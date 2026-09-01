@@ -209,6 +209,41 @@ for(const name of structureFiles){
   }
 }
 
+
+// R7R extends property ownership from shell commands/tabs to reusable Core
+// surfaces. The shared hit box, semantic field density, scientific floating
+// chrome and PortableView placement modes must not regress to source-order
+// overrides in another Structure file.
+const portablePlacementGeometry=/^(?:position|inset|left|right|top|bottom|width|min-width|max-width|height|min-height|max-height|overflow|overflow-x|overflow-y|resize|z-index|align-self|margin|flex)$/i;
+const headerActionHitGeometry=/^(?:height|min-height)$/i;
+const fieldDensityGeometry=/^(?:height|min-height|padding|padding-block|padding-inline|padding-top|padding-right|padding-bottom|padding-left|line-height)$/i;
+for(const name of structureFiles){
+  const css=fs.readFileSync(path.join(structureDirFinal,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    const selector=block.selector;
+    for(const [prop] of block.decls){
+      const normalized=String(prop).trim().toLowerCase();
+      if(headerActionHitGeometry.test(normalized)&&/(?:\.dkds-portable-icon-action\b|\.dkds-panel-close-button\b|\.dkds-portable-placement-trigger\b|\.dkds-plot-view-action\b|\.dkds-portable-history-action\b)/.test(selector)){
+        violations.push(`src/styles/structure/${name}: portable/header action subtype "${selector}" rewrites ${normalized}. Header action hit height belongs to desktop-chrome-geometry.css and must be changed through --dkds-header-action-height.`);
+      }
+      if(/\.dkds-scientific-nav-tools(?:\s*>?\s*button|\b)/.test(selector)&&/^(?:height|min-height|padding|padding-block|padding-inline)$/i.test(normalized)){
+        const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools>button'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
+        const container=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
+        if(!canonical&&!container)violations.push(`src/styles/structure/${name}: scientific floating chrome "${selector}" rewrites ${normalized}. Item height is owned by --dkds-scientific-nav-item-* / --dkds-header-action-height slots in sdk-semantic-surfaces.css.`);
+      }
+      if(/(^|[^-])\.dkds-field-control\b/.test(selector)&&!/:not\(\.dkds-field-control\)/.test(selector)&&fieldDensityGeometry.test(normalized)){
+        const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-field-control';
+        if(!canonical)violations.push(`src/styles/structure/${name}: semantic field context "${selector}" rewrites ${normalized}. dkds-field-control density belongs to sdk-semantic-surfaces.css and --dkds-field-control-* slots.`);
+      }
+      const portableContext=/\.dkds-portable-view\b/.test(selector)&&/(?:\.is-(?:floating|global-floating|docked|sticky)\b|dkds-plugin-canvas-(?:left|right|bottom)|dkds-analysis-(?:right|bottom|workbench))/.test(selector);
+      if(portableContext&&portablePlacementGeometry.test(normalized)){
+        const canonical=name==='super-top-contract.css'&&['.dkds-portable-view.is-floating','.dkds-portable-view.is-docked','.dkds-portable-view.is-sticky'].includes(selector);
+        if(!canonical)violations.push(`src/styles/structure/${name}: PortableView context "${selector}" rewrites ${normalized}. Placement geometry must be resolved by the canonical super-top-contract.css owner through --dkds-portable-* slots.`);
+      }
+    }
+  }
+}
+
 const paintProp=/^(?:background(?:-.+)?|border(?:-.+)?|box-shadow|color|fill|stroke|opacity|outline(?:-.+)?|text-shadow|filter|backdrop-filter|-webkit-backdrop-filter|accent-color)$/i;
 const literalColor=/(?:#[0-9a-f]{3,8}\b|rgba?\(|hsla?\()/i;
 function declarations(css){

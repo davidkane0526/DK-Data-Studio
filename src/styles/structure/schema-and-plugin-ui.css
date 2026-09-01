@@ -84,11 +84,19 @@ button.wide{ width:100%;
 .schema-parameter-panel.compact{grid-template-columns:repeat(2,minmax(130px,1fr));}
 .schema-param-group{display:contents;}
 .schema-param-group-title{grid-column:1/-1;font-size:var(--plugin-font-meta,11px);font-weight:700;padding-top:2px;}
-.schema-param-field{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.schema-param-field{
+  --dkds-schema-field-min-height:var(--plugin-control-height,32px);
+  --dkds-schema-field-padding-block:5px;
+  --dkds-schema-field-padding-inline:8px;
+  display:flex;flex-direction:column;gap:3px;min-width:0;
+}
 .schema-param-label{font-size:var(--plugin-font-label,12px);}
-.schema-param-field input,.schema-param-field select,.schema-param-field textarea{
+.schema-param-field :where(input,select,textarea):not(.dkds-field-control){
   width:100%;box-sizing:border-box;
-  padding:5px 8px;font-size:var(--plugin-font-label,12px);min-height:var(--plugin-control-height,32px);
+  padding-block:var(--dkds-schema-field-padding-block);
+  padding-inline:var(--dkds-schema-field-padding-inline);
+  font-size:var(--plugin-font-label,12px);
+  min-height:var(--dkds-schema-field-min-height);
 }
 .schema-param-field select[multiple]{min-height:88px;}
 .schema-param-field select.dkds-multiselect-source{display:none}
@@ -98,7 +106,9 @@ button.wide{ width:100%;
 .schema-param-field textarea{resize:vertical;line-height:1.45;}
 .schema-param-help{font-size:var(--plugin-font-meta,11px);line-height:1.4;}
 .schema-param-error{min-height:10px;font-size:var(--plugin-font-meta,11px);line-height:1.35;}
-.dkds-pointer-coarse .schema-param-field input,.dkds-pointer-coarse .schema-param-field select,.dkds-pointer-coarse .schema-param-field textarea{min-height:var(--dkds-touch-target,44px);font-size:12px;}
+.dkds-pointer-coarse .schema-param-field{--dkds-schema-field-min-height:var(--dkds-touch-target,44px);}
+.dkds-pointer-coarse .schema-param-field :where(input,select,textarea):not(.dkds-field-control){font-size:12px;}
+.dkds-pointer-coarse{--dkds-field-control-min-height:var(--dkds-touch-target,44px);}
 .dkds-size-compact .schema-parameter-panel,.dkds-size-compact .schema-parameter-panel.compact{grid-template-columns:1fr;}
 .schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;}
 .dkds-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}
@@ -353,7 +363,9 @@ button{min-height:30px;}
   top:calc(100% + 5px);
   z-index:1650;padding:5px;}
 
-input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-height:30px;
+input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *),
+select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *),
+textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *){min-height:30px;
 }
 
 .dataset-item,.plugin-manager-card,.trend-card{transition:background .12s,border-color .12s,box-shadow .12s,opacity .12s;}

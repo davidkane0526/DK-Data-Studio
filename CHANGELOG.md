@@ -1,3 +1,12 @@
+# v3.67.15 — R7R Extended Property Ownership Audit WIP
+
+- Extend property-level Core ownership to Portable/header actions, Scientific floating navigation, semantic Field density and PortableView placement modes.
+- Make desktop header/action height a single property owner. Close/place/history/plot subtypes feed `--dkds-header-action-height` instead of rewriting `height/min-height`.
+- Move Scientific floating navigation item geometry into `sdk-semantic-surfaces.css`; the Workbench layer no longer owns a second 24/25 px button contract.
+- Separate shared `dkds-field-control`, Schema-field and AnalysisWorkbench generic density owners. Global field baselines exclude those semantic owners, and pointer-coarse mode changes bounded density slots.
+- Consolidate PortableView floating/docked/sticky placement geometry in `super-top-contract.css`. AnalysisWorkbench/PluginWorkspace dock/floating contexts and sticky-disabled/collapsed states now feed `--dkds-portable-*` slots only.
+- Advance Hard Visual Invariants to 69 and extend `validate-styles.js` so these source-order ownership regressions fail the build.
+
 # v3.67.14 — R7Q Property Ownership Audit WIP
 
 - Continue **Desktop Visual Closure** by extending property-level ownership beyond ToolbarAction to Activity Tabs and Status Bar actions.

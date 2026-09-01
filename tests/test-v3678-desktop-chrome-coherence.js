@@ -22,7 +22,7 @@ assert(grid.includes('"cleft clsplit cbsplit cbsplit cbsplit"')&&grid.includes('
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
 const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 const appearance=read('src/styles/theme/component-appearance.css');
-assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'header actions must use canonical Structure spacing plus Theme 3.10 resolved ToolbarAction radius.');
+assert(desktopChrome.includes('height:var(--dkds-header-action-height,26px)')&&desktopChrome.includes('min-height:var(--dkds-header-action-height,26px)')&&desktopChrome.includes('.dkds-portable-placement-trigger{')&&desktopChrome.includes('padding:0 8px')&&appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'header actions must consume the canonical slot-owned 26px Structure hit height and Theme 3.10 resolved ToolbarAction radius.');
 assert(appearance.includes('background:color-mix(in srgb,var(--dkui-danger) 8%,transparent)')&&appearance.includes('color:var(--dkui-danger)'),'all shared close buttons must use one restrained canonical close hover treatment.');
 assert(!integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'Integrated command Theme CSS must not own generic header geometry.');
 

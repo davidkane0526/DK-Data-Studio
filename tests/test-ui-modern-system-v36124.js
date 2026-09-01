@@ -10,7 +10,7 @@ const css=readCoreCss(root,['presentation','theme']);
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','scientific','chart-runtime.js'),'utf8');
 const materialCss=fs.readFileSync(path.join(root,'src','styles','theme','material-renderer.css'),'utf8');
 const componentCss=fs.readFileSync(path.join(root,'src','styles','theme','component-appearance.css'),'utf8');
-const scientificStructure=fs.readFileSync(path.join(root,'src','styles','structure','workbench-components.css'),'utf8');
+const scientificStructure=fs.readFileSync(path.join(root,'src','styles','structure','sdk-semantic-surfaces.css'),'utf8');
 
 
 assert(html.includes('core.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the layered Core visual system');
@@ -27,7 +27,7 @@ const dataCenterCss=fs.readFileSync(path.join(root,'src','plugins','data-center'
 assert(!css.includes('#resonanceDedicatedPage')&&!css.includes('.data-center-body'),'Core modern CSS must not own domain-plugin selectors');
 assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css')&&resonanceCss.includes('#resonanceDedicatedPage'),'Resonance domain layout must be manifest-owned plugin CSS');
 assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.includes('plugin.css')&&dataCenterCss.includes('.data-center-body'),'Data Center domain layout must be manifest-owned plugin CSS');
-assert(scientificStructure.includes('.dkds-scientific-nav-tools button')&&scientificStructure.includes('width:25px;height:24px;min-width:25px;min-height:24px'),'Core scientific navigation buttons must keep one compact geometry contract');
+assert(scientificStructure.includes('--dkds-scientific-nav-item-width:25px')&&scientificStructure.includes('--dkds-scientific-nav-item-height:24px')&&scientificStructure.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'),'Core scientific navigation buttons must keep one slot-owned compact geometry contract');
 assert(materialCss.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&componentCss.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'Scientific navigation depth must be Material-owned while hit-region shape consumes Theme-resolved canonical ToolbarAction appearance');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 

@@ -36,7 +36,7 @@ const portable=read('src/core/ui/modules/layout/portable-view.js');
 const actions=read('src/core/ui/modules/interaction/context-actions.js');
 assert(portable.includes("placementButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("closeButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("collapseButton.dataset.dkdsComponentVariant='quiet'"),'Portable header controls must be quiet actions.');
 assert(actions.includes("headerIntegrated?'quiet':''"),'integrated header ActionGroup controls must default to quiet actions.');
-assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'header controls must combine canonical 26px Structure geometry with Theme 3.10 resolved Component Appearance radius.');
+assert(desktopChrome.includes('height:var(--dkds-header-action-height,26px)')&&desktopChrome.includes('min-height:var(--dkds-header-action-height,26px)')&&desktopChrome.includes('.dkds-portable-placement-trigger{')&&desktopChrome.includes('padding:0 8px')&&appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'header controls must combine the canonical slot-owned 26px Structure hit height with Theme 3.10 resolved Component Appearance radius.');
 assert(appearance.includes('color-mix(in srgb,var(--dkui-control-hover) 62%,transparent)'),'quiet hover paint must be lighter than generic control hover.');
 
 // 5/6/8) The graph command/legend outlines and every topbar group share explicit

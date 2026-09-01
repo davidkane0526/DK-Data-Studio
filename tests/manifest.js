@@ -917,6 +917,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36715-r7r-extended-property-ownership.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1864,6 +1868,14 @@ module.exports = {
     },
     {
       "file": "tests/test-v36711-r7n-shell-command-correction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36712-r7o-import-focus-compact-centering.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36715-r7r-extended-property-ownership.js",
       "args": []
     },
     {

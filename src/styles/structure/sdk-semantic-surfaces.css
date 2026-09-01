@@ -18,7 +18,24 @@
   max-height:none;}
 .dkds-scientific-auto-legend.is-top,.dkds-scientific-auto-legend.is-bottom{align-content:center;}
 .dkds-scientific-auto-legend.is-right,.dkds-scientific-auto-legend.is-left{flex-direction:column;align-items:stretch;justify-content:flex-start;}
-.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:0;padding:1px 2px;overflow:hidden;user-select:none;pointer-events:none;transform:none;transition:opacity .12s ease,border-color .12s ease,box-shadow .12s ease;}
+.dkds-scientific-nav-tools{
+  --dkds-scientific-nav-item-width:25px;
+  --dkds-scientific-nav-item-height:24px;
+  --dkds-header-action-height:var(--dkds-scientific-nav-item-height);
+  position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:0;padding:1px 2px;overflow:hidden;user-select:none;pointer-events:none;transform:none;transition:opacity .12s ease,border-color .12s ease,box-shadow .12s ease;
+}
+.dkds-scientific-nav-drag{
+  display:flex;align-items:center;justify-content:center;
+  width:var(--dkds-scientific-nav-item-width);min-width:var(--dkds-scientific-nav-item-width);max-width:var(--dkds-scientific-nav-item-width);
+  height:var(--dkds-scientific-nav-item-height);min-height:var(--dkds-scientific-nav-item-height);max-height:var(--dkds-scientific-nav-item-height);
+  flex:0 0 var(--dkds-scientific-nav-item-width);padding:0;font-size:14px;line-height:1;cursor:grab;touch-action:none;
+}
+.dkds-scientific-nav-tools>button{
+  width:var(--dkds-scientific-nav-item-width);max-width:var(--dkds-scientific-nav-item-width);
+  min-width:var(--dkds-scientific-nav-item-width);flex:0 0 var(--dkds-scientific-nav-item-width);
+  padding:0;font-size:14px;line-height:1;vertical-align:middle;
+}
+.dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing;}
 @media (hover:none),(pointer:coarse){.dkds-scientific-nav-tools{transform:none}}
 .dkds-group-plot{display:grid;grid-template-columns:repeat(var(--dkds-group-cols,1),minmax(0,1fr));gap:var(--dkds-group-gap,12px);align-items:stretch;min-width:0;overflow:auto}
 .dkds-group-plot-card{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;height:var(--dkds-group-item-height,260px);overflow:hidden}
@@ -170,7 +187,8 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 
 /* Portable chrome: unified history + touch-safe resizing. */
 .dkds-portable-history-action{
-  width:26px;height:26px;min-width:26px;min-height:26px;padding:0;font:600 16px/26px system-ui,sans-serif;
+  --dkds-header-action-height:26px;
+  width:26px;min-width:26px;max-width:26px;padding:0;font:600 16px/26px system-ui,sans-serif;
   display:inline-flex;align-items:center;justify-content:center;cursor:pointer
 }
 .dkds-portable-resize-handle{
@@ -191,13 +209,13 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 /* Core grid collision contract: a sticky plot reserves a real grid column.
    Sibling plots are explicitly reflowed by GridController instead of remaining
    underneath a visually sticky overlay. */
-.dkds-managed-grid.dkds-grid-sticky-avoidance>.dkds-portable-view.is-sticky,
-.dkds-managed-grid.dkds-grid-sticky-avoidance>.dkds-prime-portable.is-sticky{
-  position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;align-self:start
-}
-.dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-portable-view.is-sticky,
-.dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-prime-portable.is-sticky{
-  position:relative;top:auto;z-index:auto
+/* Sticky avoidance uses the canonical portable placement owner. GridController
+   reflows siblings; only the disabled context changes bounded placement slots. */
+.dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-portable-view.is-sticky{
+  --dkds-portable-sticky-position:relative;
+  --dkds-portable-sticky-top:auto;
+  --dkds-portable-sticky-z:auto;
+  --dkds-portable-sticky-align-self:auto;
 }
 
 /* Service-panel fallback starts below the complete shell chrome. */
@@ -228,7 +246,12 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-action-row{flex-wrap:wrap}
 .dkds-field{display:grid;gap:4px;min-width:0;font-size:var(--plugin-font-label,12px)}
 .dkds-field>label,.dkds-field-label{font-size:var(--plugin-font-label,12px)}
-.dkds-field-control{box-sizing:border-box;width:100%;min-width:0;min-height:var(--plugin-control-height,32px);padding:5px 8px}
+.dkds-field-control{
+  box-sizing:border-box;width:100%;min-width:0;
+  min-height:var(--dkds-field-control-min-height,var(--plugin-control-height,32px));
+  padding-block:var(--dkds-field-control-padding-block,5px);
+  padding-inline:var(--dkds-field-control-padding-inline,8px);
+}
 .dkds-check{display:flex;align-items:center;gap:7px;font-size:var(--plugin-font-label,12px)}
 .dkds-check>input[type="checkbox"],.dkds-check>input[type="radio"]{width:auto;height:auto;margin:0}
 .dkds-chip{display:inline-flex;align-items:center;gap:5px;min-height:22px;padding:2px 7px;font-size:var(--plugin-font-meta,11px);line-height:1.2}

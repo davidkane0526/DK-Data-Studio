@@ -233,22 +233,55 @@ button.plugin-status-item{cursor:pointer;}
 .dkds-split-handle::after{content:"";position:absolute;}
 .dkds-split-handle[data-axis="y"]::after{left:50%;top:3px;width:44px;height:2px;transform:translateX(-50%);}
 .dkds-split-handle[data-axis="x"]::after{left:3px;top:50%;width:2px;height:44px;transform:translateY(-50%);}
-.dkds-portable-view{min-width:260px;min-height:100px;overflow:hidden;display:flex;flex-direction:column;z-index:20;}
+.dkds-portable-view{
+  min-width:var(--dkds-portable-base-min-width,260px);
+  min-height:var(--dkds-portable-base-min-height,100px);
+  overflow:hidden;display:flex;flex-direction:column;z-index:20;
+}
 .dkds-portable-header{height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;cursor:default;user-select:none;}
 .dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.dkds-portable-view.is-floating{position:fixed;max-width:calc(100vw - 12px);max-height:calc(100vh - 42px);}.dkds-portable-view.is-floating>.dkds-portable-header{cursor:move;}
-.dkds-portable-view.is-docked{width:100%;height:auto;}.dkds-portable-view.dock-right{max-height:100%;}.dkds-portable-view.dock-bottom{max-width:100%;}
+.dkds-portable-view.is-floating{
+  position:var(--dkds-portable-floating-position,fixed);
+  max-width:var(--dkds-portable-floating-max-width,calc(100vw - 12px));
+  max-height:var(--dkds-portable-floating-max-height,calc(100vh - 42px));
+  min-width:var(--dkds-portable-floating-min-width,300px);
+  min-height:var(--dkds-portable-floating-min-height,180px);
+  z-index:var(--dkds-portable-floating-z,1100);
+  resize:var(--dkds-portable-floating-resize,both);
+  overflow:var(--dkds-portable-floating-overflow,auto);
+}
+.dkds-portable-view.is-floating>.dkds-portable-header{cursor:move;}
+.dkds-portable-view.is-docked{
+  position:var(--dkds-portable-docked-position,relative);
+  inset:var(--dkds-portable-docked-inset,auto);
+  width:var(--dkds-portable-docked-width,100%);
+  min-width:var(--dkds-portable-docked-min-width,var(--dkds-portable-base-min-width,260px));
+  height:var(--dkds-portable-docked-height,auto);
+  min-height:var(--dkds-portable-docked-min-height,var(--dkds-portable-base-min-height,100px));
+  max-width:var(--dkds-portable-docked-max-width,none);
+  max-height:var(--dkds-portable-docked-max-height,none);
+  margin:var(--dkds-portable-docked-margin,0);
+  flex:var(--dkds-portable-docked-flex,0 0 auto);
+  overflow:var(--dkds-portable-docked-overflow,hidden);
+  resize:var(--dkds-portable-docked-resize,none);
+}
+.dkds-portable-view.dock-right{--dkds-portable-docked-max-height:100%;}
+.dkds-portable-view.dock-bottom{--dkds-portable-docked-max-width:100%;}
+.dkds-portable-view.is-sticky{
+  position:var(--dkds-portable-sticky-position,sticky);
+  top:var(--dkds-portable-sticky-top,8px);
+  z-index:var(--dkds-portable-sticky-z,34);
+  align-self:var(--dkds-portable-sticky-align-self,start);
+}
 .dkds-chart-surface{min-width:0;min-height:220px;display:flex;flex-direction:column;}.dkds-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:3px 6px 3px 10px;}.dkds-chart-title{font-size:12px;}.dkds-chart-actions{display:flex;align-items:center;}.dkds-chart-plot{flex:1 1 auto;min-height:180px;min-width:0;}
 @media(max-width:900px){}
 .dkds-portable-inline-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}.dkds-portable-inline-header>.dkds-portable-controls{margin-left:auto;flex:0 0 auto;}
-.analysis-chart-card.dkds-portable-view.is-floating{overflow:auto;}
 .dkds-plugin-header-actions{margin-left:auto;display:flex;align-items:center;min-width:0;}.analysis-page-header>.dkds-plugin-header-actions+.analysis-page-close{margin-left:6px;}
 
 /* Core plugin UI infrastructure: shared context menu / pinned scientific surfaces. */
 .dkds-context-item{min-height:32px;padding:5px 8px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left;}
 .dkds-context-item kbd{font:inherit;font-size:11px;}
 .dkds-context-separator{height:1px;margin:3px 5px;}
-.dkds-portable-view.is-floating{z-index:1100;resize:both;overflow:auto;min-width:300px;min-height:180px;}
 
 /* Compact portable-view location breadcrumb. One control replaces the
    old six-icon strip so chart titles keep their horizontal space. */

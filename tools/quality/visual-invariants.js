@@ -242,9 +242,10 @@ function validate(){
 
   // HARD-12: every desktop panel close action has one square geometry and one
   // canonical corner radius, independent of which header created it.
-  requireRegex(chromeGeometry,/\.dkds-panel-close-button\{[\s\S]*?width:26px;min-width:26px;max-width:26px;height:26px;min-height:26px;[\s\S]*?padding:0/,'HARD-12: panel close geometry must be exactly 26x26 with zero padding.');
+  requireRegex(chromeGeometry,/\.dkds-panel-close-button\{[\s\S]*?--dkds-header-action-height:26px;[\s\S]*?width:26px;min-width:26px;max-width:26px;max-height:26px;[\s\S]*?padding:0/,'HARD-12: panel close geometry must declare the canonical 26 px header-action slot and square width.');
   requireText(componentCss,'[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}','HARD-12: panel close radius must have one canonical 7 px owner.');
-  requireRegex(chromeGeometry,/dkds-fixed-popover-header>\.dkds-panel-close-button\{[\s\S]*?max-height:26px;padding:0/,'HARD-12: fixed popover close must consume the same 26x26 header geometry.');
+  requireRegex(chromeGeometry,/:where\(\.dkds-integrated-action-group,\.dkds-portable-controls,\.panel-header-actions,\.dkds-plot-view-actions\)>button\{[\s\S]*?height:var\(--dkds-header-action-height,26px\);[\s\S]*?min-height:var\(--dkds-header-action-height,26px\)/,'HARD-12: desktop header actions must consume one shared hit-height property owner.');
+  forbidRegex(chromeGeometry,/dkds-fixed-popover-header>\.dkds-panel-close-button\{[^}]*(?:height|min-height|padding)\s*:/s,'HARD-12: fixed popover close must not re-own the canonical close hit box.');
 
   // HARD-13: desktop topbar uses exact geometry, not a blur approximation.
   requireText(schemaStructure,'--dkds-shell-group-height:38px','HARD-13: shell command groups must share the 38 px visual envelope.');
@@ -786,12 +787,43 @@ function validate(){
   requireText(schemaUi,'--dkds-project-tabs-padding-left:10px','HARD-66: Project Tabs Bar padding must be slot-based.');
   requireText(schemaUi,'--dkds-project-tab-height:32px;--dkds-project-tab-min-width:128px','HARD-66: narrow Desktop Project Tab geometry must modify slots rather than rewrite the content box.');
   forbidRegex(schemaUi,/@media\(max-width:820px\)\{[^}]*\.project-tab\{[^}]*(?:height|min-width|padding(?:-left|-right)?)\s*:/s,'HARD-66: responsive Project Tab contexts may not re-own content-box properties.');
+
+
+  // HARD-67: portable/header actions and scientific floating navigation use one
+  // final hit-height owner. Subtypes and scientific contexts feed bounded slots.
+  const chromeGeometryR7R=read('src/styles/structure/desktop-chrome-geometry.css');
+  const semanticSurfacesR7R=read('src/styles/structure/sdk-semantic-surfaces.css');
+  const workbenchComponentsR7R=read('src/styles/structure/workbench-components.css');
+  requireText(chromeGeometryR7R,'height:var(--dkds-header-action-height,26px)','HARD-67: desktop header actions must consume the canonical hit-height slot.');
+  requireText(chromeGeometryR7R,'--dkds-header-action-height:26px','HARD-67: portable action subtypes must feed the shared hit-height slot instead of rewriting height.');
+  requireText(semanticSurfacesR7R,'--dkds-scientific-nav-item-height:24px','HARD-67: scientific floating chrome must publish its compact item-height slot.');
+  requireText(semanticSurfacesR7R,'--dkds-header-action-height:var(--dkds-scientific-nav-item-height)','HARD-67: scientific floating buttons must reuse the shared header-action hit-height owner.');
+  forbidRegex(workbenchComponentsR7R,/\.dkds-scientific-nav-tools\s+button\{[^}]*(?:height|min-height|padding)\s*:/s,'HARD-67: Workbench Components must not re-own scientific floating button geometry.');
+
+  // HARD-68: shared field density is semantic and slot-driven. Generic/global
+  // baselines must exclude Core field components and workbench/schema owners.
+  requireText(semanticSurfacesR7R,'min-height:var(--dkds-field-control-min-height,var(--plugin-control-height,32px))','HARD-68: dkds-field-control must own its minimum height through a bounded density slot.');
+  requireText(schemaUi,'--dkds-schema-field-min-height:var(--plugin-control-height,32px)','HARD-68: schema fields must expose their own density slot contract.');
+  requireText(schemaUi,':not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *)','HARD-68: the generic field baseline must exclude semantic/specialized field owners.');
+  requireText(read('src/styles/structure/analysis-workbench.css'),':not(.dkds-field-control):not(.schema-param-field *)','HARD-68: AnalysisWorkbench generic field density must not overlap Core/schema field owners.');
+  requireText(schemaUi,'.dkds-pointer-coarse{--dkds-field-control-min-height:var(--dkds-touch-target,44px);}','HARD-68: touch density must change the semantic field slot, not re-own min-height.');
+
+  // HARD-69: PortableView placement modes have one final geometry owner. Host
+  // contexts may change only --dkds-portable-* inputs, never position/size/z.
+  requireText(superTop,'.dkds-portable-view.is-floating{','HARD-69: PortableView floating mode must have a canonical Core owner.');
+  requireText(superTop,'position:var(--dkds-portable-floating-position,fixed)','HARD-69: floating placement position must resolve through the portable slot contract.');
+  requireText(superTop,'.dkds-portable-view.is-docked{','HARD-69: PortableView docked mode must have a canonical Core owner.');
+  requireText(superTop,'.dkds-portable-view.is-sticky{','HARD-69: PortableView sticky mode must have a canonical Core owner.');
+  forbidRegex(read('src/styles/structure/analysis-workbench.css'),/\.dkds-analysis-workbench \.dkds-portable-view\.is-(?:floating|docked)\{[^}]*(?:^|;)\s*(?:position|inset|width|height|max-width|max-height|overflow|z-index)\s*:/sm,'HARD-69: AnalysisWorkbench portable contexts may only feed --dkds-portable-* slots.');
+  forbidRegex(workbenchComponentsR7R,/\.dkds-plugin-workspace \.dkds-portable-view\.is-floating\{[^}]*(?:^|;)\s*z-index\s*:/sm,'HARD-69: PluginWorkspace floating context must not re-own z-index.');
+  requireText(semanticSurfacesR7R,'--dkds-portable-sticky-position:relative','HARD-69: sticky-disabled grid state must change portable placement slots rather than final geometry.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:66});
+  return Object.freeze({ok:true,invariants:69});
 }
 
 if(require.main===module){

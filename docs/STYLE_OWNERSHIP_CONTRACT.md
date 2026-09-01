@@ -27,9 +27,10 @@ Core Structure owns layout and component geometry: display, grid/flex placement,
 size, padding, gap, alignment, overflow and interaction hit boxes. Shared Core
 components use property slots such as `--dkds-command-padding-inline`,
 `--dkds-activity-padding-inline`, `--dkds-status-item-padding-inline`, and
-`--dkds-project-tab-height`.
+`--dkds-project-tab-height`, `--dkds-header-action-height`,
+`--dkds-field-control-min-height`, and `--dkds-portable-*` placement slots.
 Contexts or semantic modifiers may set slot values, but they may not later
-rewrite the same `padding`/`height`/`line-height` property.
+rewrite the same `padding`/`height`/`line-height`/placement property.
 
 For example, `plugin-section-start` owns the gap and separator before a command.
 It does **not** own the command's internal padding. A compact Presenter command
@@ -65,7 +66,16 @@ application chrome. Theme plugins provide Theme Contract values instead of CSS.
   their bounded `--dkds-statusbar-*` / `--dkds-status-item-*` slots;
 - Project Tab / Project Tabs Bar contexts that rewrite the content box instead
   of their `--dkds-project-tab-*` / `--dkds-project-tabs-*` slots;
-- generic button interaction states that move Core controls geometrically.
+- generic button interaction states that move Core controls geometrically;
+- Portable/header action subtypes that re-own their hit height instead of
+  feeding `--dkds-header-action-height`;
+- Scientific floating navigation geometry outside its canonical semantic
+  surface owner;
+- `dkds-field-control`/Schema/AnalysisWorkbench density rules that overlap the
+  same field element instead of using mutually exclusive owners and bounded
+  density slots;
+- PortableView floating/docked/sticky host contexts that rewrite final
+  position/size/overflow/z-index instead of `--dkds-portable-*` slots.
 
 The goal is stronger than “no late override block”: changing CSS file order must
 not be required to fix a Core component. If a visual or geometry result depends

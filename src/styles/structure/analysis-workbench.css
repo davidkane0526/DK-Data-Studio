@@ -101,15 +101,39 @@
 .dkds-analysis-prime-body{min-width:0;min-height:0;overflow:auto;padding:8px;}
 .dkds-analysis-prime-chrome{display:flex;align-items:center;gap:2px;}
 .dkds-prime-hidden{display:none;}
-.dkds-analysis-workbench .dkds-portable-view.is-docked{position:relative;inset:auto;width:100%;max-width:none;max-height:none;margin:0;flex:0 0 auto;}
-.dkds-analysis-right>.dkds-portable-view,.dkds-analysis-right>.dkds-analysis-prime-panel{width:100%;min-width:0;}
-.dkds-analysis-bottom>.dkds-portable-view,.dkds-analysis-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%);flex:1 1 520px;max-width:none;}
-.dkds-analysis-workbench .dkds-portable-view.is-floating{position:absolute;max-width:calc(100% - 16px);}
+.dkds-analysis-workbench .dkds-portable-view.is-docked{
+  --dkds-portable-docked-position:relative;
+  --dkds-portable-docked-inset:auto;
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-max-width:none;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-margin:0;
+  --dkds-portable-docked-flex:0 0 auto;
+}
+.dkds-analysis-right>.dkds-portable-view{
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-min-width:0px;
+}
+.dkds-analysis-right>.dkds-analysis-prime-panel{width:100%;min-width:0;}
+.dkds-analysis-bottom>.dkds-portable-view{
+  --dkds-portable-docked-min-width:min(520px,100%);
+  --dkds-portable-docked-flex:1 1 520px;
+  --dkds-portable-docked-max-width:none;
+}
+.dkds-analysis-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%);flex:1 1 520px;max-width:none;}
+.dkds-analysis-workbench .dkds-portable-view.is-floating{
+  --dkds-portable-floating-position:absolute;
+  --dkds-portable-floating-max-width:calc(100% - 16px);
+}
 .dkds-analysis-workbench .dkds-portable-controls{flex:0 0 auto;}
 .dkds-managed-grid{display:grid;grid-template-columns:repeat(var(--dkds-grid-columns,3),minmax(0,1fr));grid-auto-flow:row dense;gap:10px;align-items:stretch;min-width:0;width:100%;}
 .dkds-managed-grid>*{min-width:0;max-width:none;margin:0;position:relative;inset:auto;}
 .dkds-analysis-workbench .analysis-chart-card{min-width:0;max-width:none;}
-.dkds-analysis-workbench .analysis-chart-card.dkds-portable-view{min-height:340px;height:auto;}
+.dkds-analysis-workbench .analysis-chart-card.dkds-portable-view{
+  --dkds-portable-base-min-height:340px;
+  --dkds-portable-docked-min-height:340px;
+  --dkds-portable-docked-height:auto;
+}
 .dkds-analysis-primary-host>.dkds-analysis-primary-node{width:100%;min-width:0;max-width:none;}
 .dkds-analysis-left>.dkds-analysis-left-node{width:100%;min-width:0;max-width:none;position:static;inset:auto;}
 @media(max-width:1000px){
@@ -142,13 +166,19 @@ body.plugin-window-host{
 .dkds-analysis-workbench textarea{
   font-size:var(--plugin-font-body);
 }
-.dkds-analysis-workbench input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-.dkds-analysis-workbench select{
+.dkds-analysis-workbench{
+  --dkds-workbench-field-height:var(--plugin-control-height);
+  --dkds-workbench-field-padding-block:4px;
+  --dkds-workbench-field-padding-inline:8px;
+  --dkds-workbench-field-line-height:1.2;
+}
+.dkds-analysis-workbench :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select):not(.dkds-field-control):not(.schema-param-field *){
   box-sizing:border-box;
-  min-height:var(--plugin-control-height);
-  height:var(--plugin-control-height);
-  padding:4px 8px;
-  line-height:1.2;
+  min-height:var(--dkds-workbench-field-height);
+  height:var(--dkds-workbench-field-height);
+  padding-block:var(--dkds-workbench-field-padding-block);
+  padding-inline:var(--dkds-workbench-field-padding-inline);
+  line-height:var(--dkds-workbench-field-line-height);
 }
 .dkds-analysis-workbench textarea{
   box-sizing:border-box;
@@ -221,6 +251,8 @@ body.plugin-window-host{
   --dkds-layer-global-float:2400;
   --dkds-layer-context-menu:3900;
 }
-.dkds-analysis-workbench .dkds-portable-view.is-floating{overflow:auto;max-height:calc(100% - 16px);
-  z-index:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
+.dkds-analysis-workbench .dkds-portable-view.is-floating{
+  --dkds-portable-floating-overflow:auto;
+  --dkds-portable-floating-max-height:calc(100% - 16px);
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
 }

@@ -52,7 +52,10 @@
 .dkds-plugin-canvas-bottom-resizer.active{display:block;}
 .dkds-plugin-canvas-left-resizer::before,.dkds-plugin-canvas-right-resizer::before{content:"";position:absolute;top:0;bottom:0;left:3px;width:1px;}
 .dkds-plugin-canvas-bottom-resizer::before{position:absolute;}
-.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view{width:100%;min-width:0;}
+.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view{
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-min-width:0px;
+}
 
 .dkds-analysis-nav.host-presented{display:none;}
 @media(max-width:1000px){
@@ -97,14 +100,34 @@
    to the same location flow next to/after one another and may scroll; they
    are not absolutely overlaid. */
 .dkds-plugin-canvas-left,.dkds-plugin-canvas-right{align-content:start;}
-.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view,
+.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view{
+  --dkds-portable-docked-position:relative;
+  --dkds-portable-docked-inset:auto;
+  --dkds-portable-docked-flex:0 0 auto;
+  --dkds-portable-docked-height:auto;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-min-height:180px;
+  --dkds-portable-docked-overflow:hidden;
+}
 .dkds-plugin-canvas-left>.dkds-analysis-prime-panel,.dkds-plugin-canvas-right>.dkds-analysis-prime-panel{
   position:relative;inset:auto;flex:0 0 auto;height:auto;max-height:none;min-height:180px;overflow:hidden
 ;}
 .dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{flex-wrap:wrap;
   display:flex;flex-flow:column nowrap;align-items:stretch;overflow:auto;gap:8px
 ;}
-.dkds-plugin-canvas-bottom>.dkds-portable-view,.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
+.dkds-plugin-canvas-bottom>.dkds-portable-view{
+  --dkds-portable-docked-position:relative;
+  --dkds-portable-docked-inset:auto;
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-max-width:none;
+  --dkds-portable-docked-min-width:0px;
+  --dkds-portable-docked-min-height:180px;
+  --dkds-portable-docked-height:auto;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-flex:0 0 auto;
+  --dkds-portable-docked-resize:none;
+}
+.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
   position:relative;inset:auto;width:100%;max-width:none;min-width:0;min-height:180px;height:auto;max-height:none;flex:0 0 auto;resize:none;}
 
 /* Whole-workspace floating is deliberately different from scientific-canvas

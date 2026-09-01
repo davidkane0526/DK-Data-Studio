@@ -27,11 +27,11 @@
 .group-panel:not(.docked){width:720px;}}
 .dkds-analysis-overlay>.dkds-portable-view.is-global-floating{pointer-events:auto;}
 .dkds-plugin-workspace .dkds-portable-view.is-floating{
-  z-index:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
 }
 .dkds-analysis-overlay>.dkds-portable-view.is-global-floating,
 .dkds-plugin-workspace .dkds-portable-view.is-global-floating{
-  z-index:var(--dkds-portable-z,var(--dkds-layer-global-float));
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-global-float));
 }
 
 /* A collapsed bottom dock consumes only its title bars. The scientific canvas
@@ -40,7 +40,13 @@
   grid-template-rows:minmax(0,1fr) 0 auto;
 }
 .dkds-plugin-canvas-frame.canvas-bottom-collapsed-only>.dkds-plugin-canvas-bottom-resizer{display:none;}
-.dkds-plugin-canvas-bottom>.dkds-portable-view.is-collapsed,
+.dkds-plugin-canvas-bottom>.dkds-portable-view.is-collapsed{
+  --dkds-portable-docked-min-height:0px;
+  --dkds-portable-docked-height:auto;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-flex:0 0 auto;
+  --dkds-portable-docked-overflow:hidden;
+}
 .dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel.is-collapsed{
   min-height:0;height:auto;max-height:none;flex:0 0 auto;overflow:hidden;}
 .dkds-portable-view.is-collapsed>.dkds-portable-header,
@@ -98,9 +104,6 @@ body.dkds-table-resizing *{cursor:col-resize;}
 /* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
 .dkds-scientific-surface-host{position:relative;}
 .dkds-scientific-auto-legend{position:absolute;z-index:12;display:flex;align-items:center;gap:5px;padding:3px 4px;overflow:auto;pointer-events:auto;font-size:10px;line-height:1.15;}
-.dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:25px;min-width:25px;height:24px;min-height:24px;flex:0 0 25px;padding:0;font-size:14px;line-height:1;cursor:grab;touch-action:none;}
-.dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing;}
-.dkds-scientific-nav-tools button{display:flex;align-items:center;justify-content:center;width:25px;height:24px;min-width:25px;min-height:24px;padding:0;font-size:14px;line-height:1;vertical-align:middle;}
 @media (hover:none),(pointer:coarse){}
 
 /* Core plugin settings surface */
@@ -163,9 +166,6 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-plugin-canvas-frame.has-canvas-bottom{grid-template-rows:minmax(0,1fr) 1px var(--dkds-plugin-canvas-bottom-height);}
 .dkds-plugin-canvas-bottom-resizer:is(:hover,:focus-visible,.is-dragging)::before{
   top:-1px;height:3px;}
-/* Sticky is a portable-view placement mode, independent of SUPER/TOP host chrome. */
-.dkds-portable-view.is-sticky{position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;align-self:start;}
-.dkds-managed-grid>.dkds-portable-view.is-sticky{position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;}
 /* Consolidated geometry from former secondary owners. */
 .dkds-context-menu{position:fixed;z-index:3900;min-width:180px;max-width:min(320px,calc(100vw - 12px));padding:5px;display:grid;gap:2px;}
 .dkds-context-menu.dkds-select-popup{max-width:min(460px,calc(100vw - 12px));overscroll-behavior:contain;}
