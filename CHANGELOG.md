@@ -1,3 +1,13 @@
+# v3.67.19 — R7V Aurora Hover / Theme Bootstrap · Desktop Visual Closure WIP
+
+- Make both persistent segmented shell command families consume ToolbarGroup-owned hover/active/selected state slots, so plain actions and menu-trigger actions render the same transient feedback in Aurora dark mode.
+- Keep segmented children borderless and shadowless in every transient state; the outer ToolbarGroup remains the sole silhouette/depth owner.
+- Add a persistent theme boot snapshot (`dkds.theme-boot.v1`) containing the resolved light/dark mode, active profile identity, header-effect state and root Theme CSS variables.
+- Restore that snapshot in the document head before authored styles load, preventing the first frame from painting the generic Core palette before the saved Theme profile is available.
+- Preserve a matching pending-profile boot snapshot while startup-critical Theme plugins register; Core no longer overwrites the restored Aurora/Thin Glass first frame with `builtin.default` during bootstrap.
+- Keep SDK **1.24.0**, Plugin API **1.19.0** and Theme Contract **3.10.0** unchanged; this patch is a Core appearance/startup correction, not a public-contract change.
+- Desktop Visual Closure history remains retained; Windows cold-start/hover visual acceptance remains the final rendered check before release finalization.
+
 # v3.67.18 — R7U Segmented Command Fill Ownership · Desktop Visual Closure WIP
 
 - Make the persistent File and System shell command families consume the same `ToolbarGroup + dkds-segmented-command-group` outer component contract.

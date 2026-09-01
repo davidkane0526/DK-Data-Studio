@@ -3,6 +3,7 @@
   const STORAGE_KEY='dkds.appearance.v1';
   const PROFILE_KEY='dkds.theme-profile.v1';
   const SETTINGS_KEY='dkds.theme-settings.v1';
+  const BOOT_STATE_KEY='dkds.theme-boot.v1';
   const CHANNEL_NAME='dkds-appearance-v1';
   const VALID=new Set(['light','dark']);
   const native=window.electronAPI||null;
@@ -130,6 +131,8 @@
   let preferredProfile=savedProfile();
   let activeProfile=profiles.has(preferredProfile)?preferredProfile:'builtin.default';
   let pendingProfile=activeProfile===preferredProfile?'':preferredProfile;
+  const bootState=(()=>{try{const row=JSON.parse(localStorage.getItem(BOOT_STATE_KEY)||'null');return row&&typeof row==='object'?row:null;}catch{return null;}})();
+  const canPreservePendingBoot=theme=>!!pendingProfile&&String(bootState?.profile||'')===preferredProfile&&String(bootState?.theme||'')===String(theme||current);
 
   const visibleEffectColor=value=>{
     const text=String(value??'').trim().toLowerCase();if(!text||text==='transparent')return false;
@@ -138,9 +141,36 @@
     if(/^#[0-9a-f]{8}$/i.test(text)&&text.endsWith('00'))return false;
     return true;
   };
+  function buildBootState(theme=current){
+    const mode=VALID.has(String(theme||'').toLowerCase())?String(theme).toLowerCase():current;
+    const profile=profiles.get(activeProfile)||profiles.get('builtin.default');
+    const resolved=ThemeContract.resolveProfile(profile,mode);
+    const vars={};
+    const setVar=(name,value)=>{if(name&&value!==undefined&&value!==null&&value!=='')vars[name]=String(value);};
+    const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};
+    for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)setVar(cssVar,cssTokenValue(key,value));}
+    for(const role of MATERIAL_ROLES){
+      const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};
+      for(const [key,value] of Object.entries(effective))if(MATERIAL_KEYS.includes(key))setVar(roleCssVar(role,key),cssTokenValue(key,value));
+      for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{}))setVar(roleAppearanceCssVar(role,key),value);
+    }
+    for(const component of COMPONENT_APPEARANCE_COMPONENTS){
+      const row=resolved?.appearance?.components?.[component]||{};
+      for(const [key,value] of Object.entries(row))if(COMPONENT_APPEARANCE_KEYS.includes(key))setVar(componentAppearanceCssVar(component,key),value);
+      for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))setVar(componentVariantCssVar(component,variant,key),value);
+    }
+    for(const [key,value] of Object.entries(resolved?.effects||{})){
+      setVar(effectCssVar(key),effectCssValue(key,value));
+      if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';setVar('--dkui-effect-gradient-angle',angle);}
+    }
+    return Object.freeze({theme:mode,profile:profile?.id||'builtin.default',headerEffect:(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false',vars:Object.freeze(vars)});
+  }
+  function persistBootState(theme=current){
+    try{localStorage.setItem(BOOT_STATE_KEY,JSON.stringify(buildBootState(theme)));}catch{}
+  }
   function clearProfileTokens(){const root=document.documentElement;if(!root)return;for(const cssVar of Object.values(PUBLIC_TOKEN_MAP))root.style.removeProperty(cssVar);for(const role of MATERIAL_ROLES){for(const key of MATERIAL_KEYS)root.style.removeProperty(roleCssVar(role,key));for(const key of ThemeContract.roleAppearanceKeys())root.style.removeProperty(roleAppearanceCssVar(role,key));}for(const component of COMPONENT_APPEARANCE_COMPONENTS){for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentAppearanceCssVar(component,key));for(const variant of COMPONENT_VARIANTS)for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentVariantCssVar(component,variant,key));}for(const key of EFFECT_KEYS)root.style.removeProperty(effectCssVar(key));root.style.removeProperty('--dkui-effect-gradient-angle');delete root.dataset.dkdsThemeHeaderEffect;}
   const cssTokenValue=(key,value)=>{if(['materialTintOpacity','materialNoiseOpacity'].includes(key)){const n=Number(value);if(Number.isFinite(n))return `${Math.max(0,Math.min(1,n))*100}%`;}return value;};
-  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))root.style.setProperty(roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){root.style.setProperty(roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){root.style.setProperty(effectCssVar(key),effectCssValue(key,value));if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';root.style.setProperty('--dkui-effect-gradient-angle',angle);}}root.dataset.dkdsThemeHeaderEffect=(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false';applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';}
+  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))root.style.setProperty(roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){root.style.setProperty(roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){root.style.setProperty(effectCssVar(key),effectCssValue(key,value));if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';root.style.setProperty('--dkui-effect-gradient-angle',angle);}}root.dataset.dkdsThemeHeaderEffect=(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false';applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';if(!pendingProfile||activeProfile===preferredProfile)persistBootState(theme);}
   function snapshotTokens(){const root=document.documentElement;if(!root)return Object.freeze({});const style=getComputedStyle(root),out={};for(const [key,cssVar] of Object.entries(PUBLIC_TOKEN_MAP))out[key]=style.getPropertyValue(cssVar).trim();return Object.freeze(out);}
 
   let visualTransaction=0;
@@ -157,8 +187,9 @@
     const next=VALID.has(normalized)?normalized:systemTheme();
     const previous=current;current=next;
     const root=document.documentElement,transaction=beginVisualTransaction();
-    if(root){root.dataset.dkdsTheme=next;root.style.colorScheme=next;applyProfileTokens(next);refreshVisualComposition();}
+    if(root){root.dataset.dkdsTheme=next;root.style.colorScheme=next;if(!canPreservePendingBoot(next)){applyProfileTokens(next);refreshVisualComposition();}}
     if(persist){try{localStorage.setItem(STORAGE_KEY,next);}catch{}}
+    else if(!canPreservePendingBoot(next))persistBootState(next);
     if(broadcast){try{channel?.postMessage?.({theme:next,preferredProfile,activeProfile});}catch{}}
     if(nativeSync){try{void native?.appearanceSetTheme?.(next);}catch{}}
     if(emit&&(previous!==next)){try{globalThis.dispatchEvent(new CustomEvent('dkds:theme-changed',{detail:{theme:next,previous,profile:activeProfile,tokens:snapshotTokens(),visualSynchronized:true}}));}catch{}}
@@ -169,6 +200,7 @@
   function commitProfile(key,{emit=true,detail={}}={}){
     const next=profiles.has(key)?key:'builtin.default',previous=activeProfile,transaction=beginVisualTransaction();
     activeProfile=next;applyProfileTokens(current);refreshVisualComposition();
+    persistBootState(current);
     if(emit&&previous!==next){try{const tokens=snapshotTokens(),shared={profile:next,previous,theme:current,tokens,visualSynchronized:true,...detail};globalThis.dispatchEvent(new CustomEvent('dkds:theme-profile-changed',{detail:shared}));globalThis.dispatchEvent(new CustomEvent('dkds:theme-changed',{detail:{theme:current,previous:current,profile:next,tokens,visualSynchronized:true}}));}catch{}}
     endVisualTransaction(transaction);return Object.freeze({profile:next,previous,changed:previous!==next});
   }

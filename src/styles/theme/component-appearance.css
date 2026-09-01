@@ -331,8 +331,19 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="
 body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"],
 body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{
   --dkds-ca-action-surface:transparent;
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-group-surface-hover,var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover)));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-group-surface-active,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface)));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-group-surface-selected,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface)));
   --dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-group-text-active,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text)));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-group-text-selected,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text)));
   --dkds-ca-action-border:transparent;
+  --dkds-ca-action-border-hover:transparent;
+  --dkds-ca-action-border-active:transparent;
+  --dkds-ca-action-shadow:none;
+  --dkds-ca-action-shadow-hover:none;
+  --dkds-ca-action-shadow-active:none;
+  --dkds-ca-action-shadow-selected:none;
   border-color:transparent;border-radius:0;box-shadow:none
 }
 body.dkds-modern-ui .dkds-segmented-command-group>:first-child:is([data-dkds-component-identity="toolbarAction"]),

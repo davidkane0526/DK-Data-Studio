@@ -933,6 +933,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36719-r7v-aurora-hover-theme-bootstrap.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1900,6 +1904,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36718-r7u-segmented-command-fill-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36719-r7v-aurora-hover-theme-bootstrap.js",
       "args": []
     },
     {

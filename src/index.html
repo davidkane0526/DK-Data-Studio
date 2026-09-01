@@ -4,6 +4,33 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DK Data Studio</title>
+  <script>
+    (() => {
+      const THEME_KEY='dkds.appearance.v1';
+      const PROFILE_KEY='dkds.theme-profile.v1';
+      const BOOT_STATE_KEY='dkds.theme-boot.v1';
+      const VALID=new Set(['light','dark']);
+      const root=document.documentElement;
+      let theme='light',profile='builtin.default';
+      try{
+        const saved=String(localStorage.getItem(THEME_KEY)||'').trim().toLowerCase();
+        theme=VALID.has(saved)?saved:(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches?'dark':'light');
+        profile=String(localStorage.getItem(PROFILE_KEY)||'').trim()||'builtin.default';
+        root.dataset.dkdsTheme=theme;
+        root.style.colorScheme=theme;
+      }catch{}
+      try{
+        const parsed=JSON.parse(localStorage.getItem(BOOT_STATE_KEY)||'null');
+        const matches=parsed&&typeof parsed==='object'&&parsed.theme===theme&&parsed.profile===profile;
+        if(matches){
+          root.dataset.dkdsThemeProfile=profile;
+          if(parsed.headerEffect==='true'||parsed.headerEffect==='false')root.dataset.dkdsThemeHeaderEffect=parsed.headerEffect;
+          const vars=parsed.vars&&typeof parsed.vars==='object'?parsed.vars:null;
+          if(vars)for(const [name,value] of Object.entries(vars))if(typeof name==='string'&&name.startsWith('--')&&value!==undefined&&value!==null&&String(value)!=='')root.style.setProperty(name,String(value));
+        }
+      }catch{}
+    })();
+  </script>
   <link rel="icon" href="../assets/dkds-icon.png" />
 <link rel="stylesheet" href="core.css" />
   <link rel="stylesheet" href="mobile.css" />
@@ -19,7 +46,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.18</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.19</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作">
