@@ -20,7 +20,7 @@ assert(material.includes('html[data-dkds-theme-header-effect="true"] body.dkds-m
   'Header effects must be explicitly gated by the active Theme effect state.');
 assert(themeRuntime.includes("delete root.dataset.dkdsThemeHeaderEffect")&&themeRuntime.includes("root.dataset.dkdsThemeHeaderEffect="),
   'Theme runtime must clear and recompute the header-effect flag on every profile/mode transaction.');
-assert(themeRuntime.includes("inspectorHeader:{surface:'#f5f8fc'")&&themeRuntime.includes("inspectorHeader:{surface:'#1d2532'"),
+assert(themeRuntime.includes("inspectorHeader:{surface:'#f5f8fc'")&&themeRuntime.includes("inspectorHeader:{surface:'#1d253"),
   'Default inspector header must remain neutral instead of inheriting Aurora-like teal paint.');
 assert(!themeRuntime.includes("inspectorHeader:{surface:'#172a31'"),
   'Legacy teal default inspector header must not return.');

@@ -58,13 +58,13 @@
       },
       dark:{
         appearance:{components:{
-          toolbarGroup:{surface:'#242b36',border:'rgba(184,194,208,.10)',text:'#e4e9f2',shadow:'0 1px 2px rgba(0,0,0,.20)',radius:8},
-          panelHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#8e9aaa'},
-          inspectorHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#8e9aaa'},
-          chip:{variants:{quiet:{surface:'transparent',text:'#9aa7b8',border:'transparent',indicator:'transparent'}}},
+          toolbarGroup:{surface:'#252b34',border:'rgba(214,220,228,.09)',text:'#e7ebf0',shadow:'0 1px 2px rgba(0,0,0,.18)',radius:8},
+          panelHeader:{surface:'#1d2530',text:'#e8edf4',textSoft:'#9ba5b2',border:'rgba(198,206,216,.09)',indicator:'#98a2af'},
+          inspectorHeader:{surface:'#1d2530',text:'#e8edf4',textSoft:'#9ba5b2',border:'rgba(198,206,216,.09)',indicator:'#98a2af'},
+          chip:{variants:{quiet:{surface:'transparent',text:'#9ba5b2',border:'transparent',indicator:'transparent'}}},
           toolbarAction:{
-            surface:'transparent',surfaceHover:'#303844',surfaceActive:'#333c49',surfaceSelected:'#333c49',text:'#e4e9f2',textActive:'#f4f6f9',textSelected:'#f4f6f9',border:'transparent',borderHover:'rgba(193,202,214,.14)',borderActive:'rgba(218,224,232,.16)',shadow:'none',shadowHover:'0 1px 4px rgba(0,0,0,.18)',shadowActive:'0 1px 5px rgba(0,0,0,.22)',shadowSelected:'0 1px 5px rgba(0,0,0,.22)',radius:7,
-            contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 2px 7px rgba(0,0,0,.24)'},selected:{shadow:'0 1px 5px rgba(0,0,0,.22)'}}}}
+            surface:'transparent',surfaceHover:'#303640',surfaceActive:'#3a4049',surfaceSelected:'#3a4049',text:'#e7ebf0',textActive:'#ffffff',textSelected:'#ffffff',border:'transparent',borderHover:'rgba(232,236,242,.09)',borderActive:'transparent',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',radius:7,
+            contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'none'},selected:{shadow:'none'}}}}
           }
         }}
       }

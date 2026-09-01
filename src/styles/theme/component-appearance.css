@@ -325,17 +325,16 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="
    system commands use this exact contract, including buttons wrapped by a
    menu-anchor. This keeps hover/pressed paint identical without flattening
    unrelated semantic groups such as the status bar. */
-body.dkds-modern-ui .dkds-segmented-command-group[data-dkds-component-identity="toolbarGroup"]{
-  /* A segmented shell command is one physical silhouette.  The parent owns
-     the only radius/edge/depth; child state is expressed by fill/text only. */
-  box-shadow:none;
-}
 body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"],
 body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}
+body.dkds-modern-ui .dkds-segmented-command-group>:first-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:first-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px) 0 0 var(--dkui-component-toolbar-action-radius,7px)}
+body.dkds-modern-ui .dkds-segmented-command-group>:last-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:last-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:0 var(--dkui-component-toolbar-action-radius,7px) var(--dkui-component-toolbar-action-radius,7px) 0}
+body.dkds-modern-ui .dkds-segmented-command-group>:only-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:only-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px)}
 body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]),
-body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]:is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]){
-  border-color:transparent;border-radius:0;box-shadow:none;
-}
+body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]:is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]){box-shadow:none}
 
 /* Scientific floating chrome is one physical control silhouette. Individual
    actions may still receive Theme hover/active fills, but they may not draw

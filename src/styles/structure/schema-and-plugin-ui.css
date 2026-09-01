@@ -272,7 +272,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   padding:2px;
   box-sizing:border-box;
 }
-.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;overflow:hidden;}
+.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}
 .dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}
 .dkds-segmented-command-group>.menu-anchor{display:flex;align-items:stretch;}
 .compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}

@@ -18,7 +18,8 @@ const materialCss=read('src/styles/theme/material-renderer.css');
 const visualGate=read('tools/quality/visual-invariants.js');
 const closureVerifier=read('tools/quality/verify-visual-closure-report.js');
 const packageJson=JSON.parse(read('package.json'));
-assert(packageJson.version==='3.67.10','v3.67.10 Visual Closure final gate requires the released app version.');
+const versionTuple=String(packageJson.version||'0.0.0').split('.').slice(0,3).map(Number);
+assert(versionTuple[0]>3||(versionTuple[0]===3&&(versionTuple[1]>67||(versionTuple[1]===67&&versionTuple[2]>=10))),'v3.67.10 Visual Closure is a historical floor and must remain valid for later patch releases.');
 
 // v3.67.10 Visual Closure: a Theme coverage PASS must mean the renderer is
 // optically valid, not merely that semantic role assignment succeeded.

@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.67.10",
+  "version": "3.67.11",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -135,7 +135,7 @@
     ],
     "electronUpdaterCompatibility": ">=2.16"
   },
-  "copyright": "Copyright \u00a9 DK Data Studio",
+  "copyright": "Copyright © DK Data Studio",
   "engines": {
     "node": ">=22.12.0"
   }

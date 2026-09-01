@@ -1,5 +1,13 @@
 # v3.67.10 — R7H Runtime / Visual Recovery WIP
 
+## 3.67.11 — R7N UI correction
+
+- Reverted the R7M over-flattened shell segmented geometry while keeping one Core appearance contract for file/system command groups.
+- Default Dark active/selected commands use neutral graphite surfaces with no blue glow or persistent selected shadow.
+- Compact presentation commands keep content-box centering.
+- Development delivery policy now bumps the application patch version for each testable project ZIP; plugin versions remain independent.
+
+
 - Clean the development root: retire duplicated R7F/R7G transient handoff/status files; one current handoff now owns continuation state. Architecture/freeze documents remain because they are still referenced design history, not transient runtime notes.
 - Fix stale SUPER preference recovery in the Core plugin kernel. A saved TOP id that is missing, disabled, or no longer contract-ready now migrates to the current valid default SUPER instead of intentionally leaving the Desktop in an empty PRIMARY/PRIME shell. Valid persisted SUPER choices still win.
 - Correct dark disabled ToolbarAction contrast by removing Core's second `opacity:.56` attenuation on top of Theme `disabledText`; Theme providers still own the disabled color.

@@ -909,7 +909,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36710-r7m-segmented-default-dark.js",
+      "file": "tests/test-v36711-r7n-shell-command-correction.js",
       "args": []
     },
     {
@@ -1859,7 +1859,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36710-r7m-segmented-default-dark.js",
+      "file": "tests/test-v36711-r7n-shell-command-correction.js",
       "args": []
     },
     {
