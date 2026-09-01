@@ -21,7 +21,7 @@ function makeProject(){
   return {
     format:'dk-data-studio-project',
     schemaVersion:3,
-    version:'3.67.20',
+    version:'3.67.21',
     dataModel:window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),
     plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
     host:{

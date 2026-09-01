@@ -941,6 +941,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36721-pre-mobile-repository-hygiene.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1916,6 +1920,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36720-r7w-scientific-drag-hover-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36721-pre-mobile-repository-hygiene.js",
       "args": []
     },
     {

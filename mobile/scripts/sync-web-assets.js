@@ -25,6 +25,11 @@ execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-brand-a
 });
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-sdk-authoring-reference.js')], { cwd: repoRoot, stdio: 'inherit' });
 
+// A clean source checkout intentionally does not carry generated renderer bundles.
+// Build them before copying src/ so Android always receives the same deterministic
+// Core compositions as Electron, without requiring generated files in the archive.
+execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-runtime-compositions.js')], { cwd: repoRoot, stdio: 'inherit' });
+
 // Mobile builds must always package the current plugin set.
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-plugin-index.js')], { cwd: repoRoot, stdio: 'inherit' });
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'validate-plugins.js')], { cwd: repoRoot, stdio: 'inherit' });

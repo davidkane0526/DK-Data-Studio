@@ -70,6 +70,19 @@ try {
   $roboArgs += '/XD'
   $roboArgs += (Join-Path $SourceRoot 'mobile\android\build')
 
+  # Deterministic generated artifacts are deliberately absent from a clean
+  # development archive. npm start/test/check and mobile sync regenerate them.
+  $roboArgs += '/XD'
+  $roboArgs += (Join-Path $SourceRoot 'src\generated')
+  $roboArgs += '/XD'
+  $roboArgs += (Join-Path $SourceRoot 'mobile\assets\web')
+  $roboArgs += '/XF'
+  $roboArgs += (Join-Path $SourceRoot 'assets\dkds-icon.png')
+  $roboArgs += '/XF'
+  $roboArgs += (Join-Path $SourceRoot 'mobile\assets\icon.png')
+  $roboArgs += '/XF'
+  $roboArgs += (Join-Path $SourceRoot 'mobile\assets\adaptive-icon.png')
+
   & robocopy @roboArgs | Out-Null
   $rc = $LASTEXITCODE
   if ($rc -gt 7) { throw "robocopy failed with exit code $rc" }

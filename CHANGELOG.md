@@ -1,3 +1,12 @@
+# v3.67.21 — Pre-Mobile Repository Hygiene
+
+- Keep the v3.67.20 Desktop/Core architecture frozen while cleaning the source-delivery boundary before Mobile UI development.
+- Make the clean-project packager exclude deterministic generated runtime bundles and generated launcher/browser icons; `npm start`, test/check, dist and mobile sync recreate them from canonical source.
+- Make Mobile web-asset sync regenerate Core runtime compositions before copying `src/`, so a fresh clone/clean archive no longer depends on ignored generated files being present.
+- Audit direct desktop and mobile dependencies: every declared direct dependency is still consumed by runtime/build/test paths, so no live dependency is removed merely to reduce archive size.
+- Preserve `.git` history and all architecture/regression gates; repository size reduction comes from removing reproducible products from delivery and repacking Git storage, not deleting validation coverage or source history.
+- SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**; no public contract change.
+
 # v3.67.20 — R7W Scientific Floating Drag Hover Parity · Desktop/Core Archive Closure
 
 - Convert the ScientificPlot floating navigation drag affordance from a role-simulated `span` into a native `button type="button"` in both ScientificCurve and generic chart-runtime navigation paths.

@@ -48,6 +48,13 @@ if(fs.existsSync(path.join(root,'.git'))){
   for(const rel of generated)assert(!tracked.includes(rel),`${rel} is generated and must not be tracked by Git.`);
 }
 
+const cleanPackager=read('tools/windows/package-clean-project.ps1');
+for(const token of ["'src\\generated'","'mobile\\assets\\web'","'assets\\dkds-icon.png'","'mobile\\assets\\icon.png'","'mobile\\assets\\adaptive-icon.png'"]){
+  assert(cleanPackager.includes(token),`Clean project packager must exclude deterministic generated artifact: ${token}`);
+}
+const mobileSync=read('mobile/scripts/sync-web-assets.js');
+assert(mobileSync.includes("generate-runtime-compositions.js"),'Mobile sync must regenerate Core runtime compositions before packaging a clean checkout.');
+
 const parityTest = read('tests/verify-science-parity.js');
 assert(!parityTest.includes("git show"), 'Scientific parity must not depend on git show or a moving branch');
 assert(!parityTest.includes('DKDS_PARITY_BASELINE_REF'), 'Scientific parity baseline must not be a branch/ref');
