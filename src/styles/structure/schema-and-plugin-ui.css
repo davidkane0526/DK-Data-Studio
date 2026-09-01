@@ -6,7 +6,7 @@ button{ padding:6px 10px; cursor:pointer;
 }
 button.wide{ width:100%;
 }
-.toolbar-group{display:flex;align-items:center;flex:0 0 auto;
+.toolbar-group{display:flex;align-items:center;flex:0 0 auto;gap:3px;padding:2px;box-sizing:border-box;
 }
 .toolbar-btn.icon-btn{--dkds-command-padding-block:0px;--dkds-command-padding-inline:0px;
 }
@@ -26,8 +26,6 @@ button.wide{ width:100%;
 }
 .preset-row button{flex:1;
 }
-.statusbar{white-space:nowrap;overflow:hidden;
-}
 .floating-panel{position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
 }
 .dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + 8px);width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
@@ -46,17 +44,32 @@ button.wide{ width:100%;
 .group-panel-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;top:0;z-index:3;
 }
 .project-tabs-bar{
+  --dkds-project-tabs-height:40px;
+  --dkds-project-tabs-padding-left:10px;
+  --dkds-project-tabs-padding-right:10px;
   position:relative;
   z-index:1300;
   display:flex;
+  align-items:end;
+  height:var(--dkds-project-tabs-height);
+  min-height:var(--dkds-project-tabs-height);
+  gap:5px;
+  padding:5px var(--dkds-project-tabs-padding-right) 0 var(--dkds-project-tabs-padding-left);
   overflow:hidden;
 }
 .project-tab{
+  --dkds-project-tab-height:34px;
+  --dkds-project-tab-min-width:126px;
+  --dkds-project-tab-padding-left:10px;
+  --dkds-project-tab-padding-right:7px;
   max-width:260px;
+  min-width:var(--dkds-project-tab-min-width);
+  height:var(--dkds-project-tab-height);
+  min-height:var(--dkds-project-tab-height);
   display:flex;
   align-items:center;
   gap:6px;
-  padding:0 7px 0 10px;
+  padding:0 var(--dkds-project-tab-padding-right) 0 var(--dkds-project-tab-padding-left);
 }
 .new-project-tab{
   min-width:34px;
@@ -94,14 +107,6 @@ button.wide{ width:100%;
    Plugin-native workspace shell
    ============================================================ */
 .plugin-activity-hidden{display:none;}
-
-.activity-tab{
-  flex:0 0 auto;
-  display:inline-flex;
-  align-items:center;
-  white-space:nowrap;
-}
-.activity-tab.active{font-weight:700;}
 
 .activity-more-anchor,.menu-anchor{position:relative;flex:0 0 auto;}
 .activity-more-menu{right:0;left:auto;top:calc(100% + 4px);}
@@ -188,10 +193,6 @@ button.wide{ width:100%;
 }
 .update-menu-btn{display:flex;align-items:center;justify-content:space-between;}
 
-.project-tabs-bar{
-  align-items:end;
-}
-
 .left-panel{padding:9px;}
 .plugin-sidebar-section{padding-bottom:9px;margin-bottom:9px;}
 .plugin-sidebar-section h3{margin-bottom:6px;}
@@ -222,14 +223,13 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   .file-command-group{padding:1px}
   .file-command-group .toolbar-btn{--dkds-command-padding-inline:5px}
   .system-commandbar{gap:2px}
-  .project-tabs-bar{padding-left:5px;padding-right:5px}
-  .project-tab{height:32px;min-width:128px}
+  .project-tabs-bar{--dkds-project-tabs-padding-left:5px;--dkds-project-tabs-padding-right:5px}
+  .project-tab{--dkds-project-tab-height:32px;--dkds-project-tab-min-width:128px}
 }
 @media(max-width:520px){
   .global-commandbar{gap:2px}
   .file-command-group .toolbar-btn{font-size:10px;--dkds-command-padding-inline:4px}
   .compact-menu-anchor .toolbar-btn,.system-commandbar .toolbar-btn,.activity-more-anchor .toolbar-btn,.context-overflow-anchor .toolbar-btn{font-size:10px;--dkds-command-padding-inline:5px}
-  .activity-tab{font-size:10px;padding-left:5px;padding-right:5px}
 }
 
 /* ============================================================
@@ -268,24 +268,11 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 .version{margin-left:0;font-weight:600;}
 
 .global-commandbar,.system-commandbar{gap:6px;}
-.toolbar-group{
-  gap:3px;
-  padding:2px;
-  box-sizing:border-box;
-}
 .dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}
 .dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;--dkds-command-padding-inline:9px;}
 .dkds-segmented-command-group>.menu-anchor{display:flex;align-items:stretch;}
 .compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}
 
-.activity-tab{
-  height:34px;
-  min-height:34px;
-  gap:6px;
-  padding:5px 10px;
-  line-height:20px;
-  overflow:visible;
-}
 .activity-icon{
   width:18px;
   height:20px;
@@ -305,15 +292,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 
   text-align:left;min-height:34px;font-size:11.5px;}
 
-.project-tabs-bar{
-  height:40px;
-  min-height:40px;
-  gap:5px;
-  padding:5px 10px 0;
-}
-.project-tab{
-  user-select:none;
-  cursor:pointer;height:34px;min-height:34px;min-width:126px;padding-left:10px;font-size:12px;}
+.project-tab{user-select:none;cursor:pointer;font-size:12px;}
 .new-project-tab{height:33px;min-height:33px;margin-bottom:1px;}
 .main-plot-tools::-webkit-scrollbar{display:none;}
 .plugin-main-tools{gap:4px;overflow:visible;}
@@ -329,7 +308,6 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 
 @media(max-width:1450px){
   .topbar-primary .brand{min-width:126px;padding-right:10px}
-  .activity-tab{padding-left:8px;padding-right:8px}
   .file-command-group .toolbar-btn{min-width:auto}
 }
 @media(max-width:1160px){
@@ -340,7 +318,6 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 @media(max-width:820px){
   .topbar-primary{height:52px;min-height:52px;padding:6px 5px}
   .topbar-primary .brand{display:none}
-  .project-tabs-bar{height:40px;min-height:40px}
 }
 
 /* ============================================================
@@ -348,13 +325,10 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
    ============================================================ */
 html,body,#app{font-family:var(--ui-font-family);font-size:var(--ui-font-size);}
 button,input,select,textarea{font-family:inherit;font-size:var(--ui-font-size);}
-button{
-  min-height:30px;transition:background .12s,border-color .12s,color .12s,box-shadow .12s,transform .08s;
-}
-button:active{transform:translateY(.5px);}
+button{min-height:30px;}
 
 /* Stable type scale shared by the shell and built-in/external plugin surfaces. */
-.activity-tab,.plugin-toolbar-btn,.plugin-main-tool-btn,.left-panel,.plugin-sidebar-section,.floating-panel,.command-menu,.plugin-manager-page,.plugin-window-host{font-size:var(--ui-font-size);}
+.plugin-toolbar-btn,.plugin-main-tool-btn,.left-panel,.plugin-sidebar-section,.floating-panel,.command-menu,.plugin-manager-page,.plugin-window-host{font-size:var(--ui-font-size);}
 .left-panel h3,
 .plugin-sidebar-section h3,
 .floating-header,
@@ -373,8 +347,6 @@ button:active{transform:translateY(.5px);}
 .analysis-plot-card-header span{font-size:var(--ui-font-tiny);}
 
 /* Lighter structural surfaces; hierarchy comes from spacing and borders, not heavy shadows. */
-.statusbar{height:28px;padding:5px 10px;}
-
 /* Cards, panels and tables share one visual grammar. */
 .command-menu{
   right:0;
@@ -405,7 +377,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-height:30px
 @media(max-width:1160px){
 }
 @media(max-width:820px){
-  .activity-tab,.plugin-toolbar-btn{font-size:var(--ui-font-size)}
+  .plugin-toolbar-btn{font-size:var(--ui-font-size)}
 }
 
 /* Plugin manager typography belongs to the plugin/schema UI owner, not shell navigation. */

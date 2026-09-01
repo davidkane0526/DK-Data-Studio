@@ -148,7 +148,7 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-dialog-header{display:grid;grid-template-columns:34px minmax(0,1fr) 30px;align-items:start;gap:10px;padding:16px 17px 13px;}
 .dkds-dialog-icon{display:grid;place-items:center;width:32px;height:32px;font-size:15px;font-weight:800;}
 .dkds-dialog-title-wrap{display:flex;flex-direction:column;gap:3px;min-width:0;padding-top:1px;}.dkds-dialog-title{font-size:14px;line-height:1.35;font-weight:720;letter-spacing:.005em;}.dkds-dialog-subtitle{font-size:10px;line-height:1.45;}
-.dkds-dialog-close{width:29px;height:29px;min-width:29px;padding:0;font-size:18px;line-height:1;cursor:pointer;}.dkds-dialog-close:hover{transform:none;}
+.dkds-dialog-close{width:29px;height:29px;min-width:29px;padding:0;font-size:18px;line-height:1;cursor:pointer;}
 .dkds-dialog-body{overflow:auto;padding:15px 17px 16px;min-height:0;}.dkds-dialog-message{margin:0;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;}
 .dkds-dialog-meta{display:grid;grid-template-columns:minmax(92px,auto) minmax(0,1fr);gap:7px 12px;margin:14px 0 0;padding:11px 12px;font-size:10px;line-height:1.45;}.dkds-dialog-meta dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;}
 .dkds-dialog-details{margin-top:12px;overflow:hidden;}.dkds-dialog-details summary{padding:8px 10px;cursor:pointer;font-size:10px;user-select:none;}.dkds-dialog-details pre{margin:0;padding:9px 10px 11px;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:9px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;}

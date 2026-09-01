@@ -1,3 +1,12 @@
+# v3.67.14 — R7Q Property Ownership Audit WIP
+
+- Continue **Desktop Visual Closure** by extending property-level ownership beyond ToolbarAction to Activity Tabs and Status Bar actions.
+- Consolidate Activity Tab height/padding/line-height into `shell-navigation.css`; responsive and top-level contexts now feed `--dkds-activity-*` slots instead of rewriting the content box.
+- Remove the earlier generic `.statusbar` height/padding owner. `#statusBar.statusbar` now owns shell status geometry through `--dkds-statusbar-*` slots, while status actions own an explicit 22px height/min-height and responsive `--dkds-status-item-*` slots.
+- Remove Structure-level `button:active` geometric translation and the dependent dialog-close counter-rule. Interaction states may change paint/motion but cannot move Core control geometry.
+- Consolidate Project Tab / Project Tabs Bar geometry into canonical property owners. Narrow-desktop size/padding changes now feed `--dkds-project-tab-*` / `--dkds-project-tabs-*` slots rather than mixing shorthands and later longhand overrides.
+- Extend `validate-styles.js` and Hard Visual Invariants to 66 so Activity/Status content-box regressions or Structure button-state transforms fail at build time rather than reappearing through source order.
+
 # v3.67.13 — R7P Style Ownership Closure WIP
 
 - Replace the R7O compact-command specificity patch with property-level geometry ownership. `.toolbar-btn` is the single content-box property owner and consumes `--dkds-command-*` slots; compact/context/responsive semantics only feed those slots.

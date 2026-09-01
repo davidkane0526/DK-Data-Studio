@@ -25,9 +25,11 @@ that button or create a second selector-specific visual implementation.
 
 Core Structure owns layout and component geometry: display, grid/flex placement,
 size, padding, gap, alignment, overflow and interaction hit boxes. Shared Core
-components use property slots such as `--dkds-command-padding-inline`. Contexts
-or semantic modifiers may set slot values, but they may not later rewrite the
-same `padding`/`height`/`line-height` property.
+components use property slots such as `--dkds-command-padding-inline`,
+`--dkds-activity-padding-inline`, `--dkds-status-item-padding-inline`, and
+`--dkds-project-tab-height`.
+Contexts or semantic modifiers may set slot values, but they may not later
+rewrite the same `padding`/`height`/`line-height` property.
 
 For example, `plugin-section-start` owns the gap and separator before a command.
 It does **not** own the command's internal padding. A compact Presenter command
@@ -56,7 +58,14 @@ application chrome. Theme plugins provide Theme Contract values instead of CSS.
 - duplicate exact/semantic owners across Structure or Presentation files;
 - plugin-owned Core chrome paint/geometry;
 - shared command state/section modifiers that rewrite content-box geometry
-  instead of using `--dkds-command-*` slots.
+  instead of using `--dkds-command-*` slots;
+- Activity Tab contexts/responsive rules that rewrite its content box instead
+  of using `--dkds-activity-*` slots;
+- Status Bar/status-item responsive rules that re-own final geometry instead of
+  their bounded `--dkds-statusbar-*` / `--dkds-status-item-*` slots;
+- Project Tab / Project Tabs Bar contexts that rewrite the content box instead
+  of their `--dkds-project-tab-*` / `--dkds-project-tabs-*` slots;
+- generic button interaction states that move Core controls geometrically.
 
 The goal is stronger than “no late override block”: changing CSS file order must
 not be required to fix a Core component. If a visual or geometry result depends

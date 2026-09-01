@@ -765,12 +765,33 @@ function validate(){
   requireText(ownershipDoc,'Property ownership, not load-order ownership','HARD-64: the property-level Style Ownership Contract must be documented.');
   requireText(ownershipDoc,'Theme Provider','HARD-64: Theme value ownership must remain explicit.');
   requireText(ownershipDoc,'Core Structure','HARD-64: Core geometry ownership must remain explicit.');
+
+  // HARD-65: standard shell components beyond ToolbarAction must also have one
+  // content-box owner. Activity/status contexts change bounded slots only;
+  // Structure interaction states never move buttons geometrically.
+  const superTop=read('src/styles/structure/super-top-contract.css');
+  const schemaUi=read('src/styles/structure/schema-and-plugin-ui.css');
+  requireText(shellNavigation,'--dkds-activity-padding-inline:10px','HARD-65: Activity Tab geometry must expose the canonical activity slot contract.');
+  requireText(shellNavigation,'padding-inline:var(--dkds-activity-padding-inline)','HARD-65: Activity Tab must have one final padding owner.');
+  forbidRegex(schemaUi,/\.activity-tab\s*\{[^}]*(?:padding|height|min-height|line-height)\s*:/s,'HARD-65: schema/plugin structure must not re-own Activity Tab content-box geometry.');
+  requireText(superTop,'--dkds-status-item-height:22px','HARD-65: Status actions must use an explicit hit-region slot instead of inheriting generic button minimums.');
+  requireText(superTop,'min-height:var(--dkds-status-item-height)','HARD-65: Status actions must neutralize the generic button min-height through their canonical owner.');
+  requireText(superTop,'--dkds-statusbar-padding-left:10px','HARD-65: Status Bar responsive geometry must flow through bounded slots.');
+  forbidRegex(schemaUi,/button:active\s*\{[^}]*transform\s*:/s,'HARD-65: Structure must not move controls on active state.');
+
+  // HARD-66: Project Tabs use the same property-slot ownership model. The base
+  // component owns the content box; responsive rules only feed bounded slots.
+  requireText(schemaUi,'--dkds-project-tab-height:34px','HARD-66: Project Tab must expose a canonical height slot.');
+  requireText(schemaUi,'height:var(--dkds-project-tab-height)','HARD-66: Project Tab height must have one final property owner.');
+  requireText(schemaUi,'--dkds-project-tabs-padding-left:10px','HARD-66: Project Tabs Bar padding must be slot-based.');
+  requireText(schemaUi,'--dkds-project-tab-height:32px;--dkds-project-tab-min-width:128px','HARD-66: narrow Desktop Project Tab geometry must modify slots rather than rewrite the content box.');
+  forbidRegex(schemaUi,/@media\(max-width:820px\)\{[^}]*\.project-tab\{[^}]*(?:height|min-width|padding(?:-left|-right)?)\s*:/s,'HARD-66: responsive Project Tab contexts may not re-own content-box properties.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:64});
+  return Object.freeze({ok:true,invariants:66});
 }
 
 if(require.main===module){

@@ -253,7 +253,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.67.13',
+    appVersion:'3.67.14',
     platform:window.DKDSPlatform,
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,

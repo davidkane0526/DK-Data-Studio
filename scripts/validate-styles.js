@@ -173,6 +173,42 @@ for(const name of structureFiles){
   }
 }
 
+// Standard Core component geometry must remain property-owned even when a context
+// or responsive state changes its values. Activity Tabs and Status Bar actions
+// are especially sensitive because they coexist with generic button baselines.
+const forbiddenActivityContentGeometry=/^(?:padding(?:-(?:left|right|top|bottom|inline|inline-start|inline-end|block|block-start|block-end))?|height|min-height|max-height|line-height)$/i;
+const forbiddenStatusItemModifierGeometry=/^(?:padding(?:-(?:left|right|top|bottom|inline|inline-start|inline-end|block|block-start|block-end))?|height|min-height|max-height|gap|row-gap|column-gap|line-height)$/i;
+for(const name of structureFiles){
+  const css=fs.readFileSync(path.join(structureDirFinal,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    const selector=block.selector;
+    for(const [prop] of block.decls){
+      const normalized=String(prop).trim().toLowerCase();
+      if(/\.activity-tab\b/.test(selector)&&forbiddenActivityContentGeometry.test(normalized)){
+        const canonical=name==='shell-navigation.css'&&selector==='.activity-tab';
+        if(!canonical)violations.push(`src/styles/structure/${name}: Activity Tab context "${selector}" rewrites ${normalized}. The .activity-tab content box belongs to shell-navigation.css; contexts must set --dkds-activity-* slots.`);
+      }
+      if(/\.plugin-status-item\b/.test(selector)&&forbiddenStatusItemModifierGeometry.test(normalized)){
+        const canonical=name==='super-top-contract.css'&&selector==='.plugin-status-item';
+        if(!canonical)violations.push(`src/styles/structure/${name}: Status item context "${selector}" rewrites ${normalized}. Status item geometry must flow through --dkds-status-item-* slots.`);
+      }
+      if(/\.statusbar(?=$|[.#:\[\s,>{+~])/.test(selector)&&/^(?:height|min-height|max-height|padding(?:-.+)?|gap|row-gap|column-gap)$/i.test(normalized)){
+        const canonical=name==='super-top-contract.css'&&selector==='#statusBar.statusbar';
+        if(!canonical)violations.push(`src/styles/structure/${name}: Status Bar context "${selector}" rewrites ${normalized}. Desktop Status Bar geometry belongs to #statusBar.statusbar in super-top-contract.css and its --dkds-statusbar-* slots.`);
+      }
+      if(/\.project-tab(?=$|[.#:\[\s,>{+~])/.test(selector)&&/^(?:height|min-height|max-height|min-width|padding(?:-.+)?)$/i.test(normalized)){
+        const canonical=name==='schema-and-plugin-ui.css'&&selector==='.project-tab';
+        if(!canonical)violations.push(`src/styles/structure/${name}: Project Tab context "${selector}" rewrites ${normalized}. Project Tab content-box geometry must flow through --dkds-project-tab-* slots.`);
+      }
+      if(/\.project-tabs-bar(?=$|[.#:\[\s,>{+~])/.test(selector)&&/^(?:height|min-height|max-height|padding(?:-.+)?|gap)$/i.test(normalized)){
+        const canonical=name==='schema-and-plugin-ui.css'&&selector==='.project-tabs-bar';
+        if(!canonical)violations.push(`src/styles/structure/${name}: Project Tabs Bar context "${selector}" rewrites ${normalized}. Project Tabs chrome geometry must flow through --dkds-project-tabs-* slots.`);
+      }
+      if(/button[^,{]*(?::hover|:active|:focus(?:-visible)?)/.test(selector)&&normalized==='transform')violations.push(`src/styles/structure/${name}: interactive button state "${selector}" changes transform. Core interaction paint/motion must not move control geometry in Structure.`);
+    }
+  }
+}
+
 const paintProp=/^(?:background(?:-.+)?|border(?:-.+)?|box-shadow|color|fill|stroke|opacity|outline(?:-.+)?|text-shadow|filter|backdrop-filter|-webkit-backdrop-filter|accent-color)$/i;
 const literalColor=/(?:#[0-9a-f]{3,8}\b|rgba?\(|hsla?\()/i;
 function declarations(css){
