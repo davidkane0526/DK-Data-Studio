@@ -58,13 +58,13 @@
       },
       dark:{
         appearance:{components:{
-          toolbarGroup:{surface:'#202733',border:'rgba(166,181,202,.08)',text:'#e4e9f2',shadow:'0 1px 2px rgba(0,0,0,.18)',radius:8},
-          panelHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#7093dc'},
-          inspectorHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#7093dc'},
+          toolbarGroup:{surface:'#242b36',border:'rgba(184,194,208,.10)',text:'#e4e9f2',shadow:'0 1px 2px rgba(0,0,0,.20)',radius:8},
+          panelHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#8e9aaa'},
+          inspectorHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#8e9aaa'},
           chip:{variants:{quiet:{surface:'transparent',text:'#9aa7b8',border:'transparent',indicator:'transparent'}}},
           toolbarAction:{
-            surface:'transparent',surfaceHover:'#29313d',surfaceActive:'#202d55',surfaceSelected:'#202d55',text:'#e4e9f2',textActive:'#e7efff',textSelected:'#e7efff',border:'transparent',borderHover:'rgba(166,181,202,.16)',borderActive:'rgba(255,255,255,.12)',shadow:'none',shadowHover:'0 0 8px rgba(166,188,226,.10)',shadowActive:'0 0 10px rgba(112,147,220,.14)',shadowSelected:'0 0 10px rgba(135,166,226,.15)',radius:7,
-            contexts:{grouped:{shadow:'none',shadowHover:'0 0 7px rgba(166,188,226,.09)',shadowActive:'0 0 9px rgba(112,147,220,.13)',shadowSelected:'0 0 9px rgba(135,166,226,.14)',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 0 10px rgba(112,147,220,.17)'},selected:{shadow:'0 0 10px rgba(135,166,226,.15)'}}}}
+            surface:'transparent',surfaceHover:'#303844',surfaceActive:'#333c49',surfaceSelected:'#333c49',text:'#e4e9f2',textActive:'#f4f6f9',textSelected:'#f4f6f9',border:'transparent',borderHover:'rgba(193,202,214,.14)',borderActive:'rgba(218,224,232,.16)',shadow:'none',shadowHover:'0 1px 4px rgba(0,0,0,.18)',shadowActive:'0 1px 5px rgba(0,0,0,.22)',shadowSelected:'0 1px 5px rgba(0,0,0,.22)',radius:7,
+            contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 2px 7px rgba(0,0,0,.24)'},selected:{shadow:'0 1px 5px rgba(0,0,0,.22)'}}}}
           }
         }}
       }

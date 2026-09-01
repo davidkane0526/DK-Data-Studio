@@ -71,7 +71,7 @@ assert(activityShell.includes("trigger.textContent='导出'")&&activityShell.inc
 assert(connectivity.includes("menu:'import-data',label:'SMB 网络文件…'")&&connectivity.includes("onClick:()=>openSmb('auto')")&&!connectivity.includes("menu:'open-project'"),'SMB must be one auto-classifying source rather than a separate project task.');
 
 // Data Management / Tools / Software Management are one system command group.
-const systemStart=html.indexOf('<div class="system-core-tools-group dkds-segmented-command-group"');
+const systemStart=html.indexOf('<div class="toolbar-group system-core-tools-group dkds-segmented-command-group"');
 const systemEnd=html.indexOf('</div>\n        </div>',systemStart);
 const systemGroup=html.slice(systemStart,systemEnd);
 for(const id of ['dataCenterSystemBtn','toolsMenuBtn','manageMenuBtn'])assert(systemGroup.includes(`id="${id}"`),`${id} must live inside the shared system group.`);

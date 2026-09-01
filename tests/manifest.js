@@ -909,7 +909,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36710-r7l-theme-depth-network-startup.js",
+      "file": "tests/test-v36710-r7m-segmented-default-dark.js",
       "args": []
     },
     {
@@ -1859,7 +1859,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36710-r7l-theme-depth-network-startup.js",
+      "file": "tests/test-v36710-r7m-segmented-default-dark.js",
       "args": []
     },
     {
