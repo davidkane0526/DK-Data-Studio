@@ -8,7 +8,7 @@ button.wide{ width:100%;
 }
 .toolbar-group{display:flex;align-items:center;flex:0 0 auto;
 }
-.toolbar-btn.icon-btn{padding:0;
+.toolbar-btn.icon-btn{--dkds-command-padding-block:0px;--dkds-command-padding-inline:0px;
 }
 .left-panel{overflow:auto;
 }
@@ -108,7 +108,7 @@ button.wide{ width:100%;
 .activity-more-menu .activity-tab{display:flex;width:100%;justify-content:flex-start;}
 
 .context-overflow-menu{right:0;left:auto;top:calc(100% + 4px);}
-.context-overflow-menu .plugin-toolbar-btn{display:flex;width:100%;height:30px;justify-content:flex-start;padding:5px 8px;font-size:10px;}
+.context-overflow-menu .plugin-toolbar-btn{display:flex;width:100%;--dkds-command-height:30px;--dkds-command-padding-block:5px;--dkds-command-padding-inline:8px;justify-content:flex-start;font-size:10px;}
 
 .command-menu{
   position:absolute;
@@ -147,11 +147,9 @@ button.wide{ width:100%;
 /* Adaptive context-toolbar grouping. */
 .context-overflow-menu .plugin-toolbar-btn.plugin-section-start{
   margin-top:4px;
-  padding-top:7px;
 }
 .context-overflow-menu .plugin-toolbar-btn.plugin-section-start:first-child{
   margin-top:0;
-  padding-top:5px;
 }
 
 /* ============================================================
@@ -222,15 +220,15 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 @media(max-width:820px){
   .topbar-primary{flex-wrap:nowrap}
   .file-command-group{padding:1px}
-  .file-command-group .toolbar-btn{padding-left:5px;padding-right:5px}
+  .file-command-group .toolbar-btn{--dkds-command-padding-inline:5px}
   .system-commandbar{gap:2px}
   .project-tabs-bar{padding-left:5px;padding-right:5px}
   .project-tab{height:32px;min-width:128px}
 }
 @media(max-width:520px){
   .global-commandbar{gap:2px}
-  .file-command-group .toolbar-btn{font-size:10px;padding-left:4px;padding-right:4px}
-  .compact-menu-anchor .toolbar-btn,.system-commandbar .toolbar-btn,.activity-more-anchor .toolbar-btn,.context-overflow-anchor .toolbar-btn{font-size:10px;padding-left:5px;padding-right:5px}
+  .file-command-group .toolbar-btn{font-size:10px;--dkds-command-padding-inline:4px}
+  .compact-menu-anchor .toolbar-btn,.system-commandbar .toolbar-btn,.activity-more-anchor .toolbar-btn,.context-overflow-anchor .toolbar-btn{font-size:10px;--dkds-command-padding-inline:5px}
   .activity-tab{font-size:10px;padding-left:5px;padding-right:5px}
 }
 
@@ -240,6 +238,9 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 .topbar-primary{
   --dkds-shell-action-height:34px;
   --dkds-shell-group-height:38px;
+  --dkds-command-height:34px;
+  --dkds-command-line-height:20px;
+  --dkds-command-padding-block:6px;
   height:52px;
   min-height:52px;
   gap:9px;
@@ -273,7 +274,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   box-sizing:border-box;
 }
 .dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}
-.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}
+.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;--dkds-command-padding-inline:9px;}
 .dkds-segmented-command-group>.menu-anchor{display:flex;align-items:stretch;}
 .compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}
 

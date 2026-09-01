@@ -21,10 +21,7 @@
 .plugin-enable-switch:has(.plugin-enable-input:disabled){cursor:default;}
 
 /* One horizontal control rhythm. The selected workspace no longer has a blue underline. */
-.topbar-primary .toolbar-btn,
-.topbar-primary .activity-tab,
-.topbar-primary .plugin-toolbar-btn,
-.topbar-primary #contextOverflowBtn{
+.topbar-primary .activity-tab{
   height:34px;min-height:34px;line-height:20px;padding-top:6px;padding-bottom:6px;align-items:center;
 }
 

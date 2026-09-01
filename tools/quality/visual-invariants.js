@@ -249,13 +249,14 @@ function validate(){
   // HARD-13: desktop topbar uses exact geometry, not a blur approximation.
   requireText(schemaStructure,'--dkds-shell-group-height:38px','HARD-13: shell command groups must share the 38 px visual envelope.');
   requireText(componentCss,'--dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected','HARD-13: topbar emphasis depth must resolve through Theme component slots, not fixed Core paint.');
-  requireRegex(shellNavigation,/\.plugin-context-toolbar \.plugin-toolbar-btn\{[\s\S]*?height:34px/,'HARD-13: plugin context commands must use the same 34 px action body.');
+  requireText(shellNavigation,'--dkds-command-height:34px','HARD-13: plugin context commands must inherit the canonical 34 px action body through the command geometry slot.');
+  requireText(shellNavigation,'height:var(--dkds-command-height,34px)','HARD-13: toolbar buttons must consume the canonical command-height slot instead of receiving contextual height overrides.');
 
   // HARD-14: Presenter-generated 参数 / 检查 / 组图 are one command family.
   requireText(desktopShell,"button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command'",'HARD-14: Desktop Presenter surface commands need the canonical presentation-command geometry class.');
   requireText(desktopShell,"button.dataset.pluginSection='presentation-surfaces'",'HARD-14: Presenter surface commands must form one section without internal separators.');
   requireText(desktopShell,"button.dataset.dkdsPresentationCompact=[...label].length<=3?'true':'false'",'HARD-14: Presenter must explicitly classify compact labels.');
-  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\[data-dkds-presentation-compact="true"\]\{[^}]*width:48px;min-width:48px;max-width:48px/,'HARD-14: Compact Presenter commands must use an exact 48 px border box.');
+  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\[data-dkds-presentation-compact="true"\]\{[^}]*width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px/,'HARD-14: Compact Presenter commands must use an exact 48 px border box.');
 
   // HARD-15: both scientific renderers use one floating toolbar contract.
   for(const [name,source] of [['ChartRuntime',scientificChart],['ScientificCurve',scientificNav]]){
@@ -746,21 +747,30 @@ function validate(){
   requireText(automationVisual,'Theme semantic header lost its declared gradient','HARD-62: Windows acceptance must fail if an active Theme header gradient disappears.');
   requireText(automationVisual,'Neutral Theme semantic header retained a stale gradient','HARD-62: Windows acceptance must fail if a neutral Theme retains stale header effects.');
 
-  // HARD-63: R7O closes two final shell regressions visible on Windows: a
-  // compact Presenter command may not regain one-sided section padding, and a
-  // segmented primary child may never own a persistent focus halo.
-  requireText(shellNavigation,'.dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start','HARD-63: compact Presenter commands must explicitly neutralize plugin-section-start padding.');
-  requireText(shellNavigation,'padding-left:0;\n  padding-right:0;','HARD-63: compact Presenter commands must keep symmetric zero horizontal padding after section spacing.');
+  // HARD-63: command geometry is property-owned rather than fixed by a later
+  // specificity patch. Compactness sets geometry slots; semantic section-start
+  // owns only spacing/separator composition and may never rewrite the content box.
+  requireText(shellNavigation,'--dkds-command-padding-inline:0px','HARD-63: compact Presenter commands must neutralize inline padding through the canonical geometry slot.');
+  requireText(shellNavigation,'padding-inline:var(--dkds-command-padding-inline,10px)','HARD-63: toolbar buttons must have one padding property owner that consumes the geometry slot.');
+  forbidRegex(shellNavigation,/\.plugin-context-toolbar \.plugin-toolbar-btn\.plugin-section-start(?:[^{}]*)\{[^}]*(?:padding|height|line-height)\s*:/s,'HARD-63: semantic section-start may own separator spacing, never the command content box.');
   requireText(componentCss,'outline:2px solid color-mix(in srgb,var(--dkui-accent) 42%,transparent)','HARD-63: ToolbarAction keyboard focus must use a valid color outline, not the box-shadow focus token.');
   forbidText(componentCss,'outline:2px solid var(--dkui-focus)','HARD-63: a box-shadow token must never be reused as outline-color.');
   requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:focus-visible','HARD-63: segmented child focus must be explicitly flattened.');
   requireText(componentCss,'.dkds-segmented-command-group:has(>[data-dkds-component-identity="toolbarAction"]:focus-visible','HARD-63: segmented keyboard focus must be represented by the group silhouette.');
+
+  // HARD-64: Theme providers own values, Core owns selectors/rendering, and Core
+  // geometry modifiers must be slot-based. This makes stylesheet order irrelevant
+  // for shared command content-box geometry.
+  const ownershipDoc=read('docs/STYLE_OWNERSHIP_CONTRACT.md');
+  requireText(ownershipDoc,'Property ownership, not load-order ownership','HARD-64: the property-level Style Ownership Contract must be documented.');
+  requireText(ownershipDoc,'Theme Provider','HARD-64: Theme value ownership must remain explicit.');
+  requireText(ownershipDoc,'Core Structure','HARD-64: Core geometry ownership must remain explicit.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:63});
+  return Object.freeze({ok:true,invariants:64});
 }
 
 if(require.main===module){

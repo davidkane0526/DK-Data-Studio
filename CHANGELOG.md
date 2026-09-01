@@ -1,3 +1,11 @@
+# v3.67.13 — R7P Style Ownership Closure WIP
+
+- Replace the R7O compact-command specificity patch with property-level geometry ownership. `.toolbar-btn` is the single content-box property owner and consumes `--dkds-command-*` slots; compact/context/responsive semantics only feed those slots.
+- Remove `plugin-section-start` padding rewrites in both the visible context toolbar and overflow menu. Section boundaries now own only external spacing/separator composition, so they cannot shift **参数 / 检查 / 组图** or any future compact Presenter command.
+- Extend the style architecture validator: command state/section modifiers that rewrite padding, height or line-height now fail `npm run styles:build` instead of relying on CSS source order.
+- Document the Style Ownership Contract explicitly: Theme Providers own visual values, Core Component Appearance / Material Renderer owns final standard-component paint selectors, Core Structure owns geometry, and plugin CSS owns domain layout rather than Core chrome.
+- Advance Hard Visual Invariants to 64 and keep historical visual tests capability-based instead of freezing obsolete direct-padding implementation details.
+
 # v3.67.12 — R7O Shell Focus / Compact Centering WIP
 
 - Remove the persistent child focus halo from segmented shell commands. The Import primary action never owns a private idle/focus shadow; keyboard focus is expressed only on the shared group silhouette.

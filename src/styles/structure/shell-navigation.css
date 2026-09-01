@@ -3,7 +3,15 @@
 /* Consolidated geometry from earlier structure owners. */
 /* Canonical geometry migrated from the former Foundation baseline. */
 .topbar{ align-items:center; gap:14px}
-.toolbar-btn{min-width:0;white-space:nowrap}
+.toolbar-btn{
+  min-width:0;
+  white-space:nowrap;
+  height:var(--dkds-command-height,34px);
+  min-height:var(--dkds-command-height,34px);
+  padding-block:var(--dkds-command-padding-block,5px);
+  padding-inline:var(--dkds-command-padding-inline,10px);
+  line-height:var(--dkds-command-line-height,20px);
+}
 .separator{display:none}
 .workspace{display:grid}
 .left-panel section{padding-bottom:12px;margin-bottom:12px}
@@ -36,7 +44,7 @@
   line-height:1;
   transform:none}
 @media (max-width:1450px){
-  .toolbar-btn{padding:4px 6px;font-size:11px}}
+  .toolbar-btn{--dkds-command-padding-block:4px;--dkds-command-padding-inline:6px;font-size:11px}}
 @media (max-width:1100px){
   .topbar{gap:8px;padding-left:10px}}
 @media (max-width:1160px){}
@@ -57,14 +65,8 @@
   width:30px;min-width:30px;height:30px;min-height:30px;padding:0;
   display:inline-flex;align-items:center;justify-content:center;
 }
-.toolbar-btn{
-  height:34px;
-  min-height:34px;
-  padding:5px 10px;
-  line-height:20px;
-}
 @media (max-width:1160px){
-  .toolbar-btn{padding-left:7px;padding-right:7px}}
+  .toolbar-btn{--dkds-command-padding-inline:7px}}
 @media (max-width:820px){
   .topbar{height:52px;min-height:52px}}
 @media (max-width:820px){
@@ -151,17 +153,19 @@
   gap:4px;
   overflow:hidden;
 }
+.plugin-context-toolbar{
+  --dkds-command-height:34px;
+  --dkds-command-padding-block:6px;
+  --dkds-command-padding-inline:11px;
+  --dkds-command-line-height:20px;
+}
 .plugin-context-toolbar .plugin-toolbar-btn{
   flex:0 0 auto;
-  min-height:34px;
-  height:34px;
-  padding:6px 11px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   text-align:center;
   font-size:12px;
-  line-height:20px;
   font-weight:560;
 }
 .plugin-context-toolbar .dkds-presentation-command{
@@ -169,16 +173,19 @@
   width:auto;
   min-width:58px;
   max-width:none;
-  padding-left:11px;
-  padding-right:11px;
 }
 .plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"]{
-  width:48px;min-width:48px;max-width:48px;padding:0;line-height:34px;text-align:center;
+  --dkds-command-padding-block:0px;
+  --dkds-command-padding-inline:0px;
+  --dkds-command-line-height:34px;
+  width:48px;
+  min-width:48px;
+  max-width:48px;
+  text-align:center;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start{
   position:relative;
   margin-left:10px;
-  padding-left:11px;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start::before{
   content:"";
@@ -190,15 +197,6 @@
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{
   margin-left:0;
-  padding-left:11px;
-}
-/* Compact Presenter commands keep a symmetric content box even when they also
-   start a semantic section. The separator owns spacing; it must never re-add
-   one-sided padding after the compact centering rule. */
-.plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start,
-.plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start:first-child{
-  padding-left:0;
-  padding-right:0;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child::before{display:none}
 .context-overflow-anchor{position:relative;margin-left:auto;flex:0 0 auto}
@@ -212,7 +210,7 @@
 
 @media(max-width:1450px){
   .workspace-commandbar{gap:5px}
-  .plugin-context-toolbar .plugin-toolbar-btn{padding-left:8px;padding-right:8px}
+  .plugin-context-toolbar{--dkds-command-padding-inline:8px}
 }
 @media(max-width:820px){
   .primary-activity-cluster{overflow-x:auto;scrollbar-width:none}

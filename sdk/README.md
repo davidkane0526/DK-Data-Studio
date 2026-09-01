@@ -337,6 +337,7 @@ The callback may return `boolean` or `{ visible, enabled, reason }`. Unavailable
 ### Canonical Core UI components and visual ownership (SDK 1.22.1)
 
 `ctx.ui.components` is the canonical construction path for standard application chrome. It exposes `action()`, `actionGroup()`, `tabs()`, `surfaceHeader()`, `field()` and `hydrate()` in addition to `mount()`. Plugins declare content, commands, semantic variants and domain layout; Core owns button/header/field geometry and Theme owns paint.
+Property ownership is strict: Theme profiles provide visual values, Core Theme renderers own the standard-component paint selectors, and Core Structure owns geometry. Context/state modifiers must use the shared component slots rather than add later padding/height overrides; CSS source order is not a supported customization mechanism.
 
 Non-theme plugin stylesheets are validated by the SDK visual ownership gate. Plugin CSS may not repaint application chrome or redefine standard Core control/header geometry. Size the surrounding domain layout instead. Scientific series/mark styling and domain geometry remain plugin-owned where they carry scientific meaning.
 The validator is source-aware: a plugin-specific class attached to a Core header/action/field is treated as an alias of that Core component, so the alias cannot silently override the Core geometry. ComponentRuntime also auto-hydrates dynamically inserted DOM, keeping Component Identity consistent even for older plugins that still build markup through `innerHTML`.

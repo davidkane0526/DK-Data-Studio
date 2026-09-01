@@ -2,6 +2,8 @@
 
 Theme Contract 3.10 is the constrained Design System contract used by DK Data Studio 3.67.10+. Theme plugins provide semantic values; Core owns DOM, selectors, component identity, interaction state, Material role assignment, layout and rendering.
 
+**Ownership rule:** Theme is the unique source of Theme **values**, not the owner of layout selectors. Core Structure owns geometry; Core Component Appearance / Material Renderer owns the final standard-component paint selectors. Shared component modifiers must compose through bounded slots rather than rewriting the same CSS property later. Stylesheet load order is never an ownership mechanism.
+
 ```js
 ctx.ui.theme.contractVersion; // "3.10.0"
 ```

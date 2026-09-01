@@ -58,8 +58,8 @@ assert(componentRuntime.includes('ThemeContract.resolveComponentAppearance')&&co
 
 // 7) Parameters / inspector / group presentation buttons have the same content
 // geometry. No first-button padding exception may return.
-assert(shell.includes('padding:6px 11px;\n  display:inline-flex;\n  align-items:center;\n  justify-content:center;\n  text-align:center;')&&shell.includes('[data-dkds-presentation-compact="true"]{\n  width:48px;min-width:48px;max-width:48px'),'plugin presentation commands must share centered content geometry and exact 48px compact width.');
-assert(shell.includes('.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{\n  margin-left:0;\n  padding-left:11px;'),'the first presentation button must use the same 11px side inset as its siblings.');
+assert(shell.includes('--dkds-command-padding-inline:11px')&&shell.includes('padding-inline:var(--dkds-command-padding-inline,10px)')&&/data-dkds-presentation-compact="true"\]\{[^}]*width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px;/.test(shell),'plugin presentation commands must share the canonical content-box slots and exact 48px compact width.');
+assert(shell.includes('.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{\n  margin-left:0;')&&!/plugin-section-start(?:[^{}]*)\{[^}]*(?:padding|height|line-height)\s*:/s.test(shell),'section-start may reset only external spacing; command side insets must remain property-owned by the shared geometry slot.');
 assert(!shell.includes('padding-left:7px;\n}\n.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child'),'the old narrow first-button exception must not return.');
 
 // 9) Theme selector is a fixed popover, never a portable view. Check both the

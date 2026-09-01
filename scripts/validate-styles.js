@@ -152,6 +152,27 @@ assertSingleSemanticOwner(presentationDir,presentationFiles,'presentation semant
 assertSingleSemanticOwner(structureDirFinal,structureFiles,'structure semantic ownership');
 assertNoSameSelectorPropertyOverride(structureDirFinal,structureFiles,'structure duplicate-property ownership');
 assertNoSameSelectorPropertyOverride(presentationDir,presentationFiles,'presentation duplicate-property ownership');
+
+// Shared command geometry follows a slot-based property-ownership contract.
+// Context/state modifiers may change custom-property inputs, margins or separator
+// composition, but they may not rewrite the command content box later in the
+// same Structure layer. This prevents specificity/load-order patches such as a
+// semantic section marker re-adding one-sided padding to a compact command.
+const forbiddenCommandModifierGeometry=/^(?:padding(?:-(?:left|right|top|bottom|inline|inline-start|inline-end|block|block-start|block-end))?|height|min-height|max-height|line-height)$/i;
+for(const name of structureFiles){
+  const css=fs.readFileSync(path.join(structureDirFinal,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    const selector=block.selector;
+    const semanticModifier=/\.plugin-section-start\b/.test(selector);
+    const stateModifier=/(?:\.active\b|\.selected\b|:hover\b|:active\b|:focus(?:-visible)?\b)/.test(selector)&&/(?:toolbar-btn|plugin-toolbar-btn|dkds-presentation-command)/.test(selector);
+    if(!semanticModifier&&!stateModifier)continue;
+    for(const [prop] of block.decls){
+      const normalized=String(prop).trim().toLowerCase();
+      if(forbiddenCommandModifierGeometry.test(normalized))violations.push(`src/styles/structure/${name}: command modifier "${selector}" rewrites ${normalized}. Shared command content-box geometry must be set through --dkds-command-* slots, never by a later modifier rule.`);
+    }
+  }
+}
+
 const paintProp=/^(?:background(?:-.+)?|border(?:-.+)?|box-shadow|color|fill|stroke|opacity|outline(?:-.+)?|text-shadow|filter|backdrop-filter|-webkit-backdrop-filter|accent-color)$/i;
 const literalColor=/(?:#[0-9a-f]{3,8}\b|rgba?\(|hsla?\()/i;
 function declarations(css){

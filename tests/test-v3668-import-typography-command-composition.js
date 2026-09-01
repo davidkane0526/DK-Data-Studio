@@ -37,7 +37,7 @@ assert(componentStructure.includes('width:18px;min-width:18px;')&&componentStruc
 assert(componentAppearance.includes('.dkds-split-action-group[data-dkds-split-variant="primary"]{box-shadow:var(--dkui-primary-shadow);}')&&componentAppearance.includes(':is(.dkds-split-action-main,.dkds-split-action-caret){box-shadow:none;}'),'The split group, not each child, must own shared depth.');
 
 // System commands remain one group, but natural-width labels replace 82 px reservations and separators.
-assert(schemaStructure.includes('.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}'),'File and system command labels must share the same natural sizing and compact horizontal padding.');
+assert(schemaStructure.includes('.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;--dkds-command-padding-inline:9px;}'),'File and system command labels must share the same natural sizing and compact horizontal padding.');
 assert(!componentStructure.includes('.system-core-tools-group>.menu-anchor:before')&&!componentAppearance.includes('.system-core-tools-group[data-dkds-component-identity="toolbarGroup"]>.menu-anchor:before')&&!shellPresentation.includes('.system-core-tools-group>.menu-anchor:before'),'System command group must not draw internal divider pseudo-elements in any style owner.');
 
 console.log('v3.66.8 import typography and command composition PASS: shared type scale, canonical neutral actions, one-piece split import control and compact divider-free system commands are enforced.');
