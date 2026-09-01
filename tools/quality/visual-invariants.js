@@ -905,12 +905,24 @@ function validate(){
   requireText(componentCss,'--dkds-ca-action-surface:transparent;','HARD-80: segmented idle children must leave fill ownership to the outer ToolbarGroup.');
   requireText(componentCss,'--dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));','HARD-80: segmented idle child text must consume the group text contract.');
 
+  // HARD-81: the ScientificPlot floating drag affordance is a real ToolbarAction
+  // button. It therefore consumes the exact same Theme hover/active paint as
+  // zoom/home siblings instead of maintaining a span-specific visual path.
+  const curveNavigationR7W=read('src/core/ui/modules/scientific-curve/navigation.js');
+  const chartRuntimeR7W=read('src/core/scientific/chart-runtime.js');
+  const integratedChromeR7W=read('src/styles/theme/integrated-command-chrome.css');
+  requireText(curveNavigationR7W,"const drag=document.createElement('button');drag.type='button';drag.className='dkds-scientific-nav-drag';",'HARD-81: ScientificCurve drag handle must be a native ToolbarAction button.');
+  requireText(chartRuntimeR7W,"const drag=document.createElement('button');drag.type='button';drag.className='dkds-scientific-nav-drag';",'HARD-81: chart-runtime drag handle must be a native ToolbarAction button.');
+  forbidText(curveNavigationR7W,"const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag'",'HARD-81: ScientificCurve drag handle may not return to a span-specific hover path.');
+  forbidText(chartRuntimeR7W,"const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag'",'HARD-81: chart-runtime drag handle may not return to a span-specific hover path.');
+  forbidRegex(integratedChromeR7W,/\.dkds-scientific-nav-drag\s*\{[^}]*(?:background|border(?:-color)?|box-shadow|color)\s*:/s,'HARD-81: drag semantics CSS may not paint the handle separately from ToolbarAction.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:80});
+  return Object.freeze({ok:true,invariants:81});
 }
 
 if(require.main===module){

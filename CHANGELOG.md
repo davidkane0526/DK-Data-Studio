@@ -1,3 +1,12 @@
+# v3.67.20 — R7W Scientific Floating Drag Hover Parity · Desktop/Core Archive Closure
+
+- Convert the ScientificPlot floating navigation drag affordance from a role-simulated `span` into a native `button type="button"` in both ScientificCurve and generic chart-runtime navigation paths.
+- Keep the drag affordance on the same canonical `toolbarAction / quiet` identity as zoom-in, zoom-out and home actions, so every Theme consumes the exact same hover/active paint path.
+- Keep `.dkds-scientific-nav-drag` CSS semantic-only (layout/cursor); it may not own background, border, shadow or text color separately from ToolbarAction.
+- Extend Windows visual diagnostics so the floating drag affordance must remain a native button, and add HARD-81 plus the v3.67.20 R7W regression to prevent a span-specific hover path from returning.
+- Keep SDK **1.24.0**, Plugin API **1.19.0** and Theme Contract **3.10.0** unchanged; this is a Core scientific-chrome consistency fix with no public SDK change.
+- This patch supersedes v3.67.19 as the recommended Desktop/Core archive baseline before Mobile UI development.
+
 # v3.67.19 — R7V Aurora Hover / Theme Bootstrap · Desktop Visual Closure WIP
 
 - Make both persistent segmented shell command families consume ToolbarGroup-owned hover/active/selected state slots, so plain actions and menu-trigger actions render the same transient feedback in Aurora dark mode.
