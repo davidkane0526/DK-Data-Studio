@@ -921,6 +921,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36716-r7s-property-ownership-audit.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1876,6 +1880,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36715-r7r-extended-property-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36716-r7s-property-ownership-audit.js",
       "args": []
     },
     {

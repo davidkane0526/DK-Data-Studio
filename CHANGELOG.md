@@ -1,3 +1,14 @@
+# v3.67.16 — R7S Property Ownership Audit WIP
+
+- Continue **Desktop Visual Closure** by extending Core property ownership to Settings/Dialog fields, managed-table density, Scientific legend density, collapsed PortableView headers and splitter/resizer hit geometry.
+- Exclude Settings/Dialog semantic fields from the generic form baseline; dedicated controls now consume `--dkds-settings-field-*` / `--dkds-dialog-field-*` slots.
+- Convert compact managed-table density to `--dkds-table-*` slot changes and keep final cell/header padding in one Structure owner.
+- Convert Scientific plot-legend padding/gap specialization to `--dkds-legend-*` slots instead of later direct padding/gap rewrites.
+- Move collapsed PortableView header sizing to parent slots and keep Portable/Header final height properties in their canonical owners.
+- Make AnalysisWorkbench and PluginWorkspace splitter hit geometry state-invariant; hover/focus/drag may change paint but cannot move or resize the hit target.
+- Add Theme paint ownership validation so Core Component Runtime identities can only be painted by Component Appearance / Material Renderer.
+- Advance Hard Visual Invariants to 75 and add the R7S regression to both test/check manifests.
+
 # v3.67.15 — R7R Extended Property Ownership Audit WIP
 
 - Extend property-level Core ownership to Portable/header actions, Scientific floating navigation, semantic Field density and PortableView placement modes.

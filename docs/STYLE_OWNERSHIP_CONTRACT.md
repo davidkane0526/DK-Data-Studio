@@ -28,9 +28,12 @@ size, padding, gap, alignment, overflow and interaction hit boxes. Shared Core
 components use property slots such as `--dkds-command-padding-inline`,
 `--dkds-activity-padding-inline`, `--dkds-status-item-padding-inline`, and
 `--dkds-project-tab-height`, `--dkds-header-action-height`,
-`--dkds-field-control-min-height`, and `--dkds-portable-*` placement slots.
-Contexts or semantic modifiers may set slot values, but they may not later
-rewrite the same `padding`/`height`/`line-height`/placement property.
+`--dkds-field-control-min-height`, `--dkds-settings-field-*`,
+`--dkds-dialog-field-*`, `--dkds-table-*`, `--dkds-legend-*`,
+`--dkds-analysis-resizer-*`, `--dkds-canvas-resizer-*`, and `--dkds-portable-*`
+placement slots. Contexts or semantic modifiers may set slot values, but they
+may not later rewrite the same `padding`/`height`/`line-height`/placement
+property.
 
 For example, `plugin-section-start` owns the gap and separator before a command.
 It does **not** own the command's internal padding. A compact Presenter command
@@ -75,7 +78,17 @@ application chrome. Theme plugins provide Theme Contract values instead of CSS.
   same field element instead of using mutually exclusive owners and bounded
   density slots;
 - PortableView floating/docked/sticky host contexts that rewrite final
-  position/size/overflow/z-index instead of `--dkds-portable-*` slots.
+  position/size/overflow/z-index instead of `--dkds-portable-*` slots;
+- Settings/Dialog field controls that overlap the generic field baseline or
+  bypass their `--dkds-*-field-*` density slots;
+- managed-table density variants that rewrite cell/header padding instead of
+  `--dkds-table-*` slots;
+- Scientific legend placement variants that rewrite padding/gap instead of
+  `--dkds-legend-*` slots;
+- collapsed PortableView header states that directly rewrite header height;
+- hover/focus/drag states that move or shrink resize/split hit targets;
+- Theme feature styles that directly paint Core Component Runtime identities
+  outside Component Appearance / Material Renderer.
 
 The goal is stronger than “no late override block”: changing CSS file order must
 not be required to fix a Core component. If a visual or geometry result depends

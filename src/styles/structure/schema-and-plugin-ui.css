@@ -363,9 +363,9 @@ button{min-height:30px;}
   top:calc(100% + 5px);
   z-index:1650;padding:5px;}
 
-input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *),
-select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *),
-textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *){min-height:30px;
+input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *),
+select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *),
+textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *){min-height:30px;
 }
 
 .dataset-item,.plugin-manager-card,.trend-card{transition:background .12s,border-color .12s,box-shadow .12s,opacity .12s;}

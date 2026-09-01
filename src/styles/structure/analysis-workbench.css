@@ -57,17 +57,18 @@
   position:relative;
   box-sizing:border-box;
 }
+.dkds-analysis-workbench{--dkds-analysis-resizer-track-size:7px;--dkds-analysis-resizer-seam-size:1px;}
 .dkds-analysis-workbench.has-left .dkds-analysis-frame{
-  grid-template-columns:var(--dkds-analysis-left-width) 7px minmax(0,1fr) 0 0;
+  grid-template-columns:var(--dkds-analysis-left-width) var(--dkds-analysis-resizer-track-size) minmax(0,1fr) 0 0;
 }
 .dkds-analysis-workbench.has-right .dkds-analysis-frame{
-  grid-template-columns:0 0 minmax(0,1fr) 7px var(--dkds-analysis-right-width);
+  grid-template-columns:0 0 minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-right-width);
 }
 .dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
-  grid-template-columns:var(--dkds-analysis-left-width) 7px minmax(0,1fr) 7px var(--dkds-analysis-right-width);
+  grid-template-columns:var(--dkds-analysis-left-width) var(--dkds-analysis-resizer-track-size) minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-right-width);
 }
 .dkds-analysis-workbench.has-bottom .dkds-analysis-frame{
-  grid-template-rows:minmax(0,1fr) 7px var(--dkds-analysis-bottom-height);
+  grid-template-rows:minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-bottom-height);
 }
 .dkds-analysis-left{grid-area:left;width:auto;min-width:0;max-width:none;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;}
 .dkds-analysis-main{grid-area:main;min-width:0;min-height:0;overflow:auto;position:relative;padding:0 4px;}
@@ -83,11 +84,15 @@
 .dkds-analysis-right-resizer.active{display:block;grid-area:rsplit;cursor:col-resize;}
 .dkds-analysis-bottom-resizer.active{display:block;grid-area:bsplit;cursor:row-resize;}
 .dkds-analysis-left-resizer::before,.dkds-analysis-right-resizer::before{
-  content:"";position:absolute;top:0;bottom:0;left:3px;width:1px;transition:.12s
+  content:"";position:absolute;top:0;bottom:0;
+  left:calc((var(--dkds-analysis-resizer-track-size) - var(--dkds-analysis-resizer-seam-size)) / 2);
+  width:var(--dkds-analysis-resizer-seam-size);transition:.12s
 ;}
-.dkds-analysis-left-resizer:hover::before,.dkds-analysis-right-resizer:hover::before{left:2px;width:3px;}
-.dkds-analysis-bottom-resizer::before{content:"";position:absolute;left:0;right:0;top:3px;height:1px;transition:.12s;}
-.dkds-analysis-bottom-resizer:hover::before{top:2px;height:3px;}
+.dkds-analysis-bottom-resizer::before{
+  content:"";position:absolute;left:0;right:0;
+  top:calc((var(--dkds-analysis-resizer-track-size) - var(--dkds-analysis-resizer-seam-size)) / 2);
+  height:var(--dkds-analysis-resizer-seam-size);transition:.12s
+;}
 .dkds-analysis-primary-host,.dkds-analysis-sub-host{width:100%;min-width:0;min-height:0;box-sizing:border-box;}
 .dkds-analysis-primary-host{display:flex;flex-direction:column;gap:10px;overflow:visible;}
 .dkds-analysis-sub-host:not(.hidden){display:block;min-height:100%;}
@@ -97,7 +102,7 @@
 
 /* PRIME surface structure belongs to AnalysisWorkbench, not SUPER/TOP chrome. */
 .dkds-analysis-prime-panel{min-width:0;overflow:hidden;display:flex;flex-direction:column;}
-.dkds-analysis-prime-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;min-height:34px;box-sizing:border-box;}
+.dkds-analysis-prime-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;min-height:var(--dkds-analysis-prime-head-min-height,34px);box-sizing:border-box;}
 .dkds-analysis-prime-body{min-width:0;min-height:0;overflow:auto;padding:8px;}
 .dkds-analysis-prime-chrome{display:flex;align-items:center;gap:2px;}
 .dkds-prime-hidden{display:none;}

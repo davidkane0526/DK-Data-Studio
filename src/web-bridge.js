@@ -157,7 +157,7 @@
     compatible,
     issues:compatible?[]:[{kind:'plugin-api',required:required||null,actual:'1.19.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.19.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.15'
+    pluginApiVersion:'1.19.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.16'
     };
   };
 

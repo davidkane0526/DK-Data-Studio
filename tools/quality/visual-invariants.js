@@ -818,12 +818,55 @@ function validate(){
   forbidRegex(workbenchComponentsR7R,/\.dkds-plugin-workspace \.dkds-portable-view\.is-floating\{[^}]*(?:^|;)\s*z-index\s*:/sm,'HARD-69: PluginWorkspace floating context must not re-own z-index.');
   requireText(semanticSurfacesR7R,'--dkds-portable-sticky-position:relative','HARD-69: sticky-disabled grid state must change portable placement slots rather than final geometry.');
 
+  // HARD-70: Settings/Dialog fields have dedicated density owners and are
+  // excluded from the generic form baseline.
+  requireText(schemaUi,':not(.dkds-settings-field *):not(.dkds-dialog-field *)','HARD-70: generic form density must exclude Settings/Dialog semantic fields.');
+  requireText(workbenchComponentsR7R,'--dkds-settings-field-height:32px','HARD-70: Settings fields must publish bounded density slots.');
+  requireText(workbenchComponentsR7R,'height:var(--dkds-settings-field-height);min-height:var(--dkds-settings-field-height)','HARD-70: Settings field hit geometry must have one final slot-driven owner.');
+  requireText(workbenchComponentsR7R,'--dkds-dialog-field-height:34px','HARD-70: Dialog fields must publish bounded density slots.');
+
+  // HARD-71: managed-table density is slot-driven; compact mode no longer
+  // re-owns cell padding later in the cascade.
+  requireText(workbenchComponentsR7R,'--dkds-table-cell-padding-block:6px','HARD-71: managed-table must own canonical cell density slots.');
+  requireText(workbenchComponentsR7R,'--dkds-table-cell-padding-block:4px','HARD-71: compact table density must change the cell slot rather than padding.');
+  forbidRegex(workbenchComponentsR7R,/data-dkds-table-density="compact"[^{}]*\{[^}]*(?:^|;)\s*padding(?:-|\s*:)/sm,'HARD-71: compact managed-table density may not directly rewrite padding.');
+  requireText(workbenchComponentsR7R,'padding-block:var(--dkds-table-cell-padding-block)','HARD-71: table cells must consume the shared density slot.');
+
+  // HARD-72: scientific legend density uses one base owner. Placement variants
+  // feed --dkds-legend-* slots instead of re-owning gap/padding.
+  requireText(workbenchComponentsR7R,'--dkds-legend-padding-block:3px','HARD-72: scientific legend base density must expose padding slots.');
+  requireText(semanticSurfacesR7R,'--dkds-legend-padding-block:2px','HARD-72: plot legend specialization must feed the legend padding slot.');
+  requireText(semanticSurfacesR7R,'--dkds-legend-gap:1px','HARD-72: top/bottom legend placement must feed the legend gap slot.');
+  forbidRegex(semanticSurfacesR7R,/\.dkds-plot-legend\.dkds-scientific-auto-legend\{[^}]*padding\s*:/s,'HARD-72: plot legend specialization must not directly own padding.');
+
+  // HARD-73: collapsed PortableView changes header size through parent slots;
+  // child headers keep their canonical property owners.
+  requireText(superTop,'--dkds-portable-header-height:32px','HARD-73: PortableView must expose a canonical header-height slot.');
+  requireText(superTop,'.dkds-portable-view.is-collapsed{','HARD-73: collapsed PortableView state must be explicit.');
+  requireText(superTop,'--dkds-portable-header-height:36px','HARD-73: collapsed state must feed the portable header slot.');
+  forbidRegex(workbenchComponentsR7R,/\.dkds-portable-view\.is-collapsed>\.dkds-portable-header[^{}]*\{[^}]*(?:height|min-height)\s*:/s,'HARD-73: collapsed contexts may not re-own portable header height.');
+
+  // HARD-74: splitter/resizer hit geometry is state-invariant. Hover/focus/drag
+  // may change paint only, not the hit target dimensions.
+  const analysisWorkbenchR7S=read('src/styles/structure/analysis-workbench.css');
+  const pluginWorkspaceR7S=read('src/styles/structure/plugin-workspace.css');
+  requireText(analysisWorkbenchR7S,'--dkds-analysis-resizer-track-size:7px','HARD-74: AnalysisWorkbench splitters must expose one track-size slot.');
+  requireText(pluginWorkspaceR7S,'--dkds-canvas-resizer-hit-size:7px','HARD-74: PluginWorkspace bottom splitter must expose a stable hit-size slot.');
+  forbidRegex(analysisWorkbenchR7S,/resizer:hover::before\{[^}]*(?:left|top|width|height)\s*:/s,'HARD-74: Analysis resizer hover must not change hit/seam geometry.');
+  forbidRegex(workbenchComponentsR7R,/resizer:is\(:hover,:focus-visible,\.is-dragging\)::before\{[^}]*(?:top|height|left|width)\s*:/s,'HARD-74: Workbench resize states must not shrink or move the hit target.');
+
+  // HARD-75: Theme files may provide feature UI paint, but standard Component
+  // Runtime paint identities have only Component Appearance / Material Renderer.
+  const styleValidatorR7S=read('scripts/validate-styles.js');
+  requireText(styleValidatorR7S,'R7S paint ownership','HARD-75: style validator must enforce Component Runtime paint ownership.');
+  requireText(styleValidatorR7S,"['component-appearance.css','material-renderer.css']",'HARD-75: standard component paint must be restricted to the two Core renderers.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:69});
+  return Object.freeze({ok:true,invariants:75});
 }
 
 if(require.main===module){

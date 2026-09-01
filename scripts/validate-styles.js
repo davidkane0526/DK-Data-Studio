@@ -240,6 +240,48 @@ for(const name of structureFiles){
         const canonical=name==='super-top-contract.css'&&['.dkds-portable-view.is-floating','.dkds-portable-view.is-docked','.dkds-portable-view.is-sticky'].includes(selector);
         if(!canonical)violations.push(`src/styles/structure/${name}: PortableView context "${selector}" rewrites ${normalized}. Placement geometry must be resolved by the canonical super-top-contract.css owner through --dkds-portable-* slots.`);
       }
+
+      // R7S: settings/dialog fields are specialized semantic density owners.
+      // Generic field baselines and later dialog/settings contexts must never
+      // re-own their final content-box properties.
+      if(/\.dkds-(?:settings|dialog)-field(?:\s*>?\s*(?:input|select)|\s+(?:input|select))/.test(selector)&&fieldDensityGeometry.test(normalized)){
+        const settingsCanonical=name==='workbench-components.css'&&[
+          '.dkds-settings-field select',
+          '.dkds-settings-field input[type="text"]',
+          '.dkds-settings-field input[type="number"]',
+          '.dkds-dialog-field>input',
+          '.dkds-dialog-field>select'
+        ].includes(selector);
+        if(!settingsCanonical)violations.push(`src/styles/structure/${name}: specialized field context "${selector}" rewrites ${normalized}. Settings/Dialog field density belongs to workbench-components.css and --dkds-*-field-* slots.`);
+      }
+
+      // R7S: Table density changes slot values only. Final cell/header padding
+      // and resizer hit geometry stay in the canonical managed-table owner.
+      if(/\.dkds-managed-table\[data-dkds-table-density/.test(selector)&&/^(?:font-size|padding|padding-block|padding-inline|padding-left|padding-right|padding-top|padding-bottom)$/i.test(normalized)){
+        violations.push(`src/styles/structure/${name}: managed-table density context "${selector}" rewrites ${normalized}. Density variants must set --dkds-table-* slots only.`);
+      }
+      if(name!=='workbench-components.css'&&/\.dkds-managed-table\b/.test(selector)&&/(?:thead\s+th|tbody\s+(?:td|th))/.test(selector)&&/^(?:padding|padding-block|padding-inline|padding-left|padding-right|padding-top|padding-bottom)$/i.test(normalized)){
+        violations.push(`src/styles/structure/${name}: managed-table cell/header "${selector}" rewrites ${normalized}. Final table cell padding belongs to workbench-components.css.`);
+      }
+
+      // R7S: Legend density has one base owner. Placement variants may set
+      // --dkds-legend-* slots, but must not directly rewrite padding/gap/height.
+      if(/\.dkds-scientific-auto-legend\b/.test(selector)&&/^(?:padding|padding-block|padding-inline|gap|row-gap|column-gap|font-size|line-height)$/i.test(normalized)){
+        const legendCanonical=name==='workbench-components.css'&&selector==='.dkds-scientific-auto-legend';
+        if(!legendCanonical)violations.push(`src/styles/structure/${name}: scientific legend context "${selector}" rewrites ${normalized}. Legend density must flow through --dkds-legend-* slots.`);
+      }
+
+      // R7S: collapsed PortableView state feeds header height slots only.
+      if(/\.dkds-portable-view\.is-collapsed/.test(selector)&&/(?:\.dkds-portable-header|\.dkds-analysis-prime-head)/.test(selector)&&/^(?:height|min-height|max-height|padding|padding-block|padding-inline|padding-left|padding-right)$/i.test(normalized)){
+        violations.push(`src/styles/structure/${name}: collapsed PortableView header "${selector}" rewrites ${normalized}. Collapsed state must set --dkds-portable-header-height / --dkds-analysis-prime-head-min-height on the parent.`);
+      }
+
+      // R7S: interaction state may recolor a splitter/resizer but cannot shrink
+      // or move its hit target. Geometry is state-invariant during drag/hover.
+      if(/(?:resizer|split-handle)/.test(selector)&&/(?:hover|focus-visible|is-dragging|active)/.test(selector)&&/^(?:top|right|bottom|left|width|min-width|max-width|height|min-height|max-height|padding)$/i.test(normalized)){
+        const structuralActivation=name==='plugin-workspace.css'&&selector==='.dkds-plugin-canvas-bottom-resizer.active'&&/^(?:height|min-height)$/i.test(normalized);
+        if(!structuralActivation)violations.push(`src/styles/structure/${name}: resizer state "${selector}" rewrites ${normalized}. Resize hit geometry must be state-invariant and slot-owned.`);
+      }
     }
   }
 }
@@ -286,6 +328,23 @@ function ruleBlocks(css,context=[]){
   }
   return out;
 }
+// R7S paint ownership: Theme Providers own values, but final standard-component
+// paint selectors stay in Component Appearance / Material Renderer. Feature UI
+// styles may paint their own theme settings/gallery DOM, but may not become a
+// second Core Component Runtime paint owner.
+const themeDir=path.join(root,'src','styles','theme');
+const themeFiles=fs.readdirSync(themeDir).filter(name=>name.endsWith('.css')).sort();
+for(const name of themeFiles){
+  if(['component-appearance.css','material-renderer.css'].includes(name))continue;
+  const css=fs.readFileSync(path.join(themeDir,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    if(!block.selector.includes('[data-dkds-component-identity='))continue;
+    for(const [prop] of block.decls){
+      if(paintProp.test(String(prop).trim()))violations.push(`src/styles/theme/${name}: Core component paint selector "${block.selector}" owns ${prop}. Standard component paint belongs to component-appearance.css / material-renderer.css.`);
+    }
+  }
+}
+
 function assertNoSameSelectorPropertyOverride(dir,files,label){
   for(const name of files){
     const css=fs.readFileSync(path.join(dir,name),'utf8');

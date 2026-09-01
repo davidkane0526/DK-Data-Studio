@@ -49,8 +49,6 @@
 }
 .dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel.is-collapsed{
   min-height:0;height:auto;max-height:none;flex:0 0 auto;overflow:hidden;}
-.dkds-portable-view.is-collapsed>.dkds-portable-header,
-.dkds-portable-view.is-collapsed>.dkds-analysis-prime-head{min-height:36px;}
 
 /* Standard plot chrome is card-local. It may never spill into another chart. */
 .dkds-plot-view-head>.dkds-plot-view-actions{margin-left:auto;}
@@ -82,35 +80,79 @@
 .dkds-table-surface-host{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
 .dkds-managed-table{
   --dkds-table-row-odd-bg:transparent;
+  --dkds-table-font-size:var(--ui-font-small,11px);
+  --dkds-table-head-padding-block:7px;
+  --dkds-table-head-padding-inline:9px;
+  --dkds-table-cell-padding-block:6px;
+  --dkds-table-cell-padding-inline:9px;
+  --dkds-table-column-padding-right:18px;
+  --dkds-table-resizer-hit-width:8px;
+  --dkds-table-resizer-line-width:1px;
   width:max-content;min-width:100%;
   font-family:var(--ui-font-family,"Microsoft YaHei UI","Segoe UI",sans-serif);
-  font-size:var(--ui-font-small,11px);line-height:1.35;
+  font-size:var(--dkds-table-font-size);line-height:1.35;
 }
-.dkds-managed-table[data-dkds-table-density="compact"]{font-size:10px;}
-.dkds-managed-table thead th{position:sticky;top:0;z-index:3;padding:7px 9px;font:inherit;font-weight:680;text-align:left;white-space:nowrap;}
-.dkds-managed-table thead th.dkds-table-column{position:sticky;padding-right:18px;}
+.dkds-managed-table[data-dkds-table-density="compact"]{
+  --dkds-table-font-size:10px;
+  --dkds-table-cell-padding-block:4px;
+  --dkds-table-cell-padding-inline:7px;
+}
+.dkds-managed-table thead th{
+  position:sticky;top:0;z-index:3;
+  padding-block:var(--dkds-table-head-padding-block);
+  padding-left:var(--dkds-table-head-padding-inline);
+  padding-right:var(--dkds-table-head-padding-inline);
+  font:inherit;font-weight:680;text-align:left;white-space:nowrap;
+}
+.dkds-managed-table thead th.dkds-table-column{--dkds-table-head-padding-right:var(--dkds-table-column-padding-right);padding-right:var(--dkds-table-head-padding-right);position:sticky;}
 .dkds-managed-table thead th.dkds-table-sortable{cursor:pointer;user-select:none;}
 .dkds-managed-table thead th.dkds-table-sortable::before{content:"↕";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--ui-font-tiny,10px);transition:opacity .12s;pointer-events:none;}
 .dkds-managed-table thead th[data-dkds-sort="asc"]::before{content:"↑";}
 .dkds-managed-table thead th[data-dkds-sort="desc"]::before{content:"↓";}
-.dkds-table-column-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:4;touch-action:none;}
-.dkds-table-column-resizer::after{content:"";position:absolute;top:16%;bottom:16%;left:3px;width:1px;transition:background .12s;}
+.dkds-table-column-resizer{position:absolute;top:0;right:calc(var(--dkds-table-resizer-hit-width,8px) / -2);width:var(--dkds-table-resizer-hit-width,8px);height:100%;cursor:col-resize;z-index:4;touch-action:none;}
+.dkds-table-column-resizer::after{content:"";position:absolute;top:16%;bottom:16%;left:calc((var(--dkds-table-resizer-hit-width,8px) - var(--dkds-table-resizer-line-width,1px)) / 2);width:var(--dkds-table-resizer-line-width,1px);transition:background .12s;}
 .dkds-managed-table .dkds-table-column-hidden{display:none;}
-.dkds-managed-table tbody td,.dkds-managed-table tbody th{padding:6px 9px;font:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.dkds-managed-table[data-dkds-table-density="compact"] tbody td,.dkds-managed-table[data-dkds-table-density="compact"] tbody th{padding:4px 7px;}
+.dkds-managed-table tbody td,.dkds-managed-table tbody th{
+  padding-block:var(--dkds-table-cell-padding-block);
+  padding-inline:var(--dkds-table-cell-padding-inline);
+  font:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 body.dkds-table-resizing{cursor:col-resize;user-select:none;}
 body.dkds-table-resizing *{cursor:col-resize;}
 
 /* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
 .dkds-scientific-surface-host{position:relative;}
-.dkds-scientific-auto-legend{position:absolute;z-index:12;display:flex;align-items:center;gap:5px;padding:3px 4px;overflow:auto;pointer-events:auto;font-size:10px;line-height:1.15;}
+.dkds-scientific-auto-legend{
+  --dkds-legend-gap:5px;
+  --dkds-legend-padding-block:3px;
+  --dkds-legend-padding-inline:4px;
+  position:absolute;z-index:12;display:flex;align-items:center;
+  gap:var(--dkds-legend-gap);
+  padding-block:var(--dkds-legend-padding-block);
+  padding-inline:var(--dkds-legend-padding-inline);
+  overflow:auto;pointer-events:auto;font-size:10px;line-height:1.15;
+}
 @media (hover:none),(pointer:coarse){}
 
 /* Core plugin settings surface */
 .dkds-settings-overlay{position:fixed;inset:0;z-index:2400;display:flex;align-items:center;justify-content:center;padding:24px;}
 .dkds-settings-dialog{width:min(520px,calc(100vw - 40px));max-height:min(720px,calc(100vh - 48px));display:flex;flex-direction:column;overflow:hidden;}
 .dkds-settings-dialog>header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:15px 16px 12px;}.dkds-settings-dialog>header>div{display:flex;flex-direction:column;gap:3px;}.dkds-settings-dialog>header strong{font-size:14px;}.dkds-settings-dialog>header span{font-size:10px;}.dkds-settings-dialog>header button{width:28px;height:28px;padding:0;font-size:18px;}
-.dkds-settings-body{overflow:auto;padding:14px 16px;display:grid;gap:11px;}.dkds-settings-field{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(180px,1fr);gap:6px 12px;align-items:center;}.dkds-settings-field.is-check{grid-template-columns:auto minmax(0,1fr);justify-content:start;}.dkds-settings-label{font-size:11px;font-weight:650;}.dkds-settings-field select,.dkds-settings-field input[type="text"],.dkds-settings-field input[type="number"]{width:100%;height:32px;min-width:0;padding:4px 8px;}.dkds-settings-field small{grid-column:1/-1;font-size:var(--ui-font-tiny,10px);line-height:1.45;}
+.dkds-settings-body{overflow:auto;padding:14px 16px;display:grid;gap:11px;}
+.dkds-settings-field{
+  --dkds-settings-field-height:32px;
+  --dkds-settings-field-padding-block:4px;
+  --dkds-settings-field-padding-inline:8px;
+  display:grid;grid-template-columns:minmax(150px,.8fr) minmax(180px,1fr);gap:6px 12px;align-items:center;
+}
+.dkds-settings-field.is-check{grid-template-columns:auto minmax(0,1fr);justify-content:start;}
+.dkds-settings-label{font-size:11px;font-weight:650;}
+.dkds-settings-field select,.dkds-settings-field input[type="text"],.dkds-settings-field input[type="number"]{
+  width:100%;min-width:0;
+  height:var(--dkds-settings-field-height);min-height:var(--dkds-settings-field-height);
+  padding-block:var(--dkds-settings-field-padding-block);padding-inline:var(--dkds-settings-field-padding-inline);
+}
+.dkds-settings-field small{grid-column:1/-1;font-size:var(--ui-font-tiny,10px);line-height:1.45;}
 .dkds-settings-dialog>footer{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;padding:11px 16px;}.dkds-settings-dialog>footer button{min-height:31px;}
 
 /* Core-owned per-workbench data import action (Plugin API 1.19). */
@@ -158,14 +200,23 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-dialog-footer{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:11px 16px;}.dkds-dialog-action{min-height:32px;padding:6px 13px;font-size:10px;font-weight:650;cursor:pointer;}@keyframes dkds-dialog-in{from{transform:translateY(5px) scale(.992)}to{transform:none}}
 @media(max-width:620px){.dkds-dialog-overlay{padding:12px}.dkds-dialog{width:min(100%,540px);max-height:calc(100vh - 24px)}.dkds-dialog-meta{grid-template-columns:1fr;gap:2px}.dkds-dialog-meta dd{margin-bottom:6px}}
 @media(prefers-reduced-motion:reduce){.dkds-dialog-overlay,.dkds-dialog{animation:none}}
-.dkds-dialog-field{display:flex;flex-direction:column;gap:6px;margin-top:13px;font-size:10px;}.dkds-dialog-field>input,.dkds-dialog-field>select{width:100%;min-height:34px;box-sizing:border-box;padding:6px 9px;font-size:10px;}
+.dkds-dialog-field{
+  --dkds-dialog-field-height:34px;
+  --dkds-dialog-field-padding-block:6px;
+  --dkds-dialog-field-padding-inline:9px;
+  display:flex;flex-direction:column;gap:6px;margin-top:13px;font-size:10px;
+}
+.dkds-dialog-field>input,.dkds-dialog-field>select{
+  width:100%;box-sizing:border-box;
+  height:var(--dkds-dialog-field-height);min-height:var(--dkds-dialog-field-height);
+  padding-block:var(--dkds-dialog-field-padding-block);padding-inline:var(--dkds-dialog-field-padding-inline);
+  font-size:10px;
+}
 
 /* Bottom dock owns no decorative spacer. Its resize hit target is
    overlaid around a 1px structural seam so the scientific canvas meets the
    dock/status chrome without a visible empty strip. */
-.dkds-plugin-canvas-frame.has-canvas-bottom{grid-template-rows:minmax(0,1fr) 1px var(--dkds-plugin-canvas-bottom-height);}
-.dkds-plugin-canvas-bottom-resizer:is(:hover,:focus-visible,.is-dragging)::before{
-  top:-1px;height:3px;}
+.dkds-plugin-canvas-frame.has-canvas-bottom{grid-template-rows:minmax(0,1fr) var(--dkds-canvas-resizer-seam-size,1px) var(--dkds-plugin-canvas-bottom-height);}
 /* Consolidated geometry from former secondary owners. */
 .dkds-context-menu{position:fixed;z-index:3900;min-width:180px;max-width:min(320px,calc(100vw - 12px));padding:5px;display:grid;gap:2px;}
 .dkds-context-menu.dkds-select-popup{max-width:min(460px,calc(100vw - 12px));overscroll-behavior:contain;}
