@@ -440,9 +440,9 @@
         themeActivate.onclick=()=>{try{const profileId=String(themeSelect.value||'');if(!profileId)return;window.DKDSTheme?.setProfile?.(profileId);state.host?.setStatus?.(`已应用主题：${themeProfilesFor(plugin.id).find(row=>row.id===profileId)?.label||profileId}`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`应用主题失败：${err.message}`);}};
       }
       const themeSettings=card.querySelector('.plugin-theme-settings-btn');
-      if(themeSettings)themeSettings.onclick=()=>window.DKDSThemeSettingsUI?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));
+      if(themeSettings)themeSettings.onclick=async()=>{await window.DKDSOptionalRuntime?.ensureThemeTooling?.();window.DKDSThemeSettingsUI?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));};
       const themeGallery=card.querySelector('.plugin-theme-gallery-btn');
-      if(themeGallery)themeGallery.onclick=()=>window.DKDSThemeGallery?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));
+      if(themeGallery)themeGallery.onclick=async()=>{await window.DKDSOptionalRuntime?.ensureThemeTooling?.();window.DKDSThemeGallery?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));};
 
       const prewarmToggle=card.querySelector('.plugin-prewarm-input');
       if(prewarmToggle)prewarmToggle.onchange=()=>{

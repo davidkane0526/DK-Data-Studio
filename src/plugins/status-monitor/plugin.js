@@ -93,7 +93,7 @@
       const button=event.target.closest?.('[data-dkds-theme-mode]');if(!button)return;
       try{window.DKDSTheme?.set?.(button.dataset.dkdsThemeMode);renderThemePanel();}catch(err){ctx.status.set(`外观切换失败：${err?.message||err}`);}
     });
-    ctx.ui.dom.on(themeSettingsBtn,'click',()=>window.DKDSThemeSettingsUI?.open?.(themeProfile()));
+    ctx.ui.dom.on(themeSettingsBtn,'click',async()=>{await window.DKDSOptionalRuntime?.ensureThemeTooling?.();window.DKDSThemeSettingsUI?.open?.(themeProfile());});
     ctx.ui.dom.on(ctx.ui.dom.query('#dkdsThemePanelClose',themePanel),'click',hideThemePanel);
 
     const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细','data-dkds-portable':'false','data-dkds-portable-chrome':'false'},html:`

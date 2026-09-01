@@ -909,6 +909,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36710-r7l-theme-depth-network-startup.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1852,6 +1856,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36710-r7k-final-ui-startup.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-r7l-theme-depth-network-startup.js",
       "args": []
     },
     {

@@ -36,8 +36,8 @@ const dts=read('sdk/plugin-api.d.ts');
 for(const token of ["contractVersion:'3.10.0'",'DKDSThemeComponentContext','DKDSThemeMaterialContext','shadowSelected','materialContexts()','componentContexts()','recipeFor('])assert(dts.includes(token),`SDK 1.24 Theme 3.10 type missing ${token}`);
 
 const thin=json('src/plugins/thin-glass-theme/plugin.json'),aurora=json('src/plugins/aurora-pop-theme/plugin.json');
-assert.equal(thin.version,'1.12.1');assert.equal(thin.compatibility.themeContract,'^3.10.0');
-assert.equal(aurora.version,'2.3.1');assert.equal(aurora.compatibility.themeContract,'^3.10.0');
+assert.equal(thin.version,'1.12.2');assert.equal(thin.compatibility.themeContract,'^3.10.0');
+assert.equal(aurora.version,'2.3.2');assert.equal(aurora.compatibility.themeContract,'^3.10.0');
 for(const rel of ['src/plugins/thin-glass-theme/plugin.js','src/plugins/aurora-pop-theme/plugin.js']){
   const source=read(rel);for(const token of ['contract.appearance.component-contexts','contract.appearance.material-role-composition','contract.material.contexts','renderer.materialContexts','contexts:{grouped:',"'workspace-modal':{materialBlur:"])assert(source.includes(token),`${rel} missing ${token}`);
   assert(!/querySelector|querySelectorAll|\.style\.|insertRule|styleSheets|adoptedStyleSheets/.test(source),`${rel} must remain declarative and selector-free.`);

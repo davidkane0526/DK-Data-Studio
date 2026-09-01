@@ -45,7 +45,7 @@ assert(!renderer.includes("return recipePolicy()[role]||'clear'"),'Material Rend
 
 const index=read('src/index.html');
 for(const row of ['id="mainWorkspace" class="main-workspace dkds-material-role-surface"','id="statusBar" class="statusbar dkds-material-role-chrome"','id="pluginManagerPage"','dkds-material-role-elevated','id="automationTestPage"']) assert(index.includes(row),`Core static role coverage missing ${row}`);
-assert(index.includes('core/theme/debug-runtime.js'),'Theme Debug runtime must be loaded in main shell.');
+assert(!index.includes('<script src="core/theme/debug-runtime.js"></script>')&&read('src/core/host/optional-runtime-loader.js').includes("loadScript('core/theme/debug-runtime.js')"),'Theme Debug runtime must be lazy in the main shell.');
 const pluginWindow=read('src/plugin-window/index.html');
 assert(pluginWindow.includes('core/theme/debug-runtime.js'),'Theme Debug runtime must be loaded in Dedicated Workspace.');
 

@@ -593,11 +593,11 @@ function validate(){
   const auroraTheme=read('src/plugins/aurora-pop-theme/plugin.js');
   requireText(themeRuntime,"version:'3.10.0',contractVersion:'3.10.0'",'HARD-43: Core Default Theme runtime must expose Theme 3.10.');
   requireText(themeRuntime,'componentContexts:()=>COMPONENT_CONTEXTS.slice()','HARD-43: Core Default Theme must expose Component Contexts.');
-  requireText(thinGlassTheme,"version:'1.12.1'",'HARD-43: Thin Glass must be migrated to 1.12.1 / Theme 3.10.');
+  requireText(thinGlassTheme,"version:'1.12.2'",'HARD-43: Thin Glass must be migrated to 1.12.2 / Theme 3.10.');
   requireText(thinGlassTheme,"contract:'theme-3.10'",'HARD-43: Thin Glass must declare Theme 3.10 contextual composition.');
   requireText(thinGlassTheme,'contexts:{grouped:', 'HARD-43: Thin Glass must author grouped Component Context depth declaratively.');
   requireText(thinGlassTheme,"'workspace-modal':{materialBlur:",'HARD-43: Thin Glass must author workspace-modal Material Context optics.');
-  requireText(auroraTheme,"version:'2.3.1'",'HARD-43: Aurora Pop must be migrated to 2.3.1 / Theme 3.10.');
+  requireText(auroraTheme,"version:'2.3.2'",'HARD-43: Aurora Pop must be migrated to 2.3.2 / Theme 3.10.');
   requireText(auroraTheme,"contract:'component-appearance-3.10'",'HARD-43: Aurora Pop must declare Theme 3.10 contextual composition.');
   requireText(auroraTheme,'contexts:{grouped:', 'HARD-43: Aurora Pop must author grouped Component Context depth declaratively.');
   requireText(auroraTheme,"'workspace-modal':{materialBlur:",'HARD-43: Aurora Pop must author workspace-modal Material Context optics.');
@@ -687,8 +687,8 @@ function validate(){
   // HARD-56: integrated command envelopes own the single outer edge. 38px shell
   // groups contain 34px actions with a mathematically equal 1px inset.
   requireText(schemaStructure,'.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)','HARD-56: all segmented topbar command groups must use the same 38px/1px geometry contract.');
-  requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"],','HARD-56: segmented command envelopes must flatten direct buttons.');
-  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: segmented command envelopes must flatten menu-wrapped buttons through the same appearance path.');
+  requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"],','HARD-56: segmented command envelopes must flatten direct buttons.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: segmented command envelopes must flatten menu-wrapped buttons through the same appearance path.');
   forbidText(componentCss,':focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px;border-color:var(--dkds-ca-action-border-active)}','HARD-56: keyboard focus must not stack a second active border on ToolbarAction.');
 
   // HARD-57: fixed status popovers stay visually anchored and inspectors publish
@@ -723,7 +723,7 @@ function validate(){
   // HARD-61: grouped is a composition/layout semantic, not proof that a parent
   // paints an outer shell. Only explicit integrated command envelopes may erase
   // child edges/depth; status/activity groups must not become visually empty.
-  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit segmented chrome owners must flatten direct and menu-wrapped actions through one contract.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit segmented chrome owners must flatten direct and menu-wrapped actions through one contract.');
   forbidText(componentCss,'body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;box-shadow:none}','HARD-61: generic grouped context must not globally erase child edge/depth.');
   requireText(semanticRegistry,'.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group','HARD-61: topbar/statusbar integrated containers must still resolve grouped Component Context for semantic composition.');
   requireText(materialRenderer,'.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button','HARD-61: Material Renderer must keep integrated top/status actions from becoming nested Material surfaces.');

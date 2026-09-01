@@ -11,6 +11,16 @@
     });
     pending.set(key,promise);return promise;
   }
+  async function ensureThemeTooling(){
+    if(window.DKDSThemeSettingsUI&&window.DKDSThemeCoverage&&window.DKDSThemeDebug&&window.DKDSThemeGallery){
+      return Object.freeze({settings:window.DKDSThemeSettingsUI,coverage:window.DKDSThemeCoverage,debug:window.DKDSThemeDebug,gallery:window.DKDSThemeGallery});
+    }
+    await loadScript('core/theme/settings-ui.js');
+    await loadScript('core/theme/coverage-runtime.js');
+    await loadScript('core/theme/debug-runtime.js');
+    await loadScript('core/theme/test-gallery.js');
+    return Object.freeze({settings:window.DKDSThemeSettingsUI,coverage:window.DKDSThemeCoverage,debug:window.DKDSThemeDebug,gallery:window.DKDSThemeGallery});
+  }
   async function ensureSdkAuthoringReference(){
     if(window.DKDSSdkAuthoringReference)return window.DKDSSdkAuthoringReference;
     await loadScript('generated/sdk-authoring-reference.js');
@@ -19,11 +29,12 @@
   }
   async function ensureAutomationRuntime(){
     if(window.DKDSAutomationTests)return window.DKDSAutomationTests;
+    await ensureThemeTooling();
     await loadScript('diagnostics/automation-smoke-cases.js');
     await loadScript('diagnostics/automation-visual-cases.js');
     await loadScript('diagnostics/automation-test-runtime.js');
     if(!window.DKDSAutomationTests)throw new Error('Automation runtime is unavailable.');
     return window.DKDSAutomationTests;
   }
-  window.DKDSOptionalRuntime=Object.freeze({ensureSdkAuthoringReference,ensureAutomationRuntime});
+  window.DKDSOptionalRuntime=Object.freeze({ensureThemeTooling,ensureSdkAuthoringReference,ensureAutomationRuntime});
 })();

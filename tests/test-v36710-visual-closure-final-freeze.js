@@ -11,7 +11,7 @@ assert(read('CHANGELOG.md').startsWith('# v3.67.10 — R7H Runtime / Visual Reco
 const audit=read('docs/VISUAL_CLOSURE_FINAL_FREEZE_AUDIT_3.67.10.md');
 for(const token of ['STATUS: REOPENED / SUPERSEDED','47 PASS','0 FAIL','occludedMaterial=0','rendererOk=true','appearanceOk=true','38','Electron 43.4.0']) assert(audit.includes(token),`Historical audit must retain ${token}.`);
 const recovery=read('docs/VISUAL_THEME_RECOVERY_WIP_3.67.10.md');
-for(const token of ['Theme Contract: **3.10.0**','SDK: **1.24.0**','Thin Glass 1.12.1','Aurora Pop 2.3.1','Automation Runner: **1.33.0**','Windows visual/performance acceptance remains reopened','ui.theme-runtime-performance']) assert(recovery.includes(token),`Recovery audit must retain ${token}.`);
+for(const token of ['Theme Contract: **3.10.0**','SDK: **1.24.0**','Thin Glass 1.12.2','Aurora Pop 2.3.2','Automation Runner: **1.33.0**','Windows visual/performance acceptance remains reopened','ui.theme-runtime-performance']) assert(recovery.includes(token),`Recovery audit must retain ${token}.`);
 assert(!fs.existsSync(path.join(root,'HANDOFF_v3.67.10_VISUAL_CLOSURE_WIP.md')),'Formal release must not retain the root WIP handoff.');
 assert(!fs.existsSync(path.join(root,'visual-harness.html')),'Formal release must not retain the temporary visual harness.');
 assert(!fs.existsSync(path.join(root,'docs/handoff-v3.67.10-visual-closure')),'Formal release must not retain WIP visual evidence artifacts.');

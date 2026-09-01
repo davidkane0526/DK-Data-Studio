@@ -1,4 +1,4 @@
-# Aurora Pop 2.3.1
+# Aurora Pop 2.3.2
 
 Aurora Pop is a bundled Plugin API 1.19 / Theme Contract 3.10 profile.
 

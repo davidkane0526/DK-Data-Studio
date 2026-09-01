@@ -1,0 +1,18 @@
+"use strict";
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const index=read('src/index.html'),optional=read('src/core/host/optional-runtime-loader.js');
+const component=read('src/styles/theme/component-appearance.css');
+const runtime=read('src/core/theme/runtime.js');
+const thin=read('src/plugins/thin-glass-theme/plugin.js');
+const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
+const updater=read('desktop/update-client.js'),main=read('desktop/main.js');
+for(const asset of ['core/theme/settings-ui.js','core/theme/coverage-runtime.js','core/theme/debug-runtime.js','core/theme/test-gallery.js'])assert(!index.includes(`<script src="${asset}"></script>`),`${asset} must not block first-paint Theme bootstrap.`);
+assert(optional.includes('async function ensureThemeTooling()')&&optional.includes("loadScript('core/theme/coverage-runtime.js')")&&optional.includes('await ensureThemeTooling();'),'Theme authoring/coverage/debug/gallery tooling must be lazy but automation-deterministic.');
+assert(component.includes('.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]')&&!component.includes('.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]'),'Segmented shell commands must fuse child depth even before/while semantic context hydration runs.');
+assert(runtime.includes("shadowHover:'0 0 8px rgba(166,188,226,.10)'")&&runtime.includes("shadowActive:'0 0 10px rgba(112,147,220,.14)'"),'Default dark controls must keep a restrained visible glow.');
+assert(thin.includes("shadowHover:'0 0 8px rgba(180,202,238,.11)'")&&thin.includes("shadowActive:'0 0 10px rgba(77,125,232,.16)'"),'Thin Glass dark controls must use a restrained cool glow.');
+assert(aurora.includes("shadowHover:'0 0 9px rgba(126,90,232,.16)'")&&aurora.includes("shadowActive:'0 0 10px rgba(36,211,217,.17)'")&&aurora.includes("shadow:'0 3px 12px rgba(35,40,70,.10)'"),'Aurora dark hover depth must be coherent and the light toolbar group must not carry a persistent violet halo.');
+assert(updater.includes("networkConsent: user.networkConsent === true")&&updater.includes("ensureNetworkActive(reason='user-network')")&&updater.includes("更新网络按需启动；首次“检查更新”时才访问局域网")&&updater.includes("this.ensureNetworkActive('manual-check')"),'Fresh startup must not bind UDP/update sockets before explicit network use.');
+assert(main.includes('lanUpdater.start();'),'Desktop boot may initialize the updater state object, but network binding must be consent-gated inside LanUpdateClient.');
+console.log('v3.67.10 R7L theme depth + lazy Theme tooling + network consent contract PASS.');

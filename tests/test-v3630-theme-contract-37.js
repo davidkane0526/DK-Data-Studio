@@ -82,7 +82,7 @@ assert(presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()')
 const template=json('sdk/templates/theme-profile/plugin.json');
 assert.equal(template.compatibility.themeContract,'^3.10.0');
 const thin=json('src/plugins/thin-glass-theme/plugin.json');
-assert.equal(thin.version,'1.12.1');
+assert.equal(thin.version,'1.12.2');
 assert.equal(thin.compatibility.themeContract,'^3.10.0');
 
 const sdkTool=read('sdk/tools/dkds-plugin.js'),packageRuntime=read('desktop/plugin-package.js');

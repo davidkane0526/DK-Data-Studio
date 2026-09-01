@@ -9,6 +9,6 @@ const css=read('src/styles/theme/material-renderer.css');assert(!css.includes('w
 const status=read('src/plugins/status-monitor/plugin.js');assert(status.includes('dkdsThemeSettingsBtn')&&status.includes('DKDSThemeSettingsUI?.open'),'bottom Theme picker must expose profile parameters');
 const manager=read('src/core/plugins/manager-ui.js');assert(manager.includes('plugin-theme-settings-btn')&&manager.includes('DKDSThemeSettingsUI?.open'),'Plugin Manager must expose Theme settings');
 const settingsUi=read('src/core/theme/settings-ui.js');assert(settingsUi.includes('DKDSThemeSettingsUI')&&settingsUi.includes('data-theme-setting')&&settingsUi.includes('resetSettings'),'Theme settings must be Core-rendered');
-const index=read('src/index.html');assert(index.includes('core/theme/settings-ui.js'));
+const index=read('src/index.html'),optional=read('src/core/host/optional-runtime-loader.js');assert(!index.includes('<script src="core/theme/settings-ui.js"></script>')&&optional.includes("loadScript('core/theme/settings-ui.js')"));
 const dts=read('sdk/plugin-api.d.ts');for(const x of ["contractVersion:'3.10.0'",'DKDSThemeSettingSpec','recipes?:Partial<Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>>','setSetting(id:string,key:string,value:any)','resetSettings(id?:string)'])assert(dts.includes(x),`SDK type missing ${x}`);
 console.log('Theme 3.8 profile-owned optical policy, settings and compositor-memory contracts passed.');

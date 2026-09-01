@@ -80,6 +80,7 @@ class LanUpdateClient extends EventEmitter {
     this.settings = this.readSettings();
 
     this.discoverySocket = null;
+    this.networkActive = false;
     this.ws = null;
     this.wsReconnectTimer = null;
     this.wsReconnectMs = 1500;
@@ -113,7 +114,9 @@ class LanUpdateClient extends EventEmitter {
       isPackaged: app.isPackaged,
       isPortable: this.isPortable,
       autoDiscover: !!this.settings.autoDiscover,
-      autoDownload: !!this.settings.autoDownload
+      autoDownload: !!this.settings.autoDownload,
+      networkConsent: !!this.settings.networkConsent,
+      networkActive: false
     };
 
     // Trusted-LAN mode: no application signing key is required.
@@ -146,7 +149,8 @@ class LanUpdateClient extends EventEmitter {
     return {
       ...this.defaults,
       ...user,
-      serverUrl: normalizeBaseUrl(user.serverUrl ?? this.defaults.serverUrl ?? '')
+      serverUrl: normalizeBaseUrl(user.serverUrl ?? this.defaults.serverUrl ?? ''),
+      networkConsent: user.networkConsent === true
     };
   }
 
@@ -158,7 +162,8 @@ class LanUpdateClient extends EventEmitter {
       serverUrl: normalizeBaseUrl(this.settings.serverUrl),
       autoDiscover: !!this.settings.autoDiscover,
       autoDownload: !!this.settings.autoDownload,
-      checkIntervalMinutes: Number(this.settings.checkIntervalMinutes) || 30
+      checkIntervalMinutes: Number(this.settings.checkIntervalMinutes) || 30,
+      networkConsent: !!this.settings.networkConsent
     }, null, 2) + '\n', 'utf8');
   }
 
@@ -210,32 +215,48 @@ class LanUpdateClient extends EventEmitter {
       serverUrl: manual,
       autoDiscover: !!this.settings.autoDiscover,
       autoDownload: !!this.settings.autoDownload,
-      message: manual ? `已设置更新服务器：${manual}` : '已恢复局域网自动发现。'
+      networkConsent: !!this.settings.networkConsent,
+      networkActive: !!this.networkActive,
+      message: manual ? `已设置更新服务器：${manual}` : '更新设置已保存；网络会在首次检查更新时按需启动。'
     });
 
-    this.restartNetwork();
-    if (manual) await this.probeAndConnect(manual, { force: true, reason: 'settings' });
+    if (this.networkActive) this.restartNetwork();
+    if (manual) { this.ensureNetworkActive('settings-manual'); await this.probeAndConnect(manual, { force: true, reason: 'settings' }); }
     return this.getSettings();
+  }
+
+  ensureNetworkActive(reason='user-network') {
+    if (this.networkActive) return false;
+    this.networkActive = true;
+    if (!this.settings.networkConsent) {
+      this.settings.networkConsent = true;
+      this.persistSettings();
+    }
+    this.restartNetwork();
+    this.restartPeriodicCheck();
+    this.setStatus({ networkConsent:true, networkActive:true, message: reason==='manual-check' ? '正在启动局域网更新发现…' : this.status.message });
+    return true;
   }
 
   start() {
     if (!this.settings.enabled) {
-      this.setStatus({ phase: 'disabled', message: '局域网更新已禁用。' });
+      this.setStatus({ phase: 'disabled', message: '局域网更新已禁用。', networkActive:false });
       return;
     }
-
+    if (!this.settings.networkConsent) {
+      this.setStatus({ phase:'idle', networkConsent:false, networkActive:false, message:'更新网络按需启动；首次“检查更新”时才访问局域网。' });
+      return;
+    }
+    this.networkActive = true;
     this.restartNetwork();
     this.restartPeriodicCheck();
-
     const manual = normalizeBaseUrl(this.settings.serverUrl);
-    if (manual) {
-      this.probeAndConnect(manual, { force: true, reason: 'startup-manual' }).catch(() => {});
-    } else {
-      this.setStatus({ phase: 'discovering', message: '正在自动发现局域网更新服务器…' });
-    }
+    if (manual) this.probeAndConnect(manual, { force: true, reason: 'startup-manual' }).catch(() => {});
+    else this.setStatus({ phase: 'discovering', networkConsent:true, networkActive:true, message: '正在自动发现局域网更新服务器…' });
   }
 
   stop() {
+    this.networkActive = false;
     try { this.discoverySocket?.close(); } catch {}
     this.discoverySocket = null;
     this.closeWebSocket();
@@ -527,6 +548,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   async checkNow({ silent = false } = {}) {
+    this.ensureNetworkActive('manual-check');
     const manual = normalizeBaseUrl(this.settings.serverUrl);
     const base = manual || normalizeBaseUrl(this.status.serverUrl);
 

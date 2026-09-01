@@ -40,8 +40,8 @@ R4 had two visual problems: Thin Glass had lost much of its component palette an
 
 R5 changes:
 
-- **Thin Glass 1.12.1** restores its own light/dark ToolbarGroup and ToolbarAction states, with contextual floating/grouped depth through Theme 3.10.
-- **Aurora Pop 2.3.1** restores stronger violet selected states and lavender/emerald group identity while retaining contextual composition.
+- **Thin Glass 1.12.2** restores its own light/dark ToolbarGroup and ToolbarAction states, with contextual floating/grouped depth through Theme 3.10.
+- **Aurora Pop 2.3.2** restores stronger violet selected states and lavender/emerald group identity while retaining contextual composition.
 - Core Material Renderer consumes controlled Theme overlays for chrome/sidebar/elevated/popover/floating roles: header gradient, ambient tint, accent glow and edge glow.
 - Theme `glowIntensity` is converted from the normalized 0..1 contract value to the CSS percentage required by `color-mix`.
 - Core Default remains on the same Theme 3.10 pipeline; themes differ by provider declarations rather than alternative DOM/CSS ownership.
@@ -80,8 +80,8 @@ The report must be from **Automation Runner 1.33.0** / **appVersion 3.67.10**, w
 In addition, provide real screenshots for:
 
 1. Core Default Theme
-2. Thin Glass 1.12.1
-3. Aurora Pop 2.3.1
+2. Thin Glass 1.12.2
+3. Aurora Pop 2.3.2
 
 At minimum inspect topbar groups/actions, Presenter buttons, scientific floating tools, Import Workbench, dialogs/popovers and light/dark modes. Also judge interaction speed directly: scrolling, plot hover/selection, panel toggling and theme switching must be materially better than R4.
 
