@@ -745,12 +745,22 @@ function validate(){
   requireText(automationVisual,'Status-bar action hit region must stay inset at about 18px','HARD-62: Windows acceptance must measure status action inset height.');
   requireText(automationVisual,'Theme semantic header lost its declared gradient','HARD-62: Windows acceptance must fail if an active Theme header gradient disappears.');
   requireText(automationVisual,'Neutral Theme semantic header retained a stale gradient','HARD-62: Windows acceptance must fail if a neutral Theme retains stale header effects.');
+
+  // HARD-63: R7O closes two final shell regressions visible on Windows: a
+  // compact Presenter command may not regain one-sided section padding, and a
+  // segmented primary child may never own a persistent focus halo.
+  requireText(shellNavigation,'.dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start','HARD-63: compact Presenter commands must explicitly neutralize plugin-section-start padding.');
+  requireText(shellNavigation,'padding-left:0;\n  padding-right:0;','HARD-63: compact Presenter commands must keep symmetric zero horizontal padding after section spacing.');
+  requireText(componentCss,'outline:2px solid color-mix(in srgb,var(--dkui-accent) 42%,transparent)','HARD-63: ToolbarAction keyboard focus must use a valid color outline, not the box-shadow focus token.');
+  forbidText(componentCss,'outline:2px solid var(--dkui-focus)','HARD-63: a box-shadow token must never be reused as outline-color.');
+  requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:focus-visible','HARD-63: segmented child focus must be explicitly flattened.');
+  requireText(componentCss,'.dkds-segmented-command-group:has(>[data-dkds-component-identity="toolbarAction"]:focus-visible','HARD-63: segmented keyboard focus must be represented by the group silhouette.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:62});
+  return Object.freeze({ok:true,invariants:63});
 }
 
 if(require.main===module){

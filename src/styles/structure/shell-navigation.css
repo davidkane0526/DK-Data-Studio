@@ -173,7 +173,7 @@
   padding-right:11px;
 }
 .plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"]{
-  width:48px;min-width:48px;max-width:48px;padding:0;line-height:1;
+  width:48px;min-width:48px;max-width:48px;padding:0;line-height:34px;text-align:center;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start{
   position:relative;
@@ -191,6 +191,14 @@
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{
   margin-left:0;
   padding-left:11px;
+}
+/* Compact Presenter commands keep a symmetric content box even when they also
+   start a semantic section. The separator owns spacing; it must never re-add
+   one-sided padding after the compact centering rule. */
+.plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start,
+.plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start:first-child{
+  padding-left:0;
+  padding-right:0;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child::before{display:none}
 .context-overflow-anchor{position:relative;margin-left:auto;flex:0 0 auto}

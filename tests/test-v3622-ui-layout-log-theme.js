@@ -40,7 +40,7 @@ const theme=read('src/styles/theme/contract.css');
 const componentAppearance=read('src/styles/theme/component-appearance.css');
 const dialogs=read('src/styles/presentation/dialogs.css');
 const connectivity=read('src/styles/presentation/connectivity.css');
-assert(theme.includes('--dkui-primary-shadow:')&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]:focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px')&&!componentAppearance.includes('--dkds-ca-action-focus-shadow'),'Core accessibility focus must use an outline so Theme 3.10 primary/selected depth remains visible instead of being replaced.');
+assert(theme.includes('--dkui-primary-shadow:')&&componentAppearance.includes('outline:2px solid color-mix(in srgb,var(--dkui-accent) 42%,transparent)')&&!componentAppearance.includes('outline:2px solid var(--dkui-focus)')&&!componentAppearance.includes('--dkds-ca-action-focus-shadow'),'Core accessibility focus must use a valid color outline; the box-shadow focus token must never be misused as outline-color.');
 assert(!dialogs.includes('.dkds-dialog-action.primary{')&&!dialogs.includes('footer button.primary{'),'Dialog presentation must not re-own primary button paint.');
 assert(!connectivity.includes('.lan-web-panel button.primary'),'Connectivity presentation must consume the shared primary Theme contract.');
 

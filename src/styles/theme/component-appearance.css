@@ -171,7 +171,10 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:hover:not(:disabled){background:var(--dkds-ca-action-surface-hover);border-color:var(--dkds-ca-action-border-hover);box-shadow:var(--dkds-ca-action-shadow-hover)}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-action-surface-active);color:var(--dkds-ca-action-text-active);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-shadow-active)}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-action-surface-selected);color:var(--dkds-ca-action-text-selected);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-shadow-selected)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible{
+  outline:2px solid color-mix(in srgb,var(--dkui-accent) 42%,transparent);
+  outline-offset:1px;
+}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn){
   --dkds-ca-action-surface:transparent;--dkds-ca-action-border:transparent;--dkds-ca-action-shadow:none
 }
@@ -335,6 +338,17 @@ body.dkds-modern-ui .dkds-segmented-command-group>:only-child:is([data-dkds-comp
 body.dkds-modern-ui .dkds-segmented-command-group>:only-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px)}
 body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]),
 body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]:is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]){box-shadow:none}
+/* A segmented command has one focus silhouette. A focused child must never
+   acquire its own persistent blue halo (notably the File/Import primary action).
+   Keyboard focus is expressed on the group edge instead. */
+body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:focus-visible,
+body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]:focus-visible{
+  outline:none;
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-segmented-command-group:has(>[data-dkds-component-identity="toolbarAction"]:focus-visible,>.menu-anchor>[data-dkds-component-identity="toolbarAction"]:focus-visible){
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--dkui-component-toolbar-group-border,var(--dkui-divider)) 72%,transparent);
+}
 
 /* Scientific floating chrome is one physical control silhouette. Individual
    actions may still receive Theme hover/active fills, but they may not draw

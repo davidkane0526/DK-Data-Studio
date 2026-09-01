@@ -1,3 +1,10 @@
+# v3.67.12 — R7O Shell Focus / Compact Centering WIP
+
+- Remove the persistent child focus halo from segmented shell commands. The Import primary action never owns a private idle/focus shadow; keyboard focus is expressed only on the shared group silhouette.
+- Correct the ToolbarAction focus contract: `--dkui-focus` is a shadow token and is no longer misused as an `outline-color` value.
+- Fix Presenter compact command centering by neutralizing the later `plugin-section-start` one-sided padding that previously shifted short labels such as **参数**.
+- Add HARD-63 and a dedicated R7O regression test so both Windows regressions cannot silently return through CSS ordering.
+
 # v3.67.10 — R7H Runtime / Visual Recovery WIP
 
 ## 3.67.11 — R7N UI correction

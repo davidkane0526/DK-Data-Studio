@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const pkg=JSON.parse(read('package.json')),index=read('src/index.html');
+const navigation=read('src/styles/structure/shell-navigation.css');
+const component=read('src/styles/theme/component-appearance.css');
+assert.equal(pkg.version,'3.67.12','R7O delivery must advance the application patch to 3.67.12.');
+assert(index.includes('<span class="version">v3.67.12</span>'),'Visible shell version must match 3.67.12.');
+assert(navigation.includes('.dkds-presentation-command[data-dkds-presentation-compact="true"].plugin-section-start')&&navigation.includes('padding-left:0;\n  padding-right:0;'),'Compact Presenter commands must cancel the later plugin-section-start one-sided padding so short labels remain centered.');
+assert(navigation.includes('width:48px;min-width:48px;max-width:48px;padding:0;line-height:34px;text-align:center;'),'Compact Presenter commands must use the full 34px line box for deterministic vertical centering.');
+assert(!component.includes('outline:2px solid var(--dkui-focus)'),'ToolbarAction focus must not use a box-shadow token as an invalid outline color.');
+assert(component.includes('.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:focus-visible')&&component.includes('outline:none;\n  box-shadow:none;'),'Segmented command children must never render a private persistent focus halo.');
+assert(component.includes('.dkds-segmented-command-group:has(>[data-dkds-component-identity="toolbarAction"]:focus-visible'),'Keyboard focus for segmented commands must be expressed by the single group silhouette instead of the Import child.');
+console.log('v3.67.12 R7O Import focus + compact Presenter centering contract PASS.');

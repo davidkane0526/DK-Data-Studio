@@ -913,6 +913,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36712-r7o-import-focus-compact-centering.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
