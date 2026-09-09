@@ -59,6 +59,8 @@
   --dkds-statusbar-gap:8px;
   --dkds-statusbar-padding-left:10px;
   --dkds-statusbar-padding-right:7px;
+  --dkds-statusbar-zone-height:100%;
+  --dkds-statusbar-zone-gap:3px;
   position:fixed;
   left:0;
   right:0;
@@ -73,6 +75,8 @@
   overflow:hidden;
   white-space:nowrap;
 }
+.statusbar-persistent,.statusbar-separator{flex:0 0 auto;min-width:0;white-space:nowrap}
+.statusbar-persistent{overflow:hidden;text-overflow:ellipsis;max-width:min(34vw,440px)}
 .statusbar-message{
   flex:1 1 auto;
   min-width:60px;
@@ -85,18 +89,19 @@
   min-width:0;
   display:flex;
   align-items:center;
-  gap:3px;
-  height:100%;
+  gap:var(--dkds-statusbar-zone-gap);
+  height:var(--dkds-statusbar-zone-height);
 }
 .statusbar-plugin-left:empty,.statusbar-plugin-right:empty{display:none;}
-/* Status actions are a right-edge command cluster; the message is the only flexible spacer. */
-.statusbar-plugin-left{margin-left:auto;}
+/* The command-cluster itself owns right-edge alignment. Plugin zones are adjacent
+   children inside that cluster and must not add a second spacer. */
+.statusbar-plugin-left,
 .statusbar-plugin-right{margin-left:0;}
-.statusbar-plugin-left:empty + .statusbar-plugin-right{margin-left:auto;}
 .plugin-status-item{
   --dkds-status-item-height:22px;
   --dkds-status-item-gap:5px;
   --dkds-status-item-padding-inline:6px;
+  position:relative;
   min-width:0;
   height:var(--dkds-status-item-height);
   min-height:var(--dkds-status-item-height);
@@ -115,36 +120,25 @@ button.plugin-status-item{cursor:pointer;}
 .plugin-status-label{overflow:hidden;text-overflow:ellipsis;max-width:190px;}
 .plugin-status-item.compact .plugin-status-label{max-width:130px;}
 
-.project-save-choice-backdrop{
-  position:fixed;
-  inset:0 0 var(--dkds-statusbar-height,28px) 0;
-  z-index:1600;
-  display:grid;
-  place-items:center;
-  padding:18px;
+.project-save-choice-backdrop{padding:22px;}
+.project-save-choice-card{width:min(520px,calc(100vw - 36px));}
+.project-save-choice-body{display:flex;flex-direction:column;gap:10px;}
+.project-save-choice-summary{display:flex;flex-direction:column;gap:8px;padding:12px 13px;}
+.project-save-choice-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;}
+.project-save-choice-label{font-size:10px;font-weight:720;letter-spacing:.025em;}
+#projectSaveChoiceProjectName{max-width:min(270px,62vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.project-save-choice-hint{margin:0;}
+.project-save-choice-shortcuts{display:flex;align-items:center;gap:14px;padding:0 2px;font-size:10px;}
+.project-save-choice-shortcuts span{display:inline-flex;align-items:center;gap:5px;}
+.project-save-choice-shortcuts kbd{min-width:26px;padding:2px 5px;text-align:center;font:600 10px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;}
+.project-save-choice-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;justify-content:stretch;}
+.project-save-choice-actions .dkds-dialog-action{width:100%;min-width:0;min-height:34px;}
+@media(max-width:560px){
+  .project-save-choice-backdrop{padding:12px;}
+  .project-save-choice-card{width:min(100%,520px);}
+  .project-save-choice-actions{grid-template-columns:1fr;}
+  #projectSaveChoiceProjectName{max-width:54vw;}
 }
-
-.project-save-choice-card{
-  width:min(470px,calc(100vw - 36px));
-  display:grid;
-  grid-template-columns:38px minmax(0,1fr);
-  gap:10px 12px;
-  padding:16px;
-}
-.project-save-choice-icon{
-  width:36px;height:36px;display:grid;place-items:center;font-size:18px;font-weight:750;
-}
-.project-save-choice-copy{min-width:0;display:flex;flex-direction:column;gap:4px;}
-.project-save-choice-copy strong{font-size:14px;}
-.project-save-choice-copy span{font-size:10px;line-height:1.55;}
-.project-save-choice-actions{
-  grid-column:1/-1;
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:7px;
-  margin-top:3px;
-}
-.project-save-choice-actions button{min-height:32px;}
 
 #lanWebMinimizeBtn{
   width:32px;
@@ -223,7 +217,15 @@ button.plugin-status-item{cursor:pointer;}
    DKDS UI Infrastructure — plugin-neutral workspace layer
    ========================================================= */
 .dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
-.dkds-action-button{height:30px;min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
+.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
+/* Core-owned semantic action density. Plugins may request a density on a
+   container, but the Core component owner remains the only geometry writer. */
+[data-dkds-action-density="regular"] .dkds-action-button{
+  min-height:var(--dkds-action-regular-height,32px);
+  padding-block:var(--dkds-action-regular-padding-block,4px);
+  line-height:1.15;
+}
+
 .dkds-action-icon{font-size:12px;line-height:1;}.dkds-action-caret{font-size:var(--ui-font-tiny,10px);}.dkds-action-separator{width:1px;height:20px;margin:0 2px;}
 .dkds-ui-workspace{min-width:0;min-height:0;position:relative;}.dkds-ui-region{min-width:0;min-height:0;}
 /* Core layout splitter geometry. Presentation is owned by the visual layer. */
@@ -241,6 +243,7 @@ button.plugin-status-item{cursor:pointer;}
   overflow:hidden;display:flex;flex-direction:column;z-index:20;
 }
 .dkds-portable-header{
+  --dkds-header-action-height:22px;
   height:var(--dkds-portable-header-height);min-height:var(--dkds-portable-header-height);flex:0 0 var(--dkds-portable-header-height);
   display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;cursor:default;user-select:none;
 }
@@ -252,14 +255,23 @@ button.plugin-status-item{cursor:pointer;}
   min-width:var(--dkds-portable-floating-min-width,300px);
   min-height:var(--dkds-portable-floating-min-height,180px);
   z-index:var(--dkds-portable-floating-z,1100);
-  resize:var(--dkds-portable-floating-resize,both);
+  resize:var(--dkds-portable-floating-resize,none);
   overflow:var(--dkds-portable-floating-overflow,auto);
 }
+
+/* A Portable PlotView is a resizable scientific window. Its header/meta rows keep
+   intrinsic height while the plot consumes the remaining user-sized viewport. */
+.dkds-plot-view.dkds-portable-view:is(.is-floating,.is-docked,.is-sticky){
+  --dkds-plot-content-flex:1 1 0;
+  --dkds-plot-content-min-height:0;
+  --dkds-plot-content-height:auto;
+}
+.dkds-plot-view.dkds-portable-view.is-floating{--dkds-portable-floating-overflow:hidden;}
 .dkds-portable-view.is-collapsed{
   --dkds-portable-header-height:36px;
   --dkds-analysis-prime-head-min-height:36px;
 }
-.dkds-portable-view.is-floating>.dkds-portable-header{cursor:move;}
+.dkds-portable-view.is-floating>:is(.dkds-portable-header,.dkds-portable-inline-header){cursor:move;}
 .dkds-portable-view.is-docked{
   position:var(--dkds-portable-docked-position,relative);
   inset:var(--dkds-portable-docked-inset,auto);
@@ -278,9 +290,13 @@ button.plugin-status-item{cursor:pointer;}
 .dkds-portable-view.dock-bottom{--dkds-portable-docked-max-width:100%;}
 .dkds-portable-view.is-sticky{
   position:var(--dkds-portable-sticky-position,sticky);
-  top:var(--dkds-portable-sticky-top,8px);
+  top:var(--dkds-portable-sticky-top,0px);
   z-index:var(--dkds-portable-sticky-z,34);
   align-self:var(--dkds-portable-sticky-align-self,start);
+  height:var(--dkds-portable-sticky-height,auto);
+  min-height:var(--dkds-portable-sticky-min-height,var(--dkds-portable-base-min-height,100px));
+  max-height:var(--dkds-portable-sticky-max-height,none);
+  overflow:hidden;
 }
 .dkds-chart-surface{min-width:0;min-height:220px;display:flex;flex-direction:column;}.dkds-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:3px 6px 3px 10px;}.dkds-chart-title{font-size:12px;}.dkds-chart-actions{display:flex;align-items:center;}.dkds-chart-plot{flex:1 1 auto;min-height:180px;min-width:0;}
 @media(max-width:900px){}

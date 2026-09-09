@@ -1,5 +1,14 @@
 'use strict';
+const StyleGate=require('ui/style-ownership-gate');
+const STYLE_SOURCE='src/core/ui/modules/scientific-curve/navigation.js';
+const navSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.scientific-navigation',scope:'runtime-scientific-navigation',source:STYLE_SOURCE});
+const navRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.scientific-navigation',scope:'runtime-scientific-navigation',source:STYLE_SOURCE});
+const VISIBILITY_OWNER='core.scientific-curve-visibility';
+const navPresentationSet=(el,attribute,value)=>StyleGate.setPresentation(el,attribute,value,{owner:VISIBILITY_OWNER,component:'scientific-marker-visibility',scope:'scientific-render',source:STYLE_SOURCE});
+const navPresentationRemove=(el,attribute)=>StyleGate.removePresentation(el,attribute,{owner:VISIBILITY_OWNER,component:'scientific-marker-visibility',scope:'scientific-render',source:STYLE_SOURCE});
+const selectionPresentation=(selection,attribute,value)=>{selection?.each?.(function(d,i,nodes){const next=typeof value==='function'?value.call(this,d,i,nodes):value;if(next===null||next===undefined||next==='')navPresentationRemove(this,attribute);else navPresentationSet(this,attribute,next);});return selection;};
 const {hostState, readJson, writeJson}=require('../foundation/shortcuts');
+const NativeTouchDrag=require('../../../host/native-touch-drag');
 
 function applyScientificCurveNavigation(ScientificCurveSurface){
   class ScientificCurveNavigationMixin {
@@ -7,13 +16,23 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
       const targetId=String(this.target?.id||this.container?.id||this.target?.dataset?.dkdsScientificPlotId||'').trim();
       return targetId?`${hostState.storagePrefix}.scientific-nav.${this.owner}.${targetId}`:'';
     }
-    setNavigationToolsPosition(x,y,{persist=false,moved=true}={}){
+    navigationClampedPosition(x,y,hostRect,toolRect){
+      const pad=4,maxX=Math.max(pad,hostRect.width-toolRect.width-pad),maxY=Math.max(pad,hostRect.height-toolRect.height-pad),clamp=(value,min,max)=>Math.min(max,Math.max(min,Number(value)||min));
+      return {x:clamp(x,pad,maxX),y:clamp(y,pad,maxY)};
+    }
+    navigationSafePosition(x,y,hostRect,toolRect){
+      const initial=this.navigationClampedPosition(x,y,hostRect,toolRect),obstacles=this.navigationToolObstacles?.()||[],pad=4,maxX=Math.max(pad,hostRect.width-toolRect.width-pad),maxY=Math.max(pad,hostRect.height-toolRect.height-pad),clamp=(value,min,max)=>Math.min(max,Math.max(min,Number(value)||min));
+      const area=point=>{const candidate={left:hostRect.left+point.x,top:hostRect.top+point.y,right:hostRect.left+point.x+toolRect.width,bottom:hostRect.top+point.y+toolRect.height};let total=0;for(const row of obstacles){const r=row.rect,w=Math.max(0,Math.min(candidate.right,r.right)-Math.max(candidate.left,r.left)),h=Math.max(0,Math.min(candidate.bottom,r.bottom)-Math.max(candidate.top,r.top));total+=w*h;}return total;};
+      if(area(initial)<=0)return initial;
+      const candidates=[initial];for(const row of obstacles){const r=row.rect;candidates.push({x:initial.x,y:r.bottom-hostRect.top+6},{x:initial.x,y:r.top-hostRect.top-toolRect.height-6},{x:r.right-hostRect.left+6,y:initial.y},{x:r.left-hostRect.left-toolRect.width-6,y:initial.y});}
+      const normalized=candidates.map(point=>({x:clamp(point.x,pad,maxX),y:clamp(point.y,pad,maxY)}));normalized.sort((a,b)=>area(a)-area(b)||Math.hypot(a.x-initial.x,a.y-initial.y)-Math.hypot(b.x-initial.x,b.y-initial.y));return normalized[0]||initial;
+    }
+    setNavigationToolsPosition(x,y,{persist=false,moved=true,avoidObstacles=true}={}){
       const tools=this.navTools,container=this.container;if(!tools||!container)return false;
       const hostRect=container.getBoundingClientRect(),toolRect=tools.getBoundingClientRect();
       if(!(hostRect.width>0&&hostRect.height>0&&toolRect.width>0&&toolRect.height>0))return false;
-      const pad=4,maxX=Math.max(pad,hostRect.width-toolRect.width-pad),maxY=Math.max(pad,hostRect.height-toolRect.height-pad);
-      const nx=Math.min(maxX,Math.max(pad,Number(x)||pad)),ny=Math.min(maxY,Math.max(pad,Number(y)||pad));
-      tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';tools.style.bottom='auto';if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;
+      const point=avoidObstacles?this.navigationSafePosition(x,y,hostRect,toolRect):this.navigationClampedPosition(x,y,hostRect,toolRect),nx=point.x,ny=point.y;
+      navSet(tools,'left',`${Math.round(nx)}px`);navSet(tools,'top',`${Math.round(ny)}px`);navSet(tools,'right','auto');navSet(tools,'bottom','auto');if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;
       if(persist){const key=this.navigationToolsStorageKey();if(key)writeJson(key,{x:nx,y:ny});}
       return true;
     }
@@ -24,17 +43,20 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
     }
     resetNavigationToolsPosition(){
       const tools=this.navTools;if(!tools)return false;const key=this.navigationToolsStorageKey();if(key)try{localStorage.removeItem(key);}catch{}
-      for(const prop of ['left','top','right','bottom'])tools.style.removeProperty(prop);delete tools.dataset.moved;return true;
+      for(const prop of ['left','top','right','bottom'])navRemove(tools,prop);delete tools.dataset.moved;return true;
+    }
+    navigationToolObstacleSelectors(){
+      return ['.dkds-plot-legend','[data-dkds-legend]','[data-dkds-floating-chrome]','.dkds-plot-view-head'];
     }
     navigationToolObstacles(){
       const container=this.container,tools=this.navTools;if(!container||!tools)return [];
-      const hostRect=container.getBoundingClientRect(),selectors=['.dkds-plot-legend','[data-dkds-legend]'],seen=new Set(),rows=[];
-      for(const selector of selectors)for(const el of document.querySelectorAll(selector)){if(!el||el===tools||seen.has(el)||el.closest?.('.dkds-scientific-nav-tools'))continue;seen.add(el);const style=getComputedStyle(el);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)continue;const r=el.getBoundingClientRect();const left=Math.max(hostRect.left,r.left),right=Math.min(hostRect.right,r.right),top=Math.max(hostRect.top,r.top),bottom=Math.min(hostRect.bottom,r.bottom);if(right>left&&bottom>top)rows.push({el,rect:r});}
+      const hostRect=container.getBoundingClientRect(),selectors=this.navigationToolObstacleSelectors(),seen=new Set(),rows=[],root=container.closest?.('[data-dkds-plot-scope]')||container;
+      for(const selector of selectors)for(const el of root.querySelectorAll?.(selector)||[]){if(!el||el===tools||seen.has(el)||el.closest?.('.dkds-scientific-nav-tools'))continue;seen.add(el);const style=getComputedStyle(el);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)continue;const r=el.getBoundingClientRect();const left=Math.max(hostRect.left,r.left),right=Math.min(hostRect.right,r.right),top=Math.max(hostRect.top,r.top),bottom=Math.min(hostRect.bottom,r.bottom);if(right>left&&bottom>top)rows.push({el,rect:r});}
       return rows;
     }
-    isNavigationLegendNode(node){
+    isNavigationObstacleNode(node){
       const el=node?.nodeType===1?node:node?.parentElement;if(!el?.closest)return false;
-      return !!el.closest('.dkds-plot-legend,[data-dkds-legend]');
+      return this.navigationToolObstacleSelectors().some(selector=>!!el.closest(selector));
     }
     scheduleNavigationCollisionCheck(){
       if(this.disposed||this.navCollisionFrame)return;this.navCollisionFrame=requestAnimationFrame(()=>{this.navCollisionFrame=0;if(!this.disposed)this.avoidNavigationToolCollisions();});
@@ -42,7 +64,7 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
     installNavigationObstacleObserver(){
       if(!window.MutationObserver||this.navObstacleObserver)return false;
       const root=this.container?.closest?.('[data-dkds-plot-scope],.dkds-surface,.card')||this.container?.parentElement||this.container;if(!root)return false;
-      this.navObstacleObserver=new MutationObserver(records=>{for(const record of records){if(this.isNavigationLegendNode(record.target)||[...(record.addedNodes||[])].some(node=>this.isNavigationLegendNode(node))||[...(record.removedNodes||[])].some(node=>this.isNavigationLegendNode(node))){this.scheduleNavigationCollisionCheck();break;}}});
+      this.navObstacleObserver=new MutationObserver(records=>{for(const record of records){if(this.isNavigationObstacleNode(record.target)||[...(record.addedNodes||[])].some(node=>this.isNavigationObstacleNode(node))||[...(record.removedNodes||[])].some(node=>this.isNavigationObstacleNode(node))){this.scheduleNavigationCollisionCheck();break;}}});
       this.navObstacleObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});return true;
     }
     avoidNavigationToolCollisions(){
@@ -70,16 +92,55 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
       const rows=[['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']];
       for(const [action,label,title] of rows){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-scientific-navigation';button.dataset.dkdsComponentVariant='quiet';button.dataset.dkdsComponentVariantOwner='core-scientific-navigation';button.textContent=label;button.setAttribute('aria-label',title);button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')this.resetView({reason:'toolbar-home'});else this.zoomBy(action==='zoom-in'?0.72:1.38,{reason:`toolbar-${action}`});});tools.appendChild(button);}
       this.container.appendChild(tools);this.navTools=tools;
-      let dragState=null;
+      const reveal=(delay=1600)=>{tools.classList.add('is-touch-visible');clearTimeout(this.navTouchHideTimer);this.navTouchHideTimer=setTimeout(()=>{if(!tools.classList.contains('is-dragging'))tools.classList.remove('is-touch-visible');},Math.max(500,Number(delay)||1600));};
+      this.navTouchRevealHandler=event=>{if(event.pointerType&&event.pointerType!=='mouse')reveal();};
+      this.container.addEventListener('pointerdown',this.navTouchRevealHandler,true);
+      if(document.documentElement?.classList?.contains('react-native-client'))reveal(1100);
+      const nativeClient=document.documentElement?.classList?.contains('react-native-client')===true;
+      let dragState=null,dragFrame=0,latestPoint=null;
+      const rawPoint=event=>{const clientX=Number(event?.clientX),clientY=Number(event?.clientY);return Number.isFinite(clientX)&&Number.isFinite(clientY)?{clientX,clientY}:null;};
+      const pointerPoint=event=>{
+        if(!nativeClient){const rows=event.getCoalescedEvents?.(),point=rows?.length?rows[rows.length-1]:event;return rawPoint(point)||rawPoint(event);}
+        const point=rawPoint(event);if(!point)return null;
+        if(point.clientX<=1&&point.clientY<=1&&dragState&&(dragState.startClientX>12||dragState.startClientY>12))return null;
+        return point;
+      };
+      const applyDrag=()=>{
+        dragFrame=0;if(!dragState||!latestPoint)return;
+        if(dragState.native){
+          this.setNavigationToolsPosition(dragState.startX+(latestPoint.clientX-dragState.startClientX),dragState.startY+(latestPoint.clientY-dragState.startClientY),{avoidObstacles:false});return;
+        }
+        const hostRect=this.container.getBoundingClientRect();this.setNavigationToolsPosition(latestPoint.clientX-hostRect.left-dragState.offsetX,latestPoint.clientY-hostRect.top-dragState.offsetY,{avoidObstacles:false});
+      };
+      const queueDragPoint=point=>{if(!dragState||!point)return;latestPoint=point;if(!dragFrame)dragFrame=requestAnimationFrame(applyDrag);};
+      const startDrag=(point,{pointerId=null,native=false,input='pointer'}={})=>{
+        if(!point||dragState)return false;
+        const toolRect=tools.getBoundingClientRect(),hostRect=this.container.getBoundingClientRect();
+        dragState=native?{pointerId,native:true,input,startClientX:point.clientX,startClientY:point.clientY,startX:toolRect.left-hostRect.left,startY:toolRect.top-hostRect.top}:{pointerId,native:false,input,offsetX:point.clientX-toolRect.left,offsetY:point.clientY-toolRect.top};
+        latestPoint=point;clearTimeout(this.navTouchHideTimer);tools.classList.add('is-dragging','is-touch-visible');return true;
+      };
+      const persistDrag=()=>{const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))this.setNavigationToolsPosition(x,y,{persist:true});reveal(1200);this.scheduleNavigationCollisionCheck();};
+      const completeDrag=point=>{
+        if(!dragState)return;if(point)latestPoint=point;if(dragFrame){cancelAnimationFrame(dragFrame);dragFrame=0;}applyDrag();
+        dragState=null;latestPoint=null;tools.classList.remove('is-dragging');persistDrag();
+      };
+      const trackPointer=event=>{if(!dragState||dragState.input!=='pointer'||event.pointerId!==dragState.pointerId)return;if(event.cancelable)event.preventDefault();const point=pointerPoint(event);if(point)queueDragPoint(point);};
+      const detachPointerTracking=()=>{window.removeEventListener('pointermove',trackPointer,true);window.removeEventListener('pointerup',finishPointer,true);window.removeEventListener('pointercancel',finishPointer,true);};
+      const finishPointer=event=>{if(!dragState||dragState.input!=='pointer'||event.pointerId!==dragState.pointerId)return;const point=pointerPoint(event),pointerId=dragState.pointerId;detachPointerTracking();completeDrag(point);try{drag.releasePointerCapture(pointerId);}catch{}};
       drag.addEventListener('pointerdown',event=>{
-        if(event.button!==0)return;event.preventDefault();event.stopPropagation();
-        const hostRect=this.container.getBoundingClientRect(),toolRect=tools.getBoundingClientRect();
-        dragState={pointerId:event.pointerId,startClientX:event.clientX,startClientY:event.clientY,startX:toolRect.left-hostRect.left,startY:toolRect.top-hostRect.top};
-        tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}
+        if(event.button!==0||(nativeClient&&event.pointerType==='touch'))return;event.preventDefault();event.stopPropagation();
+        const point=rawPoint(event);if(!point||!startDrag(point,{pointerId:event.pointerId,native:nativeClient,input:'pointer'}))return;
+        if(nativeClient){window.addEventListener('pointermove',trackPointer,{capture:true,passive:false});window.addEventListener('pointerup',finishPointer,true);window.addEventListener('pointercancel',finishPointer,true);}
+        else try{drag.setPointerCapture(event.pointerId);}catch{}
       });
-      drag.addEventListener('pointermove',event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;event.preventDefault();this.setNavigationToolsPosition(dragState.startX+event.clientX-dragState.startClientX,dragState.startY+event.clientY-dragState.startClientY);});
-      const finishDrag=event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;const pointerId=dragState.pointerId;dragState=null;tools.classList.remove('is-dragging');try{drag.releasePointerCapture(pointerId);}catch{}const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))this.setNavigationToolsPosition(x,y,{persist:true});this.scheduleNavigationCollisionCheck();};
-      drag.addEventListener('pointerup',finishDrag);drag.addEventListener('pointercancel',finishDrag);
+      if(!nativeClient){drag.addEventListener('pointermove',trackPointer);drag.addEventListener('pointerup',finishPointer);drag.addEventListener('pointercancel',finishPointer);}
+      const unbindNativeTouch=nativeClient?NativeTouchDrag.bind(drag,{
+        onStart:point=>{if(!startDrag(point,{native:true,input:'touch'}))return false;return true;},
+        onMove:point=>queueDragPoint(point),
+        onEnd:point=>completeDrag(point),
+        onCancel:point=>completeDrag(point)
+      }):()=>{};
+      this.navTouchDragCleanup=unbindNativeTouch;
       drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();this.resetNavigationToolsPosition();});
       drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();this.resetNavigationToolsPosition();}});
       this.restoreNavigationToolsPosition();this.scheduleNavigationCollisionCheck();
@@ -105,9 +166,9 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
       const last=this.lastRender;if(!last||!marker||!point)return false;const id=String(marker.id),xv=Number(point.x??point.v),yv=Number(point.y??point.i);if(!Number.isFinite(xv)||!Number.isFinite(yv))return false;
       marker.x=xv;marker.y=yv;const {dataLayer,x,y}=last;if(!dataLayer||!x||!y)return false;
       const nodes=last.markerNodes?.get?.(id),visible=this.yDisplayable(yv);
-      if(nodes?.halo){nodes.halo.style.display=visible?'':'none';if(visible)nodes.halo.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}
-      if(nodes?.mark){nodes.mark.style.display=visible?'':'none';if(visible)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('transform',visible?`translate(${x(xv)},${y(this.yDisplayValue(yv))})`:null);
-      if(nodes?.hit){nodes.hit.style.display=visible?'':'none';if(visible){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(this.yDisplayValue(yv))));}}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('cx',visible?x(xv):null).attr('cy',visible?y(yv):null);
+      if(nodes?.halo){visible?navRemove(nodes.halo,'display'):navSet(nodes.halo,'display','none');if(visible)nodes.halo.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}
+      if(nodes?.mark){visible?navPresentationRemove(nodes.mark,'display'):navPresentationSet(nodes.mark,'display','none');if(visible)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).call(selectionPresentation,'display',visible?null:'none').attr('transform',visible?`translate(${x(xv)},${y(this.yDisplayValue(yv))})`:null);
+      if(nodes?.hit){visible?navPresentationRemove(nodes.hit,'display'):navPresentationSet(nodes.hit,'display','none');if(visible){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(this.yDisplayValue(yv))));}}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).call(selectionPresentation,'display',visible?null:'none').attr('cx',visible?x(xv):null).attr('cy',visible?y(yv):null);
       return true;
     }
     nearestCurveAtPixel(px,py,x,y,curves,maxDistancePx=18){

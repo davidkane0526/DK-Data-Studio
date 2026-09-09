@@ -177,8 +177,6 @@
       detected,
       used:{vmin,vmax,vstep,tolerance,currentFloor},
       targets,vgs,records,matrix,
-      // Backward-compatible alias used by older project code.
-      terMax:terMaxByVg,
       terMaxByVg,
       terMaxByVd,
       missing

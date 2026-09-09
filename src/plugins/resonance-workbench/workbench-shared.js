@@ -12,7 +12,7 @@
   const PRESENTATION_LAYOUT=Object.freeze({
     primary:Object.freeze({id:'main',label:'共振分析',presentationRole:'scientific-primary',priority:100,collapsible:false}),
     prime:Object.freeze([
-      Object.freeze({id:'data-control',label:'参数',semanticKind:'panel',presentationRole:'data-control',priority:95,collapsible:true}),
+      Object.freeze({id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:95,collapsible:true}),
       Object.freeze({id:'curve-inspector',label:'检查',semanticKind:'inspector',presentationRole:'inspector',priority:90,collapsible:true}),
       Object.freeze({id:'group-analysis',label:'组图',semanticKind:'panel',presentationRole:'scientific-secondary',priority:70,collapsible:true})
     ]),
@@ -48,7 +48,7 @@
     return project?.plugins?.[PLUGIN_ID]?.workspace||null;
   }
 
-  function defaultWorkspace(project={},science=window.DKDSScience){
+  function defaultWorkspace(project={},science=null){
     return {
       schema:1,
       datasetMeta:[],
@@ -65,12 +65,13 @@
       gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0,featureMetric:'fwhm',featureDirection:'all',terSettings:{vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false},terAlgorithmRef:{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'}},
       transformPreviewByDataset:[],
       groupColumns:'auto',
+      groupColumnsPortrait:'auto',
       mainView:{xDomain:null,yDomain:null},
       activeView:'main'
     };
   }
 
-  function normalizeWorkspace(raw,project={},science=window.DKDSScience){
+  function normalizeWorkspace(raw,project={},science=null){
     const base=defaultWorkspace(project,science);
     const source=raw&&typeof raw==='object'?raw:{};
     return {
@@ -88,6 +89,7 @@
       gateAnalysisSettings:{...(base.gateAnalysisSettings||{}),...(source.gateAnalysisSettings||{}),terSettings:{...(base.gateAnalysisSettings?.terSettings||{}),...(source.gateAnalysisSettings?.terSettings||{})},terAlgorithmRef:{...(base.gateAnalysisSettings?.terAlgorithmRef||{}),...(source.gateAnalysisSettings?.terAlgorithmRef||{})}},
       transformPreviewByDataset:Array.isArray(source.transformPreviewByDataset)?clone(source.transformPreviewByDataset):base.transformPreviewByDataset,
       groupColumns:['auto','1','2','3','4','5','6'].includes(String(source.groupColumns))?String(source.groupColumns):'auto',
+      groupColumnsPortrait:['auto','1','2','3','4','5','6'].includes(String(source.groupColumnsPortrait))?String(source.groupColumnsPortrait):'auto',
       mainView:{xDomain:Array.isArray(source.mainView?.xDomain)?source.mainView.xDomain.map(Number):null,yDomain:Array.isArray(source.mainView?.yDomain)?source.mainView.yDomain.map(Number):null},
       activeView:VIEW_IDS.has(String(source.activeView))?String(source.activeView):'main'
     };
@@ -202,7 +204,7 @@
     return out;
   }
 
-  function createController(service,{mode='super',science=window.DKDSScience,host=null}={}){
+  function createController(service,{mode='super',science=null,host=null}={}){
     if(!service)throw new Error('Resonance shared controller requires a resonance service.');
     const controller={
       mode,service,science,host,views:VIEW_CATALOG,

@@ -21,16 +21,15 @@
     const terPlotViews=new Map();
     let workbench=null;
     let gridController=null;
-    let layoutSettings={rows:3,cols:3,sticky:true};
+    let layoutSettings={version:3,rows:3,cols:3};
+    let terHeaderActions=null;
     let transformPanel=null;
 
     function syncLayoutControls(){
       const rows=dom.query('#terLayoutRows');
       const cols=dom.query('#terLayoutCols');
-      const sticky=dom.query('#terResistanceStickyToggle');
       if(rows)rows.value=String(layoutSettings.rows);
       if(cols)cols.value=String(layoutSettings.cols);
-      if(sticky)sticky.checked=!!layoutSettings.sticky;
     }
 
     function resizeTerPlots(){
@@ -47,9 +46,7 @@
       layoutSettings=sanitizeLayout(layoutSettings);
       const grid=dom.query('#terMaxPage .ter-chart-grid');
       if(gridController)gridController.setColumns(layoutSettings.cols);
-      else if(grid)grid.style.setProperty('--dkds-grid-columns',String(layoutSettings.cols));
-      const card=dom.query('#terResistanceCard');
-      card?.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
+      else if(grid)dom.token(grid,{'--dkds-grid-columns':String(layoutSettings.cols)});
       syncLayoutControls();
       resizeTerPlots();
       if(capture)ctx.project.capture?.();
@@ -64,13 +61,6 @@
       ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
     }
 
-    function setSticky(value){
-      layoutSettings.sticky=!!value;
-      const prime=workbench?.primes?.get?.('resistance-inspector');
-      if(prime?.mounted)workbench.setPrimePlacement?.('resistance-inspector',layoutSettings.sticky?'sticky':'inline');
-      applyLayoutSettings({capture:true});
-      ctx.status.set(`R–V 随滚动吸附已${layoutSettings.sticky?'开启':'关闭'}。`);
-    }
 
     function ensureLayoutControls(){
       syncLayoutControls();
@@ -80,16 +70,6 @@
     function ensureResistanceCard(){
       const card=dom.query('#terResistanceCard');
       if(!card)return null;
-      card.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
-      if(card.dataset.terBound!=='1'){
-        card.dataset.terBound='1';
-        const clearBtn=card.querySelector('#terResistanceClearBtn');
-        if(clearBtn)clearBtn.onclick=()=>{
-          selectedTerPoint=null;
-          controller?.clearSelection?.({source:'ter-resistance-clear'});
-          renderResistancePlot();
-        };
-      }
       syncLayoutControls();
       return card;
     }
@@ -174,21 +154,20 @@
 
     function ensurePlotViews(){
       if(!ctx.ui.plotViews?.bind)return;
-      const specs=[...chartSpecs(),{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',prime:true}];
+      const specs=[...chartSpecs(),{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',resistance:true}];
       for(const spec of specs){
         if(terPlotViews.has(spec.key))continue;
         const plot=dom.query(`#${spec.plotId}`);
         const card=plot?.closest('.analysis-chart-card');
         if(!plot||!card)continue;
-        const header=card.querySelector(spec.prime?'.ter-resistance-card-header':'.analysis-chart-title');
-        const title=(header?.querySelector('.ter-card-title-text')?.textContent||header?.textContent||spec.fileBase).trim();
+        const header=dom.query(spec.resistance?'.ter-resistance-card-header':'.analysis-chart-title',card);
+        const title=(dom.query('.ter-card-title-text',header)?.textContent||header?.textContent||spec.fileBase).trim();
         try{
           const view=ctx.ui.plotViews.bind(`ter:${spec.key}`,card,{
-            plot,header,actionsHost:spec.prime?'.ter-chart-actions':null,portableTitle:title,
+            plot,header,actionsHost:spec.resistance?'.ter-chart-actions':null,portableTitle:title,
             fileStem:()=>spec.fileBase,
             csv:()=>exportSpec(spec.key)?.csv||'',
-            portable:!spec.prime,
-            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',
+            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'ter-plot-view-v3',
             portableFactory:(id,node,pSpec)=>workbench?.portable?workbench.portable(id,node,pSpec):ctx.ui.portable.create(id,node,pSpec)
           });
           terPlotViews.set(spec.key,view);
@@ -392,7 +371,7 @@
       if(cached)return cached;
       const base=automaticMaximaFromRecords(result);
       const state={baseMaxVg:base.byVg,baseMaxVd:base.byVd,byVg:new Map(),byVd:new Map(),vgToVd:new Map()};
-      const currentVg=result.terMaxByVg||result.terMax||[];
+      const currentVg=result.terMaxByVg||[];
       for(const displayed of currentVg){
         const original=base.byVg.find(row=>nearlyEqual(row.vg,displayed.vg));
         if(displayedMaxDiffers(displayed,original,'vg')){
@@ -426,7 +405,7 @@
         return record?maxVdRowFromRecord(record):{...base};
       });
       result.terMaxByVg=maxVg;
-      result.terMax=maxVg;
+      
       result.terMaxByVd=maxVd;
     }
 
@@ -483,7 +462,7 @@
 
     function renderReductionPlots(result){
       if(!result||!ctx.ui.scientificPlot)return;
-      const maxVg=result.terMaxByVg||result.terMax||[];
+      const maxVg=result.terMaxByVg||[];
       const maxVd=result.terMaxByVd||[];
       const config={responsive:true,scrollZoom:true,displaylogo:false};
       const react=(id,traces,layout,onClick)=>{
@@ -521,13 +500,13 @@
       },clickRow(maxVd,selectionFromMaxVd,'terMaxVdArgPlot'));
 
       const vgTable=dom.query('#terMaxVgTable');
-      if(vgTable)vgTable.innerHTML=`
+      if(vgTable)dom.html(vgTable,`
         <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
-        <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`;
+        <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`);
       const vdTable=dom.query('#terMaxVdTable');
-      if(vdTable)vdTable.innerHTML=`
+      if(vdTable)dom.html(vdTable,`
         <thead><tr><th>Vd (V)</th><th>TER_Max–Vd (%)</th><th>Vg@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
-        <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`;
+        <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`);
     }
 
     function moveSelectedTerPoint(step){
@@ -592,7 +571,7 @@
       const source=row?.sourceFile||selectedTerPoint.sourceFile||'';
       const ter=finiteNumber(row?.ter??selectedTerPoint.ter);
       const manual=selectedTerPoint.manual?'；<strong>手动 TER_Max</strong>':'';
-      el.innerHTML=`<strong>当前联动：</strong> Vg=${formatNumber(selectedTerPoint.vg)} V，Vds=${formatNumber(selectedTerPoint.vds)} V，TER=${formatNumber(ter)}%；正扫 R=${formatNumber(row?.rUp)} Ω，反扫 R=${formatNumber(row?.rDown)} Ω${manual}${source?`；${String(source).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}`:''}`;
+      dom.html(el,`<strong>当前联动：</strong> Vg=${formatNumber(selectedTerPoint.vg)} V，Vds=${formatNumber(selectedTerPoint.vds)} V，TER=${formatNumber(ter)}%；正扫 R=${formatNumber(row?.rUp)} Ω，反扫 R=${formatNumber(row?.rDown)} Ω${manual}${source?`；${String(source).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}`:''}`);
     }
 
     function renderResistanceBase(){
@@ -710,36 +689,27 @@
     });
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
-    const terGrid=page.querySelector('.ter-chart-grid');
-    // An explicit TER layout choice is authoritative. Responsive clamping made
-    // e.g. “6 列 × 1 行” silently collapse back to 3 columns on normal screens,
-    // which looked like a dead button. The surrounding workbench owns overflow.
-    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:7,responsive:false});
-    if(workbench?.registerPrime){
-      workbench.registerPrime({
-        id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',
-        defaultPlacement:layoutSettings.sticky?'sticky':'inline',placements:['inline','sticky','right','bottom','float','global'],autoOpen:true,
-        onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();ctx.project.capture?.();},
-        mount:()=>{ensureResistanceCard();renderResistancePlot();}
-      });
-    }
-    const terHeader=page.querySelector('.analysis-page-header');
+    const terGrid=dom.query('.ter-chart-grid',page);
+    // The user's layout choice is the preferred maximum column count. The Core
+    // grid controller clamps it to the actual Surface width so scientific cards
+    // never overlap or become unusably narrow; widening the Surface restores the
+    // requested count automatically without changing the saved preference.
+    if(workbench?.groupArea&&terGrid)gridController=workbench.groupArea(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:7,responsive:true});
+    const terHeader=dom.query('.analysis-page-header',page);
     const terHeaderActionsHost=dom.create('div');
     terHeaderActionsHost.className='dkds-plugin-header-actions';
-    terHeader?.querySelector('.analysis-page-close')?.before(terHeaderActionsHost);
-    const terHeaderActions=ctx.ui.actions?.mount?.(terHeaderActionsHost,{
+    dom.query('.analysis-page-close',terHeader)?.before(terHeaderActionsHost);
+    terHeaderActions=ctx.ui.actions?.mount?.(terHeaderActionsHost,{
       activity:'ter',
       actions:[
         {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
-        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
+        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
         {id:'layout',icon:'▦',label:'布局',menu:true,order:30,items:()=>[
           {id:'3x3',icon:'▦',label:'3 列 × 3 行（默认）',onInvoke:()=>setCols(3)},
           {id:'4x2',icon:'▦',label:'4 列 × 2 行',onInvoke:()=>setCols(4)},
           {id:'2x4',icon:'▦',label:'2 列 × 4 行',onInvoke:()=>setCols(2)},
           {id:'1x7',icon:'▤',label:'1 列 × 7 行',onInvoke:()=>setCols(1)},
-          {id:'7x1',icon:'▥',label:'7 列 × 1 行',onInvoke:()=>setCols(7)},
-          {type:'separator'},
-          {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动吸附：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
+          {id:'7x1',icon:'▥',label:'7 列 × 1 行',onInvoke:()=>setCols(7)}
         ]}
       ]
     });
@@ -748,30 +718,32 @@
       id:'ter',activity:'ter',label:'TER 分析',icon:'▧',
       layout:{
         mode:'native',root:{selector:'#terMaxPage .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',presentationRole:'data-control',priority:90,collapsible:true},{id:'resistance-inspector',presentationRole:'inspector',priority:80,collapsible:true}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:90,collapsible:true}],sub:[]
       }
     });
 
-    page.querySelector('#terApplyDisplayBtn').onclick=()=>T.applyDisplay();
-    page.querySelector('#terResetDisplayBtn').onclick=()=>T.resetDisplay();
-    page.querySelector('#terOnlyFullyVisible').onchange=e=>T.setOnlyFullyVisible(e.target.checked);
+    dom.on(dom.query('#terApplyDisplayBtn',page),'click',()=>T.applyDisplay());
+    dom.on(dom.query('#terResetDisplayBtn',page),'click',()=>T.resetDisplay());
+    dom.on(dom.query('#terOnlyFullyVisible',page),'change',event=>T.setOnlyFullyVisible(event.target.checked));
 
-    page.querySelector('#terExportLongBtn').onclick=()=>T.exportLong();
-    page.querySelector('#terCopyLongBtn').onclick=()=>T.copyLong();
-    page.querySelector('#terExportMatrixBtn').onclick=()=>T.exportMatrix();
-    page.querySelector('#terCopyMatrixBtn').onclick=()=>T.copyMatrix();
-    page.querySelector('#terExportHeatmapSvgBtn')?.addEventListener('click',()=>T.exportHeatmapSvg());
-    page.querySelector('#terExportHeatmapPngBtn')?.addEventListener('click',()=>T.exportHeatmapPng());
+    dom.on(dom.query('#terExportLongBtn',page),'click',()=>T.exportLong());
+    dom.on(dom.query('#terCopyLongBtn',page),'click',()=>T.copyLong());
+    dom.on(dom.query('#terExportMatrixBtn',page),'click',()=>T.exportMatrix());
+    dom.on(dom.query('#terCopyMatrixBtn',page),'click',()=>T.copyMatrix());
+    dom.on(dom.query('#terExportHeatmapSvgBtn',page),'click',()=>T.exportHeatmapSvg());
+    dom.on(dom.query('#terExportHeatmapPngBtn',page),'click',()=>T.exportHeatmapPng());
 
-    page.querySelector('#terExportMaxVgBtn')?.addEventListener('click',()=>T.exportMaxVg());
-    page.querySelector('#terCopyMaxVgBtn')?.addEventListener('click',()=>T.copyMaxVg());
-    page.querySelector('#terExportMaxVgSvgBtn')?.addEventListener('click',()=>T.exportMaxVgSvg());
-    page.querySelector('#terExportMaxVgPngBtn')?.addEventListener('click',()=>T.exportMaxVgPng());
+    dom.on(dom.query('#terExportMaxVgBtn',page),'click',()=>T.exportMaxVg());
+    dom.on(dom.query('#terCopyMaxVgBtn',page),'click',()=>T.copyMaxVg());
+    dom.on(dom.query('#terExportMaxVgSvgBtn',page),'click',()=>T.exportMaxVgSvg());
+    dom.on(dom.query('#terExportMaxVgPngBtn',page),'click',()=>T.exportMaxVgPng());
 
-    page.querySelector('#terExportMaxVdBtn')?.addEventListener('click',()=>T.exportMaxVd());
-    page.querySelector('#terCopyMaxVdBtn')?.addEventListener('click',()=>T.copyMaxVd());
-    page.querySelector('#terExportMaxVdSvgBtn')?.addEventListener('click',()=>T.exportMaxVdSvg());
-    page.querySelector('#terExportMaxVdPngBtn')?.addEventListener('click',()=>T.exportMaxVdPng());
+    dom.on(dom.query('#terExportMaxVdBtn',page),'click',()=>T.exportMaxVd());
+    dom.on(dom.query('#terCopyMaxVdBtn',page),'click',()=>T.copyMaxVd());
+    dom.on(dom.query('#terExportMaxVdSvgBtn',page),'click',()=>T.exportMaxVdSvg());
+    dom.on(dom.query('#terExportMaxVdPngBtn',page),'click',()=>T.exportMaxVdPng());
+    dom.on(dom.query('#terResistanceClearBtn',page),'click',()=>{selectedTerPoint=null;controller?.clearSelection?.({source:'ter-resistance-clear'});renderResistancePlot();});
+
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();terHeaderActions?.render?.();queueLinkedRender();}});
 
@@ -784,9 +756,13 @@
     });
 
     ctx.project.registerSlice('layout',{
-      serialize:()=>({...layoutSettings}),
-      restore:saved=>{layoutSettings=sanitizeLayout(saved);applyLayoutSettings();},
-      reset:()=>{layoutSettings={rows:3,cols:3,sticky:true};applyLayoutSettings();}
+      serialize:()=>({version:3,rows:layoutSettings.rows,cols:layoutSettings.cols}),
+      restore:saved=>{
+        const normalized=sanitizeLayout(saved&&typeof saved==='object'?saved:{});
+        layoutSettings={version:3,...normalized};
+        applyLayoutSettings();
+      },
+      reset:()=>{layoutSettings={version:3,rows:3,cols:3};applyLayoutSettings();}
     });
 
     ctx.events.on('layout:resize',()=>{
@@ -800,7 +776,7 @@
       id:'ter',
       name:'Same-Vd TER',
       computeMatrix:(datasets,settings={})=>{const ref=T.getState?.()?.algorithmRef||{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'};return ctx.analysis.algorithms.run(ref,datasets,{category:'ter-analysis',parameters:{settings}});},
-      computeResonant:window.DKDSScience.computeResonantTerForLabel
+      computeResonant:ctx.science.computeResonantTerForLabel
     });
 
     ctx.events.on('analysis:opened',({id})=>{if(id==='terMaxPage')queueLinkedRender();});
@@ -819,11 +795,6 @@
       if(plot&&ctx.ui.scientificPlot){try{ctx.ui.scientificPlot.purge(plot);}catch{}}
       for(const view of terPlotViews.values())view?.dispose?.();
       terPlotViews.clear();
-      const resistanceCard=dom.query('#terResistanceCard');
-      if(resistanceCard){
-        const clearBtn=resistanceCard.querySelector('#terResistanceClearBtn');
-        if(clearBtn)clearBtn.onclick=null;delete resistanceCard.dataset.terBound;
-      }
     }};
   }
   window.DKDSPluginModules.define('builtin.ter-analysis','feature-runtime',Object.freeze({mount}));

@@ -1,6 +1,11 @@
 (() => {
   'use strict';
-  const VERSION='3.0.0';
+  const VERSION='3.1.0';
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate is required before Theme Component Appearance.');
+  const STYLE_SOURCE='src/core/theme/component-appearance.js';
+  const appearanceToken=(el,token,value)=>StyleGate.setToken(el,token,value,{owner:'core.component-appearance',scope:'runtime-component-token',source:STYLE_SOURCE});
+  const removeAppearanceToken=(el,token)=>StyleGate.remove(el,token,{owner:'core.component-appearance',kind:StyleGate.KINDS.CONFIG_TOKEN,scope:'runtime-component-token',source:STYLE_SOURCE});
   const ThemeContract=globalThis.DKDSThemeContract;
   const Semantic=globalThis.DKDSSemanticUI;
   if(!ThemeContract||!Semantic)throw new Error('Theme Component Appearance requires Theme Contract and DKDSSemanticUI.');
@@ -60,15 +65,15 @@
   }
   function clearElementVars(target,id){
     if(!target?.style)return;
-    for(const slot of SLOT_KEYS){target.style.removeProperty(cssVar(id,slot));for(const variant of VARIANTS)target.style.removeProperty(variantCssVar(id,variant,slot));}
+    for(const slot of SLOT_KEYS){removeAppearanceToken(target,cssVar(id,slot));for(const variant of VARIANTS)removeAppearanceToken(target,variantCssVar(id,variant,slot));}
   }
   const setData=(target,key,value)=>{const next=String(value??'');if(String(target?.dataset?.[key]??'')===next)return false;target.dataset[key]=next;return true;};
   const clearData=(target,key)=>{if(!target?.dataset||target.dataset[key]===undefined)return false;delete target.dataset[key];return true;};
   function applyElement(target){
     const match=Semantic.resolveComponent(target);if(!match||match.target!==target)return false;
     const id=match.id,variant=Semantic.variantOf(target,id),resolved=themeResolved(target,id,variant);clearElementVars(target,id);
-    for(const slot of SLOT_KEYS){const value=resolved.baseRow?.[slot];if(value!==undefined&&value!=='')target.style.setProperty(cssVar(id,slot),String(value));}
-    if(variant)for(const slot of SLOT_KEYS){const value=resolved.variantRow?.[slot];if(value!==undefined&&value!=='')target.style.setProperty(variantCssVar(id,variant,slot),String(value));}
+    for(const slot of SLOT_KEYS){const value=resolved.baseRow?.[slot];if(value!==undefined&&value!=='')appearanceToken(target,cssVar(id,slot),String(value));}
+    if(variant)for(const slot of SLOT_KEYS){const value=resolved.variantRow?.[slot];if(value!==undefined&&value!=='')appearanceToken(target,variantCssVar(id,variant,slot),String(value));}
     setData(target,'dkdsComponentContext',resolved.context||'standalone');setData(target,'dkdsComponentContextOwner','core-runtime');
     if(resolved.role)setData(target,'dkdsComponentMaterialRole',resolved.role);else clearData(target,'dkdsComponentMaterialRole');
     if(resolved.materialContext)setData(target,'dkdsComponentMaterialContext',resolved.materialContext);else clearData(target,'dkdsComponentMaterialContext');
@@ -112,8 +117,9 @@
     const authored=authoredUsage(),authoredUnused=authored.filter(row=>row.status==='AUTHORED_BUT_UNUSED').length,present=rows.filter(row=>row.status!=='NOT_PRESENT'),managed=present.filter(row=>row.status==='MANAGED').length,identityErrors=present.filter(row=>row.status==='WRONG_COMPONENT_IDENTITY').length;
     return Object.freeze({version:VERSION,rows:Object.freeze(rows),authored,summary:Object.freeze({components:rows.length,present:present.length,managed,identityErrors,authoredUnused,ok:identityErrors===0&&authoredUnused===0})});
   }
-  let observer=null,appearanceFrame=0;const pendingAppearanceRoots=new Set();
-  const requestFrame=fn=>(globalThis.requestAnimationFrame||((cb)=>setTimeout(cb,0)))(fn);
+  let observerCleanup=null,appearanceFrame=false;const pendingAppearanceRoots=new Set();
+  const FrameScheduler=globalThis.DKDSFrameScheduler;
+  if(!FrameScheduler?.schedule)throw new Error('Component Appearance requires DKDSFrameScheduler.');
   const htmlElement=el=>typeof HTMLElement==='undefined'||el instanceof HTMLElement;
   function scheduleAppearance(root){
     PERF.scheduleCalls++;
@@ -125,15 +131,18 @@
       if(existing?.parentElement&&existing.parentElement===candidate?.parentElement){pendingAppearanceRoots.delete(existing);candidate=candidate.parentElement;}
     }
     if(!covered)pendingAppearanceRoots.add(candidate);
-    if(appearanceFrame)return;appearanceFrame=requestFrame(()=>{appearanceFrame=0;PERF.flushes++;const roots=[...pendingAppearanceRoots];pendingAppearanceRoots.clear();for(const item of roots)applyAssigned(item);});
+    if(appearanceFrame)return;appearanceFrame=true;FrameScheduler.schedule('theme.appearance.assign',()=>{appearanceFrame=false;PERF.flushes++;const roots=[...pendingAppearanceRoots];pendingAppearanceRoots.clear();for(const item of roots)applyAssigned(item);},{priority:FrameScheduler.PRIORITY.APPEARANCE});
   }
   function start(){
     const semanticState=Semantic.performance?.();if(!semanticState||semanticState.documentAssignments===0)Semantic.assign(document);applyAssigned(document);
     const recomposeAll=event=>{if(event?.detail?.visualSynchronized)return;scheduleAppearance(document);};globalThis.addEventListener?.('dkds:theme-changed',recomposeAll);
-    if(observer||typeof MutationObserver!=='function')return;
-    const subtreeAttributes=new Set(['class','data-dkds-material-role','data-dkds-material-context']);
-    observer=new MutationObserver(records=>{PERF.mutationRecords+=records.length;for(const record of records){if(record.type==='attributes'){if(!htmlElement(record.target)){PERF.ignoredNonHtml++;continue;}if(subtreeAttributes.has(record.attributeName))scheduleAppearance(record.target);else applyElement(record.target);continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1)scheduleAppearance(node);}});
-    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-component-variant','data-dkds-material-role','data-dkds-material-context']});
+    if(observerCleanup)return;
+    const hub=window.DKDSDOMMutationHub;
+    if(!hub?.subscribe)return;
+    const subtreeAttributes=new Set(['data-dkds-material-role','data-dkds-material-context']);
+    const inheritedContextClasses=new Set(['dkds-integrated-action-group','panel-header-actions','trend-header-actions','dkds-plot-view-actions','dkds-chart-actions','statusbar-command-cluster','toolbar-group','primary-activity-cluster','system-core-tools-group','dkds-mode-group','dkds-scientific-nav-tools','import-workbench','dkds-dialog','dkds-dialog-shell','dkds-settings-dialog','dkds-theme-settings-dialog','project-save-choice-card','command-menu','dkds-context-menu','dkds-tooltip','dkds-core-tooltip','dkds-d3-chart-tooltip','hover-tip','activity-more-menu','context-overflow-menu','range-action-menu','dkds-theme-panel','floating-panel','dkds-portable-view','dkds-memory-panel','lan-web-panel','update-panel','plugin-manager-card','plugin-manager-toolbar-card']);
+    const contextClassSignature=value=>String(value||'').split(/\s+/).filter(Boolean).filter(cls=>inheritedContextClasses.has(cls)||cls.startsWith('dkds-material-role-')).sort().join(' ');
+    observerCleanup=hub.subscribe('core.component-appearance',records=>{PERF.mutationRecords+=records.length;for(const record of records){if(record.type==='attributes'){if(!htmlElement(record.target)){PERF.ignoredNonHtml++;continue;}if(record.target?.closest?.('[data-dkds-theme-probe]'))continue;if(record.attributeName==='class'){const next=record.target?.getAttribute?.('class')||'';if(contextClassSignature(record.oldValue)!==contextClassSignature(next))scheduleAppearance(record.target);else applyElement(record.target);continue;}if(subtreeAttributes.has(record.attributeName))scheduleAppearance(record.target);else applyElement(record.target);continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1&&!node?.closest?.('[data-dkds-theme-probe]'))scheduleAppearance(node);}},{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-component-variant','data-dkds-material-role','data-dkds-material-context'],attributeOldValue:true});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   const performanceSnapshot=()=>Object.freeze({...PERF,pendingRoots:pendingAppearanceRoots.size,framePending:!!appearanceFrame});

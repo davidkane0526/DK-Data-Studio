@@ -1,33 +1,4 @@
-DKDSPlugins.define({
-  id:'com.dkds.theme.aurora-pop',
-  name:'Aurora Pop',
-  version:'2.3.2',
-  apiVersion:'1.19.0',
-  pluginType:'theme',
-  requiresCore:['ui.theme'],
-  capabilities:['ui.theme'],
-  compatibility:{app:'>=3.67.10 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.10.0'}
-}, async ctx => {
-  const required=[
-    'contract.appearance.roles',
-    'contract.appearance.components',
-    'contract.appearance.variants',
-    'contract.appearance.component-contexts',
-    'contract.appearance.material-role-composition',
-    'contract.material.contexts',
-    'contract.material.context-recipes',
-    'renderer.materialContexts',
-    'contract.effects.controlled',
-    'contract.scientific.seriesPalette',
-    'contract.scientific.precedence',
-    'contract.material.recipes',
-    'contract.theme.coverage'
-  ];
-  const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
-  if(missing.length){
-    throw new Error(`Aurora Pop 2.3.2 requires Theme Contract 3.10 contextual composition features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
-  }
-
+DKDSPlugins.define({"id":"com.dkds.theme.aurora-pop","name":"Aurora Pop","version":"2.3.2","apiVersion":"1.19.0","entry":"plugin.js","pluginType":"theme","requiresCore":["ui.theme"],"description":"Built-in Aurora Pop 2.3 theme for Theme Contract 3.10: expressive violet/emerald contextual component and material composition with Core-owned final paint.","scripts":["plugin.js"],"enabled":true,"order":31,"capabilities":["ui.theme"]}, async ctx => {
   const LIGHT_EMERALD=Object.freeze({
     accent:'#16C995',
     accentHover:'#10B786',
@@ -171,7 +142,7 @@ DKDSPlugins.define({
             toolbarAction:{
               surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#6F50FF',
               text:'#4F586D',textActive:LIGHT_EMERALD.text,textSelected:'#FFFFFF',
-              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,shadow:'none',shadowHover:'0 2px 8px rgba(92,72,168,.10)',shadowActive:'0 2px 10px rgba(8,167,122,.12)',shadowSelected:'0 0 0 2px rgba(111,80,255,.18)',radius:8,contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 16px rgba(111,80,255,.25)'},secondary:{shadow:'0 5px 16px rgba(8,167,122,.20)'},selected:{shadow:'0 4px 12px rgba(111,80,255,.20)'}}}},roles:{floating:{surface:'rgba(61,139,255,.08)',surfaceHover:'rgba(61,139,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(61,139,255,.12)',shadowActive:'0 2px 8px rgba(61,139,255,.16)',shadowSelected:'0 0 0 2px rgba(61,139,255,.20)'}}}},
+              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,shadow:'none',shadowHover:'0 2px 8px rgba(92,72,168,.10)',shadowActive:'0 2px 10px rgba(8,167,122,.12)',shadowSelected:'0 0 0 2px rgba(111,80,255,.18)',radius:8,variants:{primary:{surface:'#6F50FF',surfaceHover:'#6042EE',surfaceActive:'#5337D8',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderHover:'#6042EE',borderActive:'#5337D8',indicator:'#FFFFFF'}},contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 16px rgba(111,80,255,.25)'},secondary:{shadow:'0 5px 16px rgba(8,167,122,.20)'},selected:{shadow:'0 4px 12px rgba(111,80,255,.20)'}}}},roles:{floating:{surface:'rgba(61,139,255,.08)',surfaceHover:'rgba(61,139,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(61,139,255,.12)',shadowActive:'0 2px 8px rgba(61,139,255,.16)',shadowSelected:'0 0 0 2px rgba(61,139,255,.20)'}}}},
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
                 secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF',textActive:'#FFFFFF',border:LIGHT_EMERALD.border,borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.indicator},
@@ -343,7 +314,7 @@ DKDSPlugins.define({
             toolbarAction:{
               surface:'transparent',surfaceHover:'#143054',surfaceActive:'#07515B',surfaceSelected:'#3B276C',
               text:'#C5CCDA',textActive:'#E7FEFF',textSelected:'#FBF8FF',
-              border:'transparent',borderHover:'rgba(186,198,228,.17)',borderActive:'rgba(41,214,216,.82)',indicator:'#24D3D9',shadow:'none',shadowHover:'0 0 9px rgba(126,90,232,.16)',shadowActive:'0 0 10px rgba(36,211,217,.17)',shadowSelected:'0 0 10px rgba(160,124,255,.18)',radius:8,contexts:{grouped:{shadow:'none',shadowHover:'0 0 8px rgba(126,90,232,.15)',shadowActive:'0 0 9px rgba(36,211,217,.16)',shadowSelected:'0 0 9px rgba(160,124,255,.18)',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 18px rgba(118,80,232,.30)'},secondary:{shadow:'0 5px 18px rgba(6,71,80,.28)'},selected:{shadow:'0 4px 12px rgba(118,80,232,.22)'}}}},roles:{floating:{surface:'rgba(96,156,255,.09)',surfaceHover:'rgba(96,156,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(0,0,0,.22)',shadowActive:'0 2px 8px rgba(36,211,217,.18)',shadowSelected:'0 0 0 2px rgba(160,124,255,.22)'}}}},
+              border:'transparent',borderHover:'rgba(186,198,228,.17)',borderActive:'rgba(41,214,216,.82)',indicator:'#24D3D9',shadow:'none',shadowHover:'0 0 9px rgba(126,90,232,.16)',shadowActive:'0 0 10px rgba(36,211,217,.17)',shadowSelected:'0 0 10px rgba(160,124,255,.18)',radius:8,variants:{primary:{surface:'#7650E8',surfaceHover:'#8969F0',surfaceActive:'#6240CF',text:'#FFFFFF',textActive:'#FFFFFF',border:'#7650E8',borderHover:'#8969F0',borderActive:'#6240CF',indicator:'#FFFFFF'}},contexts:{grouped:{shadow:'none',shadowHover:'0 0 8px rgba(126,90,232,.15)',shadowActive:'0 0 9px rgba(36,211,217,.16)',shadowSelected:'0 0 9px rgba(160,124,255,.18)',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 18px rgba(118,80,232,.30)'},secondary:{shadow:'0 5px 18px rgba(6,71,80,.28)'},selected:{shadow:'0 4px 12px rgba(118,80,232,.22)'}}}},roles:{floating:{surface:'rgba(96,156,255,.09)',surfaceHover:'rgba(96,156,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(0,0,0,.22)',shadowActive:'0 2px 8px rgba(36,211,217,.18)',shadowSelected:'0 0 0 2px rgba(160,124,255,.22)'}}}},
               variants:{
                 primary:{surface:'#7650E8',surfaceHover:'#7E5AE8',text:'#FFFFFF',textActive:'#FFFFFF',border:'#A07CFF',borderActive:'#B99EFF',indicator:'#D9CEFF'},
                 secondary:{surface:'#064750',surfaceHover:'#08535D',text:'#E8FFFF',textActive:'#F4FFFF',border:'#25808A',borderActive:'#24D3D9',indicator:'#24D3D9'},

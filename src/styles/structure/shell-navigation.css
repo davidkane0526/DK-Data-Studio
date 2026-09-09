@@ -52,12 +52,13 @@
   overflow:hidden;
   text-overflow:ellipsis}
 .project-tab-close{
-  flex:0 0 24px;
-  width:24px;
-  height:24px;
-  min-width:24px;
-  min-height:24px;
+  flex:0 0 20px;
+  width:20px;
+  height:20px;
+  min-width:20px;
+  min-height:20px;
   padding:0;
+  box-sizing:border-box;
   display:inline-grid;
   place-items:center;
   line-height:1;
@@ -103,7 +104,7 @@
 }
 .primary-activity-cluster{
   min-width:0;
-  flex:0 1 auto;
+  flex:1 1 auto;
   width:auto;
   max-width:none;
   display:flex;
@@ -113,14 +114,15 @@
   min-height:var(--dkds-shell-group-height,38px);
   padding:2px;
   box-sizing:border-box;
-  overflow:hidden;
+  overflow:visible;
 }
 .primary-activity-bar{
   display:flex;
   align-items:center;
   gap:4px;
   min-width:0;
-  flex:0 0 auto;
+  flex:0 1 auto;
+  max-width:100%;
   overflow-x:auto;
   overflow-y:hidden;
   scrollbar-width:none;
@@ -155,16 +157,20 @@
 }
 .context-commandbar{
   min-width:0;
-  flex:0 1 auto;
+  flex:1 1 auto;
+  width:auto;
+  max-width:none;
   display:flex;
   align-items:center;
   gap:4px;
   padding-left:9px;
-  overflow:hidden;
+  overflow:visible;
 }
 .plugin-context-toolbar{
   min-width:0;
   flex:0 1 auto;
+  width:max-content;
+  max-width:100%;
   display:flex;
   align-items:center;
   gap:4px;
@@ -216,7 +222,7 @@
   margin-left:0;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child::before{display:none}
-.context-overflow-anchor{position:relative;margin-left:auto;flex:0 0 auto}
+.context-overflow-anchor{position:relative;margin-left:0;flex:0 0 auto}
 .context-overflow-anchor>#contextOverflowBtn{
   min-height:34px;
   height:34px;
@@ -232,7 +238,7 @@
   .primary-activity-bar .activity-tab.top-level-activity-tab{--dkds-activity-padding-inline:8px}
 }
 @media(max-width:820px){
-  .primary-activity-cluster{overflow-x:auto;scrollbar-width:none}
+.primary-activity-cluster{overflow-x:auto;scrollbar-width:none}
   .primary-activity-cluster::-webkit-scrollbar{display:none}
   .primary-activity-bar{overflow:visible}
 }

@@ -54,7 +54,7 @@ vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),conte
 const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runtime');
 (async()=>{
   const artifacts={list:()=>[{id:'id-table',dataset:idDataset},{id:'ig-table',dataset:igDataset}]};
-  const runtime=await feature.createTop({project,artifacts,setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}});
+  const runtime=await feature.createTop({project,artifacts,science:S,dataModel:context.DKDSData,setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}});
   const state=runtime.service.getState();
   assert.equal(state.datasets.length,1,'Resonance Artifact path must honor assignments and exclude unadopted Ig.');
   assert.equal(state.datasets[0].path,idPath,'The adopted Id dataset must remain in Resonance.');

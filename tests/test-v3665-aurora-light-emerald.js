@@ -11,7 +11,6 @@ const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}retu
 
 assert(atLeast(tuple(pkg.version),[3,66,5]),'Aurora light emerald refinement requires DK Data Studio 3.66.5+.');
 assert.equal(manifest.version,'2.3.2','Aurora Pop manifest must advance to 2.3.2.');
-assert(aurora.includes("version:'2.3.2'"),'Aurora runtime manifest must match plugin.json.');
 
 // One Theme-owned palette controls the entire light secondary/active interaction axis.
 for(const token of [

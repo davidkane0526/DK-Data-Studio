@@ -1,11 +1,12 @@
 'use strict';
 const {state, definitions, active}=require('../context');
-const {isDefinitionEnabled, definitionById, workspaceMeta, isTopDefinition, isSuperEligibleDefinition, readSuperPreference, writeSuperPreference, readPrimePlacements, writePrimePlacements, primePlacementKey, topWorkspaceForPlugin, topActivityIdForPlugin, superState}=require('../bootstrap');
+const {isDefinitionEnabled, definitionById, workspaceMeta, isTopDefinition, isSuperEligibleDefinition, readSuperPreference, writeSuperPreference, topWorkspaceForPlugin, topActivityIdForPlugin, superState}=require('../bootstrap');
 const {eventEmit}=require('../events/history');
 const {renderActivityBar, refreshActivityVisibility, setActiveActivity}=require('../activity/shell');
 const {registerTypedContribution, listContributions}=require('../contributions/typed');
 const {listPluginStates}=require('../lifecycle');
-const {isPresentationRole}=require('../../../../contracts/presentation');
+const {isPresentationRole,isPresentationPurpose}=require('../../../../contracts/presentation');
+const {pluginHostView}=require('../host-facade');
   function validateTopWorkspaceSpec(pluginId,spec={}) {
     const definition=definitionById(pluginId);
     if(!definition||!isTopDefinition(definition))throw new Error(`Plugin ${pluginId} must declare workspace.role=top before registering a TOP workspace.`);
@@ -23,6 +24,8 @@ const {isPresentationRole}=require('../../../../contracts/presentation');
       const id=String(row.id||'').trim(),presentationRole=String(row.presentationRole||'').trim().toLowerCase();
       if(!id)throw new Error(`TOP workspace ${pluginId} ${kind} surface must declare id.`);
       if(!isPresentationRole(presentationRole))throw new Error(`TOP workspace ${pluginId} ${kind}/${id} must declare a valid presentationRole for Plugin API 1.19.`);
+      const presentationPurpose=String(row.presentationPurpose||'').trim().toLowerCase();
+      if(presentationPurpose&&!isPresentationPurpose(presentationPurpose))throw new Error(`TOP workspace ${pluginId} ${kind}/${id} declares unknown presentationPurpose: ${presentationPurpose}.`);
       if(['placement','placements','defaultPlacement'].some(key=>Object.prototype.hasOwnProperty.call(row,key)))throw new Error(`TOP workspace ${pluginId} ${kind}/${id} must not declare Desktop placement in the platform-neutral Presentation contract.`);
     }
     return Object.freeze({
@@ -44,78 +47,12 @@ const {isPresentationRole}=require('../../../../contracts/presentation');
     if(topWorkspaceForPlugin(pluginId))throw new Error(`Plugin ${pluginId} already registered a TOP workspace.`);
     const value=validateTopWorkspaceSpec(pluginId,spec);
     registerTypedContribution(pluginId,'ui.topWorkspaces',value.id,value);
+    // Activity registration can precede the TOP presentation contract. Re-render
+    // only after the contract exists so PresentationModel does not permanently
+    // filter a valid TOP from navigation until some unrelated plugin changes.
+    renderActivityBar();
+    eventEmit('workspace:top-registered',{pluginId,activity:value.activity,id:value.id});
     return value;
-  }
-  function registerPrimeContribution(pluginId,id,spec={}) {
-    const activity=String(spec.activity||topActivityIdForPlugin(pluginId)||'').trim();
-    const placements=(Array.isArray(spec.placements)&&spec.placements.length?spec.placements:['float','right','bottom']).map(x=>String(x).trim().toLowerCase());
-    const allowed=new Set(['float','right','bottom']);
-    if(!placements.every(x=>allowed.has(x)))throw new Error(`Invalid PRIME placement for ${pluginId}/${id}.`);
-    const unique=[...new Set(placements)];
-    const requestedDefault=String(spec.defaultPlacement||unique[0]||'float').trim().toLowerCase();
-    const defaultPlacement=unique.includes(requestedDefault)?requestedDefault:unique[0];
-    const value=Object.freeze({
-      ...spec,id,activity,pluginId,
-      target:String(spec.target||'').trim(),
-      portable:spec.portable===true,
-      persistPlacement:spec.persistPlacement!==false,
-      defaultPlacement,
-      placements:Object.freeze(unique)
-    });
-    registerTypedContribution(pluginId,'ui.prime',id,value);
-    return value;
-  }
-  function primeContribution(pluginId,id) {
-    return listContributions('ui.prime').find(row=>row.pluginId===pluginId&&row.id===id)?.value||null;
-  }
-  function primeRowsForPlugin(pluginId) {
-    return listContributions('ui.prime').filter(row=>row.pluginId===pluginId);
-  }
-  function primePlacementFor(pluginId,id) {
-    const value=primeContribution(pluginId,id);
-    if(!value)return '';
-    const saved=value.persistPlacement?String(readPrimePlacements()[primePlacementKey(pluginId,id)]||'').trim().toLowerCase():'';
-    if(saved&&value.placements.includes(saved))return saved;
-    if(typeof value.getPlacement==='function'){
-      try {
-        const live=String(value.getPlacement()||'').trim().toLowerCase();
-        if(value.placements.includes(live))return live;
-      } catch(err){ console.warn(`[DKDS PRIME placement:${pluginId}/${id}]`,err); }
-    }
-    return value.defaultPlacement||value.placements[0]||'float';
-  }
-  async function placePrimeContribution(pluginId,id,placement,{persist=true,reason='user'}={}) {
-    const value=primeContribution(pluginId,id);
-    if(!value)throw new Error(`PRIME contribution not found: ${pluginId}/${id}`);
-    const next=String(placement||'').trim().toLowerCase();
-    if(!value.placements.includes(next))throw new Error(`PRIME ${pluginId}/${id} does not allow placement: ${next}`);
-    if(!state.host?.isAuxiliaryWindow&&state.superPluginId&&state.superPluginId!==pluginId){
-      throw new Error(`只有当前 SUPER 的 PRIME 可以放置到主界面：${pluginId}/${id}`);
-    }
-    let result;
-    if(typeof value.place==='function')result=await value.place(next,{pluginId,id,reason,host:state.host});
-    else if(typeof state.host?.placePrime==='function')result=await state.host.placePrime(value,next,{pluginId,id,reason});
-    else throw new Error(`PRIME ${pluginId}/${id} 未提供 placement adapter，也没有可用的宿主 placement manager。`);
-    if(result===false)throw new Error(`PRIME ${pluginId}/${id} placement adapter rejected: ${next}`);
-    if(persist&&value.persistPlacement){
-      readPrimePlacements()[primePlacementKey(pluginId,id)]=next;
-      writePrimePlacements();
-    }
-    eventEmit('prime:placement-changed',{pluginId,id,placement:next,reason});
-    return next;
-  }
-  async function applySuperPrimePlacements() {
-    if(!state.superPluginId)return;
-    for(const row of primeRowsForPlugin(state.superPluginId)){
-      const placement=primePlacementFor(row.pluginId,row.id);
-      if(!placement)continue;
-      try { await placePrimeContribution(row.pluginId,row.id,placement,{persist:false,reason:'super-activate'}); }
-      catch(err){ console.warn(`[DKDS PRIME apply:${row.pluginId}/${row.id}]`,err); }
-    }
-  }
-  function registerSubContribution(pluginId,id,spec={}) {
-    const activity=String(spec.activity||topActivityIdForPlugin(pluginId)||'').trim();
-    return registerTypedContribution(pluginId,'ui.sub',id,Object.freeze({id,activity,...spec,pluginId}));
   }
   function topDefinitionReady(pluginId) {
     const definition=definitionById(pluginId);
@@ -133,10 +70,7 @@ const {isPresentationRole}=require('../../../../contracts/presentation');
     }
     state.host?.applySuperWorkspace?.(current);
     const ok=await setActiveActivity(current.activityId,{invoke,forceEmbedded:true});
-    if(ok){
-      await applySuperPrimePlacements();
-      eventEmit('super:changed',superState());
-    }
+    if(ok)eventEmit('super:changed',superState());
     return ok;
   }
   async function setSuperPlugin(pluginId,{persist=true,invoke=true}={}) {
@@ -178,27 +112,27 @@ const {isPresentationRole}=require('../../../../contracts/presentation');
     }
   }
   function defaultSuperCandidate() {
-    return [...definitions.values()]
-      .filter(definition=>isSuperEligibleDefinition(definition)&&topDefinitionReady(definition.manifest.id))
+    // The declared default is an identity choice, not a readiness filter. If it
+    // is broken, initialization must keep it selected and show the neutral host
+    // rather than silently substituting another TOP.
+    const rows=[...definitions.values()]
+      .filter(definition=>isSuperEligibleDefinition(definition)&&isDefinitionEnabled(definition))
       .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)
         ||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100)
-        ||String(a.manifest.id).localeCompare(String(b.manifest.id)))[0]?.manifest?.id||null;
+        ||String(a.manifest.id).localeCompare(String(b.manifest.id)));
+    return rows.find(definition=>definition.manifest?.workspace?.defaultSuper===true)?.manifest?.id
+      ||rows.find(definition=>topDefinitionReady(definition.manifest.id))?.manifest?.id
+      ||rows[0]?.manifest?.id||null;
   }
-  async function initializeSuperSelection() {
+  async function initializeSuperSelection({persistFallback=true,preferredId=''}={}) {
     if(state.host?.isAuxiliaryWindow)return false;
     const saved=readSuperPreference();
-    // Persisted SUPER is a preference, not a command to render a broken shell.
-    // Old plugin ids, disabled/uninstalled TOPs, or contracts that are no longer
-    // valid are migrated to the current default SUPER so upgrades cannot strand
-    // the desktop in an empty PRIMARY/PRIME shell. A valid saved choice still
-    // wins exactly as before.
-    if(saved!==undefined&&saved&&topDefinitionReady(saved)){
-      state.superPluginId=saved;
-      return activateSuperWorkspace({invoke:true});
-    }
-    const initial=defaultSuperCandidate();
-    state.superPluginId=initial;
-    if(initial&&saved!==initial)writeSuperPreference(initial);
+    const selected=String(saved||preferredId||defaultSuperCandidate()||'').trim();
+    state.superPluginId=selected||null;
+    // First run may persist the manifest-declared default even when that plugin
+    // is temporarily broken. This guarantees the next launch retries the same
+    // explicit SUPER instead of turning another TOP into a session fallback.
+    if(!saved&&selected&&persistFallback)writeSuperPreference(selected);
     return activateSuperWorkspace({invoke:true});
   }
-module.exports=Object.freeze({validateTopWorkspaceSpec, registerTopWorkspace, registerPrimeContribution, primeContribution, primeRowsForPlugin, primePlacementFor, placePrimeContribution, applySuperPrimePlacements, registerSubContribution, topDefinitionReady, activateSuperWorkspace, setSuperPlugin, initializeSuperSelection});
+module.exports=Object.freeze({validateTopWorkspaceSpec, registerTopWorkspace, topDefinitionReady, activateSuperWorkspace, setSuperPlugin, initializeSuperSelection});

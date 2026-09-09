@@ -221,3 +221,26 @@ Before adding plugin-private memoization, inspect `docs/PERFORMANCE_RUNTIME.md`.
 - Plugin disable/reload must not depend on Core performance caches surviving deactivation; Core trims the plugin namespace as part of cleanup.
 - Keep Performance Runtime metrics diagnostics-safe: counters and timing only, never experiment values or source paths.
 - Run `npm run performance:test` together with the normal `npm test` / `npm run check` regression suites.
+
+
+### Mandatory two-pass / two-evidence acceptance rule (v3.68.0+)
+
+For every user-reported issue or requested correction:
+
+- perform at least **two independent reasoning passes** before concluding the root cause is understood; the second pass must actively look for an alternative owner, cascade/lifecycle/data-path explanation, regression mechanism, or hidden interaction that could invalidate the first conclusion;
+- verify the fix using at least **two materially different validation methods**. A static source/contract test and a runtime/computed/DOM/event/data-flow/device check count as different evidence; two similar grep/static tests do not;
+- do **not** declare an item solved unless both evidence classes pass; if the second evidence is unavailable in the current environment, keep that item WIP and state the limitation;
+- record the two reasoning passes and the two validation results item-by-item in the current handoff when the issue is part of an active acceptance round.
+
+This rule is mandatory even when a broad regression suite passes. A passing static gate is not a substitute for runtime/visual acceptance of a UI defect.
+
+## User acceptance / delivery rule (v3.67.45+)
+
+For every DK Data Studio iteration requested by the user:
+
+- implement every enumerated user correction accurately at its owning abstraction; do not silently skip items or substitute a nearby change;
+- before calling the iteration complete, re-check the user's items one by one against source/runtime evidence and use the strongest practical validation available in the current environment, including installing/using required runtime tooling and visual inspection when possible;
+- never claim Desktop/Mobile visual acceptance from static tests alone; state device/runtime limitations explicitly;
+- every response after code work must provide a complete, clean, continue-ready project ZIP, even when the iteration is still WIP;
+- a WIP project must contain exactly one current root `HANDOFF_*.md`; delete superseded handoffs instead of accumulating historical transfer files in the development ZIP;
+- Mobile work must not alter Desktop behavior or visuals unless the user explicitly authorizes that Desktop change; the executable semantic platform firewall must remain active; historical whole-file SHA visual freezes are not release gates and visual acceptance requires runtime/computed evidence.

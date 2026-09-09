@@ -35,7 +35,10 @@ for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile'])assert(!sdkTypes.inclu
 
 const explicit=[
   ['src/plugins/data-center/feature-runtime.js','data-primary'],
-  ['src/plugins/ter-analysis/feature-runtime.js','inspector'],
+  // TER no longer models the R–V chart as a private inspector PRIME. Its TOP
+  // contract still exposes the shared parameter/data-control surface, while all
+  // scientific charts participate in the titleless GroupArea.
+  ['src/plugins/ter-analysis/feature-runtime.js','data-control'],
   ['src/plugins/pulse-analysis/feature-runtime.js','scientific-secondary'],
   ['src/plugins/pulse-sampler-tool/plugin.js','utility-primary'],
   ['src/plugins/transfer-vth-lab/plugin.js','scientific-primary']
@@ -94,7 +97,7 @@ assert.deepStrictEqual(auxiliary.navigation.tools,[]);
 assert(auxiliary.navigation.primary.some(row=>row.activityId==='tool'),'Tool workspace must become a normal primary activity inside its dedicated host.');
 const mobile=presentation.present('mobile',{orientation:'portrait'});
 assert.strictEqual(mobile.surfaces.find(row=>row.surfaceId==='main').presentation.region,'main');
-assert.strictEqual(mobile.surfaces.find(row=>row.surfaceId==='inspect').presentation.region,'sheet');
+assert.strictEqual(mobile.surfaces.find(row=>row.surfaceId==='inspect').presentation.region,'companion-right');
 assert.strictEqual(mobile.surfaces.find(row=>row.surfaceId==='detail').presentation.region,'route');
 delete global.window;
 

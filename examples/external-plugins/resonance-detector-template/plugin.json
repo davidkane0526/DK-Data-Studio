@@ -8,6 +8,14 @@
   "styles": [
     "style.css"
   ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "shared"
+    }
+  },
   "enabled": false,
   "order": 500,
   "description": "External versioned peak-detector SDK example. Not intended to outperform the built-in robust detector.",
@@ -29,9 +37,5 @@
       "version": "1.0.0",
       "title": "Example · Raw Prominence"
     }
-  ],
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
-  }
+  ]
 }

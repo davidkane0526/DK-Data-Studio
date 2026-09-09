@@ -1,5 +1,9 @@
 (() => {
   if (window.electronAPI) return;
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate must initialize before web bridge.');
+  const STYLE_SOURCE='src/web-bridge.js';
+  const styleSet=(el,property,value,component='web-bridge')=>StyleGate.set(el,property,value,{owner:'host.web-bridge',component,scope:'runtime-web-bridge',source:STYLE_SOURCE});
 
   const fileStore = new Map();
   const projectFileHandles = new Map();
@@ -8,8 +12,21 @@
   const nativeBridge = window.ReactNativeWebView?.postMessage
     ? window.ReactNativeWebView
     : null;
+  const NativeUserIntent=window.DKDSNativeUserIntent;
+  const nativeUserIntent=nativeBridge&&NativeUserIntent?.createController
+    ? NativeUserIntent.createController({report:meta=>console.warn('[DKDS native intent blocked]',meta)})
+    : null;
+  if(nativeUserIntent)NativeUserIntent.install(nativeUserIntent);
+  const nativeIntentBridge=Object.freeze({
+    capture:(kind,meta={})=>nativeUserIntent?.capture?.(kind,{source:String(meta?.source||'mobile-shell'),control:String(meta?.control||''),reason:String(meta?.reason||'native-shell-activation')})||null,
+    clear:reason=>nativeUserIntent?.clear?.(String(reason||'mobile-shell')),
+    snapshot:()=>nativeUserIntent?.snapshot?.()||null
+  });
+  if(nativeBridge)Object.defineProperty(window,'DKDSNativeIntentBridge',{value:nativeIntentBridge,writable:false,configurable:false});
   const nativePresentationRequested=new URLSearchParams(location.search).has('reactNative');
   const studioReadableMimeTypes=['text/csv','text/plain','text/tab-separated-values','application/json','application/octet-stream'];
+  const declaredHost=String(document.documentElement.dataset.dkdsHost||window.__DKDS_HOST_KIND__||'').trim().toLowerCase();
+  const mobileHost=declaredHost==='mobile';
   window.__DKDS_WEB_CLIENT__ = !nativeBridge;
   window.__DKDS_NATIVE_CLIENT__ = !!nativeBridge;
   document.documentElement.classList.add(nativeBridge?'native-client':'web-client');
@@ -45,7 +62,7 @@
   window.addEventListener('message',receiveNativeMessage);
   document.addEventListener('message',receiveNativeMessage);
 
-  if(nativeBridge||nativePresentationRequested){
+  if((nativeBridge||nativePresentationRequested)&&mobileHost){
     document.documentElement.classList.add('react-native-client');
   }
   if(nativeBridge){
@@ -63,7 +80,7 @@
       input.type='file';
       input.multiple=multiple;
       input.accept=accept;
-      input.style.display='none';
+      styleSet(input,'display','none','file-input');
       document.body.appendChild(input);
       input.onchange=()=>{
         const files=[...(input.files||[])];
@@ -150,16 +167,7 @@
   const mobilePluginList=()=>mobilePluginStore('readonly',store=>store.getAll());
   const mobilePluginPut=pkg=>mobilePluginStore('readwrite',store=>store.put(pkg));
   const mobilePluginDelete=id=>mobilePluginStore('readwrite',store=>store.delete(String(id||'')));
-  const mobileCompatibility=pkg=>{
-    const required=String(pkg?.manifest?.apiVersion||'').trim();
-    const compatible=required==='1.19.0';
-    return {
-    compatible,
-    issues:compatible?[]:[{kind:'plugin-api',required:required||null,actual:'1.19.0'}],
-    requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.19.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.21'
-    };
-  };
+
 
   async function decodeFile(file,encoding='auto') {
     const buf=await file.arrayBuffer();
@@ -178,7 +186,7 @@
     const a=document.createElement('a');
     a.href=url;
     a.download=name||'download';
-    a.style.display='none';
+    styleSet(a,'display','none','download-anchor');
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
@@ -204,7 +212,9 @@
 
   async function copyText(text) {
     if(nativeBridge){
-      return await nativeCall('copyText',{text:String(text??'')});
+      const intent=nativeUserIntent?.consume?.('clipboard',{source:'renderer.copyText'});
+      if(!intent)return false;
+      return await nativeCall('copyText',{text:String(text??''),nativeIntent:intent});
     }
     try{
       await navigator.clipboard.writeText(String(text??''));
@@ -212,7 +222,7 @@
     }catch{
       const ta=document.createElement('textarea');
       ta.value=String(text??'');
-      ta.style.position='fixed';ta.style.opacity='0';
+      styleSet(ta,'position','fixed','clipboard-proxy');styleSet(ta,'opacity','0','clipboard-proxy');
       document.body.appendChild(ta);ta.select();
       const ok=document.execCommand('copy');
       ta.remove();
@@ -230,7 +240,7 @@
         for(const asset of assets||[])fileStore.set(asset.path,{...asset,native:true});
         return (assets||[]).map(({path,name,size})=>({path,name,size}));
       }
-      const files=await chooseFiles({multiple:true,accept:'.csv,.txt,.dat,.tsv,.asc,.xy,.iv,.prn,.out,.log,text/*'});
+      const files=await chooseFiles({multiple:true,accept:'.json,.csv,.txt,.dat,.tsv,.asc,.xy,.iv,.prn,.out,.log,application/json,text/*'});
       return files.map(registerFile);
     },
 
@@ -296,10 +306,14 @@
 
     saveText: async payload=>{
       if(nativeBridge){
+        const intent=nativeUserIntent?.consume?.('export',{source:payload?.source||'renderer.saveText'});
+        if(!intent)return false;
         return await nativeCall('saveText',{
           name:payload?.defaultName||'data.txt',
           content:String(payload?.content??''),
-          mimeType:payload?.mimeType||'text/plain'
+          mimeType:payload?.mimeType||'text/plain',
+          source:String(payload?.source||'renderer.saveText'),
+          nativeIntent:intent
         });
       }
       downloadBlob(new Blob([String(payload?.content??'')],{type:'text/plain;charset=utf-8'}),payload?.defaultName||'data.txt');
@@ -308,10 +322,14 @@
 
     saveBase64: async payload=>{
       if(nativeBridge){
+        const intent=nativeUserIntent?.consume?.('export',{source:payload?.source||'renderer.saveBase64'});
+        if(!intent)return false;
         return await nativeCall('saveBase64',{
           name:payload?.defaultName||'image.png',
           base64:String(payload?.base64||''),
-          mimeType:payload?.mimeType||'image/png'
+          mimeType:payload?.mimeType||'image/png',
+          source:String(payload?.source||'renderer.saveBase64'),
+          nativeIntent:intent
         });
       }
       const raw=String(payload?.base64||'').replace(/^data:[^;]+;base64,/,'');
@@ -334,11 +352,17 @@
         const existingUri=mode==='current'&&path.startsWith('native-document://')
           ? decodeURIComponent(path.slice('native-document://'.length))
           : '';
+        const intent=existingUri
+          ? Object.freeze({authorized:true,kind:'project-direct',directWrite:true,requestSource:String(payload?.source||'core.project.current')})
+          : nativeUserIntent?.consume?.('project',{source:payload?.source||`core.project.${mode}`});
+        if(!intent)return null;
         const uri=await nativeCall('saveText',{
           name,
           content,
           mimeType:'application/json',
-          uri:existingUri
+          uri:existingUri,
+          source:String(payload?.source||`core.project.${mode}`),
+          nativeIntent:intent
         });
         return uri?`native-document://${encodeURIComponent(uri)}`:null;
       }
@@ -432,7 +456,7 @@
 
     pluginExternalList: async()=>{
       if(!nativeBridge)return {packages:[],errors:[],unsupported:true};
-      try{return {packages:(await mobilePluginList()).map(pkg=>({...pkg,compatibilityStatus:mobileCompatibility(pkg)})),errors:[],unsupported:false};}
+      try{return {packages:await mobilePluginList(),errors:[],unsupported:false};}
       catch(err){return {packages:[],errors:[{file:'Android plugin store',error:err.message}],unsupported:false};}
     },
     pluginSelectPackage: async()=>{
@@ -445,7 +469,7 @@
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
         const previous=await mobilePluginGet(pkg.manifest.id),token=`plugin-${uuid()}`;
         pluginInstallPending.set(token,{pkg,previous});
-        return {ok:true,token,manifest:pkg.manifest,exists:!!previous,previousVersion:previous?.manifest?.version||null,compatibility:mobileCompatibility(pkg)};
+        return {ok:true,token,manifest:pkg.manifest,exists:!!previous,previousVersion:previous?.manifest?.version||null};
       }catch(err){return {ok:false,error:{title:'移动端插件包校验失败',message:err.message,code:'mobile-package-invalid'}};}
     },
     pluginCancelInstall: async token=>pluginInstallPending.delete(String(token||'')),
@@ -461,9 +485,7 @@
       try{
         const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
-        const compatibility=mobileCompatibility(pkg);
-        if(compatibility?.compatible===false)return {ok:false,error:{title:'插件版本不兼容',message:'生成插件与当前移动端 Plugin API 不兼容。',compatibility}};
-        return {ok:true,package:pkg,manifest:pkg.manifest,compatibility};
+        return {ok:true,package:pkg,manifest:pkg.manifest};
       }catch(err){return {ok:false,error:{title:'生成插件包无效',message:String(err?.message||err),code:'mobile-generated-package-invalid'}};}
     },
     pluginInstallGeneratedPackage: async payload=>{
@@ -472,12 +494,10 @@
         const raw=payload?.package||payload;
         const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
-        const compatibility=mobileCompatibility(pkg);
-        if(compatibility?.compatible===false)return {ok:false,error:{title:'插件版本不兼容',message:'生成插件与当前移动端 Plugin API 不兼容。',compatibility}};
         const previous=await mobilePluginGet(pkg.manifest.id);
         const installed={...pkg,installedAt:new Date().toISOString(),generatedBy:String(payload?.source||'studio-kernel')};
         await mobilePluginPut(installed);
-        return {ok:true,package:{...installed,previousPackage:previous||null},compatibility};
+        return {ok:true,package:{...installed,previousPackage:previous||null}};
       }catch(err){return {ok:false,error:{title:'生成插件安装失败',message:String(err?.message||err),code:'mobile-generated-install-failed'}};}
     },
     pluginRestorePackage: async payload=>{
@@ -508,25 +528,26 @@
 
     lanWebGetStatus: async()=>{
       if(!nativeBridge)return {running:true,noKey:true,key:'',urls:[location.origin],pairedClients:1,webClient:true,nativeClient:false};
-      const state=await nativeCall('webStatus');
-      const url=String(state?.url||'');
-      return {running:!!state?.running,noKey:true,key:'',urls:url?[url]:[],localhostUrl:url,pairedClients:0,webClient:false,nativeClient:true,localOnly:true};
+      const state=await nativeCall('webStatus')||{};
+      const urls=Array.isArray(state.urls)?state.urls.map(String).filter(Boolean):[];
+      const url=String(state.url||urls[0]||'');if(url&&!urls.includes(url))urls.unshift(url);
+      return {...state,running:!!state.running,enabled:state.enabled!==false,noKey:!!state.noKey,key:String(state.key||''),port:Number(state.port)||45910,url,urls,localhostUrl:String(state.localhostUrl||url),browserUrl:String(state.browserUrl||url),pairedClients:Number(state.pairedClients)||0,webClient:false,nativeClient:true,localOnly:false};
     },
     lanWebMakeQr: async()=>null,
     lanWebGetSettings: async()=>{
       if(!nativeBridge)return {enabled:true,noKey:true,port:Number(location.port)||80};
-      const state=await nativeCall('webStatus');
-      return {enabled:!!state?.running,noKey:true,port:45910,localOnly:true};
+      const state=await window.electronAPI.lanWebGetStatus();
+      return {enabled:state.enabled!==false,noKey:!!state.noKey,port:Number(state.port)||45910,localOnly:false};
     },
     lanWebSetSettings: async settings=>{
       if(!nativeBridge)return null;
-      if(settings?.enabled===false)await nativeCall('webStop');else await nativeCall('webStart');
+      await nativeCall('webApplySettings',{enabled:settings?.enabled!==false,noKey:!!settings?.noKey,port:Number(settings?.port)||45910});
       return window.electronAPI.lanWebGetStatus();
     },
     lanWebStart: async()=>nativeBridge?(await nativeCall('webStart'),window.electronAPI.lanWebGetStatus()):null,
     lanWebStop: async()=>nativeBridge?(await nativeCall('webStop'),window.electronAPI.lanWebGetStatus()):null,
     lanWebOpen: async()=>nativeBridge?nativeCall('webOpen'):false,
-    lanWebRegenerateKey: async()=>null,
+    lanWebRegenerateKey: async()=>nativeBridge?(await nativeCall('webRegenerateKey'),window.electronAPI.lanWebGetStatus()):null,
     onLanWebStatus: ()=>()=>{}
   };
 })();

@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.67.21",
+  "version": "3.68.66",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -10,8 +10,8 @@
   "scripts": {
     "visual:gate": "node tools/quality/visual-invariants.js",
     "prestart": "node scripts/prepare-dev-start.js",
-    "pretest": "npm run visual:gate",
-    "precheck": "npm run visual:gate",
+    "pretest": "npm run visual:gate && npm run architecture:hygiene",
+    "precheck": "npm run visual:gate && npm run architecture:hygiene",
     "predist": "npm run visual:gate",
     "prestyles:build": "npm run visual:gate",
     "brand:assets": "node scripts/generate-brand-assets.js",
@@ -22,13 +22,13 @@
     "start": "electron .",
     "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
     "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
-    "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
+    "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js --windows-package && node scripts/verify-dist.js",
     "update-server": "node services/update-server/server.js",
     "publish:update": "node services/update-server/publish-release.js dist",
     "science:parity": "node tests/verify-science-parity.js",
     "mobile:sync": "cd mobile && npm run sync:web",
     "mobile:android": "cd mobile && npm run android",
-    "mobile:test": "node tests/run.js mobile",
+    "mobile:test": "npm run runtime:build && npm run plugin:index && node tests/run.js mobile",
     "plugin-manager:test": "node tests/test-plugin-manager.js && node tests/test-plugin-package.js && node tests/test-plugin-override-policy-v36113.js && node tests/test-plugin-version-history-v354.js && node tests/test-algorithm-package-catalog-v355.js",
     "data-center:test": "node tests/test-data-center-core.js",
     "plugin:package": "node scripts/package-plugin.js",
@@ -69,7 +69,15 @@
     "runtime:build": "node scripts/generate-runtime-compositions.js",
     "visual:closure:verify": "node tools/quality/verify-visual-closure-report.js",
     "previsual:closure:windows": "npm run check",
-    "visual:closure:windows": "electron . --visual-closure"
+    "visual:closure:windows": "electron . --visual-closure",
+    "ui:owners": "node tools/quality/style-ownership.js",
+    "ui:owners:strict": "node tools/quality/style-ownership.js --strict",
+    "architecture:hygiene": "node tools/quality/architecture-hygiene.js && npm run native-analysis:audit:strict",
+    "native-analysis:audit": "node tools/quality/native-analysis-audit.js",
+    "native-analysis:audit:strict": "node tools/quality/native-analysis-audit.js --strict",
+    "reachability:audit": "node tools/quality/reachability-audit.js --strict",
+    "ui:gate": "node tools/quality/style-ownership-gate.js",
+    "ui:gate:strict": "node tools/quality/style-ownership-gate.js --strict"
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -78,8 +86,7 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
-    "electron": "^43.4.0",
-    "electron-builder": "^26.15.7"
+    "electron": "^43.4.0"
   },
   "build": {
     "appId": "com.dk.datastudio",
@@ -90,9 +97,10 @@
       "services/mcp-server.js",
       "src/**/*",
       "assets/**/*",
-      "sdk/semver-compat.js",
+      "sdk/platform-presentation-contract.js",
       "sdk/theme-contract.js",
       "sdk/contract.json",
+      "sdk/theme-coverage-contract.js",
       "sdk/layout-contract.js",
       "sdk/source-contract.js",
       "package.json",

@@ -1,12 +1,18 @@
 (() => {
   if (window.DKDSAutomationSmokeCases) return;
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate must initialize before automation smoke cases.');
+  const STYLE_SOURCE='src/diagnostics/automation-smoke-cases.js';
+  const styleSet=(el,property,value,component='automation-smoke')=>StyleGate.set(el,property,value,{owner:'diagnostics.automation-smoke',component,scope:'runtime-diagnostics',source:STYLE_SOURCE});
+  const stylePatch=(el,patch,component='automation-smoke')=>{for(const [property,value] of Object.entries(patch))styleSet(el,property,value,component);return el;};
+  const hiddenHost=(el,width,height,extra={})=>stylePatch(el,{position:'fixed',left:'-10000px',top:'-10000px',width:`${width}px`,height:`${height}px`,'pointer-events':'none',...extra},'automation-host');
 
   function assert(condition,message){if(!condition)throw new Error(message||'Assertion failed.');}
 
   async function rendererPlotSmoke(){
     const charts=window.DKDSCharts;assert(charts?.react,'Core scientific renderer unavailable.');
     const host=document.createElement('div');
-    host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';
+    hiddenHost(host,360,240);
     document.body.appendChild(host);
     try{
       await charts.react(host,[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'smoke'}],{width:360,height:240,margin:{l:40,r:20,t:20,b:35}},{staticPlot:true,dkdsRenderer:'d3'});
@@ -21,7 +27,7 @@
 
   async function scientificPlotInteractionSmoke(){
     const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
-    const host=document.createElement('div');host.id=`automationScientificPlot-${Date.now()}`;host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';document.body.appendChild(host);
+    const host=document.createElement('div');host.id=`automationScientificPlot-${Date.now()}`;hiddenHost(host,360,240);document.body.appendChild(host);
     const scope=ui.createScope('core.automation-scientific-plot');
     try{
       const interaction=scope.interactionRuntime.create('plot',{selection:{multiple:true,defaultType:'data.series'},defaultType:'data.series'});
@@ -45,7 +51,7 @@
 
   async function tableSurfaceSmoke(){
     const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
-    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:720px;height:320px;pointer-events:none;';
+    const host=document.createElement('div');hiddenHost(host,720,320);
     host.innerHTML='<table id="automationTable"><thead><tr><th>Name</th><th>Value</th><th>Note</th></tr></thead><tbody><tr><td>C</td><td>30</td><td>third</td></tr><tr><td>A</td><td>10</td><td>first</td></tr><tr><td>B</td><td>20</td><td>second</td></tr></tbody></table><div id="automationMountedTable"></div>';
     document.body.appendChild(host);const scope=ui.createScope('core.automation-table-surface');
     try{
@@ -63,8 +69,8 @@
 
   async function interactionRenderSchedulingSmoke(){
     const P=window.DKDSScientificPlot;assert(P?.createScope,'ScientificPlot runtime unavailable.');
-    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:640px;height:260px;pointer-events:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;';
-    const framePlot=document.createElement('div'),idlePlot=document.createElement('div');framePlot.style.height='220px';idlePlot.style.height='220px';host.append(framePlot,idlePlot);document.body.appendChild(host);
+    const host=document.createElement('div');hiddenHost(host,640,260,{display:'grid','grid-template-columns':'1fr 1fr',gap:'8px'});
+    const framePlot=document.createElement('div'),idlePlot=document.createElement('div');styleSet(framePlot,'height','220px','automation-plot');styleSet(idlePlot,'height','220px','automation-plot');host.append(framePlot,idlePlot);document.body.appendChild(host);
     const scope=P.createScope('core.automation-render-scheduler'),completion=[];
     try{
       const traces=[{x:[0,1,2],y:[0,1,0],type:'scatter',mode:'lines+markers'}],layout={margin:{l:24,r:12,t:12,b:24},showlegend:false},config={responsive:false,displayModeBar:false};
@@ -112,7 +118,7 @@
     assert(disposed.some(row=>row.id==='b'&&row.reason==='automation-trim'),'Cache trim did not dispose the retained resource.');
     assert(metric.disposedEntries>=2&&!metric.disposeErrors,'Resource disposal metrics are incomplete.');
 
-    const host=document.createElement('div');host.id=`automationResourcePlot-${Date.now()}`;host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';document.body.appendChild(host);
+    const host=document.createElement('div');host.id=`automationResourcePlot-${Date.now()}`;hiddenHost(host,360,240);document.body.appendChild(host);
     const scope=ui.createScope('core.automation-resource-lifecycle');
     try{
       const interaction=scope.interactionRuntime.create('plot',{selection:{multiple:true,defaultType:'data.series'},defaultType:'data.series'});
@@ -259,12 +265,12 @@
     assert(window.electronAPI?.pluginAlgorithmCatalog,'Algorithm Package Catalog bridge unavailable.');
     const peak=await window.electronAPI.pluginAlgorithmCatalog({category:'peak-metrics',id:'baseline-fwhm-v1',version:'1.0.0'});
     const peakCandidate=(peak?.candidates||[]).find(row=>row.source==='builtin'&&row.pluginId==='builtin.resonance-detector-robust'&&row.algorithm?.version==='1.0.0');
-    assert(peakCandidate,'Catalog did not index the built-in FWHM Algorithm Provider.');assert(peakCandidate.compatible,'Built-in FWHM package is unexpectedly incompatible with this host.');
+    assert(peakCandidate,'Catalog did not index the built-in FWHM Algorithm Provider.');assert(peakCandidate.ready,'Built-in FWHM package is not ready because current plugin dependencies are missing.');
     const ter=await window.electronAPI.pluginAlgorithmCatalog({category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'});
     const terCandidate=(ter?.candidates||[]).find(row=>row.source==='builtin'&&row.pluginId==='builtin.standard-transport-algorithms'&&row.algorithm?.version==='1.0.0');
-    assert(terCandidate,'Catalog did not index the built-in TER Algorithm Provider.');assert(terCandidate.compatible,'Built-in transport package is unexpectedly incompatible with this host.');
+    assert(terCandidate,'Catalog did not index the built-in TER Algorithm Provider.');assert(terCandidate.ready,'Built-in transport package is not ready because current plugin dependencies are missing.');
     const missing=await window.electronAPI.pluginAlgorithmCatalog({category:'peak-metrics',id:'baseline-fwhm-v1',version:'9.9.9'});assert((missing?.candidates||[]).length===0,'Catalog incorrectly matched an unavailable exact algorithm version.');
-    return {appVersion:peak.appVersion,pluginApiVersion:peak.pluginApiVersion,peakPackage:{pluginId:peakCandidate.pluginId,packageVersion:peakCandidate.packageVersion,source:peakCandidate.source,compatible:peakCandidate.compatible,algorithm:peakCandidate.algorithm},terPackage:{pluginId:terCandidate.pluginId,packageVersion:terCandidate.packageVersion,source:terCandidate.source,compatible:terCandidate.compatible,algorithm:terCandidate.algorithm},missingCandidates:missing?.count||0};
+    return {catalogVersion:peak.version,peakPackage:{pluginId:peakCandidate.pluginId,packageVersion:peakCandidate.packageVersion,source:peakCandidate.source,ready:peakCandidate.ready,algorithm:peakCandidate.algorithm},terPackage:{pluginId:terCandidate.pluginId,packageVersion:terCandidate.packageVersion,source:terCandidate.source,ready:terCandidate.ready,algorithm:terCandidate.algorithm},missingCandidates:missing?.count||0};
   }
 
   function scientificTransportAlgorithmProvidersSmoke(){
@@ -377,16 +383,12 @@
       ...(Array.isArray(diag.external?.errors)?diag.external.errors.map(row=>({...row,source:row?.source||'external'})):[]),
       ...(Array.isArray(diag.overrides?.errors)?diag.overrides.errors.map(row=>({...row,source:row?.source||'override'})):[])
     ];
-    const pluginRows=Array.isArray(diag.plugins)?diag.plugins:[],fallbackWarnings=[],blocking=[];
-    for(const row of errors){
+    const blocking=errors.map(row=>{
       const file=String(row?.file||''),pluginId=String(row?.pluginId||'').trim()||(row?.source==='override'?file.replace(/\.dkplugin$/i,'').trim():'');
-      const fallback=pluginId?pluginRows.find(item=>String(item?.id||'')===pluginId&&item?.enabled&&item?.active&&item?.status!=='error'&&String(item?.source||'')==='builtin'):null;
-      const normalized={file,pluginId,source:row?.source||'',error:row?.error||String(row||'')};
-      if(row?.source==='override'&&fallback)fallbackWarnings.push({...normalized,fallbackVersion:String(fallback.version||'')});
-      else blocking.push(normalized);
-    }
-    if(blocking.length){const err=new Error(`External plugin package errors: ${blocking.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:blocking,fallbackWarnings};throw err;}
-    return {responsibility:'external-plugin-package',errors:0,fallbackWarnings};
+      return {file,pluginId,source:row?.source||'',error:row?.error||String(row||'')};
+    });
+    if(blocking.length){const err=new Error(`External plugin package errors: ${blocking.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:blocking};throw err;}
+    return {responsibility:'external-plugin-package',errors:0};
   }
 
 

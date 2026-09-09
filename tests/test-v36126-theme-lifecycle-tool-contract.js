@@ -29,7 +29,7 @@ assert(!resonance.includes('background:rgba(255,255,255,.94)'),'Resonance floati
 const dataCenter=read('src/plugins/data-center/shared-views.js');
 assert(dataCenter.includes('dkds-surface')&&dataCenter.includes('dkds-surface-header')&&dataCenter.includes('dkds-field-control'),'Data Center must consume Core surface/header/control roles.');
 const ter=read('src/plugins/ter-analysis/shared-views.js');
-assert(ter.includes('dkds-surface')&&ter.includes('dkds-toolbar'),'TER must consume Core semantic surfaces and toolbars.');
+assert(ter.includes('dkds-surface')&&ter.includes('dkds-surface-actions')&&ter.includes('dkds-integrated-action-group'),'TER must consume Core semantic surfaces and integrated header actions without nesting a second toolbar surface.');
 const vthCss=read('examples/transfer-vth-lab/plugin.css');
 const vthExample=read('examples/transfer-vth-lab/plugin.js');
 assert(vthExample.includes('dkds-surface')&&vthExample.includes('dkds-field')&&vthExample.includes('dkds-metric'),'First-party Tool/TOP examples must demonstrate Core semantic visual primitives.');
@@ -52,7 +52,8 @@ const validTool={
   manifest:{
     id:'com.example.tool-contract',name:'Tool Contract',version:'1.0.0',apiVersion:'1.19.0',pluginType:'tool',entry:'plugin.js',
     workspace:{role:'top',activity:'tool-contract',title:'Tool Contract'},
-    window:{activity:'tool-contract',runtime:'runtime.js',scripts:['runtime.js'],reuse:true,prewarm:false,persistence:'project'}
+    window:{activity:'tool-contract',runtime:'runtime.js',scripts:['runtime.js'],reuse:true,prewarm:false,persistence:'project'},
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   },
   files:{
     'plugin.js':"DKDSPlugins.define({id:'com.example.tool-contract',name:'Tool Contract',version:'1.0.0'},async()=>({}));",

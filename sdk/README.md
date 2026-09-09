@@ -1,23 +1,79 @@
-# DK Data Studio Plugin SDK 1.24.0
+# DK Data Studio Plugin SDK 1.28.0
 
+
+## Managed Grid / GroupArea Layout Contract (SDK 1.28)
+
+SDK 1.28 publishes the Core managed-grid and GroupArea contracts through typed `ctx.ui.grid.create(...)` and `workbench.grid(...)` APIs. Plugins provide column preferences; Core owns final grid geometry, responsive width clamping, and optional Native Mobile orientation adaptation.
+
+For the common portrait policy, use an explicit strategy object rather than a private boolean:
+
+```js
+const grid = workbench.grid(host, {
+  columns: 3,
+  responsive: true,
+  minItemWidth: 260,
+  orientationPolicy: {
+    mode: 'portrait-offset',
+    offset: -1,
+    minColumns: 1
+  }
+});
+```
+
+`orientationPolicy` is opt-in, generic, and not tied to GroupArea or any specific plugin. If the plugin stores independent portrait/landscape user preferences, provide them through `preferredColumns({ orientation })`; Core still computes the final effective count. Use `grid.getAppliedColumns()` for the actual current count shown in UI.
+
+See [`GRID_LAYOUT.md`](./GRID_LAYOUT.md) for exact grid resolution and [`GROUP_AREA.md`](./GROUP_AREA.md) for the formal multi-plot GroupArea contract.
+
+
+## Platform Presentation Authoring Contract (SDK 1.25)
+
+SDK 1.25 keeps **one Plugin API 1.19.0** and makes platform presentation an explicit authoring decision. Do not create `ctx.ui.desktop` / `ctx.ui.mobile` business APIs. Shared data, state, algorithms, commands and semantic surfaces stay in the ordinary plugin runtime; only presentation assets may be selected per host.
+
+Every UI-owning plugin authored against SDK 1.25 must declare both `platformPresentation.desktop` and `platformPresentation.mobile` in `plugin.json`:
+
+```json
+{
+  "styles": ["plugin.css"],
+  "platformPresentation": {
+    "desktop": { "mode": "shared" },
+    "mobile": {
+      "mode": "custom",
+      "styles": ["mobile.css"],
+      "scripts": ["mobile-presentation.js"]
+    }
+  }
+}
+```
+
+The supported modes are:
+
+- `shared`: the shared plugin presentation is intentionally sufficient on this platform.
+- `adaptive`: the plugin exposes semantic surfaces and relies on the Core platform Presenter to adapt their placement/interaction. No platform-only files may be declared.
+- `custom`: the plugin supplies platform-only presentation CSS and/or scripts while continuing to use the same Plugin API and shared domain runtime.
+
+Shared `manifest.styles` are loaded in `@layer dkds.plugin`. Platform-only styles are loaded **only for the active host** in the later `@layer dkds.plugin-platform`, before Core structure/presentation/theme layers. This lets a mobile presentation replace shared plugin geometry without specificity escalation or `!important`, while Desktop never consumes Mobile CSS. The same host selection applies to platform-only scripts.
+
+For every current UI package, omission of either Desktop or Mobile policy is a validation error. The host does not infer policy for older packages: a package must satisfy the current manifest contract before it can load. Theme plugins do not use `platformPresentation`; they are governed by the exact current Theme Contract 3.10.0.
+
+See [`PLATFORM_PRESENTATION.md`](./PLATFORM_PRESENTATION.md) for the complete authoring and packaging contract.
 
 ## Plugin API 1.19 Presentation cutover
 
-Plugin API 1.19 is a breaking workspace-presentation boundary. `PRIMARY` represents exactly one semantic main surface. `leftNode` and `leftHtml` are removed from `DKDSPluginWorkspacePrimarySpec`, and PRIMARY mount callbacks expose only `main`, `root`, `workbench`, and `scope`. Independently placeable controls or inspectors must be registered as PRIME surfaces and declared in `ctx.ui.topWorkspace.register(...)` with a platform-neutral `presentationRole`. Every TOP PRIMARY/PRIME/SUB declaration must include a valid `presentationRole`.
+Plugin API 1.19 is a breaking workspace-presentation boundary. `PRIMARY` represents exactly one semantic main surface. `leftNode` and `leftHtml` are removed from `DKDSPluginWorkspacePrimarySpec`, and PRIMARY mount callbacks expose only `main`, `root`, `workbench`, and `scope`. Independently placeable controls or inspectors must be registered as PRIME surfaces and declared in `ctx.ui.topWorkspace.register(...)` with a platform-neutral `presentationRole`. Every TOP PRIMARY/PRIME/SUB declaration must include a valid `presentationRole`. A `data-control` PRIME maps to the same constrained-platform control slot regardless of whether the plugin labels it `参数`, `数据`, or another domain-appropriate name. A parameter/settings control may additionally declare `presentationPurpose: 'parameters'`; its Portable `semanticKind` remains `panel`.
 
-The Mobile legacy Desktop-geometry bridge is removed in DK Data Studio 3.67.5. Plugin API 1.18 packages fail explicitly on API-version compatibility instead of silently entering a legacy layout path.
+There is one current presentation path. Packages must declare Plugin API `1.19.0` exactly; other Plugin API versions are rejected before activation. No Desktop-geometry bridge or alternate Mobile runtime path exists.
 
 
 ## Theme Contract 3.10
 
-Theme plugins are independently versioned from Plugin API 1.19.0. Theme Contract 3.10 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds bounded Component Context, Material Context, Component × Material Role composition, and Core-rendered depth slots without giving Theme plugins DOM-selector paint ownership. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.10 validates token names, contextual component/material appearance, bounded literal depth values, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
+Theme plugins target Theme Contract `3.10.0` exactly. Theme Contract 3.10 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds bounded Component Context, Material Context, Component × Material Role composition, and Core-rendered depth slots without giving Theme plugins DOM-selector paint ownership. Theme packages declare `pluginType: "theme"`, require `ui.theme`, and validate directly against the current Theme Contract; there is no manifest Theme range and no plugin-side capability negotiation. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.67.10 or newer for SDK 1.24.0 / Plugin API 1.19.0 / Theme Contract 3.10 authoring. Plugin API 1.18 packages must be upgraded before loading.
+- DK Data Studio 3.68.36 with SDK 1.28.0 / Plugin API 1.19.0 / Theme Contract 3.10.0. Packages target this exact public contract.
 
 ## Create a plugin
 
@@ -34,13 +90,15 @@ For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORK
 
 The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.19.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
 
+`plugin.json` and the manifest passed to `DKDSPlugins.define(...)` are the **same current contract**, not two independently versioned descriptions. The runtime manifest must include every required field, including `entry`, and must match `plugin.json` for all declared current-contract fields. `dkds-plugin.js validate` evaluates the entry and rejects missing runtime fields, unsupported fields, or package/runtime manifest drift before packaging.
+
 ### Workspace naming: manifest vs runtime
 
 The names intentionally describe different layers: `requiresCore: ["ui.workspace"]` declares the Core dependency, `ui.plugin-workspace` is the capability label, and **`ctx.ui.workspaceSurface` is the only public executable workspace facade**. Do not infer `ctx.ui.pluginWorkspace` from the capability label; that runtime property does not exist. SDK validation and the in-app `.dkplugin` installer use the same source-contract audit and reject unknown static `ctx.ui.*` facades before activation.
 
 ## Algorithm plugins
 
-Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`, declare `algorithmProvider: true`, `algorithmCategories`, and machine-readable `algorithmProvides`, then register implementations through `ctx.analysis.algorithms.register(...)`. Algorithms should not own workbench UI; compatible workbench/task plugins resolve and invoke them through the versioned Algorithm Registry. See `sdk/templates/algorithm-provider/`.
+Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`, declare `algorithmProvider: true`, `algorithmCategories`, and machine-readable `algorithmProvides`, then register implementations through `ctx.analysis.algorithms.register(...)`. Algorithms should not own workbench UI; current-contract workbench/task plugins resolve and invoke them through the Algorithm Registry. See `sdk/templates/algorithm-provider/`.
 
 详细规范与示例另见 [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md)。
 
@@ -70,13 +128,15 @@ node sdk/tools/dkds-plugin.js package path/to/my-plugin my-plugin.dkplugin
 
 Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
-If the package uses the same stable ID as a plugin bundled with DK Data Studio, Plugin Manager treats a **strictly newer** compatible version as a managed update rather than an ID conflict. The bundled copy remains an immutable fallback; the user update is stored separately and becomes active after restart. Removing the update restores the bundled baseline. Therefore an exported first-party plugin can be independently iterated and upgraded without editing the application source for every local release.
+If a package uses the same stable ID as a bundled plugin, it is accepted only as a **strictly newer package that satisfies the current contract exactly**. The user package is stored separately and activates on restart. Removing that installed update makes the bundled package active again; this is package installation state, not an API/version compatibility path. Invalid or non-current packages are rejected rather than translated or loaded through another runtime.
 
 ## Public contract
 
 - `plugin-manifest.schema.json` — machine-readable manifest contract.
 - `plugin-api.d.ts` — editor/TypeScript declarations for `DKDSPlugins` and `ctx`.
 - `contract.json` — SDK/API/package versions.
+- `GRID_LAYOUT.md` — public managed-grid, responsive columns and Native Mobile orientation-policy contract.
+- `GROUP_AREA.md` — public multi-plot GroupArea contract, child PlotView placement/sticky semantics, and titled/titleless composition.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
@@ -297,26 +357,13 @@ settings.open();
 ### Scientific renderer dependency
 Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.
 
-## Theme Contract 3.9 (`ui.theme`)
+## Theme Contract 3.10 (`ui.theme`)
 
-Studio 3.65.0 exposes Theme Contract 3.9 independently from Plugin API 1.18.0 through SDK 1.21.2. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
+Theme packages target the exact current Theme Contract `3.10.0`. Declare `pluginType: "theme"` and `requiresCore: ["ui.theme"]`, then register a validated profile through `ctx.ui.theme.register(...)`. Unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values, invalid Component/Material contexts, and arbitrary DOM-selector paint are hard validation errors.
 
-Theme Contract 3.9 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.9 keeps structured `modes.light` / `modes.dark` blocks, makes Gallery and real UI consume one Core semantic resolver, and adds fixed component variants plus bounded Core-rendered gradients/glows without arbitrary CSS.
+Themes use structured `modes.light` / `modes.dark` profiles, semantic Material Roles, Component Context, Material Context, bounded variants/effects, and optional `scientific.seriesPalette`. Scientific palette values are fallback colors only; explicit user/plugin scientific colors retain precedence. Core owns role assignment, rendering recipes, Backdrop Root handling, readability floors, selectors and final DOM paint. There is no Theme Contract range or `ctx.ui.theme.supports(...)` authoring branch.
 
-Theme 3.8 adds `appearance.roles.<role>.surface|border|text`, `accentAlt`, semantic `success / warning / danger / info` colors, distinct `selection / active / disabled` states, and optional `scientific.seriesPalette`. Role overrides are sparse: omitted fields inherit the base appearance tokens. Scientific palette values are fallback colors only; explicit user/plugin series colors always take precedence.
-
-Material roles `chrome / sidebar / surface / elevated / popover / control / floating` let themes tune semantic material depth and, in 3.7, optional role-specific `surface / border / text` appearance without selecting DOM. Numeric lengths are logical platform units (Web=CSS px, Android native projection=dp before native blur mapping), durations are milliseconds, opacity is 0..1, and saturation is a multiplier. Core retains deterministic material/animation recipes and `prefers-reduced-motion` safety.
-
-Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light and dark Core UI coverage side by side. Start from `sdk/templates/theme-profile/` and read `sdk/THEME_CONTRACT.md`.
-
-
-
-### Theme Contract 3.9 Thin Glass
-
-SDK 1.22.1 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
-
-
-
+Start from `sdk/templates/theme-profile/` and read [`THEME_CONTRACT.md`](./THEME_CONTRACT.md).
 
 ### Dynamic menu availability (SDK 1.22.1)
 
@@ -340,7 +387,7 @@ The callback may return `boolean` or `{ visible, enabled, reason }`. Unavailable
 Property ownership is strict: Theme profiles provide visual values, Core Theme renderers own the standard-component paint selectors, and Core Structure owns geometry. Context/state modifiers must use the shared component slots rather than add later padding/height overrides; CSS source order is not a supported customization mechanism.
 
 Non-theme plugin stylesheets are validated by the SDK visual ownership gate. Plugin CSS may not repaint application chrome or redefine standard Core control/header geometry. Size the surrounding domain layout instead. Scientific series/mark styling and domain geometry remain plugin-owned where they carry scientific meaning.
-The validator is source-aware: a plugin-specific class attached to a Core header/action/field is treated as an alias of that Core component, so the alias cannot silently override the Core geometry. ComponentRuntime also auto-hydrates dynamically inserted DOM, keeping Component Identity consistent even for older plugins that still build markup through `innerHTML`.
+The validator is source-aware: a plugin-specific class attached to a Core header/action/field is treated as an alias of that Core component, so the alias cannot silently override the Core geometry. ComponentRuntime also auto-hydrates dynamically inserted current-contract DOM so Component Identity remains consistent for runtime-created markup.
 
 
 ### Integrated scientific floating chrome is one silhouette (SDK 1.24.0 hard rule)

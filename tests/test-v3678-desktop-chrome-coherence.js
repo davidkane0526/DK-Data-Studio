@@ -33,7 +33,8 @@ assert(resonance.includes('closeSelector:\'[data-respar-close="inspect"]\'')&&re
 const index=read('src/index.html');
 const connectivity=read('src/plugins/connectivity-center/plugin.js');
 const themeSettings=read('src/core/theme/settings-ui.js');
-for(const target of ['updatePanel','inspectorPanel','groupPanel','zoomPanel'])assert(index.includes(`class="panel-close dkds-panel-close-button" data-target="${target}"`),`Legacy shell panel ${target} must consume the shared close-button contract.`);
+assert(index.includes('class="panel-close dkds-panel-close-button" data-target="updatePanel"'),'The remaining app-owned Update panel must consume the shared close-button contract.');
+for(const target of ['inspectorPanel','groupPanel','zoomPanel'])assert(!index.includes(`id="${target}"`),`Retired app-owned shell panel ${target} must not return.`);
 assert(connectivity.includes('id="dksmbClose" class="dksvc-close dkds-icon-button dkds-panel-close-button"')&&connectivity.includes('id="dkaiSettingsClose" class="dksvc-close dkds-icon-button dkds-panel-close-button"'),'Connectivity dialogs must consume the shared close-button contract.');
 assert(themeSettings.includes('class="dkds-icon-button dkds-panel-close-button" data-close'),'Theme settings dialog must consume the shared close-button contract.');
 

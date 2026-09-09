@@ -1,6 +1,5 @@
 'use strict';
-const SemverCompat=require('./semver-compat');
-const VERSION='1.0.0';
+const VERSION='2.0.0';
 
 const clean=v=>String(v||'').trim();
 function normalizeRef(ref={}){
@@ -13,28 +12,25 @@ function normalizeRef(ref={}){
 }
 function normalizeProvide(row={}){return {category:clean(row.category),id:clean(row.id||row.algorithmId),version:clean(row.version||row.algorithmVersion),title:clean(row.title||row.name)};}
 function manifestAlgorithms(manifest={}){return (Array.isArray(manifest.algorithmProvides)?manifest.algorithmProvides:[]).map(normalizeProvide).filter(row=>row.category&&row.id&&row.version);}
-function compatibility(manifest={},env={}){
-  const appVersion=clean(env.appVersion),pluginApiVersion=clean(env.pluginApiVersion),themeContractVersion=clean(env.themeContractVersion),installedVersions=env.installedVersions instanceof Map?env.installedVersions:new Map(Object.entries(env.installedVersions||{}));
-  const appRange=clean(manifest.compatibility?.app)||'*',pluginApiRange=clean(manifest.compatibility?.pluginApi)||'*',themeContractRange=clean(manifest.compatibility?.themeContract)||'*';const issues=[];
-  if(appVersion&&!SemverCompat.satisfies(appVersion,appRange))issues.push({kind:'app',required:appRange,actual:appVersion});
-  if(pluginApiVersion&&!SemverCompat.satisfies(pluginApiVersion,pluginApiRange))issues.push({kind:'plugin-api',required:pluginApiRange,actual:pluginApiVersion});
-  if(themeContractVersion&&themeContractRange!=='*'&&!SemverCompat.satisfies(themeContractVersion,themeContractRange))issues.push({kind:'theme-contract',required:themeContractRange,actual:themeContractVersion});
-  const dependencies=[];
-  for(const dep of (Array.isArray(manifest.pluginDependencies)?manifest.pluginDependencies:[])){
-    const id=clean(dep.id),range=clean(dep.range)||'*',actual=clean(installedVersions.get(id)),optional=dep.optional===true,satisfied=!!actual?SemverCompat.satisfies(actual,range):optional;
-    dependencies.push({id,range,actual,optional,satisfied});if(!satisfied)issues.push({kind:'plugin-dependency',id,required:range,actual:actual||''});
-  }
-  return {compatible:issues.length===0,appRange,pluginApiRange,themeContractRange,dependencies,issues};
+function requirements(manifest={},installedIds=new Set()){
+  const ids=installedIds instanceof Set?installedIds:new Set(Array.isArray(installedIds)?installedIds:Object.keys(installedIds||{}));
+  const dependencies=(Array.isArray(manifest.pluginDependencies)?manifest.pluginDependencies:[]).map(row=>String(row?.id||'').trim()).filter(Boolean);
+  const missing=dependencies.filter(id=>!ids.has(id));
+  return {ready:missing.length===0,dependencies,missing};
 }
-function catalog(packages=[],ref={},env={}){
+function compareVersionText(a,b){
+  const parse=value=>{const m=String(value||'').match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);return m?[Number(m[1]),Number(m[2]),Number(m[3]),String(m[4]||'')]:[0,0,0,String(value||'')];};
+  const x=parse(a),y=parse(b);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;if(x[3]===y[3])return 0;if(!x[3])return 1;if(!y[3])return -1;return x[3]>y[3]?1:-1;
+}
+function catalog(packages=[],ref={},installedIds=new Set()){
   const wanted=normalizeRef(ref),rows=[];
   for(const pkg of packages){const manifest=pkg?.manifest||{};for(const algorithm of manifestAlgorithms(manifest)){
     if(wanted.category&&algorithm.category!==wanted.category)continue;if(wanted.id&&algorithm.id!==wanted.id)continue;if(wanted.version&&algorithm.version!==wanted.version)continue;
-    const compat=compatibility(manifest,env);
-    const source=clean(pkg.source)||'unknown',recoverAction=source==='history'?'rollback':source==='override'?'restart':(source==='builtin'||source==='external'?'reload':'none');rows.push({source,pluginId:clean(manifest.id),pluginName:clean(manifest.name||manifest.id),packageVersion:clean(manifest.version),token:clean(pkg.token),algorithm,compatibility:compat,compatible:compat.compatible,current:pkg.current===true,installed:pkg.installed===true,recoverAction,recoverable:compat.compatible&&recoverAction!=='none'&&recoverAction!=='restart'});
+    const requirementState=requirements(manifest,installedIds),source=clean(pkg.source)||'unknown';
+    rows.push({source,pluginId:clean(manifest.id),pluginName:clean(manifest.name||manifest.id),packageVersion:clean(manifest.version),algorithm,ready:requirementState.ready,dependencies:requirementState.dependencies,missingDependencies:requirementState.missing,current:pkg.current===true,installed:pkg.installed===true,recoverable:requirementState.ready});
   }}
-  const sourceOrder={external:0,override:1,builtin:2,history:3};
-  rows.sort((a,b)=>(Number(b.compatible)-Number(a.compatible))||(Number(b.current)-Number(a.current))||((sourceOrder[a.source]??9)-(sourceOrder[b.source]??9))||SemverCompat.compare(b.packageVersion,a.packageVersion));
+  const sourceOrder={external:0,override:1,builtin:2};
+  rows.sort((a,b)=>(Number(b.ready)-Number(a.ready))||(Number(b.current)-Number(a.current))||((sourceOrder[a.source]??9)-(sourceOrder[b.source]??9))||compareVersionText(b.packageVersion,a.packageVersion));
   return {version:VERSION,requested:wanted,count:rows.length,candidates:rows};
 }
-module.exports={VERSION,normalizeRef,manifestAlgorithms,compatibility,catalog};
+module.exports={VERSION,normalizeRef,manifestAlgorithms,requirements,catalog};

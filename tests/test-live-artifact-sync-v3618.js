@@ -1,9 +1,10 @@
 'use strict';
 const fs=require('fs');const path=require('path');const vm=require('vm');const assert=require('assert');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-const app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),preload=read('desktop/preload.js'),aux=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),sdk=read('sdk/plugin-api.d.ts');
+const app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),mainAux=read('desktop/main-modules/auxiliary-window-runtime.js'),preload=read('desktop/preload.js'),aux=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),sdk=read('sdk/plugin-api.d.ts');
 assert(preload.includes("pushActivityArtifactDelta: payload => ipcRenderer.send('windows:ownerArtifactDelta'")&&preload.includes('onOwnerArtifactDelta: callback =>'),'Preload must expose owner/TOP Artifact delta IPC.');
-assert(main.includes("ipcMain.on('windows:ownerArtifactDelta'")&&main.includes("win.webContents.send('windows:ownerArtifactDelta'"),'Main process must forward live Artifact deltas.');
+assert(main.includes("ipcMain.on('windows:ownerArtifactDelta'")&&main.includes('routeArtifactDelta(event,payload)'), 'Main process must delegate live Artifact delta routing.');
+assert(mainAux.includes('function routeArtifactDelta(event,payload={})')&&mainAux.includes("win.webContents.send('windows:ownerArtifactDelta'")&&mainAux.includes("owner.webContents.send('windows:activityProjectSnapshot'"),'Auxiliary-window runtime must own bidirectional live Artifact delta forwarding.');
 assert(app.includes('function pushArtifactDeltaToActivityWindows(')&&app.includes("pushArtifactDeltaToActivityWindows(importDelta,'import')"),'Import commits must publish exact Artifact deltas to open TOP windows.');
 assert(aux.includes('function applyOwnerArtifactDelta(')&&aux.includes("type:'owner-sync'"),'Dedicated TOP runtime must apply owner deltas locally.');
 assert(!aux.includes('syncLegacyDatasetArtifacts')&&!aux.includes('project.datasets'),'Dedicated TOP runtime must not merge a second legacy dataset source.');

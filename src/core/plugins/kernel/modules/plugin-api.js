@@ -1,7 +1,7 @@
 'use strict';
 const {state, active}=require('./context');
 const {API_VERSION, isDefinitionEnabled, definitionById, defaultPluginIcon, workspaceMeta}=require('./bootstrap');
-const {registerTopWorkspace, registerPrimeContribution, primePlacementFor, placePrimeContribution, registerSubContribution}=require('./workspace/top');
+const {registerTopWorkspace}=require('./workspace/top');
 const {getRegistry,addCleanup}=require('./registry');
 const {eventOn,eventEmitNow,eventEmit,invokeEditAction,notifyEditHistory}=require('./events/history');
 const {setActiveActivity}=require('./activity/shell');
@@ -11,13 +11,16 @@ const {registerTypedContribution, listContributions, registerProviderCapability,
 const {addStatusBarItem, registerProjectSlice}=require('./project/status');
 const {addStyle, addPage, addPanel, addPanelToggle}=require('./pages/panels');
 const {deactivate, setPluginEnabled, reloadPlugin}=require('./lifecycle');
-const {replaceExternalPluginPackage, rollbackExternalPlugin}=require('./package-runtime');
+const {replaceExternalPluginPackage}=require('./package-runtime');
 const {requirePluginType}=require('./manifest');
+const {pluginHostView}=require('./host-facade');
   function createApi(definition) {
     const pluginId = definition.manifest.id;
+    const componentSource=String(definition.sourceIdentity||definition.manifest?.entry||`plugin:${pluginId}/plugin.js`).trim();
     const pluginType=requirePluginType(definition.manifest);
+    const projectDataVisibility=pluginType==='workbench'&&String(definition.manifest?.data?.visibility||'').trim().toLowerCase()==='project';
     const dataAssignmentsMatch=(artifact)=>{
-      if(pluginType!=='workbench')return true;
+      if(pluginType!=='workbench'||projectDataVisibility)return true;
       const raw=artifact?.metadata?.dataAssignments;
       if(!Array.isArray(raw))return true;
       const rows=raw.map(String);return rows.includes('*')||rows.includes(pluginId);
@@ -47,7 +50,11 @@ const {requirePluginType}=require('./manifest');
         if(prop==='targets')return ()=>Array.isArray(syncSnapshot.targets)?syncSnapshot.targets.map(row=>({...row,accepts:Array.isArray(row?.accepts)?[...row.accepts]:[]})):[];
         const value=Reflect.get(target,prop,receiver);return typeof value==='function'?value.bind(target):value;
       }}):base;
-      if(pluginType!=='workbench')return syncBase;
+      // A project-visibility workbench is an explicit read-only browser of the
+      // canonical project Artifact graph (Data Center / gallery-like tooling),
+      // not an analysis consumer.  It must not inherit consumer assignment
+      // filtering merely because its UI happens to be a workbench.
+      if(pluginType!=='workbench'||projectDataVisibility)return syncBase;
       return new Proxy(syncBase,{get(target,prop,receiver){
         if(prop==='list')return options=>target.list?.({...((options&&typeof options==='object')?options:{}),consumer:pluginId})||[];
         if(prop==='setAssignments')return undefined;
@@ -58,10 +65,10 @@ const {requirePluginType}=require('./manifest');
         const value=Reflect.get(target,prop,receiver);return typeof value==='function'?value.bind(target):value;
       }});
     };
-    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host:state.host, events:{ emit:eventEmitNow }, commands:{ run:runCommand } }) || null;
+    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host:pluginHostView(), events:{ emit:eventEmitNow }, commands:{ run:runCommand } }) || null;
     const ioScope = window.DKDSIO?.createScope?.(pluginId) || null;
     const chartScope = window.DKDSCharts?.createScope?.(pluginId) || null;
-    const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
+    const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document,source:componentSource}) || null;
     const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
     const scientificReactiveScope = window.DKDSScientificReactive?.createScope?.(pluginId) || null;
     const scientificPipelineScope = window.DKDSScientificPipeline?.createScope?.(pluginId) || null;
@@ -128,10 +135,9 @@ const {requirePluginType}=require('./manifest');
     const lockAlgorithm=(ref,query={})=>{const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref,query)||{id:String(ref?.id||ref||''),version:'',category:String(query.category||ref?.category||'')};if(wanted.version)return Object.freeze({category:wanted.category,id:wanted.id,version:wanted.version});const row=algorithmResolve(wanted,query);return Object.freeze({category:row?.category||wanted.category,id:row?.id||wanted.id,version:row?.version||''});};
     const locateAlgorithmPackage=async(ref)=>{if(!window.electronAPI?.pluginAlgorithmCatalog||window.electronAPI?.isWebClient)return {requested:window.DKDSScientificAlgorithms?.normalizeRef?.(ref)||ref,count:0,candidates:[]};return await window.electronAPI.pluginAlgorithmCatalog(ref);};
     const recoverAlgorithmPackage=async(ref,candidate=null)=>{
-      const catalog=await locateAlgorithmPackage(ref),choice=candidate||catalog?.candidates?.find?.(row=>row.compatible&&row.recoverable);if(!choice)throw new Error('未找到兼容的算法 Provider 包。');
+      const catalog=await locateAlgorithmPackage(ref),choice=candidate||catalog?.candidates?.find?.(row=>row.ready&&row.recoverable);if(!choice)throw new Error('未找到满足当前合同的算法 Provider 包。');
       const pluginId=String(choice.pluginId||'');
-      if(choice.source==='history'){await rollbackExternalPlugin(pluginId,choice.token);}
-      else {
+      {
         let def=definitionById(pluginId);
         if(!def&&choice.source==='external'&&window.electronAPI?.pluginExternalList){const result=await window.electronAPI.pluginExternalList();const pkg=(result?.packages||[]).find(row=>String(row?.manifest?.id||'')===pluginId);if(pkg)await replaceExternalPluginPackage(pkg,{statusPrefix:'已恢复算法 Provider'});def=definitionById(pluginId);}
         if(!def)throw new Error(`算法 Provider 未载入：${pluginId}`);
@@ -144,12 +150,10 @@ const {requirePluginType}=require('./manifest');
       apiVersion: API_VERSION,
       contract: Object.freeze({version:window.DKDSPluginContract?.VERSION||'',requirements:window.DKDSPluginContract?.requirements||[]}),
       manifest: Object.freeze({ ...definition.manifest }),
-      platform: window.DKDSPlatform,
       runtime: Object.freeze({
         appVersion:String(state.host?.appVersion||''),
         isAuxiliaryWindow:!!state.host?.isAuxiliaryWindow,
-        isWebClient:!!state.host?.isWebClient,
-        isNativeClient:!!state.host?.isNativeClient
+        isWebClient:!!state.host?.isWebClient
       }),
       status: Object.freeze({set:text=>state.host?.setStatus?.(String(text??''))}),
       events: {
@@ -408,7 +412,7 @@ const {requirePluginType}=require('./manifest');
         charts: Object.freeze({...(infrastructureScope?.chartsApi||{}),...(chartScope||{})}),
         dom: componentScope,
         components: Object.freeze({
-          mount:(container,spec,context)=>window.DKDSComponents?.mount?.(container,spec,context),
+          mount:(container,spec,context)=>componentScope?.mount?.(container,spec,context)||window.DKDSComponents?.mount?.(container,spec,{...(context||{}),owner:pluginId,source:componentSource}),
           escape:value=>window.DKDSComponents?.escape?.(value)??String(value??''),
           action:spec=>window.DKDSComponents?.action?.(spec)||null,
           actionGroup:spec=>window.DKDSComponents?.actionGroup?.(spec)||null,
@@ -440,12 +444,13 @@ const {requirePluginType}=require('./manifest');
         series: infrastructureScope?.series || null,
         legends: infrastructureScope?.legends || null,
         groupPlots: infrastructureScope?.groupPlots || null,
+        groupArea: infrastructureScope?.groupArea || null,
         tooltips: infrastructureScope?.tooltips || null,
         entities: infrastructureScope?.entities || null,
         designSystem: (()=>{
           const tokens=Object.freeze({surfacePrimary:'--surface-primary',surfaceSecondary:'--surface-secondary',surfaceElevated:'--surface-elevated',surfaceHover:'--surface-hover',borderSubtle:'--border-subtle',borderStrong:'--border-strong',textPrimary:'--text-primary',textSecondary:'--text-secondary',textTertiary:'--text-tertiary',accentPrimary:'--accent-primary',accentSoft:'--accent-soft',success:'--status-success',warning:'--status-warning',danger:'--status-danger'});
           const roles=Object.freeze({surface:'surfacePrimary',panel:'surfaceSecondary',floating:'surfaceElevated',text:'textPrimary',muted:'textSecondary',border:'borderSubtle',accent:'accentPrimary'});
-          const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true,semanticVisualPrimitives:true,canonicalComponentFactories:true,firstPartyVisualGate:true,themePluginReady:true});
+          const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,groupArea:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true,semanticVisualPrimitives:true,canonicalComponentFactories:true,firstPartyVisualGate:true,themePluginReady:true});
           const classes=Object.freeze({surface:'dkds-surface',surfaceMuted:'dkds-surface-muted',surfaceElevated:'dkds-surface-elevated',surfaceHeader:'dkds-surface-header',surfaceHeading:'dkds-surface-heading',surfaceActions:'dkds-surface-actions',surfaceTabs:'dkds-surface-tabs',surfaceTitle:'dkds-surface-title',toolbar:'dkds-toolbar',actionRow:'dkds-action-row',field:'dkds-field',check:'dkds-check',chip:'dkds-chip',list:'dkds-list',listItem:'dkds-list-item',metric:'dkds-metric',tableWrap:'dkds-table-wrap',table:'dkds-table',note:'dkds-note',status:'dkds-status',overlay:'dkds-overlay',dialog:'dkds-dialog-shell',iconButton:'dkds-icon-button',message:'dkds-message',messageMeta:'dkds-message-meta',floating:'dkds-floating-surface',meta:'dkds-meta'});
           return Object.freeze({name:'DK Data Studio Design System',version:'1.19',tokens,roles,classes,capabilities,className:(...names)=>names.flatMap(name=>String(classes[String(name)]||name||'').split(/\s+/)).filter(Boolean).join(' '),token:name=>tokens[String(name)]||'',cssVar:(name,fallback='')=>{const token=tokens[String(name)]||String(name||'');return token?`var(${token}${fallback?`, ${fallback}`:''})`:String(fallback||'');}});
         })(),
@@ -463,14 +468,6 @@ const {requirePluginType}=require('./manifest');
         topWorkspace: {
           register: spec => registerTopWorkspace(pluginId,spec),
           isSuper: () => state.superPluginId===pluginId
-        },
-        prime: {
-          register: (id,spec) => registerPrimeContribution(pluginId,id,spec),
-          place: (id,placement,options) => placePrimeContribution(pluginId,id,placement,options),
-          placement: id => primePlacementFor(pluginId,id)
-        },
-        sub: {
-          register: (id,spec) => registerSubContribution(pluginId,id,spec)
         },
         toolbar: {
           add: spec => createToolbarButton(pluginId, spec)
@@ -525,8 +522,6 @@ const {requirePluginType}=require('./manifest');
         },
         theme: Object.freeze({
           contractVersion: window.DKDSTheme?.contractVersion||window.DKDSTheme?.version||'0.0.0',
-          supports: feature => window.DKDSTheme?.supports?.(feature)===true,
-          rendererCapabilities: () => window.DKDSTheme?.rendererCapabilities?.()||{renderer:{backdropBlur:false},roles:{}},
           register: (id, spec={}) => {
             const localId=String(id||'').trim();
             if(!localId) throw new Error('Theme id required.');

@@ -1,5 +1,5 @@
 'use strict';
-const {$, loadTrendColumnsPreference, state}=require('./context');
+const {$, state}=require('./context');
 const {diffArtifactRows, projectBaseName, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
@@ -14,28 +14,30 @@ const base64ImportBytes=(...args)=>deps.imports.base64ImportBytes(...args);
 const clearMainView=(...args)=>deps.workspace.clearMainView(...args);
 const renderAll=(...args)=>deps.workspace.renderAll(...args);
 const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
-const applyGroupPanelLayout=(...args)=>deps.docks.applyGroupPanelLayout(...args);
-const applyInspectorPanelLayout=(...args)=>deps.docks.applyInspectorPanelLayout(...args);
 
+function comparableProjectData(value, provenance=false){
+  if(Array.isArray(value))return value.map(row=>comparableProjectData(row,provenance));
+  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().filter(key=>!['createdAt','updatedAt'].includes(key)&&!(provenance&&['id','timestamp'].includes(key))).map(key=>[key,comparableProjectData(value[key],key==='provenance')]));
+  return value;
+}
+function preserveSavedMetadata(dataModel, saved){
+  if(!saved?.dataModel)return dataModel;
+  const previous=new Map((saved.dataModel.artifacts||[]).map(row=>[row.id,row]));
+  return {...dataModel,artifacts:(dataModel.artifacts||[]).map(row=>{
+    const old=previous.get(row.id);
+    return old&&JSON.stringify(comparableProjectData(old))===JSON.stringify(comparableProjectData(row))?JSON.parse(JSON.stringify(old)):row;
+  })};
+}
 function makeProject(){
+  const tab=activeProjectTab(),dataModel=preserveSavedMetadata(window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),tab?.savedProject);
+  const unchanged=tab?.savedProject&&JSON.stringify(comparableProjectData(dataModel))===JSON.stringify(comparableProjectData(tab.savedProject.dataModel));
   return {
     format:'dk-data-studio-project',
     schemaVersion:3,
-    version:'3.67.21',
-    dataModel:window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),
+    version:unchanged?tab.savedProject.version:'3.68.66',
+    dataModel:dataModel,
     plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
-    host:{
-      trendColumns:state.trendColumns,
-      panelLayout:{
-        groupPanelMode:state.groupPanelMode,
-        groupPanelCollapsed:state.groupPanelCollapsed,
-        groupPanelDockHeight:state.groupPanelDockHeight,
-        groupPanelFloatRect:state.groupPanelFloatRect,
-        inspectorPanelMode:state.inspectorPanelMode,
-        inspectorDockWidth:state.inspectorDockWidth,
-        inspectorFloatRect:state.inspectorFloatRect
-      }
-    }
+    host:{}
   };
 }
 
@@ -47,8 +49,11 @@ function chooseProjectSaveMode(){
   const currentBtn=$('#projectSaveCurrentBtn');
   const saveAsBtn=$('#projectSaveAsBtn');
   const cancelBtn=$('#projectSaveCancelBtn');
+  const closeBtn=$('#projectSaveCloseBtn');
   const hint=$('#projectSaveChoiceHint');
+  const projectName=$('#projectSaveChoiceProjectName');
   const currentName=state.projectPath?projectBaseName(state.projectPath):'';
+  if(projectName){projectName.textContent=currentName||'未命名项目';projectName.title=currentName||'尚未保存到项目文件';}
   if(window.electronAPI?.isWebClient){
     hint.textContent=currentName
       ? `当前工程：${currentName}。网页版工程内容与桌面版一致；浏览器允许原位写入时会直接覆盖，否则保存当前会下载同名工程文件。`
@@ -75,6 +80,7 @@ function chooseProjectSaveMode(){
     currentBtn.onclick=()=>finish('current');
     saveAsBtn.onclick=()=>finish('saveAs');
     cancelBtn.onclick=()=>finish('cancel');
+    if(closeBtn)closeBtn.onclick=()=>finish('cancel');
     dialog.onclick=e=>{if(e.target===dialog)finish('cancel');};
     window.addEventListener('keydown',onKey,true);
     requestAnimationFrame(()=>currentBtn.focus());
@@ -85,16 +91,20 @@ function chooseProjectSaveMode(){
 async function saveProject(options={}){
   const mode=options.mode||await chooseProjectSaveMode();
   if(!mode||mode==='cancel')return null;
+  const project=makeProject();
+  const tab=activeProjectTab();
+  if(mode==='current'&&state.projectPath&&tab?.savedProject&&JSON.stringify(project)===JSON.stringify(tab.savedProject)){setStatus('工程内容未变化，无需写入。');return state.projectPath;}
   const saved=await window.electronAPI.saveProject({
     mode,
     path:state.projectPath,
     defaultName:state.projectPath?`${projectBaseName(state.projectPath)}.dkds.json`:'dk_data_project.dkds.json',
-    project:makeProject()
+    project,
+    source:options.source||`core.project.${mode}`
   });
   if(saved){
     state.projectPath=saved;
     const tab=activeProjectTab();
-    if(tab){tab.projectPath=saved;tab.title=projectBaseName(saved);}
+    if(tab){tab.projectPath=saved;tab.title=projectBaseName(saved);tab.savedProject=JSON.parse(JSON.stringify(project));}
     captureActiveProjectTab();
     markProjectClean(tab,makeProject());
     renderProjectTabs();
@@ -111,7 +121,7 @@ function loadProjectIntoActive(pr,path){
   state.projectPath=path||null;
   state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:2,artifacts:[]});
   const artifactTab=activeProjectTab();
-  if(artifactTab)artifactTab.artifactStore=state.artifactStore;
+  if(artifactTab){artifactTab.artifactStore=state.artifactStore;artifactTab.savedProject=JSON.parse(JSON.stringify(pr));}
   // Project Compatibility Gateway guarantees a canonical Schema v3 payload
   // before runtime restore, so every renderer receives the same Artifact diff.
   const projectRestoreDelta=diffArtifactRows(previousArtifacts,snapshotArtifactRows());
@@ -124,16 +134,6 @@ function loadProjectIntoActive(pr,path){
   if(currentTab)currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}));
   window.DKDSPlugins?.project?.restore?.(pr.plugins||{});
 
-  const host=pr.host&&typeof pr.host==='object'?pr.host:{};
-  const panelLayout=host.panelLayout&&typeof host.panelLayout==='object'?host.panelLayout:{};
-  state.trendColumns=host.trendColumns||loadTrendColumnsPreference();
-  state.groupPanelMode=panelLayout.groupPanelMode||'docked';
-  state.groupPanelCollapsed=!!panelLayout.groupPanelCollapsed;
-  state.groupPanelDockHeight=Number(panelLayout.groupPanelDockHeight)||360;
-  state.groupPanelFloatRect=panelLayout.groupPanelFloatRect||null;
-  state.inspectorPanelMode=panelLayout.inspectorPanelMode||'right';
-  state.inspectorDockWidth=Number(panelLayout.inspectorDockWidth)||390;
-  state.inspectorFloatRect=panelLayout.inspectorFloatRect||null;
   clearMainView(false);
 }
 
@@ -151,8 +151,6 @@ function openProjectPayload(r){
   markProjectClean(tab,makeProject());
   renderProjectTabs();
   renderAll();
-  applyGroupPanelLayout();
-  applyInspectorPanelLayout();
   scheduleMainPlotRelayout();
   setStatus(`已在新标签页打开工程：${path}`);
   return true;

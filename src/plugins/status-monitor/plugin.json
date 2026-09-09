@@ -1,13 +1,14 @@
 {
   "id": "builtin.status-monitor",
   "name": "Status Monitor",
-  "version": "1.3.0",
+  "version": "1.3.3",
   "apiVersion": "1.19.0",
   "requiresCore": [
     "runtime",
     "events",
     "status",
     "services",
+    "workspace",
     "ui.dom",
     "ui.status-bar",
     "ui.theme"
@@ -22,7 +23,18 @@
     "lan.web-status",
     "ui.theme"
   ],
-  "source": "builtin",
   "pluginType": "foundation",
-  "systemCritical": true
+  "systemCritical": true,
+  "platformPresentation": {
+    "desktop": {
+      "mode": "adaptive"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "scripts": [
+    "theme-layout.js",
+    "plugin.js"
+  ]
 }

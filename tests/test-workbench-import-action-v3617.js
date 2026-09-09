@@ -16,12 +16,13 @@ const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('tests/check-plugin-boundaries.js');
 
 
-assert(contract.pluginApiVersion==='1.19.0'&&contract.minimumAppVersion==='3.67.10','SDK 1.24 / Plugin API 1.19 / Theme 3.10 must require app 3.67.10; project compatibility is separate from old plugin-package API compatibility.');
+assert(contract.pluginApiVersion==='1.19.0'&&contract.minimumAppVersion==='3.68.36','SDK 1.28 / Plugin API 1.19 / Theme 3.10 must require app 3.68.36; project compatibility is separate from old plugin-package API compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
 assert(kernel.includes("section:'DATA'")&&kernel.includes('embeddedSuper'),'Embedded SUPER workbenches must project the same Core import action into the host contextual toolbar.');
-assert(kernel.includes("if(!header){")&&kernel.includes("if(pageActivity){"),'Workbench pages without a standard header must fall back to the host contextual action instead of losing import access.');
+assert(kernel.includes("pageActivity&&!state.host?.isAuxiliaryWindow"),'Main-shell workbenches without a local slot may fall back to the host contextual action, but dedicated plugin windows must never assume the main analysis toolbar exists.');
+assert(kernel.includes("if(slot){")&&kernel.includes("dkds-core-workbench-import-slot"),'A page-local import slot must remain the cross-window authoritative mount.');
 assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList.toggle('hidden',!!scope)"),'Scoped Import Workbench must hide the global target chooser.');
 assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
 assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');

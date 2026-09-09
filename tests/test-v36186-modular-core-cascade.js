@@ -30,7 +30,7 @@ for(const file of cssFiles){
 }
 assert(!fs.existsSync(path.join(root,'src','styles','base'))&&!fs.existsSync(path.join(root,'src','styles','modern')),'base/modern specificity split must not return.');
 const cascade=read('src/core.css');
-assert(cascade.includes('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;'),'Canonical cascade order is missing.');
+assert(cascade.includes('@layer dkds.foundation, dkds.plugin, dkds.plugin-platform, dkds.structure, dkds.presentation, dkds.theme, dkds.motion, dkds.platform, dkds.window, dkds.utility;'),'Canonical cascade order is missing.');
 
 const pluginIdentity=/(?:\.(?:ter|pulse|dc|respar|reswin)[-_]|#(?:ter|pulse|resonanceDedicatedPage|reswin|respar))/i;
 for(const file of walk(path.join(root,'src','styles')).filter(f=>f.endsWith('.css'))){

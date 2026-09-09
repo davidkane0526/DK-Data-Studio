@@ -156,6 +156,7 @@ The dedicated window consumes detector providers through the Capability Runtime.
 - PRIMARY: TER controls, heatmap and TER maxima views;
 - PRIME: linked R–V inspector;
 - Core GridController owns responsive chart columns.
+- SDK 1.28 exposes the same managed-grid controller through `ctx.ui.grid.create(...)` / `workbench.grid(...)`; plugins may opt into generic Native Mobile `orientationPolicy` without plugin-specific Core branches.
 
 ### Pulse / Read
 

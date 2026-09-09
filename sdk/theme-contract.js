@@ -5,7 +5,6 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const VERSION='3.10.0';
-  const MIN_COMPATIBLE_CONTRACT_VERSION='3.6.0';
   const MATERIAL_ROLES=Object.freeze(['chrome','sidebar','surface','elevated','popover','control','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
   const MATERIAL_CONTEXTS=Object.freeze(['compact','panel','dialog','workspace-modal']);
@@ -259,16 +258,8 @@
     const scientificMode=branch.scientific?.mode||profile.scientific?.mode||'fallback-only';
     return Object.freeze({tokens:Object.freeze({...branch.tokens}),motion:Object.freeze({...profile.motion,...branch.motion}),material:Object.freeze({base:Object.freeze({...profile.material.base,...branch.material.base}),roles:mergeRoles(profile.material.roles,branch.material.roles),contexts:mergeRoles(profile.material.contexts,branch.material.contexts,MATERIAL_CONTEXTS),roleContexts:Object.freeze(Object.fromEntries(MATERIAL_ROLES.map(role=>[role,mergeRoles(profile.material.roleContexts?.[role],branch.material.roleContexts?.[role],MATERIAL_CONTEXTS)]).filter(([,row])=>Object.keys(row).length)))}),appearance:Object.freeze({roles:mergeAppearanceRoles(profile.appearance?.roles,branch.appearance?.roles),components:mergeAppearanceComponents(profile.appearance?.components,branch.appearance?.components)}),effects:Object.freeze({...profile.effects,...branch.effects}),scientific:Object.freeze({seriesPalette:Object.freeze(branchPalette.length?branchPalette:[...(profile.scientific?.seriesPalette||[])]),mode:scientificMode}),recipes:Object.freeze({...profile.recipes}),settings:profile.settings||Object.freeze([])});
   }
-  function contractVersionSupported(value){
-    const parse=v=>{const m=String(v||'').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);return m?m.slice(1).map(Number):null;};
-    const requested=parse(value),minimum=parse(MIN_COMPATIBLE_CONTRACT_VERSION),current=parse(VERSION);
-    if(!requested||!minimum||!current||requested[0]!==current[0])return false;
-    const cmp=(a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2];
-    return cmp(requested,minimum)>=0&&cmp(requested,current)<=0;
-  }
   function supports(name){
     const key=String(name||'').trim();if(!key)return false;
-    if(key.startsWith('contract:'))return contractVersionSupported(key.slice('contract:'.length));
     if(!key.startsWith('contract.'))return false;
     const scoped=key.slice('contract.'.length);
     if(TOKEN_KEYS.includes(scoped))return true;
@@ -302,5 +293,5 @@
     const add=source=>{if(!source)return;for(const key of COMPONENT_APPEARANCE_KEYS)if(source[key]!==undefined)out[key]=source[key];};
     add(row);add(row.roles?.[role]);if(variant){add(row.variants?.[variant]);add(row.roles?.[role]?.variants?.[variant]);}add(row.contexts?.[context]);if(variant)add(row.contexts?.[context]?.variants?.[variant]);add(row.roles?.[role]?.contexts?.[context]);if(variant)add(row.roles?.[role]?.contexts?.[context]?.variants?.[variant]);return Object.freeze(out);
   }
-  return Object.freeze({version:VERSION,minimumCompatibleContractVersion:MIN_COMPATIBLE_CONTRACT_VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),componentAppearanceKeys:()=>COMPONENT_APPEARANCE_KEYS.slice(),componentAppearanceComponents:()=>COMPONENT_APPEARANCE_COMPONENTS.slice(),componentVariants:()=>COMPONENT_VARIANTS.slice(),componentVariantMap:()=>Object.freeze(Object.fromEntries(Object.entries(COMPONENT_VARIANT_MAP).map(([k,v])=>[k,v.slice()]))),effectKeys:()=>EFFECT_KEYS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),materialContexts:()=>MATERIAL_CONTEXTS.slice(),componentContexts:()=>COMPONENT_CONTEXTS.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,resolveMaterialContext,resolveComponentAppearance,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
+  return Object.freeze({version:VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),componentAppearanceKeys:()=>COMPONENT_APPEARANCE_KEYS.slice(),componentAppearanceComponents:()=>COMPONENT_APPEARANCE_COMPONENTS.slice(),componentVariants:()=>COMPONENT_VARIANTS.slice(),componentVariantMap:()=>Object.freeze(Object.fromEntries(Object.entries(COMPONENT_VARIANT_MAP).map(([k,v])=>[k,v.slice()]))),effectKeys:()=>EFFECT_KEYS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),materialContexts:()=>MATERIAL_CONTEXTS.slice(),componentContexts:()=>COMPONENT_CONTEXTS.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,resolveMaterialContext,resolveComponentAppearance,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
 });

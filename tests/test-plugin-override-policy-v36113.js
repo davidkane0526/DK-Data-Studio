@@ -1,66 +1,55 @@
 'use strict';
 const fs=require('fs');
+const os=require('os');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const policy=require(path.join(root,'desktop','plugin-override-policy'));
-const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
-const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-
-
-const builtins=[
-  {manifest:{id:'builtin.data-center',version:'1.13.2'}},
-  {manifest:{id:'builtin.ter-analysis',version:'3.10.0'}}
-];
-const overrides=[
-  {manifest:{id:'builtin.data-center',version:'1.12.0'},token:'older'},
-  {manifest:{id:'builtin.data-center',version:'1.13.2'},token:'same'},
-  {manifest:{id:'builtin.data-center',version:'1.13.6'},token:'newer'},
-  {manifest:{id:'builtin.ter-analysis',version:'3.9.9'},token:'old-ter'}
-];
-const classified=policy.classify(overrides,builtins);
-assert(classified.active.length===1&&classified.active[0].token==='newer','Only a strictly newer trusted built-in override may shadow bundled code.');
-assert(classified.shadowed.length===3,'Older or equal built-in overrides must be retained only as shadowed diagnostics.');
-assert(classified.shadowed.every(row=>row.effective===false&&row.shadowedByBuiltinVersion),'Shadowed overrides must explain which bundled version won.');
-assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.6'}},'1.13.2')===true,'Newer override version must be accepted.');
-assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.2'}},'1.13.2')===false,'Equal override version must not shadow bundled code.');
-assert(policy.isNewerThanBuiltin({manifest:{version:'1.12.9'}},'1.13.2')===false,'Older override version must not shadow bundled code.');
-
-
-const packageRuntime=fs.readFileSync(path.join(root,'src','core','plugins','kernel','modules','package-runtime.js'),'utf8');
-const builtinShadowGate=packageRuntime.indexOf("packagedBuiltin?.manifest?.source==='builtin'");
-const compatibilityGate=packageRuntime.indexOf('pkg?.compatibilityStatus?.compatible===false');
-assert(builtinShadowGate>=0&&compatibilityGate>builtinShadowGate,'Bundled same-id plugins must shadow stale external copies before compatibility evaluation; do not restore old Plugin API compatibility as a fallback.');
-for(const [rel,id] of [
-  ['src/plugins/pulse-sampler-tool/plugin.json','com.dkds.tools.pulse-sampler'],
-  ['src/plugins/thin-glass-theme/plugin.json','com.dkds.theme.liquid-glass'],
-  ['src/plugins/transfer-vth-lab/plugin.json','com.dkds.transfer-vth-lab']
-]){
-  const manifest=JSON.parse(fs.readFileSync(path.join(root,rel),'utf8'));
-  assert(manifest.id===id,`${rel} must keep the stable plugin id used to shadow stale installed copies.`);
-  assert(manifest.apiVersion==='1.19.0',`${id} must be migrated to Plugin API 1.19 instead of relying on a host compatibility bridge.`);
-}
-
-
-const os=require('os');
 const runtimeFactory=require(path.join(root,'desktop','main-modules','plugin-package-runtime')).createPluginPackageRuntime;
-const tempRoot=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-external-shadow-'));
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+
+assert(policy.compareVersions('1.13.6','1.13.2')>0,'Current override policy must compare exact package versions.');
+assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.6'}},'1.13.2')===true,'A built-in update must be strictly newer than the bundled package.');
+assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.2'}},'1.13.2')===false,'An equal built-in update must be rejected.');
+assert(policy.isNewerThanBuiltin({manifest:{version:'1.12.9'}},'1.13.2')===false,'A downgrade built-in update must be rejected.');
+
+const tempRoot=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-current-override-'));
 try{
-  const userData=path.join(tempRoot,'user-data'),pluginsDir=path.join(userData,'plugins');
-  fs.mkdirSync(pluginsDir,{recursive:true});
-  fs.writeFileSync(path.join(pluginsDir,'stale-thin-glass.dkplugin'),JSON.stringify({schema:1,manifest:{id:'com.dkds.theme.liquid-glass',name:'Old Thin Glass',version:'1.7.0',apiVersion:'1.17.0'},files:{'plugin.js':''}}));
-  fs.writeFileSync(path.join(pluginsDir,'old-third-party.dkplugin'),JSON.stringify({schema:1,manifest:{id:'third.party.old',name:'Old Third Party',version:'1.0.0',apiVersion:'1.17.0'},files:{'plugin.js':''}}));
-  const fakeApp={getPath:key=>key==='userData'?userData:tempRoot,getAppPath:()=>root,getVersion:()=>pkg.version};
+  const userData=path.join(tempRoot,'user-data');fs.mkdirSync(userData,{recursive:true});
+  const fakeApp={getPath:key=>key==='userData'?userData:tempRoot,getAppPath:()=>root,getVersion:()=>require('../package.json').version};
   const runtime=runtimeFactory({app:fakeApp,BrowserWindow:{getAllWindows:()=>[]}});
-  const scanned=runtime.readInstalledExternalPlugins();
-  assert(!scanned.packages.some(row=>row.manifest.id==='com.dkds.theme.liquid-glass'),'A stale installed copy of a shipped first-party id must never enter the external package set.');
-  assert(!scanned.errors.some(row=>row.file==='stale-thin-glass.dkplugin'),'A stale same-id first-party copy must be shadowed before old Plugin API validation, so it cannot create a load warning.');
-  assert(scanned.errors.some(row=>row.file==='old-third-party.dkplugin'&&String(row.error).includes('Unsupported Plugin API: 1.17.0')),'Genuinely external old-API packages must remain incompatible; do not restore a 1.17 compatibility bridge.');
+  const builtin=runtime.readBuiltinPluginPackage('builtin.data-center');
+  assert(builtin?.manifest?.apiVersion==='1.19.0','Built-in package baseline must already use the exact current Plugin API.');
+  const overrideDir=runtime.ensurePluginOverrideDirectory();
+
+  const newer=JSON.parse(JSON.stringify(builtin));newer.manifest.version='99.0.0';
+  fs.writeFileSync(path.join(overrideDir,'newer.dkplugin'),JSON.stringify(newer));
+  let scanned=runtime.readInstalledPluginOverrides();
+  assert(scanned.packages.some(row=>row.manifest.id==='builtin.data-center'&&row.manifest.version==='99.0.0'),'A valid exact-current-contract newer override must be accepted.');
+
+  fs.rmSync(path.join(overrideDir,'newer.dkplugin'));
+  const stale=JSON.parse(JSON.stringify(builtin));stale.manifest.version='0.0.1';
+  fs.writeFileSync(path.join(overrideDir,'stale.dkplugin'),JSON.stringify(stale));
+  scanned=runtime.readInstalledPluginOverrides();
+  assert(scanned.packages.length===0&&scanned.errors.length===0&&scanned.removed.some(row=>row.reason==='override-not-newer-than-bundled'),'A stale/equal override must be removed from current installation state, not retained as a shadow compatibility layer.');
+
+  const oldApi=JSON.parse(JSON.stringify(builtin));oldApi.manifest.version='99.0.0';oldApi.manifest.apiVersion='1.17.0';
+  fs.writeFileSync(path.join(overrideDir,'old-api.dkplugin'),JSON.stringify(oldApi));
+  scanned=runtime.readInstalledPluginOverrides();
+  assert(scanned.packages.length===0&&scanned.errors.length===0&&scanned.removed.some(row=>row.reason==='non-current-contract'),'Old Plugin API overrides must be discarded from current installation state rather than revived by a compatibility bridge.');
+
+  const externalDir=runtime.ensureExternalPluginDirectory();
+  const staleBundledCopy=JSON.parse(JSON.stringify(runtime.readBuiltinPluginPackage('com.dkds.theme.aurora-pop')));staleBundledCopy.manifest.compatibility={app:'>=3.60.0'};staleBundledCopy.manifest.source='builtin';
+  const staleBundledPath=path.join(externalDir,'com.dkds.theme.aurora-pop.dkplugin');fs.writeFileSync(staleBundledPath,JSON.stringify(staleBundledCopy));
+  let external=runtime.readInstalledExternalPlugins();
+  assert(!fs.existsSync(staleBundledPath)&&external.errors.length===0&&external.removed.some(row=>row.id==='com.dkds.theme.aurora-pop'),'A bundled-ID package in the external directory is invalid current installation topology and must be removed, not translated.');
+  fs.writeFileSync(path.join(externalDir,'old-third-party.dkplugin'),JSON.stringify({schema:1,manifest:{id:'third.party.old',name:'Old Third Party',version:'1.0.0',apiVersion:'1.17.0',entry:'plugin.js',pluginType:'extension'},files:{'plugin.js':''}}));
+  external=runtime.readInstalledExternalPlugins();
+  assert(external.packages.length===0&&external.errors.some(row=>String(row.error).includes('Unsupported Plugin API: 1.17.0')),'Third-party packages on an old Plugin API must be rejected; no compatibility bridge may revive them.');
 }finally{fs.rmSync(tempRoot,{recursive:true,force:true});}
 
-const main=fs.readFileSync(path.join(root,'desktop/main.js'),'utf8');
-const packages=fs.readFileSync(path.join(root,'desktop/main-modules/plugin-package-runtime.js'),'utf8');
-assert(packages.includes('PluginOverridePolicy.classify')&&packages.includes('classifyInstalledPluginOverrides().active'),'Plugin package runtime must pass only effective overrides to plugin/window/catalog resolution.');
-assert(packages.includes("reason:'not-newer-than-bundled'")&&packages.includes("reason:'not-newer-than-installed-override'"),'LAN updater must reject stale/downgrade built-in override packages.');
-assert(main.includes('shadowed:classified.shadowed'),'Plugin override IPC must keep stale packages diagnosable without executing them.');
-assert((pkg.build?.files||[]).includes('desktop/**/*'),'Packaged app must include the override precedence policy module.');
-console.log('v3.61.14 built-in override precedence checks passed.');
+const packageRuntime=fs.readFileSync(path.join(root,'src/core/plugins/kernel/modules/package-runtime.js'),'utf8');
+assert(packageRuntime.includes('Installed override failed current-contract load'),'A broken installed override must surface as a current-contract load failure.');
+assert(!packageRuntime.includes('[DKDS built-in plugin override fallback]'),'A broken override must not silently fall back to bundled code.');
+const manager=fs.readFileSync(path.join(root,'src/core/plugins/manager-ui.js'),'utf8');
+assert(!manager.includes('plugin-history-btn')&&!manager.includes('external.history')&&!manager.includes('external.rollback'),'Plugin Manager must not expose package-version compatibility/history rollback UI.');
+console.log('Current-contract built-in override policy checks passed.');

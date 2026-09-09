@@ -29,7 +29,7 @@ assert(kernel.includes("document.querySelectorAll('.command-menu.dkds-command-me
 assert(kernel.includes('shellCommandMenus().forEach(menu=>{if(menu!==except)closeCommandMenu(menu);});'),'closeOtherCommandMenus must only close shell-owned menus.');
 assert(!kernel.includes("function closeOtherCommandMenus(except=null){\n    document.querySelectorAll('.command-menu')"),'Plugin-owned command menus must never be globally closed by shell menu logic.');
 assert(kernel.includes("globalThis.DKDSTheme?.recipePolicy?.()?.popover"),'Popover portal must be recipe-owned.');
-assert(kernel.includes('else menu.classList.remove(\'hidden\');'),'Clear/default recipe must use the original in-place menu behavior.');
+assert(/else\s*\{\s*menuSet\(menu,'visibility','hidden'\);menu\.classList\.remove\('hidden'\);prepareCommandMenuForPaint\(menu\);menuRemove\(menu,'visibility'\);\s*\}/s.test(kernel),'Clear/default recipe must remain in-place while composing Material/Component appearance before the first visible frame, with temporary visibility writes routed through Style Gate.');
 
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes('if(nestedParentOwnsChrome(el))return \'\';'),'Nested chrome suppression must depend on a Core Material parent rather than repainting the header.');

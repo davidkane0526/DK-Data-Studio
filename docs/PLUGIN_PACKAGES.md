@@ -103,7 +103,7 @@ reload / retry
 uninstall
 ```
 
-Uninstalling a plugin does **not** delete its namespaced project data. Reinstalling a compatible plugin with the same id can restore that project state.
+Uninstalling a plugin does **not** delete its namespaced project data. Installing the current-contract plugin with the same id can access that plugin namespace again.
 
 ## Peak detector plugin contract
 
@@ -188,7 +188,7 @@ LAN Web remains a non-installing client. Android/React Native is a distinct nati
 
 Algorithm/data/workbench packages using documented Plugin API contracts are portable. `ctx.ui.actions` is projected into the native action sheet, and PluginWorkspace PRIMARY/PRIME/SUB plus true-TOP window contracts are mapped to Android routes/layout. Direct Electron/Node access, private desktop DOM coupling and mouse-only controls are not portable and must be replaced with Core host/platform/input services.
 
-Android currently stores one active version per plugin id. Desktop package-history rollback and LAN package distribution remain desktop capabilities. Scientific algorithms must remain shared; do not create a separate Android-only implementation.
+Android and Desktop both execute one current package per plugin id. LAN distribution may transfer the current package, but neither host maintains an executable compatibility/history chain. Scientific algorithms remain shared; do not create a separate Android-only implementation.
 
 ## Optional dedicated window in an external package
 
@@ -211,16 +211,11 @@ The package still registers its Activity normally with `openMode:'window'`. Proj
 
 If an installed package is updated while DK Data Studio is running, the package installation revision changes. Any hidden renderer from the previous revision is destroyed and a fresh dedicated renderer is created/prewarmed from the updated package.
 
-## Version history and rollback (v3.54+)
+## Current package and algorithm catalog
 
-Desktop installation keeps one active package per plugin id. When an external `.dkplugin` is updated, the previous package is archived under the application plugin-history store. Plugin Manager can list those archived versions and roll back; the package being replaced by the rollback is archived as well.
+DK Data Studio executes one current package per plugin id. Updating an external package is transactional: if activation of the newly written package fails during that install operation, the installer may restore the file it just replaced so the transaction does not leave a broken installation. That immediate transaction restore is scoped to the in-progress write and does not create selectable prior package versions.
 
-This package history is not the same as scientific algorithm-version coexistence. A single active Algorithm Provider package may register multiple versions of the same algorithm simultaneously. Projects/results store exact algorithm references, while package rollback is a recovery mechanism when an old implementation is no longer supplied by the active package.
-
-
-## Algorithm package catalog and compatibility (v3.55+)
-
-Algorithm Provider packages should declare the exact algorithms that the package can supply in `algorithmProvides`. This allows DK Data Studio to search built-in providers, the active external/override packages and archived external-package history without executing package JavaScript.
+Algorithm Provider packages may register multiple exact versions of a scientific algorithm in the **current active package** for reproducible project locks. Publish those versions through `algorithmProvides`:
 
 ```json
 {
@@ -230,18 +225,13 @@ Algorithm Provider packages should declare the exact algorithms that the package
     {"category":"transport-transform","id":"transport.didv","version":"1.0.0"},
     {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
   ],
-  "compatibility": {
-    "app": ">=3.61.7 <4.0.0",
-    "pluginApi": "^1.14.0"
-  }
+  "pluginDependencies": [
+    {"id":"other.provider"}
+  ]
 }
 ```
 
-`pluginDependencies` may additionally declare package-level dependencies as `{id, range, optional}`. The Catalog marks a candidate compatible only when the current DK Data Studio version, Plugin API version and required plugin-package versions satisfy all declared ranges. The same compatibility result is enforced when installing/updating locally, applying a LAN update, loading an already-installed external/override package, or rolling an archived package back.
-
-When a project locks an unavailable algorithm version, Workbench code must not scan package directories or execute candidate code itself. Use the Core Algorithm API to locate/recover the package. Current compatible providers can be re-enabled/reloaded; archived external providers can be restored through package history. Override candidates are diagnostic only while the host is running because hot-swapping a built-in override would violate host/window lifecycle guarantees.
-
-Package recovery never rewrites the scientific project lock. After a recovery action, Core resolves the original exact algorithm reference again and reports failure if that exact version is still unavailable.
+`pluginDependencies` contains current package IDs only. Algorithm lookup considers currently installed providers only. When a project locks an unavailable algorithm version, Workbench code uses the Core Algorithm API to inspect/reload currently installed providers and must keep the exact project lock unchanged.
 
 ### Standalone workbench defaults and data ownership (Plugin API 1.19)
 

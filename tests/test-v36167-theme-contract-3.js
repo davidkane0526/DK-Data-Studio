@@ -19,6 +19,7 @@ const validator=read('sdk/tools/dkds-plugin.js');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const templateJson=json('sdk/templates/theme-profile/plugin.json');
 const templateJs=read('sdk/templates/theme-profile/plugin.js');
+const templateManifest=JSON.parse(read('sdk/templates/theme-profile/plugin.json'));
 const schema=json('sdk/plugin-manifest.schema.json');
 const index=read('src/index.html');
 
@@ -39,7 +40,7 @@ assert(manager.includes('dkds:theme-profile-changed'),'Plugin Manager must refre
 
 assert.equal(templateJson.pluginType,'theme','SDK theme template must be a real Theme plugin, not generic extension.');
 assert.deepEqual(templateJson.requiresCore,['ui.theme']);
-assert(templateJs.includes("pluginType:'theme'")&&templateJs.includes('motion:{')&&templateJs.includes("ctx.ui.theme.register('default'"),'SDK theme template must demonstrate profile + motion registration.');
+assert(templateManifest.pluginType==='theme'&&templateJs.includes('motion:{')&&templateJs.includes("ctx.ui.theme.register('default'"),'SDK theme template must demonstrate profile + motion registration.');
 assert(apiTypes.includes('DKDSThemeMotionSpec')&&apiTypes.includes('motion?:DKDSThemeMotionSpec'),'SDK types must expose bounded Theme motion authoring.');
 assert(validator.includes("m.pluginType==='theme'")&&validator.includes('Theme plugins must register at least one profile'),'Standalone SDK validator must enforce Theme plugin semantics.');
 assert(desktopPackage.includes("pluginType==='theme'")&&desktopPackage.includes('Theme plugins must declare ui.theme'),'Desktop package installer must enforce Theme plugin semantics.');

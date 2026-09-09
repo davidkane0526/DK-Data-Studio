@@ -12,10 +12,12 @@ const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const superTop=read('src/styles/structure/super-top-contract.css');
 const pluginWorkspace=read('src/styles/structure/plugin-workspace.css');
 const validator=read('scripts/validate-styles.js');
+const platform=read('src/styles/platform/touch.css');
 
 assert(chrome.includes('height:var(--dkds-header-action-height,26px)')&&chrome.includes('min-height:var(--dkds-header-action-height,26px)'), 'Header actions must have one slot-driven hit-height owner.');
 assert(!/\.dkds-panel-close-button\{[^}]*(?:^|;)\s*(?:height|min-height)\s*:/sm.test(chrome), 'Panel close subtype must not re-own hit height.');
-assert(semantic.includes('--dkds-scientific-nav-item-height:24px')&&semantic.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'), 'Scientific navigation must feed the shared header-action height owner.');
+assert(semantic.includes('--dkds-scientific-nav-item-height:28px')&&semantic.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'), 'Scientific navigation must keep one shared header-action height slot.');
+assert(platform.includes('html[data-dkds-host="desktop"] .dkds-scientific-nav-tools')&&platform.includes('--dkds-scientific-nav-item-height:'), 'Desktop host geometry must feed a compact host-specific value into the shared scientific height slot.');
 assert(!/\.dkds-scientific-nav-tools\s+button\{[^}]*(?:height|min-height)\s*:/s.test(workbench), 'Workbench Components must not own a second scientific-nav hit box.');
 
 assert(semantic.includes('--dkds-field-control-min-height')&&schema.includes('--dkds-schema-field-min-height')&&analysis.includes('--dkds-workbench-field-height'), 'Field density owners must expose bounded semantic slots.');

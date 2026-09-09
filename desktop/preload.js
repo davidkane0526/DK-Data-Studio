@@ -1,4 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const {createNativeSaveIntentController,installNativeSaveIntentCapture,isConcreteNativePath}=require('./preload-modules/native-save-intent');
+const {createNativeClipboardIntentController,installNativeClipboardIntentCapture}=require('./preload-modules/native-clipboard-intent');
+
+const nativeSaveIntent=createNativeSaveIntentController({report:meta=>ipcRenderer.send('files:saveIntentBlocked',meta)});
+installNativeSaveIntentCapture(nativeSaveIntent);
+const nativeClipboardIntent=createNativeClipboardIntentController();
+installNativeClipboardIntentCapture(nativeClipboardIntent);
+const withSaveIntent=(kind,payload={})=>{
+  const clean={...(payload||{})};delete clean.__dkdsNativeSaveIntent;
+  const intent=nativeSaveIntent.consume(kind,{source:clean.source||''});
+  return intent?{...clean,__dkdsNativeSaveIntent:intent}:null;
+};
 
 contextBridge.exposeInMainWorld('electronAPI', {
   openCsvFiles: () => ipcRenderer.invoke('files:openCsv'),
@@ -23,10 +35,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('mcp:request', handler);
     return () => ipcRenderer.removeListener('mcp:request', handler);
   },
-  copyText: text => ipcRenderer.invoke('clipboard:writeText', text),
-  saveText: payload => ipcRenderer.invoke('files:saveText', payload),
-  saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
-  saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
+  copyText: text => { const intent=nativeClipboardIntent.consume({source:'renderer.copyText'}); return intent?ipcRenderer.invoke('clipboard:writeText',{text:String(text??''),__dkdsClipboardIntent:intent}):Promise.resolve(false); },
+  saveText: payload => { const next=withSaveIntent('export',payload); return next?ipcRenderer.invoke('files:saveText',next):Promise.resolve(false); },
+  saveBase64: payload => { const next=withSaveIntent('export',payload); return next?ipcRenderer.invoke('files:saveBase64',next):Promise.resolve(false); },
+  saveProject: payload => {
+    const clean={...(payload||{})};delete clean.__dkdsNativeSaveIntent;
+    const direct=clean.mode!=='saveAs'&&isConcreteNativePath(clean.path);
+    if(direct)return ipcRenderer.invoke('files:saveProject',clean);
+    const next=withSaveIntent('project',clean);return next?ipcRenderer.invoke('files:saveProject',next):Promise.resolve(null);
+  },
   getRuntimeStatus: () => ipcRenderer.invoke('system:getRuntimeStatus'),
   getDevToolsState: () => ipcRenderer.invoke('system:getDevToolsState'),
   toggleDevTools: () => ipcRenderer.invoke('system:toggleDevTools'),
@@ -128,12 +145,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginInstallGeneratedPackage: payload => ipcRenderer.invoke('plugins:installGeneratedPackage', payload || {}),
   pluginCancelInstall: token => ipcRenderer.invoke('plugins:cancelInstall', token),
   pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
-  pluginHistoryList: id => ipcRenderer.invoke('plugins:historyList', id),
   pluginAlgorithmCatalog: ref => ipcRenderer.invoke('plugins:algorithmCatalog', ref),
-  pluginRollbackVersion: payload => ipcRenderer.invoke('plugins:rollbackVersion', payload),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
-  pluginExportPackage: id => ipcRenderer.invoke('plugins:exportPackage', id),
+  pluginExportPackage: id => { const payload=withSaveIntent('export',{id,source:'core.plugin-manager.export-package'}); return payload?ipcRenderer.invoke('plugins:exportPackage',payload):Promise.resolve(null); },
   pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),
+  pluginReadBuiltinScript: src => ipcRenderer.invoke('plugins:readBuiltinScript', String(src || '')),
   updateGetStatus: () => ipcRenderer.invoke('update:getStatus'),
   updateGetSettings: () => ipcRenderer.invoke('update:getSettings'),
   updateSetSettings: settings => ipcRenderer.invoke('update:setSettings', settings),

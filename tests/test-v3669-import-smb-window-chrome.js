@@ -42,7 +42,7 @@ for(const id of ['reswinShowAll','reswinShowForward','reswinShowReverse','reswin
   const re=new RegExp(`<button id="${id}" class="dkds-action-button" data-dkds-action-layout="standalone"`);
   assert(re.test(resonanceView),`${id} must consume the canonical standalone action surface.`);
 }
-assert(resonanceControls.includes("button.classList.toggle('selected',selected)")&&resonanceControls.includes("button.classList.remove('active')"),'Resonance visibility modes must use selected-mode styling rather than activity styling.');
+assert(resonanceControls.includes("button.classList.toggle('selected',selected)")&&resonanceControls.includes("button.setAttribute('aria-pressed',String(selected))")&&resonanceControls.includes("button.classList.remove('active')"),'Resonance visibility presets must expose exactly one canonical selected/fill state for the current scan mode while clearing stale active state.');
 
 assert(desktop.includes('frame: false'),'Primary desktop window must be frameless so the app chrome owns the title bar.');
 for(const ipc of ["windows:minimizeCurrent","windows:toggleMaximizeCurrent","windows:getCurrentState"]){assert(desktop.includes(ipc),`Desktop must expose ${ipc}.`);}

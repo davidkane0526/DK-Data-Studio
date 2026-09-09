@@ -5,6 +5,15 @@
 .dkds-integrated-action-group{
   display:inline-flex;align-items:center;flex-wrap:nowrap;gap:0;min-width:0;padding:0;
 }
+/* Floating command chrome is one physical silhouette. Its outer box is derived
+   from the action hit-box plus one symmetric inset, rather than from a second
+   plugin-owned fixed height. This guarantees equal top/right/bottom/left
+   breathing room even when action density changes. */
+[data-dkds-floating-chrome].dkds-integrated-action-group{
+  --dkds-floating-chrome-inset:3px;
+  box-sizing:border-box;
+  padding:var(--dkds-floating-chrome-inset);
+}
 .dkds-portable-header>.dkds-integrated-action-group,
 .dkds-surface-header>.dkds-integrated-action-group,
 .floating-header>.dkds-integrated-action-group{flex:0 0 auto;margin-left:auto;}
@@ -19,7 +28,7 @@
   height:100%;align-self:stretch;margin:0;padding:0;flex:0 0 auto;
 }
 
-:where(.dkds-integrated-action-group,.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions)>button{
+:is(.dkds-integrated-action-group,.dkds-separated-action-group,.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions)>button{
   box-sizing:border-box;
   height:var(--dkds-header-action-height,26px);
   min-height:var(--dkds-header-action-height,26px);
@@ -27,26 +36,22 @@
 }
 
 .dkds-portable-icon-action{
-  --dkds-header-action-height:26px;
   box-sizing:border-box;width:26px;min-width:26px;max-width:26px;
   padding:0;display:inline-flex;align-items:center;justify-content:center;
   font-size:18px;line-height:1;font-weight:500;
 }
 .dkds-portable-close-action{font-size:20px;}
 .dkds-panel-close-button{
-  --dkds-header-action-height:26px;
   box-sizing:border-box;display:inline-grid;place-items:center;
   width:26px;min-width:26px;max-width:26px;max-height:26px;
   padding:0;line-height:1;cursor:pointer;
 }
 .dkds-portable-placement-trigger{
-  --dkds-header-action-height:26px;
   box-sizing:border-box;width:auto;min-width:34px;
   padding:0 8px;font-size:11px;line-height:1;display:inline-flex;align-items:center;
   justify-content:center;gap:4px;white-space:nowrap;
 }
 .dkds-plot-view-action{
-  --dkds-header-action-height:26px;
   box-sizing:border-box;min-width:30px;
   padding:0 8px;font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
 }

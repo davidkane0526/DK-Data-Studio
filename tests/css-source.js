@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
-const DEFAULT_LAYERS=['foundation','structure','presentation','theme','platform'];
+const DEFAULT_LAYERS=['foundation','structure','presentation','theme','motion','platform'];
 function readCoreCss(root,layers=DEFAULT_LAYERS){
   const chunks=[];
   for(const layer of layers){

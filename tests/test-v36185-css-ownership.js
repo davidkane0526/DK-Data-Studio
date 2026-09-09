@@ -29,13 +29,13 @@ for(const id of ownedPlugins){
   }
 }
 
-// Built-in and packaged plugin styles share one explicit cascade owner.
+// Shared and host-selected plugin styles have two explicit, ordered cascade owners.
 const styleLoader=readComposition(root,'src/core/plugins/kernel');
-assert(styleLoader.includes('@layer dkds.plugin')&&styleLoader.includes('document.head.appendChild(el)'),'Plugin stylesheet lifecycle must use the dkds.plugin cascade layer independent of activation order.');
+assert(styleLoader.includes("requestedLayer==='dkds.plugin-platform'?'dkds.plugin-platform':'dkds.plugin'")&&styleLoader.includes('`@layer ${layer}'), 'Plugin stylesheet lifecycle must stay bounded to shared dkds.plugin or host-selected dkds.plugin-platform layers.');
 
 // Mobile/plot infrastructure observes semantic markers instead of named plugins.
 const mobile=read('src/core/host/mobile-host-runtime.js'),presentation=read('src/core/ui/modules/presentation/model.js');
-assert(!mobile.includes('[data-dkds-mobile-summary]')&&!mobile.includes('#reswinSummary')&&!mobile.includes('#terSummary')&&!presentation.includes('querySelector'),'Mobile shell state must now come from the DOM-blind Core Presentation Model rather than summary-node observation.');
+assert(!mobile.includes('[data-dkds-inline-summary]')&&!mobile.includes('#reswinSummary')&&!mobile.includes('#terSummary')&&!presentation.includes('querySelector'),'Mobile shell state must now come from the DOM-blind Core Presentation Model rather than summary-node observation.');
 const curves=readComposition(root,'src/core/ui/composition');
 assert(curves.includes('[data-dkds-legend]')&&curves.includes('[data-dkds-plot-scope]'),'Scientific navigation collision handling must use semantic legend/scope markers.');
 assert(!/respar-main-legend|respar-peak-legend|reswin-group-legend/.test(curves),'Scientific Core must not know Resonance legend selectors.');
@@ -45,6 +45,6 @@ const importantTotal=coreCssFiles.reduce((sum,file)=>sum+(fs.readFileSync(file,'
 assert.equal(importantTotal,0,'Authored Core CSS must not use !important; use cascade ownership layers.');
 assert(!fs.existsSync(path.join(root,'src','styles','base'))&&!fs.existsSync(path.join(root,'src','styles','modern')),'Legacy base/modern specificity directories must not return.');
 const cascade=read('src/core.css');
-for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window'])assert(cascade.includes(`dkds.${layer}`),`Core cascade is missing dkds.${layer}.`);
+for(const layer of ['foundation','plugin','plugin-platform','structure','presentation','theme','platform','window'])assert(cascade.includes(`dkds.${layer}`),`Core cascade is missing dkds.${layer}.`);
 
 console.log('v3.61.86 CSS ownership PASS: plugin geometry is manifest-owned; Core is domain-neutral; !important debt=0 and cascade ownership is explicit.');

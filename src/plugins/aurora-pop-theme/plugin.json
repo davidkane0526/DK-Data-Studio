@@ -9,11 +9,6 @@
     "ui.theme"
   ],
   "description": "Built-in Aurora Pop 2.3 theme for Theme Contract 3.10: expressive violet/emerald contextual component and material composition with Core-owned final paint.",
-  "compatibility": {
-    "app": ">=3.67.10 <4.0.0",
-    "pluginApi": "^1.19.0",
-    "themeContract": "^3.10.0"
-  },
   "scripts": [
     "plugin.js"
   ],

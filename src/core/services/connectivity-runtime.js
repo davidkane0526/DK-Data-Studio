@@ -74,9 +74,6 @@
   async function run(instruction,override={}){return chat([{role:'user',content:String(instruction||'')}],override);}
   async function test(settingsOverride={}){const settings=saveSettings(settingsOverride),key=await api('agentGetSecret',settings.presetId||'default');if(!key)throw new Error('请先保存 AI API Key。');const body=settings.provider==='anthropic'?{model:settings.model,max_tokens:16,messages:[{role:'user',content:'Reply with OK.'}]}:{model:settings.model,messages:[{role:'user',content:'Reply with OK.'}],max_tokens:8};const response=await http(settings,key,body);if(!response?.ok)throw new Error(`连接失败：HTTP ${response?.status||0}`);return true;}
 
-  // Backward-compatible planning APIs remain for older plugins; new UI should use run().
-  async function requestPlan(instruction,override={}){return {summary:'完整内核 Agent 已启用；此兼容接口不再生成待确认 UI 计划。',operations:[],agentResult:await run(instruction,override)};}
-  async function applyPlan(plan){return plan?.agentResult||plan||null;}
-  const agent=Object.freeze({presets:()=>presets.map(row=>({...row,models:[...row.models]})),loadSettings,saveSettings,getSecret:key=>api('agentGetSecret',key),setSecret:(key,value)=>api('agentSetSecret',{key,value}),test,chat,run,requestPlan,applyPlan,context:snapshot,tools:()=>availableTools(loadSettings()),audit:()=>loadAudit()});
+  const agent=Object.freeze({presets:()=>presets.map(row=>({...row,models:[...row.models]})),loadSettings,saveSettings,getSecret:key=>api('agentGetSecret',key),setSecret:(key,value)=>api('agentSetSecret',{key,value}),test,chat,run,context:snapshot,tools:()=>availableTools(loadSettings()),audit:()=>loadAudit()});
   window.DKDSConnectivity=Object.freeze({configure(next={}){core={...core,...next};},files,smb,agent,mcp});
 })();

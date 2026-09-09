@@ -24,9 +24,5 @@
       "title": "Scale Y"
     }
   ],
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
-  },
   "pluginType": "algorithm"
 }

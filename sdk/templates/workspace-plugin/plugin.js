@@ -1,12 +1,55 @@
 (() => {
   const requiresCore=['status','state','project','data.types','data.sources','ui.scientific-plot','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction-behavior','ui.pages'];
   DKDSPlugins.define({
-    id:'com.example.workspace',pluginType:'workbench',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
-    description:'Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.',requiresCore,
-    capabilities:['ui.page','ui.interaction-behavior','ui.scientific-plot','state.store','data.types','data.sources','ui.plugin-workspace'],
-    data:{accepts:['science.transport.iv']},
-    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
-  }, async ctx => {
+  "id": "com.example.workspace",
+  "name": "SDK Workspace Example",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": [
+    "plugin.js"
+  ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "enabled": true,
+  "order": 900,
+  "description": "Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.",
+  "requiresCore": [
+    "status",
+    "state",
+    "project",
+    "data.types",
+    "data.sources",
+    "ui.scientific-plot",
+    "ui.dom",
+    "ui.components",
+    "ui.workspace",
+    "ui.actions",
+    "ui.interaction-behavior",
+    "ui.pages"
+  ],
+  "capabilities": [
+    "ui.page",
+    "ui.interaction-behavior",
+    "ui.scientific-plot",
+    "state.store",
+    "data.types",
+    "data.sources",
+    "ui.plugin-workspace"
+  ],
+  "pluginType": "workbench",
+  "data": {
+    "accepts": [
+      "science.transport.iv"
+    ]
+  }
+}, async ctx => {
     const state=ctx.state.create({runs:0},{projectSlice:'settings'});
     const run=()=>{state.patch({runs:state.get().runs+1});ctx.status.set(`SDK example run ${state.get().runs}`);return true;};
     ctx.commands.register('com.example.workspace.run',run);

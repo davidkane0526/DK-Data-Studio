@@ -30,7 +30,6 @@ body.dkds-modern-ui .plugin-card-footer,
 body.dkds-modern-ui .plugin-card-details {
   background:var(--surface-secondary);
   border-color:var(--border-subtle);
-  color:var(--text-secondary)
 }
 body.dkds-modern-ui .tool-workspace-menu-item .activity-icon {color:var(--dkui-accent)
 }
@@ -69,7 +68,7 @@ body.dkds-modern-ui .dkds-memory-component-main strong {flex:0 0 auto;color:var(
 }
 body.dkds-modern-ui .dkds-memory-component-meta {margin-top:2px;color:var(--dkui-muted);font-size:var(--ui-font-tiny,10px)
 }
-body.dkds-modern-ui .dkds-memory-meter {height:3px;margin-top:6px;overflow:hidden;border-radius:99px;background:var(--dkui-control-border)
+body.dkds-modern-ui .dkds-memory-meter {height:3px;margin-top:6px;overflow:hidden;border-radius:99px
 }
 body.dkds-modern-ui .dkds-memory-meter>span {display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-surface-elevated)),var(--dkui-accent))
 }
@@ -91,25 +90,14 @@ body.dkds-modern-ui :is(.dkds-analysis-left-resizer,.dkds-analysis-right-resizer
 body.dkds-modern-ui :is(.dkds-analysis-bottom-resizer,.dkds-plugin-canvas-bottom-resizer):is(:hover,:focus-visible,.is-dragging)::before {
   background:var(--dkui-divider-hover,var(--divider-active))
 }
-body.dkds-modern-ui .dkds-portable-inline-header {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px
-}
-body.dkds-modern-ui .dkds-portable-inline-header>.dkds-portable-controls {grid-column:2;margin-left:0;justify-self:end
-}
-
 body.dkds-modern-ui .plugin-manager-page button,
 body.dkds-modern-ui .plugin-manager-toolbar-card button,
 body.dkds-modern-ui .plugin-card-actions button {
-
-
-
-
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease
-;}
+}
 body.dkds-modern-ui .plugin-manager-body {background:transparent
 }
 body.dkds-modern-ui .plugin-manager-stat strong {color:var(--dkui-text)
 }
-body.dkds-modern-ui .plugin-manager-visible-count,
 body.dkds-modern-ui .plugin-manager-section-count {
   background:transparent;
   border-color:transparent;
@@ -119,8 +107,6 @@ body.dkds-modern-ui .plugin-card-icon {
   background:var(--dkui-accent-soft);
   border:1px solid color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-control-border));
   box-shadow:var(--dkui-shadow-1)
-}
-body.dkds-modern-ui .plugin-manager-note {background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)
 }
 body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
 body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
@@ -154,14 +140,10 @@ body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
 .plugin-manager-stat.has-error strong {color:var(--danger)
 }
 .plugin-manager-toolbar-card>label {
-  color:var(--text-secondary)
 }
-.plugin-manager-visible-count {border:1px solid transparent;border-radius:999px}
 .plugin-manager-note {
   border-left:3px solid var(--dkui-control-border);
   border-radius:5px;
-  background:var(--dkui-surface-soft);
-  color:var(--text-secondary)
 }
 .plugin-manager-section-head strong {color:var(--dkui-text)
 }
@@ -205,7 +187,6 @@ body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
 .plugin-switch-label {color:var(--text-secondary)
 }
 .plugin-card-description {
-  color:var(--text-secondary)
 }
 .plugin-capability-chip.muted {opacity:.72}
 .plugin-card-footer {
@@ -219,9 +200,14 @@ body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
   background:var(--dkui-surface-soft);
   color:var(--dkui-text-soft)
 }
-.dkds-portable-resize-handle::before,
-.dkds-portable-resize-handle::after {background:var(--dkui-muted)
-}
+.dkds-portable-resize-handle{outline:none;background:transparent}
+/* The 36×36 rectangle is interaction-only. Theme owns the hue through the
+   canonical floatingChrome component slots; Core only applies restrained alpha
+   so the resize affordance remains visibly translucent without creating a
+   second-depth/folded-page material plane. No backdrop sampling or blur. */
+.dkds-portable-resize-handle::before{background:color-mix(in srgb,var(--dkui-component-floating-chrome-indicator,var(--dkui-accent-alt,var(--dkui-accent))) 58%,transparent)}
+.dkds-portable-resize-handle::after{background:color-mix(in srgb,var(--dkui-component-floating-chrome-border-active,var(--dkui-accent)) 44%,transparent)}
+.dkds-portable-resize-handle:hover::before,.dkds-portable-resize-handle:focus-visible::before,.dkds-portable-resize-handle.is-dragging::before{background:color-mix(in srgb,var(--dkui-component-floating-chrome-border-hover,var(--dkui-component-floating-chrome-indicator,var(--dkui-accent-hover))) 68%,transparent)}
 .plugin-card-icon.plugin-super-selector:disabled {opacity:.62
 }
 .plugin-card-icon.plugin-super-selector.selected:disabled {opacity:1;}
@@ -235,5 +221,20 @@ body.dkds-modern-ui .dkds-plugin-workspace {
   --plugin-workspace-grid:color-mix(in srgb,var(--text-tertiary) 14%,transparent);
   --plugin-workspace-shadow:var(--surface-shadow-raised)
 ;}
-body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px;padding:10px;margin:0 0 8px
+body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px
 }
+
+/* Native scientific companions use the same split boundary affordance as Desktop.
+   Keep a faint theme-aware seam visible at rest; hover/drag strengthens it. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui [data-dkds-mobile-presentation="semantic"] :is(.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer).active::before{
+  background:color-mix(in srgb,var(--dkui-divider) 72%,transparent);
+  box-shadow:0 0 3px color-mix(in srgb,var(--dkui-accent) 22%,transparent);
+  opacity:.78;
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui [data-dkds-mobile-presentation="semantic"] :is(.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer).active:is(:hover,:focus-visible,.is-dragging)::before{
+  background:var(--dkui-divider-hover,var(--divider-active));
+  box-shadow:0 0 5px color-mix(in srgb,var(--dkui-accent) 30%,transparent);
+  opacity:1;
+}
+
+.plugin-manager-summary-refresh{border-radius:7px}

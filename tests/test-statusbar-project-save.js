@@ -27,7 +27,7 @@ assert(html.indexOf('id="statusBar"')>html.indexOf('<div class="workspace">'),'g
 assert(css.includes('--dkds-statusbar-height:28px'),'shell must reserve a shared status-bar height.');
 assert(css.includes('.plugin-status-item'),'status-bar plugin controls need a common visual contract.');
 assert(html.includes('class="statusbar-command-cluster"')&&dedicatedHtml.includes('class="statusbar-command-cluster"'),'desktop and dedicated status actions must share one integrated command-cluster wrapper.');
-assert(modernCss.includes('.statusbar-message + .statusbar-command-cluster{margin-left:auto}')&&modernCss.includes('.statusbar-plugin-left,')&&modernCss.includes('.statusbar-plugin-right{margin-left:0}'),'status command cluster must sit at the far-right edge without separate zone spacing.');
+assert(modernCss.includes('.statusbar-message + .statusbar-command-cluster{margin-left:auto}')&&/\.statusbar-plugin-left,\s*\n?\s*\.statusbar-plugin-right\{margin-left:0;\}/.test(modernCss),'status command cluster must sit at the far-right edge while both plugin zones remain adjacent with no second auto spacer.');
 
 assert(kernel.includes("registerContribution(pluginId,'ui.statusItems'"),'plugin kernel must register status items generically.');
 assert(kernel.includes('statusBar: {')&&kernel.includes('add: spec => addStatusBarItem(pluginId, spec)'),'plugin API must expose ui.statusBar.add().');

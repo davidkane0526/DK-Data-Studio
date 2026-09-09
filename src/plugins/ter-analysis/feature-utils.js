@@ -31,7 +31,7 @@
       rows=Math.max(1,Math.min(CHART_COUNT,Math.round(Number(input.rows))));
       cols=Math.max(1,Math.ceil(CHART_COUNT/rows));
     }
-    return {rows,cols,sticky:input.sticky!==false};
+    return {rows,cols};
   }
   function heatmapCsv(result){
     const rows=['Vg_V,Vds_V,TER_percent'];
@@ -45,12 +45,12 @@
   }
   function maxVgCsv(result){
     const rows=['Vg_V,TER_Max_Vg_percent,Vd_at_max_V,I_forward_A,I_reverse_A,R_forward_ohm,R_reverse_ohm,selection_mode,source_file'];
-    for(const row of result?.terMaxByVg||result?.terMax||[])rows.push([row.vg,row.ter,row.vdsAtMax,row.iUp,row.iDown,row.rUp,row.rDown,row.manual?'manual':'auto',row.sourceFile].map(csvCell).join(','));
+    for(const row of result?.terMaxByVg||[])rows.push([row.vg,row.ter,row.vdsAtMax,row.iUp,row.iDown,row.rUp,row.rDown,row.manual?'manual':'auto',row.sourceFile].map(csvCell).join(','));
     return rows.join('\n');
   }
   function maxVgArgCsv(result){
     const rows=['Vg_V,Vd_at_TER_Max_Vg_V,TER_Max_Vg_percent,selection_mode,source_file'];
-    for(const row of result?.terMaxByVg||result?.terMax||[])rows.push([row.vg,row.vdsAtMax,row.ter,row.manual?'manual':'auto',row.sourceFile].map(csvCell).join(','));
+    for(const row of result?.terMaxByVg||[])rows.push([row.vg,row.vdsAtMax,row.ter,row.manual?'manual':'auto',row.sourceFile].map(csvCell).join(','));
     return rows.join('\n');
   }
   function maxVdCsv(result){

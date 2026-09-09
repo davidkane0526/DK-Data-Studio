@@ -56,6 +56,14 @@ function snapshotProjectDataState(){return {artifacts:snapshotArtifactRows().map
 function restoreProjectDataState(snapshot,type='history-data-restore'){
   const before=snapshotArtifactRows();state.artifactStore=window.DKDSData.createStore((snapshot?.artifacts||[]).map(window.DKDSData.deepClone));commitOwnerArtifactMutation(before,type);return true;
 }
+function projectArtifactSnapshotApi(){
+  return {
+    revision:()=>Number(state.artifactStore?.revision?.()||0),
+    list:(options={})=>(state.artifactStore?.list?.({includeTransient:options?.includeTransient!==false})||[]).map(row=>window.DKDSData.deepClone(row)),
+    get:id=>{const row=state.artifactStore?.get?.(String(id||''));return row?window.DKDSData.deepClone(row):null;}
+  };
+}
+
 function projectHistoryHostApi(){return {state:()=>projectHistorySnapshot(),undo:()=>systemUndo(),redo:()=>systemRedo(),commitArtifactMutation(payload={}){const label=String(payload.label||'数据对象修改'),beforePatch=payload.before&&typeof payload.before==='object'?payload.before:{upserts:[],removedIds:[]},afterPatch=payload.after&&typeof payload.after==='object'?payload.after:{upserts:[],removedIds:[]};applyArtifactHistoryPatch(afterPatch,'history-artifact-commit');recordProjectHistory({label,metadata:{kind:'artifact'},undo:()=>applyArtifactHistoryPatch(beforePatch,'history-artifact-undo'),redo:()=>applyArtifactHistoryPatch(afterPatch,'history-artifact-redo')});return {updated:true,state:projectHistorySnapshot()};}};}
 
 function dataSourceHostApi(){
@@ -85,4 +93,4 @@ function pluginUiContext(){
   };
 }
 
-module.exports=Object.freeze({configure, importFiles, artifactHostApi, commitOwnerArtifactMutation, applyArtifactHistoryPatch, snapshotProjectDataState, restoreProjectDataState, projectHistoryHostApi, dataSourceHostApi, pluginUiContext});
+module.exports=Object.freeze({configure, importFiles, artifactHostApi, commitOwnerArtifactMutation, applyArtifactHistoryPatch, snapshotProjectDataState, restoreProjectDataState, projectArtifactSnapshotApi, projectHistoryHostApi, dataSourceHostApi, pluginUiContext});

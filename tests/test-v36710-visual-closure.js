@@ -28,7 +28,7 @@ for(const token of ['occludedMaterial','rendererOk','appearanceOk','lowContrastC
 }
 assert(automation.includes("runCase('ui.visual-geometry-closure'"),
   'Windows/Electron automation must include the computed Desktop Visual Closure geometry case.');
-for(const token of ['getBoundingClientRect','getComputedStyle','at least 48px wide and 34px high','34px high','38px',"componentContext==='grouped'","context==='workspace-modal'",'materialRoleCompositionChecked','inspectorDockSlot','ScientificCurve / ChartRuntime','Portable header action','Shared close action','workspaceGridChecked']){
+for(const token of ['getBoundingClientRect','getComputedStyle','at least 48px wide and 34px high','34px high','38px',"componentContext==='grouped'","context==='workspace-modal'",'materialRoleCompositionChecked','data-analysis-slot="right"','ScientificCurve / ChartRuntime','Portable header action','Shared close action','workspaceGridChecked']){
   assert(automationVisual.includes(token),`Computed visual-geometry closure must retain ${token}.`);
 }
 assert(automation.includes('visualGeometryClosureSmoke'),'Automation runner must dispatch the dedicated visual geometry smoke module.');
@@ -80,12 +80,12 @@ assert(componentAppearance.includes('[data-dkds-component-identity="toolbarGroup
   'ToolbarGroup direct paint must exclude semantic Material owners such as Main Plot Tools.');
 assert(materialCss.includes('[data-dkds-component-identity="toolbarGroup"]:is(.dkds-material-role-surface,.dkds-material-role-floating)'),
   'Material Renderer must own edge geometry when ToolbarGroup is also a Material surface.');
-assert(automationSmoke.includes('fallbackWarnings')&&automationSmoke.includes("String(item?.source||'')==='builtin'"),
-  'Automation must downgrade an incompatible built-in override to a warning only when the bundled fallback is healthy.');
+assert(!automationSmoke.includes('fallbackWarnings')&&!automationSmoke.includes("String(item?.source||'')==='builtin'"),
+  'Automation must treat every invalid external/override package as a blocking current-contract error; bundled fallback compatibility is forbidden.');
 assert(ownershipTest.includes("path.resolve(file)!==path.resolve(root,'src/core/project/format.js')"),
   'Core/plugin ownership gate must compare the Project Format path platform-neutrally on Windows and POSIX.');
 const hardInvariantCount=Number((visualGate.match(/invariants:(\d+)/)||[])[1]||0);
 assert(visualGate.includes('HARD-43')&&visualGate.includes('HARD-44')&&visualGate.includes('HARD-45')&&visualGate.includes('HARD-46')&&visualGate.includes('HARD-47')&&visualGate.includes('HARD-48')&&visualGate.includes('HARD-49')&&visualGate.includes('HARD-50')&&visualGate.includes('HARD-51')&&visualGate.includes('HARD-52')&&visualGate.includes('HARD-53')&&visualGate.includes('HARD-54')&&visualGate.includes('HARD-55')&&visualGate.includes('HARD-56')&&visualGate.includes('HARD-57')&&visualGate.includes('HARD-58')&&visualGate.includes('HARD-59')&&visualGate.includes('HARD-60')&&visualGate.includes('HARD-61')&&visualGate.includes('HARD-62')&&visualGate.includes('HARD-63')&&visualGate.includes('HARD-64')&&visualGate.includes('HARD-65')&&visualGate.includes('HARD-66')&&visualGate.includes('HARD-67')&&visualGate.includes('HARD-68')&&visualGate.includes('HARD-69')&&hardInvariantCount>=69,
   'Hard visual gate must retain the v3.67.10 closure baseline while allowing later releases to add stronger invariants.');
 
-console.log('v3.67.10 Visual Closure checks passed: strict Theme coverage, Windows-safe ownership, Theme 3.10 contextual composition, parent-owned nested chrome and override fallback diagnostics are guarded.');
+console.log('v3.67.10 Visual Closure checks passed: strict Theme coverage, Windows-safe ownership, Theme 3.10 contextual composition, parent-owned nested chrome and fail-closed package diagnostics are guarded.');

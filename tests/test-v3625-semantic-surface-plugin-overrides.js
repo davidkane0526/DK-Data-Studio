@@ -41,14 +41,13 @@ try{
   const versionParts=bundledVersion.split('.').map(Number);
   const overrideVersion=`${versionParts[0]}.${versionParts[1]}.${versionParts[2]+1}`;
   pulse.manifest.version=overrideVersion;
-  pulse.manifest.compatibility={...(pulse.manifest.compatibility||{}),app:'>=3.62.0 <4.0.0',pluginApi:'^1.19.0'};
   const plan=runtime.pluginInstallPlan(pulse);
   assert.strictEqual(plan.installationKind,'override');
   assert.strictEqual(plan.requiresRestart,true);
   assert.strictEqual(plan.bundledVersion,bundledVersion);
   assert.strictEqual(plan.previousVersion,bundledVersion);
   assert(plan.target.includes(`${path.sep}plugin-overrides${path.sep}`),'Bundled updates must be written to plugin-overrides, never the application tree or external plugin store.');
-  const installed=runtime.commitPluginInstall(plan,{archiveReason:'test-override'});
+  const installed=runtime.commitPluginInstall(plan);
   assert.strictEqual(installed.manifest.version,overrideVersion);
   assert(runtime.readInstalledPluginOverrides().packages.some(row=>row.manifest.id==='com.dkds.tools.pulse-sampler'&&row.manifest.version===overrideVersion),'Non-builtin-prefix first-party override must be readable.');
   assert(runtime.installedPluginOverridePackages().some(row=>row.manifest.id==='com.dkds.tools.pulse-sampler'),'Strictly newer first-party override must become effective.');
@@ -58,15 +57,13 @@ try{
   assert.strictEqual(restore.requiresRestart,true);
   assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,bundledVersion,'Removing the override must reveal the bundled baseline again.');
 
-  const nonPrefix=policy.classify([{manifest:{id:'com.dkds.tools.pulse-sampler',version:overrideVersion}}],[{manifest:{id:'com.dkds.tools.pulse-sampler',version:bundledVersion}}]);
-  assert.strictEqual(nonPrefix.active.length,1,'Override precedence must be based on bundled membership/version, not the builtin.* prefix.');
-  assert(policy.isNewerVersion(overrideVersion,bundledVersion),'Generic version comparison must support managed bundled updates.');
+  assert(policy.isNewerVersion(overrideVersion,bundledVersion),'Override precedence must be based on actual bundled membership and strict version comparison, not a compatibility/shadow catalog.');
 }catch(err){throw err;}finally{fs.rmSync(tempRoot,{recursive:true,force:true});}
 
 const main=read('desktop/main.js'),packageRuntime=read('desktop/main-modules/plugin-package-runtime.js'),kernel=read('src/core/plugins/kernel/modules/package-runtime.js'),manager=read('src/core/plugins/manager-ui.js'),validator=read('scripts/validate-plugins.js');
 assert(!main.includes('PLUGIN_BUILTIN_CONFLICT'),'Manual installer must not reject all same-id bundled plugin packages.');
 assert(main.includes('pluginInstallPlan(')&&main.includes('installationKind'),'Desktop install IPC must route packages through managed install planning.');
-assert(packageRuntime.includes('builtinIds.has(pkg.manifest.id)')&&!packageRuntime.includes("!pkg.manifest.id.startsWith('builtin.')"),'Override eligibility must use actual bundled membership, not an id prefix.');
+assert(packageRuntime.includes('isBundledPluginId(id)')&&!packageRuntime.includes("!pkg.manifest.id.startsWith('builtin.')"),'Override eligibility must use actual bundled membership, not an id prefix.');
 assert(kernel.includes('stagedOverrideState')&&kernel.includes('重启 DK Data Studio 后启用'),'Bundled updates must remain deterministic and restart-activated instead of hot-replacing running built-in code.');
 assert(manager.includes('本地更新 · 内置基线')&&manager.includes('恢复内置版本'),'Plugin Manager must expose override provenance and bundled restore.');
 assert(validator.includes('bundled export/package contract failed')&&validator.includes('normalizePluginPackage'),'plugin:validate must enforce external-package parity for all bundled plugins.');

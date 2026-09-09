@@ -10,8 +10,8 @@
     let state=controller.getState();
     let assignmentFilter='all',lineageFilter='all',fieldFilter='';
     let page=null,lastExecution=null,quickPanel=null,chartPanel=null,stepPanels=[];
-    const $=(sel,root=page)=>root?.querySelector(sel)||null;
-    const $$=(sel,root=page)=>[...(root?.querySelectorAll(sel)||[])];
+    const $=(sel,root=page)=>dom.query(sel,root)||null;
+    const $$=(sel,root=page)=>dom.all(sel,root)||[];
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
     ctx.ui.activities.add({
@@ -23,7 +23,7 @@
     const formulaSchema={
       fields:[
         {id:'name',type:'text',label:'新列名称',default:'Derived',required:true,placeholder:'例如 Resistance'},
-        {id:'formula',type:'formula',label:'公式',default:'abs(Vd / Id)',required:true,rows:4,description:'支持列 key/名称，也可用 [带空格的列名]。函数：abs, sqrt, log10, exp, min, max, pow, clamp, ifelse…'},
+        {id:'formula',type:'formula',label:'公式',default:'abs(Vd / Id)',required:true,rows:2,description:'支持列 key/名称，也可用 [带空格的列名]。函数：abs, sqrt, log10, exp, min, max, pow, clamp, ifelse…'},
         {id:'unit',type:'text',label:'单位',default:'',placeholder:'例如 Ω'},
         {id:'role',type:'select',label:'角色',default:'derived',options:[{value:'derived',label:'派生量'},{value:'x',label:'X'},{value:'y',label:'Y'},{value:'group',label:'分组'},{value:'',label:'未指定'}]},
         {id:'replace',type:'boolean',label:'同名列存在时替换',default:false}
@@ -99,23 +99,23 @@
     });
 
     const workbench=sharedViews?.attach?.(ctx,page)||null;
-    const dcHeader=page.querySelector('.analysis-page-header');
+    const dcHeader=$('.analysis-page-header');
     const dcHeaderActionsHost=ctx.ui.dom.create('div');
     dcHeaderActionsHost.className='dkds-plugin-header-actions';
-    dcHeader?.querySelector('.analysis-page-close')?.before(dcHeaderActionsHost);
+    dom.query('.analysis-page-close',dcHeader)?.before(dcHeaderActionsHost);
     ctx.ui.actions?.mount?.(dcHeaderActionsHost,{
       activity:'data-center',
       actions:[
         {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>renderAllUi()},
-        {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>runWorkflow()}
+        {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',variant:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>runWorkflow()}
       ]
     });
 
     ctx.ui.topWorkspace.register({
       id:'data-center',activity:'data-center',label:'数据中心',icon:'▦',
       layout:{
-        mode:'native',root:{selector:'.data-center-body .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary',presentationRole:'data-primary',priority:100,collapsible:false},prime:[{id:'chart-preview',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
+        mode:'native',root:{selector:workbench?'.data-center-body .dkds-plugin-workbench-root':'.data-center-body'},
+        primary:{id:'main',role:'analysis-primary',presentationRole:'data-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'数据',presentationRole:'data-control',priority:94,collapsible:true},{id:'chart-preview',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
       }
     });
 
@@ -127,15 +127,15 @@
         ['dc-export-chart-png','数据中心图形预览 · PNG',30,()=>ctx.ui.scientificPlot.saveImage('dcChart','data_center_chart','png'),hasActiveTable],
         ['dc-copy-provenance','当前数据对象 · 复制来源链 JSON',50,()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2)),hasActiveArtifact]
       ];
-      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'data-center',order,onClick,availability});
+      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'data-center',order,onClick,availability,nativeCopy:id==='dc-copy-provenance'?'clipboard':undefined});
     }
 
-    const chartPane=page.querySelector('.dc-chart-pane');
+    const chartPane=$('.dc-chart-pane');
     if(chartPane){
       try{
-        if(workbench?.registerPrime)workbench.registerPrime({id:'chart-preview',label:'图形预览',title:'通用图形预览',node:chartPane,inlineHost:'.dc-main',handle:'.dc-tool-title',controlsHost:'#dcPlotViewActions',defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],autoOpen:true,mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(page.querySelector('#dcChart'));}catch{}})});
+        if(workbench?.registerPrime)workbench.registerPrime({id:'chart-preview',label:'图形预览',title:'通用图形预览',node:chartPane,inlineHost:'.dc-main',handle:'.dc-tool-title',controlsHost:'#dcPlotViewActions',useTargetAsWrapper:true,defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],stateVersion:'data-center-chart-inline-v2',autoOpen:true,mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}})});
         else if(ctx.ui.portable?.create)ctx.ui.portable.create('data-center-chart',chartPane,{title:'通用图形预览',handle:'.dc-tool-title',controlsHost:'#dcPlotViewActions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'});
-        const plot=page.querySelector('#dcChart');
+        const plot=$('#dcChart');
         if(plot&&ctx.ui.plotViews?.bind){
           const chartCard=plot.closest('.dc-chart-pane');
           if(chartCard)ctx.ui.plotViews.bind('data-center:preview',chartCard,{
@@ -171,7 +171,7 @@
     function renderDataNavigation(){
       const lineage=$('#dcLineageFilter'),field=$('#dcFieldFilter');if(!lineage||!field)return;
       lineage.value=['all','raw','derived'].includes(lineageFilter)?lineageFilter:'all';lineageFilter=lineage.value;
-      const current=fieldFilter,rows=availableArtifactFields();field.innerHTML='<option value="">全部字段</option>'+rows.map(row=>`<option value="${esc(row.field)}">${esc(row.field)}${row.count>1?` · ${row.count}`:''}</option>`).join('');
+      const current=fieldFilter,rows=availableArtifactFields();dom.html(field,'<option value="">全部字段</option>'+rows.map(row=>`<option value="${esc(row.field)}">${esc(row.field)}${row.count>1?` · ${row.count}`:''}</option>`).join(''));
       field.value=[...field.options].some(option=>option.value.toLocaleLowerCase()===String(current).toLocaleLowerCase())?current:'';fieldFilter=field.value;
     }
     let artifactSelectionAnchorId='';
@@ -186,7 +186,7 @@
     function selectAllVisibleArtifacts(){const rows=artifacts();selectArtifacts(rows,{focusId:state.activeArtifactId,source:'data-center-select-all'});artifactSelectionAnchorId=String(state.activeArtifactId||rows.at(-1)?.id||'');artifactSelectionView?.refresh?.({reveal:false});return rows.length;}
     function invertVisibleArtifactSelection(){const rows=artifacts(),selected=selectedArtifactIds(),next=rows.filter(a=>!selected.has(String(a.id)));selectArtifacts(next,{focusId:next.at(-1)?.id||'',source:'data-center-invert'});if(next.length){state.activeArtifactId=next.at(-1).id;artifactSelectionAnchorId=String(next.at(-1).id);}artifactSelectionView?.refresh?.({reveal:false});return next.length;}
     function clearVisibleArtifactSelection(){controller?.clearSelection?.({source:'data-center-clear'});artifactSelectionAnchorId='';artifactSelectionView?.refresh?.({reveal:false});return true;}
-    function renderAssignmentFilter(){const select=$('#dcAssignmentFilter');if(!select)return;const targets=assignmentTargets(),value=assignmentFilter;select.innerHTML='<option value="all">全部用途</option><option value="unassigned">仅数据中心</option>'+targets.map(row=>`<option value="${esc(row.id)}">${esc(row.icon||'◇')} ${esc(row.label||row.name||row.id)}</option>`).join('');select.value=[...select.options].some(option=>option.value===value)?value:'all';assignmentFilter=select.value;}
+    function renderAssignmentFilter(){const select=$('#dcAssignmentFilter');if(!select)return;const targets=assignmentTargets(),value=assignmentFilter;dom.html(select,'<option value="all">全部用途</option><option value="unassigned">仅数据中心</option>'+targets.map(row=>`<option value="${esc(row.id)}">${esc(row.icon||'◇')} ${esc(row.label||row.name||row.id)}</option>`).join(''));select.value=[...select.options].some(option=>option.value===value)?value:'all';assignmentFilter=select.value;}
     async function setArtifactAssignments(a,ids){if(!isImportedSource(a)||!sourceCapability?.setAssignments)return false;const ref=sourceRef(a);if(!ref.path&&!ref.sourcePath&&!ref.artifactId)return false;await sourceCapability.setAssignments(ref,ids);renderAllUi();return true;}
     function assignmentActionItems(a){if(!isImportedSource(a)||!sourceCapability?.setAssignments)return [];const targets=assignmentTargets(),raw=artifactAssignments(a)||[],expanded=raw.includes('*')?targets.map(row=>String(row.id)):raw.slice(),selected=new Set(expanded);return [
       {type:'separator'},
@@ -214,7 +214,7 @@
       }catch(err){ctx.status.set(`移除源数据失败：${err.message||err}`);return false;}
     }
     async function renameArtifact(a=activeArtifact()){
-      if(!a)return false;const label=window.prompt('修改数据标签',String(a.name||''));if(label===null)return false;const name=String(label||'').trim();if(!name)return false;
+      if(!a)return false;const label=await ctx.ui.dialogs.prompt({title:'修改数据标签',inputLabel:'数据标签',value:String(a.name||''),confirmLabel:'保存'});if(label===null||label===undefined)return false;const name=String(label||'').trim();if(!name)return false;
       if(isImportedSource(a)&&sourceCapability?.rename){await sourceCapability.rename(sourceRef(a),name);}
       else{const next={...D.deepClone(a),name};if(historyCapability?.commitArtifactMutation)await historyCapability.commitArtifactMutation({label:`修改数据标签 · ${name}`,before:{upserts:[D.deepClone(a)],removedIds:[]},after:{upserts:[next],removedIds:[]}});else ctx.data.artifacts.upsert(next);}
       state.activeArtifactId=a.id;renderAllUi();ctx.status.set(`数据标签已修改为：${name}`);return true;
@@ -226,7 +226,7 @@
       state.activeArtifactId=a.id;renderAllUi();ctx.status.set(`${next?'已排除':'已恢复'}数据：${a.name||a.id}`);return true;
     }
     async function deleteArtifact(a=activeArtifact()){
-      if(!a)return false;if(!window.confirm(`删除“${a.name||a.id}”？`))return false;
+      if(!a)return false;const confirmed=await ctx.ui.dialogs.confirm({title:'删除数据对象',message:`删除“${a.name||a.id}”？`,confirmLabel:'删除',destructive:true});if(!confirmed)return false;
       if(isImportedSource(a))return removeActiveSource(a);
       const lineage=ctx.data.artifacts.lineage?.(a.id),removed=[...(lineage?.descendants||[]),a].filter(Boolean),ids=removed.map(row=>String(row.id));if(historyCapability?.commitArtifactMutation)await historyCapability.commitArtifactMutation({label:`删除数据对象 · ${a.name||a.id}`,before:{upserts:removed.map(D.deepClone),removedIds:[]},after:{upserts:[],removedIds:ids}});else ctx.data.artifacts.batch?.(api=>{for(const id of ids.slice().reverse())api.remove?.(id);});state.activeArtifactId='';lastExecution=null;renderAllUi();ctx.status.set(`已删除数据对象：${a.name||a.id}`);return true;
     }
@@ -249,33 +249,60 @@
     function activeTableCsv(){const table=currentOutputArtifact();if(!table||table.kind!=='data.table')throw new Error('当前没有可导出的 DataTable。');const columns=Array.isArray(table.columns)?table.columns:[];if(!columns.length)throw new Error('当前 DataTable 没有列。');const rows=[columns.map(c=>csvCell(c.name||c.key||'column')).join(',')];for(let r=0;r<Number(table.rowCount||0);r++)rows.push(columns.map(c=>csvCell(c.values?.[r]??'')).join(','));return {table,text:rows.join('\n')};}
     async function exportActiveTableCsv(){const {table,text}=activeTableCsv();const safe=String(table.name||'data_table').replace(/[\/:*?"<>|]+/g,'_');await ctx.io.saveCsv(text,`${safe}.csv`);ctx.status.set(`已导出 ${safe}.csv。`);}
 
-    function renderArtifacts(){const list=$('#dcArtifactList');if(!list)return;renderAssignmentFilter();renderDataNavigation();const rows=artifacts();$('#dcArtifactCount').textContent=`${rows.length} 个`;list.innerHTML='';if(!rows.length){list.innerHTML='<div class="empty-state">当前筛选条件下没有数据对象。可清除用途/层级/字段筛选，或从主界面导入并调整“数据用途”。</div>';return;}for(const a of rows){ctx.data.entities?.projectArtifact?.(a);const sum=D.summarize(a);const b=ctx.ui.dom.create('button');b.type='button';b.className=`dc-artifact-item dkds-list-item${isExcluded(a)?' is-excluded':''}`;b.dataset.selectionKey=String(a.id);b.dataset.artifactId=String(a.id);const dimensions=a.kind==='data.table'?`${sum.rows??'—'} 行 · ${sum.columns??'—'} 列`:a.kind==='data.series'||a.kind==='data.sweep'||a.kind==='data.transform'?`${sum.length??'—'} 点`:a.kind,usage=assignmentSummary(a);b.innerHTML=`<div class="dc-artifact-name">${esc(a.name)}</div><div class="dc-artifact-meta dkds-meta">${esc(a.kind)} · ${esc(dimensions)} · provenance ${sum.provenance}${usage?` · 用途 ${esc(usage)}`:''}${isExcluded(a)?' · 已排除':''}</div>`;list.appendChild(b);}}
+    function renderArtifacts(){
+      const list=$('#dcArtifactList');if(!list)return;renderAssignmentFilter();renderDataNavigation();const rows=artifacts();$('#dcArtifactCount').textContent=`${rows.length} 个`;dom.html(list,'');
+      if(!rows.length){dom.html(list,'<div class="empty-state">当前筛选条件下没有数据对象。可清除用途/层级/字段筛选，或从主界面导入并调整“数据用途”。</div>');return;}
+      for(const a of rows){
+        ctx.data.entities?.projectArtifact?.(a);const sum=D.summarize(a);const dimensions=a.kind==='data.table'?`${sum.rows??'—'} 行 · ${sum.columns??'—'} 列`:a.kind==='data.series'||a.kind==='data.sweep'||a.kind==='data.transform'?`${sum.length??'—'} 点`:a.kind,usage=assignmentSummary(a);
+        const b=dom.create('button',{className:`dc-artifact-item dkds-list-item${isExcluded(a)?' is-excluded':''}`,attrs:{type:'button'},dataset:{selectionKey:String(a.id),artifactId:String(a.id)},html:`<div class="dc-artifact-name">${esc(a.name)}</div><div class="dc-artifact-meta dkds-meta">${esc(a.kind)} · ${esc(dimensions)} · provenance ${sum.provenance}${usage?` · 用途 ${esc(usage)}`:''}${isExcluded(a)?' · 已排除':''}</div>`});
+        dom.append(list,b);
+      }
+    }
     function bindPreviewTable(){const table=$('#dcTablePreview table');if(table)ctx.ui.tables?.bind?.('data-center-preview',table,{persist:true,appearance:{density:'compact',stripe:'subtle'}});return table;}
-    function renderPreview(){const a=activeArtifact();renderDataAction(a);$('#dcActiveName').textContent=a?.name||'未选择数据';$('#dcActiveMeta').textContent=a?`${a.kind} · ${a.id}`:'—';const host=$('#dcTablePreview');if(!a){host.innerHTML='<div class="empty-state">暂无数据对象</div>';return;}if(a.kind==='data.table'){const n=Math.min(a.rowCount,18);host.innerHTML=`<table class="dc-preview-table dkds-table"><thead><tr><th>#</th>${a.columns.map(c=>`<th>${esc(c.name)}${c.unit?` (${esc(c.unit)})`:''}</th>`).join('')}</tr></thead><tbody>${Array.from({length:n},(_,r)=>`<tr><td>${r+1}</td>${a.columns.map(c=>`<td>${Number.isFinite(c.values[r])?Number(c.values[r]).toPrecision(7):esc(c.values[r])}</td>`).join('')}</tr>`).join('')}</tbody></table>${a.rowCount>n?`<div class="import-diagnosis">预览前 ${n} / ${a.rowCount} 行</div>`:''}`;bindPreviewTable();return;}if(a.kind==='result.analysis'){const table=a.tables?.[0],rows=table?.rows||[];if(rows.length){const keys=Object.keys(rows[0]);const n=Math.min(rows.length,18);host.innerHTML=`<div class="import-diagnosis">${esc(JSON.stringify(a.summary||{}))}</div><table class="dc-preview-table dkds-table"><thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,n).map(row=>`<tr>${keys.map(k=>`<td>${Number.isFinite(row[k])?Number(row[k]).toPrecision(7):esc(row[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;bindPreviewTable();return;}}host.innerHTML=`<pre class="dc-json-preview">${esc(JSON.stringify(D.summarize(a),null,2))}</pre>`;}
-    function renderFormula(){const a=activeArtifact();quickPanel?.destroy?.();const host=$('#dcFormulaParams');if(!a||a.kind!=='data.table'){host.innerHTML='<div class="empty-state">公式派生列需要选择 data.table。</div>';$('#dcFormulaRefs').innerHTML='';return;}quickPanel=ctx.parameters.render(host,formulaSchema,{value:{name:'Derived',formula:a.columns.some(c=>c.key==='Vd')&&a.columns.some(c=>c.key==='Id')?'abs(Vd / Id)':'abs('+a.columns[0].key+')',unit:'',role:'derived',replace:false},context:{table:a}});const refs=$('#dcFormulaRefs');refs.innerHTML=a.columns.map(c=>`<button class="dc-ref-chip dkds-chip" data-ref="${esc(c.key)}">${esc(c.key)}</button>`).join('');$$('.dc-ref-chip',refs).forEach(b=>b.onclick=()=>{const ta=host.querySelector('[data-param-id="formula"] textarea');if(ta){const token=/\s/.test(b.dataset.ref)?`[${b.dataset.ref}]`:b.dataset.ref;ta.setRangeText(token,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));}});}
+    function renderPreview(){
+      const a=activeArtifact();renderDataAction(a);$('#dcActiveName').textContent=a?.name||'未选择数据';$('#dcActiveMeta').textContent=a?`${a.kind} · ${a.id}`:'—';const host=$('#dcTablePreview');
+      if(!a){dom.html(host,'<div class="empty-state">暂无数据对象</div>');return;}
+      if(a.kind==='data.table'){
+        const n=Math.min(a.rowCount,18);dom.html(host,`<table class="dc-preview-table dkds-table"><thead><tr><th>#</th>${a.columns.map(c=>`<th>${esc(c.name)}${c.unit?` (${esc(c.unit)})`:''}</th>`).join('')}</tr></thead><tbody>${Array.from({length:n},(_,r)=>`<tr><td>${r+1}</td>${a.columns.map(c=>`<td>${Number.isFinite(c.values[r])?Number(c.values[r]).toPrecision(7):esc(c.values[r])}</td>`).join('')}</tr>`).join('')}</tbody></table>${a.rowCount>n?`<div class="import-diagnosis">预览前 ${n} / ${a.rowCount} 行</div>`:''}`);bindPreviewTable();return;
+      }
+      if(a.kind==='result.analysis'){
+        const table=a.tables?.[0],rows=table?.rows||[];if(rows.length){const keys=Object.keys(rows[0]);const n=Math.min(rows.length,18);dom.html(host,`<div class="import-diagnosis">${esc(JSON.stringify(a.summary||{}))}</div><table class="dc-preview-table dkds-table"><thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,n).map(row=>`<tr>${keys.map(k=>`<td>${Number.isFinite(row[k])?Number(row[k]).toPrecision(7):esc(row[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`);bindPreviewTable();return;}
+      }
+      dom.html(host,`<pre class="dc-json-preview">${esc(JSON.stringify(D.summarize(a),null,2))}</pre>`);
+    }
+    function renderFormula(){
+      const a=activeArtifact();quickPanel?.destroy?.();const host=$('#dcFormulaParams'),refs=$('#dcFormulaRefs');
+      if(!a||a.kind!=='data.table'){dom.html(host,'<div class="empty-state">公式派生列需要选择 data.table。</div>');dom.html(refs,'');return;}
+      quickPanel=ctx.parameters.render(host,formulaSchema,{value:{name:'Derived',formula:a.columns.some(c=>c.key==='Vd')&&a.columns.some(c=>c.key==='Id')?'abs(Vd / Id)':'abs('+a.columns[0].key+')',unit:'',role:'derived',replace:false},context:{table:a}});
+      dom.html(refs,a.columns.map(c=>`<button class="dc-ref-chip dkds-chip" data-ref="${esc(c.key)}">${esc(c.key)}</button>`).join(''));
+    }
     async function applyFormula(){const a=activeArtifact();if(!a||a.kind!=='data.table'){ctx.status.set('公式派生列需要选择 DataTable。');return;}const valid=quickPanel.validate();if(!valid.ok){ctx.status.set('公式参数存在错误。');return;}try{const recipe=ctx.workflow.buildSequentialRecipe({id:'quick.formula',name:'Quick formula',steps:[{type:'processor',provider:'formula.derived-column',parameters:quickPanel.getValue()}]});const exec=await ctx.workflow.run(recipe,{inputs:{main:a}});const out=exec.outputs.result;if(D.isArtifact(out)){ctx.data.artifacts.upsert(out);state.activeArtifactId=out.id;lastExecution=exec;ctx.status.set(`已生成派生 DataTable：${out.name}`);renderAllUi();}}catch(err){ctx.status.set(`公式计算失败：${err.message}`);}}
 
-    function refreshProviderSelect(){const type=$('#dcStepType')?.value||'processor',select=$('#dcProviderSelect');if(!select)return;const rows=type==='processor'?ctx.workflow.processors.list():ctx.workflow.analyzers.list();select.innerHTML=rows.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join('');}
-    function renderSteps(){const host=$('#dcWorkflowSteps');if(!host)return;stepPanels.forEach(h=>h?.destroy?.());stepPanels=[];host.innerHTML='';if(!state.steps.length){host.innerHTML='<div class="empty-state">尚无步骤。选择 Processor / Analyzer 后点击“添加步骤”。</div>';return;}const table=activeArtifact();state.steps.forEach((step,index)=>{const p=provider(step.type,step.provider);const card=ctx.ui.dom.create('div');card.className='dc-step-card dkds-list-item';card.innerHTML=`<div class="dc-step-head dkds-surface-header"><strong>${index+1}. ${esc(p?.name||step.provider)} <span class="plugin-card-id">${esc(step.type)}</span></strong><div class="dc-step-actions dkds-toolbar"><button data-act="up">↑</button><button data-act="down">↓</button><button data-act="remove">删除</button></div></div><div class="dc-step-params"></div>`;host.appendChild(card);if(p){const handle=ctx.parameters.render(card.querySelector('.dc-step-params'),p.parameterSchema||{fields:[]},{value:step.parameters||{},context:{table},compact:true,onChange:value=>step.parameters=value});stepPanels.push(handle);step.parameters=handle.getValue();}card.querySelector('[data-act="up"]').onclick=()=>{if(index){[state.steps[index-1],state.steps[index]]=[state.steps[index],state.steps[index-1]];renderSteps();}};card.querySelector('[data-act="down"]').onclick=()=>{if(index<state.steps.length-1){[state.steps[index+1],state.steps[index]]=[state.steps[index],state.steps[index+1]];renderSteps();}};card.querySelector('[data-act="remove"]').onclick=()=>{state.steps.splice(index,1);renderSteps();};});}
+    function refreshProviderSelect(){const type=$('#dcStepType')?.value||'processor',select=$('#dcProviderSelect');if(!select)return;const rows=type==='processor'?ctx.workflow.processors.list():ctx.workflow.analyzers.list();dom.html(select,rows.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join(''));}
+    function renderSteps(){
+      const host=$('#dcWorkflowSteps');if(!host)return;stepPanels.forEach(h=>h?.destroy?.());stepPanels=[];dom.html(host,'');
+      if(!state.steps.length){dom.html(host,'<div class="empty-state">尚无步骤。选择 Processor / Analyzer 后点击“添加步骤”。</div>');return;}
+      const table=activeArtifact();state.steps.forEach((step,index)=>{const p=provider(step.type,step.provider);const card=dom.create('div',{className:'dc-step-card dkds-list-item',dataset:{stepIndex:index},html:`<div class="dc-step-head dkds-surface-header"><strong>${index+1}. ${esc(p?.name||step.provider)} <span class="plugin-card-id">${esc(step.type)}</span></strong><div class="dc-step-actions dkds-toolbar"><button data-act="up">↑</button><button data-act="down">↓</button><button data-act="remove">删除</button></div></div><div class="dc-step-params"></div>`});dom.append(host,card);if(p){const handle=ctx.parameters.render(dom.query('.dc-step-params',card),p.parameterSchema||{fields:[]},{value:step.parameters||{},context:{table},compact:true,onChange:value=>step.parameters=value});stepPanels.push(handle);step.parameters=handle.getValue();}});
+    }
     function addStep(){const type=$('#dcStepType').value,providerId=$('#dcProviderSelect').value;if(!providerId)return;const p=provider(type,providerId);state.steps.push({id:`step-${Date.now()}-${Math.random().toString(36).slice(2,5)}`,type,provider:providerId,parameters:ctx.parameters.defaults(p?.parameterSchema||{fields:[]},{})});renderSteps();}
     function currentRecipe(){stepPanels.forEach((h,i)=>{if(state.steps[i])state.steps[i].parameters=h.getValue();});state.recipeName=$('#dcRecipeName').value.trim()||'我的工作流';return ctx.workflow.buildSequentialRecipe({id:`user.${D.hashString(state.recipeName)}`,name:state.recipeName,steps:state.steps.map(s=>({...s})),workspace:{sourceArtifactId:state.activeArtifactId}});}
     async function runWorkflow(){const a=activeArtifact();if(!a){ctx.status.set('请选择输入 DataTable。');return;}const status=$('#dcWorkflowStatus');try{status.className='dc-workflow-status dkds-status running';status.textContent='正在运行…';const recipe=currentRecipe();const exec=await ctx.workflow.run(recipe,{inputs:{main:a},onProgress:p=>{status.textContent=`${p.index}/${p.total} · ${p.provider?.name||p.node?.provider}`;}});lastExecution=exec;const outputs=[];const seen=new Set();const collect=value=>{if(D.isArtifact(value)){if(!seen.has(value.id)){seen.add(value.id);outputs.push(value);}return;}if(Array.isArray(value)){value.forEach(collect);return;}if(value&&typeof value==='object')Object.values(value).forEach(collect);};Object.values(exec.nodeResults||{}).forEach(collect);Object.values(exec.outputs||{}).forEach(collect);ctx.data.artifacts.batch?.(api=>{for(const artifact of outputs)(api.publish?.(artifact)||api.upsert?.(artifact));})||outputs.forEach(artifact=>ctx.data.artifacts.publish?.(artifact)||ctx.data.artifacts.upsert(artifact));const lastTable=outputs.filter(o=>o.kind==='data.table').at(-1);if(lastTable)state.activeArtifactId=lastTable.id;status.className='dc-workflow-status dkds-status done';status.textContent=`完成 · ${recipe.nodes.length} 步 · 保存 ${outputs.length} 个结果对象`;ctx.status.set(`工作流“${recipe.name}”执行完成。`);renderAllUi();}catch(err){status.className='dc-workflow-status dkds-status error';status.textContent=`失败：${err.message}`;ctx.status.set(`工作流失败：${err.message}`);}}
-    function renderSavedRecipes(){const sel=$('#dcSavedRecipe');if(!sel)return;const registered=ctx.workflow.recipes.list();sel.innerHTML='<option value="">—</option>'+`${registered.length?`<optgroup label="插件 Recipe">${registered.map(r=>`<option value="plugin:${esc(r.id)}">${esc(r.name||r.id)}</option>`).join('')}</optgroup>`:''}${state.savedRecipes.length?`<optgroup label="当前工程">${state.savedRecipes.map(r=>`<option value="saved:${esc(r.id)}">${esc(r.name)}</option>`).join('')}</optgroup>`:''}`;}
+    function renderSavedRecipes(){const sel=$('#dcSavedRecipe');if(!sel)return;const registered=ctx.workflow.recipes.list();dom.html(sel,'<option value="">—</option>'+`${registered.length?`<optgroup label="插件 Recipe">${registered.map(r=>`<option value="plugin:${esc(r.id)}">${esc(r.name||r.id)}</option>`).join('')}</optgroup>`:''}${state.savedRecipes.length?`<optgroup label="当前工程">${state.savedRecipes.map(r=>`<option value="saved:${esc(r.id)}">${esc(r.name)}</option>`).join('')}</optgroup>`:''}`);}
     function saveRecipe(){const recipe=currentRecipe();const saved={...D.deepClone(recipe),savedAt:new Date().toISOString()};const i=state.savedRecipes.findIndex(r=>r.id===saved.id);if(i>=0)state.savedRecipes[i]=saved;else state.savedRecipes.push(saved);renderSavedRecipes();$('#dcSavedRecipe').value=`saved:${saved.id}`;ctx.status.set(`Recipe 已保存到当前工程：${saved.name}`);}
     function loadRecipe(){const raw=$('#dcSavedRecipe').value;if(!raw)return;const pluginRecipe=raw.startsWith('plugin:');const id=raw.replace(/^(plugin:|saved:)/,'');const r=pluginRecipe?ctx.workflow.recipes.list().find(x=>x.id===id):state.savedRecipes.find(x=>x.id===id);if(!r)return;state.recipeName=r.name||r.id;state.steps=(r.nodes||[]).map(n=>({id:n.id,type:n.type,provider:n.provider,parameters:D.deepClone(n.parameters||{})}));$('#dcRecipeName').value=state.recipeName;renderSteps();ctx.status.set(`${pluginRecipe?'已载入插件 Recipe':'已载入工程 Recipe'}：${state.recipeName}`);}
 
-    function renderProvenance(){const a=activeArtifact();const host=$('#dcProvenanceList');if(!host)return;if(!a?.provenance?.length){host.innerHTML='<div class="empty-state">暂无 provenance。</div>';return;}host.innerHTML=a.provenance.slice().reverse().map(p=>`<div class="dc-prov-item"><div class="dc-prov-time dkds-meta">${esc(p.timestamp||'—')}</div><div class="dc-prov-main"><strong>${esc(p.label||p.type)}</strong><div>${esc([p.pluginId,p.providerId,p.version].filter(Boolean).join(' · '))}</div><div>${esc(JSON.stringify(p.parameters||{}))}</div>${p.note?`<div>${esc(p.note)}</div>`:''}</div></div>`).join('');}
+    function renderProvenance(){const a=activeArtifact();const host=$('#dcProvenanceList');if(!host)return;if(!a?.provenance?.length){dom.html(host,'<div class="empty-state">暂无 provenance。</div>');return;}dom.html(host,a.provenance.slice().reverse().map(p=>`<div class="dc-prov-item"><div class="dc-prov-time dkds-meta">${esc(p.timestamp||'—')}</div><div class="dc-prov-main"><strong>${esc(p.label||p.type)}</strong><div>${esc([p.pluginId,p.providerId,p.version].filter(Boolean).join(' · '))}</div><div>${esc(JSON.stringify(p.parameters||{}))}</div>${p.note?`<div>${esc(p.note)}</div>`:''}</div></div>`).join(''));}
     function chartProviders(){const a=currentOutputArtifact();return ctx.charts.list().filter(p=>!p.inputKinds?.length||!a||p.inputKinds.includes(a.kind));}
-    function renderChartControls(){const providers=chartProviders();const select=$('#dcChartProvider');if(!select)return;select.innerHTML=providers.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join('');if(providers.some(p=>p.id===state.chart.provider))select.value=state.chart.provider;else state.chart.provider=select.value||'';select.hidden=providers.length<=1;select.title=providers.length>1?'切换 Chart Provider':'';renderChartParams();}
+    function renderChartControls(){const providers=chartProviders();const select=$('#dcChartProvider');if(!select)return;dom.html(select,providers.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join(''));if(providers.some(p=>p.id===state.chart.provider))select.value=state.chart.provider;else state.chart.provider=select.value||'';select.hidden=providers.length<=1;select.title=providers.length>1?'切换 Chart Provider':'';renderChartParams();}
     let chartRenderRevision=0;
     function clearChartPreview(message='选择 DataTable 后可配置图形。'){
       chartRenderRevision+=1;const host=$('#dcChart');if(!host)return false;
       try{ctx.ui.scientificPlot.purge?.(host);}catch{}
       try{ctx.ui.scientificPlot.get?.(host)?.dispose?.();}catch{}
-      host.replaceChildren();if(message)host.innerHTML=`<div class="empty-state">${esc(message)}</div>`;return true;
+      dom.replace(host);if(message)dom.html(host,`<div class="empty-state">${esc(message)}</div>`);return true;
     }
-    function renderChartParams(){const a=currentOutputArtifact();chartPanel?.destroy?.();const p=ctx.charts.list().find(x=>x.id===$('#dcChartProvider')?.value);if(!p||!a||a.kind!=='data.table'){const host=$('#dcChartParams');if(host)host.innerHTML='<div class="empty-state">选择 DataTable 后可配置图形。</div>';clearChartPreview();return;}state.chart.provider=p.id;const defaults={...ctx.parameters.defaults(p.parameterSchema||{fields:[]},state.chart.parameters||{})};const validKeys=new Set((a.columns||[]).map(c=>String(c.key)));if(!validKeys.has(String(defaults.x||'')))defaults.x=a.columns.find(c=>c.role==='x')?.key||a.columns[0]?.key||'';defaults.ys=(Array.isArray(defaults.ys)?defaults.ys:[]).filter(key=>validKeys.has(String(key)));if(!defaults.ys.length)defaults.ys=[a.columns.find(c=>c.role==='y'&&c.key!==defaults.x)?.key||a.columns.find(c=>c.key!==defaults.x)?.key].filter(Boolean);chartPanel=ctx.parameters.render($('#dcChartParams'),p.parameterSchema||{fields:[]},{value:defaults,context:{table:a},onChange:value=>{state.chart.parameters=value;scheduleChartPreview('parameter-change');}});state.chart.parameters=chartPanel.getValue();}
-    async function renderChart({silent=false}={}){const a=currentOutputArtifact();const select=$('#dcChartProvider');const p=ctx.charts.list().find(x=>x.id===select?.value);if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}const valid=chartPanel?.validate?.();if(valid&&!valid.ok){if(!silent)ctx.status.set('图形参数存在错误。');return false;}state.chart.parameters=chartPanel?.getValue?.()||state.chart.parameters||{};const revision=++chartRenderRevision;try{await Promise.resolve(p.render({container:$('#dcChart'),artifact:a,parameters:state.chart.parameters,context:{page}}));if(revision!==chartRenderRevision)return false;dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});return true;}catch(err){if(revision!==chartRenderRevision)return false;const host=$('#dcChart');if(host&&!host.querySelector?.('.dkds-scientific-chart-host'))host.innerHTML=`<div class="empty-state">图形预览失败：${esc(err?.message||err)}</div>`;ctx.status.set(`绘图失败：${err?.message||err}`);return false;}}
+    function renderChartParams(){const a=currentOutputArtifact();chartPanel?.destroy?.();const p=ctx.charts.list().find(x=>x.id===$('#dcChartProvider')?.value);if(!p||!a||a.kind!=='data.table'){const host=$('#dcChartParams');if(host)dom.html(host,'<div class="empty-state">选择 DataTable 后可配置图形。</div>');clearChartPreview();return;}state.chart.provider=p.id;const defaults={...ctx.parameters.defaults(p.parameterSchema||{fields:[]},state.chart.parameters||{})};const validKeys=new Set((a.columns||[]).map(c=>String(c.key)));if(!validKeys.has(String(defaults.x||'')))defaults.x=a.columns.find(c=>c.role==='x')?.key||a.columns[0]?.key||'';defaults.ys=(Array.isArray(defaults.ys)?defaults.ys:[]).filter(key=>validKeys.has(String(key)));if(!defaults.ys.length)defaults.ys=[a.columns.find(c=>c.role==='y'&&c.key!==defaults.x)?.key||a.columns.find(c=>c.key!==defaults.x)?.key].filter(Boolean);chartPanel=ctx.parameters.render($('#dcChartParams'),p.parameterSchema||{fields:[]},{value:defaults,context:{table:a},compact:true,autoFit:true,onChange:value=>{state.chart.parameters=value;scheduleChartPreview('parameter-change');}});state.chart.parameters=chartPanel.getValue();}
+    async function renderChart({silent=false}={}){const a=currentOutputArtifact();const select=$('#dcChartProvider');const p=ctx.charts.list().find(x=>x.id===select?.value);if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}const valid=chartPanel?.validate?.();if(valid&&!valid.ok){if(!silent)ctx.status.set('图形参数存在错误。');return false;}state.chart.parameters=chartPanel?.getValue?.()||state.chart.parameters||{};const revision=++chartRenderRevision;try{await Promise.resolve(p.render({container:$('#dcChart'),artifact:a,parameters:state.chart.parameters,context:{page}}));if(revision!==chartRenderRevision)return false;dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});return true;}catch(err){if(revision!==chartRenderRevision)return false;const host=$('#dcChart');if(host&&!dom.query('.dkds-scientific-chart-host',host))dom.html(host,`<div class="empty-state">图形预览失败：${esc(err?.message||err)}</div>`);ctx.status.set(`绘图失败：${err?.message||err}`);return false;}}
     function scheduleChartPreview(reason='auto'){const revision=++chartRenderRevision;dom.frame(()=>{if(revision!==chartRenderRevision)return;void renderChart({silent:reason!=='manual'});});}
     function switchTab(tab){for(const name of ['formula','workflow','provenance']){$(`#dc${name[0].toUpperCase()+name.slice(1)}Pane`)?.classList.toggle('hidden',name!==tab);}$$('[data-dc-tab]').forEach(b=>{const selected=b.dataset.dcTab===tab;b.classList.toggle('selected',selected);b.setAttribute('aria-selected',selected?'true':'false');});if(tab==='provenance')renderProvenance();}
     function renderAllUi(){renderArtifacts();renderPreview();renderFormula();refreshProviderSelect();renderSteps();renderSavedRecipes();renderProvenance();renderChartControls();scheduleChartPreview('auto');}
@@ -290,10 +317,27 @@
     const artifactContextBehavior=ctx.ui.interactionBehaviors?.create?.('data-center-artifact-context',{bindings:[{id:'data-center.artifact.context',gesture:'context',target:'artifact',intent:'context-menu',contextActions:context=>dataActionItems(context.artifact)}]});
     artifactContextBehavior?.bind?.($('#dcArtifactList'),{selector:'.dc-artifact-item',gestures:['context'],target:'artifact',targetId:({element})=>String(element.dataset.artifactId||''),payload:({element})=>({artifact:ctx.data.artifacts.get(String(element.dataset.artifactId||''))}),beforeRoute:({input})=>{const a=input.payload?.artifact;if(!a)return;state.activeArtifactId=a.id;lastExecution=null;controller?.select?.({id:a.id,kind:a.kind,name:a.name},{source:'data-center-context'});}});
 
-const artifactListEl=$('#dcArtifactList');artifactListEl?.addEventListener?.('keydown',event=>{if(event.target?.closest?.('input,select,textarea,[contenteditable="true"]'))return;const mod=event.ctrlKey||event.metaKey;if(mod&&String(event.key).toLowerCase()==='a'){event.preventDefault();selectAllVisibleArtifacts();return;}if(mod&&String(event.key).toLowerCase()==='i'){event.preventDefault();invertVisibleArtifactSelection();return;}if(event.key==='Escape'){event.preventDefault();clearVisibleArtifactSelection();}});
-    const dcSelectAllBtn=$('#dcSelectAllBtn');if(dcSelectAllBtn)dcSelectAllBtn.onclick=()=>selectAllVisibleArtifacts();const dcInvertSelectionBtn=$('#dcInvertSelectionBtn');if(dcInvertSelectionBtn)dcInvertSelectionBtn.onclick=()=>invertVisibleArtifactSelection();const dcClearSelectionBtn=$('#dcClearSelectionBtn');if(dcClearSelectionBtn)dcClearSelectionBtn.onclick=()=>clearVisibleArtifactSelection();
-$('#dcApplyFormula').onclick=applyFormula;const dataActionsBtn=$('#dcDataActionsBtn');if(dataActionsBtn)dataActionsBtn.onclick=event=>{const rect=dataActionsBtn.getBoundingClientRect();openDataActions({clientX:rect.left,clientY:rect.bottom+4},activeArtifact());event.stopPropagation();};const assignmentFilterEl=$('#dcAssignmentFilter');if(assignmentFilterEl)assignmentFilterEl.onchange=()=>{assignmentFilter=assignmentFilterEl.value||'all';renderAllUi();};const lineageFilterEl=$('#dcLineageFilter');if(lineageFilterEl)lineageFilterEl.onchange=()=>{lineageFilter=lineageFilterEl.value||'all';fieldFilter='';renderAllUi();};const fieldFilterEl=$('#dcFieldFilter');if(fieldFilterEl)fieldFilterEl.onchange=()=>{fieldFilter=fieldFilterEl.value||'';renderAllUi();};$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=()=>{state.chart.provider=$('#dcChartProvider').value||'';renderChartParams();scheduleChartPreview('provider-change');};$('#dcCopyProvenance').onclick=()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2));
-    ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});});
+    const artifactListEl=$('#dcArtifactList');
+    dom.on(artifactListEl,'keydown',event=>{if(event.target?.closest?.('input,select,textarea,[contenteditable="true"]'))return;const mod=event.ctrlKey||event.metaKey;if(mod&&String(event.key).toLowerCase()==='a'){event.preventDefault();selectAllVisibleArtifacts();return;}if(mod&&String(event.key).toLowerCase()==='i'){event.preventDefault();invertVisibleArtifactSelection();return;}if(event.key==='Escape'){event.preventDefault();clearVisibleArtifactSelection();}});
+    dom.on($('#dcSelectAllBtn'),'click',()=>selectAllVisibleArtifacts());
+    dom.on($('#dcInvertSelectionBtn'),'click',()=>invertVisibleArtifactSelection());
+    dom.on($('#dcClearSelectionBtn'),'click',()=>clearVisibleArtifactSelection());
+    dom.on($('#dcApplyFormula'),'click',applyFormula);
+    const dataActionsBtn=$('#dcDataActionsBtn');dom.on(dataActionsBtn,'click',event=>{const rect=dataActionsBtn.getBoundingClientRect();openDataActions({clientX:rect.left,clientY:rect.bottom+4},activeArtifact());event.stopPropagation();});
+    const assignmentFilterEl=$('#dcAssignmentFilter');dom.on(assignmentFilterEl,'change',()=>{assignmentFilter=assignmentFilterEl.value||'all';renderAllUi();});
+    const lineageFilterEl=$('#dcLineageFilter');dom.on(lineageFilterEl,'change',()=>{lineageFilter=lineageFilterEl.value||'all';fieldFilter='';renderAllUi();});
+    const fieldFilterEl=$('#dcFieldFilter');dom.on(fieldFilterEl,'change',()=>{fieldFilter=fieldFilterEl.value||'';renderAllUi();});
+    dom.delegate(page,'click','[data-dc-tab]',(_event,button)=>switchTab(button.dataset.dcTab));
+    dom.on($('#dcStepType'),'change',refreshProviderSelect);
+    dom.on($('#dcAddStep'),'click',addStep);
+    dom.on($('#dcSaveRecipe'),'click',saveRecipe);
+    dom.on($('#dcLoadRecipe'),'click',loadRecipe);
+    dom.on($('#dcSavedRecipe'),'change',loadRecipe);
+    dom.on($('#dcChartProvider'),'change',()=>{state.chart.provider=$('#dcChartProvider').value||'';renderChartParams();scheduleChartPreview('provider-change');});
+    dom.on($('#dcCopyProvenance'),'click',()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2)));
+    dom.delegate($('#dcFormulaRefs'),'click','.dc-ref-chip',(_event,button)=>{const host=$('#dcFormulaParams'),ta=dom.query('[data-param-id="formula"] textarea',host);if(!ta)return;const token=/\s/.test(button.dataset.ref)?`[${button.dataset.ref}]`:button.dataset.ref;ta.setRangeText(token,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));});
+    dom.delegate($('#dcWorkflowSteps'),'click','[data-act]',(_event,button)=>{const card=button.closest('.dc-step-card'),index=Number(card?.dataset?.stepIndex),act=button.dataset.act;if(!Number.isInteger(index)||index<0||index>=state.steps.length)return;if(act==='up'&&index){[state.steps[index-1],state.steps[index]]=[state.steps[index],state.steps[index-1]];renderSteps();}else if(act==='down'&&index<state.steps.length-1){[state.steps[index+1],state.steps[index]]=[state.steps[index],state.steps[index+1]];renderSteps();}else if(act==='remove'){state.steps.splice(index,1);renderSteps();}});
+    ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});});
 
     stateStore.subscribe((next,meta)=>{
       state=next;
@@ -302,7 +346,7 @@ $('#dcApplyFormula').onclick=applyFormula;const dataActionsBtn=$('#dcDataActions
     });
 
     ctx.events.on('analysis:opened',({id})=>{if(id===page.id)renderAllUi();});
-    return {deactivate(){platformOff?.();artifactSelectionView?.dispose?.();quickPanel?.destroy?.();chartPanel?.destroy?.();stepPanels.forEach(h=>h?.destroy?.());ctx.ui.scientificPlot.get?.($('#dcChart'))?.dispose?.();}};
+    return {deactivate(){artifactSelectionView?.dispose?.();quickPanel?.destroy?.();chartPanel?.destroy?.();stepPanels.forEach(h=>h?.destroy?.());ctx.ui.scientificPlot.get?.($('#dcChart'))?.dispose?.();}};
   }
   window.DKDSPluginModules.define('builtin.data-center','feature-runtime',Object.freeze({mount}));
 })();

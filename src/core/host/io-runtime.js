@@ -21,7 +21,8 @@
     return requireMethod('saveText')({
       defaultName:safeName(options.defaultName||'export.txt','export.txt'),
       content:String(options.content??''),
-      filters:Array.isArray(options.filters)?options.filters:undefined
+      filters:Array.isArray(options.filters)?options.filters:undefined,
+      source:String(options.source||'core.io.saveText')
     });
   }
   async function saveBase64(options={}){
@@ -29,7 +30,8 @@
       defaultName:safeName(options.defaultName||'export.bin','export.bin'),
       base64:String(options.base64||''),
       mimeType:String(options.mimeType||'application/octet-stream'),
-      filters:Array.isArray(options.filters)?options.filters:undefined
+      filters:Array.isArray(options.filters)?options.filters:undefined,
+      source:String(options.source||'core.io.saveBase64')
     });
   }
   async function openDataFiles(options={}){
@@ -84,11 +86,25 @@
 
   function createScope(owner){
     const id=String(owner||'plugin');
+    const scopedSaveText=options=>saveText({...options,source:options?.source||`plugin:${id}:saveText`});
+    const scopedSaveBase64=options=>saveBase64({...options,source:options?.source||`plugin:${id}:saveBase64`});
+    const scopedSaveCsv=(content,defaultName='export.csv')=>scopedSaveText({defaultName,content:String(content??''),filters:[{name:'CSV',extensions:['csv']}],source:`plugin:${id}:saveCsv`});
+    const scopedSaveSvg=(node,defaultName='plot.svg')=>scopedSaveText({defaultName,content:svgText(node),filters:[{name:'SVG',extensions:['svg']}],source:`plugin:${id}:saveSvg`});
+    const scopedSaveSvgPng=async(node,defaultName='plot.png',options={})=>{
+      if(!node)throw new Error('SVG element is required.');
+      const rect=node.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width||Number(node.getAttribute?.('width'))||1)),h=Math.max(1,Math.round(rect.height||Number(node.getAttribute?.('height'))||1)),scale=Math.max(.25,Number(options.scale)||2),background=String(options.background||'#fff');
+      const xml=svgText(node,{xmlDeclaration:false}),blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+      try{
+        const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('SVG rasterization failed.'));image.src=url;});
+        const canvas=document.createElement('canvas');canvas.width=w*scale;canvas.height=h*scale;const context=canvas.getContext('2d');context.scale(scale,scale);context.fillStyle=background;context.fillRect(0,0,w,h);context.drawImage(img,0,0,w,h);
+        const dataUrl=canvas.toDataURL('image/png');return scopedSaveBase64({defaultName,base64:dataUrl.split(',')[1]||'',mimeType:'image/png',filters:[{name:'PNG',extensions:['png']}],source:`plugin:${id}:saveSvgPng`});
+      }finally{URL.revokeObjectURL(url);}
+    };
     const scope=Object.freeze({
       version:VERSION,owner:id,
-      openDataFiles,readDataText,saveText,saveBase64,saveCsv,
+      openDataFiles,readDataText,saveText:scopedSaveText,saveBase64:scopedSaveBase64,saveCsv:scopedSaveCsv,
       clipboard:Object.freeze({writeText:writeClipboardText}),
-      svg:Object.freeze({serialize:svgText,save:saveSvg,savePng:saveSvgPng}),
+      svg:Object.freeze({serialize:svgText,save:scopedSaveSvg,savePng:scopedSaveSvgPng}),
       csv:Object.freeze({cell:escCsv,table:tableCsv}),
       names:Object.freeze({safe:safeName})
     });

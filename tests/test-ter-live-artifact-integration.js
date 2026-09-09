@@ -48,7 +48,7 @@ function sweepDataset(){
   const pipeline={register:(id,spec)=>scope.register(id,spec),runSync:(id,input,options={})=>scope.runSync(id,input,{...options,artifacts:store,dataTypes,performance}),snapshot:()=>scope.snapshot()};
   const terAnalysis=context.DKDSPluginModules.require('builtin.ter-analysis','analysis-service');
   const runtime=await terAnalysis.create({
-    artifacts:store,pipeline,performance,
+    artifacts:store,science:Analysis,dataModel:D,pipeline,performance,
     getVisibility:()=>new Map([[dataset.path,{forward:true,reverse:true}]]),
     setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){}
   });

@@ -1,5 +1,7 @@
 'use strict';
 const {$, state, status}=require('./context');
+const {createOwner}=require('./style-gate');
+const style=createOwner('app.dedicated-plugin-windows','runtime-dedicated-window');
 const {copyTextToClipboard, hideLanWebPanel, pushArtifactDeltaToActivityWindows, setStatus, showLanWebPanel, snapshotArtifactRows}=require('./foundation');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
@@ -16,15 +18,14 @@ const openImportWorkbench=(...args)=>deps.imports.openImportWorkbench(...args);
 const artifactHostApi=(...args)=>deps.artifacts.artifactHostApi(...args);
 const dataSourceHostApi=(...args)=>deps.artifacts.dataSourceHostApi(...args);
 const importFiles=(...args)=>deps.artifacts.importFiles(...args);
+const projectArtifactSnapshotApi=(...args)=>deps.artifacts.projectArtifactSnapshotApi(...args);
 const projectHistoryHostApi=(...args)=>deps.artifacts.projectHistoryHostApi(...args);
 const applySuperWorkspace=(...args)=>deps.workspace.applySuperWorkspace(...args);
 const closeAnalysisPage=(...args)=>deps.workspace.closeAnalysisPage(...args);
 const ensurePluginWorkspaceVisible=(...args)=>deps.workspace.ensurePluginWorkspaceVisible(...args);
 const openAnalysisPage=(...args)=>deps.workspace.openAnalysisPage(...args);
-const placePrimeContribution=(...args)=>deps.workspace.placePrimeContribution(...args);
 const renderAll=(...args)=>deps.workspace.renderAll(...args);
 const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
-const showMainWorkspace=(...args)=>deps.workspace.showMainWorkspace(...args);
 const showNoSuperWorkspace=(...args)=>deps.workspace.showNoSuperWorkspace(...args);
 const syncAnalysisPageViewport=(...args)=>deps.workspace.syncAnalysisPageViewport(...args);
 const saveChartImage=(...args)=>deps.scientific.saveChartImage(...args);
@@ -32,8 +33,6 @@ const makeProject=(...args)=>deps.projects.makeProject(...args);
 const openProject=(...args)=>deps.projects.openProject(...args);
 const openProjectBase64=(...args)=>deps.projects.openProjectBase64(...args);
 const saveProject=(...args)=>deps.projects.saveProject(...args);
-const applyGroupPanelLayout=(...args)=>deps.docks.applyGroupPanelLayout(...args);
-const applyInspectorPanelLayout=(...args)=>deps.docks.applyInspectorPanelLayout(...args);
 const makeFloating=(...args)=>deps.docks.makeFloating(...args);
 const systemHistorySnapshotSync=(...args)=>deps.docks.systemHistorySnapshotSync(...args);
 const systemRedo=(...args)=>deps.docks.systemRedo(...args);
@@ -77,9 +76,10 @@ async function openPluginActivityWindow(activityId){
   // independent registries. Preflight the machine window contract so a Tool
   // menu entry can never fail as an unexplained no-op when only the renderer
   // contribution exists.
+  let contract=null;
   if(window.electronAPI?.listPluginWindows){
     const configured=await window.electronAPI.listPluginWindows()||[];
-    const contract=configured.find(row=>String(row?.activity||'')===String(activityId||''));
+    contract=configured.find(row=>String(row?.activity||'')===String(activityId||''))||null;
     if(!contract)throw new Error(`独立工作区契约未注册：${activityId}`);
   }
   const capabilitySnapshot=capabilitySnapshotForWindows();
@@ -90,7 +90,7 @@ async function openPluginActivityWindow(activityId){
   // before an activity contribution has finished mounting. No activity id is
   // special-cased here.
   const pluginWindowSpec=(window.DKDSPlugins?.manager?.list?.()||[]).find(row=>String(row?.window?.activity||'')===String(activityId||''))?.window||null;
-  const artifactHydration=String(activitySpec?.artifactHydration||pluginWindowSpec?.artifactHydration||'');
+  const artifactHydration=String(activitySpec?.artifactHydration||pluginWindowSpec?.artifactHydration||contract?.artifactHydration||'');
   const artifactSnapshot=artifactHydration==='live'?snapshotArtifactRows():null;
   return window.electronAPI.openActivityWindow({
     activityId,
@@ -205,8 +205,6 @@ function applyDedicatedActivitySnapshot(payload,tab){
     captureActiveProjectTab();
     if(payload.final){
       renderAll();
-      applyGroupPanelLayout();
-      applyInspectorPanelLayout();
       scheduleMainPlotRelayout();
       setStatus(`已同步 ${payload.activityId||pluginId} 的插件状态与结果缓存。`);
     }
@@ -244,20 +242,14 @@ async function initializePluginArchitecture(){
     activity:()=>window.DKDSPlugins?.activities?.active?.()||'',
     status:setStatus,
     zones:{
-      overlay:'#app',
-      main:'#mainWorkspace',
-      left:'#pluginSidebarSections',
-      right:'#primeRightDockSlot',
-      bottom:'#primeBottomDockSlot'
+      overlay:'#app'
     }
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.67.21',
-    platform:window.DKDSPlatform,
+    appVersion:'3.68.66',
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
-    isNativeClient:!!window.electronAPI?.isNativeClient,
     renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false}),
     getRuntimeStatus:()=>window.electronAPI?.getRuntimeStatus?.(),
     getLanWebStatus:()=>state.lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),
@@ -277,10 +269,8 @@ async function initializePluginArchitecture(){
     openAnalysisPage,
     closeAnalysisPage,
     ensurePluginWorkspaceVisible,
-    showMainWorkspace,
     applySuperWorkspace,
     showNoSuperWorkspace,
-    placePrime:placePrimeContribution,
     copyTextToClipboard,
     saveChartImage,
     makeFloating,
@@ -291,6 +281,7 @@ async function initializePluginArchitecture(){
   // Platform presentation state is owned by Core registries and app state, not by
   // the desktop DOM. Desktop and mobile presenters consume this same model.
   window.DKDSPresentation?.configure?.({
+    appVersion:'3.68.66',
     projectSnapshot:()=>{
       const active=activeProjectTab();
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty}));
@@ -356,8 +347,10 @@ async function initializePluginArchitecture(){
   }));
   const kernelPlotPanel=()=>{
     let panel=document.getElementById('dkdsKernelPlotPanel');if(panel)return panel;
-    panel=document.createElement('section');panel.id='dkdsKernelPlotPanel';panel.className='floating-panel dkds-kernel-plot-panel';panel.style.cssText='position:fixed;left:12vw;top:15vh;width:min(720px,72vw);height:min(520px,68vh);z-index:820;resize:both;overflow:hidden;min-width:320px;min-height:240px;';
-    panel.innerHTML='<div class="drag-handle"><strong>AI Plot</strong><button type="button" class="panel-close dkds-panel-close-button" aria-label="关闭">×</button></div><div class="dkds-kernel-plot" style="height:calc(100% - 42px);min-height:0"></div>';
+    panel=document.createElement('section');panel.id='dkdsKernelPlotPanel';panel.className='floating-panel dkds-kernel-plot-panel';
+    style.patch(panel,{position:'fixed',left:'12vw',top:'15vh',width:'min(720px,72vw)',height:'min(520px,68vh)','z-index':'820',resize:'both',overflow:'hidden','min-width':'320px','min-height':'240px'},{component:'kernel-plot-panel'});
+    panel.innerHTML='<div class="drag-handle"><strong>AI Plot</strong><button type="button" class="panel-close dkds-panel-close-button" aria-label="关闭">×</button></div><div class="dkds-kernel-plot"></div>';
+    style.patch(panel.querySelector('.dkds-kernel-plot'),{height:'calc(100% - 42px)','min-height':'0'},{component:'kernel-plot-host'});
     document.body.appendChild(panel);panel.querySelector('.panel-close').onclick=()=>panel.classList.add('hidden');makeFloating(panel);return panel;
   };
   const kernelPlotRender=async args=>{const traces=Array.isArray(args?.traces)?window.DKDSData.deepClone(args.traces):[];if(!traces.length)throw new Error('No plottable traces were supplied.');const panel=kernelPlotPanel();panel.classList.remove('hidden');panel.querySelector('.drag-handle strong').textContent=String(args?.title||'AI Plot');const target=panel.querySelector('.dkds-kernel-plot');const layout={autosize:true,margin:{l:64,r:24,t:34,b:54},showlegend:true,hovermode:'closest',...(args?.layout||{})};await window.DKDSCharts.react(target,traces,layout,{responsive:true,displayModeBar:true,scrollZoom:true,doubleClick:'reset'});return {ok:true,id:panel.id,traceCount:traces.length};};
@@ -376,6 +369,10 @@ async function initializePluginArchitecture(){
   window.DKDSCapabilities?.register?.('core','core.data-sources',{
     kind:'service',title:'Project Data Sources',version:'1.0.0',remote:true,
     methods:dataSourceHostApi()
+  });
+  window.DKDSCapabilities?.register?.('core','core.project-artifacts',{
+    kind:'service',title:'Project Artifacts',version:'1.0.0',remote:true,
+    methods:projectArtifactSnapshotApi()
   });
   window.DKDSCapabilities?.register?.('core','core.project-history',{
     kind:'service',title:'Project Edit History',version:'1.0.0',remote:true,
@@ -441,9 +438,9 @@ async function initializePluginArchitecture(){
 
   const visualClosure=new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure';
   await window.DKDSPlugins.loadBuiltinEntries(undefined,{startupOnly:!visualClosure});
-  // Keep a user-selected external SUPER deterministic: it must be available before
-  // Core resolves the initial Presentation Model. All other external packages are
-  // scanned after first paint together with deferred built-ins.
+  // A selected external Theme provider or SUPER must be available before Core
+  // resolves first-frame visual/presentation state. Built-in profiles avoid this
+  // scan entirely; remaining external packages stay deferred until after paint.
   if(visualClosure||window.DKDSPlugins.startupRequiresExternal?.())await window.DKDSPlugins.loadExternalEntries?.();
   const activated=visualClosure
     ?await window.DKDSPlugins.activateAll()

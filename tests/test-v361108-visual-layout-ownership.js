@@ -4,10 +4,11 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 const touch=read('src/styles/platform/touch.css');
+const nativeShell=read('src/styles/platform/native-client-shell.css');
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const dialogs=read('src/styles/presentation/dialogs.css');
 assert(!touch.includes('.plugin-manager-stat{')&&!touch.includes('.plugin-manager-toolbar-card{'),'Plugin Manager desktop layout must not return to platform/touch.css.');
-assert(touch.includes('.dkds-pointer-coarse .plugin-switch-track'),'Platform layer must retain only coarse-pointer Plugin Manager deltas.');
+assert(!touch.includes('.plugin-switch-track')&&nativeShell.includes('.dkds-pointer-coarse .plugin-switch-track'),'Shared touch CSS must stay host-neutral while the native-client platform owner retains coarse-pointer Plugin Manager deltas.');
 assert(schema.includes('Core Plugin Manager layout')&&schema.includes('.plugin-manager-stat{')&&schema.includes('.plugin-manager-toolbar-card{'),'Plugin Manager common layout must belong to the structure owner.');
 const semantic=read('src/core/theme/semantic-registry.js');
 const appearance=read('src/styles/theme/component-appearance.css');

@@ -1,43 +1,68 @@
 'use strict';
 const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=require('../foundation/shortcuts');
+const StyleGate=require('ui/style-ownership-gate');
+const STYLE_SOURCE='src/core/ui/modules/layout/workspace.js';
+const splitSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.split-controller',scope:'runtime-layout',source:STYLE_SOURCE});
+const splitToken=(el,property,value)=>StyleGate.setToken(el,property,value,{owner:'core.split-controller',scope:'runtime-layout-token',source:STYLE_SOURCE});
+const movableSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.movable-surface',scope:'runtime-layout',source:STYLE_SOURCE});
+const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.movable-surface',scope:'runtime-layout',source:STYLE_SOURCE});
 
 
   class SplitController {
     constructor(scope,spec={}){
-      this.scope=scope;this.spec={axis:'x',min:180,max:null,defaultSize:320,...spec};this.container=resolveElement(spec.container);this.handle=resolveElement(spec.handle,this.container||document);this.target=resolveElement(spec.target,this.container||document)||this.container;this.axis=this.spec.axis==='y'?'y':'x';this.cleanups=[];this.drag=null;this.previewFrame=0;this.previewSize=null;this.previewOffset=0;
+      this.scope=scope;this.spec={axis:'x',min:180,max:null,defaultSize:320,...spec};this.container=resolveElement(spec.container);this.handle=resolveElement(spec.handle,this.container||document);this.target=resolveElement(spec.target,this.container||document)||this.container;this.axis=this.spec.axis==='y'?'y':'x';this.cleanups=[];this.drag=null;this.previewFrame=0;this.previewSize=null;this.previewActive=false;
       if(!this.container||!this.handle||!this.target)throw new Error('SplitController container/handle/target not found.');
       this.handle.dataset.dkdsTouchGestureOwner='split-resize';
-      this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}`;
+      const mobileScoped=!!this.spec.mobileStateScope&&document.documentElement?.classList?.contains('react-native-client');
+      this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}${mobileScoped?'.mobile':''}`;
       const saved=readJson(this.key,{});this.apply(Number(saved.size)||Number(this.spec.defaultSize)||320,{persist:false});this.bind();
-      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.apply(this.size,{persist:false,emit:false});});this.ro.observe(this.container);}
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{
+        if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;
+        if(!this.container?.isConnected||this.container.hidden||this.container.closest?.('.hidden,[hidden]'))return;
+        const rect=this.container.getBoundingClientRect?.();const total=this.axis==='x'?Number(rect?.width):Number(rect?.height);
+        // A workspace routed to a SUB page can make the PRIMARY canvas 0×0 for
+        // one or more ResizeObserver turns. Clamping against that transient zero
+        // geometry destroyed the user's persisted left/right/bottom split sizes.
+        if(!(total>2))return;
+        this.apply(this.size,{persist:false,emit:false});
+      });this.ro.observe(this.container);}
     }
-    limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const mobileOverlay=!!this.spec.mobileOverlay&&document.documentElement.classList.contains('react-native-client');const mobileRatio=Math.max(.45,Math.min(.96,Number(this.spec.mobileMaxRatio)||(this.axis==='x'?.92:.68)));const max=mobileOverlay?Math.max(min,total*mobileRatio):(Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220)));return {min,max:Math.max(min,max)};}
+    limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const mobileOverlay=!!this.spec.mobileOverlay&&document.documentElement.classList.contains('react-native-client');const mobileRatio=Math.max(.35,Math.min(.96,Number(this.spec.mobileMaxRatio)||(this.axis==='x'?.92:.68)));const mobileReserve=Math.max(0,Number(this.spec.mobileReserve)||0);const mobileRatioMax=total*mobileRatio;const mobileReservedMax=mobileReserve>0?Math.max(min,total-mobileReserve):mobileRatioMax;const max=mobileOverlay?Math.max(min,Math.min(mobileRatioMax,mobileReservedMax)):(Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220)));return {min,max:Math.max(min,max)};}
     clampSize(value){const {min,max}=this.limits();return Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));}
-    apply(value,{persist=true,emit=true,notify=true}={}){const next=this.clampSize(value);const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});}return next;}
+    apply(value,{persist=true,emit=true,notify=true}={}){const next=this.clampSize(value);const changed=next!==this.size;this.size=next;if(this.spec.cssVar)splitToken(this.container,this.spec.cssVar,`${next}px`);else if(this.axis==='x')splitSet(this.target,'width',`${next}px`);else splitSet(this.target,'height',`${next}px`);if(persist)writeJson(this.key,{size:next});if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});}return next;}
+    beginPreview(){
+      this.clearPreview();this.previewSize=null;if(this.previewActive)return;
+      this.previewActive=true;document.documentElement?.classList?.add('dkds-split-drag-active');this.scope.resizeScheduler?.suspend?.();this.handle.classList.add('is-dragging');
+    }
     paintPreview(){
-      if(this.previewSize===null||!this.drag)return;
-      // Follow the pointer with the real panel geometry, but keep all expensive
-      // chart/layout notification paths frozen until pointerup. ResizeObservers
-      // also short-circuit while dkds-split-drag-active is present.
+      if(this.previewSize===null||!this.previewActive)return;
+      // Follow the pointer with real geometry while expensive chart/layout
+      // notifications stay suspended. This path is shared by the visible split
+      // seam and the held-title touch gesture used by Mobile companions.
       this.apply(this.previewSize,{persist:false,emit:false,notify:false});
     }
     schedulePreview(value){
-      const next=this.clampSize(value),sign=this.spec.reverse?-1:1;this.previewSize=next;this.previewOffset=(next-this.drag.size)*sign;if(this.previewFrame)return;
+      this.previewSize=this.clampSize(value);if(this.previewFrame)return;
       const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.previewFrame=raf(()=>{this.previewFrame=0;this.paintPreview();});
     }
     clearPreview(){
       if(this.previewFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.previewFrame);}catch{}this.previewFrame=0;}
-      this.handle.style.removeProperty('translate');this.previewOffset=0;
+    }
+    finishPreview({persist=true,reason='split-end'}={}){
+      const next=this.previewSize===null?this.size:this.previewSize;this.clearPreview();this.previewSize=null;
+      this.apply(next,{persist,emit:false,notify:false});
+      if(this.previewActive){this.previewActive=false;document.documentElement?.classList?.remove('dkds-split-drag-active');this.handle.classList.remove('is-dragging');this.scope.resizeScheduler?.resume?.();this.scope.emitResize?.({reason,id:this.spec.id,size:this.size});}
+      return this.size;
     }
     bind(){
-      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.clearPreview();this.previewSize=null;this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};document.documentElement?.classList?.add('dkds-split-drag-active');this.scope.resizeScheduler?.suspend?.();this.handle.classList.add('is-dragging');this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
+      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};this.beginPreview();this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{if(!this.drag||e.pointerId!==this.drag.pointerId)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.schedulePreview(this.drag.size+(point-this.drag.start)*sign);e.preventDefault();};
-      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);const next=this.previewSize===null?this.size:this.previewSize;this.clearPreview();this.previewSize=null;this.drag=null;document.documentElement?.classList?.remove('dkds-split-drag-active');this.handle.classList.remove('is-dragging');this.apply(next,{persist:true,emit:false,notify:false});this.scope.resizeScheduler?.resume?.();this.scope.emitResize?.({reason:'split-end',id:this.spec.id,size:this.size});};
+      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.drag=null;this.finishPreview({persist:true,reason:'split-end'});};
       const reset=e=>{e.preventDefault();this.clearPreview();this.previewSize=null;this.apply(Number(this.spec.defaultSize)||320);};
       this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);
       this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>window.removeEventListener('pointercancel',up),()=>this.handle.removeEventListener('dblclick',reset));
     }
-    dispose(){document.documentElement?.classList?.remove('dkds-split-drag-active');this.clearPreview();this.previewSize=null;this.scope.resizeScheduler?.resume?.();this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
+    dispose(){document.documentElement?.classList?.remove('dkds-split-drag-active');this.clearPreview();this.previewSize=null;this.previewActive=false;this.scope.resizeScheduler?.resume?.();this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
   class MovableSurface {
@@ -53,18 +78,18 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
       this.apply(this.position,{persist:false,clamp:false});this.bind();requestAnimationFrame(()=>this.clamp({persist:false}));
     }
     bounds(){const rect=this.boundsElement?.getBoundingClientRect?.();return rect||{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight,width:window.innerWidth,height:window.innerHeight};}
-    apply(value,{persist=true,clamp=true}={}){this.position={x:Number(value?.x)||0,y:Number(value?.y)||0};this.target.style.translate=`${Math.round(this.position.x)}px ${Math.round(this.position.y)}px`;if(clamp)this.clamp({persist:false});if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
-    clamp({persist=false}={}){const r=this.target.getBoundingClientRect(),b=this.bounds();let x=this.position.x,y=this.position.y;if(r.left<b.left)x+=b.left-r.left;if(r.right>b.right)x-=r.right-b.right;if(r.top<b.top)y+=b.top-r.top;if(r.bottom>b.bottom)y-=r.bottom-b.bottom;if(x!==this.position.x||y!==this.position.y){this.position={x,y};this.target.style.translate=`${Math.round(x)}px ${Math.round(y)}px`;}if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
+    apply(value,{persist=true,clamp=true}={}){this.position={x:Number(value?.x)||0,y:Number(value?.y)||0};movableSet(this.target,'translate',`${Math.round(this.position.x)}px ${Math.round(this.position.y)}px`);if(clamp)this.clamp({persist:false});if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
+    clamp({persist=false}={}){const r=this.target.getBoundingClientRect(),b=this.bounds();let x=this.position.x,y=this.position.y;if(r.left<b.left)x+=b.left-r.left;if(r.right>b.right)x-=r.right-b.right;if(r.top<b.top)y+=b.top-r.top;if(r.bottom>b.bottom)y-=r.bottom-b.bottom;if(x!==this.position.x||y!==this.position.y){this.position={x,y};movableSet(this.target,'translate',`${Math.round(x)}px ${Math.round(y)}px`);}if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
     reset({persist=true}={}){return this.apply({x:0,y:0},{persist});}
     bind(){
-      const previousTouch=this.handle.style.touchAction;this.handle.style.touchAction='none';
+      const previousTouch=this.handle.style.touchAction;movableSet(this.handle,'touch-action','none');
       const down=e=>{if(e.button!==undefined&&e.button!==0)return;if(e.target.closest('button,input,select,textarea,a,[role="button"]'))return;const r=this.target.getBoundingClientRect();this.drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,baseX:this.position.x,baseY:this.position.y,rect:r,bounds:this.bounds()};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{const d=this.drag;if(!d||e.pointerId!==d.id)return;const rawX=e.clientX-d.startX,rawY=e.clientY-d.startY;const dx=Math.max(d.bounds.left-d.rect.left,Math.min(d.bounds.right-d.rect.right,rawX));const dy=Math.max(d.bounds.top-d.rect.top,Math.min(d.bounds.bottom-d.rect.bottom,rawY));this.apply({x:d.baseX+dx,y:d.baseY+dy},{persist:false,clamp:false});if(e.cancelable)e.preventDefault();};
       const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.id))return;this.handle.releasePointerCapture?.(this.drag.id);this.drag=null;if(this.spec.persist!==false)writeJson(this.key,this.position);};
       const reset=e=>{if(this.spec.resetOnDoubleClick===false||e.target.closest('button,input,select,textarea,a,[role="button"]'))return;e.preventDefault();this.reset();};
       const resize=()=>this.clamp({persist:false});
       this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);window.addEventListener('resize',resize);
-      this.cleanups.push(()=>{this.handle.style.touchAction=previousTouch;this.handle.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);this.handle.removeEventListener('dblclick',reset);window.removeEventListener('resize',resize);});
+      this.cleanups.push(()=>{if(previousTouch)movableSet(this.handle,'touch-action',previousTouch);else movableRemove(this.handle,'touch-action');this.handle.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);this.handle.removeEventListener('dblclick',reset);window.removeEventListener('resize',resize);});
     }
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);this.target?.classList?.remove('dkds-movable-surface');this.handle?.classList?.remove('dkds-movable-handle');}
   }

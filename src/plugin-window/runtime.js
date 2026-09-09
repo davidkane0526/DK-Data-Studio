@@ -28,6 +28,7 @@
     'parameter-schema':'../core/data/parameter-schema.js',
     'workflow-engine':'../core/workflow/engine.js',
     platform:'../core/host/platform.js',
+    'native-touch-drag':'../core/host/native-touch-drag.js',
     'state-store':'../core/data/state-store.js',
     'io-runtime':'../core/host/io-runtime.js',
     'plot-presentation-runtime':'../core/scientific/plot-presentation-runtime.js',
@@ -61,6 +62,8 @@
   let artifactUpserts = new Map();
   let artifactRemovals = new Set();
   let artifactStorePrimedForBootstrap = false;
+  let ownerArtifactRevision = -1;
+  let ownerArtifactReconcilePromise = null;
 
   function isTypingTarget(el) {
     if (!el) return false;
@@ -89,10 +92,6 @@
     return false;
   }
 
-  // Dedicated TOP windows do not load the main shell toolbar, but system edit
-  // semantics must remain host-invariant. Route the same keyboard operations
-  // through the active-plugin Edit Contract instead of reimplementing them in
-  // each plugin header.
   window.addEventListener('keydown', event => {
     if (isTypingTarget(event.target)) return;
     const edit = window.DKDSPlugins?.edit;
@@ -172,13 +171,16 @@
     });
   }
 
-  function loadInlineStyle(source,label) {
+  function loadInlineStyle(source,label,layer='dkds.plugin') {
     const style=document.createElement('style');
+    const resolvedLayer=String(layer||'')==='dkds.plugin-platform'?'dkds.plugin-platform':'dkds.plugin';
     style.dataset.dkdsExternalWindowStyle=label;
-    style.textContent=`@layer dkds.plugin {\n${String(source||'')}\n}`;
+    style.dataset.dkdsExternalWindowStyleLayer=resolvedLayer;
+    style.textContent=`@layer ${resolvedLayer} {\n${String(source||'')}\n}`;
     document.head.appendChild(style);
     return style;
   }
+
 
   function externalPackageFile(spec,fileName) {
     const source=spec?.packageFiles?.[fileName];
@@ -205,7 +207,7 @@
     // dependencies requested them. Loading Pipeline/Transform/Algorithm in every
     // TOP made unrelated Data Center/Pulse windows pay the cost of new science
     // features and caused startup time to grow as the platform evolved.
-    for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
@@ -262,13 +264,28 @@
     return artifactStore;
   }
 
-  function primeArtifactStoreForRuntime() {
-    // Plugin window runtimes and plugin activation are allowed to consult the
-    // Artifact API immediately. Previously `artifactStore` did not exist until
-    // after window-runtime creation + plugin activation, which made the contract
-    // timing-dependent (Resonance could throw, while Data Center silently mounted
-    // against an empty store). Runtime-only prewarm still receives an empty Store
-    // so it does not hydrate domain data or defeat the prewarm performance policy.
+  async function reconcileOwnerArtifactStore({force=false,reason='owner-reconcile'}={}) {
+    if(bootstrap?.prewarm===true||String(bootstrap?.pluginWindow?.artifactHydration||'')!=='live')return false;
+    if(ownerArtifactReconcilePromise)return ownerArtifactReconcilePromise;
+    const remote=window.DKDSCapabilities?.proxy?.('core.project-artifacts')||null;
+    if(!remote?.revision||!remote?.list)return false;
+    ownerArtifactReconcilePromise=(async()=>{
+      try{
+        const revision=Number(await remote.revision())||0;
+        if(!force&&revision===ownerArtifactRevision)return false;
+        const rows=await remote.list({includeTransient:true});
+        if(!Array.isArray(rows))return false;
+        artifactStore=window.DKDSData?.restoreStore?window.DKDSData.restoreStore({schema:2,artifacts:rows}):artifactStore;
+        artifactUpserts=new Map();artifactRemovals=new Set();ownerArtifactRevision=revision;
+        if(projectHydrated)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'owner-live-reconcile',reason,artifacts:artifactStore?.list?.({includeTransient:true})||[]});
+        return true;
+      }catch(err){console.warn('[DKDS owner artifact reconcile]',err);return false;}
+      finally{ownerArtifactReconcilePromise=null;}
+    })();
+    return ownerArtifactReconcilePromise;
+  }
+
+  async function primeArtifactStoreForRuntime() {
     if (bootstrap?.prewarm === true) {
       artifactStore = window.DKDSData?.restoreStore
         ? window.DKDSData.restoreStore({schema:2,artifacts:[]})
@@ -280,6 +297,12 @@
     }
     restoreArtifactStore();
     artifactStorePrimedForBootstrap = true;
+    const initialRows=artifactStore?.list?.({includeTransient:true})||[];
+    if(!initialRows.length)await reconcileOwnerArtifactStore({force:true,reason:'initial-live-empty'});
+    else{
+      const remote=window.DKDSCapabilities?.proxy?.('core.project-artifacts')||null;
+      try{if(remote?.revision)ownerArtifactRevision=Number(await remote.revision())||0;}catch{}
+    }
     return artifactStore;
   }
 
@@ -306,6 +329,7 @@
       activeActivityId:String(window.DKDSPlugins?.activities?.active?.()||''),
       visiblePageId:String(visiblePage?.id||''),
       visiblePagePluginId:String(visiblePage?.dataset?.pluginId||''),
+      windowChrome:window.DKDSPluginWindowChrome?.snapshot?.()||null,
       targetPluginId:String(bootstrap?.pluginWindow?.pluginId||''),
       targetPluginState:window.DKDSPlugins?.manager?.get?.(String(bootstrap?.pluginWindow?.pluginId||''))||null,
       topWorkspaceRegistered:(window.DKDSPlugins?.workspace?.top?.()||[]).some(row=>String(row?.pluginId||'')===String(bootstrap?.pluginWindow?.pluginId||'')&&String(row?.activity||'')===String(bootstrap?.activityId||'')),
@@ -355,8 +379,30 @@
     };
   }
 
+  function artifactDeltaForChange(payload={}) {
+    const type=String(payload?.type||'');
+    if(['add','upsert','publish'].includes(type)&&payload?.artifact?.id)return {upserts:[clone(payload.artifact)],removedIds:[]};
+    if(type==='remove'&&payload?.id)return {upserts:[],removedIds:[String(payload.id)]};
+    if(type==='clear')return {upserts:[],removedIds:(payload.ids||[]).map(String).filter(Boolean)};
+    if(type==='batch'){
+      const upserts=new Map(),removedIds=new Set();
+      for(const event of payload.events||[]){
+        const delta=artifactDeltaForChange(event);
+        for(const row of delta.upserts||[]){removedIds.delete(String(row.id));upserts.set(String(row.id),row);}
+        for(const id of delta.removedIds||[]){upserts.delete(String(id));removedIds.add(String(id));}
+      }
+      return {upserts:[...upserts.values()],removedIds:[...removedIds]};
+    }
+    return {upserts:[],removedIds:[]};
+  }
+
   function emitArtifactsChanged(payload={}) {
     recordArtifactChange(payload);
+    const delta=artifactDeltaForChange(payload);
+    if((delta.upserts.length||delta.removedIds.length)&&bootstrap?.prewarm!==true){
+      try{window.electronAPI?.pushActivityArtifactDelta?.({projectTabId:String(bootstrap?.projectTabId||''),activityId:String(bootstrap?.activityId||''),reason:String(payload?.type||'activity-artifact-change'),artifactDelta:delta});}
+      catch(err){console.warn('[DKDS activity artifact delta]',err);}
+    }
     window.DKDSPlugins?.events?.emit?.('data:artifacts-changed', payload);
     scheduleSnapshot();
   }
@@ -443,6 +489,7 @@
     if (page) {
       window.DKDSPlugins?.events?.emit?.('analysis:opened', {id:target});
       window.DKDSPlugins?.events?.emit?.('analysis:refresh', {id:target});
+      queueMicrotask(()=>window.DKDSPluginWindowChrome?.sync?.(page));
       requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize', {reason:'page-open'}));
     }
     return !!page;
@@ -532,11 +579,9 @@
 
   function baseHost() {
     return {
-      appVersion:'3.67.21',
-      platform:window.DKDSPlatform,
+      appVersion:'3.68.66',
       isAuxiliaryWindow:true,
       isWebClient:false,
-      isNativeClient:false,
       renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
       closeCurrentWindow:closeAnalysisPage,
       openActivityWindow:()=>false,
@@ -554,10 +599,8 @@
       scheduleMainPlotRelayout:()=>window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'plugin-window'}),
       openAnalysisPage,
       closeAnalysisPage,
-      showMainWorkspace:()=>false,
       copyTextToClipboard,
       saveChartImage,
-      saveChartImage:saveChartImage,
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
@@ -573,6 +616,7 @@
       measureSync(`${reason}:artifact-store`,()=>restoreArtifactStore());
     }
     artifactStorePrimedForBootstrap=false;
+    await measure(`${reason}:owner-artifact-reconcile`,()=>reconcileOwnerArtifactStore({force:true,reason:`${reason}:pre-mount`}));
     await measure(`${reason}:plugin-project-set`,()=>pluginRuntime?.setProject?.(project));
     await measure(`${reason}:project-restore`,()=>window.DKDSPlugins.project.restore(project.plugins || {}));
     projectHydrated=true;
@@ -586,6 +630,7 @@
     const expectedPluginId=String(bootstrap?.pluginWindow?.pluginId||'');
     if(!visiblePage)throw new Error(`插件工作区已激活但没有显示页面：${bootstrap.activityId}`);
     if(expectedPluginId&&String(visiblePage.dataset?.pluginId||'')!==expectedPluginId)throw new Error(`插件工作区显示了错误页面：${bootstrap.activityId}`);
+    window.DKDSPluginWindowChrome?.sync?.(visiblePage);
     activityOpened=true;
     window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
     window.DKDSPlugins?.events?.emit?.('layout:resize',{reason});
@@ -600,22 +645,16 @@
     const packagedSource=spec?.source==='external'||spec?.source==='override';
     if (!spec?.entry || (!packagedSource&&!spec?.pluginFolder)) throw new Error('插件窗口缺少入口信息。');
 
-    // Load only the dependencies declared by this top-level plugin. The old
-    // host loaded every scientific renderer and science/workflow module for every window.
     await measure('dependencies',()=>loadDependencies(spec));
     beginDeclaredChartPreload();
-    measureSync('artifact-store-prime',()=>primeArtifactStoreForRuntime());
+    await measure('artifact-store-prime',()=>primeArtifactStoreForRuntime());
 
-    // Optional plugin-local support scripts make a dedicated plugin
-    // self-contained: adding a new analysis does not require extending the
-    // host's shared dependency allowlist for its private implementation.
-    const loadedExternalScripts=new Set();
+    const loadedTargetScripts=new Set();
     const loadTargetScript=async(file,kind='support')=>measure(file,async()=>{
-      if(packagedSource){
-        if(loadedExternalScripts.has(file))return;
-        await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
-        loadedExternalScripts.add(file);
-      }else await loadScript(pluginUrl(file));
+      if(loadedTargetScripts.has(file))return;
+      if(packagedSource)await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
+      else await loadScript(pluginUrl(file));
+      loadedTargetScripts.add(file);
     },startupProfile.scripts,{kind});
     const loadedProviderScripts=new Set();
     const loadProviderScript=async(provider,file,kind='algorithm-provider')=>measure(`${provider.pluginId}:${file}`,async()=>{
@@ -631,11 +670,20 @@
         for(const row of (provider.styles||[]))loadInlineStyle(row.css,`${provider.pluginId}/${row.file}`);
       }
     };
+    const host = baseHost();
+    window.DKDSPlugins.configure(host);
+    installHostDevToolsStatusItem();
+    for(const provider of (spec.themeProviders||[])){
+      loadProviderStyles(provider);
+      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file,'theme-provider');
+      if(provider.source==='external'||provider.source==='override')window.DKDSPlugins?.packageRuntime?.applyManifest?.(provider.pluginId,provider.packageManifest||{},provider.source);
+    }
+    if((spec.themeProviders||[]).length)await measure('theme-providers-activate',()=>window.DKDSPlugins.activateAll());
+
     for(const file of (spec.scripts||[]))await loadTargetScript(file,'support');
 
     if (spec.runtime) await loadTargetScript(spec.runtime,'window-runtime');
 
-    const host = baseHost();
     const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
     if (windowRuntime?.create) {
       pluginRuntime = await measure('window-runtime-create',()=>windowRuntime.create({
@@ -645,7 +693,6 @@
         scheduleSnapshot,
         copyTextToClipboard,
         saveChartImage,
-        saveChartImage:saveChartImage,
         artifacts:artifactsApi
       }));
       if (pluginRuntime?.serviceName && pluginRuntime?.service) {
@@ -653,39 +700,24 @@
       }
     }
 
-    window.DKDSPlugins.configure(host);
-    installHostDevToolsStatusItem();
-    // Dedicated TOP renderers must see the same Theme Profile catalog as the
-    // main shell. Appearance mode (light/dark) is host state, while Theme
-    // Profiles are plugin definitions; without loading the providers here a
-    // dedicated window silently falls back to builtin.default and only SUPER
-    // appears themed.
-    for(const provider of (spec.themeProviders||[])){
-      loadProviderStyles(provider);
-      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file,'theme-provider');
-      if(provider.source==='external'||provider.source==='override')window.DKDSPlugins?.packageRuntime?.applyManifest?.(provider.pluginId,provider.packageManifest||{},provider.source);
-    }
     for(const provider of (spec.algorithmProviders||[])){
       for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
     }
     if(packagedSource){
-      for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
+      for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin');
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
-      // Keep the .dkplugin manifest canonical in the independent renderer too.
-      // The owner renderer has always merged the packaged manifest after script
-      // evaluation; not doing that here created two lifecycle contracts for the
-      // same external Tool and could leave a visible Tools entry with no page.
+      for(const file of (spec.platformStyles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin-platform');
+      for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
       window.DKDSPlugins?.packageRuntime?.applyManifest?.(spec.pluginId,spec.packageManifest||{},spec.source||'external');
     }else{
-      // Built-in TOPs use exactly the same plugin-style ownership as packaged
-      // plugins. The previous dedicated-window path skipped manifest.styles,
-      // which made Pulse/Vth/TER render with raw Core geometry while the same
-      // plugins looked correct in the main shell.
-      for(const row of (spec.styleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`);
-      await loadTargetScript(spec.entry,'entry');
+      for(const row of (spec.styleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin');
+      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
+      for(const row of (spec.platformStyleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin-platform');
+      for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
     }
 
     await measure('plugins-activate',()=>window.DKDSPlugins.activateAll());
+    window.DKDSPluginWindowChrome?.connectRuntimeEvents?.();
     for(const provider of (spec.algorithmProviders||[])){
       const state=window.DKDSPlugins?.manager?.get?.(String(provider.pluginId||''))||null;
       if(!state?.active){const error=String(state?.error||'').trim();throw new Error(error?`算法 Provider 激活失败：${provider.pluginId} · ${error}`:`算法 Provider 激活失败：${provider.pluginId}`);}
@@ -741,6 +773,7 @@
     scheduleDeclaredChartWarmup();
   }
 
+
   async function replaceProjectFromBootstrap(nextBootstrap) {
     if (!nextBootstrap?.project) return;
     const previousBootstrap=bootstrap;
@@ -750,23 +783,16 @@
     const liveArtifactsChanged = String(previousBootstrap?.artifactDigest||'') !== String(nextBootstrap?.artifactDigest||'');
     const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true;
     bootstrap = nextBootstrap;
+    DKDSPluginWindowChrome?.configure?.(bootstrap);
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
     try {
       if(promoteFromPrewarm||!projectHydrated||!activityOpened){
         await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:promoteFromPrewarm?'prewarm-open':'project-hydrate'});
         setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
-        // Main keeps a runtime-only prewarmed window hidden until this second
-        // readiness signal, so users never see a half-hydrated analysis page.
         window.electronAPI?.markActivityWindowReady?.({startupProfile:{...startupProfile,prewarmMode:'hydrated-open'}});
         return;
       }
       if(sameProject&&liveArtifactsChanged&&Array.isArray(nextBootstrap.artifactSnapshot)){
-        // Reused live-hydration windows must consume a new full owner snapshot
-        // even when the serialized project itself is unchanged. This repairs
-        // missed/transient deltas without reloading plugin code or remounting the
-        // activity. The Artifact API closes over `artifactStore`, so replacing
-        // the store here is immediately visible to Data Center and other live
-        // consumers after the change event below.
         project=ensureProjectShape(nextBootstrap.project);
         restoreArtifactStore();
         window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
@@ -776,7 +802,7 @@
         setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 数据已同步`);
         return;
       }
-      if(sameProject){setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);return;}
+      if(sameProject){await reconcileOwnerArtifactStore({reason:'bootstrap-refresh'});setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);return;}
       await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:'project-replace'});
       setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 项目已同步`);
     } catch (err) {
@@ -786,29 +812,30 @@
     }
   }
 
-  async function start() {
+async function start() {
     try {
       bootstrap = await measure('bootstrap',()=>window.electronAPI?.getActivityWindowBootstrap?.());
       if (!bootstrap?.project) throw new Error('没有收到主窗口项目快照。');
       if (!bootstrap?.pluginWindow) throw new Error('当前插件没有独立窗口定义。');
 
       project = ensureProjectShape(bootstrap.project);
-      document.title = `DK Data Studio · ${bootstrap.pluginWindow.title || bootstrap.activityId || '插件'}`;
+      await measure('window-chrome-ready',()=>window.DKDSPluginWindowChrome?.ready?.()||true);
+      DKDSPluginWindowChrome?.configure?.(bootstrap);
+      DKDSPluginWindowDockLayout?.install?.();
 
       window.electronAPI?.onActivityBootstrapChanged?.(async () => {
         const next = await window.electronAPI?.getActivityWindowBootstrap?.();
         if (next) await replaceProjectFromBootstrap(next);
       });
+      const reconcileOnFocus=()=>{if(projectHydrated)void reconcileOwnerArtifactStore({reason:'window-focus'});};
+      window.addEventListener('focus',reconcileOnFocus,{passive:true});
+      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reconcileOnFocus();},{passive:true});
       window.electronAPI?.onOwnerArtifactDelta?.(payload => {
         if(String(payload?.projectTabId||'')!==String(bootstrap?.projectTabId||''))return;
         applyOwnerArtifactDelta(payload);
       });
       window.electronAPI?.onActivityWillHide?.(() => {
         pushSnapshot(true);
-        // TOP reuse is a Core resource lifecycle, not a plugin-specific optimization.
-        // Suspend generic UI schedulers and release managed D3 renderer state
-        // before contracting scientific caches. Domain state/Selection/Viewport stay
-        // in the shared Controller/View model and are restored on show.
         void Promise.resolve(window.DKDSUI?.lifecycle?.('hidden',{reason:'top-window-hide'})).catch(err=>console.warn('[DKDS plugin window UI suspend]',err)).finally(()=>{
           window.DKDSPerformance?.lifecycle?.('hidden',{retainRatio:0.25,dropWeak:true,reason:'top-window-hide'});
         });

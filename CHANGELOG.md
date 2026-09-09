@@ -1,3 +1,895 @@
+## 3.68.66 WIP — Save Cancel Destructive Theme Variant
+
+- Change the Save Project dialog's `取消` action from the ordinary Theme `secondary` variant to the same `danger-soft` / `destructive` action family used by the Resonance range-selection delete control.
+- Keep red fill fully Theme-owned: no project-save-specific red, HEX or RGBA paint was introduced. Default, Thin Glass, Aurora Pop and third-party themes resolve the destructive surface/text/border through the canonical Component Appearance contract.
+- Preserve the other save actions unchanged: 保存当前 = `primary`, 另存为 = `secondary`.
+- Update the active save-dialog regression so future patches cannot silently normalize Cancel back to secondary styling.
+
+## 3.68.65 WIP — Project Save Dialog Visual Integration
+
+- Rebuilt the desktop project-save chooser on the canonical Core dialog shell used by refined settings/service surfaces.
+- Added a compact current-project summary, keyboard hints, a proper header close action, and responsive geometry without introducing a second material owner.
+- Save Current uses the Theme `primary` Action variant; Save As and Cancel use the Theme `secondary` Action variant. All three footer actions therefore keep visible Theme-owned fill across appearance profiles instead of falling back to bare text buttons.
+- Removed the legacy project-save-specific backdrop/icon/text paint so Material Renderer + Component Appearance remain the only optical owners.
+
+## 3.68.64 WIP — Native Mobile Vertical Scroll Chaining
+
+- Fix nested Mobile workspace scroll trapping. Core `safe` Primary regions and layout-recovery scrollers previously used `overscroll-behavior: contain` on native Mobile, so a continuing upward/downward touch gesture stopped when the local panel reached its boundary instead of handing off to the next scrollable workspace ancestor.
+- Add an explicit Presenter-platform vertical chaining contract for the main analysis scroller, scientific canvas center, Primary host, SUB host, dock lanes and canonical table scrollers. These regions now use `overscroll-behavior-y: auto` on native Mobile while retaining local horizontal containment.
+- Change PluginWorkspace layout recovery to preserve vertical chaining on both Desktop and Mobile instead of reintroducing Mobile-only containment through an inline runtime style.
+- Keep transient overlays isolated: parameter drawers, menus and other overlay-owned scrollers retain their containment so an overlay cannot accidentally scroll the page behind it.
+- No Pulse-specific selector or touchmove polling/listener was added. The fix stays in Core/Presenter scroll ownership and uses browser/WebView native nested-scroll behavior.
+- Desktop Visual Closure remains WIP pending Windows/Electron pixel acceptance.
+
+## 3.68.63 WIP — Persistent Primary Action Semantics / More Translucent Smaller Resize Corner
+
+- Fix the remaining important-action fill regression at the actual semantic-hydration boundary. v3.68.62 successfully projected `variant: primary`, but dedicated titlebar / ActionGroup / plugin-toolbar buttons authored that variant with module-specific owners. Semantic UI only treats `core-component` as persistent explicit semantics, so a later hydration pass could normalize the variant to `core-runtime` and then erase it. All Core-created plugin actions now use the canonical persistent component owner, keeping TER `计算 TER`, Pulse `分析勾选`, Data Center `运行工作流` and other primary actions Theme-filled after repeated hydration.
+- Strengthen the visual invariant so future releases fail if plugin-toolbar, ActionGroup or dedicated-titlebar variants stop using persistent Core component semantics.
+- Reduce only the visible PortableView resize affordance from 21/18 px to **18/15 px**, preserving the 36×36 transparent hit target, clipped silhouette and ~3 px edge relationship.
+- Fix the missing transparency from v3.68.62. The handle was Theme-colored, but the consumed `floatingChrome` slots are intentionally opaque in the builtin profiles. The handle now derives hue from those active Theme slots and mixes them with `transparent` (58% outer / 44% inner; 68% active), so light/dark and custom themes still own color while Core supplies the flat alpha treatment. No backdrop blur, panel-surface inner plane, gradient or fold-depth effect is reintroduced.
+- Desktop Visual Closure remains WIP pending Windows/Electron pixel acceptance.
+
+## 3.68.62 WIP — Primary Action Projection / Smaller Theme-Owned Resize Corner
+
+- Fix the actual TER `计算 TER` fill regression in dedicated plugin windows. The ActionGroup registry now preserves the authored semantic `variant`, the Presentation model carries it, and dedicated titlebar proxies consume it instead of rebuilding every plugin action as `quiet`. This fixes the root projection loss rather than adding a TER-specific style.
+- Preserve the same primary-action semantics in the Native presenter and overflow sheet, so important first-party actions retain Theme accent fill when the Presenter relocates them.
+- Reduce the floating PlotView resize-corner visible geometry from 24/21 px to **21/18 px** while keeping the invisible 36×36 px interaction target and the accepted clipped silhouette.
+- Keep resize-corner material Theme-owned through `floatingChrome`. Theme-defined translucency/tone is allowed; the handle itself still forbids backdrop blur, surface-colored fold planes, gradients and hard-coded profile paint, avoiding the old folded-page depth cue.
+- Desktop Visual Closure remains WIP pending Windows/Electron pixel acceptance.
+
+## 3.68.61 WIP — Theme-Owned Action/Handle Material / AI Status / Vth Live Resize / Theme Header Settings
+
+- Restyle AI Agent and MCP runtime states as quiet Core chips inside their action rows. Status text now has bounded padding, ellipsis and title mirroring instead of sitting unstyled against the right panel edge.
+- Make important first-party plugin actions explicitly request the canonical `primary` component variant. Builtin Default, Thin Glass and Aurora Pop now provide Theme-owned primary ToolbarAction fills for light/dark modes, so actions such as TER `计算 TER` receive the active Theme material instead of a generic fallback.
+- Fix a Core scientific-layout invalidation gap exposed by Vth. `ScientificCurveSurface` instances are now tracked by PluginScope and participate in the existing post-split ResizeScheduler flush, so changing the lower results-pane height immediately re-renders/clamps the Vth plot without requiring manual Refresh.
+- Preserve the accepted PortableView resize-handle geometry (36 px transparent hit target; 24/21 px clipped visible layers), but move visible color ownership fully into the Theme Contract `floatingChrome` appearance slots. Presentation no longer defines portable-corner color tokens or fixed RGBA material; light/dark/profile-specific color differences come from the active Theme.
+- Move the Theme parameter control out of the bottom appearance row into the Theme panel titlebar as the canonical settings gear. It opens the active Theme settings and stays hidden when the selected Theme declares no configurable parameters.
+- Android versionCode advanced to 88. Desktop Visual Closure remains WIP pending Windows/Electron pixel acceptance.
+
+## 3.68.60 WIP — Desktop Visual Closure / Mobile Pulse Layout / Import Classification
+
+- Preserved the accepted flat two-tone floating resize-handle silhouette while scaling visible geometry from 28/25 px to 24/21 px; the 36 px hit target is unchanged. Handle colors now derive from Theme accent roles with separate light/dark mixtures instead of fixed RGB literals.
+- Reflowed AI Agent / MCP settings to an overflow-safe responsive grid. MCP state is now part of the action row instead of a standalone line, with long runtime addresses ellipsized and exposed via title text.
+- Made the default desktop file filter show both DKDS JSON projects and supported text data without an extra filter click. JSON is classified by content; non-project tabular JSON now has a real importer supporting common object-array, 2D-array, rows/data/records/points/values, and column-array shapes.
+- Rebuilt Pulse Analysis mobile result composition into deterministic semantic-lane layout: stable two-column result plots on wide/landscape mobile, one column on narrow screens, no contradictory split display declarations.
+- Moved Pulse “显示范围” and analyzed-file summary into the right side of the canonical “结果比较” title bar, matching other titlebar action clusters.
+
+## 3.68.59 WIP — Flat Same-Family Portable Resize Material / Desktop Visual Closure
+
+- Keep the accepted 3.68.52 resize-handle geometry exactly: 36×36 transparent hit target, 28×28 clipped outer triangle and 25×25 clipped inner triangle, leaving the existing ~3 px diagonal band.
+- Fix the persistent folded-page appearance at its actual material source. The inner triangle no longer derives from `--dkui-surface-elevated`, and neither visible triangle uses `backdrop-filter`.
+- Restore both visible layers to one cyan/blue hue family, using only shade/alpha differences. Default/light uses softened `rgba(0,142,197,.62)` outer and `rgba(6,105,150,.66)` inner; dark mode strengthens alpha without changing the hue family.
+- Hover/focus/drag only strengthen the existing outer triangle. The 36×36 rectangular interaction target remains fully transparent and never receives background, border or shadow paint.
+- Rebase all historical PortableView handle regressions that were still protecting the rejected edge/glass/surface-blur material. HARD-86 now explicitly forbids backdrop blur, surface/elevated inner material and the retired `corner-glass/corner-blur` tokens.
+- Desktop and Mobile continue to share one Core geometry/paint owner. Android versionCode advanced to 86.
+- Desktop Visual Closure remains WIP pending Windows/Electron pixel acceptance.
+
+## 3.68.58 WIP — Portable Resize Edge/Glass Material Correction / Desktop Visual Closure
+
+- Restored the exact 3.68.52 resize-corner geometry: 36×36 transparent hit target, 28×28 clipped outer layer and 25×25 clipped inner layer.
+- Reinterpreted the 28 px layer as only the narrow exposed diagonal edge; the 25 px inner layer now carries the theme-derived near-surface glass material.
+- Hover/focus/drag may strengthen only the narrow outer edge. The rectangular hit target remains transparent in every state.
+- Removed the rejected single full-triangle fill model introduced after 3.68.52.
+- Desktop and Mobile continue to share the same Core geometry and paint owner.
+
+## 3.68.57 WIP — Single-Plane Portable Resize Corner / Desktop Visual Closure
+
+- Fix the actual folded-page regression: the 36×36 PortableView resize node remains an invisible rectangular hit target, while all visible paint is now confined to one 28×28 bottom-right triangle through `clip-path`.
+- Remove the nested 25×25 `::after` paint plane and retire the dual `outer/inner` material tokens. Applying translucent paint and backdrop blur independently to two nested clipped layers created two composited visual planes and therefore the persistent page-fold appearance.
+- Keep the accepted 3.68.52 outer silhouette, but refine only one same-plane material layer with theme-derived translucent tint and restrained 4 px backdrop blur. Hover/focus/drag strengthen this same clipped layer and never paint the rectangular hit target.
+- Add HARD-86 and release regressions that reject any nested `::after` fold plane, rectangular hover paint, dual outer/inner material contract, or handle-local visible gradient. Desktop and Mobile continue to share one Core owner.
+- Desktop Visual Closure remains WIP pending Windows/Electron visual acceptance.
+
+## 3.68.56 WIP — Restore 3.68.52 Portable Handle Geometry / Theme Material Only
+
+- Restore the **exact accepted v3.68.52 PortableView resize-handle silhouette**: one 36×36 invisible hit target with the shared 28×28 outer and 25×25 inner bottom-right triangles. The 3.68.53–3.68.55 geometry experiments are retired.
+- Confirm the mismatch was **not a second runtime CSS owner**. Current source has one Structure geometry owner and one Presentation paint owner; Mobile only controls visibility and does not repaint `::before/::after`.
+- Remove the actual residual regression mechanism: older regression tests had been rewritten to forbid the 3.68.52 triangle and therefore actively protected the rejected 3.68.55 shape. Those rejected-design gates are removed/rebased so the accepted 3.68.52 geometry is now the protected contract.
+- Refine only material, not silhouette: replace hard-coded cyan with theme-derived translucent outer/inner material, add restrained 5 px backdrop blur, and keep hover/drag limited to a modest outer-material emphasis. No added fold crease, border flap, diagonal slash, gradient, or glow.
+- Desktop and Mobile continue to share one Core PortableView handle owner. Android versionCode advanced to 83.
+- Desktop Visual Closure remains WIP pending the user's Windows/Electron visual acceptance.
+
+## 3.68.55 WIP — Flat Corner-Glass Resize Handle / Desktop Visual Closure
+
+- Remove the large filled triangular PortableView resize surface and the edge-to-edge diagonal crease. Both geometries continued to read as a folded page even after the nested triangle was removed.
+- Keep the 36×36 invisible resize hit target, but reduce the visible affordance to an 18×18 flat theme-glass patch attached to the true bottom-right panel corner.
+- Replace the long crease with a single 9×1 px short diagonal resize cue. No `clip-path`, filled triangle, gradient, glow, or fold-shadow remains.
+- Theme owns tint, boundary, grip contrast and 6 px backdrop blur; hover/drag only slightly strengthens the same flat patch.
+- Desktop and Mobile continue to consume one Core PortableView handle with no plugin/platform paint fork.
+- Update superseded handle regressions and add a 3.68.55 gate that rejects triangular page-fold geometry. Android versionCode advanced to 82.
+
+## 3.68.54 WIP — Portable Handle No-Page-Fold / Desktop Visual Closure
+
+- Remove the nested filled 27×27 inner triangle from the shared floating PlotView resize handle. That second filled plane was the direct cause of the visible page-turn/page-fold effect reported on the dark theme.
+- Keep the 36×36 interaction target and the existing 28×28 bottom-right corner footprint, but render only one translucent same-plane corner material.
+- Re-purpose the second pseudo-element as an approximately 1 px diagonal separator strip instead of another filled triangle. This preserves a clear boundary without implying a lifted flap.
+- Replace `outer/inner` fold-plane Theme tokens with `surface/surface-active/divider` semantics. Color difference, transparency and the local 5 px blur still derive from the active Theme; gradients and glow remain absent in normal/hover/drag states.
+- Desktop and Mobile continue to consume exactly the same Core PortableView handle; no platform/plugin-specific paint fork was added.
+- Add a release regression that explicitly forbids the old nested 27×27 triangle and old `inner/outer` tokens so the page-fold visual cannot silently return.
+- Android versionCode advanced to 81 because the shared Core handle also serves floating Mobile PlotViews.
+
+## 3.68.53 WIP — Desktop Vth / Action Density / Theme Glass Handle / Desktop Visual Closure
+
+- Fix Import Workbench canonical actions that were visually undersized because the workbench used `dkds-action-button` while omitting the existing Core `regular` action-density request. The Import Workbench now explicitly consumes the shared 32 px regular action geometry; no new private button size is introduced.
+- Recompose Transfer Vth Lab as a bounded `primaryScroll: contained` scientific workspace. The plot row is now `minmax(0,1fr)` and automatically consumes all vertical space above the results table.
+- Reverse the Vth vertical split ownership: the persisted splitter now resizes the bottom results row (`--dkds-vth-results-height`) instead of freezing the plot to a fixed pixel height. This preserves manual resizing while making plot auto-fill the default.
+- Normalize the Vth `数据` surface: the fixed-left data-control PRIME disables redundant PortableView chrome, its title no longer inherits the card-body bottom margin, and fixed one-placement PortableViews no longer inject an empty controls group.
+- Replace the hard-coded cyan floating resize corner with theme-derived semantic glass paint. The 36×36 hit area and 28×28 outer footprint remain, while the inner layer becomes 27×27 for a restrained 1 px rim; color, transparency, 5 px backdrop blur, focus and active state now derive from current Theme tokens. No gradient is used.
+- Desktop performance audit found no new global hot-loop in the 3.68.52 handle-only patch; the performance suite remains the release guard. This patch additionally removes empty fixed-panel PortableView chrome DOM rather than adding polling or observers.
+- Android versionCode advanced to 80 because the shared Core resize affordance also serves floating Mobile PlotViews.
+
+## 3.68.52 WIP — Exact HTML Portable Handle Reference / Desktop Visual Closure
+
+- Replaced the previously interpreted PortableView resize-corner styling with the exact handle geometry and palette from the user-provided HTML reference.
+- Shared Desktop/Mobile Core geometry is now 36×36 hit area, 28×28 outer triangle and 25×25 inner triangle, all anchored at the bottom-right corner.
+- Light and dark outer/active/inner RGBA values match the reference exactly; Theme owns those values as semantic tokens while Presentation consumes them without private hard-coded paint.
+- Hover, focus and drag change only the outer triangle as in the reference; the exact 140 ms background transition is owned by Motion, and focus-visible uses the reference inset highlight.
+- The resize handle remains one Core owner on Desktop and Mobile; Mobile has no private ::before/::after paint fork.
+- Android versionCode advanced to 79. The 3.68.51 Mobile SDK runtime packaging fix and zero obsolete compatibility layers remain intact.
+
+## 3.68.51 WIP — Mobile Plugin Runtime Contract Packaging
+
+- Fix Android/WebView first-party plugin registration failure caused by omitting the current `sdk/platform-presentation-contract.js` runtime from `mobile/assets/web/sdk/`.
+- Mobile sync now packages the exact three current SDK runtime contracts referenced by `src/index.html`: Platform Presentation, Theme Contract, and Theme Coverage Contract.
+- Add an explicit declaration/package consistency check so future SDK runtime additions cannot silently disappear from Android assets, while retired compatibility modules remain excluded.
+- Preserve the 3.68.50 reference-matched Core PortableView corner-handle work and the single historical project-file migration boundary.
+- Android versionCode advanced to 78. No legacy semver/plugin compatibility path was restored.
+
+## 3.68.50 WIP — Portable Handle Reference-Match
+
+- Retain the shared 6 px separator track between every dedicated self-drawn titlebar and plugin content surface.
+- Retain the Vth / Pulse first-row top-alignment corrections from 3.68.49.
+- Keep Core PortableView as the only floating resize owner: browser-native `resize:both` stays disabled and Resonance does not re-enable it.
+- Repaint the shared bottom-right resize handle to match the user reference more closely: a larger integrated corner wedge with one diagonal crease line, replacing the earlier detached-style interpretation and retiring the old inner 5×5 triangle.
+- Keep the Android/web sync current-contract fix: no `sdk/semver-compat.js` copy path.
+- Android versionCode advanced to 77. No legacy plugin/SDK compatibility path was restored.
+
+## 3.68.48 WIP — Dedicated Titlebar Right Cluster / Full Empty-Area Drag
+
+- Reworked the shared dedicated-plugin titlebar geometry to `title/version | draggable spacer | plugin actions | Core actions | window controls`, keeping registered actions adjacent to the minimize/maximize/close cluster instead of starting immediately beside the plugin title.
+- Added a title/version divider and retained the existing plugin/Core action divider.
+- Removed `no-drag` ownership from action-zone containers and from command-bar whitespace; only actual interactive controls opt out of Electron dragging, so every unused titlebar region can move the window.
+- Added runtime diagnostics and Electron smoke coverage for action-to-window-control proximity.
+
+## 3.68.47 WIP — Dedicated Titlebar Registry Presentation / Desktop Visual Closure
+
+- Dedicated plugin windows now present current plugin actions from `DKDSUI.actions` and Core workspace surfaces from `DKDSUI.workspaces` directly in the self-drawn titlebar, matching the main shell presentation model instead of reparenting live page DOM.
+- TER dedicated chrome restores `自动参数 / 计算 TER / 布局`, while Core `导入数据 / 参数` actions are presented after the titlebar divider.
+- Body-level PluginWorkspace navigation is suppressed in dedicated windows so there is no second toolbar row.
+- Electron dedicated-window diagnostics fail closed when any registered plugin action, Core workspace surface, or required import action is missing from the titlebar.
+- Resonance no longer duplicates Core-owned workspace surface navigation in its plugin-owned action group.
+
+## 3.68.46 WIP — Dedicated Window Content / Self-drawn Chrome Runtime Closure
+
+- Fix the shared dedicated-plugin-window host used by Data Center, Pulse Analysis, Pulse Sampler, Resonance, TER and Transfer Vth Lab: Core chrome no longer uses a body-wide MutationObserver that reparents live PluginWorkspace nodes while the workspace is still being constructed.
+- Adopt plugin actions/import/navigation only after the target activity has mounted and its visible page has been validated; AnalysisWorkbench keeps canonical navigation references so post-mount host presentation cannot detach Core from its own nav controls.
+- Harden frameless window chrome with a right-anchored command track, explicit no-drag interactive zones, Core IPC readiness checks and click/double-click isolation for minimize/maximize/close.
+- Extend dedicated-window diagnostics so a renderer cannot report ready with collapsed page/body/workbench geometry, dead self-drawn controls or a command bar detached from the right window edge.
+- Preserve Plugin API 1.19.0 / SDK 1.28.0 current-contract behavior; no legacy manifest/API/window fallback is restored.
+
+## 3.68.45 WIP — Legacy Root Panel Retirement / Desktop Visual Closure
+
+- Remove the obsolete app-owned `#inspectorPanel`, `#groupPanel`, and `#zoomPanel` shell surfaces that survived after Resonance migrated to PluginWorkspace PRIME surfaces. This eliminates the duplicate unthemed curve-inspector strip under the main plugin.
+- Retire the associated shell docking/layout/render state and keep current inspector/group ownership exclusively in Resonance PluginWorkspace / Core PortableView.
+- Historical `trendColumns` is consumed only at the Project Compatibility Gateway and mapped to current Resonance `groupColumns`; obsolete historical panel geometry is intentionally dropped instead of reintroduced at runtime.
+- Preserve the current **Desktop Visual Closure** ownership boundary and Plugin API 1.19.0; no runtime compatibility layer, shim, alias, or fallback is restored.
+
+## 3.68.44 WIP — Desktop Visual Closure / unified plugin window chrome
+
+- Unified dedicated plugin windows under the Core frameless titlebar and one-row action contract: plugin-specific actions, separator, then Core workspace actions.
+- Removed redundant same-name PRIMARY actions and the TER R–V visibility linkage; fixed Vth Data as a single-placement PRIME surface.
+- Split status-bar persistent project identity from updating status, and moved plugin version identity into dedicated window chrome.
+- Moved Plugin Manager refresh/count into summary cards and restored the page-level right-edge scrollbar.
+- Replaced Desktop/Mobile floating resize marks with one Core-owned compact glass-corner handle.
+- No legacy Plugin API or runtime compatibility layer was restored.
+- Mobile/Expo remains on app version **3.68.44** and Android `versionCode` advances to **75** because the shared floating resize affordance changed on Mobile.
+
+# 3.68.41 WIP
+
+- Migrated all 17 bundled plugins so the runtime manifest passed to `DKDSPlugins.define(...)` exactly matches each current Plugin API 1.19 `plugin.json`, including the required `entry` field.
+- Fixed stale bundled plugin version metadata for Connectivity Center, Shell Navigation, and Workspace Safeguards without adding compatibility aliases.
+- Strengthened bundled and public SDK validation: runtime manifests are evaluated, unsupported fields are rejected, every required field is enforced, and all current manifest fields must match `plugin.json`.
+- Updated SDK templates and the external detector example to the same exact current manifest contract; removed the stale example-only `source` manifest field.
+- Strengthened the Core Plugin Contract regression gate so a packaged manifest/runtime manifest drift cannot pass CI again.
+- `set-version.js` now keeps Desktop and Mobile source version identities synchronized.
+
+# 3.68.40 WIP
+
+- Repair the second Windows Electron plugin-registry failure exposed by the 3.68.39 diagnostics: the generated catalog contained 17 current built-ins while the live registry had only 4 definitions and the mutable deferred queue was already empty.
+- Make the generated first-party catalog the authoritative convergence source. `ensureReady()` / Plugin Manager Refresh now reconcile missing catalog rows even when `deferredBuiltinRows` has already been consumed or cleared.
+- Require every built-in script load to leave the expected current definition registered. A successful `<script>` load event without registration is now treated as a real load failure instead of silently dropping the plugin from the registry.
+- On Windows source/Electron runs, retry that same current bundled entry through the existing preload source reader when a local script load completes without registration. This is a deterministic current-source retry, not a legacy manifest/package fallback.
+- Never emit `plugins:ready` for an incomplete first-party catalog. Startup diagnostics now expose `catalogMissing` and `registeredBuiltinCount`, and Automation rejects the exact 4/17 state directly.
+- Preserve Plugin API **1.19.0**, SDK **1.28.0**, Theme Contract **3.10.0**, and the single historical project-file migration boundary; no retired plugin compatibility field, alias, shim, semver bridge, or fallback package contract was restored.
+- Desktop Visual Closure remains an explicit acceptance boundary until the repaired 3.68.40 source is rerun on Windows Electron with the user's Theme/GPU environment.
+
+# 3.68.39 WIP
+
+- Repair plugin startup convergence after Windows Electron exposed a four-definition partial registry: deferred current-contract plugins now complete through one idempotent lifecycle path with a macrotask/watchdog fallback instead of relying only on renderer idleness.
+- Make Plugin Manager **Refresh** complete the staged Plugin Kernel registry and refresh activity navigation; opening Plugin Manager also opportunistically completes a partial first-paint catalog.
+- Prevent overlay upgrades from reusing stale generated renderer artifacts: dev-start now compares generated runtime compositions and the plugin index against the current declared source graph before Electron launches.
+- Add generated plugin-index identity (`appVersion`, catalog count, SHA-256 catalog digest) and startup diagnostics so partial/stale catalogs are directly observable.
+- Add an Automation startup-convergence gate that completes the current plugin catalog before Import/Algorithm/TOP diagnostics and rejects a generated catalog whose identity does not match the running app, preventing misleading partial-registry green reports.
+- Preserve the current Theme Contract and persisted profile restoration; no retired plugin manifest fields, compatibility shims, aliases, or fallback package contracts were reintroduced.
+- Desktop Visual Closure history remains an explicit acceptance boundary; Windows Electron must still be rerun after this WIP source fix before visual acceptance is claimed.
+
+# 3.68.38 WIP
+
+- Keep package provenance (`builtin` / `external` / `override`) outside the Plugin Manifest contract; generated built-in manifests no longer receive a host-only `source` field.
+- Refresh scanning removes bundled-ID packages from the external plugin directory and removes retired/non-current or non-newer built-in overrides instead of translating or loading them through compatibility paths.
+- Preserve fail-closed behavior for genuinely invalid current-contract overrides and third-party packages.
+- Update Desktop automation shell/visual probes to the current SUPER + AnalysisWorkbench semantic DOM instead of retired `#mainWorkspace` / `#inspectorDockSlot` assumptions.
+
+# 3.68.37 WIP
+
+- Fix Windows dependency repair/install failures that surfaced as npm `TAR_ENTRY_ERROR` / `EBADF` followed by `ENOSPC: no space left on device` in the shared dependency staging area.
+- Separate the ordinary Desktop runtime/development dependency set from the packaging-only toolchain: `electron-builder` is no longer installed into every shared Desktop `node_modules`; Windows distribution packaging invokes the exact current `electron-builder` **26.15.7** on demand.
+- Preserve Electron 43.4.x as the only direct Desktop development dependency required for normal launch/test work, reducing shared dependency extraction size and temporary disk pressure.
+- Before building a shared dependency cache entry, remove only `.staging-*` directories whose owning installer PID is no longer alive; active concurrent staging directories are left untouched.
+- Add a 512 MiB preflight floor for the selected dependency staging volume and inspect the current npm debug log after install failure. `ENOSPC` now becomes an actionable Developer Toolbox cache-space error instead of an opaque cascade of tar write failures.
+- Keep shared npm/Electron/electron-builder caches and binary mirror behavior unchanged; this is a current-toolchain storage fix, not a compatibility path.
+- Advance app/mobile to **3.68.37**, Android `versionCode` **71**; SDK remains **1.28.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.68.36 WIP
+
+- Complete the post-handoff release-gate pass without changing the application/API version: full `check` 312/312, Mobile 57/57, Performance, SDK, SDK Harness, plugin/package and TER/scientific parity gates pass on the current-contract-only source.
+- Remove the final retired TER top-level result alias from the preserved scientific parity fixture. `verify-science-parity.js` now compares canonical `terMaxByVg` / `terMaxByVd` results directly instead of deleting a historical `terMax` field before comparison.
+- Extend Current Contract Audit to reject TER compatibility normalization inside scientific parity fixtures/tests. The only remaining code path allowed to understand the historical top-level `result.terMax` shape is the Project Compatibility Gateway.
+- Remove legacy/forward-compatibility execution paths from the plugin/runtime/SDK surface. Historical **project-file reading/migration is the only retained compatibility boundary**.
+- Remove Plugin API/SDK semver compatibility bridges, manifest compatibility ranges, old workspace facades, deprecated Grid GroupArea flags, plugin entry fallbacks, and obsolete compatibility/status negotiation. Current packages must satisfy Plugin API 1.19.0 and the current manifest contract exactly.
+- Advance the public SDK to **1.28.0** and rewrite Theme/SDK authoring guidance as current-contract-only. Theme packages target Theme Contract 3.10.0 directly; there is no Theme range or plugin-side capability negotiation.
+- Keep operational safety mechanisms that are not version compatibility (atomic file replacement, failed-install restoration, numerical/data fallbacks) separate from compatibility policy.
+- Native Mobile GroupArea/bottom-companion visible resize seam is **1 px** while the structural/touch hit track remains wider. Add theme-aware idle/active glow to Mobile canvas splitters, generic split handles, data-control drawer grip, floating PlotView resize corner, and table column resize handles.
+- Add a Current Contract Audit to Architecture Hygiene so retired compatibility surfaces cannot silently return.
+- Advance app/mobile to **3.68.36**, Android `versionCode` **70**, SDK **1.28.0**; Plugin API remains **1.19.0** and Theme Contract remains **3.10.0**.
+
+# 3.68.35 WIP
+
+- Formalize **GroupArea** in Core and SDK 1.27.0. First-party Resonance and TER now consume `PluginWorkspace.groupArea(...)`; third-party plugins receive `ctx.ui.groupArea.create(...)` through the `ui.group-area` requirement. The previous `grid({groupArea:true})` path remains deprecated compatibility only.
+- Define GroupArea as a domain-neutral related-multi-plot region: outer title chrome is optional, ordinary PlotView placement remains unchanged, and only children whose home belongs to a GroupArea receive current-scroll-region sticky placement.
+- Unify Native Mobile `data-control` projection: 参数 and 数据 are the same semantic slot with plugin-provided labels. Data Center's contextual 数据 control now occupies the same fixed utility position used by parameter drawers instead of appearing in plugin navigation.
+- Keep the Data Center “数据对象 / 全部用途” header on one compact row in the Mobile drawer, reducing header height without widening the drawer.
+- Increase the generic Native Mobile scientific bottom-companion maximum from 46vh to 58vh, matching the existing Core split-controller maximum ratio and allowing the Resonance group panel to expand farther without a Resonance-specific Core branch.
+- Preserve the 3.68.34 resize-only performance separation: GroupArea formalization adds no new observer/render loop.
+- Advance app/mobile to 3.68.35, Android versionCode 69, SDK 1.27.0; Plugin API remains 1.19.0 and Theme Contract remains 3.10.0.
+
+# 3.68.34 WIP
+
+- Fix the cross-platform performance regression introduced by the recent GroupArea column/layout work. Resonance `layout:resize` no longer invalidates and fully re-renders all group scientific plots.
+- Separate GroupArea **data invalidation** from **layout synchronization**: orientation/column changes now reflow Core Grid + resize existing charts without replaying 6–7 `scientificReact(...)` calls.
+- Remove `groupGridController.apply()` from normal GroupArea data rendering and make identical `GridController.apply()` calls true no-ops using a settled layout signature, preventing redundant StyleGate writes and chart-resize scheduling.
+- Add an executable v3.68.34 regression that verifies repeated identical Grid apply calls produce zero additional writes/resizes and that the Resonance resize hot path cannot call `renderGroup()`.
+- Publish **SDK 1.26.0** managed-grid authoring contract without changing Plugin API 1.19.0 or Theme Contract 3.10.0. `ctx.ui.grid.create(...)` and `PluginWorkspace.grid(...)` are now typed public APIs.
+- Replace private WIP Grid options (`orientationAdaptive`, `portraitColumnDelta`, `columnPreference`) with the documented generic SDK contract: `orientationPolicy:{mode:'portrait-offset', offset, minColumns}` plus optional `preferredColumns(...)`.
+- Add public `GridController.getAppliedColumns()` and `getOrientation()` so first-party plugins no longer read internal fields/methods. Resonance is migrated to these public APIs and remains only an opt-in consumer; TER and other grids are unchanged unless they opt in.
+- Add `sdk/GRID_LAYOUT.md`, TypeScript declarations, workspace/AI-authoring guidance, template guidance, and machine-readable SDK authoring-corpus coverage.
+- Keep Core as the single owner of final managed-grid geometry; GroupArea semantics remain orthogonal to orientation adaptation.
+- Preserve the current **Desktop Visual Closure** behavior and the 3.68.32 Mobile interaction fixes; this release is an SDK/API-surface cleanup rather than a Desktop visual rewrite.
+- Advance Desktop/Mobile application identity to **3.68.34** while keeping Android `versionCode` **68** and SDK 1.26 minimum host **3.68.33**.
+
+# 3.68.32 WIP
+
+- Re-audit the five reported Mobile/Desktop issues instead of accepting the first patch at face value.
+- Remove the `preserveTemplate` escape hatch from Core GridController. Resonance and TER multi-plot hosts now carry `dkds-managed-grid` from authored markup, Core exclusively owns final grid geometry, and plugins may only provide column preferences / `--dkds-grid-*` configuration tokens.
+- Add orientation-aware column preference handling to Core GridController: Mobile portrait defaults to the last actual landscape column count minus one, supports an independent portrait manual override, and restores the landscape preference when rotating back. Resonance itself no longer detects Mobile/orientation.
+- Extend authored semantic style ownership auditing so an alias class on a `dkds-managed-grid` host cannot reclaim `grid-template-columns`, `display`, `gap`, alignment or auto-track geometry. A deliberate probe now fails with `core-managed-grid-final-geometry`.
+- Keep ScientificCurve floating navigation fully responsive during drag: each drag frame only clamps to the plot bounds, while overlap with plot-local floating chrome/legends is repaired once on release before the position is persisted.
+- Correct Mobile bottom companion resize presentation: keep the large touch hit target but paint a 4 px visible guide, with the glow radius controlled separately.
+- Correct D3 wheel ownership: scroll zoom is intercepted only inside the actual XY plotting rectangle. Wheel events over title bars, axes/margins or other chart-panel regions are left to the parent GroupArea scroller.
+- Rework the Mobile LAN panel without creating another visual owner: the canonical Material popover now owns its radius, panel width is narrower/content-fit, the port field is shorter and centered, empty startup-address copy is removed, and the Key action is an icon-only `↻` button with accessible label “刷新 Key”.
+- Keep the earlier GroupArea sticky out-of-flow rail behavior and TER placement parity intact.
+
+# 3.68.28 WIP
+
+Core explicit-save policy and metadata stability; Mobile companion topology and compact LAN composition; generic sticky placement eligibility and grid release. Desktop Visual Closure requires fresh runtime acceptance.
+
+# v3.68.27 — Mobile PRIME Real Lifecycle / Single Material LAN Panel / Orientation Ownership (WIP)
+
+- Fix the real PRIME reopen lifecycle: a closed PRIME is parked in the connected analysis parking host, and reopening now explicitly returns that persistent node to semantic home before PortableView captures geometry. This closes the Data Center chart-preview / TER R-V / Resonance inspector close→cannot-reopen failure at the shared Core owner.
+- Reconcile Native PRIME open state from the real PluginWorkspace snapshot on every Mobile shell snapshot, so a missed/coalesced in-panel close event cannot leave the next top-button tap executing another close instead of reopen.
+- Make Mobile Presenter release stale projection frames without resurrecting PRIME nodes that PluginWorkspace has already parked; default/legacy inspector and scientific-secondary placement remains Presenter-owned until the user explicitly moves the surface.
+- Advance the Mobile PortableView persistence namespace to `mobile.m3` while leaving Desktop storage unchanged, flushing stale Mobile geometry without overwriting Desktop split/placement state.
+- Make landscape semantic companion geometry orientation-owned across all Mobile width profiles; portrait remains stacked and landscape can hold a right inspector plus a bottom scientific-secondary surface without width-profile guessing.
+- Retire the duplicate React Native Web Service popup and its `expo-blur` dependency. The native status action now opens the single Core `lanWebPanel`, which consumes the same Core `popover` Material role as other status popovers. Android settings/key operations remain available through explicit Native bridge requests.
+- Preserve the existing **Desktop Visual Closure** ownership boundary. The lifecycle/orientation corrections are expressed at shared Core/Mobile Presenter owners rather than Desktop visual overrides.
+
+# v3.68.26 — Mobile PRIME Lifecycle / Orientation / Thin Glass Parity · Desktop Visual Closure Preserved (WIP)
+
+- Reconcile native Mobile PRIME open state from the live PluginWorkspace lifecycle so an in-panel close immediately clears native tracking and the next header tap reopens the surface instead of deactivating a stale state.
+- Deactivate conflicting real PRIME surfaces, not only native tracking, so closed chart-preview / TER R–V / Resonance inspector frames release their semantic companion space immediately.
+- Keep Resonance inspector semantics platform-neutral while Mobile Presenter maps portrait to bottom and landscape to right; make PortableView persist explicit user-placement provenance and let Mobile Presenter reclaim default/legacy inspector placement, flushing historical Mobile placement leakage without any plugin-local platform branch or Desktop reset.
+- Drive compact landscape companion geometry from orientation instead of the old `min-width:520px` proxy so high-DPR landscape devices no longer fall into portrait composition.
+- Align the Native Web Service Thin Glass popover with the Theme Contract popover material: preserve the 78% fill floor, use the authored role surface/tint, avoid a second dark/light BlurView tint, and reduce blur amplification.
+- Preserve Desktop Visual Closure: no Desktop-only visual CSS is changed by this release.
+- Advance Desktop/Mobile application identity to **3.68.26** and Android `versionCode` to **64**.
+
+# v3.68.25 — Android Typecheck Closure (WIP)
+
+- Fix React Native `StyleSheet.absoluteFillObject` usage in the Thin Glass Web Service popover; React Native exposes `StyleSheet.absoluteFill`, which is valid for the `BlurView` style prop.
+- Advance Desktop/Mobile application identity to 3.68.25 and Android versionCode 63.
+- Add a release gate so the invalid StyleSheet API cannot re-enter the mobile source.
+
+# v3.68.24 — Resonance Visibility / Mobile Portable Closure (WIP)
+
+- Repair Resonance hide-all runtime wiring: controls now receive SelectionRuntime.setSelectedSweepId and clear hidden selection synchronously.
+- Restore canonical persistent fill for scan visibility presets by removing the transparent quiet variant.
+- Rebuild the external Resonance main legend after empty-state recovery.
+- Keep Vth legend at the top to return the old right-side legend strip to the plot.
+- Move portrait inspector placement policy into Mobile Presenter; explicit user PortableView placements remain honored.
+- Web Service Native popover consumes Theme Contract native material tokens and real expo-blur.
+- Sticky PortableViews re-resolve their final scrollport after layout and resize again after settling.
+- Disable browser/native floating resize corners on Mobile and keep only the integrated DKDS handle.
+- Explicit PlotView binding now replaces an earlier auto-hydrated view on the same card, preventing TER placement-state aliasing.
+
+# v3.68.22 — Desktop Visual Closure Regression + Mobile Presenter Repair (WIP)
+
+- Restore immediate Resonance visibility updates and dataset-level dual-direction selection without the heavy full-render path.
+- Preserve Desktop left/right/bottom split sizes while transient SUB routes hide the primary canvas.
+- Keep Plugin Manager card edges subtle under dark Material recipes and optically realign the Desktop data-list heading.
+- Repair Mobile parameter-drawer projection by preventing inherited Desktop PortableView placement from stealing DATA_CONTROL geometry.
+- Keep embedded PRIME surfaces inline on Mobile, including TER R–V, and force portrait semantic companions into vertical composition.
+- Synchronize Desktop/Mobile/Expo version identity and expose it at the bottom of the native project manager.
+- Use top legend placement for the native Vth workbench so unused side-legend space returns to the scientific plot.
+
+# v3.68.21 — Mobile Touch / Panel Geometry Closure (WIP)
+
+- Correct Pulse Sampler Mobile selectors to the actual semantic `route` region so the native-only landscape two-pane layout now applies to the live Tool workspace instead of a nonexistent `main` region.
+- Extend Mobile title-held PortableView resizing to sticky and explicitly docked scientific views: side/sticky surfaces resize width, bottom surfaces resize height, while floating views keep the corner-resize gesture.
+- Remove conservative dead space inside floating Mobile PlotViews by making both direct plot hosts and nested scientific chart nodes consume the full remaining window content box.
+- Tighten native Plugin Manager portrait cards: clamp descriptions to two lines, reduce body/details padding, and keep content-height card rows.
+- Tighten the native Web Service status popover anchor so its bottom gap matches the compact status-panel rhythm.
+- Add `test-v36821-mobile-touch-panel-closure.js` and update the older Pulse isolation gate to follow the current semantic Mobile region contract.
+- Advance application to **3.68.21**, Mobile/Expo to **0.8.48**, Android `versionCode` to **59**. Desktop shared CSS remains unchanged by the new Mobile-only fixes.
+
+# v3.68.20 — Mobile Geometry / Portable Interaction Closure (WIP)
+
+- Unify native Web Service popover bottom anchor with the status-popover gap contract.
+- Keep Pulse Sampler measurement extraction visible in landscape with a native-only two-pane layout.
+- Replace Mobile floating PlotView resize grip with a rounded triangular depth cue; non-floating views no longer expose the corner grip.
+- Make title-held resizing use width for right companions and height for bottom companions on Mobile.
+- Make Data Center chart-preview surface buttons perform a real open/close lifecycle.
+- Release semantic companion lanes when PortableView takes placement ownership, preventing TER phantom occupancy.
+- Pack Plugin Manager cards to content height on portrait Mobile.
+- Add Mobile-only overflowing plot-title auto-pan and bounded floating plot fill.
+
+# v3.68.19 — Desktop Visual Closure / Portable Layout Reflow
+
+- Replaced dedicated plugin-window overlay docks with real split tracks for left, right and bottom placements.
+- Added host-owned dock resizers and placement reflow synchronization for PortableView.
+- Corrected Data Center derived-form alignment and bounded Generic Chart home geometry.
+- Rebalanced Pulse Sampler Desktop extraction/result control rows.
+- Bounded Mobile Resonance primary/right/bottom companion rows and unified compact multiselect field geometry.
+- Refined PortableView resize-handle geometry without moving paint ownership into plugins.
+
+# v3.68.18 — Pulse Sampler Desktop Visual Closure
+
+- Restored Desktop ownership for the Pulse Sampler measurement-extraction command surface.
+- The multi-row sampling control region is now a neutral Core Surface instead of a `dkds-toolbar`, so shared toolbar nowrap/flex geometry can no longer collapse Desktop controls into an incoherent mixed row.
+- Desktop extraction controls now use deterministic two-row grid geometry; Mobile density remains isolated in `mobile.css`.
+
+# v3.68.17 — SMB Action Density Correction / Desktop Visual Closure
+
+- Correct the v3.68.16 SMB button-density fix after real screenshot validation showed it had no rendered effect. The previous workaround set `--dkds-generic-button-min-height`, but canonical `.dkds-action-button` controls are intentionally excluded from the generic fallback selector, so that token was never consumed.
+- Add a Core-owned semantic action-density contract: containers may request `data-dkds-action-density="regular"`, while Core remains the sole writer of the resulting action geometry (`32px` minimum height, canonical padding/line-height).
+- Apply the regular density request to the SMB dialog, covering Scan / Up / Favorite / Refresh / List Shares / Cancel / Open-selected-file actions without giving the plugin direct button-geometry ownership.
+- Bump Connectivity Center to **1.2.8**, application to **3.68.17**, Mobile to **0.8.44**, Android `versionCode` to **55**.
+- Preserve the existing **Desktop Visual Closure** outside this explicit SMB action-density correction; no unrelated Desktop selector is changed.
+
+# v3.68.16 — Mobile PortableView Layout Rebalance / SMB Density (WIP)
+
+- Correct the release identity to **3.68.16** after the previous package was mistakenly zipped from a `DKDS-3.68.15-WIP` root.
+- Advance Mobile package to **0.8.43** / Android `versionCode` **54**.
+- Continue PortableView placement-state reflow, side-dock fill, bottom-shelf resize semantics, compact Plugin Manager cards, Pulse Sampler control density, SMB button density and Data Center multiselect geometry.
+
+# v3.68.15 — Mobile Portrait Floating-Shelf / Responsive Workspace Closure (WIP)
+
+- Preserve the existing **Desktop Visual Closure** while unifying Theme, Memory, LAN and AI status-triggered panel spacing through the shared `--dkds-status-popover-gap` geometry token.
+- Rework compact Mobile semantic companions so PRIMARY, Inspector and secondary scientific surfaces flow in bounded rows instead of overlaying the main scientific canvas.
+- Make Mobile scientific bottom placement a fixed viewport shelf with Core resize affordance, automatic chart resize, Presenter-frame release and dynamic trailing scroll reserve equal to the live shelf height.
+- Repair Data Center portrait composition: formula/derived tools precede Generic Chart, X/Y/mode/legend controls share one compact adaptive row and visible X/Y controls share equal height.
+- Prevent Plugin Manager portrait cards from stretching into empty viewport rows and restore Pulse Sampler multi-row extraction controls to their own Surface geometry rather than Toolbar nowrap geometry.
+- Repair TER R–V portable behavior: home cards no longer force full-height grid rows; moved cards give remaining height to the plot; floated/bottom-shelf views release obsolete Mobile projection frames so invisible right-half hit blockers cannot remain.
+- Advance Mobile package to **0.8.42** / Android `versionCode` **53**. App is **3.68.15**; Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0** remain unchanged.
+
+# v3.68.14 — Android Gradle Agent-Parity / Runtime No-Fork Preflight Closure (WIP)
+
+- Correct the v3.68.13 diagnosis after the user's second real Windows log proved immutable JVM-argument parity alone was insufficient: Gradle 9.3.1 still selected a single-use daemon and Windows again rejected the nested `java.exe` with `CreateProcess error=5`.
+- Align the second independent Gradle in-process compatibility criterion: the wrapper client is not started with Gradle's instrumentation javaagent, while `DaemonParameters` requests that agent by default. The Android build now sets `org.gradle.internal.instrumentation.agent=false` only for the temporary no-daemon build context, so requested and actual agent status match without injecting Gradle-internal agent paths into the toolbox.
+- Keep the v3.68.13 immutable JVM-argument parity (`JAVA_OPTS` + exact generated `org.gradle.jvmargs`) and explicit `org.gradle.daemon=false`; the agent fix complements rather than replaces memory/encoding parity.
+- Add a real Gradle runtime preflight before expensive APK compilation: `gradlew help --no-daemon --max-workers=1 --info` must complete without either the single-use-daemon announcement or `Starting process 'Gradle build daemon'`. The toolbox prints PASS only after that real process contract succeeds; otherwise it stops before `assembleRelease` and surfaces the relevant daemon diagnostics.
+- Remove the previous premature diagnostic wording that claimed the single-use fork was already disabled before Gradle had verified compatibility.
+- Add v3.68.14 Android regression coverage and extend the general Windows tooling gate to require JVM parity, instrumentation-agent parity and the runtime no-fork preflight.
+- Advance Mobile package to **0.8.41** / Android `versionCode` **52**. App is **3.68.14**; Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0** remain unchanged. Windows Android release compilation and Android real-device visual/touch acceptance remain the final authorities.
+
+# v3.68.13 — Windows Android Gradle Direct No-Daemon Launch Closure (WIP)
+
+- Fix the real Windows Android build failure reported after v3.68.12 source/typecheck/prebuild all passed: Gradle 9.3.1 still announced a **single-use Daemon** under `--no-daemon`, then Windows rejected the nested `java.exe` launch with `CreateProcess error=5`.
+- Replace the ineffective retry that cleared proxy options and passed an empty `-Dorg.gradle.jvmargs=`. The user log proved that retry still forked the same disposable Gradle daemon and failed identically.
+- Add a deterministic Gradle JVM-parity launcher. The toolbox reads generated `android/gradle.properties`, preserves React Native's requested heap/metaspace values, adds the immutable wrapper client settings (`-Xms64m`, UTF-8), gives the Gradle client that exact `JAVA_OPTS`, and overrides `org.gradle.jvmargs` to the same exact value with `org.gradle.daemon=false`. With client/build JVM requirements aligned, `--no-daemon` can execute in the existing client JVM instead of requiring a Java→Java child process.
+- Preserve the configured Gradle proxy/cache environment instead of dropping proxy settings on retry; temporary `JAVA_OPTS` / `GRADLE_OPTS` changes are restored after the build.
+- Add v3.68.13 Android tooling regression coverage and update the general Windows tooling gate so the old empty-jvmargs retry cannot return.
+- Advance Mobile package to **0.8.40** / Android `versionCode` **51**. App is **3.68.13**; Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0** remain unchanged. Android release compilation on the user's Windows host remains the final acceptance authority.
+
+# v3.68.12 — Mobile Portrait / Thin Glass / Native Touch Density Closure (WIP)
+
+- Make the Mobile **Parameters** projection consume the same canonical `popover` Material role as the Theme picker, so Thin Glass blur/tint/depth matches exactly while other drawers can retain the shallower `sidebar` hierarchy.
+- Fix compact portrait right/bottom companion disappearance by clearing inherited Desktop `grid-area` before the Presenter converts those slots into absolute Mobile overlays.
+- Replace fragile Native catch-all touch `min-height` rules with inherited semantic density slots. Generic controls still receive the 44 px coarse-pointer target, while canonical integrated/scientific chrome keeps its own geometry owner and cannot be silently inflated. Also remove the generic button's local 30 px variable shadow that previously blocked the Native density token.
+- Reduce the complete Native scientific floating chrome silhouette to **23.4 px** with **20.4 px** actions and **22.5 px** item width; the outer group owns explicit height/min-height/max-height, preventing future patches from shrinking only child buttons. Desktop scientific actions remain **28 × 28 px**.
+- Restore Mobile top scientific command selection to the same canonical 26 px ToolbarAction appearance used on Desktop and forbid vertical scrolling in integrated command chrome.
+- Reflow the four Resonance scan-visibility commands as a compact **2 × 2** grid in the parameter drawer without plugin-owned button paint/padding.
+- Add HARD-83 plus v3.68.12 regression coverage for Native touch-density slot ownership, exact outer scientific chrome height, parameter/Theme Material parity, compact companion grid-area release and Mobile/Desktop action-state parity.
+- Preserve the v3.68 **Desktop Visual Closure** ownership architecture, Plugin API **1.19.0**, SDK **1.25.0** and Theme Contract **3.10.0**. Android real-device visual/touch acceptance remains required before removing WIP status.
+
+# v3.68.11 — Mobile Runtime Theme / Canvas Track / Compact Scientific Chrome Closure (WIP)
+
+- Correct the v3.68.10 Theme-panel verification failure without exposing Desktop/Mobile identity to plugins. The previous helper test forced `externalStatusBar:true` directly even though the production Plugin API intentionally has no `isNativeClient` presentation flag, so the tested branch was unreachable. Status Monitor now consumes only the generic `--dkds-statusbar-height` geometry contract; Native WebView publishes that value as **0 px** because React Native owns the real status bar outside the WebView, while Desktop retains its in-renderer status-bar height.
+- Fix Mobile parameter/side-panel Theme consumption at the actual Material owner. Projection frames consume their canonical Material role/recipe, while reparented live plugin content is marked as parent-owned Material composition and cannot repaint an opaque Desktop surface over the frame. The obsolete native drawer `background / border-color / box-shadow` hard-code is removed; the active Theme recipe now owns those paint properties.
+- Fix the cross-plugin Mobile page right-shift that disappeared only after opening Parameters. Inactive `data-control` PRIME nodes can remain physically mounted in a Desktop left slot, so Workbench visibility now ignores `data-dkds-mobile-active="false"` and the left/right/bottom region observers also react to that attribute transition immediately instead of waiting for a child to be reparented.
+- Reduce Native scientific floating controls exactly as requested from the previous 25 × 24 px target to **22.5 × 20.4 px** (width −10%, height −15%), with the integrated group inset reduced to **1.5 px** and glyph size reduced proportionally. Desktop stays on its independent 28 × 28 px contract.
+- Add v3.68.11 regression coverage for the platform-neutral status-bar geometry contract, native external-statusbar Theme anchoring, single-owner projected Material composition, immediate dock-track resync and exact Mobile floating-control geometry. Historical tests now protect Desktop/Mobile ownership separation rather than freezing the superseded 25 × 24 Mobile size.
+- Preserve the v3.68 **Desktop Visual Closure** ownership architecture, Plugin API **1.19.0**, SDK **1.25.0** and Theme Contract **3.10.0**. Android real-device visual/touch acceptance remains required before removing WIP status.
+
+# v3.68.10 — Mobile Placement / Theme Material / Data Preview Closure (WIP)
+
+- Correct native Theme picker anchoring when the React Native status bar lives outside the WebView. Mobile no longer reserves the Desktop in-WebView status-bar height a second time; the fallback sits 4 px above the WebView bottom while Desktop keeps its existing status-bar-relative anchor.
+- Make Mobile projection frames consume canonical Material roles immediately. Drawer/right companion frames use `sidebar`, bottom companions use `surface`, sheets use `floating`, and Core re-runs semantic Material assignment after reparenting so parameter/companion content receives the active Theme on its first projected paint.
+- Refine the Core Mobile Presenter placement policy: a `scientific-secondary` PRIME that belongs to a `data-primary` workspace remains `workspace-inline` instead of being forced to the bottom companion lane. This keeps Data Center `通用图形预览` integral to its data workspace without introducing plugin identity into Core.
+- Replace the historical Mobile `display:contents` dock flattening with one stable canvas topology. Wide/expanded mobile layouts use bounded physical left/right rails and a bounded bottom strip; compact layouts convert left/right/bottom user docks into bounded overlay sheets so the primary plot is never squeezed into a sliver. Local PlotView docks and semantic companion surfaces share the same Core slots.
+- Keep canonical plot-title actions inside the 30 px Mobile title strip. Generic coarse-pointer 36/44 px button sizing now excludes the compact header action contract, leaving Structure-owned 24 px action geometry authoritative; the plot header clips transient press paint to its own chrome.
+- Bound floating PlotViews to the current Mobile presentation zone. Persisted float geometry is clamped only on native Mobile, and scientific plot content flexes into the remaining PortableView height instead of retaining the global 280/300 px scientific minimum and overflowing the card.
+- Rework Data Center Mobile composition through plugin-owned layout tokens with a single final geometry owner. Narrow mobile orders source -> chart preview -> tool/workflow; wider tablet space keeps source full-width and places tool + chart side-by-side. The common chart therefore no longer defaults to the bottom of the data workspace.
+- Preserve the v3.68 **Desktop Visual Closure** ownership architecture, Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0**, and v3.68.9 Android native side-effect intent boundary. Android real-device visual/touch acceptance and Windows Electron real-project acceptance remain required before removing WIP status.
+
+# v3.68.9 — Mobile Native Side-Effect Intent / Plugin Manager Ownership (WIP)
+
+- Correct the mobile `插件` command ownership. It now invokes the canonical Core `system.plugins` Plugin Manager directly. The former mixed Plugins Sheet is removed, so current-workspace surfaces/actions (`检查 / 组图 / 物理机制 / 峰间距 / 栅压分析` etc.) remain in their own header/overflow controls and are no longer presented as plugin-management content.
+- Close the Android native-side-effect parity gap left by the Desktop-only Electron gates. The Native WebView bridge now uses the shared explicit `NativeUserIntent` controller for clipboard writes, exports and project Save As. Ordinary status-bar taps, chart clicks, selection and drag interactions clear/stay without native authority and therefore cannot open Android `ACTION_CREATE_DOCUMENT` or write the clipboard.
+- Add a second fail-closed boundary in the React Native request router. `copyText`, `saveText` and `saveBase64` requests are rejected before `Clipboard.setStringAsync` / native document creation unless the request carries an authorized explicit intent; existing project-document direct writes remain allowed without reopening a picker.
+- Preserve declared `nativeSave` / `nativeCopy` semantics through ActionGroup -> Core Presentation Model -> Mobile Host. Native-shell workspace actions mint authority only from that declared effect metadata; bottom status invocation never mints native side-effect authority. The explicit native-shell project Save command mints a one-shot `project` intent before using the shared project persistence path.
+- Add v3.68.9 regression coverage for one-shot intent consumption, stale-intent clearing by ordinary plot/status input, double-boundary Android rejection, Presentation metadata preservation and the Plugin Manager-only mobile command contract.
+- Preserve the v3.68 **Desktop Visual Closure** ownership architecture, Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0**, and the v3.68.8 responsive preview/FloatingChrome fixes. Android real-device interaction acceptance and Windows Electron real-project acceptance remain required before removing WIP status.
+
+# v3.68.8 — Fluid Compact Controls / Bounded Inline Preview / Symmetric Floating Chrome (WIP)
+
+- Correct the v3.68.7 compact `ParameterSchema` overcorrection. `compact + autoFit` no longer stops at a hard **116 px** maximum; tracks now use `minmax(96px, 1fr)`, preserving the dense 96 px minimum while distributing all spare row width equally. In real Chromium computed-layout verification, a 720 px panel produced four **171 px** tracks and a 540 px panel (75% of that width) produced four **126 px** tracks, both remaining on one row.
+- Stop Data Center `通用图形预览` from behaving like an indefinitely growing document plot. The inline/home chart now has one Desktop viewport-aware owner, `height:clamp(180px, 42dvh, 340px)`, and the obsolete wide-layout **340/280 px** duplicate plus `.dkds-size-compact .dc-chart{height:360px}` override are removed. Docked/floating PlotView and native Mobile retain their independent Core/platform geometry owners.
+- Correct Resonance main floating-tool geometry at the semantic root. `.respar-main-tools` now explicitly declares canonical `data-dkds-floating-chrome`; Core Structure owns a shared **3 px** symmetric FloatingChrome inset; the plugin no longer owns toolbar padding; and Component Appearance continues to flatten child ToolbarAction border/radius/shadow so one physical outline does not contain a second rounded outline. Real Chromium computed geometry measured **3/3/3/3 px** top/right/bottom/left inset and `0px` child action radius.
+- Add v3.68.8 regression coverage for fluid compact tracks, viewport-bounded Data Center inline chart height, removal of competing chart-height owners, FloatingChrome semantic identity, unique Core inset ownership and flattened child actions.
+- Preserve Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0**, the v3.68.4 clipboard-intent gate, v3.68.5 docking fixes, v3.68.6 measured topbar allocation and v3.68.7 Field identity correction. Windows Electron real-project visual acceptance and Android real-device acceptance remain required before removing WIP status.
+
+# v3.68.7 — Dense Auto-Fit Controls / Multi-Select Field Identity (WIP)
+
+- Tighten the Core `ParameterSchema` **compact + autoFit** contract from form-sized tracks to **96–116 px** content tracks. Four short chart controls now need only about **482 px of inner row width** (about 500 px including the current Data Center panel padding), so `X 列 / Y 列 / 绘图模式 / 显示图例` stays on one row well below the user's requested 75% desktop width instead of waiting for a nearly full-size Surface.
+- Shrink the actual canonical `.dkds-field-control` geometry for compact auto-fit rows to **26 px minimum height**, **2 px vertical padding** and **6 px horizontal padding**. v3.68.6 only changed the fallback `--dkds-schema-field-*` variables, which do not control canonical `.dkds-field-control` elements and therefore left the visible selects much taller than intended.
+- Stop the Desktop `.dkds-size-compact` bucket from forcibly collapsing `autoFit` ParameterSchema panels to one column. `autoFit` now responds to the real Surface width; ordinary non-autoFit forms still collapse through the existing compact-size rule.
+- Fix the unstyled **Y 列** popup multi-select. Its proxy is intentionally a `button.dkds-field-control`, but Component hydration previously classified every button as `toolbarAction` before the Field pass. Core hydration and semantic inference now explicitly exclude `.dkds-field-control` buttons from Toolbar Action identity, allowing the proxy to receive the canonical **Field** Component Appearance like X 列 and 绘图模式.
+- Add v3.68.7 regression coverage for dense track width, canonical field-control height/padding, Surface-width autoFit behavior and field-vs-toolbar semantic identity.
+- Preserve Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0**, the v3.68.4 clipboard intent gate and the v3.68.5/v3.68.6 docking/navigation fixes. Windows Electron real-project visual acceptance remains required before removing WIP status.
+
+# v3.68.6 — Measured Topbar Allocation / Core Auto-Fit Parameter Layout (WIP)
+
+- Replace the historical fixed **300/360 px** current-context command lane with measured flex allocation. Primary activity buttons remain content-sized, while current-plugin commands consume genuine spare workspace width before any command is moved into **更多功能**.
+- Keep the **更多功能** trigger content-packed directly after the retained commands instead of pushing it to the end of a stretched toolbar. Overflow decisions now use the row's real inner width plus computed button margins/gaps rather than magic width padding.
+- Correct the v3.68.5 Data Center chart-form implementation: plugin CSS lives in the earlier `dkds.plugin` cascade layer and therefore could not override the later Core `dkds.structure` ParameterSchema grid. Desktop `autoFit` geometry is now a Core ParameterSchema contract. **Superseded by v3.68.7:** the initial 140–205 px compact tracks were still too wide, and the 28 px fallback variables did not size canonical `.dkds-field-control` elements.
+- Add v3.68.6 regression coverage for measured topbar allocation, no fixed context-lane cap, no auto-margin More gap, and Core-owned ParameterSchema auto-fit geometry.
+- Preserve the existing **Desktop Visual Closure** ownership architecture, Plugin API **1.19.0**, SDK **1.25.0**, Theme Contract **3.10.0**, and v3.68.4 explicit clipboard-intent gate. Windows Electron real-project visual acceptance remains required before removing WIP status.
+
+# v3.68.5 — Gallery Removal / Compact Navigation / Viewport-Aware Plot Docking (WIP)
+
+- Remove the **Spatial 3D Curve Gallery** first-party experiment completely, including its package/runtime/test registration. DK Data Studio remains one project and no alternate Gallery edition is retained.
+- Change the Desktop primary-activity cluster toward content packing to remove the v3.68.3 reserved activity hole. **Superseded by v3.68.6:** the remaining fixed 300/360 px context lane still caused false overflow and visible gaps.
+- Attempt to keep Data Center **通用图形预览** X/Y/mode/legend controls on one compact row. **Corrected in v3.68.6:** this plugin-layer rule could not win against the later Core structure-layer ParameterSchema grid, so the intended layout did not actually apply.
+- Make Core PlotView assign a canonical plot-content identity to arbitrary plugin plot nodes. Docked and sticky scientific plots now consume the dock/visible viewport rather than retaining home-card aspect-ratio geometry.
+- Make PortableView sticky placement measure the nearest vertical scrollport and publish a bounded visible-height contract. TER removes its duplicate plugin-private sticky CSS path and consumes the shared Core behavior.
+- Prioritize explicitly docked PlotViews inside left/right/bottom PluginWorkspace docks and flex them into the visible dock viewport. This prevents Resonance group plots from disappearing behind pre-existing dock panels after changing position.
+- Preserve Plugin API **1.19.0**, Theme Contract **3.10.0**, Style Ownership Gate boundaries and the existing **Desktop Visual Closure** ownership rules. Windows Electron real-project visual acceptance remains required before removing WIP status.
+
+# v3.68.4 — Dedicated Window / Gallery Data / Explicit Clipboard Intent Closure (WIP)
+
+- Fix the generic dedicated TOP activity opener so the resolved machine window contract remains in function scope; TER and Pulse no longer fail before `openActivityWindow()` when their hydration mode is project-owned rather than live.
+- Project semantic Core requirement `data.artifacts` to the dedicated-window `data-model` runtime dependency. Spatial Gallery can now restore the owner Artifact snapshot before adapting canonical curves instead of receiving live rows without `DKDSData.restoreStore`.
+- Advance Spatial 3D Curve Gallery to **0.1.8** and require the v3.68.4 host contract.
+- Add a fail-closed, short-lived, one-shot Electron clipboard intent gate. Only controls explicitly marked as clipboard owners can authorize OS clipboard mutation; ordinary scientific-plot clicks, range selection and box selection clear or lack authority.
+- Propagate explicit clipboard ownership through Core ContextMenu, ActionGroup, component actions, PlotView copy actions, table copy actions, plugin export-menu copy actions and first-party copy controls.
+- Preserve Plugin API **1.19.0**, Theme Contract **3.10.0**, and the existing Desktop Visual Closure ownership rules. Windows Electron real-project acceptance remains required before removing WIP status.
+
+# v3.68.3 — Bidirectional Artifact Sync / Stable TOP Navigation / Mobile Plugin Access (WIP)
+
+- Make dedicated TOP Artifact synchronization bidirectional: auxiliary Artifact writes are pushed immediately to the owner project store, then rebroadcast to sibling live windows, while project snapshots remain the persistence path.
+- Re-render Desktop Presentation navigation immediately after a TOP workspace contract is registered, closing the Activity-before-TopWorkspace ordering hole that could hide Transfer Vth until an unrelated later plugin rerendered the shell.
+- Normalize stale Chromium horizontal scroll in the primary activity bar when all primary workspaces fit, and give context commands a stable bounded lane so closing a dedicated window cannot shift the whole primary navigation row.
+- Advance Spatial 3D Curve Gallery to **0.1.7** on the experimental branch and require the v3.68.3 live-data synchronization contract.
+- Keep Mobile global order **导入 / 数据 / 工作区 / 分析 / 插件**; the native Plugins sheet now contains a real installed-plugin management entry routed through Core `system.plugins`, while current-workspace overflow remains separate.
+- Preserve v3.68.2 Gate fast-path and drag-performance work. Gate remains an active diagnostic rather than a normal runtime profiler.
+- Advance application to **3.68.3**. Plugin API remains **1.19.0**, Theme Contract remains **3.10.0**, and Desktop Visual Closure ownership rules remain in force.
+
+# v3.68.2 — Runtime Performance / Dedicated Artifact Hydration / Desktop UX Recovery (WIP)
+
+- Keep Style Ownership Gate as an explicit diagnostic: normal style/paint writes stay on the direct fast path, while full ownership/runtime bypass tracking is acquired only by diagnostics.
+- Reduce Theme runtime idle rescans by filtering Material Renderer and Component Appearance class mutations to material/context-significant changes; bound expensive Theme Coverage optical inspection to representative nodes.
+- Make docked Group Plot height dragging CSS-only during pointer movement and commit ScientificPlot/D3 relayout once when the gesture ends.
+- Restore readable Desktop ScientificPlot floating controls to 28 × 28 px while keeping Mobile geometry independent.
+- Rebalance Data Center formula/derived-column workspace so the tool pane is bounded to 360–520 px on wide layouts and internally reflows through container queries.
+- Strengthen Thin Glass workspace-modal/elevated optical solidity and advance the built-in Theme to 1.12.3.
+- Add a real Mobile Plugins sheet instead of dispatching a dead `plugins` header action.
+- Add revisioned `core.project-artifacts` owner snapshots plus dedicated-window reconciliation before mount and on focus, allowing live Spatial Gallery windows to recover the current canonical project Artifact graph without polling or private data copies.
+- Preserve Transfer Vth Lab as a primary TOP activity and add Windows computed-geometry diagnostics that fail if the active Vth button is missing from `#primaryActivityBar`.
+- Advance application to **3.68.2**. Plugin API remains **1.19.0** and Theme Contract remains **3.10.0**. Desktop Visual Closure ownership rules remain in force.
+
+# v3.68.1 — Gate Hot-Path Recovery / Theme Runtime Version Coherence (WIP)
+
+- Move Style Ownership Gate runtime bypass observation off the normal application hot path. Core ownership claims/conflict detection and build-time raw-style audits remain active, while the document-wide style/paint MutationObserver is acquired only by explicit diagnostics such as Theme Inspector and is released when diagnostics stop.
+- Add runtime diagnostics for Gate audit activation/owners so performance reports can prove whether the expensive bypass watcher is active.
+- Cache Material Renderer capability probes per active Theme/profile/policy instead of repeating full role/recipe DOM probes for every `renderer.*` capability query.
+- Repair Material Renderer installation identity: JavaScript and authored CSS now both declare **3.11.0**. The previous 3.11.0/3.10.0 split made every material recipe report `recipeInstalled=false`, breaking Thin Glass and TOP readiness.
+- Update Windows automation to accept compatible newer Component Appearance / Material Renderer revisions instead of hard-locking 3.0.0 / 3.10.0 implementation versions while Theme Contract remains 3.10.0.
+- Preserve the v3.67 Desktop Visual Closure contract while restoring Thin Glass runtime material capability and reducing Gate/theme diagnostic overhead.
+- Advance application to **3.68.1**. Plugin API remains **1.19.0** and Theme Contract remains **3.10.0**.
+
+# v3.68.0 — Native Analysis SDK Refactor / Single-Owner UI Architecture (WIP)
+
+- Refactor first-party native analysis runtimes toward the current Plugin API/SDK: explicit `ctx.science`, `ctx.data.model`, `ctx.analysis.algorithms`, `ctx.modules`, `ctx.ui.dom`, and `ctx.ui.dialogs` dependencies replace normal-runtime host globals and raw DOM lifecycle ownership.
+- Split pure analysis/domain logic from UI controllers where practical, beginning with Transfer Vth and Pulse/TER services, while keeping dedicated `window-runtime.js` files as explicit host-adapter boundaries.
+- Establish semantic CSS rendered-property ownership auditing so geometry/paint properties cannot be re-authored through host/theme/context selector variants or shorthand/longhand overlap. Platform layers provide configuration tokens instead of overriding final properties.
+- Upgrade Theme Debug ownership diagnostics to report computed property owners, matching authored sources, inline ownership conflicts, and configuration-token provenance rather than hard-coded canonical owner labels.
+- Consolidate document-wide DOM mutation observation behind the Core DOM Mutation Hub and add lifecycle regression coverage for a single observer instance.
+- Remove obsolete historical gates that forced superseded implementation details back into production code; current gates protect SDK contracts, semantic ownership, lifecycle boundaries, and runtime behavior.
+- Preserve the v3.67 Desktop Visual Closure intent while replacing patch-style ownership with traceable single-owner geometry/paint/motion/configuration boundaries.
+- Advance application to **3.68.0**. Plugin API remains **1.19.0** while first-party plugins are migrated to the current SDK surface.
+- Add an application-level **Native Save Dialog Broker** for Electron. Only one native save dialog may exist across all renderer windows at once; concurrent requests are rejected instead of queued, and runtime diagnostics expose request/source/blocked ownership.
+- Harden PlotView export activation so CSV/SVG/PNG export handlers must originate from the currently open canonical export menu item; ordinary plot/card clicks cannot directly invoke export.
+- Add source tracing across project, PlotView, ScientificPlot/group-panel, zoom and plugin I/O save paths, plus `test-v3680-native-save-dialog-ownership.js`.
+- Correct the initial save-dialog containment fix: Electron native Save As now also requires a one-shot **explicit trusted save intent** issued by preload from a real export/project-save control. Ordinary buttons, plot clicks and other non-save interactions clear the intent, so accidental renderer calls cannot open a system save dialog.
+- Make native save ownership complete by blocking Chromium renderer `will-download` on Electron; native desktop exports must use Core I/O. Migrate Pulse Sampler 1.9.10 away from a private `<a download>` path and correct native autosave so only concrete filesystem paths are writable without Save As.
+- Keep `desktop/main.js` below the 48 KiB composition boundary by moving the new save-intent/download guard into `desktop/main-modules/native-save-runtime.js`.
+- Repair Core workbench import mounting for dedicated plugin windows: a page-local `workbench-import` slot is authoritative, and auxiliary windows never assume the main shell `analysis` toolbar exists.
+- Experimental snapshot: upgrade `com.dkds.experimental.spatial-curve-gallery` to **0.1.3**, promote **3D 画廊** to a primary workbench Activity, add an explicit **3D 演示** action, and make focus changes use real continuous X/Z/rotateY/scale/opacity spatial transitions instead of fixed-position data swapping.
+- Keep five preview ScientificPlot instances plus one canonical detail ScientificPlot; curve point arrays are materialized lazily and bounded by Core Performance staging rather than pre-copying every compatible curve. Reduced Motion remains a conventional 2D horizontal gallery.
+- Spatial Gallery 0.1.3 adds its own page-local Core import slot, fixing dedicated-window startup failure `Toolbar mount not found: analysis` without adding a Gallery-specific Core exception.
+
+# v3.67.54 — Desktop Regression Root-Cause Recovery / Shared Chrome Reunification
+
+- Restore dedicated plugin windows to the Desktop host contract before Core styles load, eliminating host-classification drift between the main shell and TOP/Tool windows.
+- Rework shared scientific floating navigation geometry at the Desktop platform layer: vertical hit chrome is reduced by more than 10%, horizontal width is increased by roughly 10%, and edge actions are flush with the group boundary while Mobile touch geometry remains unchanged.
+- Replace class-specific titlebar hover styling with semantic `panelHeader` / `inspectorHeader` appearance ownership so Resonance, TER, Vth, group plots and other first-party scientific surfaces consume the same hover contract.
+- Restore real Desktop scroll chaining at both owners: stylesheet overscroll containment is removed from document-like vertical regions and PluginWorkspace runtime safety now keeps only horizontal containment while Desktop vertical overscroll is `auto`.
+- Quarantine stale managed built-in plugin overrides whose Plugin API no longer matches the host, preserving the file for recovery while falling back to the bundled current plugin instead of emitting a permanent startup warning.
+- Merge Pulse Sampler extraction controls into one semantic command surface; repair TER Portable/PlotView header reuse and floating content fill; remove the Vth plot-card scrollbar feedback source; make legacy and Unified analysis viewports edge-to-edge on all four sides, including compact Desktop where an obsolete 8 px responsive grid gap previously created phantom top/bottom whitespace around hidden dock rows.
+- Audit and remove plugin-domain selectors from the Core Mobile presenter; domain plugins now annotate generic mobile width/scroll semantics explicitly. Historical tests that required the superseded nested TER toolbar/class whitelist were corrected to guard the current semantic ownership rather than force a regression.
+- Desktop Visual Closure remains an ownership boundary, but this patch records user-authorized corrections at their actual shared owners rather than adding Resonance/TER-specific Core paint overrides.
+- Advance application to **3.67.54**. Plugin API remains **1.19.0**.
+
+# v3.67.53 — Desktop Plugin Loading / Scientific Chrome / Scroll Chaining
+
+- Harden built-in plugin script loading on Desktop. Normal renderer resource loading still gets three attempts, then Electron can read the same bundled `src/plugins/.../*.js` source through a path-constrained IPC bridge and execute it through the existing canonical inline plugin loader. This directly covers the reported Resonance Workbench `feature-selection-runtime.js` load failure without adding plugin-specific loader logic.
+- Make generated built-in plugin indexing fail early when a declared shared or platform JavaScript asset is missing, so incomplete clean ZIPs are rejected before runtime.
+- Reduce Desktop scientific floating navigation controls to a compact **16–18 × 13–15 px** viewport-adaptive contract while preserving the independent Mobile **25 × 24 px** touch contract.
+- Give compact plot/group titlebar actions a true vertical inset: **24 px** controls centered inside the **28 px** header, leaving 2 px above and below instead of letting hover paint touch the lower edge.
+- Unify plot/group titlebar hover corner geometry through one **6 px** canonical radius, eliminating the clipped top-rounded/bottom-square appearance and cross-chart inconsistency.
+- Restore natural Desktop vertical scroll chaining for canonical nested workspace/table regions with `overscroll-behavior-y:auto`; when a local scroller reaches its boundary, wheel input can continue into the parent/global scroller under the same pointer. Menus/popovers remain excluded.
+- Preserve the frozen **Desktop Visual Closure** ownership by recording these user-authorized deltas in the existing visual-freeze owners; no new plugin-domain visual exception or `!important` override is introduced.
+- Advance application to **3.67.53**. SDK remains **1.25.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.52 — Web/Mobile First-Paint + Desktop Visual Closure
+
+- Make built-in Theme providers startup-critical so Web first paint has the selected/default Theme provider available before interactivity.
+- Narrow MenuItem semantic classification so ordinary scientific data-list rows do not inherit menu focus/selection borders; preserve borderless row selection.
+- Separate Desktop and Mobile scientific floating-toolbar geometry; Desktop is denser while Mobile retains its touch-oriented sizing.
+- Unify plot/group/portable titlebar action height, hover surface, border, radius and elevation; constrain plot-header hover paint inside the header.
+- Restore Data Center Desktop to its established static composition while SDK 1.25 loads the semantic WorkspaceSurface composition only through the Mobile platform presenter.
+- Preserve plot-level placement controls on Mobile while hiding only Desktop Surface-docking controls, and align plot titles/actions through one Mobile header grid.
+- Hide unsupported Plugin Manager filesystem-directory actions on Mobile/Web and tighten the native Plugin Manager toolbar layout.
+- Make Mobile compact control density a Core platform semantic rather than plugin-owned control chrome.
+- Stop Core Drawer geometry from erasing plugin content right inset.
+- Stamp PRIME presentation roles synchronously at registration so `data-control` parameter surfaces are hidden before Mobile Presenter projection, preventing TER/Pulse parameter first-paint relocation flashes.
+- Keep SDK **1.25.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.51 — Desktop/Mobile Presentation Polish
+
+- Separate Desktop and native Mobile scientific floating-toolbar geometry. Desktop now uses compact CSS-viewport-adaptive controls; Mobile keeps its own compact native contract instead of inheriting Desktop tuning.
+- Correct PlotView export-menu ownership so file/export actions no longer masquerade as portable placement controls. Group/plot titlebar actions now share one hover elevation contract while close actions retain only their semantic danger color.
+- Remove Chromium native number-field spinner chrome from themed fields and suppress generic selected/focused rims on row-style data selections.
+- Restore Theme picker anchoring above the bottom status item rather than overlapping status-bar commands.
+- Recompose the native Plugin Manager toolbar into ordered responsive tracks and give its integrated search shell the canonical thin field outline.
+- Pulse Sampler Tool 1.9.8: suppress Mobile parameter PRIME before first paint in the main route, then present it only in the semantic Drawer; improve Drawer content insets and containment.
+- Advance application to **3.67.51**, Mobile to **0.8.37** / Android `versionCode` **48**. SDK remains **1.25.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.50 — Menu First-Paint / Mobile Interaction Performance Closure
+
+- Reduce Desktop scientific floating navigation chrome from 25 × 24 px to a 22 × 21 px slot while preserving the Mobile native 25 × 24 px touch geometry. This is an explicitly requested **Desktop Visual Closure** delta expressed by the Desktop host-geometry layer; the frozen shared scientific Structure remains unchanged and Mobile re-establishes its 25 × 24 px touch geometry.
+- Remove the intermittent bright rectangular rim from focused row-style selections. List rows now keep the semantic selected/focused surface without inheriting the generic focused-item border.
+- Eliminate the common menu first-frame theme flash. Core `ContextMenu` and shell `command-menu` surfaces are connected paint-hidden, receive MaterialSurface plus ComponentAppearance synchronously, are positioned, and are only then revealed. The same path is shared by Desktop and Mobile.
+- Fix Mobile parameter-drawer resize ownership: the right-edge resize handle is a gesture owner inside the active drawer frame, so outside-tap dismissal no longer closes the panel when resizing begins.
+- Recompose the native Data Center artifact browser for compact operation from the actual drawer width. Header/filter/selection commands stay fixed, filters use two columns when space permits, metadata stays one-line, and the artifact list owns the remaining scroll height. Data Center advances to **1.15.8**.
+- Reduce visible Mobile re-layout work. `MobileWebSurfacePresenter` uses idempotent inline-style writes, skips stable semantic projections, avoids repeated drawer-fit scheduling, and keeps a first-time auto-fit drawer paint-hidden until its measured width is ready.
+- Coalesce native Mobile split drag geometry through a Mobile-only adapter: cache one drag-session container measurement and keep one `requestAnimationFrame` write per frame instead of repeated layout reads per raw pointer event. The frozen shared/Desktop `SplitController` remains unchanged, while expensive scientific/chart resize notifications stay suspended until commit.
+- Raise the Mobile bottom scientific companion range from 44% to **58%**, reduce the primary-area reserve from 300 px to **240 px**, and raise native CSS caps to 54–58 vh/% so Group Plot can be expanded substantially farther without allowing it to consume the entire workspace.
+- Add v3.67.50 regression coverage for menu first-paint staging, Desktop floating-toolbar density, row focus behavior, drawer resize-vs-dismiss arbitration, dense native Data Center layout, stable Mobile Presenter projection and coalesced split dragging.
+- Advance application to **3.67.50**, Mobile to **0.8.36** / Android `versionCode` **47**. SDK stays **1.25.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.49 — SDK 1.25 Platform Presentation Authoring Contract
+
+- Introduce **SDK 1.25.0** while keeping the single **Plugin API 1.19.0** and Theme Contract **3.10.0**. UI-owning plugins now explicitly declare Desktop and Mobile presentation policy as `shared`, `adaptive`, or `custom`; no `ctx.ui.desktop` / `ctx.ui.mobile` business APIs are introduced.
+- Add a machine-readable `platformPresentation` manifest contract and standalone validator. SDK 1.25 authoring requires both platform policies for UI-owning plugins, while runtime normalization keeps pre-1.25 Plugin API 1.19 packages loadable as shared/shared for compatibility.
+- Add the `dkds.plugin-platform` cascade layer between shared plugin CSS and Core structure/presentation/theme ownership. Platform-only CSS therefore overrides shared plugin geometry without selector escalation or `!important`, while Core remains the final application-chrome authority.
+- Make main renderer, dedicated Electron plugin windows, built-in packaging, external `.dkplugin` normalization, generated plugin index, package export and Mobile package loading select only the active platform assets. Shared assets remain loaded once.
+- Migrate first-party UI-owning plugins and official SDK templates to explicit Desktop/Mobile presentation policy. Resonance, Data Center, Pulse Analysis and Pulse Sampler move `mobile.css` out of shared `styles` into Mobile-only custom presentation assets.
+- Add `sdk/PLATFORM_PRESENTATION.md`, TypeScript manifest types, schema documentation, SDK authoring corpus integration and v3.67.49 regression coverage. `MOBILE_PRESENTATION_ARCHITECTURE.md` now records SDK 1.25 as the formal authoring boundary.
+- Preserve the frozen **Desktop Visual Closure** ownership: SDK 1.25 changes how plugin presentation assets are selected and layered, not Desktop component appearance tokens or scientific chrome geometry.
+- Advance application to **3.67.49**, Mobile to **0.8.35** / Android `versionCode` **46**.
+
+# v3.67.48 — Mobile Drawer Reflow / Desktop Chrome Recovery
+
+- Fix the remaining Desktop project-tab regression reported from the real Windows host. `project-tab-close` now owns a compact 20 × 20 px hit box, is excluded from the generic 30 px button fallback, and uses a quiet 5 px rounded-square appearance instead of a detached circular disc.
+- Strengthen touch-platform isolation: coarse-pointer geometry now belongs only to `data-dkds-host="mobile".react-native-client`. Touch-capable Electron/Web desktop shells therefore retain the accepted 25 × 24 px scientific navigation geometry rather than inheriting 40/44 px touch targets.
+- Make projected Mobile drawers single-axis scroll surfaces. Presenter inline geometry now forces horizontal overflow hidden and disables browser resize UI; Core removes the 10 px reserved right gutter, paints the resize hit rail transparently, and explicitly clears scrollbar-corner/resizer paint. This removes the broad white right strip and bottom-right white square/tail.
+- Make semantic drawer headers span the complete panel width in the Mobile platform owner and reflow their action area by drawer container width, so themed header paint reaches the right edge instead of stopping before a white strip.
+- Add container-driven Resonance parameter composition: detection actions, display checkboxes, label/select rows, dataset Vg controls and transform controls reflow from the actual drawer width rather than preserving the squeezed Desktop rail.
+- Add Data Center artifact-drawer container composition so purpose/filter/selection controls reflow naturally while the generic Core drawer header remains the platform geometry owner.
+- Add outside-pointer dismissal for an active Mobile parameter drawer. The dismissal consumes the pointer event so controls behind the transient panel are not accidentally activated.
+- Advance application to **3.67.48**, Mobile to **0.8.34** / Android `versionCode` **45**, Resonance Workbench to **3.61.18**, and Data Center to **1.15.7**. SDK remains **1.24.0** / Plugin API **1.19.0** during this acceptance patch; the proposed SDK 1.25 platform-presentation authoring contract remains the next architectural phase after real-device acceptance.
+
+# v3.67.47 — Real-Device Mobile Layout Correction / Desktop Touch Isolation
+
+- Correct the Desktop regression reported on a touch-capable Windows host: coarse-pointer accessibility geometry is now excluded from `data-dkds-host="desktop"`, so project tabs, close controls, toolbar actions and scientific floating buttons keep the frozen Desktop density even when Windows reports `(pointer: coarse)`. The **Desktop Visual Closure** appearance contract is preserved; this change only removes an unintended platform-style leak.
+- Correct Resonance gate-analysis Mobile packing on the actual `respar-derived` route. The previous Mobile selector lost to the plugin's ID-scoped Desktop `<=1050px` rule inside the same cascade layer; the Mobile route selector now carries matching owner specificity and restores width-driven multi-column `auto-fit` composition.
+- Replace the erroneous fixed 320 px Plugin Manager tracks introduced by v3.67.46 with a readable 320 px minimum plus flexible `1fr` tracks. Available row width is consumed instead of leaving a large blank region, while action groups remain no-wrap.
+- Repair the older v3.67.42/v3.67.44/v3.67.46 regression assertions that encoded the fixed-width Plugin Manager mistake, and add a v3.67.47 guard for Desktop coarse-pointer isolation, real Resonance route specificity and full-row card packing.
+- Advance application to **3.67.47**, Mobile to **0.8.33** / Android `versionCode` **44**, and Resonance Workbench to **3.61.17**. SDK remains **1.24.0** / Plugin API **1.19.0** in this acceptance correction; a declarative platform-presentation SDK extension is evaluated separately so the runtime API is not forked into `ctx.ui.desktop` / `ctx.ui.mobile`.
+
+# v3.67.46 — Mobile Layout Closure / Compact Surface Recovery
+
+- Replace the Mobile parameter drawer's monotonic/greedy content-width growth with a compact critical-control solver. Legacy oversized width persistence is isolated behind a new `v2` key, automatic fitting is capped at the compact ceiling, and manual resizing can still expand farther when the user asks for it.
+- Move the parameter resize grip onto the visible right edge, restore a restrained 10 px drawer radius, and make dragging reliable through window-scoped PointerEvent handling plus the existing native TouchEvent fallback.
+- Fix Resonance Mobile gate-analysis pages that were still being forced to one column by the historical Desktop `max-width:1050px` rule. Mobile route-owned CSS now auto-fits scientific cards from actual available width and uses shorter chart heights.
+- Rework Plugin Manager Mobile packing to stable 320 px `auto-fill` tracks and keep metadata/actions non-breaking, preventing the compact layout from stretching cards or collapsing Chinese action labels vertically.
+- Bound Mobile bottom companion resizing to 44% / 44vh and give the shared split specification a 0.44 Mobile ratio plus a 300 px primary-area reserve, so dragging cannot cover the upper work area.
+- Add generic `ParameterSchema` `autoFit` support for small native forms. Data Center chart parameters opt into 150–220 px tracks and its Mobile chart preview uses a compact 200–280 px height.
+- Preserve the frozen **Desktop Visual Closure** boundary: the shared `SplitController`, Resonance Desktop stylesheet, Data Center Desktop stylesheet, and other hash-frozen Desktop owners remain untouched; Mobile behavior is expressed through unfrozen Presenter/platform/plugin-mobile owners.
+- Add v3.67.46 executable regression coverage including an actual simulated parameter-handle pointer drag. Application **3.67.46**, Mobile **0.8.32**, Android `versionCode` **43**, Data Center plugin **1.15.6**.
+
+# v3.67.45 — Mobile Acceptance Closure / Desktop Perimeter Recovery
+
+- Removed the obsolete SUPER workspace body perimeter padding explicitly authorized by the user; Desktop Visual Closure firewall remains active and this is recorded as an authorized structural delta rather than a Mobile side effect.
+- Added one Core native TouchEvent drag adapter used by both scientific navigation implementations, while Desktop retains PointerEvent/coalesced-event dragging.
+- Made Mobile parameter drawers square, content-fit, explicitly handle-resizable only, and thinner-scrollbar; drawer width is clamped to the measured parameter content minimum.
+- Tightened the Mobile range-selection popover and removed full-sheet empty height.
+- Added Presenter-marker-only Mobile density for Resonance derived grids and Pulse result grids; shared plugin views remain platform-neutral.
+- Reconciled direct PRIMARY/SUB workspace navigation with the Mobile Host route stack so returning to PRIMARY cannot be re-hidden by stale SUB state.
+- Tighten Mobile auto-fit density to a 240 px card/chart floor for Plugin Manager, Resonance derived charts and Pulse result charts so medium-width native viewports can actually use multiple columns.
+- Enforce repository handoff hygiene: a clean development tree must contain exactly one current root `HANDOFF_*.md`; historical handoffs are removed from delivery ZIPs.
+- Mobile version 0.8.31 / Android versionCode 42.
+
+# v3.67.44 — Mobile Density / Parameter Surface Contract
+
+- Fix Native Pulse Analysis result composition so Mobile uses normal-flow responsive cards instead of inheriting the Desktop fixed split height; available width can produce two or more result cards without overlap.
+- Tighten Native Pulse Designer parameter geometry and keep tables/actions contained inside the projected parameter drawer.
+- Make Plugin Manager section cards use Mobile `auto-fit` columns rather than the shared narrow-screen one-column fallback.
+- Keep the parameter drawer resize grip fixed outside its scroll content, use a thin scrollbar, and separate platform geometry from Core Material paint.
+- Reduce the Native range/box-selection command sheet footprint and remove its unnecessary full-height blank region.
+- Restore full-range Native scientific-toolbar dragging by tracking active pointer movement at window scope while retaining the Desktop coalesced-event path.
+- Reuse the existing platform-neutral Plugin API 1.19 `presentationPurpose: 'parameters'` semantic; no `ctx.ui.mobile`/`ctx.ui.desktop` API fork is introduced.
+- Preserve the v3.67.40 **Desktop Visual Closure** freeze. The only Desktop visual delta in this patch is the explicitly authorized semantic elevation of parameter PRIME surfaces; all other Desktop owners remain hash-frozen.
+- Advance application to **3.67.44**, Mobile to **0.8.30** / Android `versionCode` **41**.
+
+# v3.67.43 — Desktop Isolation Recovery / Platform Firewall
+
+- Recover the Desktop Visual Closure boundary after the v3.67.41–v3.67.42 Mobile projection work exposed a cross-platform mutation hole. The issue is fixed at ownership boundaries; no Desktop CSS compensation, spacer removal patch or negative-margin workaround is introduced.
+- Decide host identity before authored CSS loads and expose it as immutable `window.__DKDS_HOST_KIND__` plus `html[data-dkds-host]`. `DKDSPlatformBoundary` treats the immutable identity as authoritative; `.react-native-client` alone can no longer promote an Electron document into Mobile behavior.
+- Instantiate Desktop and Mobile Presentation shells mutually exclusively. `MobileWebSurfacePresenter` also owns a second internal guard and returns `desktop-inert` before any Desktop DOM lookup, wrapping, reparenting or geometry normalization.
+- Keep `mobile.css` inactive on Desktop through `media="not all"`; Mobile enables it only from the immutable host identity. Native Core selectors additionally require both `data-dkds-host="mobile"` and `.react-native-client`.
+- Separate Pulse native density rules into plugin-owned `mobile.css`; restore its shared `plugin.css` byte-for-byte to the accepted v3.67.40 Desktop baseline.
+- Add an executable **Desktop Visual Closure freeze**: 57 Desktop/shared visual and geometry owners are SHA-256 pinned to the accepted v3.67.40 source. A routine Mobile patch that changes one now fails the release gate rather than silently changing the Desktop UI.
+- Add the Platform Isolation Firewall architecture contract. Shared Core remains single and host-neutral; platform geometry, interaction and persistence stay outside Core. Future hardening should split generated Desktop/Mobile platform entry bundles and migrate remaining raw native-marker reads behind the shared boundary, but only under a dedicated Desktop-parity refactor.
+- Advance application to **3.67.43**, Mobile to **0.8.29** / Android `versionCode` **40**.
+
+# v3.67.42 — Mobile Interaction Density / Drawer Ownership
+
+- Fix native parameter drawer pointer ownership: the Mobile projection frame now receives touch input, blocks the underlying scientific canvas while open, and gives the projected parameter content its own scroll container.
+- Add a fixed right-edge parameter drawer resize handle with persisted native width; the handle never scrolls with parameter content.
+- Tighten Mobile-only parameter controls and preserve Desktop control metrics.
+- Recover dense Pulse Analysis result composition on native wide/landscape viewports; multiple result plots can share a row when they fit.
+- Make Plugin Manager use responsive auto-fit cards on the native client instead of wasting wide-screen space.
+- Harden both D3 scientific toolbar drag paths against Android WebView origin-jump pointer samples while leaving Desktop drag logic unchanged.
+- Reduce scientific marker visual size to 78% on the native client while retaining larger invisible hit targets.
+- Make native transient status messages expire after 5.2 s and hide the Resonance main-summary contribution outside its activity.
+- Replace mixed-font status icons with a single thin-stroke native icon family for History/Theme/Memory/DevTool/SMB/AI/Web; AI and Web icon color follows semantic runtime state.
+- Advance application to **3.67.42**, Mobile to **0.8.28** / Android `versionCode` **39**.
+
+# v3.67.41 — Mobile Projection Stability / Parameter Surface Isolation
+
+- Fix the Android scientific floating toolbar jumping to the plot's top-left on the first drag frame. Native-client drag now follows raw PointerEvent coordinates with a drag-start delta; the existing Desktop coalesced-event path is preserved unchanged.
+- Replace direct Mobile PRIME geometry ownership with a Mobile projection frame. The frame owns drawer/companion/sheet geometry while the live plugin DOM remains the content source; any Desktop PortableView inline geometry is neutralized only while projected and restored exactly when the surface closes. This prevents plugin selector specificity from expanding the native **参数** drawer to the full viewport.
+- Tighten the native **参数** command to consume only plugin-declared `presentationPurpose: parameters`. The Mobile shell no longer guesses parameter UI from a Chinese/English label regex, so it opens the plugin's declared parameter surface instead of an accidentally named control panel.
+- Remove the compact-profile topology jump at the normal phone portrait/landscape boundary. Main plot + curve inspector + scientific bottom companion keep the same center/right/bottom relationship across ordinary rotation; only an explicit ultra-narrow `<=479px` safety floor stacks the composition.
+- Keep SUB routes inside PluginWorkspace's existing route host instead of adding a second fixed viewport layer. This removes a generic source of plugin-panel overlap.
+- Remove synthetic `window.resize` dispatches after Mobile navigation and surface activation. Real orientation/viewport resize events still republish Presenter state, but command transitions no longer force a redundant second whole-page layout cycle.
+- Make `MobileWebSurfacePresenter.apply()` mutation-stable: it no longer deletes and recreates all Mobile semantic data attributes on every status/history/resize publication; unchanged live projections retain the same DOM shell.
+- All presentation CSS in this patch remains rooted at `html.react-native-client`; Desktop Presenter, Desktop docking state and Desktop visual selectors are not changed. **Desktop Visual Closure** remains frozen.
+- Advance application to **3.67.41**, Mobile to **0.8.27** / Android `versionCode` **38**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.40 — Resonance Scan-Mode Selected Fill Recovery
+
+- Correct the Desktop regression introduced by the v3.67.36 Mobile closure: **全部扫描 / 仅正扫 / 仅反扫 / 全不选** are mode selectors, not momentary commands. The current global scan mode once again receives the canonical selected fill.
+- Preserve the original intent of the earlier persistent-fill report: non-current modes must never keep stale fill. Every render clears legacy `active`, then applies `selected` and `aria-pressed=true` to exactly the mode represented by the current per-dataset visibility state. Mixed per-dataset visibility selects none of the four global presets.
+- Keep the fix in the shared Resonance state semantics rather than adding Desktop-only CSS. Core Component Appearance already owns the selected fill for `toolbarAction`; no new plugin-specific paint or `!important` override is introduced.
+- Replace the v3.67.36 historical regression assertions that incorrectly required a nonvisual `aria-current`-only state, and add an executable v3.67.40 state test covering all four modes plus mixed visibility.
+- Advance application to **3.67.40** and Resonance Workbench to **3.61.16**. Mobile remains **0.8.26** / Android `versionCode` **37** because this patch does not alter the native shell. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.39 — Mobile Global Command Order Contract
+
+- Correct the Mobile first-level text-command order to the explicit accepted sequence: **导入 / 数据 / 工作区 / 分析 / 插件**.
+- Move **插件** into the same global command group instead of keeping a separate Plugin utility button beside Undo / Redo / 参数. The right-side utility group now contains only current-workspace tools such as history and the canonical 参数 entry.
+- Remove the now-dead dedicated Plugin utility styles and update the active Android README so future work does not reintroduce the retired icon navigation or the incorrect order.
+- Add a v3.67.39 regression gate that checks the exact five-command order, exact group membership, Plugin dispatch, and absence of a duplicate right-side Plugin button.
+- Advance application to **3.67.39**, Mobile to **0.8.26** / Android `versionCode` **37**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**. The v3.67.38 TER/portrait/parameter-drawer/flicker repairs remain unchanged.
+
+# v3.67.38 — Mobile Acceptance Recovery / TER Scalar-Field Repair
+
+- Restore the user-accepted Mobile header direction instead of continuing the v3.67.36 icon experiment: **导入 / 数据 / 分析 / 工作区** are compact theme-colored text controls, the custom black system glyph family is removed, and **插件** is a text command at the far right after Undo / Redo / 参数.
+- Make the project **＋** a truly naked hit target. The visible rounded surface/rim is removed rather than merely setting `borderWidth: 0` while retaining a filled tile.
+- Repair the TER transformed heatmap pipeline. A canonical transport `data.table` may contain both forward and reverse sweeps; Scientific Transform Runtime now expands the table through `transportDatasetsFromArtifacts -> DKDSScience.buildSweeps` before directional scalar-field algorithms run. This removes the all-missing `17 × 200 / 缺失 3400` failure while preserving source-file identity.
+- Keep Resonance scientific PRIME surfaces as companions at every responsive width. Portrait now reflows **主图 / 曲线检查器 / 组图** vertically when those companions are open; a PRIME group panel no longer becomes a full-screen route that hides the main plot. The Mobile Host also seeds already-mounted non-parameter PRIME state once, so a persisted/open inspector is not silently lost when entering or rotating the native presentation.
+- Reduce the parameter drawer to an approximately one-third viewport contract for wide/expanded windows (`33.333vw` with practical min/max bounds). Compact phones retain a usable bounded drawer rather than a full-page control surface.
+- Remove the parameter/main reparent race. `MobileWebSurfacePresenter.apply()` no longer restores every projected PRIME to its Desktop parent on every status/resize/history publication; it performs idempotent live projection and restores only surfaces that are no longer desired. The drawer entrance animation is removed so state churn cannot replay a visual transition.
+- Update superseded historical Mobile regression gates so they protect the accepted text-command and persistent-companion behavior rather than forcing the rejected icon-only / compact-route implementation back into the product.
+- Advance application to **3.67.38**, Mobile to **0.8.25** / Android `versionCode` **36**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**. **Desktop Visual Closure** remains unchanged; these changes stay in Mobile Presenter/platform ownership plus the platform-neutral scientific transform runtime.
+
+# v3.67.37 — Parameter Surface Contract Recovery
+
+- Fix the v3.67.36 built-in plugin load regression `Unknown PortableView semanticKind: parameters`. v3.67.36 incorrectly reused `semanticKind` for Mobile parameter-button promotion even though Plugin API 1.19 deliberately bounds Portable/Material semantic kinds to `panel | inspector`.
+- Restore every first-party parameter PRIME to `semanticKind: 'panel'`. PortableView and Theme Material ownership therefore remain unchanged and bounded.
+- Add an orthogonal platform-neutral `presentationPurpose: 'parameters'` contract. `presentationRole` still describes cross-platform layout importance, `semanticKind` still describes Portable/Material identity, and `presentationPurpose` describes functional meaning.
+- Carry `presentationPurpose` through PluginWorkspace navigation metadata, Core host registry, PresentationModel and the React Native shell. The native fixed **参数** action consumes this purpose; Data Center's ordinary `data-control` rail is not promoted.
+- Keep the existing label-based parameter detection only as a compatibility fallback for older plugins. First-party plugins no longer depend on Chinese/English label inference.
+- Add v3.67.37 regression coverage that forbids `semanticKind: 'parameters'`, requires canonical purpose propagation, and keeps PortableView semantic kinds bounded to `panel` / `inspector`.
+- Advance application to **3.67.37**, Mobile to **0.8.24** / Android `versionCode` **35**, Resonance Workbench to **3.61.15**, TER Analysis to **3.12.7**, Pulse / Read Analysis to **2.10.13**, Pulse Sampler to **1.9.6**, and Transfer Curve Vth Lab to **3.0.8**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.36 — Mobile Semantic Surface / UI Closure
+
+- Desktop Visual Closure remains frozen: Mobile layout fixes stay in Presenter/platform semantics and plugin container layout rather than Desktop style overrides.
+- Mobile Header system commands are icon-only and ordered Import → Data Management → Analysis → Workspace; project Add is borderless with an explicit separator after project controls.
+- Plugin Management moves out of Theme UI into top native Settings; Theme panel returns to theme-only ownership.
+- One canonical `data-control` surface now generates one Parameters button; duplicate plugin actions/surfaces are deduplicated and SUB routes expose a generic Main Plot return command.
+- MobileWebSurfacePresenter transiently projects active PRIME surfaces into semantic right/bottom/overlay canvas slots without persisting Desktop PortableView placement.
+- Native workspace platform CSS no longer imposes flex/grid display modes on plugin content; Resonance derived pages retain domain-owned layout and Parameter drawers use a substantially smaller responsive width.
+- Resonance scan visibility presets are momentary commands rather than persistent selected/fill controls on both Desktop and Mobile.
+- Native History and overflow controls use geometric glyphs rather than text-symbol icons.
+
+# v3.67.35 — Android TypeScript Font Weight Recovery
+
+- Fix the Android `tsc --noEmit` failure in `mobile/src/styles/shell-styles.ts`: React Native accepts discrete font weights, so the unsupported `fontWeight: '650'` on the Mobile History sheet action is replaced with the valid semibold `'600'`. This is a Mobile shell type/compatibility correction only and does not alter Desktop styling or Plugin Presenter ownership.
+- Advance application to **3.67.35**, Mobile to **0.8.22** / Android `versionCode` **33**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**. **Desktop Visual Closure** and the platform-neutral Presenter boundary remain unchanged.
+
+# v3.67.34 — Semantic SUPER Surface Parity / Dense TOP Composition
+
+- Continue the all-TOP-as-SUPER cleanup by moving **Pulse / Read Analysis** file/settings controls out of its scientific PRIMARY and into a semantic `data-control` PRIME. The same plugin now receives a Presenter-owned left rail on Desktop/SUPER and a drawer/sheet mapping on constrained Presenters without any Desktop/Mobile branch.
+- Move the **Data Center** data-object browser/filter rail into the same semantic `data-control` PRIME contract. Remove its plugin-owned desktop splitter from PRIMARY; Presenter geometry now owns that rail just as it does for TER, Vth and Resonance.
+- Make Data Center PRIMARY denser when space allows: source preview remains full-width while the active Formula/Workflow/Provenance tool and inline Chart Preview share the available primary surface at wide container sizes. If Chart Preview is moved to another PRIME placement, the main content automatically returns to one column.
+- Compact Pulse scientific/result geometry while preserving the existing result-height splitter. Pulse control fields now respond to their **control Surface width**, not the global page width, so a 390 px data-control rail and a wide bottom/global placement use the same plugin implementation.
+- Restore the explicit user rule that scientific cards must never overlap: TER layout choices are now preferred maximum column counts and Core `GridController` automatically reduces the effective count when the actual Surface cannot preserve the minimum card width, then restores the requested count as space returns.
+- No new platform-specific plugin path is introduced. Resonance remains ordinary; Pulse, Data Center, TER, Vth and Pulse Sampler all express domain surfaces through the same Plugin API 1.19 Presentation roles. **Desktop Visual Closure** remains a hard ownership boundary.
+- Advance application to **3.67.34**, Data Center to **1.15.5**, TER Analysis to **3.12.5**, and Pulse / Read Analysis to **2.10.11**. Mobile remains **0.8.21** / Android `versionCode` **32**; SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.33 — Deterministic SUPER Failure State / Container-Driven TOP Density
+
+- Make SUPER startup identity deterministic. If the saved or manifest-selected SUPER fails to load or cannot complete its TOP contract, DK Data Studio now keeps that SUPER preference and shows the neutral **尚未指定 / 当前主界面不可用** page. It never promotes another healthy TOP as a temporary session SUPER. Users may explicitly choose a different SUPER from Plugin Management.
+- Remove the former `ensureFallbackSuperReady()` / deferred healthy-TOP substitution path. First-run manifest `defaultSuper` remains the explicit default identity and is retried on later launches even when one startup attempt fails.
+- Keep manual SUPER promotion transactional: if the user explicitly switches from a working SUPER to another TOP and that activation fails, the already-running previous SUPER is restored; this is rollback of a user action, not automatic startup substitution.
+- Continue the all-TOP-as-SUPER density cleanup without creating plugin/platform branches. Pulse Analysis, TER, Vth Lab and Data Center now make their responsive domain-layout decisions from the width of the PluginWorkspace surface/container they actually receive, rather than the global Desktop window width. This preserves **Desktop Visual Closure** while allowing the same plugin composition to fit dedicated TOP windows, SUPER embedding and constrained Presenter surfaces.
+- Remove viewport-width coupling from TER heatmap cards and use container-relative chart geometry so a scientific card cannot size itself against `100vw` when the host has already allocated other semantic surfaces.
+- Advance application to **3.67.33**. Data Center advances to **1.15.4**, TER Analysis to **3.12.4**, Pulse / Read Analysis to **2.10.10**, and Transfer Curve Vth Lab to **3.0.6**. Mobile remains **0.8.21** / Android `versionCode` **32**; SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.32 — SUPER Host Neutralization / Fault Fallback / Plugin Script Recovery
+
+- The legacy Core main/inspector/group shell is now compatibility-only and hidden by default. A failed TOP/SUPER can no longer fall through into a half-loaded domain-shaped desktop shell.
+- A broken preferred SUPER now selects a healthy TOP explicitly for the current session without rewriting the saved SUPER preference.
+- Built-in plugin script loading resolves against `document.baseURI` and retries the failed resource with cache-busting backoff, while never replaying scripts that already loaded successfully.
+- SUPER embedding now applies generic host-role chrome rules to every TOP plugin: window-only close/import controls are suppressed in the embedded root and the native PluginWorkspace receives a dense container context. This is host-role composition, not Desktop/Mobile or plugin-specific branching.
+
+# v3.67.31 — Desktop Overflow Ownership / Mobile History / Pulse Layout Recovery
+
+- Restore the established Desktop **脉冲与采样处理** composition without reintroducing a Desktop/Mobile plugin branch. The plugin once again defaults to the original two-column Designer + merged-waveform layout, while named container queries adapt the same content when its actual Surface becomes narrow.
+- Make Desktop context-command overflow single-pass and stable: presentation surfaces are removed from both their visible toolbar and overflow parking host before re-render, the renderer emits a local toolbar-change event instead of a global resize, and the overflow popup is preserved across ResizeObserver passes when membership is unchanged. This removes the visible open flash and the repeated **栅压分析** entries.
+- Let the context toolbar shrink before its **更多功能** affordance. All plugin commands may fold into overflow when necessary; Core no longer forces one oversized command to remain visible and cover the More button at narrow widths. Secondary activity overflow reparenting is owned only by the `shell-navigation` recipe rather than both Kernel and recipe code.
+- Change the Theme popover **设置** control to the same canonical square gear icon button used by AI Agent, while keeping Plugin Management behind that control.
+- Remove the requested descriptive subtitle rows from **数据中心** and **脉冲 / 读取电流分析**.
+- Add **历史** to the Mobile desktop-style bottom status bar. It opens the unified project/workspace operation history and routes Undo/Redo through the same system-history coordinator used on Desktop. The existing canonical status retention order remains **AI > SMB > 网页服务 > 主题 > 内存 > DevTool**; History is an additional functional item and does not invert that relative ordering.
+- Delete the already-retired `SurfaceNavigation.tsx` bottom/rail navigation implementation and its unused style keys. This fixes the Android TypeScript failure caused by stale `more` navigation source instead of merely keeping dead code compiling.
+- Advance application to **3.67.31**, Mobile to **0.8.21** / Android `versionCode` **32**, Status Monitor to **1.3.1**, Data Center to **1.15.3**, Pulse Analysis to **2.10.9**, and Pulse Sampler to **1.9.4**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**. Desktop Visual Closure and the platform-neutral Presenter boundary remain in force.
+
+# v3.67.30 — Developer Toolbox Console Persistence
+
+- Fixed the Developer Toolbox **Start desktop development** action flashing and disappearing when dependency preparation or Electron startup fails.
+- The GUI now launches toolbox actions with a GUI-only `-KeepConsoleOpen` mode. CLI/CI actions still return non-zero exit codes on failure, while GUI-launched failures keep the PowerShell window open so the actual error remains readable.
+- Preserved Windows PowerShell 5.1 compatibility and the existing automatic dependency/Electron bootstrap path.
+- Retains the v3.67.29 platform-neutral plugin boundary and fault-isolated Theme startup architecture; this patch does not change Desktop/Mobile presentation ownership.
+
+# v3.67.29 — Platform-Neutral Plugin Boundary / Fault-Isolated Theme Startup
+
+- Replace the temporary Resonance `resonance-native-client` isolation with an architectural boundary: supported plugin APIs and plugin callbacks no longer receive Desktop/Mobile presentation identity. A dedicated Core `pluginHostView()` exposes only platform-neutral host services while the raw host remains private to Plugin Kernel.
+- Remove first-party `ctx.runtime.isNativeClient` / `ctx.platform` branches from Resonance, Pulse Sampler, Data Center and Status Monitor. Plugins publish one semantic Presentation contract; Presenters decide drawer/sheet/route/Desktop composition, while plugin content responds only to the Surface width it actually receives.
+- Add generic `embedded` Presentation semantics so Pulse parameters can remain embedded in the established Desktop page while the same `data-control` Surface becomes the Mobile parameter drawer. Embedded surfaces are not duplicated in Desktop command chrome.
+- Make Resonance's main summary a `presentationOnly` status contribution: it is available to Mobile/other Presenters without painting a duplicate item into the Desktop status DOM.
+- Decouple built-in startup failures. Startup-critical scripts are dependency-aware and phase ordered with the persisted Theme provider ahead of the selected SUPER; one broken built-in entry is recorded and skipped instead of aborting the remaining Theme/Core startup chain.
+- The SUPER is not hard-coded to Resonance. Core continues to resolve the saved/default SUPER from manifests; if that preferred TOP fails transiently, a secondary TOP can be loaded as a temporary fallback without overwriting the user's saved SUPER preference.
+- Extend the Theme boot snapshot from CSS variables to resolved material, component appearance, effects, scientific settings and material recipe/context policy. While the selected Theme plugin is pending, Material Renderer and Component Appearance consume this cached resolved profile, preventing the half-default/half-custom first frame and keeping the UI coherent even if an unrelated SUPER fails to load.
+- Keep Desktop Resonance's recovered two-column command geometry and theme-independent scientific focus behavior from v3.67.28. No Mobile domain selector is added to Core CSS.
+- Advance React Native package to **0.8.20** and Android `versionCode` to **31**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.28 — Desktop Visual Closure Regression Recovery / Mobile Style Isolation
+
+- Restored Resonance Desktop scan-mode and detector command geometry that was unintentionally flattened during v3.67.26 Mobile responsive composition.
+- Removed the Mobile-added `dkds-action-row` wrappers from the Desktop scan/detector groups so their established two-column layout no longer gains an extra ToolbarGroup surface/fill.
+- Preserved Mobile responsive packing through a plugin-owned `resonance-native-client` marker; no Core shell selector and no Desktop cascade override is used.
+- Restored the Desktop inspector action grid geometry while retaining canonical Core button appearance ownership.
+- Fixed the orange scientific-plot frame in Default light mode: the plot intentionally claims keyboard focus after curve/peak selection, but focus-outline suppression had accidentally been scoped to dark mode for plain `:focus`. Focus ownership remains; the browser frame is now suppressed in every theme.
+- Added v3.67.28 regression coverage for Desktop/Mobile style isolation and light-theme scientific focus.
+
+# v3.67.27 — Mobile Command Density / Overflow and Android UI Recovery
+
+- Correct the Android shell composition from real-device feedback while preserving the frozen Desktop/Core ownership and **Desktop Visual Closure** history.
+- Remove the redundant native global icon navigation row; move Workspaces / Analysis / Import / Data into the top labeled command region after the project tab, separated from plugin-owned commands by a divider.
+- Generate a persistent top **参数** button from each active plugin `data-control` surface, immediately to the right of undo/redo. Parameter content stays hidden until requested and is projected as a left drawer; Pulse Designer parameter fields use responsive `auto-fit` columns rather than a fixed two-column form.
+- Replace fixed plugin button-count heuristics with measured-width packing. Only plugin-owned top commands may enter the top `•••` overflow sheet; global commands and history/parameter controls are never moved into that sheet.
+- Preserve the desktop-style bottom status bar and implement strict preservation priority **AI > SMB > 网页服务 > 主题 > 内存 > DevTool**. When space contracts, DevTool is folded first, then Memory, Theme, Web service, SMB, and AI last. Informational status text uses the remaining left area and auto-scrolls when it cannot fit.
+- Keep DevTool represented on the native status bar, move Plugin Management into the Theme popover header as a **设置** button beside close, and anchor the Theme popover horizontally to the native Theme status control. Remove the obsolete global More sheet and duplicated Analysis-sheet surface list; standalone Data Center remains a first-level top entry instead of an Analysis-sheet item.
+- Make scientific floating navigation touch-transient on Mobile, coalesce touch pointer events through `requestAnimationFrame`, and calculate drag position from the pointer-to-toolbar offset so the toolbar follows the finger across the full plot instead of moving in short increments.
+- Restore rounded Mobile Inspector/Group companion geometry, move Resonance summary information into the left status-information stream on native clients, and let Group Plot reduce effective column count before cards can overlap.
+- Add Data Center-owned native responsive layout rules for source header/action wrapping and narrow workspaces. Core Mobile platform CSS remains domain blind; Desktop styling is not patched.
+- Advance React Native package to **0.8.18** and Android `versionCode` to **29**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.26 — Mobile Responsive Scientific Composition
+
+- Correct the v3.67.25 Mobile direction: Mobile adaptation no longer means reducing simultaneous UI. The frozen Core semantic Presentation Model is now mapped into responsive scientific composition according to actual WebView width/orientation.
+- Keep each plugin's semantic `data-control` surface as the persistent top **参数** command and project it as a temporary **left drawer** on Mobile. Desktop `autoOpen` remains Desktop-owned and does not implicitly open the Mobile drawer.
+- On compact screens, Inspector remains a bottom sheet and PRIME scientific-secondary may use a route; on wide/expanded screens, Inspector becomes a right companion and PRIME scientific-secondary becomes a bottom companion so main plot + curve inspector + group plot can coexist in one workspace.
+- Track PRIME visibility independently from SUB navigation in Mobile Host. Wide companions may coexist; compact sheet/route PRIME surfaces are mutually exclusive to avoid stacked overlays. Android Back closes SUB/transient surfaces and then the most recent open PRIME companion.
+- Keep the native plugin command strip visible in phone/tablet landscape and make commands content-sized in one horizontal scrollable strip instead of hiding them with a fixed button-count limit. A global navigation rail is introduced only on very wide landscape layouts.
+- Restore mobile-native parameter gestures through the shared Interaction Intent adapter: edge swipe opens the semantic data-control drawer and a left swipe inside it closes the drawer without introducing `ctx.ui.mobile`.
+- Make Core `dkds-action-row` and inline-form rows dense/responsive in the React Native WebView projection; Resonance scan/detect/inspector controls consume those semantic rows instead of forcing full-width/two-column command geometry.
+- Reconnect wide/expanded Mobile scientific companions to the existing Core `SplitController`: the right Inspector width and bottom scientific-secondary height use the same split variables/handles as the workbench, with one-pixel seams plus enlarged invisible touch hit targets.
+- Keep Mobile split persistence separate from Desktop geometry (`.mobile` split state), reserve usable canvas space while resizing, and make held-title resize reuse the coalesced split preview/commit path so chart/layout work stays suspended during continuous touch drag.
+- Preserve Desktop/Core and Desktop Visual Closure ownership as frozen. No Resonance-specific selector is added to Core Mobile platform CSS; SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+- Advance React Native package to **0.8.17** and Android `versionCode` to **28**. Mobile visual/runtime acceptance remains WIP pending Android real-device validation.
+
+# v3.67.25 — Mobile Semantic Surface Routing / Landscape Recovery
+
+- Correct the Android landscape projection exposed by real-device screenshots: Mobile Host now forwards the live `DKDSPlatform.profile.orientation` into `MobilePresenter` and republishes when the platform profile changes, so inspector/data-control surfaces use a right rail instead of portrait bottom sheets.
+- Separate Mobile route visibility from Desktop workspace mounted state. Desktop `autoOpen` PRIME surfaces may stay mounted for Desktop, but they no longer appear as implicitly active Mobile panels or create multiple simultaneously highlighted header actions.
+- Add an idempotent Core `workspaces.activate(...)` path for Mobile Host navigation so opening a Mobile route never depends on Desktop toggle state; tapping the currently active PRIME closes only the Mobile route rather than mutating the Desktop-owned mounted surface.
+- Make semantic `route` geometry generic for PRIME/SUB projections and suppress the Desktop portable-placement trigger inside Presenter-owned Mobile surfaces; Mobile Presenter, not Desktop dock controls, owns sheet/rail/route placement.
+- Preserve one Core Presentation Model and one Plugin API. No plugin-specific mobile layout patch, `ctx.ui.mobile`, duplicated scientific logic or Theme paint override is introduced.
+- Advance React Native package to **0.8.16** and Android `versionCode` to **27**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**. Desktop/Core and Desktop Visual Closure ownership remain frozen while Mobile visual acceptance stays WIP.
+
+# v3.67.24 — Clean Mobile Test Bootstrap Fix
+
+- Fix the clean-repository Android validation path exposed by the Windows toolbox: `npm run mobile:test` now regenerates the ignored Core runtime compositions before the Mobile architecture suite reads `src/generated/runtime/*`.
+- Preserve the repository-hygiene contract that generated runtime bundles stay out of Git/clean delivery ZIPs; validation now rebuilds them from canonical composition sources instead of requiring them to be shipped.
+- Add a dedicated clean-mobile bootstrap regression and extend structural/repository-hygiene gates so `mobile:test` cannot silently lose its runtime-generation prerequisite.
+- Make the v3.67.23 Mobile Host Phase 2 regression release-forward rather than pinning the application/mobile checkpoint to one exact patch, matching the repository rule that historical tests validate capabilities rather than moving release identity.
+- Desktop/Core and Desktop Visual Closure ownership remain frozen; SDK stays **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.23 — Mobile Host Architecture Phase 2
+
+- Continue Mobile development without reopening the frozen Desktop/Core presentation contract or Desktop Visual Closure ownership.
+- Reduce `mobile/App.tsx` from a 33.9 KiB mixed host/runtime component to a ~4 KiB composition root that only wires shell state, responsive chrome and explicit Mobile host services.
+- Split the versioned Mobile Host protocol/native facade, request queue and lifecycle timing, Android file/session I/O, native request routing, semantic shell actions, LAN web-service controller, Android system lifecycle/back handling and WebView renderer/recovery into dedicated owners.
+- Keep all Core Presenter / Interaction Intent routes unchanged: Mobile still consumes the Core Presentation Model and routes navigation, surfaces, actions and status requests through the acknowledged `dkds.mobile-host.v1` protocol.
+- Add aggregate Mobile-host source helpers so historical architecture/theme regressions validate ownership behavior after modularization rather than freezing a monolithic `App.tsx` path.
+- Add a v3.67.23 regression gate that keeps `App.tsx` under 8 KiB, keeps every authored Mobile host module below 48 KiB and blocks native file/bridge/runtime responsibilities from returning to the composition root.
+- Advance the React Native package to **0.8.15** and Android `versionCode` to **26**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# v3.67.22 — Mobile Shell Architecture Phase 1
+
+- Begin Mobile development from the frozen v3.67.21 pre-Mobile baseline without reopening Desktop/Core presentation ownership.
+- Split the former 47.6 KiB `mobile/src/Shell.tsx` into explicit model, Theme palette, header/navigation/status components, sheets, service UI and one style owner; keep `Shell.tsx` as a thin public barrel.
+- Preserve the existing Mobile Presenter/Core Registry contract, project/history controls, plugin activity/action projection, semantic surface navigation, portrait/landscape navigation, import sheets and native web-service UI with no behavior change.
+- Remove three unreferenced React Native style keys discovered during the extraction and keep every new authored Mobile shell module below the 48 KiB module ceiling.
+- Add a modular Mobile-shell source helper for historical regressions and a v3.67.22 ownership gate preventing the shell facade from becoming monolithic again.
+- Advance the React Native package to **0.8.14** and Android `versionCode` to **25**. SDK remains **1.24.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
 # v3.67.21 — Pre-Mobile Repository Hygiene
 
 - Keep the v3.67.20 Desktop/Core architecture frozen while cleaning the source-delivery boundary before Mobile UI development.

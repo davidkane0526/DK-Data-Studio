@@ -1,4 +1,8 @@
 'use strict';
+require('ui/frame-scheduler');
+require('ui/dom-mutation-hub');
+require('ui/style-ownership-gate');
+const PlatformBoundary=require('../../host/platform-boundary');
 if(!window.DKDSUI){
   require('./foundation/shortcuts');
   require('./selection/data-interaction');
@@ -24,7 +28,7 @@ if(!window.DKDSUI){
   require('./host/api');
 }
 require('./presentation/presenters');
-require('./presentation/desktop-shell');
-require('./presentation/mobile-web-surface');
+if(PlatformBoundary.isMobileDocument())require('./presentation/mobile-web-surface');
+else require('./presentation/desktop-shell');
 require('./interaction/adapters');
 module.exports=window.DKDSUI;

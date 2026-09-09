@@ -1,15 +1,27 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-dkds-host="desktop">
 <head>
   <meta charset="UTF-8">
+  <script>
+    (() => {
+      const root=document.documentElement;
+      root.dataset.dkdsHost='desktop';
+      try{Object.defineProperty(window,'__DKDS_HOST_KIND__',{value:'desktop',writable:false,configurable:false,enumerable:false});}
+      catch{window.__DKDS_HOST_KIND__='desktop';}
+    })();
+  </script>
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DK Data Studio</title>
 <link rel="stylesheet" href="../core.css">
   <link rel="stylesheet" href="./style.css">
-  <script src="../../sdk/semver-compat.js"></script>
+  <script src="../../sdk/platform-presentation-contract.js"></script>
   <script src="../../sdk/theme-contract.js"></script>
+  <script src="../core/ui/frame-scheduler.js"></script>
+  <script src="../core/ui/dom-mutation-hub.js"></script>
+  <script src="../core/contracts/style-ownership-semantics.js"></script>
+  <script src="../core/theme/style-ownership-gate-runtime.js"></script>
   <script src="../core/theme/semantic-registry.js"></script>
   <script src="../../sdk/theme-coverage-contract.js"></script>
   <script src="../core/theme/material-renderer.js"></script>
@@ -20,21 +32,43 @@
   <script src="../core/theme/debug-runtime.js"></script>
 </head>
 <body class="auxiliary-window plugin-window-host dkds-modern-ui">
+  <header id="pluginWindowTitlebar" class="plugin-window-titlebar dkds-material-role-chrome">
+    <div class="plugin-window-heading"><strong id="pluginWindowTitle">DK Data Studio</strong><span id="pluginWindowVersion" class="plugin-window-version"></span></div>
+    <span id="pluginWindowHeadingDivider" class="plugin-window-heading-divider hidden" aria-hidden="true">|</span>
+    <div id="pluginWindowDragSpacer" class="plugin-window-drag-spacer" aria-hidden="true"></div>
+    <div id="pluginWindowActions" class="plugin-window-actions">
+      <div id="pluginWindowPluginActions" class="plugin-window-action-zone plugin-window-plugin-actions" aria-label="插件专属操作"></div>
+      <span id="pluginWindowActionDivider" class="plugin-window-action-divider hidden" aria-hidden="true">|</span>
+      <div id="pluginWindowCoreActions" class="plugin-window-action-zone plugin-window-core-actions" aria-label="通用操作"><div id="pluginWindowCoreUtilityActions"></div><div id="pluginWindowWorkspaceNav"></div></div>
+    </div>
+    <div id="pluginWindowCommandbar" class="window-commandbar" aria-label="窗口控制">
+      <button id="pluginWindowMinimizeBtn" class="window-control-btn" type="button" aria-label="最小化窗口">−</button>
+      <button id="pluginWindowMaximizeBtn" class="window-control-btn" type="button" aria-label="最大化窗口">□</button>
+      <button id="pluginWindowCloseBtn" class="window-control-btn window-control-close" type="button" aria-label="关闭窗口">×</button>
+    </div>
+  </header>
   <div id="app"></div>
   <aside id="pluginWindowLeftDock" class="plugin-window-universal-dock plugin-window-left-dock"></aside>
+  <div id="pluginWindowLeftDockResizer" class="plugin-window-dock-resizer plugin-window-left-dock-resizer" data-dkds-dock-side="left" role="separator" aria-orientation="vertical" aria-label="调整左侧停靠区宽度"></div>
   <aside id="pluginWindowRightDock" class="plugin-window-universal-dock plugin-window-right-dock"></aside>
+  <div id="pluginWindowRightDockResizer" class="plugin-window-dock-resizer plugin-window-right-dock-resizer" data-dkds-dock-side="right" role="separator" aria-orientation="vertical" aria-label="调整右侧停靠区宽度"></div>
+  <div id="pluginWindowBottomDockResizer" class="plugin-window-dock-resizer plugin-window-bottom-dock-resizer" data-dkds-dock-side="bottom" role="separator" aria-orientation="horizontal" aria-label="调整底部停靠区高度"></div>
   <section id="pluginWindowBottomDock" class="plugin-window-universal-dock plugin-window-bottom-dock"></section>
   <div id="pluginWindowError" class="plugin-window-error hidden" role="alert">
     <strong>插件窗口启动失败</strong>
     <span id="pluginWindowErrorText"></span>
   </div>
   <div id="statusBar" class="statusbar plugin-window-status" aria-label="插件窗口状态栏">
+    <div id="statusBarPersistent" class="statusbar-persistent" aria-live="polite"></div>
+    <span id="statusBarPersistentSeparator" class="statusbar-separator hidden" aria-hidden="true">|</span>
     <div id="statusBarMessage" class="statusbar-message" aria-live="polite"></div>
     <div class="statusbar-command-cluster" aria-label="状态与快捷操作">
       <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left"></div>
       <div id="statusBarPluginRight" class="statusbar-plugin-zone statusbar-plugin-right"></div>
     </div>
   </div>
+  <script src="./dock-layout.js"></script>
+  <script src="./chrome.js"></script>
   <script defer src="./runtime.js"></script>
 </body>
 </html>

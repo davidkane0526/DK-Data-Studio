@@ -54,6 +54,8 @@ assert(auxiliary.includes('synchronized:projectChanged'),'Reuse result must reco
 assert(main.includes("windows:syncPluginActivities"),'disabled independent plugins must dispose cached windows generically.');
 assert(main.includes('pluginState: payload?.pluginState'),'main process must forward namespaced plugin state.');
 assert(main.includes('artifactDelta: payload?.artifactDelta'),'main process must forward incremental artifact changes.');
+assert(main.includes('artifactHydration:spec.artifactHydration'),'windows:listPluginWindows must expose the machine-owned Artifact hydration contract to the renderer.');
+assert(app.includes('contract?.artifactHydration'),'Dedicated activity bootstrap must fall back to the machine window contract when runtime Activity metadata is not mounted yet.');
 
 assert(preload.includes('onActivityWillHide'),'preload must expose the hide/snapshot lifecycle event.');
 assert(preload.includes('listPluginWindows'),'preload must expose manifest-driven dedicated-window discovery.');
@@ -93,7 +95,7 @@ const expected={
   'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',manifestDeps:['data-model','scientific-renderer','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','scientific-renderer','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel','performance-runtime','parameter-schema','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
   'data-center':{activity:'data-center',mode:'dedicated',runtime:'',deps:['scientific-renderer','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
   'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',manifestDeps:['data-model','scientific-renderer','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','scientific-renderer','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel','performance-runtime','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
-  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',deps:['scientific-renderer','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}
+  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',manifestDeps:['scientific-renderer','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel'],deps:['scientific-renderer','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel','data-model']}
 };
 const builtinPrewarmByActivity=new Map();
 for(const [folder,spec] of Object.entries(expected)){
@@ -122,6 +124,7 @@ for(const spec of Object.values(expected)){
 }
 assert(listBuiltinPluginWindows(root).length===resolved.size,'listBuiltinPluginWindows must enumerate the same manifest contracts as the resolver.');
 
+
 // Synthetic future-plugin regression: a brand-new independent plugin must gain
 // prewarm/reuse/project-persistence and plugin-local scripts without touching
 // app.js/main.js. A second scan must also see manifest edits immediately.
@@ -132,8 +135,9 @@ try{
   fs.writeFileSync(path.join(dir,'plugin.js'),'window.__futureFftPlugin=true;\n');
   fs.writeFileSync(path.join(dir,'engine.js'),'window.__futureFftEngine=true;\n');
   const manifest={
-    id:'builtin.future-fft',name:'Future FFT',version:'1.0.0',entry:'plugin.js',
-    window:{activity:'fft',title:'FFT',scripts:['engine.js'],dependencies:[]}
+    id:'builtin.future-fft',name:'Future FFT',version:'1.0.0',apiVersion:'1.19.0',pluginType:'workbench',entry:'plugin.js',
+    window:{activity:'fft',title:'FFT',scripts:['engine.js'],dependencies:[]},
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   };
   fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify(manifest,null,2));
   let row=readBuiltinPluginWindows(fixture).get('fft');
@@ -155,7 +159,8 @@ const externalPkg=normalizePluginPackage({
   manifest:{
     id:'example.external-window',pluginType:'workbench',name:'External Window',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['plugin.js'],styles:['style.css'],
-    window:{activity:'external-window',runtime:'window-runtime.js',scripts:['engine.js'],dependencies:[],prewarm:true,reuse:true,persistence:'project'}
+    window:{activity:'external-window',runtime:'window-runtime.js',scripts:['engine.js'],dependencies:[],prewarm:true,reuse:true,persistence:'project'},
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   },
   files:{
     'plugin.js':'DKDSPlugins.define({id:"example.external-window",pluginType:"workbench",name:"External Window",version:"1.0.0"},async()=>({}));',
@@ -175,8 +180,9 @@ assert(externalRow?.packageScripts?.includes('plugin.js')&&typeof externalRow?.p
 const overridePkg=normalizePluginPackage({
   schema:1,
   manifest:{
-    id:'builtin.ter-analysis',name:'TER Override',version:'2.0.1',apiVersion:'1.19.0',entry:'plugin.js',
-    window:{activity:'ter-override',runtime:'window-runtime.js',dependencies:[],prewarm:true,reuse:true,persistence:'project'}
+    id:'builtin.ter-analysis',pluginType:'workbench',name:'TER Override',version:'2.0.1',apiVersion:'1.19.0',entry:'plugin.js',
+    window:{activity:'ter-override',runtime:'window-runtime.js',dependencies:[],prewarm:true,reuse:true,persistence:'project'},
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   },
   files:{
     'plugin.js':'DKDSPlugins.define({id:"builtin.ter-analysis",name:"TER Override",version:"2.0.1"},async()=>({}));',

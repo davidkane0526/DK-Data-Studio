@@ -90,7 +90,7 @@ const {ContextMenu}=require('./context-actions');
           if((decision.handled||spec.stopPropagation===true)&&spec.stopPropagation!==false)event.stopPropagation?.();
           try{spec.onDecision?.({...base,input,decision});}catch(err){console.warn('[DKDS interaction behavior onDecision]',this.id,err);}
         };
-        root.addEventListener(eventName,listener,spec.capture===true);cleanups.push(()=>root.removeEventListener(eventName,listener,spec.capture===true));
+        root.addEventListener(eventName,listener,spec.capture===true);const untrack=globalThis.DKDSComponents?.trackLifecycle?.(root,this.owner,`interaction:${eventName}`,`${this.id}:${gesture}`)||(()=>{});cleanups.push(()=>{root.removeEventListener(eventName,listener,spec.capture===true);untrack();});
       }
       const cleanup=()=>cleanups.splice(0).reverse().forEach(cleanupCall);this.cleanups.push(cleanup);return cleanup;
     }

@@ -2,21 +2,18 @@
    Baseline reference token retained for regression trace: --dkui-border:#d8e5f4
    Scope: visual treatment only. No renderer-internal DOM selectors and no layout geometry overrides. */
 /* Canonical presentation migrated from the former Foundation baseline. */
-html{ font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-}
-body{ font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-}
-#app{ font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-}
 /* Reusable Core splitter affordance. Idle splitters stay visually quiet. */
 body.dkds-modern-ui .dkds-split-handle{background:transparent;}
-body.dkds-modern-ui .dkds-split-handle::after{border-radius:999px;background:var(--dkui-divider-hover);opacity:0;transition:opacity var(--motion-fast) var(--ease-standard);}
+body.dkds-modern-ui .dkds-split-handle::after{border-radius:999px;background:var(--dkui-divider-hover);opacity:0;}
 body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.72;}
+
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-split-handle::after{
+  opacity:.72;box-shadow:0 0 3px color-mix(in srgb,var(--dkui-accent) 24%,transparent)
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-split-handle:is(:hover,:active,.is-dragging)::after{
+  opacity:1;box-shadow:0 0 5px color-mix(in srgb,var(--dkui-accent) 40%,transparent)
+}
 .brand{ font-weight:750; letter-spacing:.1px;
-}
-.version{font-size:11px;font-weight:550;
-}
-.toolbar-btn{font-size:12px;line-height:1;
 }
 .toolbar-btn.strong{font-weight:650;
 }
@@ -24,11 +21,9 @@ body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.7
 }
 .toolbar-btn.icon-btn{font-size:17px;
 }
-.left-panel h3{font-size:14px;
-}
 .compact button{font-size:12px;
 }
-.hint{font-size:12px;line-height:1.7;color:var(--text-secondary);
+.hint{color:var(--text-secondary);
 }
 .panel-header-actions button{font-size:11px;
 }
@@ -110,6 +105,9 @@ body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.7
   --dkui-inner-highlight:transparent;
   --dkui-glass-edge:var(--dkui-divider);
   --dkui-material-noise-opacity:0%;
+  /* Portable resize corner. Geometry is Core-owned; material derives from
+     the active theme instead of fixed RGB literals. Both planes stay in the
+     theme accent family so the affordance remains flat rather than page-like. */
 
   /* Public plugin visual contract. Plugins should consume these semantic tokens
      instead of owning light/dark color literals. */
@@ -165,18 +163,10 @@ body.dkds-modern-ui{
 body.dkds-modern-ui ::selection{background:var(--dkui-selection-surface);color:var(--dkui-selection-text)}
 
 /* Shell: low-contrast surfaces with a small physical separation from the canvas. */
-body.dkds-modern-ui .brand{color:var(--dkui-text)}
 body.dkds-modern-ui .version{color:var(--dkui-muted)}
 body.dkds-modern-ui .brand-mark{
   border:1px solid color-mix(in srgb,var(--dkui-accent) 12%,var(--dkui-divider));
   border-radius:7px;
-  background:var(--dkui-surface-elevated);
-  box-shadow:var(--dkui-shadow-1);
-}
-body.dkds-modern-ui .toolbar-btn,
-body.dkds-modern-ui .activity-tab,
-body.dkds-modern-ui .plugin-toolbar-btn{
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
 
 /* Modern shell owns the default control palette. Plugin/page selectors may tune geometry, not fall back to legacy white paint. */
@@ -193,10 +183,6 @@ body.dkds-modern-ui .workspace-commandbar,
 body.dkds-modern-ui .context-commandbar,
 body.dkds-modern-ui .plugin-context-toolbar{color:var(--text-primary)}
 body.dkds-modern-ui *{scrollbar-color:var(--dkui-scrollbar) transparent}
-@media (prefers-reduced-motion:reduce){body.dkds-modern-ui *{animation-duration:.001ms;animation-iteration-count:1;transition-duration:.001ms}}
-@media (prefers-reduced-motion:reduce){
-  body.dkds-modern-ui *::before,body.dkds-modern-ui *::after{animation-duration:.001ms;animation-iteration-count:1;transition-duration:.001ms}
-}
 html[data-dkds-theme="dark"]{
     --dkui-canvas:#151922;
     --dkui-surface:#1d232e;
@@ -235,6 +221,8 @@ html[data-dkds-theme="dark"]{
     --dkui-active-surface:var(--dkui-accent-soft);
     --dkui-active-text:#dce7ff;
     --dkui-disabled-surface:rgba(255,255,255,.035);
+    /* Dark mode uses a brighter accent-alt weighting and stronger alpha so
+       the same small corner remains legible against the dark floating surface. */
     --dkui-disabled-text:#687589;
     --dkui-selection-bg:var(--dkui-selection-surface);
     --dkui-marker-selected-stroke:#f8fafc;
@@ -254,9 +242,6 @@ body.dkds-modern-ui #pluginToolsMenu{
   width:max-content;
   min-width:0;
   max-width:min(360px,calc(100vw - 16px));
-}
-body.dkds-modern-ui .plugin-main-tool-btn{
-  white-space:nowrap;
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui hr{border-color:var(--dkui-border);opacity:.55;
 }
@@ -283,26 +268,6 @@ body.dkds-modern-ui .floating-panel{outline:0;
 
 
 
-}
-body.dkds-modern-ui .panel-header-actions button,
-body.dkds-modern-ui .scan-global-buttons button,
-body.dkds-modern-ui .action-grid button,
-body.dkds-modern-ui .zoom-actions button{
-
-
-
-
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
-}
-body.dkds-modern-ui .dataset-vg-edit input,
-body.dkds-modern-ui .schema-param-field input,
-body.dkds-modern-ui .schema-param-field select,
-body.dkds-modern-ui .schema-param-field textarea{
-
-
-
-
-  transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
 }
 .smart-detection-note{
   color:var(--dkui-text-soft);
@@ -446,22 +411,6 @@ body.dkds-modern-ui .schema-param-field textarea{
 }
 .plugin-algorithm-version-row small{color:var(--text-tertiary);
 }
-@keyframes dkds-dialog-overlay-in{
-  from{opacity:0;
-  }
-}
-@keyframes dkds-dialog-overlay-in{
-  to{opacity:1;
-  }
-}
-@keyframes dkds-dialog-in{
-  from{opacity:0;
-  }
-}
-@keyframes dkds-dialog-in{
-  to{opacity:1;
-  }
-}
 .schema-param-group-title{color:var(--text-secondary);
 }
 .schema-param-label{color:var(--text-secondary);
@@ -501,9 +450,8 @@ body.dkds-modern-ui textarea:focus-visible{
 }
 .topbar-primary .brand{
   border-right:1px solid var(--dkui-divider);
-  color:var(--dkui-text);
 }
-.brand-mark{border-radius:7px;box-shadow:var(--dkui-shadow-1);
+.brand-mark{border-radius:7px;
 }
 .dataset-item:hover{background:var(--surface-hover);
 }
@@ -649,17 +597,7 @@ body.dkds-modern-ui textarea:focus-visible{
 .dkds-prime-portable.dkds-prime-docked-bottom{box-shadow:none;
   border-radius:0;
 }
-.project-save-choice-backdrop{
-  background:rgba(15,23,42,.22);
-  backdrop-filter:blur(2px);
-}
-.project-save-choice-icon{
-  border-radius:9px;background:var(--dkui-accent-soft);color:var(--dkui-accent);
-}
-.project-save-choice-copy strong{color:var(--dkui-text);
-}
-.project-save-choice-copy span{color:var(--dkui-muted);
-}
+
 .global-commandbar>.compact-menu-anchor>#editMenuBtn{
   border-radius:10px;
 }

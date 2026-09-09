@@ -40,15 +40,10 @@
       "title": "局部基线 FWHM"
     }
   ],
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
-  },
   "pluginType": "algorithm",
   "pluginDependencies": [
     {
-      "id": "builtin.scientific-data-contracts",
-      "range": "^1.0.0"
+      "id": "builtin.scientific-data-contracts"
     }
   ]
 }

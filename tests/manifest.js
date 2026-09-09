@@ -1,6 +1,250 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v36865-project-save-dialog.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36864-mobile-scroll-chaining.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36863-primary-semantic-owner-handle-translucency.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36862-primary-action-projection-handle-scale.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36861-theme-ai-vth-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36860-ui-import-pulse-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36859-portable-handle-flat-cyan-material.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36858-portable-handle-edge-glass.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36856-portable-handle-restore-52.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36853-desktop-vth-action-handle-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36848-dedicated-titlebar-right-cluster-drag.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36847-dedicated-titlebar-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36846-dedicated-window-chrome-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36845-retire-legacy-root-panels.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36844-unified-plugin-window-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36840-catalog-gap-reconciliation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36839-plugin-registry-refresh-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36835-formal-group-area-data-control.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36834-group-layout-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36833-sdk-grid-orientation-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36829-group-area-mobile-seams-ter-lan.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36828-owner-regressions.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36827-real-mobile-lifecycle.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36826-mobile-prime-lifecycle-material-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36825-mobile-typecheck-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36824-real-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36822-mobile-desktop-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36821-mobile-touch-panel-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36819-portable-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36818-pulse-desktop-layout-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36817-smb-action-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36816-mobile-layout-rebalance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36815-mobile-floating-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36814-android-gradle-agent-parity-preflight.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36813-android-gradle-direct-no-daemon.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36812-mobile-portrait-material-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36811-mobile-runtime-material-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36810-mobile-placement-theme-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3689-mobile-native-intent-plugin-manager.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3688-responsive-preview-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3687-compact-chart-controls.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3686-shell-autofit-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3685-layout-docking-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3684-window-data-clipboard-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3683-live-data-navigation-mobile.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3681-gate-performance-theme-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-dom-mutation-hub.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-vth-sdk-refactor.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-motion-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-frame-scheduler.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-reachability-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-check-project-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-component-lifecycle-diagnostics.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-style-trace-ux.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-native-save-dialog-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-native-save-intent-gate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-desktop-user-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-semantic-style-owner-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-style-ownership-gate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-resonance-gate-runtime-fallback.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-app-runtime-import-closure.js",
+      "args": []
+    },
+    {
       "file": "tests/test-hard-visual-invariants.js",
       "args": []
     },
@@ -945,11 +1189,359 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36722-mobile-shell-modularization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36723-mobile-host-modularization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36724-clean-mobile-test-bootstrap.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36725-mobile-semantic-surface-routing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36726-mobile-responsive-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-overflow-priority.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-shell-density-overflow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36728-mobile-desktop-style-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36737-parameter-surface-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36738-mobile-acceptance-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36739-mobile-global-command-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36740-resonance-scan-mode-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36741-mobile-projection-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36742-mobile-interaction-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36744-mobile-density-parameter-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36745-mobile-acceptance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36746-mobile-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36749-sdk-platform-presentation-125.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36750-menu-mobile-performance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36751-desktop-mobile-presentation-polish.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-real-desktop-visual-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-web-mobile-first-paint-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36753-desktop-plugin-load-scroll-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36754-desktop-regression-root-causes.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36748-mobile-drawer-desktop-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36743-desktop-mobile-projection-isolation.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
   ],
   "check": [
+    {
+      "file": "tests/test-v36865-project-save-dialog.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36864-mobile-scroll-chaining.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36863-primary-semantic-owner-handle-translucency.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36862-primary-action-projection-handle-scale.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36861-theme-ai-vth-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36860-ui-import-pulse-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36859-portable-handle-flat-cyan-material.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36858-portable-handle-edge-glass.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36856-portable-handle-restore-52.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36853-desktop-vth-action-handle-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36852-portable-handle-html-reference.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36851-mobile-sdk-runtime-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36850-portable-handle-reference-match.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36848-dedicated-titlebar-right-cluster-drag.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36847-dedicated-titlebar-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36846-dedicated-window-chrome-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36845-retire-legacy-root-panels.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36844-unified-plugin-window-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36840-catalog-gap-reconciliation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36839-plugin-registry-refresh-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36835-formal-group-area-data-control.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36834-group-layout-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36833-sdk-grid-orientation-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36829-group-area-mobile-seams-ter-lan.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36826-mobile-prime-lifecycle-material-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36825-mobile-typecheck-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36822-mobile-desktop-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36821-mobile-touch-panel-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36819-portable-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36818-pulse-desktop-layout-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36817-smb-action-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36815-mobile-floating-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36814-android-gradle-agent-parity-preflight.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36813-android-gradle-direct-no-daemon.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36812-mobile-portrait-material-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36811-mobile-runtime-material-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36810-mobile-placement-theme-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3689-mobile-native-intent-plugin-manager.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3688-responsive-preview-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3687-compact-chart-controls.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3686-shell-autofit-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3685-layout-docking-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3684-window-data-clipboard-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3683-live-data-navigation-mobile.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3681-gate-performance-theme-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-dom-mutation-hub.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-vth-sdk-refactor.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-motion-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-frame-scheduler.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-reachability-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-check-project-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-component-lifecycle-diagnostics.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-style-trace-ux.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-native-save-dialog-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-native-save-intent-gate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-desktop-user-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-semantic-style-owner-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-style-ownership-gate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-resonance-gate-runtime-fallback.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3680-app-runtime-import-closure.js",
+      "args": []
+    },
     {
       "file": "tests/test-hard-visual-invariants.js",
       "args": []
@@ -1927,11 +2519,243 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36722-mobile-shell-modularization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36723-mobile-host-modularization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36724-clean-mobile-test-bootstrap.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36725-mobile-semantic-surface-routing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36726-mobile-responsive-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-overflow-priority.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-shell-density-overflow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36728-mobile-desktop-style-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36737-parameter-surface-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36738-mobile-acceptance-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36739-mobile-global-command-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36740-resonance-scan-mode-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36741-mobile-projection-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36742-mobile-interaction-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36744-mobile-density-parameter-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36745-mobile-acceptance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36746-mobile-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36749-sdk-platform-presentation-125.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36750-menu-mobile-performance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36751-desktop-mobile-presentation-polish.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-real-desktop-visual-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-web-mobile-first-paint-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36753-desktop-plugin-load-scroll-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36754-desktop-regression-root-causes.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36748-mobile-drawer-desktop-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36743-desktop-mobile-projection-isolation.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
   ],
   "mobile": [
+    {
+      "file": "tests/test-v36864-mobile-scroll-chaining.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36863-primary-semantic-owner-handle-translucency.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36862-primary-action-projection-handle-scale.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36861-theme-ai-vth-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36860-ui-import-pulse-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36859-portable-handle-flat-cyan-material.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36858-portable-handle-edge-glass.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36856-portable-handle-restore-52.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36852-portable-handle-html-reference.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36851-mobile-sdk-runtime-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36835-formal-group-area-data-control.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36834-group-layout-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36833-sdk-grid-orientation-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36829-group-area-mobile-seams-ter-lan.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36828-owner-regressions.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36827-real-mobile-lifecycle.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36826-mobile-prime-lifecycle-material-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36825-mobile-typecheck-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36824-real-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36822-mobile-desktop-regression-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36821-mobile-touch-panel-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36819-portable-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36817-smb-action-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36816-mobile-layout-rebalance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36815-mobile-floating-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36814-android-gradle-agent-parity-preflight.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36813-android-gradle-direct-no-daemon.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36812-mobile-portrait-material-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36811-mobile-runtime-material-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36810-mobile-placement-theme-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3689-mobile-native-intent-plugin-manager.js",
+      "args": []
+    },
     {
       "file": "tests/test-mobile-react-native-architecture.js",
       "args": []
@@ -1978,6 +2802,102 @@ module.exports = {
     },
     {
       "file": "tests/test-v3642-android-brand-assets.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36724-clean-mobile-test-bootstrap.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36725-mobile-semantic-surface-routing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36726-mobile-responsive-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-overflow-priority.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36727-mobile-shell-density-overflow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36728-mobile-desktop-style-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36737-parameter-surface-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36738-mobile-acceptance-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36739-mobile-global-command-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36741-mobile-projection-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36742-mobile-interaction-density.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36744-mobile-density-parameter-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36745-mobile-acceptance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36746-mobile-layout-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36749-sdk-platform-presentation-125.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36750-menu-mobile-performance-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36751-desktop-mobile-presentation-polish.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-real-desktop-visual-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36752-web-mobile-first-paint-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36748-mobile-drawer-desktop-chrome-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36743-desktop-mobile-projection-isolation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36820-mobile-portable-geometry-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36723-mobile-host-modularization.js",
       "args": []
     }
   ]

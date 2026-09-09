@@ -9,7 +9,8 @@ let captured=null;
 const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
 const window={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(el);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
 const document={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
-const context={window,document,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;window.window=window;window.document=document;
+const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
+const context={window,document,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){},DKDSStyleGate:styleGate};context.globalThis=context;window.DKDSStyleGate=styleGate;window.window=window;window.document=document;
 vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.js'});
 (async()=>{
   await window.DKDSCharts.react('plot',[],{hoverlabel:{bgcolor:'orange',namelength:-1,font:{size:18,color:'green'}}},{});

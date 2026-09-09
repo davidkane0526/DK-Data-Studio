@@ -13,9 +13,10 @@ const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const dc=read('src/plugins/data-center/feature-runtime.js');
 const dcViews=read('src/plugins/data-center/shared-views.js');
 
-assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--accent-soft'), 'Core linked selection must use semantic accent surface.');
+assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--dkui-selection-surface)'),'Core linked selection must retain the frozen semantic selection surface contract.');
 assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
-assert(modern.includes('.dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-surface)')&&modern.includes('color:var(--dkui-selection-text)'),'Modern selected rows must be theme-token driven by the canonical selection surface/text contract.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('.dkds-selection-item.dkds-selection-row:is(.dkds-selection-focused,.dkds-selection-selected,[aria-selected="true"])')&&componentAppearance.includes('border-color:transparent')&&componentAppearance.includes('box-shadow:none'),'Row-style selected/focused items must suppress the generic selection perimeter in canonical Component Appearance without modifying the frozen shell geometry/paint owner.');
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is('),'Dark mode must cover every canonical active toolbarAction independent of page context.');
 const semanticRegistry=read('src/core/theme/semantic-registry.js');
 const materialRoles=read('src/styles/theme/material-roles.css');

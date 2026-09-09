@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.28.0');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');
@@ -30,7 +30,7 @@ const roleCss=read('src/styles/theme/material-roles.css');const roleRuntime=read
 const props=new Map();
 const rootStyle={setProperty:(k,v)=>props.set(k,String(v)),removeProperty:k=>props.delete(k),colorScheme:''};
 const sandbox={console,Map,Set,Object,String,Promise,CustomEvent:function(type,init){this.type=type;this.detail=init?.detail;},localStorage:{getItem:()=>'',setItem:()=>{}},document:{documentElement:{style:rootStyle,dataset:{}}},getComputedStyle:()=>({getPropertyValue:k=>props.get(k)||''}),matchMedia:()=>({matches:false}),addEventListener:()=>{},dispatchEvent:()=>{},window:null,globalThis:null};
-sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox,{filename:'theme-contract.js'});vm.runInContext(theme,sandbox,{filename:'theme-runtime.js'});
+sandbox.DKDSStyleGate={KINDS:{CONFIG_TOKEN:'configuration-token'},set(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},setToken(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},remove(el,prop){el?.style?.removeProperty?.(prop);return true;}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox,{filename:'theme-contract.js'});vm.runInContext(theme,sandbox,{filename:'theme-runtime.js'});
 const handle=sandbox.DKDSTheme.registerProfile('test.material',{material:{materialBlur:11,materialBlurStrong:19,materialSaturation:1.15,materialTintOpacity:.04,specularHighlight:'rgba(255,255,255,.2)',innerHighlight:'rgba(255,255,255,.1)',glassEdge:'rgba(255,255,255,.16)',materialNoiseOpacity:.02},modes:{light:{},dark:{material:{materialBlur:15}}}});
 sandbox.DKDSTheme.setProfile('test.material',{persist:false,emit:false,broadcast:false});
 assert.equal(props.get('--dkui-material-blur'),'11px');

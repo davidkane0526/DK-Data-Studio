@@ -20,10 +20,11 @@ const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}retu
 assert(atLeast(tuple(pkg.version),[3,66,0]),'Visual Contract Finalization 2 requires DK Data Studio 3.66.1+.');
 assert(atLeast(tuple(sdk.sdkVersion),[1,22,0]),'Visual Contract Finalization 2 requires SDK 1.22.1+.');
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0','Plugin API remains 1.19.0; this is a stronger Core UI ownership contract, not a runtime facade break.');
-assert.strictEqual(sdk.themeContractVersion,'3.10.0','Theme Contract remains 3.9.0; component identity/material resolution stays canonical.');
+assert.strictEqual(sdk.themeContractVersion,'3.10.0','Theme Contract remains 3.10.0; component identity/material resolution stays canonical.');
 
-assert(uiRuntime.includes("const VERSION='2.0.0'"),'Core ComponentRuntime 2.0 must be the canonical component factory.');
-assert(uiRuntime.includes('MutationObserver')&&uiRuntime.includes('queueHydration'),'Core ComponentRuntime must auto-hydrate dynamically inserted plugin DOM so semantic identity cannot depend on page-specific calls.');
+const componentRuntimeVersion=uiRuntime.match(/const VERSION='([^']+)'/)?.[1]||'0.0.0';
+assert(atLeast(tuple(componentRuntimeVersion),[2,0,0]),`Core ComponentRuntime must remain on the 2.x canonical component factory contract or newer, got ${componentRuntimeVersion}.`);
+assert(uiRuntime.includes('queueHydration')&&uiRuntime.includes('DKDSDOMMutationHub')&&uiRuntime.includes("hub.subscribe('core.components.hydration'"),'Core ComponentRuntime must auto-hydrate dynamic plugin DOM through the shared DOM Mutation Hub, not a private document observer.');
 for(const name of ['action','actionGroup','tabs','surfaceHeader','field','hydrate']){
   assert(new RegExp(`\\b${name}\\(`).test(uiRuntime),`Core ComponentRuntime must implement ${name}().`);
   assert(facade.includes(`${name}:`),`Plugin facade must expose ctx.ui.components.${name}.`);

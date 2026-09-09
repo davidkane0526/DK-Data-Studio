@@ -20,10 +20,12 @@ assert(ui.includes("['contained','auto','safe'].includes(String(spec.primaryScro
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto'),'Auto PRIMARY workspaces must own a real scroll viewport.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center')&&/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow:hidden[^}]*min-height:0[^}]*align-items:stretch/.test(css),'Contained and safe scientific canvases must remain bounded interaction surfaces.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host'),'Safe PRIMARY must expose a Host-owned fallback scroll viewport for third-party content.');
-for(const folder of ['ter-analysis','pulse-analysis','data-center']){
+for(const folder of ['ter-analysis','pulse-analysis']){
   const views=read(`src/plugins/${folder}/shared-views.js`);
   assert(views.includes("primaryScroll:'auto'"),`${folder} must use the scrollable PRIMARY contract.`);
 }
+const dataCenterMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
+assert(dataCenterMobilePresentation.includes("primaryScroll:'auto'"),'Data Center Mobile platform presentation must use the scrollable PRIMARY contract while Desktop keeps its established static page.');
 assert(resonanceViews.includes("primaryScroll:'contained'"),'Resonance main plot must explicitly use the contained scientific canvas contract.');
 
 // SUB is a full workspace page, not another scientific-canvas dock target.
@@ -40,7 +42,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   assert(feature.includes("'global'"),`${folder} portable plots must offer whole-workspace free float.`);
 }
-assert(resonanceGroupFeature.includes("placements:['home','left','right','bottom','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
+assert(resonanceGroupFeature.includes("placements:['home','left','right','bottom','float','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
 
 // Dock locations are stacks, not absolute piles.
 assert(css.includes('A dock slot is a stack, never a pile'),'Core must document same-location dock ordering.');

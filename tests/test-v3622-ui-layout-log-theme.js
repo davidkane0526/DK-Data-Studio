@@ -3,6 +3,12 @@ const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
+// Importable UI modules use composition ids such as `ui/...`. The production
+// composition resolves those ids from src/core; direct Node harnesses must
+// install the same module root instead of bypassing the Style Gate dependency.
+const Module=require('module');
+process.env.NODE_PATH=[path.join(root,'src/core'),process.env.NODE_PATH||''].filter(Boolean).join(path.delimiter);
+Module._initPaths();
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
@@ -12,6 +18,10 @@ global.document={querySelector:()=>null};
 global.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
 global.requestAnimationFrame=fn=>{fn();return 1;};
 global.cancelAnimationFrame=()=>{};
+// UI Infrastructure preloads the Style Ownership Gate before importable modules.
+// Direct Node tests install the same runtime instead of bypassing that authority.
+delete global.DKDSStyleGate;
+require('../src/core/theme/style-ownership-gate-runtime.js');
 
 // ScientificPlot: logarithmic viewport math belongs to Core and must operate in
 // log space rather than applying linear arithmetic to positive decades.
@@ -55,13 +65,16 @@ function luminance(hex){
 const ratio=(luminance('#FFFFFF')+.05)/(luminance('#2F63DB')+.05);
 assert(ratio>=4.5,`Thin Glass dark primary contrast must be >=4.5:1, got ${ratio.toFixed(2)}.`);
 
-// PluginWorkspace defines lifecycle, not a mandatory Resonance-style sidebar.
+// PluginWorkspace publishes semantic secondary surfaces instead of baking a
+// Desktop-shaped left rail into PRIMARY. Presenter geometry is therefore shared
+// by every TOP/SUPER rather than copied from Resonance.
 const pulse=read('src/plugins/pulse-analysis/shared-views.js');
 const dc=read('src/plugins/data-center/shared-views.js');
-assert(pulse.includes("wb.mountPrimary({id:'main',label:'脉冲分析',scroll:'auto',mainNode:primaryMain})")&&!pulse.includes('leftNode:'),'Pulse must retain its domain batch layout inside a main-only PRIMARY.');
+const dcMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
+assert(pulse.includes("wb.compose({")&&pulse.includes("id:'data-control'")&&pulse.includes("presentationRole:'data-control'")&&!pulse.includes('leftNode:'),'Pulse file/settings controls must be a semantic data-control PRIME beside a main-only PRIMARY.');
 assert(pulse.includes("id:'pulse-results-height'")&&pulse.includes("axis:'y'")&&pulse.includes('pulse-results-splitter'),'Pulse result plots/table must use the persisted Core height splitter.');
-assert(dc.includes("wb.mountPrimary({id:'main',label:'数据中心',scroll:'auto',mainNode:layout})")&&!dc.includes('leftNode:'),'Data Center must keep its domain data rail inside its own PRIMARY layout.');
-assert(dc.includes("id:'data-center-data-width'")&&dc.includes("axis:'x'"),'Data Center domain rail must use Core persisted split mechanics.');
+assert(!dc.includes('ctx.ui.workspaceSurface.create(')&&dcMobilePresentation.includes("wb.compose({")&&dcMobilePresentation.includes("id:'data-control'")&&dcMobilePresentation.includes("presentationRole:'data-control'")&&!dcMobilePresentation.includes('leftNode:'),'Data Center Desktop keeps its accepted native page while the SDK 1.25 Mobile presentation projects data objects as a semantic data-control PRIME.');
+assert(!dc.includes("id:'data-center-data-width'")&&!dc.includes("layout.className='dc-workspace-layout'"),'Data Center must no longer own a desktop-specific data-rail splitter inside PRIMARY.');
 
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');

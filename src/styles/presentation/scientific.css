@@ -63,9 +63,9 @@ body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
 }
 .trend-card-legend {border-top:1px solid var(--border-subtle);border-color:var(--border-subtle);background:transparent;font-size:11px;color:var(--text-secondary)
 }
-.group-panel-toolbar {border-bottom:1px solid var(--border-subtle);font-size:12px;color:var(--text-secondary);background:transparent;border-color:var(--border-subtle)
+.group-panel-toolbar {border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);background:transparent;border-color:var(--border-subtle)
 }
-.group-panel-hint {font-size:11px;color:var(--text-tertiary)
+.group-panel-hint {color:var(--text-tertiary)
 }
 .trend-layout-controls>span {font-size:11px;color:var(--text-secondary)
 }
@@ -108,13 +108,13 @@ body.dkds-modern-ui .dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools
 body.dkds-modern-ui .dkds-scientific-chart-host:focus-within>.dkds-scientific-nav-tools,
 body.dkds-modern-ui .dkds-scientific-nav-tools:hover,
 body.dkds-modern-ui .dkds-scientific-nav-tools:focus-within,
-body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging {opacity:.94;pointer-events:auto
+body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging {opacity:.94
 }
-body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065;pointer-events:none
+body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band {opacity:.10
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0;pointer-events:none
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0
 }
 html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
 html[data-dkds-theme="light"] body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
@@ -201,7 +201,7 @@ body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis-title {fill:var
   .dkds-scientific-nav-tools {opacity:.82
   }
 }
-html[data-dkds-theme="dark"] .dkds-scientific-curve-surface:focus,
+.dkds-scientific-curve-surface:focus,
 .dkds-scientific-curve-surface:focus-visible {outline:none
 }
 .dkds-inspector-section {
@@ -282,3 +282,15 @@ body.dkds-modern-ui .dkds-plot-legend {background:transparent;border-color:var(-
 }
 
 body.dkds-modern-ui .dkds-scientific-surface-host:focus,body.dkds-modern-ui .dkds-scientific-surface-host:focus-visible,body.dkds-modern-ui .dkds-scientific-surface-host:focus-within{outline:none}
+
+/* Native Mobile resize affordances remain optically discoverable without
+   enlarging the structural hit target. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-table-column-resizer::after{
+  background:color-mix(in srgb,var(--dkui-divider) 72%,transparent);
+  box-shadow:0 0 3px color-mix(in srgb,var(--dkui-accent) 24%,transparent)
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-table-column-resizer:is(:hover,:active,.is-dragging)::after,
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui.dkds-table-resizing .dkds-table-column-resizer::after{
+  background:var(--dkui-divider-hover,var(--border-strong));
+  box-shadow:0 0 5px color-mix(in srgb,var(--dkui-accent) 40%,transparent)
+}

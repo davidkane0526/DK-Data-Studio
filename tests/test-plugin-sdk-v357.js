@@ -39,7 +39,7 @@ for(const name of ['workspace-plugin','top-workspace-plugin','algorithm-provider
   const output=path.join(tmp,`${name}.dkplugin`);
   execFileSync(process.execPath,[cli,'package',pluginDir,output],{stdio:'pipe'});
   const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(output,'utf8')));
-  assert(pkg.manifest.apiVersion==='1.19.0'&&pkg.manifest.source==='external',`${name} SDK package must be installable by the application normalizer.`);
+  assert(pkg.manifest.apiVersion==='1.19.0'&&!Object.prototype.hasOwnProperty.call(pkg.manifest,'source'),`${name} SDK package must be installable by the current application normalizer without host-store metadata in the manifest.`);
   assert(['workbench','algorithm'].includes(pkg.manifest.pluginType),`${name} SDK template must declare its Plugin Manager category explicitly.`);
 }
 fs.rmSync(tmp,{recursive:true,force:true});

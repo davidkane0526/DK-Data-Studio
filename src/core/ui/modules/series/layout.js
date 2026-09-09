@@ -62,6 +62,7 @@ const {seriesColor, compactSeriesLabel}=require('./primitives');
         if(payload._emit===true)this.scope.options.events?.emit?.('layout:resize',{pluginId:this.scope.owner,...Object.fromEntries(Object.entries(payload).filter(([k])=>k!=='_emit'))});
       }catch{}finally{this.dispatching=false;}
       for(const chart of this.scope.charts){try{if(!chart?.container||chart.container.offsetParent===null)continue;chart.resize?.();}catch{}}
+      for(const surface of this.scope.scientificCurves||[]){try{if(surface?.disposed||!surface?.container||surface.container.offsetParent===null)continue;surface.clampNavigationTools?.();surface.requestRender?.('scope-resize');surface.scheduleNavigationCollisionCheck?.();}catch{}}
       if(this.pending&&!this.raf){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.raf=raf(()=>this.flush());}
     }
     suspend(){if(this.disposed||this.suspended)return false;this.suspended=true;if(this.raf){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.raf);}catch{}}this.raf=0;return true;}

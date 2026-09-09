@@ -19,20 +19,22 @@ const coreContract=read('src/core/plugins/contract-runtime.js');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const sdkTool=read('sdk/tools/dkds-plugin.js');
 const manifestSchema=json('sdk/plugin-manifest.schema.json');
-const Catalog=require(path.join(root,'desktop/algorithm-package-catalog.js'));
+const {normalizePluginPackage}=require(path.join(root,'desktop/plugin-package.js'));
 
 
-assert.equal(sdk.pluginApiVersion,'1.19.0','Plugin SDK contract must remain API 1.16.0.');
+assert.equal(sdk.pluginApiVersion,'1.19.0','Plugin SDK contract must target the exact current Plugin API 1.19.0.');
 assert(pluginPackages.includes("const PluginSdkContract=require('../../sdk/contract.json');"),'Plugin package runtime must consume the published SDK contract.');
 assert(pluginPackages.includes("const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();"),'Plugin package runtime must derive its current Plugin API from sdk/contract.json.');
 assert(!main.includes("PLUGIN_API_VERSION='1.15.0'"),'Stale installer Plugin API 1.15 constant must not return.');
-assert(pkg.build.files.includes('sdk/contract.json'),'Packaged application must include the SDK compatibility contract used by main.js.');
+assert(pkg.build.files.includes('sdk/contract.json'),'Packaged application must include the exact current SDK contract used by the installer.');
 
-const compatibility=Catalog.compatibility({
-  id:'com.dkds.tools.pulse-sampler',version:'1.0.4',apiVersion:'1.19.0',pluginType:'tool',
-  compatibility:{app:'>=3.61.29 <4.0.0',pluginApi:'^1.19.0'}
-},{appVersion:pkg.version,pluginApiVersion:sdk.pluginApiVersion,installedVersions:new Map()});
-assert.equal(compatibility.compatible,true,'A Plugin API ^1.16.0 package targeting app >=3.61.29 must install on v3.61.31.');
+let rejectedCompatibility=false;
+try{
+  normalizePluginPackage({schema:1,manifest:{id:'com.dkds.tools.current-only',name:'Current only',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',pluginType:'extension',compatibility:{app:'>=3.61.29 <4.0.0'}},files:{'plugin.js':''}});
+}catch(err){rejectedCompatibility=String(err?.message||err).includes('unsupported current-contract fields');}
+assert.equal(rejectedCompatibility,true,'The current installer must reject compatibility ranges instead of negotiating an older/future contract.');
+const current=normalizePluginPackage({schema:1,manifest:{id:'com.dkds.tools.current-only',name:'Current only',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',pluginType:'extension'},files:{'plugin.js':''}});
+assert.equal(current.manifest.apiVersion,sdk.pluginApiVersion,'A package on the exact current Plugin API must normalize without compatibility metadata.');
 
 for(const token of ["ipcMain.handle('plugins:selectPackage'","ipcMain.handle('plugins:cancelInstall'","ipcMain.handle('plugins:installPackage'"])
   assert(main.includes(token),`Two-stage plugin install IPC missing ${token}`);
@@ -54,4 +56,4 @@ assert(coreContract.includes("'ui.dialogs':api=>!!api?.ui?.dialogs")&&kernel.inc
 assert(manifestSchema.properties.requiresCore.items.enum.includes('ui.dialogs'),'SDK manifest schema must allow declaring ui.dialogs.');
 assert(apiTypes.includes('export interface DKDSDialogRuntime')&&apiTypes.includes('dialogs:DKDSDialogRuntime'),'SDK types must describe the Core Dialog Runtime.');
 assert(sdkTool.includes('native browser dialog (use ctx.ui.dialogs)'),'SDK validator must reject plugin-owned browser-native dialogs.');
-console.log('v3.61.31 plugin compatibility + Core modal regression passed.');
+console.log('v3.61.31 current-contract plugin install + Core modal regression passed.');

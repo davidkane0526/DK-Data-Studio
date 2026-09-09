@@ -2,8 +2,6 @@
    Theme Component Appearance and Material Renderer own all state paint.
    This layer only defines layout, sizing and semantic status accents. */
 
-.statusbar{font-size:12px}
-
 body.dkds-modern-ui .dkds-analysis-nav{
   gap:8px;
   padding:5px 10px;
@@ -22,8 +20,9 @@ body.dkds-modern-ui .dkds-analysis-nav-btn{
 /* The status bar is one Core chrome surface. Its command cluster and plugin
    zones are layout/hit regions only; they never own a nested capsule. */
 body.dkds-modern-ui #statusBar.statusbar{
-  gap:8px;
-  padding:2px 14px 2px 9px;
+  --dkds-statusbar-gap:8px;
+  --dkds-statusbar-padding-left:9px;
+  --dkds-statusbar-padding-right:14px;
 }
 body.dkds-modern-ui .statusbar-command-cluster{
   flex:0 0 auto;
@@ -35,18 +34,14 @@ body.dkds-modern-ui .statusbar-command-cluster{
   padding:0;
 }
 body.dkds-modern-ui .statusbar-plugin-zone{
-  height:18px;
-  gap:8px;
-  padding:0;
+  --dkds-statusbar-zone-height:18px;
+  --dkds-statusbar-zone-gap:8px;
 }
-body.dkds-modern-ui .statusbar-plugin-left,
-body.dkds-modern-ui .statusbar-plugin-right{margin-left:0}
 body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
+body.dkds-modern-ui .statusbar-separator{color:var(--dkui-divider);opacity:.6}
 body.dkds-modern-ui .plugin-status-item{
-  position:relative;
-  height:18px;
-  min-height:18px;
-  padding:0 7px;
+  --dkds-status-item-height:18px;
+  --dkds-status-item-padding-inline:7px;
   border-radius:6px;
   --status-accent:currentColor;
 }

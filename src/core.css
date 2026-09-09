@@ -1,4 +1,4 @@
-@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;
+@layer dkds.foundation, dkds.plugin, dkds.plugin-platform, dkds.structure, dkds.presentation, dkds.theme, dkds.motion, dkds.platform, dkds.window, dkds.utility;
 @import url("./styles/foundation/foundation.css") layer(dkds.foundation);
 @import url("./styles/structure/metrics.css") layer(dkds.structure);
 @import url("./styles/structure/analysis-shell.css") layer(dkds.structure);
@@ -30,5 +30,6 @@
 @import url("./styles/theme/component-appearance.css") layer(dkds.theme);
 @import url("./styles/theme/settings-ui.css") layer(dkds.theme);
 @import url("./styles/theme/test-gallery.css") layer(dkds.theme);
+@import url("./styles/motion/recipes.css") layer(dkds.motion);
 @import url("./styles/platform/touch.css") layer(dkds.platform);
 @import url("./styles/utility/visibility.css") layer(dkds.utility);

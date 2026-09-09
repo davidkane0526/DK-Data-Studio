@@ -15,6 +15,7 @@ const materialJs=read('src/core/theme/material-renderer.js');
 const semanticTheme=read('src/core/theme/semantic-registry.js');
 const materialCss=read('src/styles/theme/material-renderer.css');
 const statusCss=read('src/styles/presentation/control-status.css');
+const statusStructure=read('src/styles/structure/super-top-contract.css');
 const shellCss=read('src/styles/presentation/shell.css');
 const statusPlugin=read('src/plugins/status-monitor/plugin.js');
 const pluginWindowHtml=read('src/plugin-window/index.html');
@@ -25,7 +26,7 @@ const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const automationRuntime=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 const index=read('src/index.html');
 
-assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;'),
+assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.plugin-platform, dkds.structure, dkds.presentation, dkds.theme, dkds.motion, dkds.platform, dkds.window, dkds.utility;'),
   'Visibility utility must be the final authored cascade layer.');
 assert(coreCss.includes('styles/utility/visibility.css')&&/:where\(\.hidden,\[hidden\]\)\{display:none;\}/.test(utility),
   'Global .hidden/[hidden] state must be single-owned by the final utility layer.');
@@ -61,17 +62,19 @@ for(const token of ['.primary','.strong','.danger-soft','.accent-soft','[aria-pr
 assert(semanticTheme.includes("return semanticControlOwnsPaint(el)?'':'control'")&&materialJs.includes("expected==='control'&&semanticControlOwnsPaint(el)"),
   'Semantic role inference and renderer ownership must leave semantic control paint to the semantic owner.');
 const componentCss=read('src/styles/theme/component-appearance.css');
-assert(semanticTheme.includes("id:'toolbarAction'")&&semanticTheme.includes("selector:'button,.toolbar-btn,.plugin-toolbar-btn"),
+assert(semanticTheme.includes("id:'toolbarAction'")&&semanticTheme.includes("selector:'button:not(.dkds-field-control),.toolbar-btn,.plugin-toolbar-btn"),
   'Every ordinary button must enter the canonical ToolbarAction identity instead of a Presentation-owned generic palette.');
 assert(!shellCss.includes('button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn)')&&componentCss.includes('[data-dkds-component-identity="toolbarAction"]'),
   'Legacy generic button paint must stay removed; Component Appearance is the single action paint owner.');
 assert(materialCss.includes('Popover surfaces own the optical material')&&componentCss.includes('[data-dkds-component-identity="menuItem"]'),
   'Popover material must own only the surface while canonical MenuItem appearance owns row paint for both simple and rich popovers.');
 
-assert(!resonanceView.includes('respar-scan-global dkds-action-row'),
-  'Resonance scan grid must not simultaneously claim the generic flex action-row contract.');
-assert(!resonanceView.includes('respar-detect-actions dkds-action-row'),
-  'Resonance detector grid must not simultaneously claim the generic flex action-row contract.');
+assert(resonanceView.includes('respar-scan-global dkds-mode-group')&&!resonanceView.includes('respar-scan-global dkds-mode-group dkds-action-row'),
+  'Resonance scan buttons must keep canonical mode-button identity without converting the Desktop domain layout into a toolbar-group surface.');
+assert(resonanceView.includes('respar-detect-actions')&&!resonanceView.includes('respar-detect-actions dkds-action-row'),
+  'Resonance detector buttons use the ordinary-button ToolbarAction fallback while Desktop geometry stays plugin-owned.');
+assert(/#resonanceDedicatedPage \.respar-(?:scan-global|detect-actions)\{[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
+  'Resonance Desktop scan/detector command geometry must remain the established two-column plugin layout.');
 assert(resonanceView.includes('data-dkds-menu-behavior="rich"'),
   'Range-selection panel must identify itself as a rich popover so its buttons retain normal control chrome.');
 assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
@@ -79,8 +82,8 @@ assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
 assert(resonanceGroupFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
   'Group-plot card actions must be integrated into the subplot title bar from first paint.');
 
-assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:18px;\s*gap:8px;/.test(statusCss),
-  'Status-bar contribution spacing must preserve a readable 6px rhythm.');
+assert(statusCss.includes('--dkds-statusbar-zone-height:18px;')&&statusCss.includes('--dkds-statusbar-zone-gap:8px;')&&statusStructure.includes('height:var(--dkds-statusbar-zone-height);')&&statusStructure.includes('gap:var(--dkds-statusbar-zone-gap);'),
+  'Status-bar contribution spacing must be configured by Presentation tokens and uniquely applied by Structure.');
 
 assert(index.includes('id="automationTestRunBtn" class="primary">运行全部自动化测试</button>'),
   'Automation center must author an explicit run action.');

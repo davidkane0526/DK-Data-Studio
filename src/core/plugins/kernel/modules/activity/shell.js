@@ -3,43 +3,13 @@ const {state, active, disabled}=require('../context');
 const {definitionById, isTopDefinition, topActivityIdForPlugin, superState}=require('../bootstrap');
 const {eventEmit, activityRows, activeActivity}=require('../events/history');
 const {reflowContextToolbar}=require('../shell/context-toolbar');
+const {pluginHostView}=require('../host-facade');
 
 
   function reflowActivities(){
-    const bar=document.querySelector('#activityBar');
-    const menu=document.querySelector('#activityMoreMenu');
-    const more=document.querySelector('#activityMoreBtn');
-    const wrap=document.querySelector('.activity-switcher');
-    if(!bar||!menu||!more||!wrap)return;
-
-    for(const btn of [...menu.querySelectorAll('.activity-tab')])bar.appendChild(btn);
-    const buttons=[...bar.querySelectorAll('.activity-tab')];
-    buttons.sort((a,b)=>(Number(a.dataset.activityOrder)||100)-(Number(b.dataset.activityOrder)||100));
-    buttons.forEach(b=>bar.appendChild(b));
-    menu.classList.add('hidden');
-    more.classList.add('hidden');
-
-    const width=Math.max(0,wrap.getBoundingClientRect().width);
-    if(!width||buttons.length<=1)return;
-    const reserve=92;
-    const max=Math.max(150,width-reserve);
-    let used=0;
-    const measured=buttons.map(b=>Math.ceil(b.getBoundingClientRect().width)+4);
-    for(let i=0;i<buttons.length;i++)used+=measured[i];
-    if(used<=width)return;
-
-    more.classList.remove('hidden');
-    used=0;
-    // Always keep the active activity visible when possible.
-    const activeBtn=buttons.find(b=>b.dataset.activityId===state.activeActivityId);
-    const ordered=buttons.filter(b=>b!==activeBtn);
-    if(activeBtn)ordered.unshift(activeBtn);
-    const keep=new Set();
-    for(const b of ordered){
-      const idx=buttons.indexOf(b),w=measured[idx];
-      if(used+w<=max||keep.size===0){keep.add(b);used+=w;}
-    }
-    for(const b of buttons)if(!keep.has(b))menu.appendChild(b);
+    // Shell overflow geometry is owned by the Core shell-navigation recipe.
+    // Kernel activity code only requests a reflow; it never reparents buttons.
+    try{window.dispatchEvent(new CustomEvent('dkds:shell-navigation-reflow'));}catch{}
   }
 
   function renderToolMenu(){
@@ -143,7 +113,7 @@ const {reflowContextToolbar}=require('../shell/context-toolbar');
     refreshActivityVisibility();
     state.host?.applySuperWorkspace?.(superState());
     if(invoke){
-      try { await row.value?.onActivate?.({id,host:state.host,pluginId:row.pluginId,super:row.pluginId===state.superPluginId}); }
+      try { await row.value?.onActivate?.({id,host:pluginHostView(),pluginId:row.pluginId,super:row.pluginId===state.superPluginId}); }
       catch(err){
         console.error(`[DKDS activity:${id}]`,err);
         state.host?.setStatus?.(`工作区 ${row.value?.label||id} 打开失败：${err.message}`);

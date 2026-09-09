@@ -47,3 +47,17 @@
 .dkds-theme-debug-exit>svg{display:block;width:12px;height:12px;overflow:visible}
 .dkds-theme-debug-exit>svg path{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .dkds-theme-debug-hint{margin-top:2px;opacity:.72}
+
+.dkds-theme-style-trace{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--dkui-divider)}
+.dkds-theme-trace-group{padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--dkui-divider) 65%,transparent)}
+.dkds-theme-trace-group:last-child{border-bottom:0}
+.dkds-theme-trace-group[data-status="CONFLICT"]>b{color:var(--dkui-danger)}
+.dkds-theme-trace-group>small,.dkds-theme-trace-empty{color:var(--dkui-muted)}
+.dkds-theme-trace-props{margin-top:3px;padding-left:8px;color:var(--dkui-muted)}
+.dkds-theme-trace-filters{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0;pointer-events:auto}
+.dkds-theme-trace-filters>button{min-height:24px;padding:2px 7px;font:inherit}
+.dkds-theme-trace-diagnostic{padding:3px 0}
+.dkds-theme-trace-diagnostic[data-status="OWNER_CONFLICT"]>b,
+.dkds-theme-trace-diagnostic[data-status="UNEXPECTED_OWNER"]>b,
+.dkds-theme-trace-diagnostic[data-status="UNAUTHORIZED"]>b{color:var(--dkui-danger)}
+.dkds-theme-trace-diagnostic[data-status="UNOWNED"]>b{color:var(--dkui-warning)}

@@ -1,4 +1,4 @@
-# Transfer Curve Vth Lab 3.0.2
+# Transfer Curve Vth Lab 3.1.0
 
 A Plugin API 1.19 external TOP workbench reference implementation.
 
@@ -6,16 +6,22 @@ A Plugin API 1.19 external TOP workbench reference implementation.
 - Registers one `ctx.ui.topWorkspace` contract so TOP and SUPER share the same implementation.
 - Uses Core-owned scoped import through `data.accepts`; the plugin creates no file picker.
 - Reads only `ctx.data.sources.list()` assignments for `com.dkds.transfer-vth-lab`.
-- Uses `PluginWorkspace` with `primaryScroll: "safe"` and Host-safe scrolling with a flexible `minmax(0, 1fr)` plot grid. Core can recover overflow instead of silently clipping plugin content.
+- Uses the bounded `primaryScroll: "contained"` workspace contract: the result table is the local scroll owner, while ScientificPlot flex-fills all remaining primary height.
 - Uses `ScientificPlot` for plotting and the Algorithm Registry for Vth extraction.
 
 - The log-current checkbox selects the Core ScientificPlot display scale (`yScaleType: "log"`); the plugin does not pre-transform data with a private `log10()` view.
 
 
+## 3.1.0
+
+- Uses `primaryScroll: "contained"` because this workbench has an explicit internal results-table scroll owner.
+- The vertical split now resizes the results row; the ScientificPlot row is `1fr` and therefore fills every remaining pixel by default.
+- The fixed-left Data PRIME disables redundant PortableView chrome and uses the canonical Surface Header directly.
+
 ## 3.0.2
 
-- Uses the Plugin API 1.19 layout contract: `primaryScroll: "safe"`, no workspace `overflow:hidden`, and no plugin-owned viewport clipping.
-- ScientificPlot sizing is Host-owned; the plugin no longer sets a private minimum that can conflict with its grid container.
+- Used the earlier `primaryScroll: "safe"` layout contract.
+- ScientificPlot sizing was Host-owned, but the fixed pixel plot split left unused vertical space on taller desktop windows.
 
 ## 3.0.1
 

@@ -9,9 +9,9 @@ const json=rel=>JSON.parse(read(rel));
 
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.24.0','SDK 1.20.0+ cutover is required');
+assert.equal(contract.sdkVersion,'1.28.0','SDK 1.20.0+ cutover is required');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.67.10','SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
+assert.equal(contract.minimumAppVersion,'3.68.36','SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
 
 const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');
@@ -30,7 +30,7 @@ assert(css.includes('opacity:0')&&css.includes('pointer-events:none'),'Navigatio
 assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('height:100%')&&css.includes('overflow:auto'),'safe PluginWorkspace must retain a bounded Core-owned Primary scroll viewport.');
 const semantic=read('src/core/theme/semantic-registry.js');
 const componentAppearance=read('src/styles/theme/component-appearance.css');
-assert(semantic.includes("selector:'button,.toolbar-btn,.plugin-toolbar-btn")&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'Shell menu triggers must enter canonical ToolbarAction appearance instead of receiving a dark-mode paint patch.');
+assert(semantic.includes("selector:'button:not(.dkds-field-control),.toolbar-btn,.plugin-toolbar-btn")&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'Shell menu triggers must enter canonical ToolbarAction appearance instead of receiving a dark-mode paint patch.');
 assert(!modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger'),'Dark shell menu-trigger paint override must not return.');
 assert(semantic.includes('.trend-card,.analysis-chart-card'),'Scientific cards must be registered as Core semantic Material surfaces.');
 assert(!semantic.includes('.trend-card-legend'),'Trend Card legend must remain transparent child content instead of creating a nested Material surface.');

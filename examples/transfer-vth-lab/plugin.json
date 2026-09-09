@@ -10,6 +10,14 @@
   "styles": [
     "plugin.css"
   ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
   "enabled": true,
   "order": 420,
   "description": "Threshold-voltage extraction TOP workbench using scoped project sources, Core-owned import and bounded ScientificPlot layout.",
@@ -85,9 +93,5 @@
       "version": "2.0.0",
       "title": "Threshold voltage by constant-current neighborhood"
     }
-  ],
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
-  }
+  ]
 }

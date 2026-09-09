@@ -3,7 +3,6 @@
       <div class="analysis-page-header pulse-page-header">
         <div>
           <h2>脉冲 / 读取电流分析</h2>
-          <div class="analysis-subtitle">支持读写脉宽不同、仅记录电流、记录电压波形和等点数分段数据；每个文件独立保存协议参数。</div>
         </div>
         <button class="analysis-page-close" data-analysis-target="pulseAnalysisPage">关闭窗口</button>
       </div>
@@ -146,16 +145,16 @@
         <div class="pulse-results-split">
           <div class="pulse-results-visual-pane">
             <section class="pulse-card pulse-compare-toolbar-card dkds-surface">
-          <div class="pulse-compare-toolbar dkds-toolbar">
-            <div><strong>结果比较</strong><span>有脉冲电压时使用电压横轴；未记录/未指定时自动改用脉冲序号。</span></div>
-            <label>显示范围
-              <select id="pulseResultScope"><option value="checked">全部勾选文件</option><option value="active">仅当前文件</option></select>
-            </label>
-            <div id="pulseComparedSummary" class="pulse-compared-summary dkds-chip">0 个已分析文件</div>
-          </div>
+              <div class="pulse-card-heading dkds-surface-header dkds-surface-header-stacked pulse-compare-toolbar" data-dkds-mobile-density="compact">
+                <div class="dkds-surface-heading-stack"><h3>结果比较</h3><p>有脉冲电压时使用电压横轴；未记录/未指定时自动改用脉冲序号。</p></div>
+                <div class="pulse-compare-actions dkds-surface-actions">
+                  <label class="pulse-scope-action"><span>显示范围</span><select id="pulseResultScope"><option value="checked">全部勾选文件</option><option value="active">仅当前文件</option></select></label>
+                  <div id="pulseComparedSummary" class="pulse-compared-summary dkds-chip">0 个已分析文件</div>
+                </div>
+              </div>
             </section>
 
-            <div class="pulse-results-grid" data-dkds-mobile-stack>
+            <div class="pulse-results-grid">
           <section class="pulse-card pulse-result-card dkds-surface">
             <div class="pulse-card-heading pulse-plot-heading" data-dkds-plot-header>
               <h3 class="dkds-plot-view-title">脉冲条件 → 读取电流</h3>
@@ -178,7 +177,7 @@
           <section class="pulse-card pulse-results-table-card dkds-surface">
           <div class="pulse-card-heading dkds-surface-header dkds-surface-header-stacked pulse-table-heading">
             <div class="dkds-surface-heading-stack"><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
-            <div class="pulse-table-actions dkds-surface-actions"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
+            <div class="pulse-table-actions dkds-surface-actions"><button id="pulseCopyCsvBtn" class="copy-btn" data-dkds-native-copy="clipboard">复制可见结果</button><button id="pulseExportCsvBtn" data-dkds-native-save="export">导出可见 CSV</button></div>
           </div>
             <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="pulse-result-table dkds-table"></table></div>
           </section>
@@ -186,15 +185,25 @@
       </div>`;
 
   function attach(ctx,page){
-    const body=page?.querySelector('.pulse-analysis-body');if(!body)return null;
-    const content=[...body.children];content.forEach(node=>node.remove());
+    const body=ctx.ui.dom.query('.pulse-analysis-body',page);if(!body)return null;
+    const batch=ctx.ui.dom.query('.pulse-batch-workspace',body);
+    const fileManager=ctx.ui.dom.query('.pulse-file-manager-card',batch);
+    const config=ctx.ui.dom.query('.pulse-config-card',batch);
+    const primaryNodes=[...body.children].filter(node=>node!==batch);
+    for(const node of [...body.children])node.remove();
     body.classList.add('dkds-unified-workbench-body');
     const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse',primaryScroll:'auto',resizableLeft:false,resizableRight:false,resizableBottom:false});
-    const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(...content);
-    wb.mountPrimary({id:'main',label:'脉冲分析',scroll:'auto',mainNode:primaryMain});
-    const split=primaryMain.querySelector('.pulse-results-split'),handle=primaryMain.querySelector('.pulse-results-splitter'),visual=primaryMain.querySelector('.pulse-results-visual-pane');
-    if(split&&handle&&visual)ctx.ui.layout.split({id:'pulse-results-height',container:split,handle,target:visual,axis:'y',cssVar:'--pulse-results-visual-height',defaultSize:620,min:420,reserve:220});
+    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse',primaryScroll:'auto',leftWidth:390,leftMin:300,leftReserve:640,resizableRight:false,resizableBottom:false});
+    const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(...primaryNodes);
+    const controls=ctx.ui.dom.create('div');controls.className='pulse-control-rail';
+    if(fileManager)controls.appendChild(fileManager);
+    if(config)controls.appendChild(config);
+    wb.compose({
+      primary:{id:'main',label:'脉冲分析',scroll:'auto',mainNode:primaryMain},
+      primes:[{id:'data-control',label:'参数',title:'脉冲文件与提取设置',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:92,collapsible:true,chrome:false,existingNode:controls,autoOpen:true,defaultPlacement:'left',placements:['left','global','right','bottom'],stateVersion:'presentation-v1',mount:({container})=>container.classList.remove('hidden')}]
+    });
+    const split=ctx.ui.dom.query('.pulse-results-split',primaryMain),handle=ctx.ui.dom.query('.pulse-results-splitter',primaryMain),visual=ctx.ui.dom.query('.pulse-results-visual-pane',primaryMain);
+    if(split&&handle&&visual)ctx.ui.layout.split({id:'pulse-results-height',container:split,handle,target:visual,axis:'y',cssVar:'--pulse-results-visual-height',defaultSize:540,min:380,reserve:220});
     return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}

@@ -6,6 +6,18 @@
   <title>DK Data Studio</title>
   <script>
     (() => {
+      const root=document.documentElement;
+      const query=new URLSearchParams(location.search);
+      const mobile=!!window.ReactNativeWebView?.postMessage||query.has('reactNative');
+      const host=mobile?'mobile':(window.electronAPI?'desktop':'web');
+      root.dataset.dkdsHost=host;
+      root.classList.toggle('react-native-client',host==='mobile');
+      try{Object.defineProperty(window,'__DKDS_HOST_KIND__',{value:host,writable:false,configurable:false,enumerable:false});}
+      catch{window.__DKDS_HOST_KIND__=host;}
+    })();
+  </script>
+  <script>
+    (() => {
       const THEME_KEY='dkds.appearance.v1';
       const PROFILE_KEY='dkds.theme-profile.v1';
       const BOOT_STATE_KEY='dkds.theme-boot.v1';
@@ -33,9 +45,16 @@
   </script>
   <link rel="icon" href="../assets/dkds-icon.png" />
 <link rel="stylesheet" href="core.css" />
-  <link rel="stylesheet" href="mobile.css" />
-  <script src="../sdk/semver-compat.js"></script>
+  <link id="dkdsMobileStyle" rel="stylesheet" href="mobile.css" media="not all" />
+  <script>
+    if(window.__DKDS_HOST_KIND__==='mobile')document.getElementById('dkdsMobileStyle').media='all';
+  </script>
+  <script src="../sdk/platform-presentation-contract.js"></script>
   <script src="../sdk/theme-contract.js"></script>
+  <script src="core/ui/frame-scheduler.js"></script>
+  <script src="core/ui/dom-mutation-hub.js"></script>
+  <script src="core/contracts/style-ownership-semantics.js"></script>
+  <script src="core/theme/style-ownership-gate-runtime.js"></script>
   <script src="core/theme/semantic-registry.js"></script>
   <script src="../sdk/theme-coverage-contract.js"></script>
   <script src="core/theme/material-renderer.js"></script>
@@ -46,12 +65,12 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.21</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.68.66</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作">
             <button id="openBtn" class="toolbar-btn" type="button" aria-label="导入">导入</button>
-            <button id="saveProjectBtn" class="toolbar-btn" type="button" aria-label="保存">保存</button>
+            <button id="saveProjectBtn" class="toolbar-btn" type="button" aria-label="保存" data-dkds-native-save="project">保存</button>
             <div class="menu-anchor" data-menu-align="left">
               <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出</button>
               <div id="exportMenu" class="command-menu hidden">
@@ -124,33 +143,10 @@
     </div>
 
 
-    <div class="workspace">
-      <aside class="left-panel dkds-material-role-sidebar">
-        <div id="pluginSidebarSections" class="plugin-sidebar-sections dkds-material-role-sidebar" data-plugin-sidebar></div>
-      </aside>
-
-      <main class="main-area">
-        <div id="mainWorkspace" class="main-workspace dkds-material-role-surface">
-        <div id="mainPlotWrap" class="plot-wrap" data-dkds-plot-scope>
-          <div class="main-plot-header">
-          <div class="main-plot-tools dkds-integrated-action-group dkds-material-role-control" id="mainPlotTools">
-            <div id="pluginMainPlotTools" class="plugin-main-tools" data-plugin-main-tools></div>
-          </div>
-          <div id="mainLegendBar" class="main-legend-bar dkds-scroll-x-compact dkds-material-role-control" data-dkds-legend></div>
-          </div>
-          <svg id="mainPlot"></svg>
-          <div id="selectionActionMenu" class="range-action-menu hidden" aria-live="polite"></div>
-          <div id="hoverTip" class="hover-tip hidden"></div>
-        </div>
-        <div id="inspectorDockSlot" class="inspector-dock-slot"></div>
-        <div id="primeRightDockSlot" class="prime-right-dock-slot" data-prime-dock="right" aria-label="PRIME 右侧停靠区"></div>
-        </div>
-        <div id="dockedGroupSlot" class="docked-group-slot"></div>
-        <div id="primeBottomDockSlot" class="prime-bottom-dock-slot" data-prime-dock="bottom" aria-label="PRIME 底部停靠区"></div>
-      </main>
-    </div>
 
     <footer id="statusBar" class="statusbar dkds-material-role-chrome" aria-label="应用状态栏">
+      <div id="statusBarPersistent" class="statusbar-persistent" aria-live="polite"></div>
+      <span id="statusBarPersistentSeparator" class="statusbar-separator hidden" aria-hidden="true">|</span>
       <div id="statusBarMessage" class="statusbar-message" aria-live="polite">未加载数据</div>
       <div class="statusbar-command-cluster" aria-label="状态与快捷操作">
         <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left" aria-label="插件状态"></div>
@@ -162,8 +158,8 @@
     <section id="superWorkspaceEmpty" class="analysis-page hidden core-analysis-page super-empty-page">
       <div class="super-empty-card">
         <div class="super-empty-icon">⌂</div>
-        <h2>尚未指定主界面</h2>
-        <p>请选择一个已启用且完成 TOP 工作区契约的插件作为 SUPER。DK Data Studio 不会在插件停用后自动猜测新的主界面。</p>
+        <h2>尚未指定 / 当前主界面不可用</h2>
+        <p>请选择一个已启用且完成 TOP 工作区契约的插件作为 SUPER。若当前 SUPER 加载失败，DK Data Studio 会保留该选择并停留在此页，不会自动切换到其他 TOP。</p>
         <button id="superEmptyOpenManagerBtn" class="primary" type="button">打开插件管理</button>
       </div>
     </section>
@@ -175,7 +171,7 @@
           <div class="analysis-subtitle">启用、停用、重新加载和诊断插件。插件开关属于本机全局设置，不随工程切换。</div>
         </div>
         <div class="plugin-manager-header-actions">
-          <button id="pluginManagerDiagnosticsBtn">复制诊断</button>
+          <button id="pluginManagerDiagnosticsBtn" data-dkds-native-copy="clipboard">复制诊断</button>
           <button id="pluginManagerResetBtn">恢复默认</button>
           <button class="analysis-page-close" data-analysis-target="pluginManagerPage">返回主图</button>
         </div>
@@ -183,7 +179,7 @@
       <div class="analysis-page-body plugin-manager-body">
         <div id="pluginManagerSummary" class="plugin-manager-summary"></div>
         <div class="plugin-manager-toolbar-card">
-          <div class="plugin-manager-search-wrap dkds-material-role-control">
+          <div class="plugin-manager-search-wrap dkds-material-role-control" data-dkds-component-identity="field" data-dkds-component-identity-owner="core-plugin-manager">
             <span aria-hidden="true">⌕</span>
             <input id="pluginManagerSearch" data-dkds-field-layout="integrated" type="search" placeholder="搜索插件名称、ID、能力…" autocomplete="off">
           </div>
@@ -209,10 +205,8 @@
               <option value="developer">开发与示例</option>
             </select>
           </label>
-          <span id="pluginManagerVisibleCount" class="plugin-manager-visible-count" data-dkds-component-identity="chip">显示 0 / 0</span>
           <button id="pluginManagerInstallBtn" class="primary">安装插件</button>
           <button id="pluginManagerOpenFolderBtn">插件目录</button>
-          <button id="pluginManagerRefreshBtn">刷新</button>
         </div>
         <div id="pluginManagerNote" class="plugin-manager-note">
           停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。
@@ -234,7 +228,7 @@
           <div class="analysis-subtitle">在当前构建出的真实运行环境中检查 Core、插件、数据契约、绘图和 TOP 独立窗口。测试日志不包含当前工程的实验数据。</div>
         </div>
         <div class="automation-test-header-actions">
-          <button id="automationTestCopyBtn" disabled>复制日志</button>
+          <button id="automationTestCopyBtn" data-dkds-native-copy="clipboard" disabled>复制日志</button>
           <button id="automationTestFolderBtn">日志目录</button>
           <button class="analysis-page-close" data-analysis-target="automationTestPage">返回主图</button>
         </div>
@@ -254,14 +248,14 @@
     </section>
 
     <div id="importPanel" class="import-panel-overlay hidden">
-      <div class="import-workbench dkds-material-role-elevated" data-dkds-material-context="workspace-modal">
+      <div class="import-workbench dkds-material-role-elevated" data-dkds-material-context="workspace-modal" data-dkds-action-density="regular">
         <div class="import-workbench-header">
           <div>
             <h2>数据导入工作台</h2>
             <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
           </div>
           <div class="import-header-actions">
-            <div class="import-data-command dkds-split-action-group" data-dkds-split-variant="primary">
+            <div class="import-data-command dkds-split-action-group dkds-separated-action-group" data-dkds-split-variant="primary">
               <button id="importChooseFilesBtn" class="dkds-action-button primary dkds-split-action-main" type="button">导入数据/项目</button>
               <div class="menu-anchor import-source-anchor" data-menu-align="right">
                 <button id="importSourceBtn" class="dkds-action-button primary menu-trigger import-source-trigger dkds-split-action-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
@@ -453,7 +447,7 @@
 
         <div class="import-workbench-footer">
           <div id="importGlobalSummary" class="import-global-summary">尚未选择文件</div>
-          <div class="import-footer-actions">
+          <div class="import-footer-actions dkds-separated-action-group">
             <button id="importCancelBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">取消</button>
             <button id="importCommitBtn" class="dkds-action-button primary" type="button">导入勾选文件</button>
           </div>
@@ -462,19 +456,44 @@
     </div>
 
 
-    <div id="projectSaveChoiceDialog" class="project-save-choice-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="projectSaveChoiceTitle">
-      <div class="project-save-choice-card dkds-material-role-elevated">
-        <div class="project-save-choice-icon" aria-hidden="true">▣</div>
-        <div class="project-save-choice-copy">
-          <strong id="projectSaveChoiceTitle">保存项目</strong>
-          <span id="projectSaveChoiceHint">请选择保存方式。</span>
+    <div id="projectSaveChoiceDialog" class="project-save-choice-backdrop dkds-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="projectSaveChoiceTitle" aria-describedby="projectSaveChoiceHint">
+      <section class="project-save-choice-card dkds-dialog dkds-material-role-elevated">
+        <header class="dkds-dialog-header project-save-choice-header">
+          <div class="project-save-choice-icon dkds-dialog-icon" aria-hidden="true">▣</div>
+          <div class="dkds-dialog-title-wrap">
+            <strong id="projectSaveChoiceTitle" class="dkds-dialog-title">保存项目</strong>
+            <span class="dkds-dialog-subtitle">选择项目文件的保存方式</span>
+          </div>
+          <button id="projectSaveCloseBtn" class="dkds-dialog-close dkds-panel-close-button dkds-action-button" type="button" aria-label="关闭保存项目面板"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="quiet" data-dkds-component-variant-owner="core-component">×</button>
+        </header>
+        <div class="dkds-dialog-body project-save-choice-body" data-dkds-material-content="true">
+          <div class="project-save-choice-summary dkds-note">
+            <div class="project-save-choice-summary-head">
+              <span class="project-save-choice-label">当前项目</span>
+              <span id="projectSaveChoiceProjectName" class="dkds-chip"
+                data-dkds-component-identity="chip" data-dkds-component-identity-owner="core-component">未命名项目</span>
+            </div>
+            <p id="projectSaveChoiceHint" class="dkds-dialog-message">请选择保存方式。</p>
+          </div>
+          <div class="project-save-choice-shortcuts dkds-meta" aria-hidden="true">
+            <span><kbd>Enter</kbd> 保存当前</span>
+            <span><kbd>Esc</kbd> 取消</span>
+          </div>
         </div>
-        <div class="project-save-choice-actions">
-          <button id="projectSaveCurrentBtn" class="primary" type="button">保存当前</button>
-          <button id="projectSaveAsBtn" type="button">另存为</button>
-          <button id="projectSaveCancelBtn" type="button">取消</button>
-        </div>
-      </div>
+        <footer class="project-save-choice-actions dkds-dialog-footer" data-dkds-action-density="regular">
+          <button id="projectSaveCurrentBtn" class="dkds-dialog-action dkds-action-button primary" type="button" data-dkds-native-save="project" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="primary" data-dkds-component-variant-owner="core-component">保存当前</button>
+          <button id="projectSaveAsBtn" class="dkds-dialog-action dkds-action-button" type="button" data-dkds-native-save="project" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="secondary" data-dkds-component-variant-owner="core-component">另存为</button>
+          <button id="projectSaveCancelBtn" class="dkds-dialog-action dkds-action-button danger-soft" type="button" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="destructive" data-dkds-component-variant-owner="core-component">取消</button>
+        </footer>
+      </section>
     </div>
 
     <div id="lanWebPanel" class="floating-panel lan-web-panel hidden dkds-material-role-elevated">
@@ -563,7 +582,7 @@
                   <div class="lan-web-section-title">可用局域网地址</div>
                   <small>多网卡时选择与你同学处于同一网络的地址。</small>
                 </div>
-                <button id="lanWebCopyBaseUrlBtn">复制地址</button>
+                <button id="lanWebCopyBaseUrlBtn" data-dkds-native-copy="clipboard">复制地址</button>
               </div>
               <div id="lanWebUrls" class="lan-web-urls" role="listbox" aria-label="可用局域网地址">
                 <div class="lan-web-empty-address">服务启动后显示</div>
@@ -594,7 +613,7 @@
             </div>
 
             <div class="lan-web-share-actions">
-              <button id="lanWebCopyShareLinkBtn" class="primary">复制扫码链接</button>
+              <button id="lanWebCopyShareLinkBtn" class="primary" data-dkds-native-copy="clipboard">复制扫码链接</button>
               <button id="lanWebRefreshQrBtn">刷新二维码</button>
             </div>
 
@@ -672,71 +691,13 @@
       </div>
     </div>
 
-    <div id="inspectorPanel" class="floating-panel inspector-panel" data-generic-panel="inspector">
-      <div id="inspectorDockResizer" class="inspector-dock-resizer" data-dkds-tooltip="拖动调整右侧检查器宽度"></div>
-      <div class="floating-header drag-handle">
-        <span id="inspectorPanelHeaderTitle">检查器</span>
-        <div class="panel-header-actions dkds-integrated-action-group">
-          <button id="inspectorDockBtn" type="button">停靠右侧</button>
-          <button class="panel-close dkds-panel-close-button" data-target="inspectorPanel">×</button>
-        </div>
-      </div>
-      <div class="floating-body" id="inspectorBody">
-        <div class="empty-state">点击曲线或峰位点查看详细信息</div>
-      </div>
-    </div>
-
-    <div id="groupPanel" class="floating-panel group-panel" data-generic-panel="group">
-      <div id="groupDockResizer" class="dock-resizer" data-dkds-tooltip="拖动调整底部组图高度"></div>
-      <div class="floating-header drag-handle">
-        <span id="groupPanelHeaderTitle">组图</span>
-        <div class="panel-header-actions dkds-integrated-action-group">
-          <button id="groupDockBtn" type="button">停靠底部</button>
-          <button id="groupMinimizeBtn" type="button">缩小</button>
-          <button class="panel-close dkds-panel-close-button" data-target="groupPanel">×</button>
-        </div>
-      </div>
-      <div class="floating-body">
-        <div class="group-panel-toolbar">
-          <div class="group-panel-title-wrap">
-            <span id="groupPanelTitle">未选择</span>
-            <span class="group-panel-hint">双击任意小图放大</span>
-          </div>
-          <div class="trend-layout-controls">
-            <span>每行</span>
-            <button type="button" data-trend-cols="auto">自动</button>
-            <button type="button" data-trend-cols="1">1</button>
-            <button type="button" data-trend-cols="2">2</button>
-            <button type="button" data-trend-cols="3" class="active">3</button>
-            <button type="button" data-trend-cols="4">4</button>
-            <button type="button" data-trend-cols="5">5</button>
-            <button type="button" data-trend-cols="6">6</button>
-          </div>
-        </div>
-        <div id="trendGrid" class="trend-grid"></div>
-      </div>
-    </div>
-
-    <div id="zoomPanel" class="floating-panel zoom-panel hidden">
-      <div class="floating-header drag-handle">
-        <span id="zoomPanelTitle">放大图</span>
-        <button class="panel-close dkds-panel-close-button" data-target="zoomPanel">×</button>
-      </div>
-      <div class="floating-body zoom-body">
-        <div id="zoomPlot" class="zoom-plot"></div>
-        <div class="zoom-actions">
-          <button id="zoomExportSvg">导出 SVG</button>
-          <button id="zoomExportCsv">导出数据</button>
-          <button id="zoomCopyCsv" class="copy-btn">复制数据</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script src="../node_modules/d3/dist/d3.min.js"></script>
   <script src="core/project/format.js"></script>
   <script src="project-importers/compatibility-gateway.js"></script>
   <script src="core/host/mobile-plugin-package.js"></script>
+  <script src="core/host/native-user-intent.js"></script>
   <script src="web-bridge.js"></script>
   <script src="science/common.js"></script>
   <script src="science/presets.js"></script>
@@ -754,6 +715,7 @@
   <script src="core/data/parameter-schema.js"></script>
   <script src="core/workflow/engine.js"></script>
   <script src="core/host/platform.js"></script>
+  <script src="core/host/native-touch-drag.js"></script>
   <script src="core/data/state-store.js"></script>
   <script src="core/host/io-runtime.js"></script>
   <script src="core/scientific/plot-presentation-runtime.js"></script>

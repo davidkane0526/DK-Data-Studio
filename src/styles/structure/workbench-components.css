@@ -106,11 +106,11 @@
 }
 .dkds-managed-table thead th.dkds-table-column{--dkds-table-head-padding-right:var(--dkds-table-column-padding-right);padding-right:var(--dkds-table-head-padding-right);position:sticky;}
 .dkds-managed-table thead th.dkds-table-sortable{cursor:pointer;user-select:none;}
-.dkds-managed-table thead th.dkds-table-sortable::before{content:"↕";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--ui-font-tiny,10px);transition:opacity .12s;pointer-events:none;}
+.dkds-managed-table thead th.dkds-table-sortable::before{content:"↕";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--ui-font-tiny,10px);pointer-events:none;}
 .dkds-managed-table thead th[data-dkds-sort="asc"]::before{content:"↑";}
 .dkds-managed-table thead th[data-dkds-sort="desc"]::before{content:"↓";}
 .dkds-table-column-resizer{position:absolute;top:0;right:calc(var(--dkds-table-resizer-hit-width,8px) / -2);width:var(--dkds-table-resizer-hit-width,8px);height:100%;cursor:col-resize;z-index:4;touch-action:none;}
-.dkds-table-column-resizer::after{content:"";position:absolute;top:16%;bottom:16%;left:calc((var(--dkds-table-resizer-hit-width,8px) - var(--dkds-table-resizer-line-width,1px)) / 2);width:var(--dkds-table-resizer-line-width,1px);transition:background .12s;}
+.dkds-table-column-resizer::after{content:"";position:absolute;top:16%;bottom:16%;left:calc((var(--dkds-table-resizer-hit-width,8px) - var(--dkds-table-resizer-line-width,1px)) / 2);width:var(--dkds-table-resizer-line-width,1px);}
 .dkds-managed-table .dkds-table-column-hidden{display:none;}
 .dkds-managed-table tbody td,.dkds-managed-table tbody th{
   padding-block:var(--dkds-table-cell-padding-block);
@@ -182,14 +182,14 @@ body.dkds-table-resizing *{cursor:col-resize;}
 /* Plugin Host safety net. The scroll policy above is authoritative. The
    runtime guard only repairs plugin-owned semantic containers that would
    otherwise clip their own content; it must never change workspace geometry. */
-.dkds-layout-overflow-fallback{overscroll-behavior:contain;scrollbar-gutter:stable;}
+.dkds-layout-overflow-fallback{overscroll-behavior-x:contain;scrollbar-gutter:stable;}
 .dkds-scientific-surface-host.dkds-scientific-layout-fallback{
   min-height:var(--dkds-scientific-preferred-min-height,180px);}
 
 /* Core modal surface. Application-level confirmations and blocking errors use
    this renderer-owned dialog instead of Electron/native message boxes. */
-.dkds-dialog-overlay{position:fixed;inset:0;z-index:2650;display:grid;place-items:center;padding:22px;animation:dkds-dialog-overlay-in .14s ease-out both;}
-.dkds-dialog{width:min(540px,calc(100vw - 36px));max-height:min(720px,calc(100vh - 44px));display:flex;flex-direction:column;overflow:hidden;animation:dkds-dialog-in .16s cubic-bezier(.2,.75,.25,1) both;}
+.dkds-dialog-overlay{position:fixed;inset:0;z-index:2650;display:grid;place-items:center;padding:22px;}
+.dkds-dialog{width:min(540px,calc(100vw - 36px));max-height:min(720px,calc(100vh - 44px));display:flex;flex-direction:column;overflow:hidden;}
 .dkds-dialog-header{display:grid;grid-template-columns:34px minmax(0,1fr) 30px;align-items:start;gap:10px;padding:16px 17px 13px;}
 .dkds-dialog-icon{display:grid;place-items:center;width:32px;height:32px;font-size:15px;font-weight:800;}
 .dkds-dialog-title-wrap{display:flex;flex-direction:column;gap:3px;min-width:0;padding-top:1px;}.dkds-dialog-title{font-size:14px;line-height:1.35;font-weight:720;letter-spacing:.005em;}.dkds-dialog-subtitle{font-size:10px;line-height:1.45;}
@@ -197,9 +197,8 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-dialog-body{overflow:auto;padding:15px 17px 16px;min-height:0;}.dkds-dialog-message{margin:0;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;}
 .dkds-dialog-meta{display:grid;grid-template-columns:minmax(92px,auto) minmax(0,1fr);gap:7px 12px;margin:14px 0 0;padding:11px 12px;font-size:10px;line-height:1.45;}.dkds-dialog-meta dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;}
 .dkds-dialog-details{margin-top:12px;overflow:hidden;}.dkds-dialog-details summary{padding:8px 10px;cursor:pointer;font-size:10px;user-select:none;}.dkds-dialog-details pre{margin:0;padding:9px 10px 11px;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:9px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;}
-.dkds-dialog-footer{--dkds-dialog-action-height:32px;--dkds-dialog-action-padding-block:6px;--dkds-dialog-action-padding-inline:13px;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:11px 16px;}.dkds-dialog-action{height:var(--dkds-dialog-action-height);min-height:var(--dkds-dialog-action-height);padding-block:var(--dkds-dialog-action-padding-block);padding-inline:var(--dkds-dialog-action-padding-inline);font-size:10px;font-weight:650;cursor:pointer;}@keyframes dkds-dialog-in{from{transform:translateY(5px) scale(.992)}to{transform:none}}
+.dkds-dialog-footer{--dkds-dialog-action-height:32px;--dkds-dialog-action-padding-block:6px;--dkds-dialog-action-padding-inline:13px;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:11px 16px;}.dkds-dialog-action{height:var(--dkds-dialog-action-height);min-height:var(--dkds-dialog-action-height);padding-block:var(--dkds-dialog-action-padding-block);padding-inline:var(--dkds-dialog-action-padding-inline);font-size:10px;font-weight:650;cursor:pointer;}
 @media(max-width:620px){.dkds-dialog-overlay{padding:12px}.dkds-dialog{width:min(100%,540px);max-height:calc(100vh - 24px)}.dkds-dialog-meta{grid-template-columns:1fr;gap:2px}.dkds-dialog-meta dd{margin-bottom:6px}}
-@media(prefers-reduced-motion:reduce){.dkds-dialog-overlay,.dkds-dialog{animation:none}}
 .dkds-dialog-field{
   --dkds-dialog-field-height:34px;
   --dkds-dialog-field-padding-block:6px;

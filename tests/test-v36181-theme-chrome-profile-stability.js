@@ -59,6 +59,14 @@ global.electronAPI={
   onAppearanceThemeChanged:()=>()=>{}
 };
 global.DKDSThemeContract=require(path.join(root,'sdk/theme-contract.js'));
+// Theme Runtime is Gate-owned in v3.68+: standalone harnesses must install the
+// same style authority that the real UI composition preloads.
+global.DKDSStyleGate={
+  KINDS:{CONFIG_TOKEN:'configuration-token'},
+  set(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},
+  setToken(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},
+  remove(el,prop){el?.style?.removeProperty?.(prop);return true;}
+};
 
 delete require.cache[require.resolve(path.join(root,'src/core/theme/runtime.js'))];
 require(path.join(root,'src/core/theme/runtime.js'));

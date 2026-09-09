@@ -8,21 +8,17 @@ Theme Contract 3.10 is the constrained Design System contract used by DK Data St
 ctx.ui.theme.contractVersion; // "3.10.0"
 ```
 
-A new Theme package should declare:
+A new Theme package declares only the current runtime contract:
 
 ```json
 {
   "pluginType": "theme",
-  "requiresCore": ["ui.theme"],
-  "compatibility": {
-    "app": ">=3.67.10 <4.0.0",
-    "pluginApi": "^1.19.0",
-    "themeContract": "^3.10.0"
-  }
+  "apiVersion": "1.19.0",
+  "requiresCore": ["ui.theme"]
 }
 ```
 
-Themes written for supported Theme 3.x subsets remain valid on a 3.10 host when they stay within that declared subset. Theme plugins still may not ship arbitrary Core-targeting CSS, choose application selectors, mutate Core DOM, own layout, or provide pseudo-elements/keyframes/filter strings. Theme 3.10 does allow bounded literal shadow/radius depth slots, which Core validates and paints.
+Theme packages target the host's exact current Theme Contract **3.10.0**. There is no Theme semver range, compatibility negotiation, downgrade path, or capability-probing bridge for older contracts. A non-current package is rejected before activation. Theme plugins still may not ship arbitrary Core-targeting CSS, choose application selectors, mutate Core DOM, own layout, or provide pseudo-elements/keyframes/filter strings. Theme 3.10 does allow bounded literal shadow/radius depth slots, which Core validates and paints.
 
 ## Ownership model
 
@@ -210,7 +206,7 @@ Development mode provides a real-page Theme Inspector (`Ctrl+Alt+T`). It reports
 - computed background/text/border/backdrop-filter
 - explicit semantic/render error state
 
-Representative error states include `UNMANAGED_COMPONENT_APPEARANCE`, `WRONG_COMPONENT_IDENTITY`, `ROLE_MISMATCH`, `RECIPE_MISMATCH`, `TOKEN_NOT_CONSUMED`, `AUTHORED_BUT_UNUSED`, `OPAQUE_PARENT_OCCLUSION`, `HARDCODED_APPEARANCE`, and `ENGINE_UNSUPPORTED`. For Plugin API 1.19 compatibility, `OPAQUE_PARENT_OCCLUSION` retains its historical public identifier; current diagnostics only raise it when a translucent Material is itself repainted opaque (`occlusionSource: "self"`) or a large unmanaged opaque descendant covers it (`occlusionSource: "child"`). An opaque ancestor is reported only as diagnostic context and does not by itself mean that `backdrop-filter` is ineffective.
+Representative error states include `UNMANAGED_COMPONENT_APPEARANCE`, `WRONG_COMPONENT_IDENTITY`, `ROLE_MISMATCH`, `RECIPE_MISMATCH`, `TOKEN_NOT_CONSUMED`, `AUTHORED_BUT_UNUSED`, `OPAQUE_MATERIAL_OCCLUSION`, `HARDCODED_APPEARANCE`, and `ENGINE_UNSUPPORTED`. `OPAQUE_MATERIAL_OCCLUSION` is the current diagnostic identifier and is raised only when a translucent Material is itself repainted opaque (`occlusionSource: "self"`) or a large unmanaged opaque descendant covers it (`occlusionSource: "child"`). An opaque ancestor is reported only as diagnostic context and does not by itself mean that `backdrop-filter` is ineffective.
 
 ## 8. Theme Coverage
 
@@ -269,13 +265,13 @@ group.setDensity('comfortable');
 
 Supported values are `comfortable` and `compact`. Plugins can select a density but do not redefine the Core policy names.
 
-## Compatibility
+## Current-contract-only behavior
 
-Theme Contract 3.9 is additive within major version 3. Capability discovery continues to advertise supported contract versions from 3.6 through 3.9. This is semantic contract compatibility, not a legacy CSS/DOM bridge.
+Theme packages target the exact current Theme Contract `3.10.0`. There is no contract-version negotiation, no supported-version range, and no Theme-side `contract:*` capability probing. A Theme package authored for a different contract must be migrated to `3.10.0` before it can load. Historical compatibility is intentionally confined to project-file import/migration and is not part of the Theme runtime.
 
 ## Validation
 
-Use SDK 1.21:
+Use SDK 1.28:
 
 ```bash
 node sdk/tools/dkds-plugin.js validate path/to/theme

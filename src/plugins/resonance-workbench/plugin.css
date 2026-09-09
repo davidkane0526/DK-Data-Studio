@@ -20,7 +20,7 @@
 #resonanceDedicatedPage .respar-main-area{position:relative;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto}
 #resonanceDedicatedPage .respar-main-workspace{position:relative;min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);height:100%}#resonanceDedicatedPage .respar-plot-wrap{position:relative;min-width:0;min-height:0;overflow:hidden}
 #resonanceDedicatedPage .respar-main-plot-header{--respar-main-chrome-height:34px;position:absolute;left:82px;right:18px;top:8px;z-index:42;display:flex;align-items:center;gap:8px;min-width:0;pointer-events:none}#resonanceDedicatedPage .respar-main-plot-header>*{pointer-events:auto}
-#resonanceDedicatedPage .respar-main-tools{display:flex;align-items:center;gap:0;flex:0 0 auto;height:var(--respar-main-chrome-height);box-sizing:border-box;padding:3px}
+#resonanceDedicatedPage .respar-main-tools{flex:0 0 auto;height:var(--respar-main-chrome-height);min-height:var(--respar-main-chrome-height)}
 #resonanceDedicatedPage .respar-main-legend{min-width:0;flex:1;height:var(--respar-main-chrome-height);box-sizing:border-box;display:flex;align-items:center;gap:8px;overflow-x:auto;white-space:nowrap;padding:3px 7px}
 #resonanceDedicatedPage .respar-legend-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;height:26px;padding:3px 7px}#resonanceDedicatedPage .respar-legend-line{width:18px;height:0}
 #resonanceDedicatedPage .respar-main-svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:hidden}#resonanceDedicatedPage .respar-curve-hit{stroke-width:14px;pointer-events:stroke;cursor:pointer}#resonanceDedicatedPage .respar-peak-hit{pointer-events:all;cursor:pointer}#resonanceDedicatedPage .respar-peak-hit.editable{cursor:grab}#resonanceDedicatedPage .respar-peak-point{pointer-events:none}#resonanceDedicatedPage .respar-peak-point.dimmed{opacity:.12}#resonanceDedicatedPage .respar-physics-label{pointer-events:none}#resonanceDedicatedPage .respar-width-band{opacity:.075;pointer-events:none}#resonanceDedicatedPage .respar-width-line{stroke-width:1.5;pointer-events:none}#resonanceDedicatedPage .respar-width-handle{cursor:ew-resize;pointer-events:all}#resonanceDedicatedPage .respar-direct-box{pointer-events:none;stroke-width:1.4}#resonanceDedicatedPage .respar-direct-box.range{stroke-dasharray:5 3}#resonanceDedicatedPage .respar-direct-box.zoom{stroke-dasharray:3 3}#resonanceDedicatedPage .respar-persisted-range{stroke-width:1;stroke-dasharray:5 4;pointer-events:none}
@@ -29,7 +29,7 @@
 #resonanceDedicatedPage .respar-floating-panel{position:absolute;z-index:160;resize:both;min-width:320px;min-height:220px;display:grid;grid-template-rows:auto minmax(0,1fr)}#resonanceDedicatedPage .respar-inspector-panel{right:24px;top:56px;width:390px;height:560px}#resonanceDedicatedPage .respar-group-panel{right:24px;bottom:44px;width:min(880px,calc(100% - 48px));height:620px}#resonanceDedicatedPage .respar-floating-header{display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}#resonanceDedicatedPage .respar-floating-header>div{display:flex;gap:5px}#resonanceDedicatedPage .respar-floating-body{min-height:0;overflow:auto;padding:10px}#resonanceDedicatedPage .respar-group-panel.collapsed{resize:none}#resonanceDedicatedPage .respar-group-panel.collapsed .respar-floating-body{display:none}
 #resonanceDedicatedPage .respar-inspect-controls{display:flex;flex-direction:column;gap:7px}#resonanceDedicatedPage .respar-inspect-controls>label{display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .reswin-kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 8px}#resonanceDedicatedPage .respar-inline-actions,#resonanceDedicatedPage .respar-label-editor{display:flex;gap:6px;align-items:flex-end;margin:7px 0}#resonanceDedicatedPage .respar-label-editor label{flex:1;display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
 #resonanceDedicatedPage .respar-group-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;position:sticky;top:0;z-index:3}#resonanceDedicatedPage .respar-group-cols{display:flex;align-items:center;gap:4px}
-#resonanceDedicatedPage .reswin-group-grid{--reswin-group-cols:3;display:grid;grid-template-columns:repeat(var(--reswin-group-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-empty{grid-column:1/-1;min-height:150px;display:grid;place-items:center;text-align:center;padding:18px;box-sizing:border-box}#resonanceDedicatedPage .reswin-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}#resonanceDedicatedPage .reswin-group-plot{width:100%;min-height:0}
+#resonanceDedicatedPage .reswin-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-empty{grid-column:1/-1;min-height:150px;display:grid;place-items:center;text-align:center;padding:18px;box-sizing:border-box}#resonanceDedicatedPage .reswin-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}#resonanceDedicatedPage .reswin-group-plot{width:100%;min-height:0}
 #resonanceDedicatedPage .respar-derived{position:absolute;inset:0;z-index:130;overflow:auto;padding:12px}#resonanceDedicatedPage .respar-derived-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#resonanceDedicatedPage .respar-derived-header h3{margin:0}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#resonanceDedicatedPage .reswin-medium-plot{height:380px}#resonanceDedicatedPage .reswin-feature-field-card{grid-column:1/-1}#resonanceDedicatedPage .reswin-feature-field-plot{height:360px;min-height:320px}#resonanceDedicatedPage .reswin-report{padding:12px;line-height:1.65}
 #resonanceDedicatedPage .reswin-gate-controls{flex-flow:row nowrap;align-items:flex-end;gap:9px}
 #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 150px;min-width:118px}
@@ -52,14 +52,16 @@
 #resonanceDedicatedPage .respar-inspector-row{display:flex;align-items:center;gap:6px;margin-top:7px}
 #resonanceDedicatedPage .respar-inspector-transform{margin-top:10px;padding-top:10px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
 #resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px;height:18px}
-#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px;min-height:280px;resize:both}
+#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px;min-height:280px;resize:none}
 #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px}
 
 #resonanceDedicatedPage .respar-group-context{margin-left:6px}
 
-#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px;min-height:300px;resize:both}
+#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px;min-height:300px;resize:none}
 
 @media(max-width:1250px){#resonanceDedicatedPage .reswin-gate-controls{flex-wrap:wrap}#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 180px}}
+
+/* Narrow workspace density follows available geometry; it does not branch on Desktop/Mobile identity. */
 @media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
 
 /* Gate-voltage domain layout; visual presentation comes from Core semantic surfaces. */
@@ -96,3 +98,16 @@
 
 /* Mobile resonance domain geometry; Core platform layer targets semantic roles only. */
 @media(max-width:980px){.respar-main-plot-header{left:6px;right:6px;max-width:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.respar-main-plot-header::-webkit-scrollbar{display:none}}
+
+
+/* SUB pages keep domain-owned internal flow when a Presenter maps them to a route.
+   Platform CSS controls only route geometry; it must not turn plugin page children
+   into flex/grid siblings. */
+#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived{position:relative;inset:auto;z-index:auto;display:block;width:100%;min-width:0;min-height:100%;box-sizing:border-box;container-type:inline-size}
+#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived .reswin-spacing-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived .analysis-chart-card,#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived .analysis-table-wrap{min-width:0}
+@container (max-width:760px){#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived .reswin-two-col,#resonanceDedicatedPage .dkds-plugin-sub-page-host>.respar-derived .reswin-gate-grid{grid-template-columns:1fr}}
+
+/* Optical alignment for the normal (non-projected) data-list heading. Mobile
+   drawer projection adds data-dkds-mobile-region to the same plugin-owned rail. */
+#resonanceDedicatedPage .respar-left-panel:not([data-dkds-mobile-region]) .respar-data-list-title{transform:translate(3px,-3px);margin-bottom:5px}

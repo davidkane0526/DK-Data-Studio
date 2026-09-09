@@ -3,7 +3,7 @@ const {esc, resolveElement, resolveScopedElement, cleanupCall}=require('../found
 const {ActionGroup}=require('../interaction/context-actions');
 const {normalizePlacement}=require('../layout/docking');
 const {SplitController}=require('../layout/workspace');
-const {GridController}=require('../grid/controller');
+const {GridController,GroupAreaController}=require('../grid/controller');
 
   class AnalysisWorkbench {
     constructor(scope,root,spec={}){
@@ -42,6 +42,12 @@ const {GridController}=require('../grid/controller');
       </section>`;
       this.shell=this.root.firstElementChild;
       if(this.shell){this.shell.dataset.dkdsWorkspaceActivity=this.activityId;this.shell.dataset.dkdsWorkspaceSurfaceHost='1';}
+      this.navigationElement=this.shell?.querySelector('.dkds-analysis-nav')||null;
+      this.navigationHosts={
+        primary:this.navigationElement?.querySelector('.dkds-analysis-nav-primary')||null,
+        prime:this.navigationElement?.querySelector('.dkds-analysis-nav-prime')||null,
+        sub:this.navigationElement?.querySelector('.dkds-analysis-nav-sub')||null
+      };
       this.slots={
         left:this.shell.querySelector('[data-analysis-slot="left"]'),main:this.shell.querySelector('[data-analysis-slot="main"]'),
         right:this.shell.querySelector('[data-analysis-slot="right"]'),bottom:this.shell.querySelector('[data-analysis-slot="bottom"]'),
@@ -74,7 +80,7 @@ const {GridController}=require('../grid/controller');
       this.syncRegions();
       if(window.MutationObserver){
         this.regionObserver=new MutationObserver(()=>this.syncRegions());
-        for(const el of [this.slots.left,this.slots.right,this.slots.bottom])this.regionObserver.observe(el,{childList:true,subtree:false});
+        for(const el of [this.slots.left,this.slots.right,this.slots.bottom])this.regionObserver.observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['data-dkds-mobile-active']});
       }
       if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.syncRegions();this.scope.emitResize?.({reason:'analysis-workbench-observer'});});this.resizeObserver.observe(this.shell);}
     }
@@ -84,6 +90,10 @@ const {GridController}=require('../grid/controller');
       node.dataset.dkdsWorkspaceActivity=this.activityId;
       node.dataset.dkdsWorkspaceSurfaceId=id;
       node.dataset.dkdsWorkspaceSurfaceKind=String(kind||row.role||'');
+      const purpose=String(row.presentationPurpose||'').trim();
+      const presentationRole=String(row.presentationRole||'').trim();
+      if(purpose)node.dataset.dkdsPresentationPurpose=purpose;else delete node.dataset.dkdsPresentationPurpose;
+      if(presentationRole)node.dataset.dkdsPresentationRole=presentationRole;else delete node.dataset.dkdsPresentationRole;
       return node;
     }
     portableSlot(name,row=null){return this.slots[String(name)]||null;}
@@ -91,7 +101,7 @@ const {GridController}=require('../grid/controller');
     setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');return this;}
     syncRegions(){
       if(!this.shell)return;
-      const visibleChildren=el=>[...(el?.children||[])].some(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));
+      const visibleChildren=el=>[...(el?.children||[])].some(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden')&&node.dataset?.dkdsMobileActive!=='false');
       const left=visibleChildren(this.slots.left)&&!this.slots.left.classList.contains('hidden');
       const right=visibleChildren(this.slots.right);const bottom=visibleChildren(this.slots.bottom);
       this.shell.classList.toggle('has-left',left);this.shell.classList.toggle('has-right',right);this.shell.classList.toggle('has-bottom',bottom);
@@ -134,7 +144,7 @@ const {GridController}=require('../grid/controller');
     registerPrime(spec={}){
       const id=String(spec.id||'').trim();if(!id)throw new Error('PRIME id required.');
       const row={role:'prime',placements:['inline','right','bottom','float'],defaultPlacement:'inline',...spec,id,container:null,portable:null,mounted:false,cleanup:null,actionGroup:null};
-      const owned=spec.existingNode||resolveElement(spec.node,this.shell)||resolveElement(spec.node,this.root);if(owned?.dataset)owned.dataset.dkdsPrimeOwned='1';
+      const owned=spec.existingNode||resolveElement(spec.node,this.shell)||resolveElement(spec.node,this.root);if(owned?.dataset){owned.dataset.dkdsPrimeOwned='1';this.markSurfaceNode(owned,row,'prime');}
       this.primes.set(id,row);this.renderNav();if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);return row;
     }
     registerSub(spec={}){
@@ -142,17 +152,21 @@ const {GridController}=require('../grid/controller');
       const row={role:'sub',keepLeft:false,persistent:true,...spec,id,mounted:false,container:null,cleanup:null};this.subs.set(id,row);this.renderNav();return row;
     }
     renderNav(){
-      const primaryHost=this.shell.querySelector('.dkds-analysis-nav-primary'),primeHost=this.shell.querySelector('.dkds-analysis-nav-prime'),subHost=this.shell.querySelector('.dkds-analysis-nav-sub');
+      const primaryHost=this.navigationHosts?.primary||null,primeHost=this.navigationHosts?.prime||null,subHost=this.navigationHosts?.sub||null;
       primaryHost?.replaceChildren();primeHost?.replaceChildren();subHost?.replaceChildren();
-      if(this.primary&&primaryHost){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
-      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
-      for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-sub-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost?.appendChild(b);}
-      const nav=this.shell.querySelector('.dkds-analysis-nav');
+      const mode=String(this.spec.navigation||this.spec.navigationMode||'auto').toLowerCase();
+      const subRows=[...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100));
+      // PRIMARY is a return route. In current-contract workspaces that only expose
+      // PRIMARY + PRIME controls it must not become a useless same-name button.
+      // A plugin may still request an explicit PRIMARY action with navigation='always'.
+      const showPrimaryNavigation=!!this.primary&&(mode==='always'||subRows.length>0);
+      if(showPrimaryNavigation&&primaryHost){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
+      for(const row of [...this.primes.values()].filter(row=>row.embedded!==true).sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
+      for(const row of subRows){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-sub-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost?.appendChild(b);}
+      const nav=this.navigationElement;
       if(nav){
         const primaryCount=primaryHost?.children.length||0,primeCount=primeHost?.children.length||0,subCount=subHost?.children.length||0,total=primaryCount+primeCount+subCount;
-        const mode=String(this.spec.navigation||this.spec.navigationMode||'auto').toLowerCase();
-        const redundantSinglePrimary=total===1&&primaryCount===1;
-        nav.classList.toggle('empty',mode==='hidden'||total===0||(mode!=='always'&&redundantSinglePrimary));
+        nav.classList.toggle('empty',mode==='hidden'||total===0);
       }
     }
     primeHome(row){
@@ -170,7 +184,13 @@ const {GridController}=require('../grid/controller');
       if(row.mounted&&row.container)return row;
       const found=this.resolvePrimeNode(row);const container=found.container;row.existing=found.existing;
       container.classList.remove('dkds-prime-hidden');
-      if(!container.isConnected)this.primeHome(row)?.appendChild(container);
+      const home=this.primeHome(row);
+      // PRIME close parks persistent existing nodes in the hidden parking slot.
+      // Reopening must first return the node to its semantic home before a new
+      // PortableView captures home geometry. Merely checking isConnected is not
+      // enough because the parking slot is intentionally connected to the DOM.
+      if(container.parentNode===this.slots.parking)home?.appendChild(container);
+      else if(!container.isConnected)home?.appendChild(container);
       const body=found.existing?container:container.querySelector('.dkds-analysis-prime-body');
       const cleanup=row.mount?.({workbench:this,scope:this.scope,container:body,panel:container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;
       row.container=container;row.mounted=true;
@@ -204,7 +224,7 @@ const {GridController}=require('../grid/controller');
       try{row.onClose?.({workbench:this,scope:this.scope,container:row.container,row});}catch(err){console.warn('[DKDS PRIME close]',err);}
       row.portable?.dispose?.();row.portable=null;row.actionGroup?.dispose?.();row.actionGroup=null;cleanupCall(row.cleanup);row.cleanup=null;
       if(row.container){row.container.classList.add('dkds-prime-hidden');this.park(row.container);}
-      row.mounted=false;this.renderNav();this.syncRegions();this.resize('prime-close');return true;
+      row.mounted=false;this.renderNav();this.syncRegions();for(const grid of this.grids)grid.apply?.();this.resize('prime-close');return true;
     }
     showPrimary(){
       const active=this.activeSub?this.subs.get(this.activeSub):null;if(active?.container)this.park(active.container);
@@ -237,6 +257,7 @@ const {GridController}=require('../grid/controller');
       this.portables.set(String(id),value);this.syncRegions();return value;
     }
     grid(container,spec={}){const value=new GridController(this.scope,container,spec);this.grids.push(value);return value;}
+    groupArea(container,spec={}){const value=new GroupAreaController(this.scope,container,spec);this.grids.push(value);return value;}
     surfaceState(){return {primary:this.primary?.id||'',activeSub:this.activeSub,primes:Object.fromEntries([...this.primes].map(([id,row])=>[id,{open:!!row.mounted,placement:row.portable?.wrapper?.dataset?.placement||''}]))};}
     resize(reason='resize'){this.syncRegions();this.scope.requestChartResize?.({reason:`analysis-workbench:${reason}`});return this;}
     dispose(){

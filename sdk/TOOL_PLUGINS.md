@@ -85,7 +85,9 @@ const workspace = ctx.ui.workspaceSurface.create(host, {
 });
 ```
 
-当 Tool 只有一个 Primary 页面时，Core 默认隐藏没有导航价值的单按钮导航条。若工具确实需要始终显示该导航条，可显式传入 `navigation: "always"`；也可使用 `navigation: "hidden"` 强制隐藏。
+在当前合同中，PRIMARY 是工作台主内容面，不是一个默认生成的“同名功能按钮”。`navigation: "auto"` 时，Core 只有在存在 SUB 页面、需要“返回 PRIMARY”这一真实导航语义时才生成 PRIMARY 按钮；PRIME（参数、数据、检查器等）仍按自身语义显示。若插件确实需要始终暴露 PRIMARY 操作，可显式使用 `navigation: "always"`；`navigation: "hidden"` 则关闭整条工作台导航。
+
+PRIME/PlotView 的 `placements` 同样按“真实选择”呈现：若只声明一个位置（例如 `placements: ["left"]`），Core 会固定该位置且**不生成位置菜单**。插件不得再自行隐藏一个无意义的位置按钮；需要可移动时应声明两个或更多合法位置。
 
 优先让 PluginWorkspace 的 `safe` 模式管理滚动：Core 为 Primary 提供固定视口和唯一滚动容器，插件内容可以超出视口，但不能反向把 Host/窗口撑高。插件根节点使用 `min-height:0`，不要串联 `min-height:100%`；表单/卡片若使用多行 `auto` Grid，应显式 `align-content:start`，避免被同排更高卡片拉伸后把空余高度分散到各行。只有有意参与文档流增长时才使用 `auto`，真正固定视口且不需要 Host 滚动时才使用 `contained`。
 

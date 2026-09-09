@@ -1,8 +1,14 @@
 'use strict';
 const {state, commandMenuPortals}=require('../context');
-const {reflowActivities}=require('../activity/shell');
 const {closeContextOverflowPopup,openContextOverflowPopup,reflowContextToolbar}=require('../shell/context-toolbar');
 const {listContributions}=require('../contributions/typed');
+const {pluginHostView}=require('../host-facade');
+const StyleGate=globalThis.DKDSStyleGate;
+if(!StyleGate)throw new Error('DKDSStyleGate must initialize before plugin command menus.');
+const STYLE_OWNER='core.plugin-command-menu';
+const STYLE_SOURCE='src/core/plugins/kernel/modules/shortcuts/menu.js';
+const menuSet=(el,prop,value)=>StyleGate.set(el,prop,value,{owner:STYLE_OWNER,component:'command-menu',kind:'runtime-inline',source:STYLE_SOURCE});
+const menuRemove=(el,prop)=>StyleGate.remove(el,prop,{owner:STYLE_OWNER,component:'command-menu',kind:'runtime-inline',source:STYLE_SOURCE});
   function isTypingTarget(target){
     if(!target)return false;
     const tag=String(target.tagName||'').toLowerCase();
@@ -17,11 +23,11 @@ const {listContributions}=require('../contributions/typed');
       const spec=row.value||{};
       if(isTypingTarget(event.target)&&!spec.allowTyping)continue;
       let match=false;
-      try{match=typeof spec.match==='function'?!!spec.match(event,{host:state.host,activityId:state.activeActivityId,pluginId:row.pluginId}):false;}
+      try{match=typeof spec.match==='function'?!!spec.match(event,{host:pluginHostView(),activityId:state.activeActivityId,pluginId:row.pluginId}):false;}
       catch(err){console.error(`[DKDS shortcut match:${row.pluginId}/${row.id}]`,err);continue;}
       if(!match)continue;
       try{
-        const handled=spec.handler?.({event,host:state.host,activityId:state.activeActivityId,pluginId:row.pluginId})!==false;
+        const handled=spec.handler?.({event,host:pluginHostView(),activityId:state.activeActivityId,pluginId:row.pluginId})!==false;
         if(handled){
           event.preventDefault?.();
           event.stopImmediatePropagation?.();
@@ -43,6 +49,15 @@ const {listContributions}=require('../contributions/typed');
     const recipe=String(globalThis.DKDSTheme?.recipePolicy?.()?.popover||'').trim();
     return TRANSLUCENT_COMMAND_MENU_RECIPES.has(recipe);
   }
+  function prepareCommandMenuForPaint(menu){
+    if(!menu)return null;
+    globalThis.DKDSMaterialSurface?.apply?.(menu,'popover');
+    for(const item of menu.querySelectorAll?.('button,[role="menuitem"],[role="option"],.plugin-menu-item,.menu-item')||[]){
+      if(!item.dataset?.dkdsComponentIdentity){item.dataset.dkdsComponentIdentity='menuItem';item.dataset.dkdsComponentIdentityOwner='core-command-menu';}
+    }
+    globalThis.DKDSThemeComponentAppearance?.assign?.(menu);
+    return menu;
+  }
   function commandMenuAnchorButton(menu){
     return commandMenuPortals.get(menu)?.button||menu?.closest?.('.menu-anchor')?.querySelector?.('[aria-expanded]')||null;
   }
@@ -63,7 +78,7 @@ const {listContributions}=require('../contributions/typed');
     let top=rect.bottom+gap;
     if(height&&top+height>viewportHeight-margin&&rect.top-height-gap>=margin)top=rect.top-height-gap;
     top=Math.max(margin,Math.min(top,Math.max(margin,viewportHeight-Math.min(height,viewportHeight-margin*2)-margin)));
-    menu.style.left=`${Math.round(left)}px`;menu.style.top=`${Math.round(top)}px`;menu.style.right='auto';
+    menuSet(menu,'left',`${Math.round(left)}px`);menuSet(menu,'top',`${Math.round(top)}px`);menuSet(menu,'right','auto');
   }
   function portalCommandMenu(button,menu){
     if(!button||!menu||!commandMenuPortalEnabled())return false;
@@ -78,10 +93,11 @@ const {listContributions}=require('../contributions/typed');
     // Resolve portal geometry while hidden from paint. Removing `.hidden` before
     // setting visibility allowed a transient frame at the menu's old flow
     // position on some Chromium builds, which looked like the menu flew upward.
-    menu.style.visibility='hidden';
+    menuSet(menu,'visibility','hidden');
     menu.classList.remove('hidden');
+    prepareCommandMenuForPaint(menu);
     positionCommandMenuPortal(button,menu);
-    menu.style.visibility='';
+    menuRemove(menu,'visibility');
     return true;
   }
   function restoreCommandMenu(menu){
@@ -92,7 +108,7 @@ const {listContributions}=require('../contributions/typed');
       state.placeholder.remove();
     }
     menu.classList.remove('dkds-command-menu-portal');
-    for(const property of ['left','top','right','visibility'])menu.style.removeProperty(property);
+    for(const property of ['left','top','right','visibility'])menuRemove(menu,property);
     commandMenuPortals.delete(menu);
     return !!state;
   }
@@ -127,7 +143,9 @@ const {listContributions}=require('../contributions/typed');
         if(willOpen){
           menu.dispatchEvent(new CustomEvent('dkds:menu-will-open',{bubbles:false}));
           if(commandMenuPortalEnabled())portalCommandMenu(button,menu);
-          else menu.classList.remove('hidden');
+          else{
+            menuSet(menu,'visibility','hidden');menu.classList.remove('hidden');prepareCommandMenuForPaint(menu);menuRemove(menu,'visibility');
+          }
           button.setAttribute('aria-expanded','true');
         }else closeCommandMenu(menu);
       });
@@ -156,12 +174,13 @@ const {listContributions}=require('../contributions/typed');
       if(!event.target.closest('.context-overflow-anchor')&&!event.target.closest('.dkds-context-menu'))closeContextOverflowPopup();
       if(!event.target.closest('.activity-more-anchor')&&!event.target.closest('.activity-more-menu'))closeCommandMenu(activityMoreMenu);
     });
+    globalThis.addEventListener?.('dkds:context-toolbar-changed',()=>reflowContextToolbar());
     globalThis.addEventListener?.('dkds:theme-profile-changed',()=>{
       if(commandMenuPortalEnabled())return;
       document.querySelectorAll('.command-menu.dkds-command-menu-portal').forEach(menu=>restoreCommandMenu(menu));
     });
     if(window.ResizeObserver){
-      state.shellResizeObserver=new ResizeObserver(()=>{reflowContextToolbar();reflowActivities();repositionPortaledCommandMenus();});
+      state.shellResizeObserver=new ResizeObserver(()=>{reflowContextToolbar();repositionPortaledCommandMenus();});
       const context=document.querySelector('.context-commandbar');
       const activity=document.querySelector('.activity-switcher');
       const topbar=document.querySelector('.topbar-primary');
@@ -169,7 +188,7 @@ const {listContributions}=require('../contributions/typed');
       if(activity)state.shellResizeObserver.observe(activity);
       if(topbar)state.shellResizeObserver.observe(topbar);
     }else{
-      window.addEventListener?.('resize',()=>{reflowContextToolbar();reflowActivities();repositionPortaledCommandMenus();},{passive:true});
+      window.addEventListener?.('resize',()=>{reflowContextToolbar();repositionPortaledCommandMenus();},{passive:true});
     }
   }
-module.exports=Object.freeze({isTypingTarget, dispatchPluginShortcut, TRANSLUCENT_COMMAND_MENU_RECIPES, commandMenuPortalEnabled, commandMenuAnchorButton, shellCommandMenus, positionCommandMenuPortal, portalCommandMenu, restoreCommandMenu, closeCommandMenu, closeOtherCommandMenus, repositionPortaledCommandMenus, bindShellOnce});
+module.exports=Object.freeze({isTypingTarget, dispatchPluginShortcut, TRANSLUCENT_COMMAND_MENU_RECIPES, commandMenuPortalEnabled, prepareCommandMenuForPaint, commandMenuAnchorButton, shellCommandMenus, positionCommandMenuPortal, portalCommandMenu, restoreCommandMenu, closeCommandMenu, closeOtherCommandMenus, repositionPortaledCommandMenus, bindShellOnce});

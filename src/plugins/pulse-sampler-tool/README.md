@@ -137,7 +137,7 @@ DK Data Studio Plugin API 1.19.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 
 ## v1.9.2 / SDK 1.18.0 重新发布
 
-- 使用当前 SDK 1.24.0 / Plugin API 1.19.0 / Theme Contract 3.10.0 重新校验和打包。
+- 使用当前 SDK 1.27.0 / Plugin API 1.19.0 / Theme Contract 3.10.0 重新校验和打包。
 - 本次 SDK 与 v1.9.0 所使用的 SDK 逐文件一致，因此不引入额外兼容层或无意义的实现改动。
 - 插件仍使用 canonical Artifact-only 数据路径、Core ScientificPlot legend/series、Core TableSurface 和 safe PluginWorkspace。
 - 脉冲生成、三通道合并、时间边界匹配、稳态平均、结果显示与 CSV 数据语义均保持不变。

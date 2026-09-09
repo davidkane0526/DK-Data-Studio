@@ -32,11 +32,7 @@
     return rows.length?rows.map(row=>`${row.id}@${row.version}`).join('、'):'未声明可离线索引的算法版本';
   }
 
-  function pluginCompatibilityText(plugin){
-    const app=plugin?.compatibility?.app||'*',api=plugin?.compatibility?.pluginApi||'*',theme=plugin?.compatibility?.themeContract||'*',deps=Array.isArray(plugin?.pluginDependencies)?plugin.pluginDependencies:[];
-    const depText=deps.length?` · 依赖 ${deps.map(row=>`${row.id} ${row.range}${row.optional?'（可选）':''}`).join('、')}`:'';
-    return `App ${app} · Plugin API ${api}${pluginTypeMeta(plugin).id==='theme'?` · Theme ${theme}`:''}${depText}`;
-  }
+
 
   function themeProfilesFor(pluginId){
     const id=String(pluginId||'');
@@ -102,28 +98,16 @@
       'ui.sidebar':'侧栏界面',
       'ui.inspector':'检查器',
       'ui.group-charts':'组图',
-      'ui.groupCharts':'组图',
-      'ui.groupViews':'组图视图',
-      'ui.mainViews':'主视图',
-      'ui.selectionMenus':'选区菜单',
-      'ui.mainOverlays':'主图叠加层',
       'ui.shortcuts':'快捷键',
       'ui.topWorkspaces':'TOP 工作区契约',
-      'ui.prime':'PRIME 功能',
-      'ui.sub':'SUB 功能',
       'ui.main-tools':'主图工具',
       'ui.status-bar':'底部状态栏',
       'ui.top-workspace':'TOP 工作区',
-      'ui.prime':'PRIME 功能',
-      'ui.sub':'SUB 功能',
       'data.importer':'数据导入',
       'data.import':'数据导入',
       'data.inspector':'数据检查',
       'data.model':'标准数据模型',
       'data.formula':'公式派生列',
-      'analysis.resonance':'共振分析',
-      'analysis.ter':'TER 分析',
-      'analysis.pulse':'脉冲分析',
       'analysis.peak-detector':'寻峰算法',
       'chart.trend':'趋势图',
       'chart.heatmap':'热图',
@@ -137,7 +121,9 @@
       'lan.web-status':'网页版状态',
       'project.slice':'工程状态'
     };
-    return map[capability] || capability;
+    if(map[capability])return map[capability];
+    if(String(capability||'').startsWith('analysis.'))return `分析能力 · ${String(capability).slice('analysis.'.length)}`;
+    return capability;
   }
 
   function contributionKindLabel(kind){
@@ -150,11 +136,6 @@
       'ui.theme':'主题配置',
       'ui.sidebar':'侧栏区域',
       'ui.inspectors':'检查器',
-      'ui.groupCharts':'组图',
-      'ui.groupViews':'组图视图',
-      'ui.mainViews':'主视图',
-      'ui.selectionMenus':'选区菜单',
-      'ui.mainOverlays':'主图叠加层',
       'ui.shortcuts':'快捷键',
       'workflow.processors':'数据处理器',
       'workflow.analyzers':'分析器',
@@ -286,7 +267,7 @@
   }
 
 
-  function renderSummary(all) {
+  function renderSummary(all,visible=all) {
     const total=all.length;
     const active=all.filter(p=>p.active).length;
     const disabled=all.filter(p=>!p.enabled).length;
@@ -294,11 +275,13 @@
     const local=all.filter(p=>p.source==='external'||p.source==='override').length;
     const overrides=all.filter(p=>p.source==='override').length;
     const themes=all.filter(p=>pluginTypeMeta(p).id==='theme').length;
-    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['主题',themes],['本地插件',local],['内置更新',overrides],['错误',errors]];
+    const rows=[['全部插件',total,'all'],['显示',`${visible.length} / ${total}`,'visible'],['已启用',active],['已停用',disabled],['主题',themes],['本地插件',local],['内置更新',overrides],['错误',errors]];
     const host=$('#pluginManagerSummary');
     if(!host)return;
-    host.innerHTML=rows.map(([label,value],index)=>{const error=label==='错误'&&value;return `<div class="plugin-manager-stat ${error?'has-error':''}"${error?' data-dkds-material-state="error"':''}><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`;}).join('');
+    host.innerHTML=rows.map(([label,value,kind])=>{const error=label==='错误'&&value;const refresh=kind==='all'?'<button id="pluginManagerSummaryRefreshBtn" class="plugin-manager-summary-refresh" type="button" aria-label="刷新插件目录" data-dkds-tooltip="刷新插件目录">↻</button>':'';return `<div class="plugin-manager-stat ${error?'has-error':''}"${error?' data-dkds-material-state="error"':''}><div class="plugin-manager-stat-head"><span>${escapeHtml(label)}</span>${refresh}</div><strong>${escapeHtml(value)}</strong></div>`;}).join('');
+    const refresh=$('#pluginManagerSummaryRefreshBtn');if(refresh)refresh.onclick=()=>void refreshManager();
   }
+
 
   function renderList(options={}) {
     const list=$('#pluginManagerList');
@@ -307,17 +290,17 @@
     const scrollSnapshot=captureManagerScroll(anchorPluginId);
     const resetScroll=options.scroll==='top';
     const all=window.DKDSPlugins?.manager?.list?.()||[];
-    renderSummary(all);
     const installSupported=!!window.DKDSPlugins?.external?.available?.();
     const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.dataset.dkdsTooltip=installSupported?'安装 .dkplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
-    const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn)folderBtn.disabled=!installSupported;
+    const folderSupported=window.DKDSPlugins?.external?.folderAvailable?.()===true;
+    const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn){folderBtn.hidden=!folderSupported;folderBtn.disabled=!folderSupported;folderBtn.dataset.dkdsTooltip=folderSupported?'打开桌面端插件目录':'';}
     const externalErrors=window.DKDSPlugins?.external?.errors?.()||[];
     const note=$('#pluginManagerNote');
     if(note)note.innerHTML=externalErrors.length
       ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
       : '发行版内置插件是可回退的基线；安装<strong>同 ID、版本更高</strong>的 <code>.dkplugin</code> 会建立本地更新层，重启后生效，并可随时恢复内置版本。普通外部插件仍可直接安装、更新与卸载。';
     const plugins=filteredPlugins();
-    $('#pluginManagerVisibleCount').textContent=`显示 ${plugins.length} / ${all.length}`;
+    renderSummary(all,plugins);
 
     if(!plugins.length){
       list.innerHTML='<div class="plugin-manager-empty">没有符合当前筛选条件的插件。</div>';
@@ -392,9 +375,9 @@
           </div>
           <div class="plugin-card-actions">
             <button class="plugin-details-btn" type="button">详情</button>
-            <button class="plugin-export-btn" type="button" ${busy?'disabled':''}>导出</button>
+            <button class="plugin-export-btn" type="button" data-dkds-native-save="export" ${busy?'disabled':''}>导出</button>
             <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
-            ${(plugin.source==='external'||plugin.source==='override')?`<button class="plugin-history-btn" type="button" ${busy?'disabled':''}>版本历史</button><button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>${plugin.source==='override'?'恢复内置版本':'卸载'}</button>`:''}
+            ${(plugin.source==='external'||plugin.source==='override')?`<button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>${plugin.source==='override'?'恢复内置版本':'卸载'}</button>`:''}
           </div>
         </div>
         <div class="plugin-card-details hidden">
@@ -403,9 +386,9 @@
           <div><strong>启用来源：</strong>${plugin.systemLocked?'系统功能 · 强制启用':plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
-          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div><div><strong>兼容范围：</strong>${escapeHtml(pluginCompatibilityText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
+          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
           ${typeMeta.id==='theme'?`<div><strong>Theme Contract：</strong>v${escapeHtml(window.DKDSTheme?.version||'?')} · 当前 Profile ${escapeHtml(window.DKDSTheme?.profile?.()||'builtin.default')} · 已注册 ${themeProfilesFor(plugin.id).length}</div>`:''}
-          ${plugin.systemLocked&&plugin.workspaceRole==='top'?`<div><strong>系统窗口：</strong>独立系统功能 · 强制启用 · 不参与 SUPER 选择</div>`:(plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:'')}
+          ${plugin.systemLocked&&plugin.workspaceRole==='top'?`<div><strong>系统窗口：</strong>独立系统功能 · 强制启用 · 不参与 SUPER 选择</div>`:(plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'}</div>`:'')}
         </div>`;
 
       const superSelector=card.querySelector('.plugin-super-selector');
@@ -482,19 +465,6 @@
 
       card.querySelectorAll('.plugin-algorithm-preference').forEach(select=>{select.onchange=()=>{try{const category=select.dataset.algCategory||'',id=select.dataset.algId||'',version=select.value||'';if(version)window.DKDSScientificAlgorithms.setPreferred({category,id,version});else window.DKDSScientificAlgorithms.clearPreferred(category,id);state.host?.setStatus?.(`${id} 的新分析默认版本已${version?`设为 v${version}`:'恢复为自动解析'}；已锁定工程不会改变。`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`算法默认版本修改失败：${err.message}`);renderList({anchorPluginId:plugin.id});}};});
 
-      const historyBtn=card.querySelector('.plugin-history-btn');
-      if(historyBtn)historyBtn.onclick=async()=>{
-        try{
-          const rows=await window.DKDSPlugins.external.history(plugin.id);
-          if(!rows?.length){state.host?.setStatus?.(`${display.name} 暂无可回退的历史版本。`);return;}
-          const candidates=rows.slice(0,12);
-          const token=await window.DKDSUI?.dialogs?.prompt?.({tone:'info',title:'选择插件历史版本',message:`选择要回退的 ${display.name} 版本。当前插件包会自动进入版本历史，可再次恢复。`,input:{type:'select',label:'历史版本',value:candidates[0]?.token||'',options:candidates.map(row=>({value:row.token,label:`v${row.version} · ${row.archiveReason||'history'}${row.archivedAt?` · ${row.archivedAt}`:''}`}))},confirmLabel:'选择版本'});if(token===null)return;
-          const row=candidates.find(item=>String(item.token)===String(token));if(!row){state.host?.setStatus?.('无效的历史版本。');return;}
-          const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'回退插件版本',message:`将 ${display.name} 从 v${plugin.version||'?'} 回退到 v${row.version}。`,meta:[{label:'插件 ID',value:plugin.id},{label:'目标版本',value:`v${row.version}`}],cancelLabel:'取消',confirmLabel:'回退版本'});if(!confirmed)return;
-          state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});await window.DKDSPlugins.external.rollback(plugin.id,row.token);state.host?.setStatus?.(`${display.name} 已回退到 v${row.version}。`);
-        }catch(err){state.host?.setStatus?.(`插件版本回退失败：${err.message}`);}finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
-      };
-
       const uninstall=card.querySelector('.plugin-uninstall-btn');
       if(uninstall)uninstall.onclick=async()=>{
         const restoring=plugin.source==='override';
@@ -539,12 +509,42 @@
     }
   }
 
+  async function refreshManager({silent=false}={}){
+    const button=$('#pluginManagerSummaryRefreshBtn');
+    if(button)button.disabled=true;
+    if(!silent)state.host?.setStatus?.('正在完成当前插件目录加载…');
+    try{
+      // “刷新” is a lifecycle operation, not a paint-only action. It forces
+      // the staged first-paint registry to complete and then renders the exact
+      // current-contract definitions that actually exist. No legacy package is
+      // translated or resurrected here.
+      await (window.DKDSPlugins?.manager?.refresh?.()||window.DKDSPlugins?.ensureReady?.({includeExternal:true,reason:'plugin-manager-refresh'}));
+      window.DKDSPlugins?.activities?.refresh?.();
+      renderList({scroll:'top'});
+      settleManagerAtTop();
+      if(!silent){
+        const count=window.DKDSPlugins?.manager?.list?.().length||0;
+        state.host?.setStatus?.(`插件目录已刷新：${count} 个当前合同插件。`);
+      }
+      return true;
+    }catch(err){
+      state.host?.setStatus?.(`插件目录刷新失败：${err?.message||err}`);
+      renderList({scroll:'top'});
+      return false;
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
   function openManager(){
     state.host?.openAnalysisPage?.('pluginManagerPage');
     const scroller=pluginManagerScroller();
     if(scroller)scroller.scrollTop=0;
     renderList({scroll:'top'});
     settleManagerAtTop();
+    // Opening the manager is also an explicit request to inspect the complete
+    // plugin catalog. Finish any background staging without blocking the panel.
+    void refreshManager({silent:true});
   }
 
   function bind(){
@@ -554,7 +554,6 @@
     $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList({scroll:'top'});};
     $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList({scroll:'top'});};
     $('#pluginManagerTypeFilter').onchange=e=>{state.typeFilter=e.target.value||'all';renderList({scroll:'top'});};
-    $('#pluginManagerRefreshBtn').onclick=renderList;
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{
         const installed=await window.DKDSPlugins.external.install();
@@ -570,7 +569,7 @@
       }catch(err){await showPluginInstallFailure(err);}
       renderList();
     };
-    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.DKDSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
+    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{const opened=await window.DKDSPlugins.external.openFolder();if(opened===false)state.host?.setStatus?.('当前平台没有可直接浏览的插件目录；请使用“安装插件”选择 .dkplugin 文件。');}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
       const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'恢复插件默认设置',message:'恢复所有插件的默认启用状态与默认预热设置？插件工程数据不会被删除。',cancelLabel:'取消',confirmLabel:'恢复默认'});if(!confirmed)return;
@@ -606,6 +605,7 @@
   window.DKDSPluginManagerUI={
     configure(host){state.host=host||{};bind();renderList();},
     render:renderList,
+    refresh:refreshManager,
     open:openManager
   };
 })();

@@ -39,10 +39,14 @@ assert(resonanceMainPlot.includes('onWheelZoomStart:()=>clearRangeMenu({keepSele
 for(const forbidden of ['d3.drag().clickDistance(7)','wheel.resmain','rangeDrag={pointerId']){
   assert(!resonanceFeature.includes(forbidden)&&!resonanceMainPlot.includes(forbidden),`Resonance retained base interaction plumbing: ${forbidden}`);
 }
-for(const folder of ['data-center','ter-analysis','pulse-analysis']){
+for(const folder of ['ter-analysis','pulse-analysis']){
   const views=read(`src/plugins/${folder}/shared-views.js`);
   assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder} must consume the single public workspaceSurface contract.`);
 }
+const dataCenterShared=read('src/plugins/data-center/shared-views.js');
+const dataCenterMobile=read('src/plugins/data-center/mobile-presentation.js');
+assert(!dataCenterShared.includes('ctx.ui.workspaceSurface.create')&&dataCenterMobile.includes('ctx.ui.workspaceSurface.create'),
+  'SDK 1.25 Data Center must keep Desktop shared composition static while Mobile alone consumes workspaceSurface through its platform presentation module.');
 
 
 // v3.36 canvas-local docking / performance invariants.

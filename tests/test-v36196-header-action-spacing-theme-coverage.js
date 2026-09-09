@@ -44,8 +44,8 @@ assert(shell.includes('.analysis-page-header>.analysis-page-close{flex:0 0 auto;
 // and Close, rather than one shared outer capsule with touching hit regions.
 assert(chrome.includes('.analysis-page-header>.dkds-separated-action-group')&&chrome.includes('background:transparent;'),
   'Separated header action group container must be paintless.');
-assert(actions.includes("button.dataset.dkdsActionLayout='standalone'")&&/\.dkds-action-button\{[^}]*height:30px;[^}]*padding:0 10px;/.test(structure)&&semanticTheme.includes("const group=closest(target,INTEGRATED_CONTAINER_SELECTOR);return group&&group!==target?'grouped':'standalone'")&&appearance.includes('[data-dkds-component-identity="toolbarAction"]'),
-  'Separated header actions must keep canonical geometry while Theme 3.10 resolves them as standalone ToolbarAction components.');
+assert(actions.includes("button.dataset.dkdsActionLayout='standalone'")&&shell.includes('--dkds-header-action-height:30px')&&!/\.dkds-action-button\{[^}]*?(?:^|[;{])\s*height\s*:/m.test(structure)&&semanticTheme.includes("const group=closest(target,INTEGRATED_CONTAINER_SELECTOR);return group&&group!==target?'grouped':'standalone'")&&appearance.includes('[data-dkds-component-identity="toolbarAction"]'),
+  'Separated header actions must configure the canonical height slot while Theme resolves them as standalone ToolbarAction components.');
 assert(!chrome.includes('.dkds-separated-action-group>.dkds-action-button'),
   'Presentation must not restore a page-specific paint path for separated header actions.');
 

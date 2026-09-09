@@ -54,8 +54,13 @@ for(const [name,folder] of Object.entries(migrated)){
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${name} controller must use the typed core Selection/Interaction Runtime`);
-  assert(views.includes('ctx.ui.workspaceSurface.create'),`${name} shared views must use the canonical workspaceSurface`);
-  assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
+  const presentationViews=name==='Data Center'?read('src/plugins/data-center/mobile-presentation.js'):views;
+  assert(presentationViews.includes('ctx.ui.workspaceSurface.create'),`${name} platform presentation must use the canonical workspaceSurface where semantic remapping is required`);
+  assert(presentationViews.includes('wb.compose')||presentationViews.includes('wb.mountPrimary'),`${name} platform presentation must compose its semantic PRIMARY through the Analysis Workbench`);
+  if(name==='Data Center'){
+    assert(!views.includes('ctx.ui.workspaceSurface.create')&&manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.scripts?.includes('mobile-presentation.js'),
+      'Data Center must keep the established Desktop shared page and isolate Mobile workspace remapping in SDK 1.25 platformPresentation.');
+  }
   assert(feature.includes('ctx.ui.actions')&&(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts')),`${name} feature runtime must use dynamic actions and Core PlotView/Chart infrastructure`);
   assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
   assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);

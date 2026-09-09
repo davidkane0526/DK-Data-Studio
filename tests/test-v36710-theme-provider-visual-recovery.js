@@ -7,11 +7,10 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const thin=read('src/plugins/thin-glass-theme/plugin.js'),aurora=read('src/plugins/aurora-pop-theme/plugin.js');
-assert.equal(json('src/plugins/thin-glass-theme/plugin.json').version,'1.12.2');
+assert.equal(json('src/plugins/thin-glass-theme/plugin.json').version,'1.12.3');
 assert.equal(json('src/plugins/aurora-pop-theme/plugin.json').version,'2.3.2');
 for(const source of [thin,aurora]){
-  assert(source.includes('contract.appearance.component-contexts'));
-  assert(source.includes('contract.material.contexts'));
+  assert(!/theme\.supports\s*\(|\.supports\s*\(\s*['\"]contract[.:]/.test(source),'Current Theme providers must target Theme Contract 3.10 directly instead of probing historical/current capability IDs.');
   assert(source.includes('contexts:{grouped:'));
   assert(source.includes("'workspace-modal':{materialBlur:"));
 }

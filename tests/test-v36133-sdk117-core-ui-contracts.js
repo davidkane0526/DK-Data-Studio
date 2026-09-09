@@ -9,9 +9,9 @@ const json=rel=>JSON.parse(read(rel));
 
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.24.0','SDK must be the current 1.23 / Plugin API 1.19 contract.');
+assert.equal(contract.sdkVersion,'1.28.0','SDK must be the current SDK 1.28 / Plugin API 1.19 contract.');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.67.10','SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
+assert.equal(contract.minimumAppVersion,'3.68.36','SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
 
 const infra=read('src/generated/runtime/ui-infrastructure.js');
 for(const token of ['class SeriesRegistry','class LegendGroup','class ActiveLayoutSolver','class GroupPlot','class TooltipService','series=new SeriesRegistry','groupPlots={create','layoutSolver.solve'])assert(infra.includes(token),`Core UI contract missing ${token}`);

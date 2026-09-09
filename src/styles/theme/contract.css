@@ -1,32 +1,6 @@
-/* Theme Contract semantic/motion base
-   Theme profiles own semantic appearance plus bounded motion tokens.
-   Core owns the animation recipes and reduced-motion safety. */
-body.dkds-modern-ui :where(button,.dkds-action-button,.project-tab-close,.plugin-manager-card,.dataset-item,.dkds-selection-item){
-  transition-duration:var(--dkui-motion-fast);
-  transition-timing-function:var(--dkui-ease-standard);
-}
-body.dkds-modern-ui :where(.dkds-dialog,.command-menu,.dkds-portable-view){
-  transition-duration:var(--dkui-motion-normal);
-  transition-timing-function:var(--dkui-ease-emphasized);
-}
-/* Standard Core controls are stationary. Theme may tune motion timing, but
-   hover/active/focus never move or scale the control silhouette. */
-body.dkds-modern-ui :where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible){
-  transform:none;
-}
-/* Popover/menu anchor geometry is also stationary. The Theme contract owns
-   motion recipes; presentation files only own semantic paint/content. */
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu){
-  animation:none;transform:none;transition-property:opacity,background-color,border-color,color,box-shadow;
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item){
-  transform:none;transition-property:background-color,border-color,color,box-shadow;
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):is(:hover,:active,:focus-visible){
-  transform:none;
-}
+/* Theme Contract semantic/motion tokens.
+   Theme profiles own semantic appearance and bounded motion configuration.
+   Temporal behavior itself is authored only in styles/motion/recipes.css. */
 @media(prefers-reduced-motion:reduce){
   :root{
     --dkui-motion-fast:.001ms;

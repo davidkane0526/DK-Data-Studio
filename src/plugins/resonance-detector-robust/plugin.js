@@ -1,17 +1,5 @@
 (() => {
-  DKDSPlugins.define({
-    id:'builtin.resonance-detector-robust',pluginType:'algorithm',
-    name:'Standard Resonance Algorithms',
-    version:'2.2.0',
-    apiVersion:'1.19.0',requiresCore:["science","analysis.algorithms","modules"],
-    description:'Versioned resonance peak detection and baseline-aware peak metrics algorithms.',
-    source:'builtin',
-    order:80,
-    algorithmProvider:true,algorithmCategories:['peak-detector','peak-metrics'],
-    algorithmProvides:[{category:'peak-detector',id:'robust-ricker-v1',version:'1.0.0',title:'稳健多通道 / 多尺度'},{category:'peak-metrics',id:'baseline-fwhm-v1',version:'1.0.0',title:'局部基线 FWHM'}],
-    pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'},
-    capabilities:['analysis.algorithm','analysis.peak-detector','analysis.peak-metrics']
-  }, async ctx => {
+  DKDSPlugins.define({"id":"builtin.resonance-detector-robust","name":"Standard Resonance Algorithms","version":"2.2.0","apiVersion":"1.19.0","requiresCore":["science","analysis.algorithms","modules"],"entry":"plugin.js","scripts":["algorithm.js","plugin.js"],"enabled":true,"order":80,"description":"Versioned built-in resonance peak detection and FWHM/peak-metrics algorithm providers. Implementations are plugin-local and replaceable.","capabilities":["analysis.algorithm","analysis.peak-detector","analysis.peak-metrics"],"algorithmProvider":true,"algorithmCategories":["peak-detector","peak-metrics"],"algorithmProvides":[{"category":"peak-detector","id":"robust-ricker-v1","version":"1.0.0","title":"稳健多通道 / 多尺度"},{"category":"peak-metrics","id":"baseline-fwhm-v1","version":"1.0.0","title":"局部基线 FWHM"}],"pluginType":"algorithm","pluginDependencies":[{"id":"builtin.scientific-data-contracts"}]}, async ctx => {
     const S=ctx.science;
     const A=ctx.modules.require('algorithm');
     if(!A?.detectPeaks||!A?.peakMetrics)throw new Error('Standard resonance algorithm implementation is unavailable.');

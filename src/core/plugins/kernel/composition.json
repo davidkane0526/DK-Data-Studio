@@ -63,6 +63,10 @@
       "path": "src/core/plugins/kernel/modules/pages/panels.js"
     },
     {
+      "id": "kernel/host-facade",
+      "path": "src/core/plugins/kernel/modules/host-facade.js"
+    },
+    {
       "id": "kernel/plugin-api",
       "path": "src/core/plugins/kernel/modules/plugin-api.js"
     },
@@ -80,5 +84,8 @@
     }
   ],
   "entryModule": "kernel/runtime",
-  "modules": []
+  "modules": [],
+  "preludeScripts": [
+    "src/core/theme/style-ownership-gate-runtime.js"
+  ]
 }

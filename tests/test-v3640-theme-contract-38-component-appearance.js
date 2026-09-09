@@ -7,13 +7,12 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.24.0');
+assert.equal(sdk.sdkVersion,'1.28.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
-assert.equal(sdk.minimumAppVersion,'3.67.10');
+assert.equal(sdk.minimumAppVersion,'3.68.36');
 assert.equal(Theme.version,'3.10.0');
-assert(Theme.supports('contract:3.6.0')&&Theme.supports('contract:3.7.0')&&Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must preserve additive 3.x contract capability IDs from the supported baseline.');
-assert(!Theme.supports('contract:4.0.0')&&!Theme.supports('contract:2.9.0'),'Theme runtime must not advertise future-major or different-major contract capabilities.');
+for(const historical of ['contract:3.6.0','contract:3.7.0','contract:3.8.0','contract:3.9.0','contract:4.0.0','contract:2.9.0']) assert.equal(Theme.supports(historical),false,`Theme Contract 3.10 must not negotiate version capabilities: ${historical}`);
 assert(Theme.supports('contract.appearance.components')&&Theme.supports('contract.appearance.components.tab'));
 assert(Theme.supports('contract.scientific.precedence'));
 assert.deepEqual(Theme.componentAppearanceComponents(),['tab','toolbarAction','toolbarGroup','panelHeader','inspectorHeader','menuItem','chip','statusBar','floatingChrome','field']);
@@ -50,7 +49,7 @@ for(const token of ["VERSION='4.0.0'",'appearanceCoverage','authoredUnused','app
 const debug=read('src/core/theme/debug-runtime.js');
 for(const token of ['componentIdentity','appearanceSlot','resolvedTokenSource','sourceTheme']) assert(debug.includes(token),`Theme Debug missing ${token}`);
 const gallery=read('src/core/theme/test-gallery.js');
-for(const token of ["VERSION='4.0.0'",'Theme Component Gallery','Toolbar Action','Panel Header','Inspector Header','Menu Item','ScientificPlot / neutral data surface','Tooltip / Popover','data-gallery-meta']) assert(gallery.includes(token),`Theme Gallery missing ${token}`);
+for(const token of ["VERSION='4.1.0'",'Theme Component Gallery','Toolbar Action','Panel Header','Inspector Header','Menu Item','ScientificPlot / neutral data surface','Tooltip / Popover','data-gallery-meta']) assert(gallery.includes(token),`Theme Gallery missing ${token}`);
 
 const api=read('src/core/plugins/kernel/modules/plugin-api.js');
 assert(api.includes('appearanceComponents:')&&api.includes('consumption:')&&api.includes("mode:'fallback-only'"));

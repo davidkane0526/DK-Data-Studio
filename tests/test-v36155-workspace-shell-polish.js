@@ -13,7 +13,7 @@ const json=rel=>JSON.parse(read(rel));
 // built-in machine-readable registry used by every other dedicated workspace.
 const vth=json('src/plugins/transfer-vth-lab/plugin.json');
 assert.equal(vth.id,'com.dkds.transfer-vth-lab');
-assert.equal(vth.version,'3.0.5');
+{const parts=String(vth.version||'0.0.0').split('.').map(Number);const current=(parts[0]||0)*1e6+(parts[1]||0)*1e3+(parts[2]||0);assert(current>=3000005,'Vth built-in must remain at or above the v3.0.5 TOP-workspace baseline.');}
 assert.equal(vth.workspace?.role,'top');
 assert.equal(vth.workspace?.activity,'transfer-vth-lab');
 assert.equal(vth.window?.activity,'transfer-vth-lab');

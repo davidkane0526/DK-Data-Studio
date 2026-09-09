@@ -1,5 +1,7 @@
 'use strict';
 const {$, state, status}=require('./context');
+const {createOwner}=require('./style-gate');
+const style=createOwner('app.foundation','runtime-app-foundation');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
 const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
@@ -155,7 +157,7 @@ function renderUpdateStatus(status){
   $('#updateLastCheck').textContent=formatUpdateTime(status.lastCheckAt);
 
   const progress=Math.max(0,Math.min(100,Number(status.progress)||0));
-  $('#updateProgressBar').style.width=`${progress}%`;
+  style.set($('#updateProgressBar'),'width',`${progress}%`,{component:'update-progress'});
   $('#updateProgressText').textContent=phase==='downloading'
     ? `${progress.toFixed(1)}%`
     : (phase==='downloaded'?'100%':'');
@@ -304,8 +306,11 @@ function renderLanWebStatus(status){
   const panel=$('#lanWebPanel');
   panel?.classList.toggle('native-local-only',localOnly);
   const title=panel?.querySelector('.lan-web-panel-title>span');
+  const mobileTitle=panel?.querySelector('[data-lan-web-mobile-title]');
   const subtitle=panel?.querySelector('.lan-web-panel-title>small');
-  if(title)title.textContent=localOnly?'本机独立网页版':'局域网网页版';
+  const resolvedTitle=localOnly?'本机独立网页版':'局域网网页版';
+  if(title)title.textContent=resolvedTitle;
+  if(mobileTitle)mobileTitle.textContent=resolvedTitle;
   if(subtitle)subtitle.textContent=localOnly?'在 Android 系统浏览器中运行完整网页版':'手机 / 平板 / 其他电脑扫码或输入地址即可访问';
   $('#lanWebStatusTitle').textContent=localOnly?(running?'本机网页版运行中':'本机网页版未启动'):(running?'网页版服务运行中':'网页版服务未启动');
   $('#lanWebStatusText').textContent=status.error
@@ -317,6 +322,9 @@ function renderLanWebStatus(status){
       : '启动后，同一局域网中的电脑、平板和手机可直接使用浏览器运行完整分析界面。';
 
   $('#lanWebKey').textContent=status.noKey?'无需 Key':(status.key||'----');
+  const mobileService=document.documentElement?.dataset?.dkdsHost==='mobile'&&document.documentElement?.classList?.contains('react-native-client');
+  const newKeyBtn=$('#lanWebNewKeyBtn');
+  if(newKeyBtn){newKeyBtn.textContent=mobileService?'↻':'换一个 Key';newKeyBtn.setAttribute('aria-label',mobileService?'刷新 Key':'换一个 Key');newKeyBtn.title=mobileService?'刷新 Key':'换一个 Key';newKeyBtn.classList.toggle('dkds-mobile-key-refresh',mobileService);}
   $('#lanWebKeyHint').textContent=status.noKey
     ? '当前不需要配对 Key；二维码和复制链接均为普通局域网地址。'
     : '二维码会自动携带本次 Key；手动输入普通地址时仍可使用此 Key 配对。';
@@ -329,8 +337,9 @@ function renderLanWebStatus(status){
 
   const urls=$('#lanWebUrls');
   urls.innerHTML='';
+  urls.classList.toggle('hidden',mobileService&&!list.length);
   if(!list.length){
-    urls.innerHTML='<div class="lan-web-empty-address">服务启动后显示可用局域网地址</div>';
+    if(!mobileService)urls.innerHTML='<div class="lan-web-empty-address">服务启动后显示可用局域网地址</div>';
   }else{
     for(const url of list){
       const b=document.createElement('button');
@@ -393,6 +402,16 @@ function floatingSafeBounds(panel){
 
 function ensureFloatingPanelVisible(panel,{preferCenter=false}={}){
   if(!panel)return false;
+  const mobileStatusPanel=document.documentElement?.dataset?.dkdsHost==='mobile'&&document.documentElement?.classList?.contains('react-native-client')&&(panel.classList?.contains('lan-web-panel')||panel.classList?.contains('dkds-mobile-service'));
+  if(mobileStatusPanel){
+    // Native Mobile uses the same Core WebView Material surface as Theme/Memory;
+    // no parallel React-Native blur recipe is allowed. Keep the status-popover
+    // edge gap and a compact right-anchored panel while Material Renderer owns
+    // transparency, backdrop blur, border and shadow.
+    try{window.DKDSMaterialSurface?.apply?.(panel,'popover');}catch{}
+    style.patch(panel,{transform:'none',left:'auto',right:'6px',top:'auto',bottom:'var(--dkds-status-popover-gap,8px)',width:'min(352px,calc(100vw - 12px))',height:'auto','min-width':'0','min-height':'0','max-height':'calc(100vh - 16px)',resize:'none'},{component:'floating-panel'});
+    return true;
+  }
   const bounds=floatingSafeBounds(panel);
   const rect=panel.getBoundingClientRect();
   const width=Math.min(rect.width||panel.offsetWidth||720,Math.max(320,bounds.right-bounds.left));
@@ -403,17 +422,33 @@ function ensureFloatingPanelVisible(panel,{preferCenter=false}={}){
   if(fullyVisible&&!preferCenter)return true;
   const desiredLeft=preferCenter?(bounds.left+Math.max(0,(bounds.right-bounds.left-width)/2)):rect.left;
   const desiredTop=preferCenter?(bounds.top+Math.max(0,(bounds.bottom-bounds.top-height)/2)):rect.top;
-  panel.style.transform='none';
-  panel.style.right='auto';panel.style.bottom='auto';
-  panel.style.left=`${Math.round(Math.min(maxLeft,Math.max(bounds.left,Number.isFinite(desiredLeft)?desiredLeft:bounds.left)))}px`;
-  panel.style.top=`${Math.round(Math.min(maxTop,Math.max(bounds.top,Number.isFinite(desiredTop)?desiredTop:bounds.top)))}px`;
+  style.patch(panel,{transform:'none',right:'auto',bottom:'auto',left:`${Math.round(Math.min(maxLeft,Math.max(bounds.left,Number.isFinite(desiredLeft)?desiredLeft:bounds.left)))}px`,top:`${Math.round(Math.min(maxTop,Math.max(bounds.top,Number.isFinite(desiredTop)?desiredTop:bounds.top)))}px`},{component:'floating-panel'});
   return true;
+}
+
+function presentMobileLanService(panel){
+  if(document.documentElement?.dataset?.dkdsHost!=='mobile'||!document.documentElement.classList.contains('react-native-client')||panel.dataset.mobileService==='true')return;
+  panel.dataset.mobileService='true';
+  // Keep the canonical LAN panel identity so Material Surface ownership, outer
+  // radius and header chrome stay identical to Theme/Memory/AI popovers. Mobile
+  // only recomposes the content hierarchy; it does not create a parallel shell.
+  panel.classList.add('dkds-mobile-service');
+  const remainder=document.createElement('div');remainder.hidden=true;remainder.dataset.mobileServiceRemainder='true';
+  while(panel.firstChild)remainder.append(panel.firstChild);
+  panel.append(remainder);
+  const layout=document.createElement('div');layout.className='dkds-mobile-service-content';
+  layout.innerHTML='<header class="floating-header drag-handle dkds-surface-header dkds-mobile-service-header"><div class="dkds-mobile-service-title"><span data-service-slot="dot"></span><div><strong data-lan-web-mobile-title>局域网网页版</strong><small data-service-slot="status"></small></div></div><div class="panel-header-actions dkds-integrated-action-group"><span data-service-slot="close"></span></div></header><div class="floating-body dkds-mobile-service-body" data-dkds-material-content="true"><label class="dkds-mobile-service-row"><span>启用网页服务<small>允许同一局域网设备访问 Studio</small></span><span data-service-slot="enabled"></span></label><label class="dkds-mobile-service-row"><span>无需配对 Key<small>关闭后访问设备需要输入 4 位 Key</small></span><span data-service-slot="noKey"></span></label><div class="dkds-mobile-service-port"><label>端口 <span data-service-slot="port"></span></label><span data-service-slot="key"></span><span data-service-slot="newKey"></span></div><div class="dkds-mobile-service-urls" data-service-slot="urls"></div><div class="dkds-mobile-service-apply" data-service-slot="apply"></div></div>';
+  const fields={dot:'#lanWebStatusDot',status:'#lanWebStatusTitle',close:'.panel-close',enabled:'#lanWebEnabled',noKey:'#lanWebNoKey',port:'#lanWebPort',key:'#lanWebKey',newKey:'#lanWebNewKeyBtn',urls:'#lanWebUrls',apply:'#lanWebApplyBtn'};
+  for(const [slot,selector] of Object.entries(fields)){const node=remainder.querySelector(selector);if(node)layout.querySelector(`[data-service-slot="${slot}"]`).append(node);}
+  panel.append(layout);
+  window.DKDSMaterialSurface?.apply?.(panel,'popover');
 }
 
 async function showLanWebPanel(){
   if(window.electronAPI?.isWebClient)return false;
   const panel=$('#lanWebPanel');
   if(!panel)return false;
+  presentMobileLanService(panel);
   panel.classList.remove('hidden');
   // Dedicated service panels must never reopen underneath the shell toolbar.
   // Respect a user-moved position while it is still visible; otherwise restore

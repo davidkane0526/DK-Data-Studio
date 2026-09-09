@@ -1,0 +1,110 @@
+/* DKDS Motion Recipes 1.1
+   Temporal behavior has one authored owner. Geometry lives in Structure,
+   paint lives in Presentation/Theme, and canonical components consume semantic
+   motion roles assigned by Core Component Runtime. Platform layers may tune
+   configuration/state, never author another transition/animation owner. */
+
+:root{
+  --dkds-motion-control-duration:var(--dkui-motion-fast);
+  --dkds-motion-field-duration:var(--dkui-motion-fast);
+  --dkds-motion-card-duration:var(--dkui-motion-fast);
+  --dkds-motion-panel-duration:var(--dkui-motion-normal);
+  --dkds-motion-dialog-duration:var(--dkui-motion-normal);
+  --dkds-motion-spinner-cycle:720ms;
+}
+
+/* Canonical semantic recipes. These are stationary feedback recipes: frequent
+   controls interpolate paint only and do not translate/scale on hover/press. */
+body.dkds-modern-ui [data-dkds-motion-role="control"]{
+  transition-property:background-color,border-color,color,box-shadow,opacity;
+  transition-duration:var(--dkds-motion-control-duration);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+body.dkds-modern-ui [data-dkds-motion-role="control"]:is(:hover,:active,:focus-visible){transform:none}
+/* Hydration assigns the semantic role synchronously, but native/default buttons
+   must stay stationary even before or outside a hydrated subtree. This is a
+   behavioral invariant, not a second transition owner. */
+body.dkds-modern-ui :where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible){transform:none}
+body.dkds-modern-ui [data-dkds-motion-role="field"]{
+  transition-property:border-color,box-shadow,background-color,color;
+  transition-duration:var(--dkds-motion-field-duration);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+body.dkds-modern-ui [data-dkds-motion-role="interactive-card"]{
+  transition-property:background-color,border-color,box-shadow,opacity;
+  transition-duration:var(--dkds-motion-card-duration);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+body.dkds-modern-ui [data-dkds-motion-role="selection"]{
+  transition-property:opacity,background-color,border-color,box-shadow;
+  transition-duration:var(--dkds-motion-control-duration);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+
+/* Menus are intentionally stationary. Their child actions inherit the control
+   recipe above; the container only interpolates its own surface paint. */
+body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu){
+  animation:none;
+  transform:none;
+  transition-property:opacity,background-color,border-color,color,box-shadow;
+  transition-duration:var(--dkds-motion-panel-duration);
+  transition-timing-function:var(--dkui-ease-emphasized);
+}
+body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
+  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item){transform:none}
+
+/* Bounded specialized recipes. These remain in the same Motion owner because
+   the animated property is intrinsic to the component rather than a Theme. */
+.plugin-switch-track{transition:background-color var(--dkui-motion-normal) var(--dkui-ease-standard)}
+.plugin-switch-thumb{transition:transform var(--dkui-motion-normal) var(--dkui-ease-standard)}
+.update-progress-bar{transition:width var(--dkui-motion-normal) var(--dkui-ease-standard)}
+.dkds-scientific-nav-tools{transition:opacity var(--dkui-motion-fast) var(--dkui-ease-standard),border-color var(--dkui-motion-fast) var(--dkui-ease-standard),box-shadow var(--dkui-motion-fast) var(--dkui-ease-standard)}
+.dkds-plot-legend-swatch,.dkds-selection-measurement{transition:width var(--dkui-motion-fast) var(--dkui-ease-standard),height var(--dkui-motion-fast) var(--dkui-ease-standard),opacity var(--dkui-motion-fast) var(--dkui-ease-standard)}
+.dkds-analysis-left-resizer::before,.dkds-analysis-right-resizer::before,.dkds-analysis-bottom-resizer::before{transition:opacity var(--dkui-motion-fast) var(--dkui-ease-standard),background-color var(--dkui-motion-fast) var(--dkui-ease-standard),border-color var(--dkui-motion-fast) var(--dkui-ease-standard)}
+.dkds-table-column-resizer::after,.dkds-managed-table thead th.dkds-table-sortable::before{transition:background-color var(--dkui-motion-fast) var(--dkui-ease-standard),opacity var(--dkui-motion-fast) var(--dkui-ease-standard)}
+body.dkds-modern-ui .dkds-split-handle::after{transition:opacity var(--motion-fast) var(--ease-standard)}
+.dkds-portable-resize-handle::before{transition:background-color var(--dkui-motion-fast) var(--dkui-ease-standard)}
+
+/* Native-client visibility consumes the same Core recipe; host CSS may only
+   provide state/configuration. */
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools{transition-duration:var(--dkui-motion-normal)}
+html[data-dkds-host="mobile"].react-native-client.dkds-split-drag-active :where(.dkds-plugin-canvas-frame,.dkds-scientific-surface-host,.dkds-scientific-chart-host,.dkds-group-plot-card,.dkds-plot-view-card){transition:none}
+
+/* Dialog entrance is brief, state-bounded and interruptible by removal. */
+.dkds-dialog-overlay{animation:dkds-dialog-overlay-in var(--dkds-motion-dialog-duration) ease-out both}
+.dkds-dialog{animation:dkds-dialog-in var(--dkds-motion-dialog-duration) var(--dkui-ease-emphasized) both}
+.dkds-action-button[data-busy="true"]::before{animation:dkds-core-spin var(--dkds-motion-spinner-cycle) linear infinite}
+@keyframes dkds-dialog-overlay-in{from{opacity:0}to{opacity:1}}
+@keyframes dkds-dialog-in{from{opacity:0;transform:translateY(5px) scale(.992)}to{opacity:1;transform:none}}
+@keyframes dkds-core-spin{to{transform:rotate(360deg)}}
+
+html.dkds-theme-switching body.dkds-modern-ui *::after{transition-duration:0s;transition-delay:0s}
+
+
+/* Experimental spatial-navigation primitives. The consuming feature supplies
+   depth geometry; Motion owns the temporal interpolation and active-drag cutout. */
+body.dkds-modern-ui [data-dkds-motion-role="spatial-card"]{
+  transition-property:transform,opacity;
+  transition-duration:var(--dkds-motion-panel-duration);
+  transition-timing-function:var(--dkui-ease-emphasized);
+}
+body.dkds-modern-ui :where(.is-dragging,.is-recycling) [data-dkds-motion-role="spatial-card"]{transition:none}
+body.dkds-modern-ui [data-dkds-motion-role="content-swap"]{
+  transition-property:opacity;
+  transition-duration:var(--dkds-motion-control-duration);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+
+@media(prefers-reduced-motion:reduce){
+  body.dkds-modern-ui *,body.dkds-modern-ui *::before,body.dkds-modern-ui *::after{
+    animation-duration:.001ms;
+    animation-iteration-count:1;
+    transition-duration:.001ms;
+  }
+  .dkds-dialog-overlay,.dkds-dialog{animation:none}
+  html[data-dkds-host="mobile"].react-native-client.dkds-split-drag-active :where(.dkds-plugin-canvas-frame,.dkds-scientific-surface-host,.dkds-scientific-chart-host,.dkds-group-plot-card,.dkds-plot-view-card){transition:none}
+}
+
+/* Native overflowing PlotView titles pan themselves without exposing a horizontal scrollbar. */
+html[data-dkds-host="mobile"].react-native-client .dkds-plot-view-title.is-overflowing>.dkds-plot-view-title-track{animation:dkds-mobile-plot-title-pan var(--dkds-plot-title-pan-duration,7s) ease-in-out 1s infinite alternate}
+@keyframes dkds-mobile-plot-title-pan{from{transform:translateX(0)}to{transform:translateX(calc(0px - var(--dkds-plot-title-pan,0px)))}}

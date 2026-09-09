@@ -1,5 +1,9 @@
 (() => {
   const listeners = new Set();
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate is required before platform runtime.');
+  const STYLE_SOURCE='src/core/host/platform.js';
+  const platformToken=(el,token,value)=>StyleGate.setToken(el,token,value,{owner:'core.platform-profile',scope:'runtime-platform-token',source:STYLE_SOURCE});
 
   function computeProfile() {
     const w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
@@ -57,9 +61,9 @@
     root.classList.add(`dkds-runtime-${next.runtime}`);
     if (next.android) root.classList.add('dkds-platform-android');
 
-    root.style.setProperty('--dkds-touch-target', `${next.interaction.targetMinPx}px`);
-    root.style.setProperty('--dkds-curve-hit', `${next.interaction.curveHitPx}px`);
-    root.style.setProperty('--dkds-peak-hit-radius', `${next.interaction.peakHitRadiusPx}px`);
+    platformToken(root,'--dkds-touch-target',`${next.interaction.targetMinPx}px`);
+    platformToken(root,'--dkds-curve-hit',`${next.interaction.curveHitPx}px`);
+    platformToken(root,'--dkds-peak-hit-radius',`${next.interaction.peakHitRadiusPx}px`);
   }
 
   function refresh() {

@@ -22,7 +22,7 @@ assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.
 const contractPos=topHtml.indexOf('../../sdk/theme-contract.js');
 const semanticPos=topHtml.indexOf('../core/theme/semantic-registry.js');
 const rendererPos=topHtml.indexOf('../core/theme/material-renderer.js');
-assert(topHtml.includes('../../sdk/semver-compat.js'),'Dedicated TOP must load the same Theme compatibility floor as the main shell');
+assert(!topHtml.includes('semver-compat'),'Dedicated TOP must not load a Theme semver compatibility bridge.');
 assert(contractPos>0&&semanticPos>contractPos&&rendererPos>semanticPos,'Dedicated TOP must load Theme Contract → Semantic Registry → Material Renderer in canonical order');
 assert(!/toolbarAction[^\n]+statusbar-command-cluster button/.test(semantic),'status-bar commands must not consume toolbarAction hover appearance');
 assert(statusRuntime.includes("button.className='plugin-status-item quiet'")&&component.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]'),'status-bar commands must consume the canonical quiet ToolbarAction contract.');
@@ -34,7 +34,7 @@ assert(automation.includes('component?.id||component?.componentIdentity'),'Autom
 assert(/^2\.(?:[0-9]|[1-9]\d)\./.test(auroraManifest.version),'Built-in Aurora Pop must remain on the 2.x reference line.');
 assert.equal(auroraManifest.pluginType,'theme');
 assert.deepEqual(auroraManifest.capabilities,['ui.theme']);
-assert.equal(auroraManifest.compatibility.themeContract,'^3.10.0');
+assert.equal(auroraManifest.apiVersion,'1.19.0');assert(!Object.prototype.hasOwnProperty.call(auroraManifest,'compatibility'),'Aurora must target only the exact current Theme/Plugin contract.');
 assert(!fs.existsSync(path.join(root,'src/plugins/aurora-pop-theme/plugin.css')),'Aurora Pop must stay token-only and must not inject theme CSS');
 for(const token of ["accent:'#7650E8'","accentHover:'#7E5AE8'","disabledText:'#8490A7'"])assert(aurora.includes(token),`Built-in Aurora Pop 2.x missing ${token}`);
 

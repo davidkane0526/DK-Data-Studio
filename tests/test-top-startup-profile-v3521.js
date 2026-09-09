@@ -11,7 +11,7 @@ const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 
 const domains=['scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime'];
-assert(runtime.includes("for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])"),'Dedicated TOP stable infrastructure list changed unexpectedly.');
+assert(runtime.includes("for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])"),'Dedicated TOP stable infrastructure list changed unexpectedly.');
 for(const id of domains)assert(!runtime.includes(`'data-flow-runtime','${id}`),`${id} must not be part of the unconditional TOP host runtime list.`);
 assert(runtime.includes("measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies"),'Dedicated renderer must profile each dependency load.');
 assert(runtime.includes("measure('plugins-activate'")&&runtime.includes("`${reason}:activity-open`")&&runtime.includes('startupProfile.totalMs'),'Dedicated renderer must profile activation and workspace open phases.');

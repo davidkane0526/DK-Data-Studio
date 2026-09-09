@@ -505,3 +505,39 @@ A plugin may project PRIME/SUB commands to the SUPER host toolbar while using th
 ### History state notifications
 
 When a plugin keeps a fine-grained local undo/redo stack, call `ctx.ui.edit.changed({reason, label})` whenever that stack changes. Core uses this notification to refresh the unified System History state in the desktop shell, dedicated TOP windows and the Android native shell. Do not rely on incidental DOM changes to refresh Undo/Redo availability.
+
+
+## SDK 1.28 managed-grid / GroupArea contract
+
+`ctx.ui.grid.create(container, spec)` and `workbench.grid(container, spec)` are the public Core-managed grid APIs. Plugins declare column preferences; Core owns the final CSS Grid geometry and exposes the effective result through `getAppliedColumns()`.
+
+For optional Native Mobile orientation adaptation, use the explicit policy object:
+
+```js
+const grid = workbench.grid(host, {
+  columns: 3,
+  maxColumns: 6,
+  minItemWidth: 260,
+  responsive: true,
+  orientationPolicy: {
+    mode: 'portrait-offset',
+    offset: -1,
+    minColumns: 1
+  }
+});
+```
+
+This policy is generic and opt-in. It is not a Resonance special case and does not automatically apply to every GroupArea. `groupArea:true` only adds GroupArea child placement/sticky semantics; it is independent of orientation behavior.
+
+A plugin that stores separate user preferences for portrait and landscape may supply `preferredColumns({ orientation })`. Returning `null`, `undefined`, or `'auto'` delegates to Core fallback/derivation. The callback returns a requested count only; `responsive:true` may still reduce it to satisfy `minItemWidth`.
+
+Plugins must not write their own `grid-template-columns`, `display`, `gap`, auto-track, or alignment geometry onto a Core-managed grid host. See `sdk/GRID_LAYOUT.md` for the full resolution order and TypeScript contract.
+
+
+## v3.68.28 WIP placement and project-write contracts
+
+Core PortableView evaluates scientific plot placement choices against its home region. Standalone plots do not offer `sticky`; managed-grid and group subplots, or plots sharing a region, offer `sticky`. Sticky GridController reserves the rightmost column, clears its owned cell assignments when members move/hide/close, and releases observers on disposal. Plugins should not implement their own sticky cell offsets.
+
+Mobile maps an inspector PRIME to the right companion in both orientations, including an embedded inspector. A scientific-secondary group retains the bottom companion. Explicit user PortableView placement remains authoritative. Desktop Presenter is unchanged.
+
+Project capture, tab switches, history operations, and idle dirty checks do not write the opened project file. Only an explicit save writes it. Unchanged artifact content retains its saved creation/update/provenance metadata; data changes update the application version on explicit save. Native visual acceptance of this WIP is still pending.

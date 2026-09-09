@@ -1,9 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execFile } = require('child_process');
-const { promisify } = require('util');
-const os = require('os');
-const execFileAsync = promisify(execFile);
+const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const jsFiles = [];
@@ -20,25 +17,22 @@ function walk(dir) {
 walk(root);
 
 let failed = false;
-async function checkSyntaxFiles() {
-  const concurrency = Math.max(2, Math.min(12, os.cpus()?.length || 4));
-  let cursor = 0;
-  async function worker() {
-    while (cursor < jsFiles.length) {
-      const file = jsFiles[cursor++];
-      try { await execFileAsync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 }); }
-      catch (err) {
-        failed = true;
-        console.error(`Syntax failed: ${path.relative(root, file)}`);
-        console.error(err?.stderr || err?.message || err);
-      }
+function checkSyntaxFiles() {
+  for (const file of jsFiles) {
+    try {
+      // The project is CommonJS. Parsing in-process gives the same syntax gate that
+      // `node --check` provided here without spawning hundreds of fresh Node VMs.
+      new vm.Script(fs.readFileSync(file, 'utf8'), { filename: file, displayErrors: true });
+    } catch (err) {
+      failed = true;
+      console.error(`Syntax failed: ${path.relative(root, file)}`);
+      console.error(err?.stack || err?.message || err);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, jsFiles.length)) }, () => worker()));
 }
 
-async function main() {
-  await checkSyntaxFiles();
+function main() {
+  checkSyntaxFiles();
 
 const required = [
   'src/generated/runtime/plugin-kernel.js',
@@ -132,7 +126,13 @@ if (JSON.stringify(allCmds) !== JSON.stringify(expectedCmds)) {
   console.error(`CMD consolidation policy failed. Expected ${expectedCmds.join(', ')}; found ${allCmds.join(', ')}`);
 }
 
+const handoffFiles = fs.readdirSync(root).filter(name => /^HANDOFF[-_].*\.md$/i.test(name)).sort();
+if (handoffFiles.length !== 1) {
+  failed = true;
+  console.error(`Handoff hygiene failed. Expected exactly one current HANDOFF-*.md or HANDOFF_*.md; found ${handoffFiles.length}: ${handoffFiles.join(', ')}`);
+}
+
 if (failed) process.exit(2);
 console.log(`Project check OK: ${jsFiles.length} JavaScript files + required architecture/docs/toolbox layout.`);
 }
-main().catch(err => { console.error(err); process.exit(2); });
+try { main(); } catch (err) { console.error(err); process.exit(2); }

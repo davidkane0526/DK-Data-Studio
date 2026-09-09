@@ -1,6 +1,11 @@
 'use strict';
+const StyleGate=require('ui/style-ownership-gate');
+const STYLE_SOURCE='src/core/ui/modules/workbench/plugin.js';
+const safetySet=(el,property,value,priority='')=>{if(priority)throw new Error('Style Ownership Gate forbids runtime priority style writes.');return StyleGate.set(el,property,value,{owner:'core.plugin-workbench-layout-safety',scope:'runtime-workbench-safety',source:STYLE_SOURCE});};
+const safetyRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.plugin-workbench-layout-safety',scope:'runtime-workbench-safety',source:STYLE_SOURCE});
 const {cleanupCall}=require('../foundation/shortcuts');
 const {SplitController}=require('../layout/workspace');
+const {enhanceMobileSplitController}=require('../layout/mobile-split-performance');
 const {AnalysisWorkbench}=require('./analysis');
 
 
@@ -28,12 +33,13 @@ const {AnalysisWorkbench}=require('./analysis');
       sub.classList.add('dkds-plugin-sub-page-host');
       this.canvasFrame=frame;this.canvasSlots={main:center,left:frame.querySelector('[data-plugin-canvas-slot="left"]'),right:frame.querySelector('[data-plugin-canvas-slot="right"]'),bottom:frame.querySelector('[data-plugin-canvas-slot="bottom"]'),overlay:frame.querySelector('[data-plugin-canvas-slot="overlay"]')};
       const id=String(spec.activity||spec.id||'main');
-      this.canvasLeftSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-left`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-left-resizer'),target:this.canvasSlots.left,cssVar:'--dkds-plugin-canvas-left-width',defaultSize:Number(spec.canvasLeftWidth)||320,min:Number(spec.canvasLeftMin)||240,reserve:Number(spec.canvasLeftReserve)||520,mobileOverlay:true,mobileMaxRatio:.92});
-      this.canvasRightSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-right`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-right-resizer'),target:this.canvasSlots.right,cssVar:'--dkds-plugin-canvas-right-width',defaultSize:Number(spec.canvasRightWidth)||390,min:Number(spec.canvasRightMin)||280,reserve:Number(spec.canvasRightReserve)||520,reverse:true,mobileOverlay:true,mobileMaxRatio:.92});
-      this.canvasBottomSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-bottom`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-bottom-resizer'),target:this.canvasSlots.bottom,cssVar:'--dkds-plugin-canvas-bottom-height',axis:'y',defaultSize:Number(spec.canvasBottomHeight)||320,min:Number(spec.canvasBottomMin)||190,reserve:Number(spec.canvasBottomReserve)||260,reverse:true,mobileOverlay:true,mobileMaxRatio:.68});
+      this.canvasLeftSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-left`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-left-resizer'),target:this.canvasSlots.left,cssVar:'--dkds-plugin-canvas-left-width',defaultSize:Number(spec.canvasLeftWidth)||320,min:Number(spec.canvasLeftMin)||240,reserve:Number(spec.canvasLeftReserve)||520,mobileOverlay:true,mobileMaxRatio:.92,mobileStateScope:true});
+      this.canvasRightSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-right`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-right-resizer'),target:this.canvasSlots.right,cssVar:'--dkds-plugin-canvas-right-width',defaultSize:Number(spec.canvasRightWidth)||390,min:Number(spec.canvasRightMin)||280,reserve:Number(spec.canvasRightReserve)||520,reverse:true,mobileOverlay:true,mobileMaxRatio:.48,mobileReserve:320,mobileStateScope:true});
+      this.canvasBottomSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-bottom`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-bottom-resizer'),target:this.canvasSlots.bottom,cssVar:'--dkds-plugin-canvas-bottom-height',axis:'y',defaultSize:Number(spec.canvasBottomHeight)||320,min:Number(spec.canvasBottomMin)||190,reserve:Number(spec.canvasBottomReserve)||260,reverse:true,mobileOverlay:true,mobileMaxRatio:.58,mobileReserve:240,mobileStateScope:true});
+      enhanceMobileSplitController(this.canvasLeftSplit);enhanceMobileSplitController(this.canvasRightSplit);enhanceMobileSplitController(this.canvasBottomSplit);
       frame.__dkdsCanvasSplits={left:this.canvasLeftSplit,right:this.canvasRightSplit,bottom:this.canvasBottomSplit};
       const sync=()=>this.syncCanvasRegions();
-      if(window.MutationObserver){this.canvasObserver=new MutationObserver(sync);for(const el of [this.canvasSlots.left,this.canvasSlots.right,this.canvasSlots.bottom])this.canvasObserver.observe(el,{childList:true,subtree:false});}
+      if(window.MutationObserver){this.canvasObserver=new MutationObserver(sync);for(const el of [this.canvasSlots.left,this.canvasSlots.right,this.canvasSlots.bottom])this.canvasObserver.observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['data-dkds-mobile-active']});}
       this.syncCanvasRegions();
     }
     installLayoutGuard(){
@@ -45,8 +51,9 @@ const {AnalysisWorkbench}=require('./analysis');
     }
     restoreGuardedElement(el){
       const saved=this.layoutGuarded.get(el);if(!saved)return;
-      for(const axis of ['overflow-x','overflow-y']){const row=saved[axis];if(row?.value)el.style.setProperty(axis,row.value,row.priority||'');else el.style.removeProperty(axis);}
-      el.classList.remove('dkds-layout-overflow-fallback','dkds-layout-containment-fallback');el.style.removeProperty('overscroll-behavior');this.layoutGuarded.delete(el);
+      for(const axis of ['overflow-x','overflow-y']){const row=saved[axis];if(row?.value)safetySet(el,axis,row.value,row.priority||'');else safetyRemove(el,axis);}
+      el.classList.remove('dkds-layout-overflow-fallback','dkds-layout-containment-fallback');
+      safetyRemove(el,'overscroll-behavior');safetyRemove(el,'overscroll-behavior-x');safetyRemove(el,'overscroll-behavior-y');this.layoutGuarded.delete(el);
     }
     applyLayoutSafety(){
       const root=this.slots?.primary;if(!root||!root.isConnected)return {recovered:0,guarded:0,risks:0};
@@ -68,11 +75,16 @@ const {AnalysisWorkbench}=require('./analysis');
           });
           console.warn('[DKDS PluginWorkspace layout recovery]',{owner:this.owner,activity:this.spec?.activity||'',...risk});
         }
-        // Containment is a Core guarantee: plugin content may be imperfect, but
-        // it may never paint through its semantic card/panel or become unreachable.
-        // We prefer a local scroll container because growing an inner grid can
-        // recursively enlarge the window and destabilize resize observers.
-        if(unsafeY)el.style.setProperty('overflow-y','auto');if(unsafeX)el.style.setProperty('overflow-x','auto');el.style.setProperty('overscroll-behavior','contain');el.classList.add('dkds-layout-overflow-fallback','dkds-layout-containment-fallback');risk.recovered=true;recovered++;
+        // Layout recovery owns reachability, not scroll isolation. Horizontal
+        // overflow stays locally contained so a wide grid cannot push the whole
+        // workbench sideways. Vertical overflow must chain on both Desktop and
+        // native Mobile: once a recovered local scroller reaches its boundary, a
+        // continuing wheel/touch gesture belongs to the next workspace ancestor.
+        if(unsafeY)safetySet(el,'overflow-y','auto');if(unsafeX)safetySet(el,'overflow-x','auto');
+        safetyRemove(el,'overscroll-behavior');
+        safetySet(el,'overscroll-behavior-x','contain');
+        safetySet(el,'overscroll-behavior-y','auto');
+        el.classList.add('dkds-layout-overflow-fallback','dkds-layout-containment-fallback');risk.recovered=true;recovered++;
       }
       this.layoutRisks=risks;this.shell?.setAttribute('data-layout-guarded',String(this.layoutGuarded.size));this.shell?.setAttribute('data-layout-risks',String(risks.length));return {recovered,guarded:this.layoutGuarded.size,risks:risks.length};
     }
@@ -92,7 +104,7 @@ const {AnalysisWorkbench}=require('./analysis');
     layout(){return {slot:name=>this.portableSlot(name)};}
     syncCanvasRegions(){
       if(!this.canvasFrame||!this.canvasSlots)return {left:false,right:false,bottom:false,bottomCollapsedOnly:false};
-      const visible=el=>[...(el?.children||[])].filter(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));
+      const visible=el=>[...(el?.children||[])].filter(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden')&&node.dataset?.dkdsMobileActive!=='false');
       const leftRows=visible(this.canvasSlots.left),rightRows=visible(this.canvasSlots.right),bottomRows=visible(this.canvasSlots.bottom);
       const state={left:leftRows.length>0,right:rightRows.length>0,bottom:bottomRows.length>0,bottomCollapsedOnly:bottomRows.length>0&&bottomRows.every(node=>node.classList?.contains('is-collapsed')||node.classList?.contains('collapsed'))};
       this.canvasFrame.classList.toggle('has-canvas-left',state.left);this.canvasFrame.classList.toggle('has-canvas-right',state.right);this.canvasFrame.classList.toggle('has-canvas-bottom',state.bottom);this.canvasFrame.classList.toggle('canvas-bottom-collapsed-only',state.bottomCollapsedOnly);
@@ -101,21 +113,21 @@ const {AnalysisWorkbench}=require('./analysis');
       this.canvasFrame.querySelector('.dkds-plugin-canvas-bottom-resizer')?.classList.toggle('active',state.bottom&&!state.bottomCollapsedOnly);return state;
     }
     syncRegions(){const state=super.syncRegions();this.syncCanvasRegions?.();return state;}
-    presentationChanged(reason='surface'){try{window.dispatchEvent?.(new CustomEvent('dkds:workspace-presentation-changed',{detail:{owner:this.owner,activity:String(this.spec?.activity||''),reason}}));}catch{}return this;}
-    showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');if(value)this.presentationChanged('primary');return value;}
-    openPrime(id,placement){const ok=super.openPrime(id,placement);if(ok)this.presentationChanged('prime-open');return ok;}
-    closePrime(id){const ok=super.closePrime(id);if(ok)this.presentationChanged('prime-close');return ok;}
-    openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden');if(ok)this.presentationChanged('sub-open');return ok;}
+    presentationChanged(reason='surface',detail={}){try{window.dispatchEvent?.(new CustomEvent('dkds:workspace-presentation-changed',{detail:{owner:this.owner,activity:String(this.spec?.activity||''),reason,...detail}}));}catch{}return this;}
+    showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');if(value)this.presentationChanged('primary',{kind:'primary',surfaceId:String(this.primary?.id||'main')});return value;}
+    openPrime(id,placement){const ok=super.openPrime(id,placement);if(ok)this.presentationChanged('prime-open',{kind:'prime',surfaceId:String(id||'')});return ok;}
+    closePrime(id){const ok=super.closePrime(id);if(ok)this.presentationChanged('prime-close',{kind:'prime',surfaceId:String(id||'')});return ok;}
+    openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden');if(ok)this.presentationChanged('sub-open',{kind:'sub',surfaceId:String(id||'')});return ok;}
     setNavigationPresentation(mode='inline'){
-      this.navigationPresentation=String(mode||'inline');const nav=this.shell?.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('host-presented',this.navigationPresentation!=='inline');return this;
+      this.navigationPresentation=String(mode||'inline');const nav=this.navigationElement||null;if(nav)nav.classList.toggle('host-presented',this.navigationPresentation!=='inline');return this;
     }
     navigationActions({includePrimary=true,includePrimes=true,includeSubs=true}={}){
       const describe=(row,kind,id,active,onInvoke)=>({
-        id:`workspace-${kind}:${id}`,surfaceId:String(id),kind,semanticKind:String(row?.semanticKind||''),presentationRole:String(row?.presentationRole||row?.semanticRole||''),
-        priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
+        id:`workspace-${kind}:${id}`,surfaceId:String(id),kind,semanticKind:String(row?.semanticKind||''),presentationPurpose:String(row?.presentationPurpose||''),presentationRole:String(row?.presentationRole||row?.semanticRole||''),
+        priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,embedded:row?.embedded===true,label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
       });
       const rows=[];
-      if(includePrimary&&this.primary)rows.push(describe(this.primary,'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));
+      if(includePrimary&&this.primary&&(String(this.spec.navigation||this.spec.navigationMode||'auto').toLowerCase()==='always'||this.subs.size>0))rows.push(describe(this.primary,'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));
       if(includePrimes)for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'prime',row.id,()=>!!row.mounted,()=>this.togglePrime(row.id)));
       if(includeSubs)for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'sub',row.id,()=>this.activeSub===row.id,()=>this.openSub(row.id)));
       return rows;

@@ -1,6 +1,4 @@
 (() => {
-  const A = window.DKDSScience;
-
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -50,8 +48,8 @@
     return -1;
   }
 
-  function defaultSettings(ins, name='') {
-    const inferred = A.inferPulseProtocolFromName?.(name) || {};
+  function defaultSettings(science, ins, name='') {
+    const inferred = science?.inferPulseProtocolFromName?.(name) || {};
     const timeCol=guessColumn(ins,'time');
     const currentCol=guessColumn(ins,'current');
     const voltageCol=guessColumn(ins,'voltage');
@@ -107,7 +105,9 @@
   }
 
   window.DKDSPluginModules.define('builtin.pulse-analysis','analysis-service',{
-    async create({setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,detachSource=null}) {
+    async create({setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,science=null,io=null,charts=null,dom=null,artifacts=null,detachSource=null}) {
+      const A=science;
+      if(!A)throw new Error('Pulse analysis science runtime is unavailable. Inject ctx.science.');
       const $=s=>dom?.query?.(s)||null;
       let state = createState();
 
@@ -137,7 +137,7 @@
         return {
           id:String(artifact.id),artifactId:String(artifact.id),path,name,size:text.length,label:String(previous?.label||artifact?.name||name).replace(/\.[^.]+$/,''),
           checked:previous?.checked!==false,text,encoding,inspection,
-          settings:{...defaultSettings(inspection,name),...(previous?.settings||{})},
+          settings:{...defaultSettings(A,inspection,name),...(previous?.settings||{})},
           result:previous?.result?cloneSerializable(previous.result):null,error:'',loading:false,analyzedAt:previous?.analyzedAt||null
         };
       }
@@ -189,7 +189,7 @@
       }
 
       function analysisOptions(item) {
-        const s = {...defaultSettings(item.inspection,item.name),...(item.settings||{})};
+        const s = {...defaultSettings(A,item.inspection,item.name),...(item.settings||{})};
         const options={
           segmentationMode:s.segmentationMode||'auto',
           timeCol:Number(s.timeCol),
@@ -259,18 +259,16 @@
       function renderFileList() {
         const el = $('#pulseFileList');
         if (!el) return;
-        el.innerHTML = '';
-        if (!state.files.length) el.innerHTML = '<div class="pulse-file-empty">尚未添加脉冲数据文件</div>';
+        dom.html(el,'');
+        if (!state.files.length) dom.html(el,'<div class="pulse-file-empty">尚未添加脉冲数据文件</div>');
 
         for (const item of state.files) {
-          const row = dom.create('div');
           const isActive = item.id === state.activeId;
-          row.className = `pulse-batch-file-item dkds-list-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`;
           const rv = nullableNumber(item.result?.readVoltage);
           const meta = item.result
             ? `${modeName(resultMode(item.result))} · ${rv!==null?`读取≈${rv.toFixed(4)} V`:'未记录读取电压'} · ${item.result.points.length} 组${item.error?' · 重算失败，保留上次结果':''}`
             : item.error ? item.error : item.loading ? '读取中…' : '待分析';
-          row.innerHTML = `
+          const row = dom.create('div',{className:`pulse-batch-file-item dkds-list-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`,dataset:{fileId:item.id,dkdsMotion:'interactive-card'},html:`
             <div class="pulse-batch-file-main">
               <input class="pulse-file-check" type="checkbox" ${item.checked?'checked':''}>
               <div class="pulse-batch-file-text">
@@ -279,19 +277,8 @@
               </div>
               <span class="pulse-file-state dkds-chip ${item.result?'done':item.error?'bad':''}">${item.result?'已分析':item.error?'错误':'待处理'}</span>
             </div>
-            <div class="pulse-batch-file-meta">${esc(meta)}</div>`;
-          row.querySelector('.pulse-file-check').onclick = e => {
-            e.stopPropagation();
-            item.checked = e.target.checked;
-            renderFileList();
-            renderComparison();
-            scheduleSnapshot();
-          };
-          row.onclick = () => {
-            state.activeId = item.id;
-            render();
-          };
-          el.appendChild(row);
+            <div class="pulse-batch-file-meta">${esc(meta)}</div>`});
+          dom.append(el,row);
         }
         const rows = checked();
         const analyzed = rows.filter(f=>f.result).length;
@@ -301,15 +288,14 @@
         if ($('#pulseAnalyzeCheckedBtn')) $('#pulseAnalyzeCheckedBtn').disabled = !rows.length;
         if ($('#pulseRemoveFilesBtn')) $('#pulseRemoveFilesBtn').disabled = !rows.length;
       }
-
       function renderSummary() {
         const item = active();
         const box = $('#pulseSummary');
         if (!box) return;
         const r = item?.result;
-        if (!item) { box.innerHTML='<span class="pulse-summary-placeholder dkds-note">请选择文件。</span>'; return; }
-        if (item.error && !r) { box.innerHTML=`<span class="pulse-summary-error dkds-status error">${esc(item.error)}</span>`; return; }
-        if (!r) { box.innerHTML='<span class="pulse-summary-placeholder dkds-note">当前文件尚未分析。</span>'; return; }
+        if (!item) { dom.html(box,'<span class="pulse-summary-placeholder dkds-note">请选择文件。</span>'); return; }
+        if (item.error && !r) { dom.html(box,`<span class="pulse-summary-error dkds-status error">${esc(item.error)}</span>`); return; }
+        if (!r) { dom.html(box,'<span class="pulse-summary-placeholder dkds-note">当前文件尚未分析。</span>'); return; }
         const rows = [
           ['分段方式',modeName(resultMode(r))],
           ['读取电压',finiteValue(r.readVoltage)?`${Number(r.readVoltage).toFixed(6)} V`:'未记录 / 未指定'],
@@ -320,7 +306,7 @@
         if (r.protocol?.writeDuration>0) rows.splice(1,0,['写入宽度',`${r.protocol.writeDuration} s`]);
         if (r.protocol?.readDuration>0) rows.splice(2,0,['读取宽度',`${r.protocol.readDuration} s`]);
         if (finiteValue(r.blockSamples)) rows.splice(1,0,['平台点数',String(r.blockSamples)]);
-        box.innerHTML = rows.map(([k,v])=>`<span class="pulse-stat-chip dkds-metric"><span>${esc(k)}</span><strong>${esc(v)}</strong></span>`).join('');
+        dom.html(box,rows.map(([k,v])=>`<span class="pulse-stat-chip dkds-metric"><span>${esc(k)}</span><strong>${esc(v)}</strong></span>`).join(''));
       }
 
       function renderEditor() {
@@ -339,7 +325,7 @@
         if(analyzeCurrentBtn)analyzeCurrentBtn.disabled=!item;
         if (!item) return;
 
-        const s = {...defaultSettings(item.inspection,item.name),...(item.settings||{})};
+        const s = {...defaultSettings(A,item.inspection,item.name),...(item.settings||{})};
         item.settings = s;
         $('#pulseActiveFileName').textContent = item.name;
         $('#pulseActiveFileMeta').textContent =
@@ -347,9 +333,9 @@
           + (item.result?` · 最近分析 ${item.result.points.length} 个脉冲/读取对`:'');
         $('#pulseSeriesLabel').value = label(item);
         $('#pulseSegmentationMode').value = s.segmentationMode||'auto';
-        $('#pulseTimeCol').innerHTML = columnOptions(item.inspection,s.timeCol,{optional:true,optionalLabel:'未记录时间'});
-        $('#pulseCurrentCol').innerHTML = columnOptions(item.inspection,s.currentCol);
-        $('#pulseVoltageCol').innerHTML = columnOptions(item.inspection,s.voltageCol,{optional:true,optionalLabel:'未记录电压'});
+        dom.html($('#pulseTimeCol'),columnOptions(item.inspection,s.timeCol,{optional:true,optionalLabel:'未记录时间'}));
+        dom.html($('#pulseCurrentCol'),columnOptions(item.inspection,s.currentCol));
+        dom.html($('#pulseVoltageCol'),columnOptions(item.inspection,s.voltageCol,{optional:true,optionalLabel:'未记录电压'}));
         const cycleEstimate = A.estimatePulseCycleSamples?.(item.inspection,{currentCol:Number(s.currentCol),voltageCol:Number(s.voltageCol)})||0;
         $('#pulseCycleSamples').value = Number(s.cycleSamples)||0;
         $('#pulseCycleSamples').placeholder = cycleEstimate>1?`0 = 自动（≈${cycleEstimate}）`:'0 = 自动';
@@ -444,7 +430,7 @@
           : '没有可显示的已分析结果。';
         const table = $('#pulseResultTable');
         if (!table) return;
-        table.innerHTML = `
+        dom.html(table,`
           <thead><tr><th>标签</th><th>源文件</th><th>#</th><th>分段</th><th>Vpulse (V)</th><th>Ipulse (A)</th><th>Vread (V)</th><th>Iread (A)</th><th>Pulse time</th><th>Read time</th><th>Pulse block</th><th>Read block</th></tr></thead>
           <tbody>${rows.map(({item,d})=>`<tr>
             <td class="pulse-table-label">${esc(label(item))}</td><td class="pulse-table-source">${esc(item.name)}</td>
@@ -452,7 +438,7 @@
             <td>${tableNumber(d.pulseVoltage)}</td><td>${tableNumber(d.pulseCurrent,'current')}</td>
             <td>${tableNumber(d.readVoltage)}</td><td>${tableNumber(d.readCurrent,'current')}</td>
             <td>${tableNumber(d.pulseTime)}</td><td>${tableNumber(d.readTime)}</td>
-            <td>${d.pulseBlockIndex??''}</td><td>${d.readBlockIndex??''}</td></tr>`).join('')}</tbody>`;
+            <td>${d.pulseBlockIndex??''}</td><td>${d.readBlockIndex??''}</td></tr>`).join('')}</tbody>`);
       }
 
       function renderComparison() {
@@ -632,6 +618,8 @@
       const service = {
         render,
         refreshSources,
+        setActiveFile(id){const next=state.files.find(f=>String(f.id)===String(id));if(!next)return false;state.activeId=next.id;render();return true;},
+        setFileChecked(id,value){const item=state.files.find(f=>String(f.id)===String(id));if(!item)return false;item.checked=!!value;renderFileList();renderComparison();scheduleSnapshot();return true;},
         setAllChecked(value){state.files.forEach(f=>f.checked=!!value);renderFileList();renderComparison();scheduleSnapshot();},
         removeChecked,
         analyzeCurrent,

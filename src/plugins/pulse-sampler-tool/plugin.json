@@ -1,7 +1,7 @@
 {
   "id": "com.dkds.tools.pulse-sampler",
   "name": "脉冲与采样处理",
-  "version": "1.9.2",
+  "version": "1.9.13",
   "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "scripts": [
@@ -15,9 +15,11 @@
   "description": "三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。",
   "pluginType": "tool",
   "requiresCore": [
+    "runtime",
     "events",
     "status",
     "project",
+    "io",
     "workspace",
     "data.sources",
     "data.artifacts",
@@ -67,8 +69,15 @@
       "science.transport.transfer"
     ]
   },
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "custom",
+      "styles": [
+        "mobile.css"
+      ]
+    }
   }
 }

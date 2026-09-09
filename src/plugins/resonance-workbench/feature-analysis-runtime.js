@@ -1,7 +1,7 @@
 (() => {
   function create(context){
     const {live,services,actions,utils}=context;
-    const {$,charts,artifacts,performance,S,D}=services;
+    const {$,dom,charts,artifacts,performance,S,D}=services;
     const {
       sweepById,peakMetrics,category,visibleSweepIds,peakLabel,scientificReact,peakById,publishPeakSelection
     }=actions;
@@ -23,9 +23,9 @@
     }
     function renderPhysics(){
       const r=physicalAnalysis();
-      const summary=$('#reswinPhysicsSummary');if(summary)summary.innerHTML=[`模型 ${r.modelCode||'—'}`,`峰族 ${r.families?.length||0}`,`稳定双向 ${(r.families||[]).filter(f=>f.bothStable).length}`].map(t=>`<div>${esc(t)}</div>`).join('');
-      const model=$('#reswinPhysicsModel');if(model)model.innerHTML=`<strong>${esc(r.modelTitle||'')}</strong><p>${esc(r.modelText||'')}</p><p>该判断来自当前已采纳峰轨迹的稳定性、正反扫差异与峰宽尺度；它是模型筛选依据，不等同于对微观机制的唯一证明。</p>`;
-      const table=$('#reswinPhysicsTable');if(table)table.innerHTML=`<thead><tr><th>峰族</th><th>类型</th><th>正扫点</th><th>反扫点</th><th>共同 Vg</th><th>中位 |ΔV|</th><th>中位峰宽</th></tr></thead><tbody>${(r.families||[]).map(f=>`<tr><td>${esc(f.label||`峰${f.order}`)}</td><td>${esc(f.type||f.code||'')}</td><td>${f.forwardCount||0}</td><td>${f.reverseCount||0}</td><td>${f.commonCount||0}</td><td>${fmt(f.medianDelta,5)}</td><td>${fmt(f.medianWidth,5)}</td></tr>`).join('')}</tbody>`;
+      const summary=$('#reswinPhysicsSummary');if(summary)dom.html(summary,[`模型 ${r.modelCode||'—'}`,`峰族 ${r.families?.length||0}`,`稳定双向 ${(r.families||[]).filter(f=>f.bothStable).length}`].map(t=>`<div>${esc(t)}</div>`).join(''));
+      const model=$('#reswinPhysicsModel');if(model)dom.html(model,`<strong>${esc(r.modelTitle||'')}</strong><p>${esc(r.modelText||'')}</p><p>该判断来自当前已采纳峰轨迹的稳定性、正反扫差异与峰宽尺度；它是模型筛选依据，不等同于对微观机制的唯一证明。</p>`);
+      const table=$('#reswinPhysicsTable');if(table)dom.html(table,`<thead><tr><th>峰族</th><th>类型</th><th>正扫点</th><th>反扫点</th><th>共同 Vg</th><th>中位 |ΔV|</th><th>中位峰宽</th></tr></thead><tbody>${(r.families||[]).map(f=>`<tr><td>${esc(f.label||`峰${f.order}`)}</td><td>${esc(f.type||f.code||'')}</td><td>${f.forwardCount||0}</td><td>${f.reverseCount||0}</td><td>${f.commonCount||0}</td><td>${fmt(f.medianDelta,5)}</td><td>${fmt(f.medianWidth,5)}</td></tr>`).join('')}</tbody>`);
       const plot=$('#reswinPhysicsPlot');if(plot&&charts){
         const rows=Array.isArray(r.v0Delta)?r.v0Delta:[];
         const traces=rows.length?[{x:rows.map(x=>x.vg),y:rows.map(x=>x.V0),mode:'lines+markers',name:'V0'},{x:rows.map(x=>x.vg),y:rows.map(x=>x.delta),mode:'lines+markers',name:'|δ|',yaxis:'y2'}]:[];
@@ -54,13 +54,13 @@
       if(!valid.has(s.seriesB)||s.seriesB===s.seriesA)s.seriesB=opts.find(o=>o.key!==s.seriesA)?.key||s.seriesA||'';
       live.workspace.spacingSettings=s;
       const markup=opts.map(o=>`<option value="${esc(o.key)}">${esc(o.name)}</option>`).join('');
-      const a=$('#reswinSpacingA'),b=$('#reswinSpacingB');if(a){a.innerHTML=markup;a.value=s.seriesA;}if(b){b.innerHTML=markup;b.value=s.seriesB;}
+      const a=$('#reswinSpacingA'),b=$('#reswinSpacingB');if(a){dom.html(a,markup);a.value=s.seriesA;}if(b){dom.html(b,markup);b.value=s.seriesB;}
       const mode=$('#reswinSpacingMode');if(mode)mode.value=s.mode||'abs';
     }
     function renderSpacing(){
       populateSpacing();const s=live.workspace.spacingSettings;spacingResult=computeSpacingResult(s.seriesA,s.seriesB);
       const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';scientificReact(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
-      const table=$('#reswinSpacingTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>VB−VA</th><th>|ΔV|</th></tr></thead><tbody>${spacingResult.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.deltaV,6)}</td><td>${fmt(d.spacing,6)}</td></tr>`).join('')}</tbody>`;
+      const table=$('#reswinSpacingTable');if(table)dom.html(table,`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>VB−VA</th><th>|ΔV|</th></tr></thead><tbody>${spacingResult.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.deltaV,6)}</td><td>${fmt(d.spacing,6)}</td></tr>`).join('')}</tbody>`);
     }
     function spacingCsv(){const rows=['Vg_V,series_A,V_A_V,series_B,V_B_V,delta_V_B_minus_A_V,absolute_spacing_V'];for(const d of spacingResult)rows.push([d.vg,csvCell(d.labelA),d.vA,csvCell(d.labelB),d.vB,d.deltaV,d.spacing].join(','));return rows.join('\n');}
 
@@ -107,9 +107,9 @@
       const defaultA=opts[0]?.key||'',defaultB=opts.find(o=>o.key!==defaultA)?.key||defaultA;
       if(!valid.has(s.seriesA))s.seriesA=defaultA;if(!valid.has(s.seriesB)||s.seriesB===s.seriesA)s.seriesB=defaultB;
       const markup=opts.map(o=>`<option value="${esc(o.key)}">${esc(o.name)}</option>`).join('');
-      for(const [id,value] of [['reswinGateA',s.seriesA],['reswinGateB',s.seriesB]]){const el=$('#'+id);if(el){el.innerHTML=markup;el.value=value||'';}}
+      for(const [id,value] of [['reswinGateA',s.seriesA],['reswinGateB',s.seriesB]]){const el=$('#'+id);if(el){dom.html(el,markup);el.value=value||'';}}
       const labels=gateLabels();if(!labels.includes(s.hysteresisLabel))s.hysteresisLabel=labels[0]||'';
-      const hys=$('#reswinGateHysteresis');if(hys){hys.innerHTML=labels.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');hys.value=s.hysteresisLabel||'';}
+      const hys=$('#reswinGateHysteresis');if(hys){dom.html(hys,labels.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join(''));hys.value=s.hysteresisLabel||'';}
       const width=$('#reswinGateWidth');if(width)width.value=s.widthMode||'hwhm';
       s.featureMetric=GATE_FEATURE_METRICS[s.featureMetric]?s.featureMetric:'fwhm';s.featureDirection=['all','forward','reverse'].includes(String(s.featureDirection))?String(s.featureDirection):'all';
       const featureMetric=$('#reswinGateFeatureMetric');if(featureMetric)featureMetric.value=s.featureMetric;const featureDirection=$('#reswinGateFeatureDirection');if(featureDirection)featureDirection.value=s.featureDirection;
@@ -159,15 +159,20 @@
       gateComputeKey=key;
       if(live.pipelineRuntime?.runSync){
         const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>String(a?.semanticType||'')==='science.transport.iv');
-        const executed=live.pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...terSettings},terAlgorithmRef,peakKey,metricRevision:live.peakMetricRevision},publish:true,revision:dataRevision});
-        gateResult=executed?.value||null;
+        try{
+          const executed=live.pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...terSettings},terAlgorithmRef,peakKey,metricRevision:live.peakMetricRevision},publish:true,revision:dataRevision});
+          gateResult=executed?.value||compute();
+        }catch(err){
+          console.warn('[Resonance gate pipeline fallback]',err);
+          gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
+        }
       }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
       return gateResult;
     }
     function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x},yaxis:{title:y},legend:{orientation:'h',y:-.2},autosize:true};}
     function renderGate(){
       populateGate();const r=computeGate(),rows=r.rows||[],a=r.seriesA?.name||'ridge A',b=r.seriesB?.name||'ridge B';
-      const summary=$('#reswinGateSummary');if(summary)summary.innerHTML=[`共同 Vg ${rows.length}`,`A ${a}`,`B ${b}`,`TER ${r.terResult?'可用':'不可用'}`,`特征场 ${(r.featureField?.y||[]).length} 序列`].map(t=>`<span>${esc(t)}</span>`).join('');
+      const summary=$('#reswinGateSummary');if(summary)dom.html(summary,[`共同 Vg ${rows.length}`,`A ${a}`,`B ${b}`,`TER ${r.terResult?'可用':'不可用'}`,`特征场 ${(r.featureField?.y||[]).length} 序列`].map(t=>`<span>${esc(t)}</span>`).join(''));
       const plots={
         reswinGateRidges:{traces:[{x:r.Arows.map(d=>d.vg),y:r.Arows.map(d=>d.v),mode:'lines+markers',name:a},{x:r.Brows.map(d=>d.vg),y:r.Brows.map(d=>d.v),mode:'lines+markers',name:b}],layout:gateBase('Vg (V)','V_R (V)')},
         reswinGateV0:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.V0),mode:'lines+markers',name:'V0'}],layout:gateBase('Vg (V)','V0 (V)')},
@@ -186,8 +191,8 @@
       const field=r.featureField||gateFeatureField(r.settings||{}),fieldPlot=$('#reswinGateFeatureField'),fieldTitle=$('#reswinGateFeatureFieldTitle'),fieldMeta=$('#reswinGateFeatureFieldMeta');
       if(fieldTitle)fieldTitle.textContent=`跨曲线特征场 · ${field.label}`;if(fieldMeta)fieldMeta.textContent=`${field.y.length} 个峰序列 × ${field.x.length} 个 Vg · 缺失 ${field.missing} · 点击单元格可定位真实峰`;
       if(fieldPlot){if(field.x.length&&field.y.length&&live.uiRuntime?.scientificPlot?.scalarField){live.uiRuntime.scientificPlot.scalarField(fieldPlot,field,{diverging:field.diverging,colorscale:field.diverging?'RdBu':'Viridis',reversescale:field.diverging,zmid:field.diverging?0:undefined,yaxis:{type:'category',automargin:true},source:'resonance-feature-field',renderKey:`gate-feature:${gateComputeKey}:${field.metric}:${field.direction}:${field.missing}`,hovertemplate:`Vg=%{x:.6g} V<br>%{y}<br>${field.label}=%{z:.6g}${field.unit?` ${field.unit}`:''}<extra></extra>`,onClick:event=>{const peak=peakFromFeatureFieldPoint(field,event);if(peak)publishPeakSelection(peak,'resonance-feature-field',{openInspector:true});}}).catch(()=>{});}else if(!field.x.length||!field.y.length)try{live.uiRuntime?.scientificPlot?.purge?.(fieldPlot);}catch{}}
-      const report=$('#reswinGateReport');if(report){const f=r.fits||{},c=r.correlations||{};report.innerHTML=`<strong>栅压物理分析摘要</strong><p>V0 表示两条所选共振 ridge 的共模位置；δ=(VB−VA)/2 表示有效分裂。用于可分辨度比较时使用 |δ|/w。</p><p>dV0/dVg=${fmt(f.V0?.slope,6)}，R²=${fmt(f.V0?.r2,4)}；d|δ|/dVg=${fmt(f.deltaAbs?.slope,6)}；r[TERmax, |δ|/w]=${fmt(c.terVsDeltaOverW,4)}；r[Vd*, V0]=${fmt(c.vStarVsV0,4)}。</p><p>这些相关量用于检验机制假设，不把 η_eff 直接解释为畴面积，也不把正反扫峰位差直接等同于 coercive voltage。</p>`;}
-      const table=$('#reswinGateTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>V0</th><th>δ</th><th>|δ|/w</th><th>TERmax</th><th>Vd*</th><th>η_eff</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.V0,6)}</td><td>${fmt(d.delta,6)}</td><td>${fmt(d.deltaOverW,5)}</td><td>${fmt(d.terMax,4)}</td><td>${fmt(d.vStar,6)}</td><td>${fmt(d.etaEff,4)}</td></tr>`).join('')}</tbody>`;
+      const report=$('#reswinGateReport');if(report){const f=r.fits||{},c=r.correlations||{};dom.html(report,`<strong>栅压物理分析摘要</strong><p>V0 表示两条所选共振 ridge 的共模位置；δ=(VB−VA)/2 表示有效分裂。用于可分辨度比较时使用 |δ|/w。</p><p>dV0/dVg=${fmt(f.V0?.slope,6)}，R²=${fmt(f.V0?.r2,4)}；d|δ|/dVg=${fmt(f.deltaAbs?.slope,6)}；r[TERmax, |δ|/w]=${fmt(c.terVsDeltaOverW,4)}；r[Vd*, V0]=${fmt(c.vStarVsV0,4)}。</p><p>这些相关量用于检验机制假设，不把 η_eff 直接解释为畴面积，也不把正反扫峰位差直接等同于 coercive voltage。</p>`);}
+      const table=$('#reswinGateTable');if(table)dom.html(table,`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>V0</th><th>δ</th><th>|δ|/w</th><th>TERmax</th><th>Vd*</th><th>η_eff</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.V0,6)}</td><td>${fmt(d.delta,6)}</td><td>${fmt(d.deltaOverW,5)}</td><td>${fmt(d.terMax,4)}</td><td>${fmt(d.vStar,6)}</td><td>${fmt(d.etaEff,4)}</td></tr>`).join('')}</tbody>`);
     }
     function gateCsv(){const rows=['Vg,V_A,V_B,V0,delta,abs_delta,delta_over_w,TER_max,Vd_star,eta_eff'];for(const d of gateResult?.rows||[])rows.push([d.vg,d.vA,d.vB,d.V0,d.delta,d.absDelta,d.deltaOverW,d.terMax,d.vStar,d.etaEff].join(','));return rows.join('\n');}
     function gateReportText(){const r=gateResult||computeGate(),f=r.fits||{},c=r.correlations||{};return ['# 栅压物理分析报告','',`ridge A: ${r.seriesA?.name||'—'}`,`ridge B: ${r.seriesB?.name||'—'}`,`共同 Vg 点: ${r.rows?.length||0}`,'',`dV0/dVg = ${fmt(f.V0?.slope,7)} V/V`,`R²(V0) = ${fmt(f.V0?.r2,4)}`,`d|δ|/dVg = ${fmt(f.deltaAbs?.slope,7)} V/V`,`Pearson r[TERmax, |δ|/w] = ${fmt(c.terVsDeltaOverW,4)}`,`Pearson r[Vd*, V0] = ${fmt(c.vStarVsV0,4)}`,'','解释边界：V0 是共模轨迹位置；δ 是有效共振分裂；η_eff 是有效电学权重；正反扫峰位差不自动等同于 coercive voltage。'].join('\n');}

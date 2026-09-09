@@ -24,11 +24,12 @@ const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'Theme semantic-core regression requires app 3.65.0 or newer');
-assert.equal(sdk.sdkVersion,'1.24.0');
+assert.equal(sdk.sdkVersion,'1.28.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
 assert.equal(Theme.version,'3.10.0');
-assert(Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must remain additive across the supported 3.x range');
+assert.equal(Theme.supports('contract:3.8.0'),false,'Theme Contract 3.10 must not advertise historical contract-version compatibility.');
+assert.equal(Theme.supports('contract:3.9.0'),false,'Theme Contract 3.10 must not advertise historical contract-version compatibility.');
 
 const semanticPos=index.indexOf('core/theme/semantic-registry.js');
 assert(semanticPos>index.indexOf('../sdk/theme-contract.js')&&semanticPos<index.indexOf('core/theme/runtime.js'),'canonical semantic registry must load after Theme Contract and before Theme runtime');
@@ -52,9 +53,9 @@ assert(appearanceCss.includes('[data-dkds-component-identity="inspectorHeader"]'
 assert(!appearanceCss.includes('.curve-inspector')&&!appearanceCss.includes('#resonanceDedicatedPage'),'Theme component paint must not contain page/plugin patches');
 assert(!shellCss.includes('.analysis-page{\n  background:#f5f7fb;'),'persistent pages must not retain the historical light-only hard-coded background');
 
-for(const status of ['NOT_PRESENT','MANAGED','PARTIAL','UNMANAGED','ROLE_MISMATCH','RECIPE_MISSING','OPAQUE_PARENT_OCCLUSION'])assert(coverage.includes(status),`Theme Coverage must expose ${status}`);
+for(const status of ['NOT_PRESENT','MANAGED','PARTIAL','UNMANAGED','ROLE_MISMATCH','RECIPE_MISSING','OPAQUE_MATERIAL_OCCLUSION'])assert(coverage.includes(status),`Theme Coverage must expose ${status}`);
 for(const key of ['material:materialSummary','appearance:componentSummary','components:componentSummary','state:stateSummary','semanticColor:semanticColorSummary'])assert(coverage.includes(key),`Theme Coverage missing ${key}`);
-for(const status of ['UNMANAGED_COMPONENT_APPEARANCE','WRONG_COMPONENT_IDENTITY','ROLE_MISMATCH','RECIPE_MISMATCH','TOKEN_NOT_CONSUMED','AUTHORED_BUT_UNUSED','OPAQUE_PARENT_OCCLUSION','HARDCODED_APPEARANCE','ENGINE_UNSUPPORTED'])assert(debug.includes(status),`Real Theme Inspector missing ${status}`);
+for(const status of ['UNMANAGED_COMPONENT_APPEARANCE','WRONG_COMPONENT_IDENTITY','ROLE_MISMATCH','RECIPE_MISMATCH','TOKEN_NOT_CONSUMED','AUTHORED_BUT_UNUSED','OPAQUE_MATERIAL_OCCLUSION','HARDCODED_APPEARANCE','ENGINE_UNSUPPORTED'])assert(debug.includes(status),`Real Theme Inspector missing ${status}`);
 assert(gallery.includes('parityReport')&&gallery.includes("'WRONG_COMPONENT_IDENTITY'")&&gallery.includes('DKDSThemeComponentAppearance.inspect'),'Theme Gallery must compare real UI through the canonical appearance resolver');
 
 assert.deepEqual(Theme.componentVariants(),['primary','secondary','selected','active','quiet','destructive','info','success','warning','danger']);

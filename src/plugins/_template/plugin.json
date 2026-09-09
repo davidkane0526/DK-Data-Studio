@@ -32,5 +32,13 @@
     "ui.interaction-behavior",
     "ui.pages"
   ],
-  "pluginType": "developer"
+  "pluginType": "developer",
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  }
 }

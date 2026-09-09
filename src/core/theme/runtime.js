@@ -1,5 +1,11 @@
 (() => {
   'use strict';
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate is required before Theme runtime.');
+  const STYLE_SOURCE='src/core/theme/runtime.js';
+  const themeToken=(el,token,value)=>StyleGate.setToken(el,token,value,{owner:'core.theme-runtime',scope:'runtime-theme-token',source:STYLE_SOURCE});
+  const removeThemeToken=(el,token)=>StyleGate.remove(el,token,{owner:'core.theme-runtime',kind:StyleGate.KINDS.CONFIG_TOKEN,scope:'runtime-theme-token',source:STYLE_SOURCE});
+  const themeProperty=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.theme-runtime',scope:'runtime-theme-property',source:STYLE_SOURCE});
   const STORAGE_KEY='dkds.appearance.v1';
   const PROFILE_KEY='dkds.theme-profile.v1';
   const SETTINGS_KEY='dkds.theme-settings.v1';
@@ -53,8 +59,10 @@
           chip:{variants:{quiet:{surface:'transparent',text:'#65758a',border:'transparent',indicator:'transparent'}}},
           toolbarAction:{
             surface:'transparent',surfaceHover:'#f0f5fc',surfaceActive:'#eaf2ff',surfaceSelected:'#eaf2ff',text:'#1c2a43',textActive:'#174ea6',textSelected:'#174ea6',border:'transparent',borderHover:'rgba(102,132,168,.22)',borderActive:'rgba(71,116,197,.34)',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'0 0 0 2px rgba(71,116,197,.14)',radius:7,
+            variants:{primary:{surface:'#4B74B9',surfaceHover:'#416AAE',surfaceActive:'#385F9F',text:'#FFFFFF',textActive:'#FFFFFF',border:'#4B74B9',borderHover:'#416AAE',borderActive:'#385F9F',indicator:'#FFFFFF'}},
             contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 0 0 2px rgba(71,116,197,.12)'},selected:{shadow:'0 0 0 2px rgba(71,116,197,.14)'}}}}
-          }
+          },
+          floatingChrome:{surface:'#EEF4FB',surfaceHover:'#E5EEF9',surfaceActive:'#DCE9F8',text:'#33445B',border:'#B9CBE1',borderHover:'#78A2D7',borderActive:'#5E8FCD',indicator:'#6E9CD6'}
         }}
       },
       dark:{
@@ -65,8 +73,10 @@
           chip:{variants:{quiet:{surface:'transparent',text:'#9ba5b2',border:'transparent',indicator:'transparent'}}},
           toolbarAction:{
             surface:'transparent',surfaceHover:'#303640',surfaceActive:'#3a4049',surfaceSelected:'#3a4049',text:'#e7ebf0',textActive:'#ffffff',textSelected:'#ffffff',border:'transparent',borderHover:'rgba(232,236,242,.09)',borderActive:'transparent',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',radius:7,
+            variants:{primary:{surface:'#526F9F',surfaceHover:'#6281B3',surfaceActive:'#47638E',text:'#FFFFFF',textActive:'#FFFFFF',border:'#526F9F',borderHover:'#6281B3',borderActive:'#47638E',indicator:'#FFFFFF'}},
             contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'none'},selected:{shadow:'none'}}}}
-          }
+          },
+          floatingChrome:{surface:'#202A38',surfaceHover:'#28374A',surfaceActive:'#30435A',text:'#DCE6F2',border:'#3D526B',borderHover:'#6D8FB8',borderActive:'#557AA8',indicator:'#789BC5'}
         }}
       }
     }
@@ -108,18 +118,26 @@
     const normalized=normalizeSettingInput(row,value);settingsStore={...settingsStore,[pid]:{...(settingsStore[pid]||{}),[row.id]:normalized}};saveSettingsStore();if(pid===activeProfile)applyProfileTokens(current);try{globalThis.dispatchEvent(new CustomEvent('dkds:theme-settings-changed',{detail:{profile:pid,id:row.id,value:normalized,theme:current}}));globalThis.dispatchEvent(new CustomEvent('dkds:theme-changed',{detail:{theme:current,previous:current,profile:pid,tokens:snapshotTokens()}}));}catch{}return normalized;
   }
   function resetSettings(profileId=activeProfile){const pid=String(profileId||activeProfile);if(settingsStore[pid]!==undefined){const next={...settingsStore};delete next[pid];settingsStore=next;saveSettingsStore();if(pid===activeProfile)applyProfileTokens(current);try{globalThis.dispatchEvent(new CustomEvent('dkds:theme-settings-changed',{detail:{profile:pid,reset:true,theme:current}}));globalThis.dispatchEvent(new CustomEvent('dkds:theme-changed',{detail:{theme:current,previous:current,profile:pid,tokens:snapshotTokens()}}));}catch{}}return true;}
-  function recipePolicy(profileId=activeProfile,mode=current){
-    const profile=profiles.get(String(profileId||activeProfile))||profiles.get('builtin.default'),out={};for(const role of MATERIAL_ROLES)if(profile?.recipes?.[role])out[role]=profile.recipes[role];
-    for(const row of settingRows(profile?.id)){const t=row.target||{};if(t.scope!=='recipe'||(t.mode&&t.mode!=='all'&&t.mode!==mode))continue;const saved=settingsStore?.[profile.id]?.[row.id];if(saved!==undefined)out[t.role]=String(saved);}
+  function computeRecipePolicy(profile,mode=current){
+    const out={};for(const role of MATERIAL_ROLES)if(profile?.recipes?.[role])out[role]=profile.recipes[role];
+    for(const row of settingRows(profile?.id)){const target=row.target||{};if(target.scope!=='recipe'||(target.mode&&target.mode!=='all'&&target.mode!==mode))continue;const saved=settingsStore?.[profile.id]?.[row.id];if(saved!==undefined)out[target.role]=String(saved);}
     return Object.freeze(out);
   }
-  function recipeFor(role,context='',profileId=activeProfile,mode=current){
-    const profile=profiles.get(String(profileId||activeProfile))||profiles.get('builtin.default'),base=recipePolicy(profile?.id,mode),contextRecipe=profile?.recipes?.contexts?.[String(context||'')]?.[String(role||'')];return String(contextRecipe||base[String(role||'')]||'');
+  function pendingBootMatches(mode=current){return !!pendingProfile&&String(bootState?.profile||'')===preferredProfile&&String(bootState?.theme||'')===String(mode||current)&&!!bootState?.resolved;}
+  function recipePolicy(profileId='',mode=current){
+    const requested=String(profileId||'').trim();
+    if((!requested||requested===activeProfile)&&pendingBootMatches(mode)&&bootState?.recipes&&typeof bootState.recipes==='object')return Object.freeze({...bootState.recipes});
+    const profile=profiles.get(requested||activeProfile)||profiles.get('builtin.default');return computeRecipePolicy(profile,mode);
+  }
+  function recipeFor(role,context='',profileId='',mode=current){
+    const requested=String(profileId||'').trim(),roleId=String(role||''),contextId=String(context||'');
+    if((!requested||requested===activeProfile)&&pendingBootMatches(mode)){const contextRecipe=bootState?.recipeContexts?.[contextId]?.[roleId];return String(contextRecipe||recipePolicy('',mode)[roleId]||'');}
+    const profile=profiles.get(requested||activeProfile)||profiles.get('builtin.default'),base=computeRecipePolicy(profile,mode),contextRecipe=profile?.recipes?.contexts?.[contextId]?.[roleId];return String(contextRecipe||base[roleId]||'');
   }
   function applySettingOverrides(profile,theme){
     const root=document.documentElement;if(!root)return;for(const row of settingRows(profile.id)){const t=row.target||{};if(t.scope==='recipe'||(t.mode&&t.mode!=='all'&&t.mode!==theme))continue;const saved=settingsStore?.[profile.id]?.[row.id];if(saved===undefined)continue;const key=t.key,value=saved;
-      if(t.scope==='material'){if(t.role)root.style.setProperty(roleCssVar(t.role,key),cssTokenValue(key,value));else{const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}}
-      else {const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,value);}
+      if(t.scope==='material'){if(t.role)themeToken(root,roleCssVar(t.role,key),cssTokenValue(key,value));else{const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)themeToken(root,cssVar,cssTokenValue(key,value));}}
+      else {const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)themeToken(root,cssVar,value);}
     }
   }
 
@@ -133,6 +151,15 @@
   let pendingProfile=activeProfile===preferredProfile?'':preferredProfile;
   const bootState=(()=>{try{const row=JSON.parse(localStorage.getItem(BOOT_STATE_KEY)||'null');return row&&typeof row==='object'?row:null;}catch{return null;}})();
   const canPreservePendingBoot=theme=>!!pendingProfile&&String(bootState?.profile||'')===preferredProfile&&String(bootState?.theme||'')===String(theme||current);
+  function restorePendingBootState(theme=current){
+    if(!canPreservePendingBoot(theme))return false;
+    const root=document.documentElement,vars=bootState?.vars&&typeof bootState.vars==='object'?bootState.vars:null;if(!root||!vars)return false;
+    clearProfileTokens();
+    for(const [name,value] of Object.entries(vars))if(typeof name==='string'&&name.startsWith('--')&&value!==undefined&&value!==null&&String(value)!=='')themeToken(root,name,String(value));
+    root.dataset.dkdsTheme=String(theme||current);themeProperty(root,'color-scheme',String(theme||current));root.dataset.dkdsThemeProfile=preferredProfile;
+    if(bootState?.headerEffect==='true'||bootState?.headerEffect==='false')root.dataset.dkdsThemeHeaderEffect=bootState.headerEffect;
+    refreshVisualComposition();return true;
+  }
 
   const visibleEffectColor=value=>{
     const text=String(value??'').trim().toLowerCase();if(!text||text==='transparent')return false;
@@ -163,14 +190,19 @@
       setVar(effectCssVar(key),effectCssValue(key,value));
       if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';setVar('--dkui-effect-gradient-angle',angle);}
     }
-    return Object.freeze({theme:mode,profile:profile?.id||'builtin.default',headerEffect:(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false',vars:Object.freeze(vars)});
+    return Object.freeze({
+      theme:mode,profile:profile?.id||'builtin.default',label:profile?.label||'',owner:profile?.owner||'core',
+      headerEffect:(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false',vars:Object.freeze(vars),
+      resolved:Object.freeze({tokens:resolved.tokens,motion:resolved.motion,material:resolved.material,appearance:resolved.appearance,effects:resolved.effects||Object.freeze({}),scientific:resolved.scientific}),
+      recipes:computeRecipePolicy(profile,mode),recipeContexts:profile?.recipes?.contexts||Object.freeze({})
+    });
   }
   function persistBootState(theme=current){
     try{localStorage.setItem(BOOT_STATE_KEY,JSON.stringify(buildBootState(theme)));}catch{}
   }
-  function clearProfileTokens(){const root=document.documentElement;if(!root)return;for(const cssVar of Object.values(PUBLIC_TOKEN_MAP))root.style.removeProperty(cssVar);for(const role of MATERIAL_ROLES){for(const key of MATERIAL_KEYS)root.style.removeProperty(roleCssVar(role,key));for(const key of ThemeContract.roleAppearanceKeys())root.style.removeProperty(roleAppearanceCssVar(role,key));}for(const component of COMPONENT_APPEARANCE_COMPONENTS){for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentAppearanceCssVar(component,key));for(const variant of COMPONENT_VARIANTS)for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentVariantCssVar(component,variant,key));}for(const key of EFFECT_KEYS)root.style.removeProperty(effectCssVar(key));root.style.removeProperty('--dkui-effect-gradient-angle');delete root.dataset.dkdsThemeHeaderEffect;}
+  function clearProfileTokens(){const root=document.documentElement;if(!root)return;for(const cssVar of Object.values(PUBLIC_TOKEN_MAP))removeThemeToken(root,cssVar);for(const role of MATERIAL_ROLES){for(const key of MATERIAL_KEYS)removeThemeToken(root,roleCssVar(role,key));for(const key of ThemeContract.roleAppearanceKeys())removeThemeToken(root,roleAppearanceCssVar(role,key));}for(const component of COMPONENT_APPEARANCE_COMPONENTS){for(const key of COMPONENT_APPEARANCE_KEYS)removeThemeToken(root,componentAppearanceCssVar(component,key));for(const variant of COMPONENT_VARIANTS)for(const key of COMPONENT_APPEARANCE_KEYS)removeThemeToken(root,componentVariantCssVar(component,variant,key));}for(const key of EFFECT_KEYS)removeThemeToken(root,effectCssVar(key));removeThemeToken(root,'--dkui-effect-gradient-angle');delete root.dataset.dkdsThemeHeaderEffect;}
   const cssTokenValue=(key,value)=>{if(['materialTintOpacity','materialNoiseOpacity'].includes(key)){const n=Number(value);if(Number.isFinite(n))return `${Math.max(0,Math.min(1,n))*100}%`;}return value;};
-  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))root.style.setProperty(roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){root.style.setProperty(roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){root.style.setProperty(effectCssVar(key),effectCssValue(key,value));if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';root.style.setProperty('--dkui-effect-gradient-angle',angle);}}root.dataset.dkdsThemeHeaderEffect=(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false';applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';if(!pendingProfile||activeProfile===preferredProfile)persistBootState(theme);}
+  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)themeToken(root,cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))themeToken(root,roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){themeToken(root,roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(COMPONENT_APPEARANCE_KEYS.includes(key))themeToken(root,componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))themeToken(root,componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){themeToken(root,effectCssVar(key),effectCssValue(key,value));if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';themeToken(root,'--dkui-effect-gradient-angle',angle);}}root.dataset.dkdsThemeHeaderEffect=(visibleEffectColor(resolved?.effects?.headerGradientStart)&&visibleEffectColor(resolved?.effects?.headerGradientEnd))?'true':'false';applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';if(!pendingProfile||activeProfile===preferredProfile)persistBootState(theme);}
   function snapshotTokens(){const root=document.documentElement;if(!root)return Object.freeze({});const style=getComputedStyle(root),out={};for(const [key,cssVar] of Object.entries(PUBLIC_TOKEN_MAP))out[key]=style.getPropertyValue(cssVar).trim();return Object.freeze(out);}
 
   let visualTransaction=0;
@@ -187,7 +219,7 @@
     const next=VALID.has(normalized)?normalized:systemTheme();
     const previous=current;current=next;
     const root=document.documentElement,transaction=beginVisualTransaction();
-    if(root){root.dataset.dkdsTheme=next;root.style.colorScheme=next;if(!canPreservePendingBoot(next)){applyProfileTokens(next);refreshVisualComposition();}}
+    if(root){root.dataset.dkdsTheme=next;themeProperty(root,'color-scheme',next);if(!canPreservePendingBoot(next)){applyProfileTokens(next);refreshVisualComposition();}}
     if(persist){try{localStorage.setItem(STORAGE_KEY,next);}catch{}}
     else if(!canPreservePendingBoot(next))persistBootState(next);
     if(broadcast){try{channel?.postMessage?.({theme:next,preferredProfile,activeProfile});}catch{}}
@@ -205,10 +237,16 @@
     endVisualTransaction(transaction);return Object.freeze({profile:next,previous,changed:previous!==next});
   }
   function registerProfile(id,spec={}){const profile=normalizeProfile(id,spec);profiles.set(profile.id,profile);if(pendingProfile===profile.id||preferredProfile===profile.id&&activeProfile!==profile.id){pendingProfile='';commitProfile(profile.id,{detail:{restored:true}});}else if(activeProfile===profile.id)apply(current,{persist:false,emit:false,broadcast:true});return Object.freeze({id:profile.id,dispose:()=>unregisterProfile(profile.id)});}
-  function unregisterProfile(id){const key=String(id||'');if(!key||key==='builtin.default')return false;const existed=profiles.delete(key);if(activeProfile===key){if(preferredProfile===key)pendingProfile=key;commitProfile('builtin.default',{detail:{suspended:key}});}return existed;}
+  function unregisterProfile(id){const key=String(id||'');if(!key||key==='builtin.default')return false;const existed=profiles.delete(key);if(activeProfile===key){if(preferredProfile===key){pendingProfile=key;activeProfile='builtin.default';if(!restorePendingBootState(current))commitProfile('builtin.default',{detail:{suspended:key}});}else commitProfile('builtin.default',{detail:{suspended:key}});}return existed;}
   function setProfile(id,{persist=true,emit=true,broadcast=true}={}){const key=String(id||'').trim();if(!profiles.has(key))throw new Error(`Unknown theme profile: ${key}`);pendingProfile='';preferredProfile=key;if(persist){try{localStorage.setItem(PROFILE_KEY,key);}catch{}}commitProfile(key,{emit});if(broadcast){try{channel?.postMessage?.({theme:current,preferredProfile:key,activeProfile:key});}catch{}}return key;}
   function listProfiles(){return [...profiles.values()].map(profile=>Object.freeze({id:profile.id,label:profile.label,owner:profile.owner,metadata:profile.metadata,settings:profile.settings.length,recipes:recipePolicy(profile.id)}));}
-  function previewProfile(id=activeProfile,theme=current){const key=String(id||activeProfile),mode=VALID.has(String(theme))?String(theme):current,profile=profiles.get(key)||profiles.get('builtin.default'),resolved=ThemeContract.resolveProfile(profile,mode);return Object.freeze({id:profile?.id||'builtin.default',label:profile?.label||'',owner:profile?.owner||'core',mode,tokens:resolved.tokens,motion:resolved.motion,material:resolved.material,appearance:resolved.appearance,effects:resolved.effects||Object.freeze({}),scientific:resolved.scientific,recipes:recipePolicy(profile?.id||'builtin.default',mode),settings:settings(profile?.id||'builtin.default')});}
+  function previewProfile(id='',theme=current){
+    const requested=String(id||'').trim(),key=requested||activeProfile,mode=VALID.has(String(theme))?String(theme):current;
+    if((!requested||key===activeProfile)&&pendingBootMatches(mode)){
+      const resolved=bootState.resolved||{};return Object.freeze({id:preferredProfile,label:String(bootState.label||preferredProfile),owner:String(bootState.owner||'boot-cache'),mode,tokens:resolved.tokens||Object.freeze({}),motion:resolved.motion||Object.freeze({}),material:resolved.material||Object.freeze({base:{},roles:{}}),appearance:resolved.appearance||Object.freeze({roles:{},components:{}}),effects:resolved.effects||Object.freeze({}),scientific:resolved.scientific||Object.freeze({}),recipes:recipePolicy('',mode),settings:Object.freeze([]),pending:true});
+    }
+    const profile=profiles.get(key)||profiles.get('builtin.default'),resolved=ThemeContract.resolveProfile(profile,mode);return Object.freeze({id:profile?.id||'builtin.default',label:profile?.label||'',owner:profile?.owner||'core',mode,tokens:resolved.tokens,motion:resolved.motion,material:resolved.material,appearance:resolved.appearance,effects:resolved.effects||Object.freeze({}),scientific:resolved.scientific,recipes:recipePolicy(profile?.id||'builtin.default',mode),settings:settings(profile?.id||'builtin.default')});
+  }
   function materialSnapshot(platform='web'){return ThemeContract.projectMaterial(previewProfile(activeProfile,current).material,platform);}
   function scientificSnapshot(){const scientific=previewProfile(activeProfile,current).scientific||{};return Object.freeze({seriesPalette:Object.freeze([...(scientific.seriesPalette||[])]),mode:scientific.mode||'fallback-only',precedence:Object.freeze(['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default'])});}
   function roleAppearanceSnapshot(){const appearance=previewProfile(activeProfile,current).appearance||{roles:{},components:{}};return Object.freeze({roles:Object.freeze(Object.fromEntries(MATERIAL_ROLES.map(role=>[role,Object.freeze({...appearance.roles?.[role]})]))),components:Object.freeze(Object.fromEntries(COMPONENT_APPEARANCE_COMPONENTS.map(component=>[component,Object.freeze({...appearance.components?.[component]})]))) });}

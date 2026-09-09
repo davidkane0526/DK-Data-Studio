@@ -60,8 +60,14 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(entry.split(/\r?\n/).length<40,`${folder}: plugin.js must be a thin composition entry.`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${folder}: controller must own typed shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
-  assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical workspaceSurface.`);
-  assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${folder}: shared views must compose a PRIMARY surface.`);
+  const presentationViews=folder==='data-center'?read('src/plugins/data-center/mobile-presentation.js'):views;
+  assert(presentationViews.includes('ctx.ui.workspaceSurface.create'),`${folder}: its semantic platform presentation must mount through the canonical workspaceSurface.`);
+  assert(presentationViews.includes('wb.compose')||presentationViews.includes('wb.mountPrimary'),`${folder}: its semantic platform presentation must compose a PRIMARY surface.`);
+  if(folder==='data-center'){
+    const manifest=JSON.parse(read('src/plugins/data-center/plugin.json'));
+    assert(!views.includes('ctx.ui.workspaceSurface.create')&&manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.scripts?.includes('mobile-presentation.js'),
+      'data-center: Desktop shared composition must stay static while Mobile remapping lives in SDK 1.25 platformPresentation.');
+  }
   assert(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume Core PlotView/Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);

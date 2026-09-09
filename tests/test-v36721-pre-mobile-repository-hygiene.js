@@ -13,10 +13,10 @@ const version=String(pkg.version||'0.0.0').split('.').map(Number);
 assert(version[0]>3||(version[0]===3&&(version[1]>67||(version[1]===67&&version[2]>=21))),'Pre-Mobile repository hygiene requires application 3.67.21 or newer.');
 
 assert.deepEqual(Object.keys(pkg.dependencies||{}).sort(),['d3','electron-updater','qrcode','ws'].sort(),'Desktop direct runtime dependencies must remain the audited minimal set.');
-assert.deepEqual(Object.keys(pkg.devDependencies||{}).sort(),['electron','electron-builder'].sort(),'Desktop direct development dependencies must remain the audited minimal set.');
+assert.deepEqual(Object.keys(pkg.devDependencies||{}).sort(),['electron'].sort(),'Desktop ordinary development dependencies must remain runtime-focused; packaging-only electron-builder is on-demand.');
 assert.deepEqual(Object.keys(mobile.dependencies||{}).sort(),[
-  'd3','expo','expo-blur','expo-clipboard','expo-document-picker','expo-file-system','expo-navigation-bar','expo-sharing','expo-status-bar','react','react-native','react-native-safe-area-context','react-native-webview'
-].sort(),'Mobile direct runtime dependencies must remain the audited pre-Mobile baseline unless a new capability explicitly requires another package.');
+  'd3','expo','expo-clipboard','expo-document-picker','expo-file-system','expo-navigation-bar','expo-sharing','expo-status-bar','react','react-native','react-native-safe-area-context','react-native-webview'
+].sort(),'Mobile direct runtime dependencies must remain the audited minimal set; retired duplicate UI dependencies such as expo-blur must not remain after Core Material cutover.');
 assert.deepEqual(Object.keys(mobile.devDependencies||{}).sort(),['@types/react','typescript'].sort(),'Mobile direct development dependencies must remain the audited minimal set.');
 
 const packager=read('tools/windows/package-clean-project.ps1');

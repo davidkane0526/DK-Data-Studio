@@ -8,7 +8,7 @@ const {PortableView}=require('../layout/portable-view');
 const {SplitController, MovableSurface, WorkspaceLayout}=require('../layout/workspace');
 const {ChartSurface, PlotViewRegistry}=require('../plot-view/chart');
 const {ViewHost}=require('../workbench/view-host');
-const {GridController}=require('../grid/controller');
+const {GridController,GroupAreaController}=require('../grid/controller');
 const {SettingsRegistry}=require('../dialog/settings');
 const {globalTableSurfaceRegistry}=require('../table/surfaces');
 const {TooltipService, GroupPlot}=require('../tooltip/group-plot');
@@ -17,7 +17,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
 
   class PluginScope {
     constructor(owner,options={}){
-      this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.pluginWorkspaces=[];
+      this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.scientificCurves=new Set();this.pluginWorkspaces=[];
       this.shortcuts={
         register:(id,spec)=>this.track(shortcutHub.register(this.owner,id,spec)),
         add:spec=>this.track(shortcutHub.register(this.owner,spec?.id||`shortcut-${this.cleanups.length}`,spec||{})),
@@ -34,6 +34,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
       this.series=new SeriesRegistry(this.owner);this.legendGroups=new Map();this.layoutSolver=new ActiveLayoutSolver(this);this.tooltipService=new TooltipService(this);this.cleanups.push(()=>this.tooltipService.dispose());
       this.legends={group:(id='default',spec={})=>{const key=String(id||'default');if(!this.legendGroups.has(key))this.legendGroups.set(key,this.trackObject(new LegendGroup(this,key,spec)));return this.legendGroups.get(key);},get:id=>this.legendGroups.get(String(id||'default'))||null};
       this.groupPlots={create:(container,spec={})=>this.trackObject(new GroupPlot(this,container,spec))};
+      this.groupArea={create:(container,spec={})=>this.trackObject(new GroupAreaController(this,container,spec))};
       this.tooltips={show:spec=>this.tooltipService.show(spec),hide:()=>this.tooltipService.hide(),bind:(target,spec)=>this.track(this.tooltipService.bind(target,spec))};
       this.selectionChannels=new Map();this.selectionModels=new Map();this.interactionRuntimes=new Map();this.interactionBehaviorProfiles=new Map();
       this.selection={
@@ -64,7 +65,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
       this.pluginWorkspace={create:createPluginWorkspace};
       this.scientificRenderer=window.DKDSScientificPlot?.createScope?.(this.owner)||null;if(this.scientificRenderer)this.cleanups.push(()=>this.scientificRenderer.dispose?.());
       this.scientificPlot={
-        create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec)),
+        create:(target,spec={})=>{const surface=new ScientificCurveSurface(this,target,spec);this.scientificCurves.add(surface);this.cleanups.push(()=>{this.scientificCurves.delete(surface);surface.dispose?.();});return surface;},
         createRenderer:(target,spec={})=>this.scientificRenderer?.create?.(target,spec)||null,
         attach:(target,spec={})=>this.scientificRenderer?.attach?.(target,spec)||null,
         react:(target,data=[],layout={},config={},spec={})=>this.scientificRenderer?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
@@ -101,7 +102,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
       if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificRenderer?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
       return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificRenderer?.lifecycleState?.()||null};
     }
-    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.legendGroups.clear();this.series.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.pluginWorkspaces=[];}
+    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.legendGroups.clear();this.series.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.scientificCurves.clear();this.pluginWorkspaces=[];}
   }
 
 module.exports=Object.freeze({PluginScope});

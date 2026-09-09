@@ -6,8 +6,6 @@
   // with `clone is not defined`. SUPER and TOP now execute the exact same
   // explicit helper prelude.
   const Shared=window.DKDSPluginModules.require('builtin.resonance-workbench','workbench-shared');
-  const S=window.DKDSScience;
-  const D=window.DKDSData;
   const FeatureContext=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-context');
   const GroupRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-group-runtime');
   const AnalysisRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-analysis-runtime');
@@ -23,7 +21,6 @@
   const csvCell=value=>{const text=String(value??'');return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;};
   const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
   if(!Shared)throw new Error('Resonance shared workbench layer is unavailable.');
-  if(!S)throw new Error('Resonance science runtime is unavailable.');
   if(!FeatureContext||!GroupRuntime||!AnalysisRuntime||!PeakRuntime||!SelectionRuntime||!InspectorRuntime||!MainPlotRuntime||!ControlsRuntime)throw new Error('Resonance feature sub-runtimes are unavailable.');
   // SUPER/TOP adapters are intentionally limited to container/lifecycle mapping.
   async function mountSuper(ctx,controller,adapter={}){
@@ -32,16 +29,20 @@
     return views.mountUnified(ctx,controller,{mode:'super',adapter});
   }
 
-  const defaultWorkspace=(project={})=>Shared.defaultWorkspace(project,S);
-  const normalizeWorkspace=(raw,project={})=>Shared.normalizeWorkspace(raw,project,S);
+  const defaultWorkspace=(project={},science=null)=>Shared.defaultWorkspace(project,science);
+  const normalizeWorkspace=(raw,project={},science=null)=>Shared.normalizeWorkspace(raw,project,science);
 
-  function parseDatasets(project={},artifacts=null){
-    if(!artifacts?.list||!D?.transportDatasetsFromArtifacts)return [];
-    return D.transportDatasetsFromArtifacts(artifacts.list({includeTransient:true})||[],{consumer:'builtin.resonance-workbench'});
+  function parseDatasets(project={},artifacts=null,dataModel=null){
+    if(!artifacts?.list||!dataModel?.transportDatasetsFromArtifacts)return [];
+    return dataModel.transportDatasetsFromArtifacts(artifacts.list({includeTransient:true})||[],{consumer:'builtin.resonance-workbench'});
   }
 
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,historyChanged=detail=>window.DKDSPlugins?.edit?.changed?.(detail),copyTextToClipboard,saveChartImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,series=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,isNativeClient=false,setStatus,setPresentationSummary=()=>{},scheduleSnapshot:persistSnapshot,historyChanged=()=>{},copyTextToClipboard,saveChartImage,science=null,dataModel=null,io=null,charts=null,dom=null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,series=null,dialogs=null,adapter={}}){
+      const S=science;
+      const D=dataModel;
+      if(!S)throw new Error('Resonance science runtime is unavailable. Inject ctx.science.');
+      if(!D)throw new Error('Resonance data model is unavailable. Inject ctx.data.model.');
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -73,20 +74,20 @@
           workspace:()=>workspace,project:()=>project,datasets:()=>datasets,sweeps:()=>sweeps,
           selectedPeakId:()=>selectionRuntime?.selectedPeakId||'',selectedSweepId:()=>selectionRuntime?.selectedSweepId||'',selectedRange:()=>selectionRuntime?.selectedRange||null,
           interactionRuntime:()=>selectionRuntime?.interactionRuntime()||null,interactionSelection:()=>selectionRuntime?.interactionSelection()||null,sharedController:()=>sharedController,
-          workspaceNavigator:()=>workspaceNavigator,
+          workspaceNavigator:()=>workspaceNavigator,isNativeClient:()=>isNativeClient===true,
           algorithmRuntime:()=>algorithmRuntime,pipelineRuntime:()=>pipelineRuntime,reactiveRuntime:()=>reactiveRuntime,
           uiRuntime:()=>uiRuntime,workspaceRuntime:()=>workspaceRuntime,peakMetricRevision:()=>peakRuntime?.revision?.()||0
         },
-        services:{$,dom,charts,artifacts,performance,S,D,transforms,setStatus,copyTextToClipboard},
+        services:{$,dom,dialogs,charts,artifacts,performance,S,D,transforms,setStatus,copyTextToClipboard},
         actions:{
           groupSeries,peakMetrics,selectedPeak,selectedSweep,visibleSweeps,visibleSweepIds,visibilityMap,isVisible,peakLabel,colorForPeakOrder,colorForSeries,colorForPhysicsCode,
           scientificReact,peakPointEntity,peakById,publishPeakSelection,publishSweepSelection,publishRangeSelection,peaksInRange,resize,sweepById,category,
-          datasetEntityId,renderControls,renderSummary,ensureMainSurface,renderInspection,renderTrend,renderLinkedSelection,
+          datasetEntityId,renderControls,renderSummary,ensureMainSurface,renderInspection,renderTrend,renderLinkedSelection,visibilityChanged,
           updateGroupContext,isUiBound,normalizeCategories,invalidatePhysics,physicalAnalysis,render,scheduleSnapshot,commitPeakMetricEdit,
           clearMainRangeMenu,renderMainPlot,selectedSweep,selectedPeak,assignPeakCategory,createPeakCategoryForPeak,
           renameSelectedCategory,updatePeak,deletePeak,currentTransform,peakColor,clearRangeState:()=>selectionRuntime?.clearRangeState(),
           setRangeState:range=>selectionRuntime?.setRangeState(range),clearSelectionIds:options=>selectionRuntime?.clearIds(options),
-          assignDetectedOrders,commitWorkspaceEdit,setSelectedPeakId:value=>selectionRuntime?.setSelectedPeakId(value),rebuild,refreshData
+          assignDetectedOrders,commitWorkspaceEdit,setSelectedSweepId:value=>selectionRuntime?.setSelectedSweepId(value),setSelectedPeakId:value=>selectionRuntime?.setSelectedPeakId(value),rebuild,refreshData
         },
         utils:{esc,fmt,csvCell,finite,directionName,clone}
       });
@@ -116,7 +117,8 @@
         if(reactiveViewsInstalled||!reactiveRuntime?.effect)return;reactiveViewsInstalled=true;
         reactiveRuntime.effect('resonance.view.main',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.visibility'],scheduler:'frame',effect:()=>{if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.('reactive');}});
         reactiveRuntime.effect('resonance.view.inspector',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.selection'],scheduler:'frame',effect:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();}});
-        reactiveRuntime.effect('resonance.view.group',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.visibility','resonance.group.settings'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null){groupRuntime.invalidate();renderGroup();}}});
+        reactiveRuntime.effect('resonance.view.group',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.visibility'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null){groupRuntime.invalidate();renderGroup();}}});
+        reactiveRuntime.effect('resonance.view.group-layout',{dependsOn:['resonance.group.settings'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null)groupRuntime.applyLayout?.();}});
       }
       let undoStack=[],redoStack=[];
       let committedWorkspace=null;
@@ -138,7 +140,7 @@
         committedWorkspace=current;persistSnapshot?.();return true;
       }
       function applyHistoryWorkspace(next,source){
-        workspace=normalizeWorkspace(next,project);committedWorkspace=clone(workspace);currentView=workspace.activeView||'main';analysisRuntime.invalidatePhysics();selectionRuntime?.clearIds();rebuild();
+        workspace=normalizeWorkspace(next,project,S);committedWorkspace=clone(workspace);currentView=workspace.activeView||'main';analysisRuntime.invalidatePhysics();selectionRuntime?.clearIds();rebuild();
         selectionRuntime?.interactionSelection()?.clear?.({source});render();persistSnapshot?.();return true;
       }
       function undoLastAction(){
@@ -190,7 +192,6 @@
       function applyRangeIdentity(order,label=''){return selectionRuntime?.applyRangeIdentity(order,label)||false;}
       function deleteRangePeaks(){return selectionRuntime?.deleteRangePeaks();}
 
-      function installAlgorithmPipeline(){return peakRuntime?.installPipeline?.()||false;}
       async function detectRange(range=selectionRuntime?.selectedRange){return peakRuntime?.detectRange?.(range);}
       function peakMetrics(p){return peakRuntime?.peakMetrics?.(p)||S.peakMetrics?.(p,sweepById(p?.sweepId))||null;}
       function commitPeakMetricEdit(p,options={}){return peakRuntime?.commitPeakMetricEdit?.(p,options)||peakMetrics(p);}
@@ -250,7 +251,7 @@
       }
 
       function rebuild(){
-        datasets=parseDatasets(project,artifacts);
+        datasets=parseDatasets(project,artifacts,D);
         applyWorkspaceToDatasets();
         sweeps=[];
         for(const dataset of datasets){
@@ -423,7 +424,18 @@
       function renderInspection(){return inspectorRuntime?.render();}
 
 
-      function renderSummary(){const el=$('#reswinSummary');if(el)el.innerHTML=`<span>数据 ${datasets.length}</span><span>扫描 ${sweeps.length}</span><span>可见 ${visibleSweeps().length}</span><span>峰 ${(workspace.peaks||[]).length}</span><span>手动 ${(workspace.peaks||[]).filter(p=>p.manual).length}</span>`;}
+      function renderSummary(){const parts=[`数据 ${datasets.length}`,`扫描 ${sweeps.length}`,`可见 ${visibleSweeps().length}`,`峰 ${(workspace.peaks||[]).length}`,`手动 ${(workspace.peaks||[]).filter(p=>p.manual).length}`];const el=$('#reswinSummary');if(el)dom.html(el,parts.map(value=>`<span>${value}</span>`).join(''));setPresentationSummary(parts.join(' · '));}
+      function visibilityChanged(reason='visibility'){
+        // Visibility is a presentation-only edit. Rebuilding entities, derived
+        // artifacts and the complete control tree made a checkbox press wait on
+        // unrelated analysis work before the main chart could repaint.
+        renderSummary();
+        if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.(reason);
+        if($('#reswinTrendPlot')?.offsetParent!==null)renderTrend();
+        const touched=reactiveTouch('resonance.visibility',{reason});
+        if(!touched&&$('#resparGroupPanel')?.offsetParent!==null){groupRuntime.invalidate();dom.frame(()=>renderGroup());}
+        return true;
+      }
       function renderMain(){renderControls();renderSummary();renderMainPlot();renderTrend();}
       function renderView(){
         currentView=workspace.activeView||currentView||'main';
@@ -448,7 +460,7 @@
       function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;if(workspaceNavigator)workspaceNavigator(currentView);else renderView();scheduleSnapshot();}
       function render(){normalizeCategories();syncEntities();syncDerivedArtifacts();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);if($('#resparGroupPanel')?.offsetParent!==null&&currentView!=='group')renderGroup();}else renderView();}
       function resize(){
-        if(resizeRaf)return;resizeRaf=dom.frame(()=>{resizeRaf=0;if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{charts.resize(el);}catch{}});});
+        if(resizeRaf)return;resizeRaf=dom.frame(()=>{resizeRaf=0;if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{charts.resize(el);}catch{}});if($('#resparGroupPanel')?.offsetParent!==null)groupRuntime.syncLayout?.();});
       }
 
       function peaksCsv(){const rows=['dataset,vg,direction,peak_order,peak_label,vpk,i,accepted,manual,locked'];for(const p of workspace.peaks||[])rows.push([p.datasetPath,p.vg,directionName(p.direction),p.peakOrder,peakLabel(p),p.v,p.i,p.accepted!==false,p.manual===true,p.locked===true].map(csvCell).join(','));return rows.join('\n');}
@@ -463,37 +475,48 @@
 
       function bindUi(page){
         if(uiBound||!page)return;uiBound=true;
-        page.querySelectorAll('[data-reswin-view]').forEach(btn=>btn.onclick=()=>setView(btn.dataset.reswinView));
-        page.querySelector('#reswinSweepSelect')?.addEventListener('change',e=>{const sw=sweepById(e.target.value);if(sw)publishSweepSelection(sw,'resonance-toolbar');});
-        page.querySelector('#reswinInspectSweepSelect')?.addEventListener('change',e=>{const sw=sweepById(e.target.value);if(sw)publishSweepSelection(sw,'resonance-inspector');});
-        page.querySelector('#reswinTransform').onchange=e=>setTransform(e.target.value);
-        page.querySelector('#reswinPreset').onchange=e=>setPreset(e.target.value);
-        page.querySelector('#reswinDetectSelected').onclick=()=>runDetection('selected');
-        page.querySelector('#reswinDetectAll').onclick=()=>runDetection('all');
-        page.querySelector('#reswinSortPeaks').onclick=sortPeakOrderByVd;
-        for(const [id,key] of [['reswinShowRejected','showRejected'],['reswinShowWidth','showWidth'],['reswinShowPoints','showPoints']])page.querySelector('#'+id)?.addEventListener('change',e=>{workspace.peakDisplay={...(workspace.peakDisplay||{}),[key]:!!e.target.checked};renderMainPlot();scheduleSnapshot();});
-        page.querySelector('#reswinPhysicsLabels')?.addEventListener('change',e=>{workspace.physicsShowLabels=!!e.target.checked;renderMainPlot();scheduleSnapshot();});
-        page.querySelector('#reswinShowAll').onclick=()=>setAllVisibility('all');
-        page.querySelector('#reswinShowForward')?.addEventListener('click',()=>setAllVisibility('forward'));
-        page.querySelector('#reswinShowReverse')?.addEventListener('click',()=>setAllVisibility('reverse'));
-        page.querySelector('#reswinHideAll').onclick=()=>setAllVisibility('none');
-        page.querySelector('#reswinExportMainCsv')?.addEventListener('click',()=>io.saveCsv(mainCsv(),'resonance_iv.csv') );
-        page.querySelector('#reswinExportMainSvg')?.addEventListener('click',()=>exportMainSvg());
-        page.querySelector('#reswinExportMainPng')?.addEventListener('click',()=>exportMainPng());
-        page.querySelector('#reswinCopyMain')?.addEventListener('click',()=>copyTextToClipboard(mainCsv(),'主图 CSV'));
-        page.querySelector('#reswinUndo')?.addEventListener('click',()=>{if(commandRuntime?.run)return commandRuntime.run('builtin.resonance.undo');return undoLastAction();});
-        page.querySelector('#reswinDeselect')?.addEventListener('click',()=>clearSelection());
-        page.querySelector('#reswinExportPeaks')?.addEventListener('click',()=>io.saveCsv(peaksCsv(),'resonance_peaks.csv') );
-        page.querySelector('#reswinCopyPeaks')?.addEventListener('click',()=>copyTextToClipboard(peaksCsv(),'峰参数 CSV'));
-        page.querySelector('#reswinApplyPeakLabel')?.addEventListener('click',()=>renameSelectedCategory(page.querySelector('#reswinPeakLabelInput')?.value));
-        page.querySelector('#reswinDeletePeak')?.addEventListener('click',()=>{const p=selectedPeak();if(p)deletePeak(p.id);});
-        for(const id of ['reswinSpacingA','reswinSpacingB','reswinSpacingMode'])page.querySelector('#'+id).onchange=()=>{workspace.spacingSettings={seriesA:$('#reswinSpacingA').value,seriesB:$('#reswinSpacingB').value,mode:$('#reswinSpacingMode').value};renderSpacing();scheduleSnapshot();};
-        page.querySelector('#reswinSpacingExport').onclick=()=>io.saveCsv(spacingCsv(),'resonance_peak_spacing.csv');
-        page.querySelector('#reswinGateRun').onclick=()=>{renderGate();scheduleSnapshot();};
-        for(const id of ['reswinGateFeatureMetric','reswinGateFeatureDirection'])page.querySelector('#'+id)?.addEventListener('change',()=>{analysisRuntime.readGate?.();renderGate();scheduleSnapshot();});
-        page.querySelector('#reswinGateExportCsv').onclick=()=>io.saveCsv(gateCsv(),'gate_physics_analysis.csv');
-        page.querySelector('#reswinGateFeatureExport')?.addEventListener('click',()=>io.saveCsv(gateFeatureFieldCsv(),'resonance_feature_field.csv'));
-        page.querySelector('#reswinGateExportReport').onclick=()=>io.saveText({defaultName:'gate_physics_analysis_report.md',content:gateReportText(),filters:[{name:'Markdown',extensions:['md']},{name:'Text',extensions:['txt']}]});
+        dom.on(page,'click',event=>{
+          const target=event.target?.closest?.('button,[data-reswin-view]');if(!target||!page.contains(target))return;
+          const view=target.dataset?.reswinView;if(view){setView(view);return;}
+          switch(target.id){
+            case 'reswinDetectSelected':runDetection('selected');break;
+            case 'reswinDetectAll':runDetection('all');break;
+            case 'reswinSortPeaks':sortPeakOrderByVd();break;
+            case 'reswinShowAll':setAllVisibility('all');break;
+            case 'reswinShowForward':setAllVisibility('forward');break;
+            case 'reswinShowReverse':setAllVisibility('reverse');break;
+            case 'reswinHideAll':setAllVisibility('none');break;
+            case 'reswinExportMainCsv':void io.saveCsv(mainCsv(),'resonance_iv.csv');break;
+            case 'reswinExportMainSvg':void exportMainSvg();break;
+            case 'reswinExportMainPng':void exportMainPng();break;
+            case 'reswinCopyMain':void copyTextToClipboard(mainCsv(),'主图 CSV');break;
+            case 'reswinUndo':if(commandRuntime?.run)void commandRuntime.run('builtin.resonance.undo');else undoLastAction();break;
+            case 'reswinDeselect':clearSelection();break;
+            case 'reswinExportPeaks':void io.saveCsv(peaksCsv(),'resonance_peaks.csv');break;
+            case 'reswinCopyPeaks':void copyTextToClipboard(peaksCsv(),'峰参数 CSV');break;
+            case 'reswinSpacingExport':void io.saveCsv(spacingCsv(),'resonance_peak_spacing.csv');break;
+            case 'reswinGateRun':renderGate();scheduleSnapshot();break;
+            case 'reswinGateExportCsv':void io.saveCsv(gateCsv(),'gate_physics_analysis.csv');break;
+            case 'reswinGateFeatureExport':void io.saveCsv(gateFeatureFieldCsv(),'resonance_feature_field.csv');break;
+            case 'reswinGateExportReport':void io.saveText({defaultName:'gate_physics_analysis_report.md',content:gateReportText(),filters:[{name:'Markdown',extensions:['md']},{name:'Text',extensions:['txt']}]});break;
+          }
+        });
+        dom.on(page,'change',event=>{
+          const target=event.target;if(!target||!page.contains(target))return;
+          switch(target.id){
+            case 'reswinSweepSelect':{const sw=sweepById(target.value);if(sw)publishSweepSelection(sw,'resonance-toolbar');break;}
+            case 'reswinInspectSweepSelect':{const sw=sweepById(target.value);if(sw)publishSweepSelection(sw,'resonance-inspector');break;}
+            case 'reswinTransform':setTransform(target.value);break;
+            case 'reswinPreset':setPreset(target.value);break;
+            case 'reswinShowRejected':workspace.peakDisplay={...(workspace.peakDisplay||{}),showRejected:!!target.checked};renderMainPlot();scheduleSnapshot();break;
+            case 'reswinShowWidth':workspace.peakDisplay={...(workspace.peakDisplay||{}),showWidth:!!target.checked};renderMainPlot();scheduleSnapshot();break;
+            case 'reswinShowPoints':workspace.peakDisplay={...(workspace.peakDisplay||{}),showPoints:!!target.checked};renderMainPlot();scheduleSnapshot();break;
+            case 'reswinPhysicsLabels':workspace.physicsShowLabels=!!target.checked;renderMainPlot();scheduleSnapshot();break;
+            case 'reswinSpacingA':case 'reswinSpacingB':case 'reswinSpacingMode':
+              workspace.spacingSettings={seriesA:$('#reswinSpacingA')?.value||'',seriesB:$('#reswinSpacingB')?.value||'',mode:$('#reswinSpacingMode')?.value||'abs'};renderSpacing();scheduleSnapshot();break;
+            case 'reswinGateFeatureMetric':case 'reswinGateFeatureDirection':analysisRuntime.readGate?.();renderGate();scheduleSnapshot();break;
+          }
+        });
         bindLinkedSelectionViews();
       }
 
@@ -510,11 +533,11 @@
         serialize:()=>clone(workspace),
         selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
         directionName,peakLabel,colorForPeakOrder,colorForSeries,colorForPhysicsCode,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
-        restore(data){workspace=normalizeWorkspace(data,project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
-        reset(){workspace=defaultWorkspace(project);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView='main';rebuild();render();scheduleSnapshot();},
+        restore(data){workspace=normalizeWorkspace(data,project,S);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
+        reset(){workspace=defaultWorkspace(project,S);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';workspace.groupColumnsPortrait='auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(analysisRuntime.getGateFeatureField()),gateFeatureFieldCsv,
-        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
+        getGroupColumns:()=>String(workspace.groupColumns||'auto'),getCurrentGroupColumnPreference:()=>groupRuntime.orientation?.()==='portrait'?String(workspace.groupColumnsPortrait||'auto'):String(workspace.groupColumns||'auto'),getEffectiveGroupColumns:()=>String(groupRuntime.effectiveColumns?.()||1),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';if(groupRuntime.orientation?.()==='portrait')workspace.groupColumnsPortrait=next;else workspace.groupColumns=next;if($('#resparGroupPanel')?.offsetParent!==null)groupRuntime.applyLayout?.();reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRuntime.invalidate();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         openInspector(){workspaceNavigator?.('inspect');return true;},
@@ -548,7 +571,7 @@
       };
       sharedController=Shared.createController(service,{mode:'top-runtime',science:S});
 
-      function setProject(next){project=clone(next||{});const saved=pluginSliceFromProject(project);workspace=normalizeWorkspace(saved,project);if(saved?.groupColumns===undefined)workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
+      function setProject(next){project=clone(next||{});const saved=pluginSliceFromProject(project);workspace=normalizeWorkspace(saved,project,S);if(saved?.groupColumns===undefined)workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
       await setProject(project);
       return {
         serviceName:'builtin.resonance-workbench.runtime',service,render,resize,setProject,

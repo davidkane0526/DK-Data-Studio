@@ -1,12 +1,17 @@
 const path = require('path');
-const SemverCompat = require('./semver-compat');
 const {inspectWorkspaceStyles}=require('../sdk/layout-contract');
 const {inspectPluginSource,usesThemeRegister}=require('../sdk/source-contract');
+const PlatformPresentation=require('../sdk/platform-presentation-contract');
 
 const PLUGIN_PACKAGE_SCHEMA = 1;
 const MAX_FILES = 64;
 const MAX_FILE_CHARS = 4 * 1024 * 1024;
 const MAX_TOTAL_CHARS = 8 * 1024 * 1024;
+const CURRENT_MANIFEST_FIELDS = new Set([
+  'id','name','version','apiVersion','entry','pluginType','enabled','order','description','systemCritical',
+  'requiresCore','capabilities','workspace','window','data','algorithmProvider','algorithmCategories','algorithmProvides',
+  'pluginDependencies','scripts','styles','platformPresentation'
+]);
 
 function validPluginId(id) {
   return /^[a-z0-9][a-z0-9._-]*$/i.test(String(id || ''));
@@ -29,16 +34,21 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   if (Number(pkg.schema) !== PLUGIN_PACKAGE_SCHEMA) throw new Error(`Unsupported plugin package schema: ${pkg.schema}`);
 
   const sourceManifest = pkg.manifest;
-  if (!sourceManifest || typeof sourceManifest !== 'object') throw new Error('Plugin package manifest is missing.');
+  if (!sourceManifest || typeof sourceManifest !== 'object'||Array.isArray(sourceManifest)) throw new Error('Plugin package manifest is missing.');
+  const unknownFields=Object.keys(sourceManifest).filter(key=>!CURRENT_MANIFEST_FIELDS.has(key));
+  if(unknownFields.length)throw new Error(`Plugin manifest contains unsupported current-contract fields: ${unknownFields.join(', ')}`);
   const id = String(sourceManifest.id || '').trim();
   if (!validPluginId(id)) throw new Error(`Invalid plugin id: ${id}`);
   if (!allowBuiltinId && id.startsWith('builtin.')) throw new Error('The builtin.* namespace is reserved for application plugins.');
 
   const name = String(sourceManifest.name || '').trim();
   const version = String(sourceManifest.version || '').trim();
-  const apiVersion = String(sourceManifest.apiVersion || '1.0.0').trim();
-  const entry = normalizeRelativeFile(sourceManifest.entry || 'plugin.js');
-  const pluginType=String(sourceManifest.pluginType||'extension').trim().toLowerCase();
+  const apiVersion = String(sourceManifest.apiVersion || '').trim();
+  if(!apiVersion)throw new Error('Plugin manifest.apiVersion is required.');
+  if(!sourceManifest.entry)throw new Error('Plugin manifest.entry is required.');
+  const entry = normalizeRelativeFile(sourceManifest.entry);
+  const pluginType=String(sourceManifest.pluginType||'').trim().toLowerCase();
+  if(!pluginType)throw new Error('Plugin manifest.pluginType is required.');
   const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
   if(!pluginTypes.has(pluginType))throw new Error(`Unsupported pluginType: ${sourceManifest.pluginType}`);
   const algorithmProvider=sourceManifest.algorithmProvider===true;
@@ -59,23 +69,15 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     const key=`${category}::${algorithmId}@${algorithmVersion}`;if(algorithmProvideKeys.has(key))throw new Error(`Duplicate algorithmProvides entry: ${key}`);algorithmProvideKeys.add(key);
     algorithmProvides.push({category,id:algorithmId,version:algorithmVersion,...(raw.title?{title:String(raw.title)}:{})});
   }
-  let compatibility=sourceManifest.compatibility;
-  if(compatibility!==undefined){
-    if(!compatibility||typeof compatibility!=='object'||Array.isArray(compatibility))throw new Error('Plugin manifest.compatibility must be an object.');
-    const appRange=String(compatibility.app||'*').trim()||'*',pluginApiRange=String(compatibility.pluginApi||'*').trim()||'*',themeContractRange=String(compatibility.themeContract||'*').trim()||'*';
-    if(!SemverCompat.validateRange(appRange))throw new Error(`Invalid compatibility.app range: ${appRange}`);
-    if(!SemverCompat.validateRange(pluginApiRange))throw new Error(`Invalid compatibility.pluginApi range: ${pluginApiRange}`);
-    if(!SemverCompat.validateRange(themeContractRange))throw new Error(`Invalid compatibility.themeContract range: ${themeContractRange}`);
-    compatibility={app:appRange,pluginApi:pluginApiRange,...(compatibility.themeContract!==undefined?{themeContract:themeContractRange}:{})};
-  }
   if(sourceManifest.pluginDependencies!==undefined&&!Array.isArray(sourceManifest.pluginDependencies))throw new Error('Plugin manifest.pluginDependencies must be an array.');
   const pluginDependencies=[];const dependencyIds=new Set();
   for(const raw of (Array.isArray(sourceManifest.pluginDependencies)?sourceManifest.pluginDependencies:[])){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('pluginDependencies entries must be objects.');
-    const dependencyId=String(raw.id||'').trim(),range=String(raw.range||'').trim();
-    if(!validPluginId(dependencyId)||!range||!SemverCompat.validateRange(range))throw new Error(`Invalid plugin dependency: ${dependencyId}@${range}`);
+    const keys=Object.keys(raw);if(keys.some(key=>key!=='id'))throw new Error(`pluginDependencies only accepts {id} in the current contract: ${keys.join(', ')}`);
+    const dependencyId=String(raw.id||'').trim();
+    if(!validPluginId(dependencyId))throw new Error(`Invalid plugin dependency: ${dependencyId}`);
     if(dependencyIds.has(dependencyId))throw new Error(`Duplicate plugin dependency: ${dependencyId}`);dependencyIds.add(dependencyId);
-    pluginDependencies.push({id:dependencyId,range,optional:raw.optional===true});
+    pluginDependencies.push({id:dependencyId});
   }
   if (!name) throw new Error('Plugin manifest.name is required.');
   if (!version) throw new Error('Plugin manifest.version is required.');
@@ -103,7 +105,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   const scripts = Array.isArray(sourceManifest.scripts) && sourceManifest.scripts.length
     ? sourceManifest.scripts.map(normalizeRelativeFile)
     : [entry];
-  if (!scripts.includes(entry)) scripts.push(entry);
+  if (Array.isArray(sourceManifest.scripts)&&sourceManifest.scripts.length&&!scripts.includes(entry)) throw new Error(`Plugin manifest.scripts must include entry ${entry}.`);
   for (const fileName of scripts) {
     if (!Object.prototype.hasOwnProperty.call(files, fileName)) throw new Error(`Plugin script not found: ${fileName}`);
     if (!fileName.toLowerCase().endsWith('.js')) throw new Error(`Plugin script must be JavaScript: ${fileName}`);
@@ -121,7 +123,29 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if (!Object.prototype.hasOwnProperty.call(files, fileName)) throw new Error(`Plugin stylesheet not found: ${fileName}`);
     if (!fileName.toLowerCase().endsWith('.css')) throw new Error(`Plugin stylesheet must be CSS: ${fileName}`);
   }
-  const layoutAudit=inspectWorkspaceStyles({apiVersion,pluginType,workspace:sourceManifest.workspace,ui:sourceManifest.ui||{},styles:styles.map(name=>({name,content:files[name]}))});
+  const platformCheck=PlatformPresentation.validate(sourceManifest);
+  if(!platformCheck.ok)throw new Error(`Plugin platform presentation contract failed: ${platformCheck.errors.join(' ')}`);
+  let platformPresentation;
+  if(sourceManifest.platformPresentation!==undefined){
+    platformPresentation={};
+    for(const platform of PlatformPresentation.platforms){
+      const raw=sourceManifest.platformPresentation?.[platform]||{};
+      const mode=String(raw.mode||'').trim().toLowerCase();
+      const platformStyles=Array.isArray(raw.styles)?raw.styles.map(normalizeRelativeFile):[];
+      const platformScripts=Array.isArray(raw.scripts)?raw.scripts.map(normalizeRelativeFile):[];
+      for(const fileName of platformStyles){
+        if(!Object.prototype.hasOwnProperty.call(files,fileName))throw new Error(`Plugin ${platform} presentation stylesheet not found: ${fileName}`);
+        if(!fileName.toLowerCase().endsWith('.css'))throw new Error(`Plugin ${platform} presentation stylesheet must be CSS: ${fileName}`);
+      }
+      for(const fileName of platformScripts){
+        if(!Object.prototype.hasOwnProperty.call(files,fileName))throw new Error(`Plugin ${platform} presentation script not found: ${fileName}`);
+        if(!fileName.toLowerCase().endsWith('.js'))throw new Error(`Plugin ${platform} presentation script must be JavaScript: ${fileName}`);
+      }
+      platformPresentation[platform]={mode,...(platformStyles.length?{styles:[...new Set(platformStyles)]}:{}),...(platformScripts.length?{scripts:[...new Set(platformScripts)]}:{})};
+    }
+  }
+  const platformStyleNames=platformPresentation?PlatformPresentation.platforms.flatMap(platform=>platformPresentation[platform]?.styles||[]):[];
+  const layoutAudit=inspectWorkspaceStyles({apiVersion,pluginType,workspace:sourceManifest.workspace,ui:sourceManifest.ui||{},styles:[...new Set([...styles,...platformStyleNames])].map(name=>({name,content:files[name]}))});
   if(layoutAudit.errors.length)throw new Error(`Plugin layout contract failed: ${layoutAudit.errors.join(' ')}`);
 
   let windowSpec = sourceManifest.window;
@@ -147,6 +171,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if(!requiresCore.includes('ui.theme'))throw new Error('Theme plugins must declare ui.theme in requiresCore.');
     if(requiresCore.includes('ui.styles'))throw new Error('Theme plugins must use Theme Contract tokens instead of ui.styles.');
     if(styles.length)throw new Error('Theme plugins must not ship arbitrary stylesheets.');
+    if(sourceManifest.platformPresentation!==undefined)throw new Error('Theme plugins must not declare platformPresentation; use Theme Contract tokens.');
     if(sourceManifest.workspace||windowSpec)throw new Error('Theme plugins must not own workspace or window contracts.');
     if(algorithmProvider)throw new Error('Theme plugins cannot be Algorithm Providers.');
     const themeSource=scripts.map(fileName=>files[fileName]||'').join('\n');
@@ -171,14 +196,13 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     pluginType,
     scripts: [...new Set(scripts)],
     styles: [...new Set(styles)],
+    ...(platformPresentation!==undefined?{platformPresentation}:{}),
     ...(windowSpec!==undefined?{window:windowSpec}:{}),
     ...(sourceManifest.algorithmProvider!==undefined?{algorithmProvider}:{}),
     ...(algorithmCategories.length?{algorithmCategories}:{}),
     ...(algorithmProvides.length?{algorithmProvides}:{}),
-    ...(compatibility!==undefined?{compatibility}:{}),
     ...(pluginDependencies.length?{pluginDependencies}:{}),
-    enabled: sourceManifest.enabled !== false,
-    source: 'external'
+    enabled: sourceManifest.enabled !== false
   };
 
   return {

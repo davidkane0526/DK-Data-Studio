@@ -1,7 +1,4 @@
 (() => {
-  const A=window.DKDSScience;
-  const D=window.DKDSData;
-
   function finite(value){return value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));}
   function numOrNull(value){if(!finite(value))return null;return Number(value);}
   function csvCell(value){const s=String(value??'');return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
@@ -12,7 +9,10 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,artifacts,io=window.DKDSIO,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,artifacts,science=null,dataModel=null,io=null,dom=null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null}){
+      const A=science,D=dataModel;
+      if(!A)throw new Error('TER science runtime is unavailable. Inject ctx.science.');
+      if(!D)throw new Error('TER data model is unavailable. Inject ctx.data.model.');
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
@@ -21,7 +21,7 @@
       const DEFAULT_TER_ALGORITHM=Object.freeze({category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'});
       let terAlgorithmRef={...DEFAULT_TER_ALGORITHM};
       const normalizeAlgorithmRef=value=>{if(!value)return {...DEFAULT_TER_ALGORITHM};if(typeof value==='string'){const text=String(value||''),at=text.lastIndexOf('@');return {category:'ter-analysis',id:at>0?text.slice(0,at):text,version:at>0?text.slice(at+1):''};}return {category:String(value.category||'ter-analysis'),id:String(value.id||value.algorithmId||DEFAULT_TER_ALGORITHM.id),version:String(value.version||value.algorithmVersion||'')};};
-      const algorithmApi=()=>algorithms||window.DKDSScientificAlgorithms||null;
+      const algorithmApi=()=>algorithms||null;
       const listTerAlgorithms=()=>{const api=algorithmApi();return api?.list?.({category:'ter-analysis'})||[];};
       const resolveTerAlgorithm=(ref=terAlgorithmRef)=>{const api=algorithmApi(),wanted=normalizeAlgorithmRef(ref);if(!api)return listTerAlgorithms()[0]||null;if(wanted.version)return api.resolve?.(wanted,{category:'ter-analysis'})||null;const row=api.resolve?.(wanted,{category:'ter-analysis'})||listTerAlgorithms()[0]||null;if(row)terAlgorithmRef=api.lock?.({category:'ter-analysis',id:row.id,version:row.version})||{category:'ter-analysis',id:row.id,version:row.version};return row;};
       const algorithmProvenance=row=>row?{pluginId:row.owner,algorithmId:row.id,algorithmVersion:row.version,category:row.category,title:row.title}:null;
@@ -104,7 +104,7 @@
             (api.publish?.(matrix)||api.upsert?.(matrix));
           }
           const tm=transformMatrix();if(tm&&!pipeline?.runSync){const transformed=D.createMatrix({id:`ter.transform:${tm.type}:${tm.direction}`,name:`${tm.label||tm.type} · ${Number(tm.direction)<0?'反扫':'正扫'}`,x:tm.targets,y:tm.vgs,z:tm.matrix,xName:'Vd',yName:'Vg',valueName:tm.label||tm.type,xUnit:'V',yUnit:'V',valueUnit:tm.unit||'',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance},lineage:{parents,role:'transform',producer:'builtin.ter-analysis',operation:'computeSweepScalarField',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance}}});(api.publish?.(transformed)||api.upsert?.(transformed));}
-          const maxima=D.createAnalysisResult({id:'ter.analysis:maxima',name:'TER Maxima',summary:{vgCount:result.vgs?.length||0,vdCount:result.targets?.length||0,missing:result.missing||0},payload:{terMaxByVg:result.terMaxByVg||result.terMax||[],terMaxByVd:result.terMaxByVd||[]},lineage:{parents:['ter.matrix:main'],role:'analysis',producer:'builtin.ter-analysis',operation:'reduceTerMax',parameters:{axes:['Vg','Vd']}}});(api.publish?.(maxima)||api.upsert?.(maxima));
+          const maxima=D.createAnalysisResult({id:'ter.analysis:maxima',name:'TER Maxima',summary:{vgCount:result.vgs?.length||0,vdCount:result.targets?.length||0,missing:result.missing||0},payload:{terMaxByVg:result.terMaxByVg||[],terMaxByVd:result.terMaxByVd||[]},lineage:{parents:['ter.matrix:main'],role:'analysis',producer:'builtin.ter-analysis',operation:'reduceTerMax',parameters:{axes:['Vg','Vd']}}});(api.publish?.(maxima)||api.upsert?.(maxima));
         };
         if(artifacts.batch)artifacts.batch(publish);else publish(artifacts);return true;
       }
@@ -124,10 +124,10 @@
         const select=$('#terAlgorithmSelect');if(!select)return;
         const rows=listTerAlgorithms(),resolved=resolveTerAlgorithm(terAlgorithmRef),api=algorithmApi(),diagnostic=api?.diagnose?.(terAlgorithmRef,{category:'ter-analysis'});
         const missing=diagnostic?.status==='missing-version'||diagnostic?.status==='missing-algorithm';
-        select.innerHTML=(missing?`<option value="${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}">缺失版本 · ${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}</option>`:'')+rows.map(row=>`<option value="${String(row.id)}@${String(row.version)}">${String(row.title||row.id)} · ${String(row.id)}@${String(row.version)}</option>`).join('');
+        dom.html(select,(missing?`<option value="${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}">缺失版本 · ${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}</option>`:'')+rows.map(row=>`<option value="${String(row.id)}@${String(row.version)}">${String(row.title||row.id)} · ${String(row.id)}@${String(row.version)}</option>`).join(''));
         if(resolved){terAlgorithmRef=api?.lock?.({category:'ter-analysis',id:resolved.id,version:resolved.version})||{category:'ter-analysis',id:resolved.id,version:resolved.version};select.value=`${resolved.id}@${resolved.version}`;}else if(missing)select.value=`${terAlgorithmRef.id}@${terAlgorithmRef.version}`;
-        const recover=$('#terRecoverAlgorithmBtn');if(recover){recover.classList.toggle('hidden',!missing||typeof api?.recover!=='function');recover.disabled=false;if(recover.dataset.terRecoverBound!=='1'){recover.dataset.terRecoverBound='1';recover.addEventListener('click',async()=>{recover.disabled=true;try{const catalog=await api.locate?.(terAlgorithmRef);const compatible=(catalog?.candidates||[]).filter(row=>row.compatible&&row.recoverable);if(!compatible.length){const found=(catalog?.candidates||[]).length;setStatus(found?`已定位到 ${found} 个包含该 TER 算法的包，但当前环境不兼容。`:`未在当前包或插件历史中找到 ${terAlgorithmRef.id}@${terAlgorithmRef.version}。`);return;}const restored=await api.recover(terAlgorithmRef,compatible[0]);setStatus(`已恢复 TER 算法 ${restored.id}@${restored.version}。`);syncTerAlgorithmControl();render();}catch(err){setStatus(`恢复 TER 算法失败：${err.message}`);}finally{recover.disabled=false;}});}}
-        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'algorithm-change'});render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
+        const recover=$('#terRecoverAlgorithmBtn');if(recover){recover.classList.toggle('hidden',!missing||typeof api?.recover!=='function');recover.disabled=false;if(recover.dataset.terRecoverBound!=='1'){recover.dataset.terRecoverBound='1';dom.on(recover,'click',async()=>{recover.disabled=true;try{const catalog=await api.locate?.(terAlgorithmRef);const ready=(catalog?.candidates||[]).filter(row=>row.ready&&row.recoverable);if(!ready.length){const found=(catalog?.candidates||[]).length;setStatus(found?`已定位到 ${found} 个包含该 TER 算法的包，但缺少当前合同要求的插件依赖。`:`未在当前已安装插件包中找到 ${terAlgorithmRef.id}@${terAlgorithmRef.version}。`);return;}const restored=await api.recover(terAlgorithmRef,ready[0]);setStatus(`已恢复 TER 算法 ${restored.id}@${restored.version}。`);syncTerAlgorithmControl();render();}catch(err){setStatus(`恢复 TER 算法失败：${err.message}`);}finally{recover.disabled=false;}});}}
+        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';dom.on(select,'change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'algorithm-change'});render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
       }
       function syncInputs(){
         setInput('terVmin',settings.vmin);setInput('terVmax',settings.vmax);
@@ -197,7 +197,7 @@
           return result;
         }catch(err){
           result=null;reactive?.touch?.('ter.result',{reason:'calculate-failed'});
-          if($('#terSummary'))$('#terSummary').innerHTML=`<span class="dkds-summary-chip dkds-chip danger">计算失败：${String(err.message||err)}</span>`;
+          if($('#terSummary'))dom.html($('#terSummary'),`<span class="dkds-summary-chip dkds-chip danger">计算失败：${String(err.message||err)}</span>`);
           setStatus(`TER_max 计算失败：${err.message||err}`);
           return null;
         }
@@ -206,29 +206,28 @@
       function renderResult(){
         if(!result)return;
         const r=result;
-        if($('#terSummary'))$('#terSummary').innerHTML=[
+        if($('#terSummary'))dom.html($('#terSummary'),[
           `Vg 数：${r.vgs.length}`,`Vds 点：${r.targets.length}`,`缺失 TER：${r.missing}`,
           `Vds：${r.used.vmin} ~ ${r.used.vmax} V`,`step=${r.used.vstep} V`,
           `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`,
           `算法：${r.algorithm?.algorithmId||terAlgorithmRef.id}@${r.algorithm?.algorithmVersion||terAlgorithmRef.version}`
-        ].map(t=>`<span class="dkds-summary-chip dkds-chip quiet">${t}</span>`).join('');
-        const maxVg=r.terMaxByVg||r.terMax||[],maxVd=r.terMaxByVd||[];
-        if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML=`
+        ].map(t=>`<span class="dkds-summary-chip dkds-chip quiet">${t}</span>`).join(''));
+        const maxVg=r.terMaxByVg||[],maxVd=r.terMaxByVd||[];
+        if($('#terMaxVgTable'))dom.html($('#terMaxVgTable'),`
           <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th></tr></thead>
-          <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td></tr>`).join('')}</tbody>`;
-        if($('#terMaxVdTable'))$('#terMaxVdTable').innerHTML=`
+          <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td></tr>`).join('')}</tbody>`);
+        if($('#terMaxVdTable'))dom.html($('#terMaxVdTable'),`
           <thead><tr><th>Vd (V)</th><th>TER_Max–Vd (%)</th><th>Vg@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th></tr></thead>
-          <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td></tr>`).join('')}</tbody>`;
+          <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td></tr>`).join('')}</tbody>`);
       }
 
       function render(){
-        if($('#terMaxProjectName'))$('#terMaxProjectName').textContent=`项目：${bootstrap?.title||project.projectName||'当前项目'}`;
         syncInputs();syncDisplay();
         if(result)renderResult();
         else{
-          if($('#terSummary'))$('#terSummary').innerHTML='<span class="dkds-summary-chip dkds-chip quiet">尚未计算 TER_max</span>';
-          if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML='';
-          if($('#terMaxVdTable'))$('#terMaxVdTable').innerHTML='';
+          if($('#terSummary'))dom.html($('#terSummary'),'<span class="dkds-summary-chip dkds-chip quiet">尚未计算 TER_max</span>');
+          if($('#terMaxVgTable'))dom.html($('#terMaxVgTable'),'');
+          if($('#terMaxVdTable'))dom.html($('#terMaxVdTable'),'');
         }
       }
 
@@ -247,7 +246,7 @@
       function maxVgCsv(){
         if(!result)return '';
         const rows=['Vg_V,TER_Max_Vg_percent,Vd_at_max_V,I_up_A,I_down_A,R_up_ohm,R_down_ohm,source_file'];
-        for(const d of (result.terMaxByVg||result.terMax||[]))rows.push([d.vg,d.terMax,d.vdsAtMax,d.iUp,d.iDown,d.rUp,d.rDown,csvCell(d.sourceFile)].join(','));
+        for(const d of (result.terMaxByVg||[]))rows.push([d.vg,d.terMax,d.vdsAtMax,d.iUp,d.iDown,d.rUp,d.rDown,csvCell(d.sourceFile)].join(','));
         return rows.join('\n');
       }
       function maxVdCsv(){

@@ -42,6 +42,13 @@ class MobileGestureAdapter {
     if(method==='status')return Intent.create(Intent.types.STATUS,payload,meta);
     return null;
   }
+  semanticSurfaceIntent(role=''){
+    if(typeof window==='undefined')return null;
+    const activityId=text(window.DKDSPlugins?.activities?.active?.()),rows=window.DKDSUI?.workspaces?.actions?.(activityId)||[];
+    const row=rows.find(item=>text(item.presentationRole)===text(role));
+    if(!activityId||!row)return null;
+    return Intent.create(Intent.types.SURFACE,{activityId,id:text(row.surfaceId||row.id)},{source:'mobile',modality:'gesture'});
+  }
   fromHeldSwipe({dx=0,dy=0,heldMs=0,target=null}={}){
     if(heldMs<320)return null;
     let key='';
@@ -76,13 +83,33 @@ class MobileGestureAdapter {
     this.installed=true;this.setDispatcher(dispatch);this.setPublisher(publish);
     let gesture=null;
     document.addEventListener('pointerdown',event=>{
-      if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;
+      if(event.isPrimary===false)return;
+      const activeDrawer=document.querySelector?.('.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"]');
+      const activeDrawerFrame=activeDrawer?.closest?.('.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]')||null;
+      // The resize rail is a sibling of the projected content inside the Drawer
+      // frame. Treat the entire Presenter frame as inside; otherwise the global
+      // outside-dismiss capture handler closes the drawer before resize starts.
+      const insideDrawer=activeDrawer&&(activeDrawerFrame?.contains?.(event.target)||activeDrawer.contains?.(event.target)||event.target?.closest?.('[data-dkds-mobile-drawer-resize="true"]'));
+      if(activeDrawer&&!insideDrawer){
+        const activityId=text(window.DKDSPlugins?.activities?.active?.()),surfaceId=text(activeDrawer.getAttribute?.('data-dkds-workspace-surface-id'));
+        if(activityId&&surfaceId){const intent=Intent.create(Intent.types.SURFACE,{activityId,id:surfaceId},{source:'mobile',modality:'pointer'});this.dispatchIntent(intent,event);if(event.cancelable)event.preventDefault();event.stopPropagation?.();gesture=null;return;}
+      }
+      if(!['touch','pen'].includes(text(event.pointerType)))return;
+      const drawer=event.target?.closest?.('[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"]');
+      if(drawer){gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false,mode:'drawer-close',surfaceId:text(drawer.getAttribute?.('data-dkds-workspace-surface-id'))};return;}
+      if(event.clientX<=24&&!event.target?.closest?.('input,textarea,select,button,a,[contenteditable="true"],[data-dkds-touch-gesture-owner]')){gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false,mode:'drawer-open'};return;}
       if(event.target?.closest?.('input,textarea,select,button,a,[contenteditable="true"],[data-dkds-touch-gesture-owner],.dkds-portable-header,.drag-handle,.dkds-portable-resize-handle,.dkds-movable-handle,[role=scrollbar],.dkds-table-column-resizer'))return;
-      gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false};
+      gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false,mode:'held-swipe'};
     },true);
     document.addEventListener('pointermove',event=>{
       if(!gesture||gesture.id!==event.pointerId||gesture.fired)return;
-      const intent=this.fromHeldSwipe({dx:event.clientX-gesture.x,dy:event.clientY-gesture.y,heldMs:performance.now()-gesture.at,target:gesture.target});
+      const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+      let intent=null;
+      if(gesture.mode==='drawer-open'&&dx>58&&Math.abs(dx)>Math.abs(dy)*1.3)intent=this.semanticSurfaceIntent('data-control');
+      else if(gesture.mode==='drawer-close'&&dx<-58&&Math.abs(dx)>Math.abs(dy)*1.3){
+        const activityId=text(window.DKDSPlugins?.activities?.active?.());
+        if(activityId&&gesture.surfaceId)intent=Intent.create(Intent.types.SURFACE,{activityId,id:gesture.surfaceId},{source:'mobile',modality:'gesture'});
+      }else if(gesture.mode==='held-swipe')intent=this.fromHeldSwipe({dx,dy,heldMs:performance.now()-gesture.at,target:gesture.target});
       if(!intent)return;gesture.fired=true;this.dispatchIntent(intent,event);if(event.cancelable)event.preventDefault();
     },{capture:true,passive:false});
     const end=event=>{if(gesture?.id===event.pointerId)gesture=null;};

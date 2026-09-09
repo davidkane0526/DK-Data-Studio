@@ -9,6 +9,7 @@ const {runCommand, registerContribution}=require('../commands/toolbar');
 const {registerTypedContribution}=require('./typed');
 const {reflowContextToolbar}=require('../shell/context-toolbar');
 const {pluginTypeOf}=require('../manifest');
+const {pluginHostView}=require('../host-facade');
   function registerActivity(pluginId,id,spec={}) {
     const definition=definitionById(pluginId);
     const meta=workspaceMeta(definition?.manifest);
@@ -47,7 +48,7 @@ const {pluginTypeOf}=require('../manifest');
     mount.appendChild(section);
     sortContributions(mount,'.plugin-sidebar-section');
     addCleanup(pluginId,()=>section.remove());
-    spec.onMount?.({section,host:state.host});
+    spec.onMount?.({section,host:pluginHostView()});
     refreshActivityVisibility();
     return section;
   }
@@ -64,7 +65,7 @@ const {pluginTypeOf}=require('../manifest');
     mount.appendChild(element);
     registerContribution(pluginId,'ui.mainOverlays',spec.id,{id:spec.id,element,activity:spec.activity||'',pluginId});
     addCleanup(pluginId,()=>element.remove());
-    spec.onMount?.({element,host:state.host});
+    spec.onMount?.({element,host:pluginHostView()});
     refreshActivityVisibility();
     return element;
   }
@@ -109,7 +110,7 @@ const {pluginTypeOf}=require('../manifest');
     let value;
     try{
       value=typeof spec.availability==='function'
-        ?spec.availability({host:state.host,activityId:state.activeActivityId,pluginId,menu})
+        ?spec.availability({host:pluginHostView(),activityId:state.activeActivityId,pluginId,menu})
         :spec.availability;
       if(value&&typeof value.then==='function')throw new Error('Menu availability must be synchronous.');
       const status=normalizeMenuAvailability(value);
@@ -146,6 +147,8 @@ const {pluginTypeOf}=require('../manifest');
     const mount=document.querySelector(`[data-plugin-menu="${menu}"]`);
     if(!mount)throw new Error(`Plugin menu mount not found: ${menu}`);
     const button=createScopedButton(pluginId,{...spec,menu},`[data-plugin-menu="${menu}"]`,'plugin-menu-item');
+    if(menu==='export')button.dataset.dkdsNativeSave='export';
+    if(spec.nativeCopy)button.dataset.dkdsNativeCopy='clipboard';
     button.__dkdsMenuContribution={spec,pluginId,menu};
     const menuHost=mount.closest('.command-menu')||mount;
     if(!menuHost.__dkdsAvailabilityBound){

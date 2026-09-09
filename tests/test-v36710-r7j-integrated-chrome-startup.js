@@ -25,8 +25,8 @@ assert(themeRuntime.includes("inspectorHeader:{surface:'#f5f8fc'")&&themeRuntime
 assert(!themeRuntime.includes("inspectorHeader:{surface:'#172a31'"),
   'Legacy teal default inspector header must not return.');
 
-assert(structure.includes('.dkds-scientific-nav-tools')&&structure.includes('gap:0')&&structure.includes('padding:1px 2px')&&structure.includes('overflow:hidden'),
-  'Scientific floating navigation must expose one fused outer silhouette.');
+assert(structure.includes('.dkds-scientific-nav-tools')&&structure.includes('gap:0')&&structure.includes('--dkds-scientific-nav-padding-block:2px')&&structure.includes('--dkds-scientific-nav-padding-inline:2px')&&structure.includes('padding:var(--dkds-scientific-nav-padding-block) var(--dkds-scientific-nav-padding-inline)')&&structure.includes('overflow:hidden'),
+  'Scientific floating navigation must expose one fused outer silhouette while platform-specific density enters only through geometry tokens.');
 assert(appearance.includes('[data-dkds-component-identity="floatingChrome"].dkds-integrated-action-group')&&appearance.includes('border-radius:0')&&appearance.includes('box-shadow:none'),
   'FloatingChrome children must not render separate rounded cards/depth.');
 assert(automation.includes('must not expose gaps between integrated actions')&&automation.includes('must not render an independent rounded card'),

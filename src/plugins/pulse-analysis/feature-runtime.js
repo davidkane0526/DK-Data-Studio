@@ -18,15 +18,15 @@
     });
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
-    const pulseHeader=page.querySelector('.analysis-page-header');
+    const pulseHeader=dom.query('.analysis-page-header',page);
     const pulseHeaderActionsHost=dom.create('div');
     pulseHeaderActionsHost.className='dkds-plugin-header-actions';
-    pulseHeader?.querySelector('.analysis-page-close')?.before(pulseHeaderActionsHost);
+    dom.query('.analysis-page-close',pulseHeader)?.before(pulseHeaderActionsHost);
     ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
       activity:'pulse',
       actions:[
         {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
-        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
+        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
       ]
     });
 
@@ -34,7 +34,7 @@
       id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
       layout:{
         mode:'native',root:{selector:'#pulseAnalysisPage .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'raw-diagnostic',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:92,collapsible:true},{id:'raw-diagnostic',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
       }
     });
 
@@ -43,17 +43,17 @@
     // Pulse only contributes domain actions/semantics; location, CSV/copy,
     // SVG/PNG and resize lifecycle belong to the platform.
     const pulsePlotViews=[];
-    const rawCard=page.querySelector('#pulseRawPlot')?.closest('.pulse-card');
+    const rawCard=dom.query('#pulseRawPlot',page)?.closest('.pulse-card');
     if(rawCard&&workbench?.registerPrime){
       workbench.registerPrime({
         id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
         handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
-        placements:['inline','right','bottom','float','global'],autoOpen:true,
-        mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(page.querySelector('#pulseRawPlot'));}catch{}})
+        placements:['inline','right','bottom','float','global'],stateVersion:'pulse-raw-diagnostic-v2',autoOpen:true,
+        mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(dom.query('#pulseRawPlot',page));}catch{}})
       });
     }
     const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
-      const plot=page.querySelector('#'+plotId);
+      const plot=dom.query('#'+plotId,page);
       const card=plot?.closest('.pulse-card');
       if(!plot||!card||!ctx.ui.plotViews?.bind)return null;
       const view=ctx.ui.plotViews.bind(`pulse:${viewId}`,card,{
@@ -70,27 +70,29 @@
     bindPulsePlot('pulsePulsePlot','pulse','脉冲条件 → 脉冲电流');
 
 
-    page.querySelector('#pulseFileList')?.addEventListener('click',()=>dom.microtask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});}));
-    page.querySelector('#pulseCheckAllBtn').onclick=()=>P.setAllChecked(true);
-    page.querySelector('#pulseUncheckAllBtn').onclick=()=>P.setAllChecked(false);
-    page.querySelector('#pulseRemoveFilesBtn').onclick=()=>P.removeChecked();
-    page.querySelector('#pulseApplySettingsBtn').onclick=()=>P.applySettingsToChecked();
+    const fileList=dom.query('#pulseFileList',page);
+    dom.on(fileList,'click',event=>{
+      const row=event.target?.closest?.('.pulse-batch-file-item'),fileId=row?.dataset?.fileId;if(!fileId)return;
+      if(event.target?.matches?.('.pulse-file-check')){event.stopPropagation();P.setFileChecked(fileId,event.target.checked);return;}
+      P.setActiveFile(fileId);dom.microtask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});});
+    });
+    dom.on(dom.query('#pulseCheckAllBtn',page),'click',()=>P.setAllChecked(true));
+    dom.on(dom.query('#pulseUncheckAllBtn',page),'click',()=>P.setAllChecked(false));
+    dom.on(dom.query('#pulseRemoveFilesBtn',page),'click',()=>P.removeChecked());
+    dom.on(dom.query('#pulseApplySettingsBtn',page),'click',()=>P.applySettingsToChecked());
 
-    page.querySelector('#pulseSeriesLabel').onchange=()=>{
-      const item=P.syncEditor();
-      if(item)P.refreshFileAndComparison();
-    };
+    dom.on(dom.query('#pulseSeriesLabel',page),'change',()=>{const item=P.syncEditor();if(item)P.refreshFileAndComparison();});
     for(const id of [
       'pulseSegmentationMode','pulseTimeCol','pulseCurrentCol','pulseVoltageCol',
       'pulseCycleSamples','pulseCycleOffsetSamples','pulseWriteStartSample','pulseWriteEndSample',
       'pulseReadStartSample','pulseReadEndSample','pulseWriteDuration','pulseReadDuration',
       'pulseSampleInterval','pulsePhaseOrder','pulseReadVoltageFallback','pulsePulseVoltageFallback',
       'pulseBlockSamples','pulseWindowStart','pulseWindowEnd','pulseReadPairMode'
-    ])page.querySelector('#'+id).onchange=()=>P.syncEditor();
-    page.querySelector('#pulseResultScope').onchange=e=>P.setResultScope(e.target.value);
+    ])dom.on(dom.query('#'+id,page),'change',()=>P.syncEditor());
+    dom.on(dom.query('#pulseResultScope',page),'change',event=>P.setResultScope(event.target.value));
+    dom.on(dom.query('#pulseCopyCsvBtn',page),'click',()=>P.copyResults());
+    dom.on(dom.query('#pulseExportCsvBtn',page),'click',()=>P.exportResults());
 
-    page.querySelector('#pulseCopyCsvBtn').onclick=()=>P.copyResults();
-    page.querySelector('#pulseExportCsvBtn').onclick=()=>P.exportResults();
 
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
       const activeResultAvailable=()=>{const state=P.getState?.()||{},active=state.files?.find?.(row=>row.id===state.activeId);return !!active?.result;};
@@ -126,7 +128,7 @@
     });
 
     ctx.analysis.providers.register('pulse-read',{
-      id:'pulse-read',name:'Pulse / read transient extraction',analyze:window.DKDSScience.analyzePulseReadData
+      id:'pulse-read',name:'Pulse / read transient extraction',analyze:ctx.science.analyzePulseReadData
     });
     return {deactivate(){pulsePlotViews.splice(0).forEach(view=>view?.dispose?.());}};
   }

@@ -1,5 +1,14 @@
 export type DKDSDisposable = { dispose?(): void } | (() => void) | void;
+export type DKDSPlatformPresentationMode = 'shared'|'adaptive'|'custom';
+export interface DKDSPlatformPresentationPolicy { mode:DKDSPlatformPresentationMode; styles?:string[]; scripts?:string[] }
+export interface DKDSPlatformPresentationContract { desktop:DKDSPlatformPresentationPolicy; mobile:DKDSPlatformPresentationPolicy }
 export type DKDSPluginInstance = { deactivate?(): void | Promise<void> };
+export interface DKDSPluginHost {
+  readonly appVersion:string; readonly isAuxiliaryWindow:boolean; readonly isWebClient:boolean;
+  setStatus?(text:string):any; getRuntimeStatus?():any; getLanWebStatus?():any; openLanWebPanel?():any; hideLanWebPanel?():any;
+  openImportWorkbench?(options?:any):any; makeProject?():any; getActiveProjectTab?():any; captureActiveProjectTab?():any;
+  copyTextToClipboard?(text:string):any; saveChartImage?(...args:any[]):any;
+}
 export type DKDSAlgorithmRef = { category: string; id: string; version?: string };
 export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[]; focus:any; ranges:any[]; context:Record<string,unknown>; source:any };
 export interface DKDSDataModelRuntime {
@@ -10,9 +19,11 @@ export interface DKDSDataSourceTarget { id:string; label:string; icon:string; or
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.19.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  id:string; name:string; version:string; apiVersion:'1.19.0'; entry:string; scripts?:string[]; styles?:string[]; enabled?:boolean; order?:number; description?:string; systemCritical?:boolean;
+  /** SDK 1.25 authoring contract: one shared Plugin API with explicit Desktop/Mobile presentation policy. */
+  platformPresentation?:DKDSPlatformPresentationContract;
   /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
-  pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'theme'|'extension'|'developer';
+  pluginType:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'theme'|'extension'|'developer';
   ui?:{tableAppearance?:{cssOverrides?:Array<'row-striping'|'row-state'>}};
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
@@ -20,8 +31,7 @@ export interface DKDSManifest {
   window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';artifactHydration?:'project'|'live';width?:number;height?:number;minWidth?:number;minHeight?:number};
   algorithmProvider?:boolean; algorithmCategories?:string[];
   algorithmProvides?:Array<{category:string;id:string;version:string;title?:string}>;
-  compatibility?:{app?:string;pluginApi?:string};
-  pluginDependencies?:Array<{id:string;range:string;optional?:boolean}>;
+  pluginDependencies?:Array<{id:string}>;
 }
 export interface DKDSStateStore<T=any>{get():T;snapshot():T;patch(patch:Partial<T>|((value:T)=>Partial<T>)):T;set(value:T):T;restore(value:T,options?:any):T;reset(options?:any):T;subscribe?(fn:(value:T)=>void):()=>void;dispose?():void}
 
@@ -69,13 +79,63 @@ export interface DKDSDomRuntime {
   on(target:EventTarget,event:string,handler:(event:any)=>void,options?:any):()=>void; delegate(target:any,event:string,selector:string,handler:(event:any,hit:HTMLElement)=>void,options?:any):()=>void;
   observe(target:any,callback:(entries:any)=>void,options?:{resize?:boolean;mutation?:boolean|MutationObserverInit}):()=>void; frame(fn:()=>void):()=>void; timeout(fn:()=>void,delay?:number):()=>void; interval(fn:()=>void,delay?:number):()=>void; microtask(fn:()=>void):void; dispose():void;
 }
-export interface DKDSStatusBarItemSpec { id:string; side?:'left'|'right'; order?:number; icon?:string; label?:string; title?:string; state?:'info'|'ok'|'warn'|'error'|'running'|'stopped'|'checking'|'starting'|'waiting'|'done'|'ready'|'mcp'|string; colorPolicy?:'theme'|'semantic'; hidden?:boolean; disabled?:boolean; className?:string; onClick?:(payload:{event:Event;element:HTMLButtonElement;pluginId:string;id:string;host:any})=>void }
+export interface DKDSStatusBarItemSpec { id:string; side?:'left'|'right'; order?:number; icon?:string; label?:string; title?:string; activity?:string; activityId?:string; state?:'info'|'ok'|'warn'|'error'|'running'|'stopped'|'checking'|'starting'|'waiting'|'done'|'ready'|'mcp'|string; colorPolicy?:'theme'|'semantic'; hidden?:boolean; disabled?:boolean; className?:string; onClick?:(payload:{event:Event;element:HTMLButtonElement;pluginId:string;id:string;host:DKDSPluginHost})=>void }
 export interface DKDSStatusBarItem { readonly id:string; readonly pluginId:string; readonly element:HTMLButtonElement; update(patch:Partial<DKDSStatusBarItemSpec>):DKDSStatusBarItem; remove():void; readonly value:DKDSStatusBarItemSpec }
 export interface DKDSStatusBarRuntime { add(spec:DKDSStatusBarItemSpec):DKDSStatusBarItem; own():DKDSStatusBarItem[] }
 
 export interface DKDSActivitySpec { id:string; label?:string; contextLabel?:string; icon?:string; order?:number; default?:boolean; primary?:boolean; openMode?:'window'|'page'; navigation?:'primary'|'system'|'hidden'|string; artifactHydration?:'project'|'live'; description?:string; onActivate?:(context?:any)=>any }
+export type DKDSGridOrientation='landscape'|'portrait';
+export interface DKDSGridColumnContext {
+  /** Native Mobile reports the physical orientation; Desktop/Web always report landscape. */
+  orientation:DKDSGridOrientation;
+  /** Current grid host width in CSS pixels before the responsive width clamp is applied. */
+  width:number;
+  /** Configured default column count from DKDSGridSpec.columns. */
+  columns:number;
+  maxColumns:number;
+  minItemWidth:number;
+  container:HTMLElement;
+  controller:DKDSGridController;
+}
+export interface DKDSGridOrientationPolicy {
+  /** Native-Mobile-only fallback: when portrait has no explicit preferredColumns result, derive it from the latest effective landscape count plus offset. */
+  mode:'portrait-offset';
+  /** Added to the landscape baseline in portrait. Defaults to -1. */
+  offset?:number;
+  /** Lower bound for the derived portrait request. Defaults to 1. */
+  minColumns?:number;
+}
+export interface DKDSGridSpec {
+  /** Default requested columns before responsive width clamping. */
+  columns?:number;
+  minItemWidth?:number;
+  maxColumns?:number;
+  /** When true (default), Core may reduce the requested count to fit minItemWidth. */
+  responsive?:boolean;
+  /** Optional Native Mobile orientation policy. It has no effect on Desktop/Web. */
+  orientationPolicy?:DKDSGridOrientationPolicy;
+  /** Optional per-orientation requested column count. Return null/undefined/'auto' to let Core derive/fallback. */
+  preferredColumns?:(context:DKDSGridColumnContext)=>number|'auto'|null|undefined;
+}
+export interface DKDSGridController {
+  readonly container:HTMLElement;
+  apply():number;
+  setColumns(value:number):number;
+  /** Returns the configured base column count, not the responsive/effective count. */
+  getColumns():number;
+  /** Returns the currently applied count after orientation policy and width clamping. */
+  getAppliedColumns():number;
+  /** Native Mobile physical orientation; Desktop/Web return landscape. */
+  getOrientation():DKDSGridOrientation;
+  dispose():void;
+}
+export interface DKDSGridRuntime { create(container:Element|string,spec?:DKDSGridSpec):DKDSGridController }
+/** A Core-owned multi-plot region. It is layout-only: outer titles/chrome are optional and plugin-owned content remains ordinary PlotViews. */
+export interface DKDSGroupAreaSpec extends DKDSGridSpec {}
+export interface DKDSGroupAreaController extends DKDSGridController { readonly kind:'group-area' }
+export interface DKDSGroupAreaRuntime { create(container:Element|string,spec?:DKDSGroupAreaSpec):DKDSGroupAreaController }
 export interface DKDSPluginWorkspaceCreateSpec {
-  /** Navigation is auto-hidden when Primary is the only destination. */
+  /** auto: PRIMARY is rendered as a navigation action only when SUB routes need a return path; always forces it visible; hidden suppresses workspace navigation. */
   navigation?:'auto'|'always'|'hidden';
   id?:string; activity?:string; title?:string; subtitle?:string; header?:boolean; closable?:boolean; hostMode?:'embedded'|'dedicated'|string;
   /** safe = bounded Core-owned Primary scrolling (default); auto = intentional document-flow growth; contained = bounded no-scroll canvas. */
@@ -85,10 +145,13 @@ export interface DKDSPluginWorkspaceMountContext { workbench:DKDSPluginWorkspace
 export interface DKDSPluginWorkspacePrimarySpec { id:string; label?:string; /** PRIMARY is exactly one semantic main surface in Plugin API 1.19. Register controls/inspectors as PRIME surfaces. */ mainNode?:any; mainHtml?:string|(()=>string); /** Same bounded/growing semantics as create().primaryScroll. */ scroll?:'safe'|'auto'|'contained'; scrollMode?:'safe'|'auto'|'contained'; mount?:(context:DKDSPluginWorkspaceMountContext)=>void|(()=>void) }
 /** Stable Core-owned semantic kinds for persistent PRIME/Portable surfaces. Themes never define new values. */
 export type DKDSSemanticSurfaceKind='panel'|'inspector';
+/** Functional purpose is orthogonal to Portable/Material semanticKind and cross-platform presentationRole. */
+export type DKDSPresentationSurfacePurpose='parameters';
 export type DKDSPresentationSurfaceRole='scientific-primary'|'data-primary'|'utility-primary'|'data-control'|'inspector'|'scientific-secondary';
 export interface DKDSPluginWorkspacePrimeSpec {
   id:string; label?:string; title?:string; order?:number; autoOpen?:boolean;
-  semanticKind?:DKDSSemanticSurfaceKind; presentationRole?:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean;
+  semanticKind?:DKDSSemanticSurfaceKind; presentationPurpose?:DKDSPresentationSurfacePurpose; presentationRole?:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean;
+  /** One declared placement means fixed placement and Core omits the position chooser; two or more placements expose the canonical chooser. */
   placements?:Array<'inline'|'home'|'left'|'right'|'bottom'|'main'|'float'|'global'>; defaultPlacement?:'inline'|'home'|'left'|'right'|'bottom'|'main'|'float'|'global';
   existingNode?:any; node?:any; inlineHost?:any; useTargetAsWrapper?:boolean; handle?:any; controlsHost?:any; controlsPlacement?:'start'|'end'|string; stateVersion?:number|string;
   closeSelector?:string; collapseSelector?:string; actions?:any[]; actionHost?:any; actionsHost?:any;
@@ -96,10 +159,10 @@ export interface DKDSPluginWorkspacePrimeSpec {
 }
 export interface DKDSPluginWorkspace {
   readonly shell:HTMLElement;
-  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:DKDSPluginWorkspacePrimeSpec):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;risks:ReadonlyArray<{element:string;tag:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number;containmentX:number;containmentY:number;unsafeX:boolean;unsafeY:boolean;recovered:boolean}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
+  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:DKDSPluginWorkspacePrimeSpec):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; grid(container:Element|string,spec?:DKDSGridSpec):DKDSGridController; groupArea(container:Element|string,spec?:DKDSGroupAreaSpec):DKDSGroupAreaController; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;risks:ReadonlyArray<{element:string;tag:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number;containmentX:number;containmentY:number;unsafeX:boolean;unsafeY:boolean;recovered:boolean}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
 }
 export interface DKDSPluginWorkspaceRuntime { create(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace }
-export interface DKDSTopWorkspaceSurfaceSpec { id:string; role?:string; semanticKind?:DKDSSemanticSurfaceKind; presentationRole:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean }
+export interface DKDSTopWorkspaceSurfaceSpec { id:string; role?:string; semanticKind?:DKDSSemanticSurfaceKind; presentationPurpose?:DKDSPresentationSurfacePurpose; presentationRole:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean }
 export interface DKDSTopWorkspaceSpec {
   id:string; activity:string; label?:string; icon?:string;
   layout:{mode:'native';root:{selector:string};primary:DKDSTopWorkspaceSurfaceSpec;prime?:DKDSTopWorkspaceSurfaceSpec[];sub?:DKDSTopWorkspaceSurfaceSpec[]};
@@ -171,6 +234,7 @@ export interface DKDSPlotViewSpec {
   plot?:Element|string; header?:Element|string; actionsHost?:Element|string;
   title?:string; titleHtml?:string; fileStem?:string|((view:DKDSPlotView)=>string);
   csv?:boolean|((view:DKDSPlotView)=>string); copy?:boolean; images?:boolean; portable?:boolean;
+  /** One declared placement is fixed and has no position chooser; multiple placements expose the Core chooser. */
   placements?:Array<'home'|'sticky'|'float'|'global'|'left'|'right'|'bottom'>; defaultPlacement?:string; stateVersion?:string; snap?:boolean;
   contentAspectRatio?:number; contentMinHeight?:number; contentMaxHeight?:number;
   [key:string]:any;
@@ -239,7 +303,7 @@ export interface DKDSThemeProfileSpec {
 export type DKDSThemeCoverageStatus = 'NOT_PRESENT'|'MANAGED'|'PARTIAL'|'UNMANAGED'|'ROLE_MISMATCH';
 export interface DKDSThemeCoverageArea { id:string; label:string; role:DKDSThemeMaterialRole; selector:string; count:number; managed:number; status:DKDSThemeCoverageStatus }
 export interface DKDSThemeCoverageIssue { severity:'warning'; kind:'unmanaged-visual'; source:string; pluginId:string; selector:string; property:string; value:string; reason:string }
-export type DKDSThemeMaterialRenderStatus='REAL_MATERIAL'|'MATERIAL_DISABLED'|'MATERIAL_SEMANTIC_OVERRIDE'|'ROLE_MISSING'|'RECIPE_MISSING'|'BACKDROP_FILTER_NONE'|'OPAQUE_PARENT_OCCLUSION'|'BROKEN_MATERIAL_RENDERER'|'BROKEN_OPTICAL_RENDERER'|'LOW_CONTRAST_MATERIAL'|'ENGINE_UNSUPPORTED';
+export type DKDSThemeMaterialRenderStatus='REAL_MATERIAL'|'MATERIAL_DISABLED'|'MATERIAL_SEMANTIC_OVERRIDE'|'ROLE_MISSING'|'RECIPE_MISSING'|'BACKDROP_FILTER_NONE'|'OPAQUE_MATERIAL_OCCLUSION'|'BROKEN_MATERIAL_RENDERER'|'BROKEN_OPTICAL_RENDERER'|'LOW_CONTRAST_MATERIAL'|'ENGINE_UNSUPPORTED';
 export type DKDSMaterialRecipe='clear'|'thin-glass'|'soft-glass'|'liquid-glass';
 export interface DKDSThemeRendererCapabilities { version:string; recipeInstalled:boolean; engine:{backdropFilter:boolean;webkitBackdropFilter:boolean;colorMix:boolean;radialGradient:boolean;maskImage:boolean;pointerEvents:boolean}; policy:{roleToRecipe:Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>;recipes:readonly DKDSMaterialRecipe[]}; renderer:{backdropBlur:boolean;saturation:boolean;noise:boolean;glassEdge:boolean;innerHighlight:boolean;specularHighlight:boolean;webMaterial:boolean;nativeBlur:boolean;thinGlass:boolean;nonUniformBlur:boolean;edgeRefraction:boolean;dynamicSpecular:boolean;liquidGlass:boolean;materialContexts:boolean}; recipes:Record<DKDSMaterialRecipe,boolean>; roles:Record<DKDSThemeMaterialRole,boolean>; materialContexts?:readonly DKDSThemeMaterialContext[] }
 export interface DKDSThemeControlContrastIssue { tag:string; id:string; className:string; text:string; foreground:string; background:string; effectiveBackground:{r:number;g:number;b:number;a:number}; ratio:number; minimum:number; disabled:boolean }
@@ -248,8 +312,6 @@ export interface DKDSThemeConsumptionReport { version:string; contractVersion:st
 export interface DKDSThemeCoverageReport { version:string; contractVersion:string; profile:string; mode:'light'|'dark'; rendererCapabilities:DKDSThemeRendererCapabilities|null; core:ReadonlyArray<DKDSThemeCoverageArea & {renderStatus:string;realMaterial:number;occludedMaterial:number;brokenMaterial:number;render:ReadonlyArray<{status:DKDSThemeMaterialRenderStatus;role:string;expectedRole:string;recipe:DKDSMaterialRecipe|string;expectedBlur:string;expectedBlurStrong?:string;expectedSaturation:string;backdropFilter:string;backgroundColor:string;occlusionSource?:''|'self'|'child';opaqueParent?:any;occludingChild?:any}>}>; appearance:{version:string;rows:ReadonlyArray<{component:DKDSThemeAppearanceComponent;label:string;count:number;managed:number;authoredSlots:string[];status:string}>;authored:ReadonlyArray<{component:string;slot:string;path:string;status:'CONSUMED'|'AUTHORED_BUT_UNUSED'}>;consumption:DKDSThemeConsumptionReport;summary:{components:number;present:number;managed:number;authoredUnused:number;ok:boolean}}; contrast:{checked:number;issues:ReadonlyArray<DKDSThemeControlContrastIssue>;ok:boolean}; plugins:{issues:ReadonlyArray<DKDSThemeCoverageIssue>;summary:{total:number;warnings:number;plugins:string[]}}; summary:{areas:number;managed:number;partial:number;unmanaged:number;realMaterial:number;brokenMaterial:number;occludedMaterial:number;componentTypes:number;presentComponentTypes:number;managedComponents:number;authoredUnused:number;appearanceOk:boolean;lowContrastControls:number;pluginIssues:number;rendererOk:boolean;ok:boolean} }
 export interface DKDSThemeCapability {
   readonly contractVersion:'3.10.0';
-  supports(feature:string):boolean;
-  rendererCapabilities():DKDSThemeRendererCapabilities;
   register(id:string,spec:DKDSThemeProfileSpec):{id:string;dispose?:()=>void};
   activate(id:string):string;
   current():{mode:'light'|'dark';profile:string};
@@ -275,7 +337,7 @@ export interface DKDSThemeCapability {
 }
 
 export interface DKDSMenuAvailability { visible?:boolean; enabled?:boolean; reason?:string }
-export interface DKDSMenuAvailabilityContext { host:any; activityId:string|null; pluginId:string; menu:string }
+export interface DKDSMenuAvailabilityContext { host:DKDSPluginHost; activityId:string|null; pluginId:string; menu:string }
 export interface DKDSMenuItemSpec { id:string; menu?:string; label:string; order?:number; activity?:string; command?:string; onClick?:(event?:Event)=>any; availability?:boolean|DKDSMenuAvailability|((context:DKDSMenuAvailabilityContext)=>boolean|DKDSMenuAvailability) }
 export interface DKDSMenusRuntime { add(spec:DKDSMenuItemSpec):HTMLButtonElement }
 
@@ -312,11 +374,11 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string;action(spec:any):HTMLButtonElement|null;actionGroup(spec:any):HTMLElement|null;tabs(spec:any):HTMLElement|null;surfaceHeader(spec:any):HTMLElement|null;field(spec:any):HTMLElement|null;hydrate(root?:any):any};
-    scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:DKDSPlotViewRuntime; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
+    scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; groupArea:DKDSGroupAreaRuntime; tooltips:DKDSTooltipRuntime; plotViews:DKDSPlotViewRuntime; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     /** Canonical runtime facade for manifest requirement `ui.workspace` / capability label `ui.plugin-workspace`. There is intentionally no `ctx.ui.pluginWorkspace`. */
-    workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'>};}; grid:any; portable:any; layout:{split(spec:any):any;move(spec:DKDSMovableSurfaceSpec):DKDSMovableSurface;solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
+    workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'}>;}; grid:DKDSGridRuntime; portable:any; layout:{split(spec:any):any;move(spec:DKDSMovableSurfaceSpec):DKDSMovableSurface;solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
-    topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:DKDSMenusRuntime; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
+    topWorkspace:DKDSTopWorkspaceRuntime; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:DKDSMenusRuntime; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
     pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:DKDSEditRuntime; designSystem:DKDSDesignSystem
   };
 }

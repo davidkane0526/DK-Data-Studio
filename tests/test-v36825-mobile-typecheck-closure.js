@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const json=rel=>JSON.parse(read(rel));
+const app=json('package.json'),mobile=json('mobile/package.json'),expo=json('mobile/app.json').expo;
+assert(/^3\.68\./.test(app.version));
+assert.strictEqual(mobile.version,app.version);
+assert.strictEqual(expo.version,app.version);
+assert(expo.android.versionCode>=65);
+assert(!fs.existsSync(path.join(root,'mobile/src/services/WebServicePopover.tsx')),'Duplicate RN Web Service popover must stay retired.');
+assert(!Object.prototype.hasOwnProperty.call(mobile.dependencies||{},'expo-blur'),'Unused expo-blur dependency must stay removed after Core popover cutover.');
+console.log('v3.68.27 mobile typecheck closure PASS: duplicate RN BlurView popover retired; Core WebView owns LAN service UI.');

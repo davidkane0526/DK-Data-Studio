@@ -11,9 +11,9 @@
     Object.freeze({id:'inspectorHeader',label:'Inspector Header',expectedRole:'chrome',priority:100,selector:'[data-dkds-inspector-header],[data-dkds-surface-kind="inspector"] .dkds-surface-header,[data-dkds-surface-kind="inspector"] .dkds-portable-header,[data-generic-panel="inspector"] .floating-header,[data-generic-panel="inspector"] .dkds-portable-header,.inspector-panel .floating-header'}),
     Object.freeze({id:'panelHeader',label:'Panel Header',expectedRole:'chrome',priority:90,selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.analysis-chart-title,.dkds-chart-head,.trend-card-header,.floating-header,.dkds-portable-header,.dkds-analysis-prime-head'}),
     Object.freeze({id:'tab',label:'Tab',expectedRole:'',priority:80,selector:'.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]'}),
-    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'button,.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.dkds-surface-header>button,.panel-header-actions>button,.trend-header-actions>button,.dkds-mode-group>button,.dkds-integrated-action-group button,.trend-layout-controls>button,.plugin-card-icon.plugin-super-selector'}),
+    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'button:not(.dkds-field-control),.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.dkds-surface-header>button,.panel-header-actions>button,.trend-header-actions>button,.dkds-mode-group>button,.dkds-integrated-action-group button,.trend-layout-controls>button,.plugin-card-icon.plugin-super-selector'}),
     Object.freeze({id:'toolbarGroup',label:'Toolbar Group',expectedRole:'',priority:60,selector:'.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row'}),
-    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:75,selector:'.plugin-menu-item,[role="menuitem"],[role="option"],.menu-item,.command-menu>button,.dkds-context-item,.dkds-list-item,.dkds-plot-legend-item,.dkds-legend-item,.main-legend-chip,.trend-legend-chip'}),
+    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:75,selector:'.plugin-menu-item,[role="menuitem"],[role="option"],.menu-item,.command-menu>button,.dkds-context-item,button.dkds-list-item,.dkds-list-item[role="menuitem"],.dkds-list-item[role="option"],.dkds-plot-legend-item,.dkds-legend-item,.main-legend-chip,.trend-legend-chip'}),
     Object.freeze({id:'chip',label:'Chip / Tag',expectedRole:'',priority:40,selector:'.dkds-chip,.plugin-capability-chip,.plugin-status-badge,.plugin-type-badge,.plugin-role-badge,.plugin-owned-badge,.dkds-summary-chip'}),
     Object.freeze({id:'statusBar',label:'Status Bar',expectedRole:'chrome',priority:100,selector:'#statusBar.statusbar,.statusbar'}),
     Object.freeze({id:'floatingChrome',label:'Floating Chrome',expectedRole:'floating',priority:30,selector:'.dkds-scientific-nav-tools,[data-dkds-floating-chrome]'}),
@@ -61,7 +61,7 @@
     if(!el)return '';
     const allowed=new Set(COMPONENT_VARIANT_MAP[component]||[]),accept=value=>COMPONENT_VARIANTS.has(value)&&allowed.has(value)?value:'';
     const authoredVariant=el.dataset?.dkdsComponentVariantOwner==='core-runtime'?'':el.dataset?.dkdsComponentVariant;const explicit=String(authoredVariant||el.dataset?.dkdsActionTone||'').trim(),accepted=accept(explicit);if(accepted)return accepted;
-    if(component==='toolbarAction'&&matches(el,'.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn,.dkds-theme-settings-inline')){const value=accept('quiet');if(value)return value;}
+    if(component==='toolbarAction'&&matches(el,'.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn,.dkds-theme-settings-inline,.dkds-theme-plugin-settings')){const value=accept('quiet');if(value)return value;}
     const state=stateOf(el);if(state==='selected'||state==='active'){const value=accept(state);if(value)return value;}
     if(matches(el,'.primary,.strong')){const value=accept('primary');if(value)return value;}
     if(matches(el,'.danger,.danger-soft,.error,.is-error,[data-tone="danger"],[data-status="error"]')){const value=accept(component==='chip'?'danger':'destructive');if(value)return value;}
@@ -169,10 +169,11 @@
   function assign(root=document){PERF.assignCalls++;if(root===document)PERF.documentAssignments++;return Object.freeze({assigned:assignSubtree(root)});}
   const htmlElement=el=>typeof HTMLElement==='undefined'||el instanceof HTMLElement;
   const pendingSemanticRoots=new Set();
-  let semanticFrame=0;
-  const requestFrame=fn=>(globalThis.requestAnimationFrame||((cb)=>setTimeout(cb,0)))(fn);
+  let semanticFrame=false;
+  const FrameScheduler=globalThis.DKDSFrameScheduler;
+  if(!FrameScheduler?.schedule)throw new Error('Semantic Registry requires DKDSFrameScheduler.');
   function flushSemanticAssignments(){
-    semanticFrame=0;PERF.flushes++;
+    semanticFrame=false;PERF.flushes++;
     if(!pendingSemanticRoots.size)return;
     const roots=[...pendingSemanticRoots];pendingSemanticRoots.clear();
     for(const root of roots)assign(root);
@@ -191,18 +192,19 @@
       if(!covered)pendingSemanticRoots.add(candidate);
     }
     if(semanticFrame)return;
-    semanticFrame=requestFrame(flushSemanticAssignments);
+    semanticFrame=true;FrameScheduler.schedule('theme.semantic.assign',flushSemanticAssignments,{priority:FrameScheduler.PRIORITY.SEMANTIC});
   }
-  let observer=null;
+  let observerCleanup=null;
   function start(){
     assign(document);
-    if(observer||typeof MutationObserver!=='function')return;
-    observer=new MutationObserver(records=>{
+    if(observerCleanup)return;
+    const hub=window.DKDSDOMMutationHub;
+    if(!hub?.subscribe)return;
+    observerCleanup=hub.subscribe('core.semantic-registry',records=>{
       PERF.mutationRecords+=records.length;const added=[];
-      for(const record of records){if(record.type==='attributes'){if(htmlElement(record.target))assignElement(record.target);else PERF.ignoredNonHtml++;continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1&&htmlElement(node))added.push(node);else if(node?.nodeType===1)PERF.ignoredNonHtml++;}
+      for(const record of records){if(record.type==='attributes'){if(htmlElement(record.target)){if(!record.target?.closest?.('[data-dkds-theme-probe]'))assignElement(record.target);}else PERF.ignoredNonHtml++;continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1&&htmlElement(node)){if(!node?.closest?.('[data-dkds-theme-probe]'))added.push(node);}else if(node?.nodeType===1)PERF.ignoredNonHtml++;}
       if(added.length){const roots=[];for(const node of added){if(roots.some(root=>root===node||root.contains?.(node)))continue;for(let i=roots.length-1;i>=0;i--)if(node.contains?.(roots[i]))roots.splice(i,1);roots.push(node);}PERF.subtreeBatches++;for(const root of roots)assignSubtree(root);}
-    });
-    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-action-tone','data-dkds-surface-kind','data-dkds-material-context','data-dkds-component-context']});
+    },{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-action-tone','data-dkds-surface-kind','data-dkds-material-context','data-dkds-component-context']});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   const performanceSnapshot=()=>Object.freeze({...PERF,pendingRoots:pendingSemanticRoots.size,framePending:!!semanticFrame});

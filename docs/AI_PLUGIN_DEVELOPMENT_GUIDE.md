@@ -20,6 +20,7 @@ Keep the pure algorithm in a plugin support module. If it is replaceable/version
 
 ### Scientific workspace
 Use Core AnalysisWorkbench with PRIMARY / PRIME / SUB, Core PlotViews, Core ScientificPlot, the Entity Registry, Core Actions and Core Interaction Runtime. Do not build another pane/dock/window framework.
+For a related multi-plot scientific region, use `ctx.ui.groupArea.create(...)` or `workbench.groupArea(...)`; use plain `ctx.ui.grid.create(...)` / `workbench.grid(...)` only for non-GroupArea grids. Core owns final grid geometry. Native Mobile orientation changes use the SDK `orientationPolicy` / `preferredColumns` contract from `sdk/GRID_LAYOUT.md`, not plugin-local viewport/orientation branches.
 
 ### Generic infrastructure
 If multiple unrelated plugins could need it (file bridge, drag/resize, worker queue, chart export, typed selection, responsive grid, service discovery), implement it in `src/core/` and expose it through `ctx`.

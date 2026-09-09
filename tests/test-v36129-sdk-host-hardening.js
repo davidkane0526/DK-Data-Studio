@@ -11,7 +11,7 @@ const json=rel=>JSON.parse(read(rel));
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.19 host guarantees');
-assert.equal(contract.minimumAppVersion,'3.67.10','Current SDK minimum app must include the Theme 3.10 contextual-composition baseline.');
+assert.equal(contract.minimumAppVersion,'3.68.36','Current SDK minimum app must include the Theme 3.10 contextual-composition baseline.');
 
 const components=read('src/core/ui/component-runtime.js');
 assert(components.includes('isEventTarget')&&components.includes("value===window||value===document"),'scoped DOM runtime must support lifecycle-safe window/document EventTargets');
@@ -20,7 +20,7 @@ assert(status.includes('ctx.ui.dom.create')&&status.includes("ctx.ui.dom.on(wind
 assert(!/\bdocument\./.test(status)&&!/(^|[^.])\b(?:setTimeout|clearTimeout|setInterval|clearInterval)\s*\(/m.test(status),'Status Monitor must have zero raw DOM/scheduler boundary exceptions');
 
 const infra=read('src/generated/runtime/ui-infrastructure.js');
-for(const token of ['prepareLayoutGeometry()','layoutDiagnostics()','dkds-scientific-layout-fallback','hardMinHeight','applyLayoutSafety()','layoutDiagnostics()','DKDS PluginWorkspace layout recovery','dkds-layout-overflow-fallback',"setProperty('overflow-y','auto')","spec.primaryScroll||'safe'"]){
+for(const token of ['prepareLayoutGeometry()','layoutDiagnostics()','dkds-scientific-layout-fallback','hardMinHeight','applyLayoutSafety()','layoutDiagnostics()','DKDS PluginWorkspace layout recovery','dkds-layout-overflow-fallback',"safetySet(el,'overscroll-behavior-y','auto')","spec.primaryScroll||'safe'"]){
   assert(infra.includes(token),`Plugin Host/ScientificPlot hardening missing ${token}`);
 }
 assert(!infra.includes('if(width<minWidth||height<minHeight){this.awaitingLayout=true;return false;}'),'ScientificCurveSurface must not silently blank solely because preferred min geometry was missed');
@@ -40,7 +40,7 @@ assert.equal(inspectWorkspaceStyles({apiVersion:'1.19.0',pluginType:'tool',works
 assert(inspectWorkspaceStyles({apiVersion:'1.19.0',pluginType:'tool',workspace:{role:'top'},styles:[{name:'internal.css',content:'.pulse-card{overflow:hidden}'}]}).errors.some(x=>x.includes('overflow:hidden')),'API 1.19 must reject clipping semantic card content.');
 
 const {normalizePluginPackage}=require('../desktop/plugin-package');
-const manifest={id:'com.example.layout-guard',name:'Layout Guard',version:'1.0.0',apiVersion:'1.19.0',pluginType:'tool',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],requiresCore:['workspace','ui.activities','ui.top-workspace'],workspace:{role:'top',activity:'layout-guard'},window:{activity:'layout-guard',reuse:true}};
+const manifest={id:'com.example.layout-guard',name:'Layout Guard',version:'1.0.0',apiVersion:'1.19.0',pluginType:'tool',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],requiresCore:['workspace','ui.activities','ui.top-workspace'],workspace:{role:'top',activity:'layout-guard'},window:{activity:'layout-guard',reuse:true},platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}};
 const pkg={schema:1,manifest,files:{'plugin.js':'DKDSPlugins.define('+JSON.stringify(manifest)+',async()=>({}));','plugin.css':'.tool-shell{overflow:hidden}'}};
 assert.throws(()=>normalizePluginPackage(pkg,{allowBuiltinId:false}),/Plugin layout contract failed/,'application install path must enforce the same API 1.19 layout contract even when standalone validation was skipped');
 assert.throws(()=>normalizePluginPackage({...pkg,manifest:{...manifest,apiVersion:'1.17.0'}},{allowBuiltinId:false}),/Unsupported Plugin API/,'Legacy Plugin API packages must be rejected by the v3.62 host.');

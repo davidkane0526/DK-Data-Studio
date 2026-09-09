@@ -3,6 +3,8 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
+const {readMobileShell}=require('./mobile-shell-source');
+const {readMobileApp}=require('./mobile-app-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
@@ -22,27 +24,30 @@ const webBridge=read('src/web-bridge.js');
 const intent=read('src/core/ui/modules/interaction/intent.js');
 const adapters=read('src/core/ui/modules/interaction/adapters.js');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
-const app=read('mobile/App.tsx');
-const shell=read('mobile/src/Shell.tsx');
+const app=readMobileApp(root);
+const shell=readMobileShell(root);
 const mobileCss=read('src/mobile.css');
 const sdkTool=read('sdk/tools/dkds-plugin.js');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=5))),'Plugin API 1.19 Presentation Cutover requires v3.67.5+.');}
-assert.strictEqual(sdk.sdkVersion,'1.24.0');
+assert.strictEqual(sdk.sdkVersion,'1.28.0');
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
-assert.strictEqual(sdk.minimumAppVersion,'3.67.10');
+assert.strictEqual(sdk.minimumAppVersion,'3.68.36');
 assert.strictEqual(sdkSchema.properties.apiVersion.const,'1.19.0');
 assert.strictEqual(docsSchema.properties.apiVersion.const,'1.19.0');
 
-// Runtime/package compatibility is exact, not "any 1.x".
+// Runtime/package contract is exact, not "any 1.x".
 assert(lifecycle.includes("String(manifest.apiVersion||'') !== '1.19.0'"),'Core lifecycle must reject non-1.19 plugin definitions before activation.');
 assert(mobilePackage.includes("apiVersion!=='1.19.0'")&&mobilePackage.includes('this host requires 1.19.0'),'Mobile package normalizer must require Plugin API 1.19.0 exactly.');
-assert(webBridge.includes("const compatible=required==='1.19.0'")&&!webBridge.includes("startsWith('1.')"),'Mobile compatibility diagnostics must agree with the exact Runtime API boundary.');
-const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(sandbox);vm.runInContext(contractSource,sandbox,{filename:'plugin-contract-runtime.js'});
+assert(!webBridge.includes("startsWith('1.')")&&!webBridge.includes('semver-compat'),'Web/Mobile bridge must not negotiate a Plugin API compatibility range.');
+const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(sandbox);
+vm.runInContext(read('sdk/platform-presentation-contract.js'),sandbox,{filename:'platform-presentation-contract.js'});
+sandbox.window.DKDSPlatformPresentationContract=sandbox.DKDSPlatformPresentationContract;
+vm.runInContext(contractSource,sandbox,{filename:'plugin-contract-runtime.js'});
 const contract=sandbox.window.DKDSPluginContract;
 assert.strictEqual(contract.API_VERSION,'1.19.0');
-assert(contract.validateManifest({id:'test.current',pluginType:'extension',apiVersion:'1.19.0',requiresCore:['io']}).ok,'Plugin API 1.19 manifest must validate.');
-assert(!contract.validateManifest({id:'test.old',pluginType:'extension',apiVersion:'1.18.0',requiresCore:['io']}).ok,'Plugin API 1.18 manifest must fail explicitly after cutover.');
+assert(contract.validateManifest({id:'test.current',pluginType:'extension',apiVersion:'1.19.0',entry:'plugin.js',requiresCore:['io']}).ok,'Plugin API 1.19 manifest must validate.');
+assert(!contract.validateManifest({id:'test.old',pluginType:'extension',apiVersion:'1.18.0',entry:'plugin.js',requiresCore:['io']}).ok,'Plugin API 1.18 manifest must fail explicitly after cutover.');
 
 // PRIMARY is main-only in public types and runtime.
 const primaryType=dts.match(/export interface DKDSPluginWorkspacePrimarySpec \{[^}]+\}/)?.[0]||'';
@@ -80,7 +85,7 @@ for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){
   if(!fs.existsSync(manifestPath))continue;
   const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
   assert.strictEqual(manifest.apiVersion,'1.19.0',`${dir}: first-party manifest must target Plugin API 1.19.0.`);
-  if(manifest.compatibility?.pluginApi)assert.strictEqual(manifest.compatibility.pluginApi,'^1.19.0',`${dir}: compatibility.pluginApi must target ^1.19.0.`);
+  assert(!Object.prototype.hasOwnProperty.call(manifest,'compatibility'),`${dir}: current first-party manifests must not declare compatibility ranges.`);
   const jsFiles=fs.readdirSync(path.join(root,'src/plugins',dir)).filter(name=>name.endsWith('.js'));
   for(const file of jsFiles){
     const source=fs.readFileSync(path.join(root,'src/plugins',dir,file),'utf8');

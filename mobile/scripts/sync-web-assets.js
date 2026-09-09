@@ -53,8 +53,26 @@ if (fs.existsSync(sharedAssets)) fs.cpSync(sharedAssets, path.join(out, 'assets'
 // validated Theme/Material/Coverage semantics as Electron.
 const sdkOut = path.join(out, 'sdk');
 fs.mkdirSync(sdkOut, { recursive: true });
-for (const name of ['semver-compat.js','theme-contract.js','theme-coverage-contract.js']) {
-  fs.copyFileSync(path.join(repoRoot, 'sdk', name), path.join(sdkOut, name));
+// Mobile must package the exact current SDK runtime contracts referenced by
+// src/index.html. Keep this list explicit so a future contract addition cannot
+// silently disappear from Android assets, while retired compatibility modules
+// cannot re-enter through broad directory copying.
+const currentSdkRuntime = [
+  'platform-presentation-contract.js',
+  'theme-contract.js',
+  'theme-coverage-contract.js'
+];
+const sourceIndexHtml = fs.readFileSync(path.join(source, 'index.html'), 'utf8');
+const declaredSdkRuntime = [...sourceIndexHtml.matchAll(/<script\s+src=["']\.\.\/sdk\/([^"']+\.js)["']/g)].map(match => match[1]);
+const missingDeclarations = currentSdkRuntime.filter(name => !declaredSdkRuntime.includes(name));
+const unexpectedDeclarations = declaredSdkRuntime.filter(name => !currentSdkRuntime.includes(name));
+if (missingDeclarations.length || unexpectedDeclarations.length) {
+  throw new Error(`Mobile SDK runtime contract mismatch. Missing declarations: ${missingDeclarations.join(', ') || '(none)'}; unexpected declarations: ${unexpectedDeclarations.join(', ') || '(none)'}`);
+}
+for (const name of currentSdkRuntime) {
+  const src = path.join(repoRoot, 'sdk', name);
+  if (!fs.existsSync(src)) throw new Error(`Missing current SDK runtime contract: sdk/${name}`);
+  fs.copyFileSync(src, path.join(sdkOut, name));
 }
 
 const vendor = path.join(out, 'vendor');

@@ -7,7 +7,8 @@ function renderMaximizedState(maximized){
   const active=!!maximized;
   button.textContent=active?'❐':'□';
   button.setAttribute('aria-label',active?'还原窗口':'最大化窗口');
-  button.title=active?'还原':'最大化';
+  // Native `title` is forbidden: Chromium would paint a second platform tooltip.
+  button.removeAttribute('title');
 }
 
 async function initializeWindowChrome(){

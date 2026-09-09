@@ -1,6 +1,9 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {validate:validateStyleOwnership}=require('../tools/quality/style-ownership');
+const {validate:validateSemanticStyleOwnership}=require('../tools/quality/semantic-style-ownership');
+const {validate:validateStyleOwnershipGate}=require('../tools/quality/style-ownership-gate');
 const {inspectPluginCss,collectCoreAliases}=require('../sdk/visual-contract');
 const root=path.resolve(__dirname,'..');
 const authored=[];
@@ -25,6 +28,7 @@ function structuralBalance(text,file){
   if(depth!==0)throw new Error(`${file}: unbalanced braces (${depth})`);
 }
 const violations=[];
+const styleGateReport=validateStyleOwnershipGate();
 // CSS override debt must not hide inside runtime template strings.
 const runtimeText=[];
 for(const base of ['src/core','src/app','src/plugins']){
@@ -49,6 +53,14 @@ const foundationCss=fs.existsSync(foundationPath)?fs.readFileSync(foundationPath
 const utilityCss=fs.existsSync(utilityPath)?fs.readFileSync(utilityPath,'utf8'):'';
 if(/(^|[},])\s*\.hidden\s*\{\s*display\s*:\s*none/m.test(foundationCss))violations.push('src/styles/foundation/foundation.css: global hidden state must not live below structural display rules.');
 if(!/:where\(\.hidden,\[hidden\]\)\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(utilityCss))violations.push('src/styles/utility/visibility.css: final utility layer must own .hidden/[hidden] display:none.');
+const motionOwner='src/styles/motion/recipes.css';
+for(const file of authored){
+  const rel=path.relative(root,file).replace(/\\/g,'/');
+  if(rel===motionOwner)continue;
+  const css=fs.readFileSync(file,'utf8');
+  if(/(?:^|[;{])\s*(?:transition(?:-[a-z-]+)?|animation(?:-[a-z-]+)?)\s*:/mi.test(css)||/@keyframes\b/i.test(css))
+    violations.push(`${rel}: Temporal CSS declarations belong only to ${motionOwner}; use semantic motion roles/configuration instead of local animation overrides.`);
+}
 for(const file of authored){
   const rel=path.relative(root,file).replace(/\\/g,'/');
   if(rel==='src/styles/utility/visibility.css')continue;
@@ -57,7 +69,7 @@ for(const file of authored){
 }
 if(!entry.includes('dkds.utility')||!entry.includes('styles/utility/visibility.css'))violations.push('src/core.css: final dkds.utility visibility layer is required.');
 if(entry.includes('dkds.state')||entry.includes('styles/state/visibility.css'))violations.push('src/core.css: legacy dkds.state visibility layer must not return; use the paint-free dkds.utility layer.');
-for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window','utility'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
+for(const layer of ['foundation','plugin','structure','presentation','theme','motion','platform','window','utility'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
 const superTopPath=path.join(root,'src','styles','structure','super-top-contract.css');
 if(fs.existsSync(superTopPath)){
   const superTop=fs.readFileSync(superTopPath,'utf8');
@@ -224,11 +236,11 @@ for(const name of structureFiles){
     for(const [prop] of block.decls){
       const normalized=String(prop).trim().toLowerCase();
       if(headerActionHitGeometry.test(normalized)&&/(?:\.dkds-portable-icon-action\b|\.dkds-panel-close-button\b|\.dkds-portable-placement-trigger\b|\.dkds-plot-view-action\b|\.dkds-portable-history-action\b)/.test(selector)){
-        const genericFallback=selector.startsWith('button:not(:is(');
+        const genericFallback=selector.startsWith('button:not(:is(')||selector.startsWith(':where(button):not(:where(');
         if(!genericFallback)violations.push(`src/styles/structure/${name}: portable/header action subtype "${selector}" rewrites ${normalized}. Header action hit height belongs to desktop-chrome-geometry.css and must be changed through --dkds-header-action-height.`);
       }
       if(/\.dkds-scientific-nav-tools(?:\s*>?\s*button|\b)/.test(selector)&&/^(?:height|min-height|padding|padding-block|padding-inline)$/i.test(normalized)){
-        const genericFallback=selector.startsWith('button:not(:is(');
+        const genericFallback=selector.startsWith('button:not(:is(')||selector.startsWith(':where(button):not(:where(');
         const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools>button'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
         const container=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
         if(!genericFallback&&!canonical&&!container)violations.push(`src/styles/structure/${name}: scientific floating chrome "${selector}" rewrites ${normalized}. Item height is owned by --dkds-scientific-nav-item-* / --dkds-header-action-height slots in sdk-semantic-surfaces.css.`);
@@ -294,7 +306,7 @@ for(const name of structureFiles){
 // geometry from PortableView, and centralizes interactive transform ownership.
 const schemaR7T=fs.readFileSync(path.join(structureDirFinal,'schema-and-plugin-ui.css'),'utf8');
 const workbenchR7T=fs.readFileSync(path.join(structureDirFinal,'workbench-components.css'),'utf8');
-if(!/button:not\(:is\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\)\)/.test(schemaR7T))violations.push('R7T generic button fallback must explicitly exclude Plugin Manager, Settings/Dialog and Scientific floating action owners.');
+if(!/:where\(button\):not\(:where\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\.dkds-plot-view-actions>button[\s\S]*\)\)/.test(schemaR7T))violations.push('R7T generic button fallback must stay zero-specificity and explicitly exclude specialized Core action owners.');
 if(!/:not\(\.plugin-manager-page \*\)/.test(schemaR7T))violations.push('R7T generic field fallback must exclude Plugin Manager field density.');
 for(const required of ['--dkds-plugin-manager-toolbar-action-height','--dkds-plugin-card-action-height','--dkds-plugin-theme-action-height'])if(!schemaR7T.includes(required))violations.push(`R7T Plugin Manager action geometry is missing ${required}.`);
 for(const required of ['--dkds-settings-header-action-size','--dkds-settings-footer-action-height','--dkds-dialog-action-height'])if(!workbenchR7T.includes(required))violations.push(`R7T Settings/Dialog action geometry is missing ${required}.`);
@@ -315,7 +327,7 @@ for(const name of presentationFiles){
   const css=fs.readFileSync(path.join(presentationDir,name),'utf8');
   for(const block of ruleBlocks(css)){
     if(!/(?:hover|active|focus-visible)/.test(block.selector)||!/(?:button|toolbar-btn|activity-tab|dialog-action|plugin-manager)/.test(block.selector))continue;
-    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/presentation/${name}: interactive control state "${block.selector}" owns transform. Standard control motion belongs to theme/contract.css.`);
+    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/presentation/${name}: interactive control state "${block.selector}" owns transform. Standard control motion belongs to motion/recipes.css.`);
   }
 }
 // R7U segmented shell ownership: the two persistent top-shell command
@@ -334,7 +346,7 @@ for(const name of fs.readdirSync(path.join(root,'src','styles','theme')).filter(
   const css=fs.readFileSync(path.join(root,'src','styles','theme',name),'utf8');
   for(const block of ruleBlocks(css)){
     if(!/(?:hover|active|focus-visible)/.test(block.selector)||!/(?:button|toolbarAction|toolbar-btn|activity-tab)/.test(block.selector))continue;
-    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/theme/${name}: standard control state "${block.selector}" owns transform. Motion recipes belong to theme/contract.css.`);
+    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/theme/${name}: standard control state "${block.selector}" owns transform. Motion recipes belong to motion/recipes.css.`);
   }
 }
 
@@ -464,5 +476,8 @@ if(fs.existsSync(plugins))for(const e of fs.readdirSync(plugins,{withFileTypes:t
   const audit=inspectPluginCss(cssRaw,{path:`src/plugins/${e.name}/plugin.css`,aliases});
   for(const issue of audit.issues)violations.push(`${issue.code}: ${issue.message}`);
 }
+try{validateStyleOwnership();}catch(error){violations.push(`rendered-property style ownership: ${error.message}`);}
+let semanticOwnerReport=null;
+try{semanticOwnerReport=validateSemanticStyleOwnership();}catch(error){violations.push(`semantic component style ownership: ${error.message}`);}
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
-console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);
+console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active, rendered-property ownership unique, semantic owner contracts=${semanticOwnerReport?.contracts||0}.`);

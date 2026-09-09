@@ -49,9 +49,9 @@ try{
     'Application install/override normalization must reject the invalid facade before the plugin can be persisted or activated.'
   );
 
-  // Simulate an already-installed invalid managed override from v3.62.5. On
-  // startup it must be quarantined by normalization and the bundled baseline
-  // must remain the effective package instead of crashing its TOP renderer.
+  // Simulate an already-installed invalid managed override. Current-contract-only
+  // startup must report it as blocking for that built-in id; it must not silently
+  // revive the bundled implementation as a compatibility fallback.
   const overrideDir=runtime.ensurePluginOverrideDirectory();
   const overrideFile=path.join(overrideDir,'com.dkds.tools.pulse-sampler.dkplugin');
   fs.writeFileSync(overrideFile,JSON.stringify(badPackage,null,2)+'\n','utf8');
@@ -60,7 +60,7 @@ try{
   assert.strictEqual(overrideRead.errors.length,1,'Invalid installed override must surface one actionable package error.');
   assert.match(overrideRead.errors[0].error,/ctx\.ui\.pluginWorkspace/);
   assert.match(overrideRead.errors[0].error,/ctx\.ui\.workspaceSurface/);
-  assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,bundled.manifest.version,'Invalid override must fall back to the bundled baseline.');
+  assert.throws(()=>runtime.currentPluginPackage('com.dkds.tools.pulse-sampler'),/failed current-contract validation/,'Invalid installed override must block current package resolution instead of silently falling back to bundled code.');
   const correctedPackage=JSON.parse(JSON.stringify(bundled));
   correctedPackage.manifest.version=overrideVersion;
   const correctedPlan=runtime.pluginInstallPlan(correctedPackage);
@@ -89,9 +89,10 @@ try{
 const packageJsonText=fs.readFileSync(path.join(root,'package.json'),'utf8');
 assert(packageJsonText.includes('sdk/source-contract.js'),'Packaged desktop builds must include the shared SDK source contract used by plugin-package normalization.');
 const desktopMain=fs.readFileSync(path.join(root,'desktop','main.js'),'utf8');
-assert(desktopMain.includes("'PLUGIN_SOURCE_CONTRACT'")&&desktopMain.includes('showCompatibility'),'Source-contract install failures must not be disguised as Plugin API/app-version compatibility errors.');
+const desktopPackage=fs.readFileSync(path.join(root,'desktop','plugin-package.js'),'utf8');
+assert(desktopPackage.includes("error.code='PLUGIN_SOURCE_CONTRACT'")&&!desktopMain.includes('showCompatibility')&&!desktopMain.includes('PLUGIN_INCOMPATIBLE'),'Source-contract install failures must stay explicit current-contract errors without compatibility UI/gates.');
 const smoke=fs.readFileSync(path.join(root,'src','diagnostics','automation-smoke-cases.js'),'utf8');
 assert(smoke.includes('diag.overrides?.errors')&&smoke.includes("source:row?.source||'override'"),'Automation package diagnostics must include invalid managed overrides without misclassifying them as activation failures.');
 const runtimeApi=fs.readFileSync(path.join(root,'src','core','plugins','kernel','modules','plugin-api.js'),'utf8');
 assert(runtimeApi.includes('workspaceSurface:')&&!runtimeApi.includes('pluginWorkspace: Object.freeze'),'Plugin API runtime must keep one canonical public workspace facade; do not add a pluginWorkspace compatibility alias.');
-console.log('v3.62.6 SDK public API source contract + invalid override fallback PASS');
+console.log('v3.62.6 SDK public API source contract + strict invalid-override handling PASS');

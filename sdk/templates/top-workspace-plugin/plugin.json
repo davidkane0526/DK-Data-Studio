@@ -10,6 +10,14 @@
   "styles": [
     "plugin.css"
   ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
   "enabled": true,
   "order": 910,
   "description": "Reference external TOP workbench with a dedicated window, scoped project sources and bounded scientific layout.",
@@ -59,9 +67,5 @@
     "accepts": [
       "science.transport.iv"
     ]
-  },
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
   }
 }

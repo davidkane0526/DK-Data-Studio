@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 
 
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.24.0');
+assert.equal(contract.sdkVersion,'1.28.0');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.67.10');
+assert.equal(contract.minimumAppVersion,'3.68.36');
 
 const scientific=read('src/core/scientific/plot-runtime.js');
 const renderer=read('src/core/scientific/d3-chart-renderer.js');
@@ -31,7 +31,7 @@ assert(renderer.includes('const rawValue=z?.[yi]?.[xi];if(!finite(rawValue))cont
 assert(renderer.includes('return manual?scale:scale.nice()'),'Explicit Cartesian ranges must remain exact while automatic ranges use nice ticks.');
 assert(renderer.includes("value!==null&&value!==undefined&&!(typeof value==='string'&&!value.trim())"),'D3 missing scalar values must not silently become numeric zero.');
 assert(terUtils.includes("if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;"),'TER optional display limits must preserve automatic heatmap scaling.');
-assert(css.includes('--dkds-scientific-nav-item-width:25px')&&css.includes('--dkds-scientific-nav-item-height:24px')&&css.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'),'Scientific floating navigation chrome must consume the shared slot-owned 25 × 24 px Core hit-region geometry for drag and actions.');
+assert(css.includes('--dkds-scientific-nav-item-width:28px')&&css.includes('--dkds-scientific-nav-item-height:28px')&&css.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'),'Scientific floating navigation chrome must consume the shared slot-owned 28 × 28 px Core hit-region geometry for drag and actions.');
 
 // scalarFieldSpec is pure enough to execute without a browser. Null/blank optional
 // limits must stay absent so the D3 renderer derives the real matrix extent.
@@ -44,7 +44,8 @@ assert(!Object.prototype.hasOwnProperty.call(spec.traces[0],'zmin'),'Null zmin m
 assert(!Object.prototype.hasOwnProperty.call(spec.traces[0],'zmax'),'Blank zmax must mean automatic color scale, not zero.');
 assert.deepEqual(spec.traces[0].z,[[1,2,3],[4,5,6]]);
 
-const rendererContext={window:{},console,structuredClone,queueMicrotask};
+const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
+const rendererContext={window:{DKDSStyleGate:styleGate},console,structuredClone,queueMicrotask,DKDSStyleGate:styleGate};
 rendererContext.globalThis=rendererContext;
 vm.createContext(rendererContext);
 vm.runInContext(renderer,rendererContext,{filename:'d3-chart-renderer.js'});

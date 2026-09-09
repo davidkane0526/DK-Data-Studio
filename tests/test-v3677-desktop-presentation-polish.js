@@ -35,13 +35,13 @@ const componentRuntime=read('src/core/theme/component-appearance.js');
 const themeRuntime=read('src/core/theme/runtime.js');
 const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 assert(/\.window-control-btn\{[^}]*width:30px[^}]*height:30px/s.test(nav),'desktop window controls must use compact 30 px hit chrome instead of full-titlebar slabs.');
-assert(/\[data-dkds-component-identity="toolbarAction"\]:is\(\.dkds-panel-close-button,\.window-control-close\):hover:not\(:disabled\)\{[^}]*box-shadow:none/s.test(component),'window close hover must remain a canonical shadow-free ToolbarAction state.');
+assert(/\[data-dkds-component-identity="toolbarAction"\]:is\(\.dkds-panel-close-button,\.window-control-close\):hover:not\(:disabled\)\{[^}]*box-shadow:none/s.test(component)&&/:where\([\s\S]*?\[data-dkds-component-identity="panelHeader"\][\s\S]*?\[data-dkds-component-identity="inspectorHeader"\][\s\S]*?\) \[data-dkds-component-identity="toolbarAction"\]\.dkds-panel-close-button:hover:not\(:disabled\)\{[^}]*box-shadow:var\(--dkds-titlebar-action-shadow-hover\)/s.test(component),'close actions must remain shadow-free by default while any semantic panel/inspector titlebar supplies the same canonical hover elevation as its peer actions.');
 assert(nav.includes('--dkds-command-padding-inline:11px')&&/plugin-section-start\{[^}]*margin-left:10px/s.test(nav)&&/plugin-section-start::before\{[^}]*top:10px[^}]*bottom:10px/s.test(nav)&&!/plugin-section-start(?:[^{}]*)\{[^}]*(?:padding|height|line-height)\s*:/s.test(nav),'context section dividers must own only external spacing/separator composition; the canonical 11 px action inset belongs to the command geometry slot.');
 assert(componentRuntime.includes('function contextFor(target)')&&componentRuntime.includes('function roleFor(target)')&&componentRuntime.includes('ThemeContract.resolveComponentAppearance')&&themeRuntime.includes('contexts:{grouped:')&&themeRuntime.includes('standalone:{variants:')&&!component.includes('--dkds-shell-action-halo'),'Theme 3.10 must resolve standalone/grouped depth through Core composition instead of hard-coded topbar halo/suppression CSS.');
 
 const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(desktopChrome.includes('.dkds-panel-close-button{')&&component.includes('[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}'),'Core must expose one close-button geometry owner in Structure and one appearance owner in Component Appearance.');
+assert(desktopChrome.includes('.dkds-panel-close-button{')&&component.includes('[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:6px}'),'Core must expose one close-button geometry owner in Structure and one appearance owner in Component Appearance.');
 assert(!integrated.includes('body.dkds-modern-ui .dkds-panel-close-button{'),'Integrated command Theme CSS must not reclaim shared close-button appearance.');
 const status=read('src/plugins/status-monitor/plugin.js');
 const devtools=read('src/core/plugins/devtools.js');

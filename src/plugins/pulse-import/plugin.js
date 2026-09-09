@@ -1,10 +1,5 @@
 (() => {
-  DKDSPlugins.define({
-    id:'builtin.pulse-import',pluginType:'data',name:'Pulse Text Import',version:'1.0.0',apiVersion:'1.19.0',
-    requiresCore:['science','data.model','data.importers'],pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
-    description:'Typed pulse/read text importer for the shared Import Workbench.',source:'builtin',order:18,
-    capabilities:['data.importer','data.inspector']
-  }, async ctx => {
+  DKDSPlugins.define({"id":"builtin.pulse-import","name":"Pulse Text Import","version":"1.0.0","apiVersion":"1.19.0","requiresCore":["science","data.model","data.importers"],"entry":"plugin.js","enabled":true,"order":18,"description":"Typed pulse/read text importer. Parses raw instrument tables into a shared science.pulse.trace DataTable without owning file dialogs or workbench UI.","capabilities":["data.importer","data.inspector"],"pluginType":"data","scripts":["plugin.js"],"pluginDependencies":[{"id":"builtin.scientific-data-contracts"}]}, async ctx => {
     const A=ctx.science;
     const D=ctx.data.model;
     const safeKey=(header,index)=>{

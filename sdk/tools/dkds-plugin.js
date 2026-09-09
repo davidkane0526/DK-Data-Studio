@@ -6,14 +6,15 @@ const vm=require('vm');
 const {inspectWorkspaceStyles}=require('../layout-contract');
 const ThemeContract=require('../theme-contract');
 const ThemeCoverageContract=require('../theme-coverage-contract');
-const SemverCompat=require('../semver-compat');
 const {inspectPluginSource,usesThemeRegister}=require('../source-contract');
 const {inspectPluginCss,collectCoreAliases}=require('../visual-contract');
+const PlatformPresentation=require('../platform-presentation-contract');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
 const schema=JSON.parse(fs.readFileSync(path.join(sdkRoot,contract.manifestSchema),'utf8'));
 const requirements=new Set(schema.properties.requiresCore.items.enum);
+const currentManifestFields=new Set(Object.keys(schema.properties||{}));
 const API=contract.pluginApiVersion;
 const TRANSLUCENT_THEME_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass']);
 const GLASS_FILL_FLOORS=Object.freeze({chrome:.58,sidebar:.62,elevated:.62,popover:.78,floating:.58});
@@ -52,7 +53,7 @@ function readManifest(folder){
   return JSON.parse(fs.readFileSync(file,'utf8'));
 }
 function referencedFiles(manifest,folder){
-  const set=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]);
+  const set=new Set([manifest.entry,...(manifest.scripts||[]),...(manifest.styles||[]),...PlatformPresentation.referencedPlatformAssets(manifest),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]);
   if(fs.existsSync(path.join(folder,'README.md')))set.add('README.md');
   return [...set].map(relFile);
 }
@@ -85,20 +86,22 @@ function staticInjectedStyleRows(source){
 }
 async function validate(folder){
   folder=path.resolve(folder);const m=readManifest(folder);const errors=[];
+  for(const field of Object.keys(m||{}))if(!currentManifestFields.has(field))errors.push(`unsupported current-contract manifest field: ${field}`);
+  for(const field of ['id','name','version','apiVersion','entry','pluginType','requiresCore'])if(m[field]===undefined||m[field]===null||m[field]==='')errors.push(`${field} is required`);
   if(!pluginId(m.id))errors.push(`invalid id: ${m.id||'(missing)'}`);if(String(m.id||'').startsWith('builtin.'))errors.push('builtin.* is reserved for application plugins');
   if(!String(m.name||'').trim())errors.push('name is required');if(!version(m.version))errors.push(`version must be semver: ${m.version||'(missing)'}`);
   const pluginTypes=new Set(schema.properties.pluginType?.enum||[]);if(!pluginTypes.has(String(m.pluginType||'')))errors.push(`invalid pluginType: ${m.pluginType||'(missing)'}`);
   if(m.apiVersion!==API)errors.push(`new SDK plugins must target apiVersion ${API}`);if(!Array.isArray(m.requiresCore))errors.push('requiresCore must be an array');
   else {const seen=new Set();for(const r of m.requiresCore){if(!requirements.has(r))errors.push(`unknown Core requirement: ${r}`);if(seen.has(r))errors.push(`duplicate Core requirement: ${r}`);seen.add(r);}}
-  if(m.compatibility!==undefined){
-    if(!m.compatibility||typeof m.compatibility!=='object'||Array.isArray(m.compatibility))errors.push('compatibility must be an object.');
-    else{
-      for(const field of ['app','pluginApi','themeContract']){
-        if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))errors.push(`compatibility.${field} must be a valid semver range.`);
-      }
-    }
-  }
-  if(Array.isArray(m.pluginDependencies))for(const dep of m.pluginDependencies){if(!dep||typeof dep!=='object'||!pluginId(dep.id)||!SemverCompat.validateRange(dep.range))errors.push(`invalid plugin dependency range: ${dep?.id||'(missing)'}@${dep?.range||'(missing)'}`);}
+  const platformCheck=PlatformPresentation.validate(m);
+  errors.push(...platformCheck.errors);
+  if(m.pluginType==='theme'&&m.platformPresentation!==undefined)errors.push('Theme plugins must not declare platformPresentation; use Theme Contract tokens.');
+  for(const sharedStyle of (Array.isArray(m.styles)?m.styles:[])){
+    const file=path.join(folder,String(sharedStyle||''));
+    if(!fs.existsSync(file))continue;
+    const css=fs.readFileSync(file,'utf8');
+    if(/data-dkds-host\s*=|react-native-client/.test(css))errors.push(`${sharedStyle} contains platform-host selectors; move platform-only presentation into platformPresentation.desktop/mobile assets.`);
+  }  if(Array.isArray(m.pluginDependencies))for(const dep of m.pluginDependencies){const keys=dep&&typeof dep==='object'&&!Array.isArray(dep)?Object.keys(dep):[];if(!dep||typeof dep!=='object'||Array.isArray(dep)||keys.some(key=>key!=='id')||!pluginId(dep.id))errors.push(`invalid current-contract plugin dependency: ${dep?.id||'(missing)'}`);}
   let files=[];try{files=referencedFiles(m,folder);}catch(e){errors.push(e.message);}
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
   const declared=new Set(m.requiresCore||[]);const rawSource=files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n');const source=stripComments(rawSource);
@@ -127,9 +130,6 @@ async function validate(folder){
     if(m.workspace||m.window)errors.push('Theme plugins must not own workspace or window contracts.');
     if(m.algorithmProvider===true)errors.push('Theme plugins cannot be Algorithm Providers.');
     if(!usesThemeRegister(rawSource))errors.push('Theme plugins must register at least one profile through ctx.ui.theme.register(...) or a stable ctx.ui.theme alias.');
-    if(!m.compatibility?.app)errors.push('Theme plugins must declare compatibility.app.');
-    if(!m.compatibility?.themeContract)errors.push('Theme plugins must declare compatibility.themeContract.');
-    else if(SemverCompat.validateRange(m.compatibility.themeContract)&&!SemverCompat.satisfies(ThemeContract.version,m.compatibility.themeContract))errors.push(`Theme plugin requires Theme Contract ${m.compatibility.themeContract}, but this SDK provides ${ThemeContract.version}.`);
   }
   const topWorkspace=m?.workspace?.role==='top';
   if(m.pluginType==='tool'&&!topWorkspace){
@@ -167,20 +167,20 @@ async function validate(folder){
   if(usesScientificRenderer&&m?.window&&topWorkspace&&!windowDependencies.has('scientific-renderer'))errors.push('Dedicated workspace using ScientificPlot must declare "scientific-renderer" in window.dependencies. Renderer vendors are Core implementation details.');
   if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.19 workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
 
-  const entry=path.join(folder,m.entry||'plugin.js');
+  const entry=path.join(folder,m.entry);
   if(fs.existsSync(entry)){
     try{
-      let runtime=null,runtimeActivate=null;const sandbox={DKDSPlugins:{define:(manifest,activate)=>{runtime=manifest;runtimeActivate=activate;}}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:m.entry||'plugin.js',timeout:1000});
+      let runtime=null,runtimeActivate=null;const sandbox={DKDSPlugins:{define:(manifest,activate)=>{runtime=manifest;runtimeActivate=activate;}}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:m.entry,timeout:1000});
       if(!runtime)errors.push('entry did not call DKDSPlugins.define(...)');
       else {
-        for(const key of ['id','name','version','apiVersion','pluginType'])if(String(runtime[key]??'')!==String(m[key]??''))errors.push(`runtime manifest ${key} does not match plugin.json`);
-        for(const key of ['requiresCore','capabilities','workspace','window','data','algorithmCategories','algorithmProvides','compatibility','pluginDependencies'])if(!same(runtime[key]??(Array.isArray(m[key])?[]:null),m[key]??(Array.isArray(runtime[key])?[]:null)))errors.push(`runtime manifest ${key} does not match plugin.json`);
-        if(Boolean(runtime.algorithmProvider)!==Boolean(m.algorithmProvider))errors.push('runtime manifest algorithmProvider does not match plugin.json');
+        for(const key of Object.keys(runtime||{}))if(!currentManifestFields.has(key))errors.push(`runtime manifest contains unsupported current-contract field: ${key}`);
+        for(const key of schema.required||[])if(runtime[key]===undefined||runtime[key]===null||runtime[key]==='')errors.push(`runtime manifest ${key} is required`);
+        for(const key of currentManifestFields)if(!same(runtime[key],m[key]))errors.push(`runtime manifest ${key} does not match plugin.json`);
         if(m.pluginType==='theme'){
           if(typeof runtimeActivate!=='function')errors.push('Theme plugin must provide an activation function.');
           else{
             const registered=[];
-            const themeApi=Object.freeze({contractVersion:ThemeContract.version,supports:feature=>{const key=String(feature||'');return key==='renderer.profilePolicy'||key==='renderer.materialContexts'||key==='renderer.thinGlass'||key==='renderer.recipes.clear'||key==='renderer.recipes.thin-glass'||key==='renderer.recipes.soft-glass'||key==='renderer.recipes.liquid-glass'||ThemeContract.supports(feature);},rendererCapabilities:()=>Object.freeze({version:'sdk-validator',recipeInstalled:false,engine:{},renderer:{backdropBlur:false,saturation:false,noise:false,glassEdge:false,innerHighlight:false,specularHighlight:false,webMaterial:false,nativeBlur:false,thinGlass:true,materialContexts:true},recipes:{clear:true,'thin-glass':true,'soft-glass':true,'liquid-glass':true},roles:Object.fromEntries(ThemeContract.materialRoles().map(role=>[role,true])),materialContexts:ThemeContract.materialContexts()}),materialContexts:ThemeContract.materialContexts,componentContexts:ThemeContract.componentContexts,materialFor:(role,context)=>ThemeContract.resolveMaterialContext(ThemeContract.validateProfile({modes:{light:{},dark:{}}}).material,role,context),recipeFor:()=> 'clear',register:(id,spec)=>{const local=String(id||'').trim();if(!local)throw new Error('Theme profile id required.');const normalized=ThemeContract.validateProfile(spec,`theme.register(${local})`);registered.push({id:local,profile:normalized});return Object.freeze({id:local,dispose(){}});},activate:()=>'',current:()=>({mode:'light',profile:'builtin.default'}),list:()=>[],tokens:()=>({}),materialRoles:ThemeContract.materialRoles,appearanceRoles:()=>({roles:{},components:{}}),appearanceComponents:()=>({}),consumption:()=>({version:'1.0.0',contractVersion:ThemeContract.version,components:{},semantic:{primary:'accent',secondary:'accentAlt',info:'info',success:'success',warning:'warning',danger:'danger'},scientific:{mode:'fallback-only',precedence:['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']}}),scientific:()=>({seriesPalette:[],mode:'fallback-only',precedence:['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']})});
+            const themeApi=Object.freeze({contractVersion:ThemeContract.version,materialContexts:ThemeContract.materialContexts,componentContexts:ThemeContract.componentContexts,materialFor:(role,context)=>ThemeContract.resolveMaterialContext(ThemeContract.validateProfile({modes:{light:{},dark:{}}}).material,role,context),recipeFor:()=> 'clear',register:(id,spec)=>{const local=String(id||'').trim();if(!local)throw new Error('Theme profile id required.');const normalized=ThemeContract.validateProfile(spec,`theme.register(${local})`);registered.push({id:local,profile:normalized});return Object.freeze({id:local,dispose(){}});},activate:()=>'',current:()=>({mode:'light',profile:'builtin.default'}),list:()=>[],tokens:()=>({}),materialRoles:ThemeContract.materialRoles,appearanceRoles:()=>({roles:{},components:{}}),appearanceComponents:()=>({}),consumption:()=>({version:'1.0.0',contractVersion:ThemeContract.version,components:{},semantic:{primary:'accent',secondary:'accentAlt',info:'info',success:'success',warning:'warning',danger:'danger'},scientific:{mode:'fallback-only',precedence:['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']}}),scientific:()=>({seriesPalette:[],mode:'fallback-only',precedence:['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']})});
             const activationResult=runtimeActivate(Object.freeze({ui:Object.freeze({theme:themeApi}),manifest:Object.freeze(m),apiVersion:API}));
             if(activationResult&&typeof activationResult.then==='function')await Promise.race([activationResult,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Theme activation validation timed out.')),1000))]);
             if(!registered.length)errors.push('Theme plugins must register at least one valid Theme Profile during SDK validation.');

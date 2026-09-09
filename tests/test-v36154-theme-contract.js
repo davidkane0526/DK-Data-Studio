@@ -3,6 +3,8 @@ const fs=require('fs');
 const path=require('path');
 const {readCoreCss}=require('./css-source');
 const assert=require('assert');
+const {readMobileShell}=require('./mobile-shell-source');
+const {readMobileApp}=require('./mobile-app-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
@@ -18,15 +20,16 @@ const sdkSchema=json('sdk/plugin-manifest.schema.json');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
 const presentationModel=read('src/core/ui/modules/presentation/model.js');
 const presenters=read('src/core/ui/modules/presentation/presenters.js');
-const mobileShell=read('mobile/src/Shell.tsx');
-const mobileApp=read('mobile/App.tsx');
+const mobileShell=readMobileShell(root);
+const mobileApp=readMobileApp(root);
 const apiTypes=read('sdk/plugin-api.d.ts');
 const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
+const themeTemplateManifest=json('sdk/templates/theme-profile/plugin.json');
 
 for(const token of ["version:'3.10.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
   assert(theme.includes(token),`Theme Runtime 3.6 contract missing ${token}`);
 }
-assert(materialRenderer.includes("const VERSION='3.10.0'")&&materialRenderer.includes("'thin-glass'"),'current material renderer must own Theme 3.5 recipes through Renderer 3.6 rather than Theme Runtime.');
+assert(materialRenderer.includes("const VERSION='3.11.0'")&&materialRenderer.includes("'thin-glass'"),'current Gate-aware Material Renderer must own material recipes rather than Theme Runtime.');
 for(const token of ['--dkui-divider:','--dkui-control-border:','--dkui-scrollbar:','--surface-sidebar:','--control-border:']){
   assert(css.includes(token),`semantic visual token missing ${token}`);
 }
@@ -49,7 +52,7 @@ assert((sdkSchema.properties?.requiresCore?.items?.enum||[]).includes('ui.theme'
 assert(presentationModel.includes('tokens:window.DKDSTheme?.tokens?.()||{}')&&presenters.includes('themeTokens:core.theme.tokens')&&mobileApp.includes('themeTokens: row.themeTokens')&&mobileApp.includes('paletteFor(shell.theme, shell.themeTokens || {})'),'Theme profile tokens must cross the Core Presentation Model / Mobile Presenter bridge.');
 assert(mobileShell.includes('divider: string')&&mobileShell.includes('controlBorder: string')&&mobileShell.includes('nativeThemeColor(tokens.divider')&&mobileShell.includes('nativeThemeColor(tokens.controlBorder'),'Native mobile chrome must consume the same semantic divider/control-border channels as desktop themes.');
 assert(apiTypes.includes('DKDSThemeCapability')&&apiTypes.includes('theme:DKDSThemeCapability'),'Standalone SDK types must expose the additive ui.theme authoring contract.');
-assert(themeTemplate.includes("ctx.ui.theme.register('default'")&&themeTemplate.includes("pluginType:'theme'"),'SDK must ship a first-class semantic theme-plugin template.');
+assert(themeTemplate.includes("ctx.ui.theme.register('default'")&&themeTemplateManifest.pluginType==='theme'&&themeTemplateManifest.entry==='plugin.js','SDK must ship a first-class semantic theme-plugin template.');
 const pluginFiles=[];const walk=dir=>{for(const ent of fs.readdirSync(path.join(root,dir),{withFileTypes:true})){const rel=path.join(dir,ent.name);if(ent.isDirectory())walk(rel);else if(/\.(?:js|css)$/.test(ent.name))pluginFiles.push(rel);}};walk('src/plugins');
 for(const rel of pluginFiles){const source=read(rel);assert(!/background(?:-color)?\s*:\s*(?:#fff(?:fff)?\b|rgba\(255\s*,\s*255\s*,\s*255)/i.test(source),`first-party plugin theme surface must be semantic, found light-only background in ${rel}`);}
 console.log('Theme Contract 3.8 semantic ownership checks passed.');

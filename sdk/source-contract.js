@@ -11,6 +11,7 @@ const PUBLIC_UI_FACADES=Object.freeze({
   series:'ui.series',
   legends:'ui.legend-groups',
   groupPlots:'ui.group-plots',
+  groupArea:'ui.group-area',
   tooltips:'ui.tooltips',
   plotViews:'ui.plot-views',
   tables:'ui.table',

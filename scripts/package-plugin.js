@@ -32,9 +32,13 @@ if (builtinId && (!folder.startsWith(builtinRoot) || folder.includes(`${path.sep
 }
 
 const referenced = new Set([
-  manifest.entry || 'plugin.js',
+  manifest.entry,
   ...(manifest.scripts || []),
   ...(manifest.styles || []),
+  ...(manifest.platformPresentation?.desktop?.styles || []),
+  ...(manifest.platformPresentation?.desktop?.scripts || []),
+  ...(manifest.platformPresentation?.mobile?.styles || []),
+  ...(manifest.platformPresentation?.mobile?.scripts || []),
   ...(manifest.window?.runtime ? [manifest.window.runtime] : []),
   ...(manifest.window?.scripts || []),
   ...(fs.existsSync(path.join(folder, 'README.md')) ? ['README.md'] : [])

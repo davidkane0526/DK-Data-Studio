@@ -6,6 +6,10 @@
 
 ```text
 React Native / Expo native shell
+  ├─ model / theme
+  ├─ header / navigation / status components
+  ├─ sheets / native service UI
+  └─ one shell style owner
         ↓
 react-native-webview
         ↓
@@ -71,7 +75,7 @@ DKDS.cmd android-build
 → 校验 APK 内置移动运行时并输出大小与 SHA-256
 ```
 
-Gradle 在部分 Windows 安全软件环境下可能偶发拒绝启动一次性 Java 子进程。构建入口会保留外部缓存并自动重试一次；重试仅临时移除 JVM 代理参数并使用兼容 JVM 配置，结束后恢复原设置。
+Gradle 的 `--no-daemon` **并不保证完全不创建子 JVM**。Gradle 只有在当前 Launcher JVM 同时满足 Build JVM 的不可变参数和 instrumentation-agent 状态时，才会真正原进程执行。部分 Windows 安全策略会拒绝 Java→Java 子进程，从而出现 `CreateProcess error=5`。当前构建入口会读取生成的 `android/gradle.properties` 对齐 JVM 内存/编码参数，并在该次 no-daemon 构建中显式设置 `org.gradle.internal.instrumentation.agent=false` 与 `org.gradle.daemon=false`，使未加载 Gradle javaagent 的 wrapper client 与请求上下文保持一致。随后会先执行一次真实的 `gradlew help --no-daemon --info` 预检；只有确认没有出现 single-use Daemon 或 `Starting process 'Gradle build daemon'` 后才进入 `assembleRelease`。代理和共享 Gradle 缓存保持不变，临时 JVM 环境在构建结束后恢复。
 
 输出：
 
@@ -243,9 +247,9 @@ Android 被 Core 标识为 Native Client，不会被当作 LAN Web Client。APK 
 
 ## 紧凑壳层与文件访问
 
-竖屏顶部合并为一个横向栏：先显示文字式项目标签和 `+`，再通过分隔线显示插件的 PRIMARY/PRIME/SUB 与操作按钮；空间不足时自动收纳到“更多”，数据/参数固定在最右侧。绿色 Core 就绪圆点不再单独占位，载入状态由加载页和底部状态栏表达。
+竖屏顶部合并为一个横向栏：先显示文字式项目标签和裸 `+`，随后固定显示 **导入 / 数据 / 工作区 / 分析 / 插件** 五个一级文字入口，再通过分隔线显示当前插件的 PRIMARY/PRIME/SUB 与操作按钮；插件按钮空间不足时自动收纳到“更多”。撤销 / 恢复 / 参数属于右侧当前工作区工具，不参与五个一级入口的顺序。绿色 Core 就绪圆点不再单独占位，载入状态由加载页和底部状态栏表达。
 
-底部五个原生导航按钮只显示图标并水平对齐，位于原桌面状态栏上方；原状态栏中的插件/系统按钮保持为可横向滚动的完整单元，展开面板置于 PRIME 之上。数据/参数抽屉支持点外部收起和拖边调宽，PRIME 左、右、底部面板使用加宽的边缘触摸分隔条调节尺寸。“更多”中提供按项目隔离的操作历史、撤销与重做。按住后向上或向左滑动分别映射为方向键上、方向键左。Android 手势导航指示条由沉浸式系统栏配置隐藏。
+底部不再重复建立一排原生导航按钮；全局一级入口统一归入顶部文字命令栏。原桌面状态栏中的插件/系统状态项保留，并按可用宽度执行优先级收纳，展开面板置于 PRIME 之上。数据/参数抽屉支持点外部收起和拖边调宽，PRIME 左、右、底部面板使用加宽的边缘触摸分隔条调节尺寸。“更多”中提供按项目隔离的操作历史、撤销与重做。按住后向上或向左滑动分别映射为方向键上、方向键左。Android 手势导航指示条由沉浸式系统栏配置隐藏。
 
 文件选择使用 Android Storage Access Framework 的系统文档界面，可显示设备文件、第三方文件管理器和已注册的云盘提供方。选择结果保留为 provider URI 句柄并申请持久读取权限，渲染器按需读取并在完成后释放；新建与保存使用可持久写入的文档 URI。系统选择器属于交互式长事务，不再使用会在用户选文件期间误报的 15 秒命令超时。
 ## v3.67.0 Presentation Architecture

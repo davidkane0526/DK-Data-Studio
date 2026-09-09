@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { normalizeRelativeFile } = require('./plugin-package');
+const PlatformPresentation=require('../sdk/platform-presentation-contract');
 
 const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'scientific-renderer',
@@ -36,6 +37,7 @@ const CORE_REQUIREMENT_WINDOW_DEPENDENCIES = Object.freeze({
   'data.transforms':Object.freeze(['scientific-transform-runtime']),
   'analysis.algorithms':Object.freeze(['scientific-algorithm-runtime']),
   'data.model':Object.freeze(['data-model']),
+  'data.artifacts':Object.freeze(['data-model']),
   'data.formula':Object.freeze(['formula-engine']),
   'workflow':Object.freeze(['workflow-engine']),
   'state':Object.freeze(['state-store'])
@@ -131,7 +133,7 @@ function normalizeBuiltinAlgorithmProvider(appPath, pluginFolder, manifest) {
   const categories=normalizeAlgorithmCategories(manifest.algorithmCategories);
   if(!categories.length)return null;
   const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
-  const entry=safeRelativeFile(pluginDir,manifest.entry||'plugin.js','algorithm provider entry');
+  const entry=safeRelativeFile(pluginDir,manifest.entry,'algorithm provider entry');
   const scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
     const file=safeRelativeFile(pluginDir,raw,'algorithm provider script');
@@ -156,7 +158,7 @@ function readBuiltinAlgorithmProviders(appPath) {
 function normalizePackagedAlgorithmProvider(pkg,source='external') {
   const manifest=pkg?.manifest||{};if(manifest.algorithmProvider!==true)return null;
   const categories=normalizeAlgorithmCategories(manifest.algorithmCategories);if(!categories.length)return null;
-  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged algorithm provider entry'),scripts=[];
+  const entry=packageFile(pkg,manifest.entry,'packaged algorithm provider entry'),scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){const file=packageFile(pkg,raw,'packaged algorithm provider script');if(!scripts.includes(file))scripts.push(file);}if(!scripts.includes(entry))scripts.push(entry);
   return Object.freeze({source,pluginId:String(manifest.id||''),version:String(manifest.version||''),entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories,packageFiles:Object.freeze({...pkg.files})});
 }
@@ -171,7 +173,7 @@ function resolveAlgorithmProviders(appPath,externalPackages=[],overridePackages=
 function normalizeBuiltinThemeProvider(appPath, pluginFolder, manifest) {
   if(String(manifest?.pluginType||'').trim().toLowerCase()!=='theme')return null;
   const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
-  const entry=safeRelativeFile(pluginDir,manifest.entry||'plugin.js','theme provider entry');
+  const entry=safeRelativeFile(pluginDir,manifest.entry,'theme provider entry');
   const scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
     const file=safeRelativeFile(pluginDir,raw,'theme provider script');
@@ -200,7 +202,7 @@ function readBuiltinThemeProviders(appPath) {
 function normalizePackagedThemeProvider(pkg,source='external') {
   const manifest=pkg?.manifest||{};
   if(String(manifest.pluginType||'').trim().toLowerCase()!=='theme')return null;
-  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged theme provider entry');
+  const entry=packageFile(pkg,manifest.entry,'packaged theme provider entry');
   const scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
     const file=packageFile(pkg,raw,'packaged theme provider script');if(!scripts.includes(file))scripts.push(file);
@@ -275,10 +277,11 @@ function readBuiltinPluginWindows(appPath) {
       if (!activity || !/^[A-Za-z0-9._-]+$/.test(activity)) continue;
 
       try {
-        const entry = safeRelativeFile(pluginDir, manifest.entry || 'plugin.js', 'plugin window entry');
+        const entry = safeRelativeFile(pluginDir, manifest.entry, 'plugin window entry');
         const runtime = windowSpec.runtime
           ? safeRelativeFile(pluginDir, windowSpec.runtime, 'plugin window runtime')
           : '';
+        const presentationAssets=PlatformPresentation.assetsFor(manifest,'desktop');
         next.set(activity, Object.freeze({
           source:'builtin',
           mode:'dedicated',
@@ -291,7 +294,11 @@ function readBuiltinPluginWindows(appPath) {
           activity,
           dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
           scripts:normalizePluginScripts(pluginDir, windowSpec.scripts),
+          packageScripts:normalizePluginScripts(pluginDir,Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry]),
           styleSources:normalizeBuiltinPluginStyles(pluginDir,manifest.styles),
+          platformScripts:normalizePluginScripts(pluginDir,presentationAssets.platformScripts),
+          platformStyleSources:normalizeBuiltinPluginStyles(pluginDir,presentationAssets.platformStyles),
+          platformPresentationMode:presentationAssets.mode,
           algorithmProvider:manifest.algorithmProvider===true,
           algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
           title:String(windowSpec.title || manifest.name || activity),
@@ -327,7 +334,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
   const activity=String(windowSpec?.activity||'').trim();
   if(!activity)return null;
   if(!/^[A-Za-z0-9._-]+$/.test(activity))throw new Error(`Invalid packaged plugin window activity: ${activity}`);
-  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged plugin entry');
+  const entry=packageFile(pkg,manifest.entry,'packaged plugin entry');
   const runtime=windowSpec.runtime?packageFile(pkg,windowSpec.runtime,'packaged plugin window runtime'):'';
   const scripts=[];
   for(const raw of (Array.isArray(windowSpec.scripts)?windowSpec.scripts:[])){
@@ -345,6 +352,17 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     const file=packageFile(pkg,raw,'packaged plugin package style');
     if(!styles.includes(file))styles.push(file);
   }
+  const presentationAssets=PlatformPresentation.assetsFor(manifest,'desktop');
+  const platformScripts=[];
+  for(const raw of (presentationAssets.platformScripts||[])){
+    const file=packageFile(pkg,raw,'packaged desktop presentation script');
+    if(!platformScripts.includes(file))platformScripts.push(file);
+  }
+  const platformStyles=[];
+  for(const raw of (presentationAssets.platformStyles||[])){
+    const file=packageFile(pkg,raw,'packaged desktop presentation style');
+    if(!platformStyles.includes(file))platformStyles.push(file);
+  }
   return Object.freeze({
     source,
     mode:'dedicated',
@@ -360,6 +378,9 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
     packageScripts:Object.freeze(packageScripts),
     styles:Object.freeze(styles),
+    platformScripts:Object.freeze(platformScripts),
+    platformStyles:Object.freeze(platformStyles),
+    platformPresentationMode:presentationAssets.mode,
     packageFiles:Object.freeze({...pkg.files}),
     // Carry the canonical package manifest into the dedicated renderer. The
     // owner renderer already merges this metadata after evaluating plugin.js;

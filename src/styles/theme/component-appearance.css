@@ -175,13 +175,45 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible
   outline:2px solid color-mix(in srgb,var(--dkui-accent) 42%,transparent);
   outline-offset:1px;
 }
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn){
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.project-tab-close,.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn){
   --dkds-ca-action-surface:transparent;--dkds-ca-action-border:transparent;--dkds-ca-action-shadow:none
 }
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"].project-tab-close{border-radius:50%}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}
+/* Plot/group/portable title bars are one integrated command strip. Every
+   placement, menu, export, collapse and close action consumes one restrained
+   quiet hover surface/depth regardless of its nested ActionGroup or semantic
+   subtype. Close keeps only danger foreground, never a different elevation. */
+body.dkds-modern-ui :where(
+  [data-dkds-component-identity="panelHeader"],
+  [data-dkds-component-identity="inspectorHeader"]
+) [data-dkds-component-identity="toolbarAction"]{
+  --dkds-titlebar-action-radius:6px;
+  --dkds-titlebar-action-surface-hover:var(--dkui-component-toolbar-action-variant-quiet-surface-hover,color-mix(in srgb,var(--dkui-control-hover) 62%,transparent));
+  --dkds-titlebar-action-border-hover:transparent;
+  --dkds-titlebar-action-shadow-hover:0 1px 2px color-mix(in srgb,var(--dkui-text) 18%,transparent);
+  --dkds-ca-action-surface-hover:var(--dkds-titlebar-action-surface-hover);
+  --dkds-ca-action-border-hover:var(--dkds-titlebar-action-border-hover);
+  --dkds-ca-action-shadow-hover:var(--dkds-titlebar-action-shadow-hover);
+  border-radius:var(--dkds-titlebar-action-radius);
+}
+body.dkds-modern-ui :where(
+  [data-dkds-component-identity="panelHeader"],
+  [data-dkds-component-identity="inspectorHeader"]
+) [data-dkds-component-identity="toolbarAction"]:hover:not(:disabled){
+  background:var(--dkds-titlebar-action-surface-hover);
+  border-color:var(--dkds-titlebar-action-border-hover);
+  border-radius:var(--dkds-titlebar-action-radius);
+  box-shadow:var(--dkds-titlebar-action-shadow-hover);
+}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"].project-tab-close{border-radius:5px}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:6px}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-panel-close-button,.window-control-close):hover:not(:disabled){
   background:color-mix(in srgb,var(--dkui-danger) 8%,transparent);color:var(--dkui-danger);-webkit-text-fill-color:currentColor;border-color:transparent;box-shadow:none
+}
+body.dkds-modern-ui :where(
+  [data-dkds-component-identity="panelHeader"],
+  [data-dkds-component-identity="inspectorHeader"]
+) [data-dkds-component-identity="toolbarAction"].dkds-panel-close-button:hover:not(:disabled){
+  background:var(--dkds-titlebar-action-surface-hover);color:var(--dkui-danger);-webkit-text-fill-color:currentColor;border-color:var(--dkds-titlebar-action-border-hover);box-shadow:var(--dkds-titlebar-action-shadow-hover)
 }
 
 /* Headers: identity, not visual location, determines the appearance slot. */
@@ -394,4 +426,17 @@ body.dkds-modern-ui #dkdsThemePanel [data-dkds-component-identity="menuItem"].dk
    old profile so light/dark/profile paint can never overlap for a frame. */
 html.dkds-theme-switching body.dkds-modern-ui *,
 html.dkds-theme-switching body.dkds-modern-ui *::before,
-html.dkds-theme-switching body.dkds-modern-ui *::after{transition-duration:0s;transition-delay:0s}
+
+/* Row-style selection uses fill, not a second focus rim. This belongs to
+   canonical selection appearance so list rows never expose the generic card border. */
+body.dkds-modern-ui .dkds-selection-item.dkds-selection-row:is(.dkds-selection-focused,.dkds-selection-selected,[aria-selected="true"]){
+  border-color:transparent;
+  outline:none;
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-selection-item.dkds-selection-row:focus-visible{outline:none}
+/* Number fields keep keyboard stepping but never expose Chromium's native
+   beveled spinner, which is visually incompatible with themed Core fields. */
+body.dkds-modern-ui input[type="number"]{appearance:textfield;-moz-appearance:textfield}
+body.dkds-modern-ui input[type="number"]::-webkit-inner-spin-button,
+body.dkds-modern-ui input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}

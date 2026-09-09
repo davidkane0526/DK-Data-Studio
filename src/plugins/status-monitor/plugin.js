@@ -1,15 +1,9 @@
 (() => {
-  DKDSPlugins.define({
-    id:'builtin.status-monitor',pluginType:'foundation',
-    name:'Status Monitor',
-    version:'1.3.0',
-    apiVersion:'1.19.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar","ui.theme"],
-    order:7,systemCritical:true,
-    description:'Unified bottom status bar for theme selection, memory, DevTools and LAN state.',
-    capabilities:['ui.status-bar','system.runtime-status','lan.web-status','ui.theme']
-  }, async ctx => {
+  DKDSPlugins.define({"id":"builtin.status-monitor","name":"Status Monitor","version":"1.3.3","apiVersion":"1.19.0","requiresCore":["runtime","events","status","services","workspace","ui.dom","ui.status-bar","ui.theme"],"entry":"plugin.js","enabled":true,"order":7,"description":"Unified bottom status bar for theme selection, runtime memory, DevTools, and LAN web service state.","capabilities":["ui.status-bar","system.runtime-status","lan.web-status","ui.theme"],"pluginType":"foundation","systemCritical":true,"platformPresentation":{"desktop":{"mode":"adaptive"},"mobile":{"mode":"adaptive"}},"scripts":["theme-layout.js","plugin.js"]}, async ctx => {
     const runtimeService=ctx.services.require('runtime');
     const lanService=ctx.services.require('lanWeb');
+    const ThemeLayout=globalThis.DKDSStatusMonitorThemeLayout;
+    if(!ThemeLayout?.positionThemePanel)throw new Error('Status Monitor theme-layout.js must load before plugin.js.');
     const formatBytes=value=>{
       const n=Number(value)||0;
       if(n<=0)return '—';
@@ -31,21 +25,24 @@
     const themeProfiles=()=>Array.isArray(window.DKDSTheme?.listProfiles?.())?window.DKDSTheme.listProfiles():[];
     const themeLabel=()=>themeProfiles().find(row=>String(row?.id||'')===themeProfile())?.label||themeProfile();
 
+    let themeAnchor=null;
     const themeItem=ctx.ui.statusBar.add({
       id:'theme',side:'right',order:10,icon:'◐',label:'主题',state:'',className:'compact theme-status-item',
-      title:'选择主题',onClick:()=>toggleThemePanel()
+      title:'选择主题',onClick:context=>toggleThemePanel(context)
     });
 
     const themePanel=ctx.ui.dom.create('aside',{className:'dkds-theme-panel dkds-fixed-popover dkds-material-role-popover hidden',attrs:{id:'dkdsThemePanel','aria-label':'主题选择','data-dkds-portable-chrome':'false','data-dkds-portable':'false'},html:`
       <div class="dkds-theme-panel-head dkds-fixed-popover-header">
         <div class="dkds-theme-panel-heading"><strong>主题</strong><span id="dkdsThemeCurrentLabel">—</span></div>
-        <button id="dkdsThemePanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button>
+        <div class="dkds-theme-panel-head-actions dkds-integrated-action-group">
+          <button id="dkdsThemeSettingsBtn" class="dkds-icon-button dkds-theme-plugin-settings hidden" type="button" title="主题参数" aria-label="主题参数">⚙</button>
+          <button id="dkdsThemePanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button>
+        </div>
       </div>
       <div class="dkds-theme-panel-body">
         <div id="dkdsThemeProfileList" class="dkds-theme-profile-list" role="listbox" aria-label="主题配置"></div>
         <div class="dkds-theme-mode-row">
           <span>外观</span>
-          <button id="dkdsThemeSettingsBtn" class="dkds-theme-settings-inline hidden" type="button">参数</button>
           <div class="dkds-integrated-action-group dkds-material-role-control dkds-theme-mode-switch" role="group" aria-label="亮暗模式">
             <button type="button" data-dkds-theme-mode="light">亮色</button>
             <button type="button" data-dkds-theme-mode="dark">暗色</button>
@@ -73,16 +70,10 @@
     }
     const hideThemePanel=()=>themePanel.classList.add('hidden');
     function positionThemePanel(){
-      if(themePanel.classList.contains('hidden'))return;
-      const anchor=themeItem.element;if(!anchor?.getBoundingClientRect)return;
-      const a=anchor.getBoundingClientRect(),box=themePanel.getBoundingClientRect(),margin=8;
-      const edgeAligned=(a.left+a.width/2)>window.innerWidth/2?a.right-box.width:a.left;
-      const left=Math.max(margin,Math.min(window.innerWidth-box.width-margin,edgeAligned));
-      themePanel.style.left=`${Math.round(left)}px`;themePanel.style.right='auto';
-      themePanel.style.bottom=`calc(var(--dkds-statusbar-height,28px) + 6px)`;
+      ThemeLayout.positionThemePanel({dom:ctx.ui.dom,panel:themePanel,anchor:themeAnchor,anchorElement:themeItem.element,viewport:window});
     }
-    const showThemePanel=()=>{renderThemePanel();themePanel.classList.remove('hidden');ctx.ui.dom.frame(positionThemePanel);};
-    function toggleThemePanel(){if(themePanel.classList.contains('hidden'))showThemePanel();else hideThemePanel();}
+    const showThemePanel=context=>{themeAnchor=context?.anchorRect||null;renderThemePanel();themePanel.classList.remove('hidden');ctx.ui.dom.frame(positionThemePanel);};
+    function toggleThemePanel(context){if(themePanel.classList.contains('hidden'))showThemePanel(context);else hideThemePanel();}
 
     ctx.ui.dom.on(themeList,'click',event=>{
       const button=event.target.closest?.('[data-theme-profile]');if(!button)return;
@@ -101,7 +92,7 @@
         <div class="dkds-memory-panel-title"><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
         <div class="dkds-integrated-action-group"><button id="dkdsMemoryPanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button></div>
       </div>
-      <div class="dkds-memory-panel-note">${ctx.runtime.isNativeClient?'按 Android 应用进程 PSS 统计实际驻留内存':'按 Electron 进程 / 插件窗口统计工作集内存'}</div>
+      <div class="dkds-memory-panel-note">按当前宿主提供的工作集 / 驻留内存统计</div>
       <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`});
     ctx.ui.dom.append(ctx.ui.dom.query('#app')||ctx.ui.dom.root(),panel);
     const componentList=ctx.ui.dom.query('#dkdsMemoryComponentList',panel);
@@ -122,12 +113,13 @@
         const used=Number(row.workingSetBytes)||0;
         const ratio=total>0?Math.max(3,Math.min(100,used/total*100)):0;
         const meta=[String(row.type||''),Number(row.pid)>0?`PID ${row.pid}`:''].filter(Boolean).join(' · ');
-        return `<div class="dkds-memory-component-row" data-plugin-id="${esc(row.pluginId||'')}">
+        return `<div class="dkds-memory-component-row" data-plugin-id="${esc(row.pluginId||'')}" data-memory-ratio="${ratio.toFixed(1)}">
           <div class="dkds-memory-component-main"><span class="dkds-memory-component-name">${esc(row.label||row.type||'组件')}</span><strong>${formatBytes(used)}</strong></div>
           <div class="dkds-memory-component-meta">${esc(meta)}</div>
-          <div class="dkds-memory-meter"><span style="width:${ratio.toFixed(1)}%"></span></div>
+          <div class="dkds-memory-meter"><span></span></div>
         </div>`;
       }).join('');
+      ctx.ui.dom.all('[data-memory-ratio]',componentList).forEach(row=>ctx.ui.dom.style(ctx.ui.dom.query('.dkds-memory-meter > span',row),{width:`${Number(row.dataset.memoryRatio)||0}%`}));
     }
     const showMemoryPanel=()=>{renderMemoryPanel();panel.classList.remove('hidden');scheduleMemoryHide();};
 
@@ -137,7 +129,7 @@
     });
 
     const devToolsItem=ctx.ui.statusBar.add({
-      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||ctx.runtime.isNativeClient||typeof runtimeService.toggleDevTools!=='function',
+      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient,
       title:'打开当前窗口 DevTools',
       onClick:async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();devToolsItem.update({state:'ok',title:'打开 Plugin DevTools；Chromium 可从面板内进入'});return;}const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
     });

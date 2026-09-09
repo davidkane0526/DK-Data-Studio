@@ -1,21 +1,45 @@
 (() => {
   DKDSPlugins.define({
-    id:'com.example.raw-prominence-detector',
-    name:'Raw Prominence Detector Example',
-    version:'1.0.0',
-    apiVersion:'1.19.0',
-    pluginType:'algorithm',
-    source:'external',
-    enabled:false,
-    order:500,
-    description:'SDK example: raw-sample local maxima with a prominence threshold.',
-    requiresCore:['analysis.algorithms'],
-    capabilities:['analysis.algorithm','analysis.peak-detector'],
-    algorithmProvider:true,
-    algorithmCategories:['peak-detector'],
-    algorithmProvides:[{category:'peak-detector',id:'example-raw-prominence-v1',version:'1.0.0',title:'Example · Raw Prominence'}],
-    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
-  }, async ctx => {
+  "id": "com.example.raw-prominence-detector",
+  "name": "Raw Prominence Detector Example",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "pluginType": "algorithm",
+  "entry": "plugin.js",
+  "styles": [
+    "style.css"
+  ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "shared"
+    }
+  },
+  "enabled": false,
+  "order": 500,
+  "description": "External versioned peak-detector SDK example. Not intended to outperform the built-in robust detector.",
+  "capabilities": [
+    "analysis.algorithm",
+    "analysis.peak-detector"
+  ],
+  "requiresCore": [
+    "analysis.algorithms"
+  ],
+  "algorithmProvider": true,
+  "algorithmCategories": [
+    "peak-detector"
+  ],
+  "algorithmProvides": [
+    {
+      "category": "peak-detector",
+      "id": "example-raw-prominence-v1",
+      "version": "1.0.0",
+      "title": "Example · Raw Prominence"
+    }
+  ]
+}, async ctx => {
     const parameterSchema={
       fields:[
         {id:'minProminence',type:'number',label:'最小相对 prominence',default:0.08,min:0,max:1,step:0.01},

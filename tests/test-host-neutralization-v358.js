@@ -21,7 +21,7 @@ for(const token of [
 ])assert(!make.includes(token),`Canonical Core project output contains domain field ${token}`);
 assert(make.includes("format:'dk-data-studio-project'")&&make.includes('schemaVersion:3'),'Core must emit canonical project schema v3.');
 assert(make.includes('dataModel:')&&make.includes('plugins:')&&make.includes('host:{'),'Canonical project must persist generic data model + plugin + host namespaces.');
-assert(make.includes('panelLayout:{'),'Generic panel layout must live under the host namespace.');
+assert(!make.includes('panelLayout:{'),'Retired app-owned panel layout must not survive in current host state; current surfaces are owned by PluginWorkspace/PortableView.');
 
 const configStart=pluginHost.indexOf('window.DKDSPlugins.configure({');
 const configEnd=pluginHost.indexOf('\n  });',configStart);

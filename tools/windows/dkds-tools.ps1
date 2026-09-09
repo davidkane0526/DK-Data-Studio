@@ -5,7 +5,8 @@
   [string]$OutputPath = '',
   [string]$ProxyMode = '',
   [string]$Proxy = '',
-  [string]$NoProxy = ''
+  [string]$NoProxy = '',
+  [switch]$KeepConsoleOpen
 )
 
 Set-StrictMode -Version 2.0
@@ -180,14 +181,29 @@ function Clear-GradleProxyOptions {
   else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
 }
 
-function Add-GradleProxyOption([string]$Name,[string]$Value) {
+function Remove-GradleJvmSystemProperty([string]$Name) {
+  if (-not $env:GRADLE_OPTS) { return }
+  $escaped=[Regex]::Escape($Name)
+  $pattern='(?i)(?<!\S)(?:"-D' + $escaped + '=(?:\\.|[^"])*"|-D' + $escaped + '=\S+)'
+  $cleaned=[Regex]::Replace($env:GRADLE_OPTS,$pattern,' ')
+  $cleaned=[Regex]::Replace($cleaned,'\s+',' ').Trim()
+  if ($cleaned) { $env:GRADLE_OPTS=$cleaned }
+  else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+}
+
+function Add-GradleJvmSystemProperty([string]$Name,[string]$Value) {
   if ([string]::IsNullOrWhiteSpace($Value)) { return }
+  Remove-GradleJvmSystemProperty $Name
   $rawToken = "-D$Name=$Value"
-  # gradlew.bat expands GRADLE_OPTS through cmd.exe. Java nonProxyHosts uses
-  # pipes, which cmd otherwise interprets as a shell pipeline.
+  # gradlew.bat expands GRADLE_OPTS through cmd.exe. Quote values containing
+  # spaces or cmd metacharacters so a single JVM system property reaches Java.
   $token = if ($rawToken -match '[\s&|<>^()]') { '"' + $rawToken.Replace('"','\"') + '"' } else { $rawToken }
   if (-not $env:GRADLE_OPTS) { $env:GRADLE_OPTS = $token; return }
-  if ($env:GRADLE_OPTS -notlike ("*" + $token + "*")) { $env:GRADLE_OPTS = ($env:GRADLE_OPTS.Trim() + ' ' + $token) }
+  $env:GRADLE_OPTS = ($env:GRADLE_OPTS.Trim() + ' ' + $token)
+}
+
+function Add-GradleProxyOption([string]$Name,[string]$Value) {
+  Add-GradleJvmSystemProperty $Name $Value
 }
 
 function Apply-GradleProxy([string]$HttpProxy,[string]$HttpsProxy,[string]$NoProxyValue) {
@@ -611,6 +627,63 @@ function Ensure-ElectronBinary([string]$ModulesPath) {
   throw "Electron binary installation failed after retries. npm package downloads are cached separately from Electron's binary ZIP. Cache=$env:electron_config_cache Mirror=$env:ELECTRON_MIRROR Error=$($lastError.Exception.Message)"
 }
 
+function Clear-StaleDependencyStaging([string]$SlotRoot) {
+  if (-not $SlotRoot -or -not (Test-Path -LiteralPath $SlotRoot -PathType Container)) { return }
+  foreach ($candidate in @(Get-ChildItem -LiteralPath $SlotRoot -Directory -Filter '*.staging-*' -ErrorAction SilentlyContinue)) {
+    $match=[Regex]::Match($candidate.Name,'\.staging-(\d+)$')
+    if (-not $match.Success) { continue }
+    $ownerPid=[int]$match.Groups[1].Value
+    if (Get-Process -Id $ownerPid -ErrorAction SilentlyContinue) { continue }
+    Write-Host "INFO removing stale dependency staging left by dead process $ownerPid`: $($candidate.FullName)" -ForegroundColor Yellow
+    try { Remove-NodeModulesPath $candidate.FullName }
+    catch { Write-Host "WARN could not remove stale dependency staging: $($_.Exception.Message)" -ForegroundColor Yellow }
+  }
+}
+
+function Get-AvailableBytesForPath([string]$PathValue) {
+  if ([string]::IsNullOrWhiteSpace($PathValue)) { return $null }
+  try {
+    $full=[IO.Path]::GetFullPath($PathValue)
+    $rootPath=[IO.Path]::GetPathRoot($full)
+    if ([string]::IsNullOrWhiteSpace($rootPath)) { return $null }
+    $drive=[IO.DriveInfo]::new($rootPath)
+    if (-not $drive.IsReady) { return $null }
+    return [Int64]$drive.AvailableFreeSpace
+  } catch { return $null }
+}
+
+function Format-StorageBytes([Nullable[Int64]]$Bytes) {
+  if ($null -eq $Bytes) { return 'unknown' }
+  if ($Bytes.Value -ge 1GB) { return ('{0:N2} GiB' -f ($Bytes.Value / 1GB)) }
+  if ($Bytes.Value -ge 1MB) { return ('{0:N0} MiB' -f ($Bytes.Value / 1MB)) }
+  return ('{0:N0} KiB' -f ($Bytes.Value / 1KB))
+}
+
+function Get-LatestNpmDebugLog([DateTime]$SinceUtc) {
+  if (-not $env:npm_config_cache) { return $null }
+  $logRoot=Join-Path $env:npm_config_cache '_logs'
+  if (-not (Test-Path -LiteralPath $logRoot -PathType Container)) { return $null }
+  $logs=@(Get-ChildItem -LiteralPath $logRoot -File -Filter '*-debug-0.log' -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTimeUtc -ge $SinceUtc } |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1)
+  if ($logs.Count -eq 0) { return $null }
+  return $logs[0]
+}
+
+function Test-NpmLogNoSpace([string]$LogPath) {
+  if (-not $LogPath -or -not (Test-Path -LiteralPath $LogPath -PathType Leaf)) { return $false }
+  try { return [bool](Select-String -LiteralPath $LogPath -Pattern 'ENOSPC|no space left on device' -Quiet) }
+  catch { return $false }
+}
+
+function New-DependencyNoSpaceMessage([string]$StagingPath,[Nullable[Int64]]$AvailableBytes,[string]$LogPath='') {
+  $message="npm ran out of storage while extracting desktop dependencies. Staging=$StagingPath Available=$(Format-StorageBytes $AvailableBytes)."
+  if ($LogPath) { $message += " npmLog=$LogPath." }
+  $message += ' Free space or move Developer Toolbox > 路径与缓存 > shared cache root / node_modules root to a larger drive, then retry. Stale .staging-* directories from dead installs are cleaned automatically.'
+  return $message
+}
+
 function Install-SharedDependencyEntry([string]$Dir=$Root) {
   [void](Require-Command 'node' 'Install Node.js first.')
   [void](Require-Command 'npm.cmd' 'Install Node.js first.')
@@ -628,6 +701,7 @@ function Install-SharedDependencyEntry([string]$Dir=$Root) {
 
   $slotRoot = Split-Path $entry -Parent
   New-Item -ItemType Directory -Force -Path $slotRoot | Out-Null
+  Clear-StaleDependencyStaging $slotRoot
 
   if (Test-Path -LiteralPath $entry) {
     Write-Host "INFO removing incomplete shared dependency cache: $entry" -ForegroundColor Yellow
@@ -652,7 +726,21 @@ function Install-SharedDependencyEntry([string]$Dir=$Root) {
       @('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund','--package-lock=false')
     }
     if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
-    Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $staging
+    $installStartedAt=[DateTime]::UtcNow.AddSeconds(-2)
+    $availableBefore=Get-AvailableBytesForPath $staging
+    if ($null -ne $availableBefore -and $availableBefore -lt 512MB) {
+      throw (New-DependencyNoSpaceMessage -StagingPath $staging -AvailableBytes $availableBefore)
+    }
+    try {
+      Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $staging
+    } catch {
+      $latestLog=Get-LatestNpmDebugLog -SinceUtc $installStartedAt
+      if ($latestLog -and (Test-NpmLogNoSpace $latestLog.FullName)) {
+        $availableAfter=Get-AvailableBytesForPath $staging
+        throw (New-DependencyNoSpaceMessage -StagingPath $staging -AvailableBytes $availableAfter -LogPath $latestLog.FullName)
+      }
+      throw
+    }
 
     $stagingModules = Join-Path $staging 'node_modules'
     if (-not (Test-Path -LiteralPath $stagingModules -PathType Container)) {
@@ -1488,6 +1576,94 @@ function Invoke-AndroidPrebuild([string]$AndroidMobile) {
   Invoke-Step -FilePath 'npx.cmd' -Arguments $arguments -WorkingDirectory $AndroidMobile
 }
 
+function Get-AndroidGradleBuildJvmArgs([string]$AndroidDirectory) {
+  $propertiesPath=Join-Path $AndroidDirectory 'gradle.properties'
+  $jvmArgs=$null
+  if (Test-Path -LiteralPath $propertiesPath -PathType Leaf) {
+    foreach ($line in Get-Content -LiteralPath $propertiesPath) {
+      if ($line -match '^\s*org\.gradle\.jvmargs\s*=\s*(.+?)\s*$') {
+        $jvmArgs=$Matches[1].Trim()
+        break
+      }
+    }
+  }
+  if ([string]::IsNullOrWhiteSpace($jvmArgs)) {
+    # Gradle's documented fallback. React Native normally emits an explicit
+    # 2 GiB / 512 MiB value, but the toolbox remains valid if the template moves.
+    $jvmArgs='-Xmx512m -XX:MaxMetaspaceSize=384m'
+  }
+
+  # gradlew.bat itself starts the client with a 64 MiB minimum heap and UTF-8.
+  # Include those immutable settings in the requested build JVM so --no-daemon
+  # can execute the build in the already-running client instead of forking a
+  # disposable Java child process.
+  if ($jvmArgs -notmatch '(?i)(?:^|\s)-Xms\S+') { $jvmArgs += ' -Xms64m' }
+  if ($jvmArgs -notmatch '(?i)(?:^|\s)-Dfile\.encoding=\S+') { $jvmArgs += ' -Dfile.encoding=UTF-8' }
+  return ([Regex]::Replace($jvmArgs,'\s+',' ').Trim())
+}
+
+function Enable-AndroidGradleDirectNoDaemon([string]$AndroidDirectory) {
+  $jvmArgs=Get-AndroidGradleBuildJvmArgs $AndroidDirectory
+
+  # Gradle's in-process compatibility check has TWO independent owners:
+  #   1) immutable JVM args; and
+  #   2) instrumentation-agent status.
+  #
+  # v3.68.13 closed only (1). The generated Gradle wrapper client does not
+  # start with Gradle's instrumentation javaagent, while DaemonParameters asks
+  # for that agent by default. Even with byte-for-byte JVM-argument parity,
+  # Gradle therefore still rejected the launcher JVM and tried to create a
+  # single-use daemon. On the user's locked-down Windows host that nested
+  # java.exe launch is rejected with CreateProcess error=5.
+  #
+  # For a --no-daemon in-process build, keep the wrapper client uninstrumented
+  # and make the requested build context explicitly uninstrumented as well.
+  # This aligns the agent-status criterion instead of trying to attach an
+  # internal Gradle javaagent from the toolbox.
+  $env:JAVA_OPTS=$jvmArgs
+  Add-GradleJvmSystemProperty 'org.gradle.jvmargs' $jvmArgs
+  Add-GradleJvmSystemProperty 'org.gradle.internal.instrumentation.agent' 'false'
+  Add-GradleJvmSystemProperty 'org.gradle.daemon' 'false'
+
+  Write-Host 'Gradle process mode: direct client JVM requested (JVM + agent parity enforced)' -ForegroundColor DarkGray
+  Write-Host ("Gradle build JVM  : {0}" -f $jvmArgs) -ForegroundColor DarkGray
+  Write-Host 'Gradle agent mode : disabled for this no-daemon build' -ForegroundColor DarkGray
+  return $jvmArgs
+}
+
+function Test-AndroidGradleInProcess([string]$AndroidDirectory) {
+  Write-SectionTitle 'Verify Gradle direct no-daemon process contract'
+  $arguments=@('help','--no-daemon','--max-workers=1','--info')
+  Write-Host ('> .\gradlew.bat ' + ($arguments -join ' ')) -ForegroundColor DarkGray
+
+  Push-Location $AndroidDirectory
+  try {
+    $lines=@()
+    & '.\gradlew.bat' @arguments 2>&1 | ForEach-Object {
+      $lines += [string]$_
+    }
+    $exitCode=$LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+
+  $text=($lines -join "`n")
+  $forkRequested=($text -match 'single-use Daemon process will be forked') -or ($text -match "Starting process 'Gradle build daemon'")
+  if ($forkRequested) {
+    $relevant=@($lines | Where-Object {
+      $_ -match 'launcher JVM|single-use Daemon|Gradle build daemon|Wanted:|Actual:|Agent status|CreateProcess|Could not start'
+    })
+    if (-not $relevant.Count) { $relevant=@($lines | Select-Object -Last 24) }
+    throw ("Gradle no-fork preflight failed: Gradle still requested a child build daemon after JVM + instrumentation-agent parity. `n" + ($relevant -join "`n"))
+  }
+  if ($null -ne $exitCode -and $exitCode -ne 0) {
+    $tail=@($lines | Select-Object -Last 30)
+    throw ("Gradle no-fork preflight exited with code $exitCode before APK compilation. `n" + ($tail -join "`n"))
+  }
+
+  Write-Host 'Gradle no-fork preflight: PASS (project help executed without a child Gradle build daemon).' -ForegroundColor Green
+}
+
 function Test-AndroidApkArtifact([string]$Path) {
   $resolved=[IO.Path]::GetFullPath($Path)
   if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) { throw "Android APK was not generated: $resolved" }
@@ -1510,6 +1686,32 @@ function Test-AndroidApkArtifact([string]$Path) {
   Write-Host ("SHA-256: {0}" -f $hash) -ForegroundColor Green
 }
 
+function Invoke-AndroidReleaseGradleBuild([string]$AndroidDirectory) {
+  # Both android-build and android-run must use the same Gradle process contract.
+  # Keeping this in one owner prevents the connected-device path from silently
+  # reintroducing the single-use daemon that the release-packaging path forbids.
+  $savedJavaOptions=$env:JAVA_OPTS
+  $savedGradleOptions=$env:GRADLE_OPTS
+  try {
+    [void](Enable-AndroidGradleDirectNoDaemon -AndroidDirectory $AndroidDirectory)
+    Test-AndroidGradleInProcess -AndroidDirectory $AndroidDirectory
+    Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
+      'assembleRelease',
+      '--no-daemon',
+      '--max-workers=4',
+      '-PreactNativeArchitectures=arm64-v8a',
+      '--stacktrace'
+    ) -WorkingDirectory $AndroidDirectory
+  } catch {
+    throw "Android Gradle release build failed in direct no-daemon mode. $($_.Exception.Message)"
+  } finally {
+    if ($null -ne $savedJavaOptions -and $savedJavaOptions -ne '') { $env:JAVA_OPTS=$savedJavaOptions }
+    else { Remove-Item Env:JAVA_OPTS -ErrorAction SilentlyContinue }
+    if ($null -ne $savedGradleOptions -and $savedGradleOptions -ne '') { $env:GRADLE_OPTS=$savedGradleOptions }
+    else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+  }
+}
+
 function Build-AndroidRelease {
   Show-EffectiveBuildCaches -VerifyNpm
   [void](Ensure-JavaToolchain -AutoProvision $true)
@@ -1525,39 +1727,11 @@ function Build-AndroidRelease {
   Write-SectionTitle 'Build release APK'
   $env:NODE_ENV='production'
   # Android delivery targets current arm64 devices. Building all four React Native
-  # ABIs needlessly multiplies the native/C++ cold-build cost. --no-daemon keeps
-  # Gradle from reusing or retaining a background daemon after this invocation.
+  # ABIs needlessly multiplies the native/C++ cold-build cost. The shared Gradle
+  # release owner below also enforces JVM + instrumentation-agent parity before
+  # either packaging or connected-device installation may compile the APK.
   $androidDirectory=Join-Path $androidMobile 'android'
-  try {
-    Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
-      'assembleRelease',
-      '--no-daemon',
-      '--max-workers=4',
-      '-PreactNativeArchitectures=arm64-v8a',
-      '--stacktrace'
-    ) -WorkingDirectory $androidDirectory
-  } catch {
-    $firstGradleFailure=$_
-    Write-Host 'WARN Gradle release build failed once. Retrying with the same external caches and generated project.' -ForegroundColor Yellow
-    Start-Sleep -Seconds 2
-    $savedGradleOptions=$env:GRADLE_OPTS
-    Clear-GradleProxyOptions
-    try {
-      Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
-        'assembleRelease',
-        '--no-daemon',
-        '--max-workers=4',
-        '-PreactNativeArchitectures=arm64-v8a',
-        '-Dorg.gradle.jvmargs=',
-        '--stacktrace'
-      ) -WorkingDirectory $androidDirectory
-    } catch {
-      throw "Android Gradle release build failed twice. First=$($firstGradleFailure.Exception.Message) Retry=$($_.Exception.Message)"
-    } finally {
-      if ($savedGradleOptions) { $env:GRADLE_OPTS=$savedGradleOptions }
-      else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
-    }
-  }
+  Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDirectory
   New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
   $src = Join-Path $androidMobile 'android\app\build\outputs\apk\release\app-release.apk'
   if (-not (Test-Path $src)) { throw "Release APK was not generated: $src" }
@@ -1649,13 +1823,7 @@ try {
       try {
         $env:NODE_ENV='production'
         $androidDir=Join-Path $androidMobile 'android'
-        Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
-          'assembleRelease',
-          '--no-daemon',
-          '--max-workers=4',
-          '-PreactNativeArchitectures=arm64-v8a',
-          '--stacktrace'
-        ) -WorkingDirectory $androidDir
+        Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDir
         $runApk=Join-Path $androidDir 'app\build\outputs\apk\release\app-release.apk'
         Test-AndroidApkArtifact -Path $runApk
         Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$runApk)
@@ -1726,5 +1894,10 @@ try {
 } catch {
   Write-Host ''
   Write-Host ('FAILED: ' + $_.Exception.Message) -ForegroundColor Red
+  if ($KeepConsoleOpen) {
+    Write-Host ''
+    Write-Host 'Developer Toolbox kept this console open so the failure above remains visible.' -ForegroundColor Yellow
+    return
+  }
   exit 1
 }

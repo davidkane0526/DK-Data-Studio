@@ -6,16 +6,21 @@ const {refreshActivityVisibility}=require('../activity/shell');
 const {registerActivity}=require('../contributions/ui');
 const {createToolbarButton, registerCommand, runCommand, registerContribution}=require('../commands/toolbar');
 const {pluginTypeOf}=require('../manifest');
+const {pluginHostView}=require('../host-facade');
 
 
-  function addStyle(pluginId, id, cssText) {
+  function addStyle(pluginId, id, cssText, options={}) {
     const el = document.createElement('style');
     el.dataset.pluginId = pluginId;
     el.dataset.pluginStyle = id;
+    const requestedLayer=String(options?.layer||'dkds.plugin').trim();
+    const layer=requestedLayer==='dkds.plugin-platform'?'dkds.plugin-platform':'dkds.plugin';
+    el.dataset.pluginStyleLayer=layer;
     const css = String(cssText || '');
-    el.textContent = `@layer dkds.plugin {\n${css}\n}`;
-    // Plugin styles have one explicit cascade owner. They no longer depend on
-    // activation order or on being inserted before/after a particular Core file.
+    el.textContent = `@layer ${layer} {\n${css}\n}`;
+    // Shared plugin paint and platform presentation paint have explicit, ordered
+    // cascade owners. Public ctx.ui.styles.add(...) remains in dkds.plugin; only
+    // the package/presenter loader may opt into dkds.plugin-platform.
     document.head.appendChild(el);
     return addCleanup(pluginId, () => el.remove());
   }
@@ -35,23 +40,27 @@ const {pluginTypeOf}=require('../manifest');
     if(embeddedSuper&&pageActivity){
       return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
     }
-    const header=page.querySelector('.analysis-page-header');
-    if(!header){
-      if(pageActivity){
-        return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
-      }
-      return null;
-    }
+    // A page-local standard slot is authoritative and works in both the main
+    // shell and dedicated activity windows. Dedicated windows intentionally do
+    // not own the main shell's `analysis` toolbar, so Core must never assume
+    // that mount exists merely because the page has an activity id.
     let slot=page.querySelector('[data-dkds-slot="workbench-import"]');
-    if(!slot){
+    const header=page.querySelector('.analysis-page-header');
+    if(!slot&&header){
       slot=document.createElement('div');slot.dataset.dkdsSlot='workbench-import';
       const pluginActions=header.querySelector('.dkds-plugin-header-actions');
       const close=header.querySelector('.analysis-page-close');
       if(pluginActions)header.insertBefore(slot,pluginActions);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
     }
-    slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
-    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-workbench-import';button.dataset.dkdsActionLayout='standalone';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
-    return button;
+    if(slot){
+      slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
+      const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-workbench-import';button.dataset.dkdsActionLayout='standalone';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
+      return button;
+    }
+    if(pageActivity&&!state.host?.isAuxiliaryWindow){
+      return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
+    }
+    return null;
   }
 
   function addPage(pluginId, spec) {
@@ -93,7 +102,7 @@ const {pluginTypeOf}=require('../manifest');
       const commandId = `${pluginId}.${spec.id}.open`;
       registerCommand(pluginId, commandId, async () => {
         state.host?.openAnalysisPage?.(page.id);
-        await spec.onOpen?.({ page, host:state.host });
+        await spec.onOpen?.({ page, host:pluginHostView() });
       });
       registerActivity(pluginId,pageActivity,{
         label:spec.label||manifest.name||spec.id,
@@ -108,7 +117,7 @@ const {pluginTypeOf}=require('../manifest');
       const commandId = `${pluginId}.${spec.id}.open`;
       registerCommand(pluginId, commandId, async () => {
         state.host?.openAnalysisPage?.(page.id);
-        await spec.onOpen?.({ page, host:state.host });
+        await spec.onOpen?.({ page, host:pluginHostView() });
       });
       createToolbarButton(pluginId, {
         id: spec.buttonId,
@@ -156,7 +165,7 @@ const {pluginTypeOf}=require('../manifest');
       const commandId=`${pluginId}.${spec.id}.toggle`;
       registerCommand(pluginId,commandId,async()=>{
         panel.classList.toggle('hidden');
-        if(!panel.classList.contains('hidden'))await spec.onOpen?.({panel,host:state.host});
+        if(!panel.classList.contains('hidden'))await spec.onOpen?.({panel,host:pluginHostView()});
       });
       createToolbarButton(pluginId,{
         id:spec.buttonId,label:spec.toolbarLabel||spec.label||spec.id,title:spec.title||'',
@@ -164,7 +173,7 @@ const {pluginTypeOf}=require('../manifest');
         order:spec.order||100,priority:spec.priority||0,section:spec.section||'',command:commandId
       });
     }
-    spec.onMount?.({panel,created,host:state.host});
+    spec.onMount?.({panel,created,host:pluginHostView()});
     refreshActivityVisibility();
     return panel;
   }
@@ -176,7 +185,7 @@ const {pluginTypeOf}=require('../manifest');
     const commandId = `${pluginId}.${spec.id}.toggle`;
     addCleanup(pluginId, () => panel.classList.add('hidden'));
     registerCommand(pluginId, commandId, () => {
-      if (spec.toggle) return spec.toggle({ panel, host:state.host });
+      if (spec.toggle) return spec.toggle({ panel, host:pluginHostView() });
       panel.classList.toggle('hidden');
     });
     return createToolbarButton(pluginId, {

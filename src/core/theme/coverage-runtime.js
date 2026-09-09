@@ -15,13 +15,13 @@
       const ownershipRows=nodes.map(el=>Renderer?.ownership?.(el,area.role)||{managed:roleOf(el)===area.role,status:roleOf(el)===area.role?'MATERIAL_ROLE_OWNED':'ROLE_MISSING',role:roleOf(el),expectedRole:area.role});
       const managed=ownershipRows.filter(row=>row?.managed===true).length;
       const mismatches=ownershipRows.filter(row=>!row?.managed&&row?.role&&row.role!==area.role).length;
-      const renderRows=nodes.map((el,index)=>{const owner=ownershipRows[index];if(owner?.managed&&owner.status!=='MATERIAL_ROLE_OWNED')return owner;return Renderer?.inspect?.(el,area.role)||{status:'BROKEN_MATERIAL_RENDERER',role:roleOf(el),expectedRole:area.role};});
+      const renderRows=nodes.map((el,index)=>{const owner=ownershipRows[index];if(owner?.managed&&owner.status!=='MATERIAL_ROLE_OWNED')return owner;return Renderer?.inspect?.(el,area.role,{detailed:index<3})||{status:'BROKEN_MATERIAL_RENDERER',role:roleOf(el),expectedRole:area.role};});
       const broken=renderRows.filter(row=>BROKEN_RENDER.has(row.status)).length;
       const recipeMissing=renderRows.filter(row=>row.status==='RECIPE_MISSING').length;
-      const occluded=renderRows.filter(row=>row.status==='OPAQUE_PARENT_OCCLUSION').length;
+      const occluded=renderRows.filter(row=>row.status==='OPAQUE_MATERIAL_OCCLUSION').length;
       const real=renderRows.filter(row=>OK_RENDER.has(row.status)).length;
       let status='NOT_PRESENT';if(nodes.length){if(mismatches)status='ROLE_MISMATCH';else if(managed===nodes.length)status=broken?'PARTIAL':'MANAGED';else if(managed)status='PARTIAL';else status='UNMANAGED';}
-      const renderStatus=!nodes.length?'NOT_PRESENT':broken?'PARTIAL':occluded&&real?'PARTIAL':occluded?'OPAQUE_PARENT_OCCLUSION':'MANAGED';
+      const renderStatus=!nodes.length?'NOT_PRESENT':broken?'PARTIAL':occluded&&real?'PARTIAL':occluded?'OPAQUE_MATERIAL_OCCLUSION':'MANAGED';
       return Object.freeze({...area,count:nodes.length,managed,status,renderStatus,realMaterial:real,occludedMaterial:occluded,brokenMaterial:broken,roleMismatch:mismatches,recipeMissing,render:Object.freeze(renderRows.slice(0,24))});
     });
   }

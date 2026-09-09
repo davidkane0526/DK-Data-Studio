@@ -1,32 +1,27 @@
 'use strict';
 
-const SemverCompat=require('./semver-compat');
-
-function manifestOf(value){return value?.manifest&&typeof value.manifest==='object'?value.manifest:value||{};}
-function versionMap(builtins=[]){
-  const map=new Map();
-  for(const row of (Array.isArray(builtins)?builtins:[])){
-    const manifest=manifestOf(row),id=String(manifest?.id||'').trim();
-    if(id)map.set(id,String(manifest?.version||'0.0.0'));
+function versionParts(value){
+  const match=String(value||'0.0.0').trim().match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
+  if(!match)return {major:0,minor:0,patch:0,pre:''};
+  return {major:Number(match[1]),minor:Number(match[2]),patch:Number(match[3]),pre:String(match[4]||'')};
+}
+function compareVersions(a,b){
+  const left=versionParts(a),right=versionParts(b);
+  for(const key of ['major','minor','patch'])if(left[key]!==right[key])return left[key]>right[key]?1:-1;
+  if(left.pre===right.pre)return 0;
+  if(!left.pre)return 1;
+  if(!right.pre)return -1;
+  const la=left.pre.split('.'),lb=right.pre.split('.'),n=Math.max(la.length,lb.length);
+  for(let i=0;i<n;i++){
+    if(la[i]===undefined)return -1;if(lb[i]===undefined)return 1;
+    const an=/^\d+$/.test(la[i]),bn=/^\d+$/.test(lb[i]);
+    if(an&&bn){const av=Number(la[i]),bv=Number(lb[i]);if(av!==bv)return av>bv?1:-1;continue;}
+    if(an!==bn)return an?-1:1;
+    if(la[i]!==lb[i])return la[i]>lb[i]?1:-1;
   }
-  return map;
+  return 0;
 }
-function isNewerVersion(candidateVersion,currentVersion){return SemverCompat.compare(String(candidateVersion||'0.0.0'),String(currentVersion||'0.0.0'))>0;}
-function isNewerThanBuiltin(pkg,builtinVersion){
-  const overrideVersion=String(pkg?.manifest?.version||'0.0.0');
-  return isNewerVersion(overrideVersion,builtinVersion);
-}
-function classify(packages=[],builtins=[]){
-  const versions=versionMap(builtins),active=[],shadowed=[];
-  for(const pkg of (Array.isArray(packages)?packages:[])){
-    const id=String(pkg?.manifest?.id||'').trim(),builtinVersion=versions.get(id)||'';
-    if(!builtinVersion||isNewerThanBuiltin(pkg,builtinVersion)){
-      active.push(pkg);
-      continue;
-    }
-    shadowed.push({...pkg,effective:false,shadowedByBuiltinVersion:builtinVersion,shadowReason:'bundled-plugin-is-same-or-newer'});
-  }
-  return {active,shadowed};
-}
+function isNewerVersion(candidateVersion,currentVersion){return compareVersions(candidateVersion,currentVersion)>0;}
+function isNewerThanBuiltin(pkg,builtinVersion){return isNewerVersion(pkg?.manifest?.version,builtinVersion);}
 
-module.exports={versionMap,isNewerVersion,isNewerThanBuiltin,classify};
+module.exports={compareVersions,isNewerVersion,isNewerThanBuiltin};

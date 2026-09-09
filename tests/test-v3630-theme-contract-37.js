@@ -7,10 +7,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.24.0');
+assert.equal(sdk.sdkVersion,'1.28.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
-assert.equal(sdk.minimumAppVersion,'3.67.10');
+assert.equal(sdk.minimumAppVersion,'3.68.36');
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));
@@ -80,17 +80,20 @@ assert(presentationModel.includes('appearance:window.DKDSTheme?.appearanceRoles?
 assert(presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()')&&mobile.includes('themeScientific:core.theme.scientific'));
 
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.themeContract,'^3.10.0');
+assert.equal(template.apiVersion,'1.19.0');
+assert(!Object.prototype.hasOwnProperty.call(template,'compatibility'),'Theme template must target the exact current Plugin API without compatibility metadata.');
 const thin=json('src/plugins/thin-glass-theme/plugin.json');
-assert.equal(thin.version,'1.12.2');
-assert.equal(thin.compatibility.themeContract,'^3.10.0');
+assert.equal(thin.version,'1.12.3');
+assert.equal(thin.apiVersion,'1.19.0');
+assert(!Object.prototype.hasOwnProperty.call(thin,'compatibility'),'Thin Glass must target the exact current Plugin API without compatibility metadata.');
 
 const sdkTool=read('sdk/tools/dkds-plugin.js'),packageRuntime=read('desktop/plugin-package.js');
 assert(sdkTool.includes('usesThemeRegister(rawSource)'),'Standalone SDK must share Theme registration-source recognition.');
 assert(packageRuntime.includes('usesThemeRegister(themeSource)'),'Application package ingestion must share Theme registration-source recognition.');
 const thinJs=read('src/plugins/thin-glass-theme/plugin.js');
-assert(thinJs.includes("'contract.appearance.roles'")&&thinJs.includes("'contract.scientific.seriesPalette'"));
+assert(thinJs.includes("appearance:{roles:")&&thinJs.includes("scientific:{mode:'fallback-only',seriesPalette:"),'Thin Glass must declare current Theme 3.10 appearance/scientific data directly.');
+assert(!thinJs.includes('theme.supports')&&!thinJs.includes('contract.appearance.roles')&&!thinJs.includes('contract.scientific.seriesPalette'),'Theme plugins must not negotiate historical/current capability versions at runtime.');
 
 const coreFiles=['src/core/theme/runtime.js','src/core/theme/material-renderer.js','src/styles/theme/material-roles.css','src/styles/theme/material-renderer.css'];
 for(const file of coreFiles){const text=read(file).toLowerCase();assert(!text.includes('aurora-pop')&&!text.includes('aurora pop'),'Core must not contain Aurora theme identity special cases.');}
-console.log('v3.64.0 historical semantic appearance/scientific palette compatibility retained under current Theme Contract 3.10 / SDK 1.24 PASS');
+console.log('Theme Contract 3.10 current-only semantic appearance/scientific palette PASS');

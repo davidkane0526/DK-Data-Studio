@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const SemverCompat = require('../desktop/semver-compat');
 const {normalizePluginPackage}=require('../desktop/plugin-package');
+const PlatformPresentation=require('../sdk/platform-presentation-contract');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
@@ -12,6 +12,7 @@ let count = 0;
 
 const manifestSchema=JSON.parse(fs.readFileSync(path.join(root,'docs','plugin-manifest.schema.json'),'utf8'));
 const coreRequirements=new Set(manifestSchema.properties.requiresCore.items.enum);
+const currentManifestFields=new Set(Object.keys(manifestSchema.properties||{}));
 
 
 const requirementUsage=[
@@ -22,7 +23,7 @@ const requirementUsage=[
   ['data.artifacts',/ctx\.data\.artifacts\b/],['data.sources',/ctx\.data\.sources\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
   ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['analysis.detectors',/ctx\.analysis\.detectors\b/],
   ['charts',/ctx\.ui\.charts\b/],['charts.providers',/ctx\.charts\b/],['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],
-  ['ui.workspace',/ctx\.ui\.(?:pluginWorkspace|analysisWorkbench|workspaceSurface|analysisSurface|workbench)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.series',/ctx\.ui\.series\b/],['ui.legend-groups',/ctx\.ui\.legends\b/],['ui.group-plots',/ctx\.ui\.groupPlots\b/],['ui.tooltips',/ctx\.ui\.tooltips\b/],['ui.design-system',/ctx\.ui\.designSystem\b/],
+  ['ui.workspace',/ctx\.ui\.(?:pluginWorkspace|analysisWorkbench|workspaceSurface|analysisSurface|workbench)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.series',/ctx\.ui\.series\b/],['ui.legend-groups',/ctx\.ui\.legends\b/],['ui.group-plots',/ctx\.ui\.groupPlots\b/],['ui.group-area',/ctx\.ui\.groupArea\b|\.groupArea\s*\(/],['ui.tooltips',/ctx\.ui\.tooltips\b/],['ui.design-system',/ctx\.ui\.designSystem\b/],
   ['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.dialogs',/ctx\.ui\.dialogs\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],
   ['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.menus',/ctx\.ui\.menus\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],
   ['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],
@@ -47,17 +48,20 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   try { m = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); }
   catch (err) { fail(`${name}/plugin.json invalid JSON: ${err.message}`); continue; }
 
-  for (const field of ['id','name','version','entry']) if (!m[field]) fail(`${name}: missing ${field}`);
+  for (const field of ['id','name','version','apiVersion','entry','pluginType','requiresCore']) if (m[field]===undefined||m[field]===null||m[field]==='') fail(`${name}: missing ${field}`);
+  for(const field of Object.keys(m))if(!currentManifestFields.has(field))fail(`${name}: unsupported current-contract manifest field ${field}`);
   if (!/^[a-z0-9][a-z0-9._-]*$/i.test(String(m.id || ''))) fail(`${name}: invalid id ${m.id}`);
   if (ids.has(m.id)) fail(`${name}: duplicate id ${m.id}`);
   ids.add(m.id);
 
-  const entry = path.join(dir, m.entry || 'plugin.js');
+  const entry = path.join(dir, m.entry);
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
   if (String(m.apiVersion||'') !== '1.19.0') fail(`${name}: built-in plugins must target apiVersion 1.19.0`);
   const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
   if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
-  if(m.pluginType==='theme'){if(!(m.requiresCore||[]).includes('ui.theme'))fail(`${name}: theme plugins must declare ui.theme`);if((m.requiresCore||[]).includes('ui.styles'))fail(`${name}: theme plugins must use Theme Contract tokens instead of ui.styles`);if(Array.isArray(m.styles)&&m.styles.length)fail(`${name}: theme plugins must not ship arbitrary stylesheets`);if(m.workspace||m.window)fail(`${name}: theme plugins must not own workspace/window contracts`);if(m.algorithmProvider===true)fail(`${name}: theme plugins cannot be Algorithm Providers`);}
+  if(m.pluginType==='theme'){if(!(m.requiresCore||[]).includes('ui.theme'))fail(`${name}: theme plugins must declare ui.theme`);if((m.requiresCore||[]).includes('ui.styles'))fail(`${name}: theme plugins must use Theme Contract tokens instead of ui.styles`);if(Array.isArray(m.styles)&&m.styles.length)fail(`${name}: theme plugins must not ship arbitrary stylesheets`);if(m.platformPresentation!==undefined)fail(`${name}: theme plugins must not declare platformPresentation`);if(m.workspace||m.window)fail(`${name}: theme plugins must not own workspace/window contracts`);if(m.algorithmProvider===true)fail(`${name}: theme plugins cannot be Algorithm Providers`);}
+  const platformCheck=PlatformPresentation.validate(m);
+  for(const error of platformCheck.errors)fail(`${name}: ${error}`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);
   else for(const requirement of m.requiresCore)if(!coreRequirements.has(String(requirement)))fail(`${name}: unknown Core requirement ${requirement}`);
   const algorithmCategories=Array.isArray(m.algorithmCategories)?m.algorithmCategories.map(value=>String(value||'').trim()).filter(Boolean):[];
@@ -77,14 +81,10 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
     if(category&&!algorithmCategories.includes(category))fail(`${name}: algorithmProvides category ${category} missing from algorithmCategories`);
     const key=`${category}::${id}@${version}`;if(algorithmProvideKeys.has(key))fail(`${name}: duplicate algorithmProvides entry ${key}`);algorithmProvideKeys.add(key);
   }
-  if(m.compatibility!==undefined){
-    if(!m.compatibility||typeof m.compatibility!=='object'||Array.isArray(m.compatibility))fail(`${name}: compatibility must be an object`);
-    else for(const field of ['app','pluginApi','themeContract'])if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))fail(`${name}: compatibility.${field} must be a valid version range`);
-  }
   const pluginDependencies=Array.isArray(m.pluginDependencies)?m.pluginDependencies:[];
   if(m.pluginDependencies!==undefined&&!Array.isArray(m.pluginDependencies))fail(`${name}: pluginDependencies must be an array`);
   const pluginDependencyIds=new Set();
-  for(const row of pluginDependencies){const dependencyId=String(row?.id||'').trim(),range=String(row?.range||'').trim();if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(dependencyId)||!range||!SemverCompat.validateRange(range))fail(`${name}: invalid plugin dependency ${dependencyId}@${range}`);if(pluginDependencyIds.has(dependencyId))fail(`${name}: duplicate plugin dependency ${dependencyId}`);pluginDependencyIds.add(dependencyId);}
+  for(const row of pluginDependencies){const dependencyId=String(row?.id||'').trim(),keys=row&&typeof row==='object'&&!Array.isArray(row)?Object.keys(row):[];if(!row||typeof row!=='object'||Array.isArray(row)||keys.some(key=>key!=='id')||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(dependencyId))fail(`${name}: invalid current-contract plugin dependency ${dependencyId||'(missing)'}`);if(pluginDependencyIds.has(dependencyId))fail(`${name}: duplicate plugin dependency ${dependencyId}`);pluginDependencyIds.add(dependencyId);}
   if(m.scripts!==undefined){
     if(!Array.isArray(m.scripts)||!m.scripts.length)fail(`${name}: scripts must be a non-empty array when declared`);
     else for(const raw of m.scripts){
@@ -93,7 +93,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
       else if(!fs.existsSync(path.join(dir,file)))fail(`${name}: script not found ${file}`);
       else if(!file.toLowerCase().endsWith('.js'))fail(`${name}: plugin scripts must be JavaScript: ${file}`);
     }
-    if(Array.isArray(m.scripts)&&!m.scripts.includes(m.entry||'plugin.js'))fail(`${name}: scripts must include entry ${m.entry||'plugin.js'}`);
+    if(Array.isArray(m.scripts)&&!m.scripts.includes(m.entry))fail(`${name}: scripts must include entry ${m.entry}`);
   }
 
 
@@ -105,20 +105,20 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
     const sandbox={DKDSPlugins:{define:(manifest)=>{runtimeManifest=manifest;}}};
     sandbox.window=sandbox;sandbox.globalThis=sandbox;
     vm.createContext(sandbox);
-    vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:`${name}/${m.entry||'plugin.js'}`,timeout:500});
+    vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:`${name}/${m.entry}`,timeout:500});
     if(!runtimeManifest)fail(`${name}: entry did not register a runtime manifest`);
     else {
-      if(String(runtimeManifest.pluginType||'')!==String(m.pluginType||''))fail(`${name}: runtime pluginType must exactly match plugin.json`);
-      if(JSON.stringify(runtimeManifest.requiresCore||[])!==JSON.stringify(m.requiresCore||[]))fail(`${name}: runtime requiresCore must exactly match plugin.json`);
-      if(Boolean(runtimeManifest.algorithmProvider) !== Boolean(m.algorithmProvider))fail(`${name}: runtime algorithmProvider must exactly match plugin.json`);
-      if(JSON.stringify(runtimeManifest.algorithmCategories||[])!==JSON.stringify(m.algorithmCategories||[]))fail(`${name}: runtime algorithmCategories must exactly match plugin.json`);
-      if(JSON.stringify(runtimeManifest.algorithmProvides||[])!==JSON.stringify(m.algorithmProvides||[]))fail(`${name}: runtime algorithmProvides must exactly match plugin.json`);
-      if(JSON.stringify(runtimeManifest.compatibility||null)!==JSON.stringify(m.compatibility||null))fail(`${name}: runtime compatibility must exactly match plugin.json`);
-      if(JSON.stringify(runtimeManifest.pluginDependencies||[])!==JSON.stringify(m.pluginDependencies||[]))fail(`${name}: runtime pluginDependencies must exactly match plugin.json`);
+      for(const field of Object.keys(runtimeManifest||{}))if(!currentManifestFields.has(field))fail(`${name}: runtime manifest contains unsupported current-contract field ${field}`);
+      for(const field of ['id','name','version','apiVersion','entry','pluginType','requiresCore'])if(runtimeManifest[field]===undefined||runtimeManifest[field]===null||runtimeManifest[field]==='')fail(`${name}: runtime manifest missing ${field}`);
+      for(const field of currentManifestFields){
+        const runtimeValue=runtimeManifest[field],packageValue=m[field];
+        if(JSON.stringify(runtimeValue)!==JSON.stringify(packageValue))fail(`${name}: runtime manifest ${field} must exactly match plugin.json`);
+      }
     }
   } catch(err){ fail(`${name}: cannot evaluate runtime manifest: ${err.message}`); }
 
-  const ownedFiles=new Set(Array.isArray(m.scripts)?m.scripts:[m.entry||'plugin.js']);
+  const ownedFiles=new Set(Array.isArray(m.scripts)?m.scripts:[m.entry]);
+  for(const file of PlatformPresentation.referencedPlatformAssets(m))ownedFiles.add(file);
   if(m.window?.runtime)ownedFiles.add(m.window.runtime);
   for(const file of (m.window?.scripts||[]))ownedFiles.add(file);
   const source=[...ownedFiles].filter(file=>fs.existsSync(path.join(dir,file))).map(file=>fs.readFileSync(path.join(dir,file),'utf8')).join('\n');
@@ -166,7 +166,7 @@ if(!process.exitCode){
     const manifestPath=path.join(dir,'plugin.json');if(!fs.existsSync(manifestPath))continue;
     try{
       const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
-      const referenced=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]),files={};
+      const referenced=new Set([manifest.entry,...(manifest.scripts||[]),...(manifest.styles||[]),...PlatformPresentation.referencedPlatformAssets(manifest),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]),files={};
       for(const rel of referenced){const file=path.join(dir,String(rel));if(fs.existsSync(file)&&fs.statSync(file).isFile())files[String(rel).replace(/\\/g,'/')]=fs.readFileSync(file,'utf8');}
       normalizePluginPackage({schema:1,manifest,files},{allowBuiltinId:true});
     }catch(err){fail(`${name}: bundled export/package contract failed: ${err.message}`);}

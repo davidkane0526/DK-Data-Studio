@@ -60,6 +60,37 @@ function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
   };
 }
 
+function routeArtifactDelta(event,payload={}) {
+  const auxiliary=auxiliaryBootstrap.get(event?.sender?.id)||null;
+  const projectTabId=String(payload?.projectTabId||auxiliary?.projectTabId||'').trim();
+  const delta=payload?.artifactDelta&&typeof payload.artifactDelta==='object'?payload.artifactDelta:null;
+  if(auxiliary){
+    const owner=BrowserWindow.getAllWindows().find(win=>win.webContents?.id===auxiliary.ownerWebContentsId);
+    if(!owner||owner.isDestroyed()||!projectTabId||!delta)return false;
+    owner.webContents.send('windows:activityProjectSnapshot',{
+      projectTabId,activityId:String(auxiliary.activityId||payload?.activityId||''),
+      pluginId:String(auxiliary.pluginWindow?.pluginId||''),persistence:auxiliary.pluginWindow?.persistence||'project',
+      project:null,pluginState:null,artifactDelta:delta,final:false,artifactOnly:true
+    });
+    return true;
+  }
+  const owner=BrowserWindow.fromWebContents(event?.sender);
+  const ownerId=owner?.webContents?.id;
+  const excludeActivityId=String(payload?.excludeActivityId||'').trim();
+  if(!ownerId||!projectTabId||!delta)return false;
+  for(const win of auxiliaryWindows.values()){
+    if(!win||win.isDestroyed())continue;
+    const row=auxiliaryBootstrap.get(win.webContents.id);
+    if(row?.ownerWebContentsId!==ownerId||String(row?.projectTabId||'')!==projectTabId)continue;
+    if(excludeActivityId&&String(row?.activityId||'')===excludeActivityId)continue;
+    if(row?.prewarm===true)continue;
+    try{win.webContents.send('windows:ownerArtifactDelta',{
+      projectTabId,reason:String(payload?.reason||'owner-artifact-change'),artifactDelta:delta
+    });}catch{}
+  }
+  return true;
+}
+
 function hideDedicatedAuxiliaryWindow(win) {
   if (!win || win.isDestroyed()) return false;
   try { win.webContents.send('windows:activityWillHide'); } catch {}
@@ -218,6 +249,18 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
         if(!String(rendererData.visiblePageId||''))throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without a visible page.`);
         if(expectedPluginId&&String(rendererData.visiblePagePluginId||'')!==expectedPluginId)throw new Error(`${expectedPluginId}: visible page is owned by ${rendererData.visiblePagePluginId||'unknown'}.`);
         if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'&&rendererData.topWorkspaceRegistered!==true)throw new Error(`${expectedPluginId}: TOP Workspace was not registered.`);
+        const chrome=rendererData.windowChrome||null,pageRect=chrome?.pageRect||null,bodyRect=chrome?.pageBodyRect||null,rootRect=chrome?.workbenchRootRect||null;
+        if(!pageRect||pageRect.width<160||pageRect.height<120)throw new Error(`${expectedPluginId||expectedActivityId}: visible page has invalid geometry ${JSON.stringify(pageRect)}.`);
+        if(!bodyRect||bodyRect.width<160||bodyRect.height<100)throw new Error(`${expectedPluginId||expectedActivityId}: visible page body collapsed ${JSON.stringify(bodyRect)}.`);
+        if(rootRect&&(rootRect.width<160||rootRect.height<100))throw new Error(`${expectedPluginId||expectedActivityId}: workbench root collapsed ${JSON.stringify(rootRect)}.`);
+        if(chrome?.controlsBound!==true||chrome?.ipcReady!==true)throw new Error(`${expectedPluginId||expectedActivityId}: self-drawn window controls are not bound to Core IPC.`);
+        if(Number.isFinite(Number(chrome?.commandbarRightGap))&&Number(chrome.commandbarRightGap)>12)throw new Error(`${expectedPluginId||expectedActivityId}: self-drawn command bar is not right-anchored (gap=${chrome.commandbarRightGap}).`);
+        if(Number.isFinite(Number(chrome?.actionToCommandGap))&&Number(chrome.actionToCommandGap)>20)throw new Error(`${expectedPluginId||expectedActivityId}: dedicated action cluster drifted away from window controls (gap=${chrome.actionToCommandGap}).`);
+        const titlebar=chrome?.titlebarPresentation||null;
+        if(!titlebar)throw new Error(`${expectedPluginId||expectedActivityId}: dedicated titlebar presentation diagnostics are missing.`);
+        if(Number(titlebar.renderedPluginCount)!==Number(titlebar.expectedPluginCount))throw new Error(`${expectedPluginId||expectedActivityId}: dedicated titlebar lost plugin actions (${titlebar.renderedPluginCount}/${titlebar.expectedPluginCount}).`);
+        if(Number(titlebar.renderedSurfaceCount)!==Number(titlebar.expectedSurfaceCount))throw new Error(`${expectedPluginId||expectedActivityId}: dedicated titlebar lost Core workspace actions (${titlebar.renderedSurfaceCount}/${titlebar.expectedSurfaceCount}).`);
+        if(titlebar.importExpected===true&&titlebar.importRendered!==true)throw new Error(`${expectedPluginId||expectedActivityId}: dedicated titlebar lost the Core import action.`);
       }
       const hidden=hideDedicatedAuxiliaryWindow(win);
       const hiddenWait=await waitForRendererLifecycleContract(win,true,2500);
@@ -385,6 +428,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     backgroundColor: nativeWindowBackground(),
     icon: path.join(APP_ROOT, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
+    frame: false,
     title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
     webPreferences: {
       ...commonWindowPreferences(),
@@ -395,6 +439,8 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     }
   });
   win.setMenuBarVisibility(false);
+  win.on('maximize',()=>{try{win.webContents.send('windows:maximizedChanged',true);}catch{}});
+  win.on('unmaximize',()=>{try{win.webContents.send('windows:maximizedChanged',false);}catch{}});
   const browserWindowCreateMs=Date.now()-browserWindowStartedAtMs;
   auxiliaryWindows.set(key, win);
   const auxiliaryWebContentsId = win.webContents.id;
@@ -461,7 +507,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
     auxiliaryWindowKey,removeAuxiliaryWindowReferences,projectSnapshotDigest,makeAuxiliaryBootstrap,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,waitForAuxiliaryWindowClosed,
     markAuxiliaryWindowReady,markAuxiliaryWindowFailed,diagnosticRendererLifecycleSnapshot,diagnosticRendererProjectSnapshot,waitForRendererLifecycleContract,waitForAuxiliaryDiagnosticOutcome,
-    runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,createOrFocusAuxiliaryWindow
+    runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
   });
 }
 

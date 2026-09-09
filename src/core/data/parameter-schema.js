@@ -57,9 +57,9 @@
     return {ok:!Object.keys(errors).length,errors,values};
   }
 
-  function render(container,schema,{value={},context={},onChange=null,compact=false}={}){
+  function render(container,schema,{value={},context={},onChange=null,compact=false,autoFit=false}={}){
     if(typeof container==='string')container=document.querySelector(container);if(!container)throw new Error('Parameter panel container not found.');
-    let values=defaultValues(schema,value);const controls=new Map();container.innerHTML='';container.classList.add('schema-parameter-panel');if(compact)container.classList.add('compact');
+    let values=defaultValues(schema,value);const controls=new Map();container.innerHTML='';container.classList.add('schema-parameter-panel');container.classList.toggle('compact',!!compact);container.classList.toggle('auto-fit',!!autoFit);
 
     function inputFor(field){
       const options=resolveOptions(field,context,values);let input,control,refresh=null;

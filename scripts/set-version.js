@@ -85,6 +85,17 @@ if (previous && resolved && !resolved.prerelease && !previous.prerelease) {
 pkg.version = version;
 fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
 
+for (const [relative, keyPath] of [
+  [path.join('mobile','package.json'), ['version']],
+  [path.join('mobile','app.json'), ['expo','version']]
+]) {
+  const target=path.join(root,relative);
+  if(!fs.existsSync(target))continue;
+  const data=JSON.parse(fs.readFileSync(target,'utf8'));
+  let cursor=data;for(const key of keyPath.slice(0,-1))cursor=cursor[key];cursor[keyPath[keyPath.length-1]]=version;
+  fs.writeFileSync(target,JSON.stringify(data,null,2)+'\n','utf8');
+}
+
 const indexPath = path.join(root, 'src', 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 html = html.replace(

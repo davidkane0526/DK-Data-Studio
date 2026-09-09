@@ -5,7 +5,6 @@ const {blankProjectTab, mountProjectTab, renderProjectTabs, switchProjectTab}=re
 const {openImportWorkbench}=require('./import-workbench');
 const {applySuperWorkspace, bindSuperWorkspaceControls, renderAll, syncAnalysisPageViewport, updateMainModeButtons}=require('./workspace-super-shell');
 const {saveProject}=require('./project-persistence');
-const {applyGroupPanelLayout, applyInspectorPanelLayout}=require('./floating-docks');
 const {applyActivityProjectSnapshot, configureAutomationTests, initializePluginArchitecture, prewarmDedicatedPluginWindows}=require('./dedicated-plugin-windows');
 const {initializeWindowChrome}=require('./window-chrome');
 async function startApplication(){
@@ -44,8 +43,6 @@ async function startApplication(){
   renderProjectTabs();
   updateMainModeButtons();
   renderAll();
-  applyGroupPanelLayout();
-  applyInspectorPanelLayout();
   initializeUpdateUi();
   initializeLanWebUi();
   window.electronAPI?.onPluginLanUpdate?.(info=>{

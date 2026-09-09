@@ -32,8 +32,8 @@ function contractSurface(row={},kind='prime'){
   const defaults=surfaceDefaults(kind,row);
   return Object.freeze({
     id:`workspace-${kind}:${id}`,surfaceId:id,kind,
-    label:text(row.label||row.title||id),semanticKind:text(row.semanticKind),
-    ...defaults,active:false,
+    label:text(row.label||row.title||id),semanticKind:text(row.semanticKind),presentationPurpose:text(row.presentationPurpose),
+    ...defaults,embedded:row.embedded===true,active:false,
     presentationDeclared:hasDeclaredPresentationRole(row),source:'core-registry'
   });
 }
@@ -45,8 +45,8 @@ function runtimeSurface(row={},fallback=null){
   const defaults=surfaceDefaults(kind,roleDeclared?row:(fallback||row));
   return Object.freeze({
     id,surfaceId:text(row.surfaceId||fallback?.surfaceId||id.split(':').slice(1).join(':')),kind,
-    label:text(row.label||row.title||fallback?.label||row.surfaceId||id),semanticKind:text(row.semanticKind||fallback?.semanticKind),
-    ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
+    label:text(row.label||row.title||fallback?.label||row.surfaceId||id),semanticKind:text(row.semanticKind||fallback?.semanticKind),presentationPurpose:text(row.presentationPurpose||fallback?.presentationPurpose),
+    ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),embedded:row.embedded!==undefined?row.embedded===true:!!fallback?.embedded,active:!!row.active,
     presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,source:fallback?'core-runtime+contract':'core-runtime'
   });
 }
@@ -54,13 +54,14 @@ function statusRows(){
   const rows=window.DKDSPlugins?.statusBar?.list?.()||[];
   return rows.filter(row=>!row?.value?.hidden).map(row=>{
     const value=row?.value||{};
-    return Object.freeze({pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',order:number(value.order,100),label:text(value.label),icon:text(value.icon),state:text(value.state),className:text(value.className),colorPolicy:text(value.colorPolicy||'theme'),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title)});
+    return Object.freeze({pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',order:number(value.order,100),label:text(value.label),icon:text(value.icon),state:text(value.state),className:text(value.className),colorPolicy:text(value.colorPolicy||'theme'),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title),activityId:text(value.activityId||value.activity)});
   }).filter(row=>row.pluginId&&row.id&&row.id!=='lan-web').sort((a,b)=>a.side.localeCompare(b.side)||a.order-b.order||a.id.localeCompare(b.id));
 }
 function actionRows(activityId){
   return (window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>Object.freeze({
-    id:text(row.id),label:text(row.label),icon:text(row.icon),enabled:row.enabled!==false,active:!!row.active,menu:!!row.menu,
-    items:Object.freeze((row.items||[]).map(item=>Object.freeze({id:text(item.id),label:text(item.label),icon:text(item.icon),enabled:item.enabled!==false})))
+    id:text(row.id),label:text(row.label),icon:text(row.icon),enabled:row.enabled!==false,active:!!row.active,variant:text(row.variant),menu:!!row.menu,
+    nativeSave:text(row.nativeSave),nativeCopy:text(row.nativeCopy),
+    items:Object.freeze((row.items||[]).map(item=>Object.freeze({id:text(item.id),label:text(item.label),icon:text(item.icon),enabled:item.enabled!==false,nativeSave:text(item.nativeSave),nativeCopy:text(item.nativeCopy)})))
   }));
 }
 
@@ -138,7 +139,7 @@ class PresentationModel {
     const route=context.route||{kind:activity?.system?'system':'workspace',activityId,pluginId:text(activity?.pluginId)};
     const history=typeof this.configured.historySnapshot==='function'?this.configured.historySnapshot():{canUndo:false,canRedo:false,past:[],future:[]};
     return Object.freeze({
-      schema:SCHEMA,version:VERSION,revision:++this.revision,project,activity:Object.freeze({id:activityId,label:text(activity?.label),pluginId:text(activity?.pluginId)}),
+      schema:SCHEMA,version:VERSION,revision:++this.revision,appVersion:text(this.configured.appVersion),project,activity:Object.freeze({id:activityId,label:text(activity?.label),pluginId:text(activity?.pluginId)}),
       route:Object.freeze({...route}),workspaces,status:Object.freeze({message:this.statusMessage,items:Object.freeze(statusRows())}),history:Object.freeze({...history}),theme:this.theme()
     });
   }

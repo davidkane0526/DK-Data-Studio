@@ -1,68 +1,28 @@
 (() => {
   const MAX_FILES=64,MAX_FILE_CHARS=4*1024*1024,MAX_TOTAL_CHARS=8*1024*1024;
   const TYPES=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
+  const FIELDS=new Set(['id','name','version','apiVersion','entry','pluginType','enabled','order','description','systemCritical','requiresCore','capabilities','workspace','window','data','algorithmProvider','algorithmCategories','algorithmProvides','pluginDependencies','scripts','styles','platformPresentation']);
   const validId=value=>/^[a-z0-9][a-z0-9._-]*$/i.test(String(value||''));
   function fileName(value){
-    const raw=String(value||'').replace(/\\/g,'/').trim();
-    if(!raw||raw.startsWith('/')||/^[a-z]:\//i.test(raw))throw new Error(`Invalid plugin file path: ${value}`);
-    const parts=[];
-    for(const part of raw.split('/')){
-      if(!part||part==='.')continue;
-      if(part==='..')throw new Error(`Unsafe plugin file path: ${value}`);
-      parts.push(part);
-    }
-    const normalized=parts.join('/');
-    if(!normalized||normalized.length>220)throw new Error(`Invalid plugin file path: ${value}`);
-    return normalized;
+    const raw=String(value||'').replace(/\\/g,'/').trim();if(!raw||raw.startsWith('/')||/^[a-z]:\//i.test(raw))throw new Error(`Invalid plugin file path: ${value}`);
+    const parts=[];for(const part of raw.split('/')){if(!part||part==='.')continue;if(part==='..')throw new Error(`Unsafe plugin file path: ${value}`);parts.push(part);}const normalized=parts.join('/');if(!normalized||normalized.length>220)throw new Error(`Invalid plugin file path: ${value}`);return normalized;
   }
   function normalize(input){
-    const pkg=typeof input==='string'?JSON.parse(input):input;
-    if(!pkg||typeof pkg!=='object'||Array.isArray(pkg))throw new Error('Plugin package must be an object.');
-    if(Number(pkg.schema)!==1)throw new Error(`Unsupported plugin package schema: ${pkg.schema}`);
-    const raw=pkg.manifest;
-    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Plugin package manifest is missing.');
-    const id=String(raw.id||'').trim(),name=String(raw.name||'').trim(),version=String(raw.version||'').trim();
-    const apiVersion=String(raw.apiVersion||'1.0.0').trim(),pluginType=String(raw.pluginType||'extension').trim().toLowerCase();
-    if(!validId(id)||id.startsWith('builtin.'))throw new Error(`Invalid or reserved plugin id: ${id}`);
-    if(!name||!version)throw new Error('Plugin manifest.name and version are required.');
-    if(apiVersion!=='1.19.0')throw new Error(`Unsupported Plugin API: ${apiVersion}; this host requires 1.19.0`);
-    if(!TYPES.has(pluginType))throw new Error(`Unsupported pluginType: ${pluginType}`);
-    const entry=fileName(raw.entry||'plugin.js');
-    const entries=Object.entries(pkg.files||{});
-    if(!entries.length||entries.length>MAX_FILES)throw new Error(`Invalid plugin file count: ${entries.length}`);
-    const files={};let total=0;
-    for(const [key,value] of entries){
-      const normalized=fileName(key);
-      if(Object.hasOwn(files,normalized)||typeof value!=='string')throw new Error(`Invalid plugin file: ${normalized}`);
-      if(value.length>MAX_FILE_CHARS)throw new Error(`Plugin file is too large: ${normalized}`);
-      total+=value.length;if(total>MAX_TOTAL_CHARS)throw new Error('Plugin package is too large.');
-      files[normalized]=value;
-    }
-    const scripts=Array.isArray(raw.scripts)&&raw.scripts.length?raw.scripts.map(fileName):[entry];
-    if(!scripts.includes(entry))scripts.push(entry);
-    const styles=Array.isArray(raw.styles)?raw.styles.map(fileName):[];
-    for(const script of scripts)if(!Object.hasOwn(files,script)||!script.toLowerCase().endsWith('.js'))throw new Error(`Plugin script is missing or invalid: ${script}`);
-    for(const style of styles)if(!Object.hasOwn(files,style)||!style.toLowerCase().endsWith('.css'))throw new Error(`Plugin stylesheet is missing or invalid: ${style}`);
-    if(raw.compatibility!==undefined){
-      if(!raw.compatibility||typeof raw.compatibility!=='object'||Array.isArray(raw.compatibility))throw new Error('Plugin compatibility must be an object.');
-      const semver=globalThis.DKDSSemverCompat;
-      for(const field of ['app','pluginApi','themeContract'])if(raw.compatibility[field]!==undefined&&(!semver?.validateRange?.(raw.compatibility[field])))throw new Error(`Invalid compatibility.${field} range: ${raw.compatibility[field]}`);
-    }
-    if(pluginType==='theme'){
-      const requires=Array.isArray(raw.requiresCore)?raw.requiresCore.map(String):[];
-      if(!requires.includes('ui.theme'))throw new Error('Theme plugins must declare ui.theme.');
-      if(requires.includes('ui.styles')||styles.length)throw new Error('Theme plugins must use Theme Contract tokens instead of arbitrary stylesheets.');
-      if(raw.workspace||raw.window||raw.algorithmProvider===true)throw new Error('Theme plugins cannot own workspace/window/algorithm-provider contracts.');
-      const themeRange=String(raw.compatibility?.themeContract||'*');const currentTheme=String(globalThis.DKDSTheme?.contractVersion||'');if(currentTheme&&themeRange!=='*'&&!globalThis.DKDSSemverCompat?.satisfies?.(currentTheme,themeRange))throw new Error(`Theme plugin requires Theme Contract ${themeRange}; current ${currentTheme}.`);
-    }
-    if(pluginType==='tool'){
-      const activity=String(raw.workspace?.activity||'').trim();
-      if(String(raw.workspace?.role||'').toLowerCase()!=='top'||!validId(activity)||String(raw.window?.activity||'')!==activity){
-        throw new Error('Tool plugins require matching workspace.role=top and window.activity contracts.');
-      }
-    }
-    const manifest={...raw,id,name,version,apiVersion,pluginType,entry,scripts:[...new Set(scripts)],styles:[...new Set(styles)],source:'external',enabled:raw.enabled!==false};
-    return {schema:1,manifest,files,installedAt:pkg.installedAt||null};
+    const pkg=typeof input==='string'?JSON.parse(input):input;if(!pkg||typeof pkg!=='object'||Array.isArray(pkg))throw new Error('Plugin package must be an object.');if(Number(pkg.schema)!==1)throw new Error(`Unsupported plugin package schema: ${pkg.schema}`);
+    const raw=pkg.manifest;if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Plugin package manifest is missing.');const unknown=Object.keys(raw).filter(key=>!FIELDS.has(key));if(unknown.length)throw new Error(`Plugin manifest contains unsupported current-contract fields: ${unknown.join(', ')}`);
+    const id=String(raw.id||'').trim(),name=String(raw.name||'').trim(),version=String(raw.version||'').trim(),apiVersion=String(raw.apiVersion||'').trim(),pluginType=String(raw.pluginType||'').trim().toLowerCase();
+    if(!validId(id)||id.startsWith('builtin.'))throw new Error(`Invalid or reserved plugin id: ${id}`);if(!name||!version)throw new Error('Plugin manifest.name and version are required.');if(!apiVersion)throw new Error('Plugin manifest.apiVersion is required.');if(apiVersion!=='1.19.0')throw new Error(`Unsupported Plugin API: ${apiVersion}; this host requires 1.19.0`);if(!pluginType)throw new Error('Plugin manifest.pluginType is required.');if(!TYPES.has(pluginType))throw new Error(`Unsupported pluginType: ${pluginType}`);if(!raw.entry)throw new Error('Plugin manifest.entry is required.');
+    const entry=fileName(raw.entry),entries=Object.entries(pkg.files||{});if(!entries.length||entries.length>MAX_FILES)throw new Error(`Invalid plugin file count: ${entries.length}`);const files={};let total=0;
+    for(const [key,value] of entries){const normalized=fileName(key);if(Object.hasOwn(files,normalized)||typeof value!=='string')throw new Error(`Invalid plugin file: ${normalized}`);if(value.length>MAX_FILE_CHARS)throw new Error(`Plugin file is too large: ${normalized}`);total+=value.length;if(total>MAX_TOTAL_CHARS)throw new Error('Plugin package is too large.');files[normalized]=value;}
+    if(!Object.hasOwn(files,entry))throw new Error(`Plugin entry not found in package: ${entry}`);
+    const scripts=Array.isArray(raw.scripts)&&raw.scripts.length?raw.scripts.map(fileName):[entry];if(Array.isArray(raw.scripts)&&raw.scripts.length&&!scripts.includes(entry))throw new Error(`Plugin manifest.scripts must include entry ${entry}.`);const styles=Array.isArray(raw.styles)?raw.styles.map(fileName):[];
+    for(const script of scripts)if(!Object.hasOwn(files,script)||!script.toLowerCase().endsWith('.js'))throw new Error(`Plugin script is missing or invalid: ${script}`);for(const style of styles)if(!Object.hasOwn(files,style)||!style.toLowerCase().endsWith('.css'))throw new Error(`Plugin stylesheet is missing or invalid: ${style}`);
+    if(raw.pluginDependencies!==undefined&&!Array.isArray(raw.pluginDependencies))throw new Error('pluginDependencies must be an array.');const dependencyIds=new Set();for(const dep of raw.pluginDependencies||[]){const keys=dep&&typeof dep==='object'&&!Array.isArray(dep)?Object.keys(dep):[];const dependencyId=String(dep?.id||'').trim();if(!dep||typeof dep!=='object'||Array.isArray(dep)||keys.some(key=>key!=='id')||!validId(dependencyId))throw new Error(`Invalid current-contract plugin dependency: ${dependencyId||'(missing)'}`);if(dependencyIds.has(dependencyId))throw new Error(`Duplicate plugin dependency: ${dependencyId}`);dependencyIds.add(dependencyId);}
+    const presentationContract=globalThis.DKDSPlatformPresentationContract;if(!presentationContract?.validate||!presentationContract?.platforms)throw new Error('DKDSPlatformPresentationContract is unavailable.');const presentationCheck=presentationContract.validate(raw);if(!presentationCheck.ok)throw new Error(`Plugin platform presentation contract failed: ${presentationCheck.errors.join(' ')}`);let platformPresentation;
+    if(raw.platformPresentation!==undefined){platformPresentation={};for(const platform of (presentationContract?.platforms||['desktop','mobile'])){const policy=raw.platformPresentation?.[platform]||{},mode=String(policy.mode||'').trim().toLowerCase(),platformStyles=Array.isArray(policy.styles)?policy.styles.map(fileName):[],platformScripts=Array.isArray(policy.scripts)?policy.scripts.map(fileName):[];for(const style of platformStyles)if(!Object.hasOwn(files,style)||!style.toLowerCase().endsWith('.css'))throw new Error(`Plugin ${platform} presentation stylesheet is missing or invalid: ${style}`);for(const script of platformScripts)if(!Object.hasOwn(files,script)||!script.toLowerCase().endsWith('.js'))throw new Error(`Plugin ${platform} presentation script is missing or invalid: ${script}`);platformPresentation[platform]={mode,...(platformStyles.length?{styles:[...new Set(platformStyles)]}:{}),...(platformScripts.length?{scripts:[...new Set(platformScripts)]}:{})};}}
+    if(pluginType==='theme'){const requires=Array.isArray(raw.requiresCore)?raw.requiresCore.map(String):[];if(!requires.includes('ui.theme'))throw new Error('Theme plugins must declare ui.theme.');if(requires.includes('ui.styles')||styles.length)throw new Error('Theme plugins must use Theme Contract tokens instead of arbitrary stylesheets.');if(raw.platformPresentation!==undefined)throw new Error('Theme plugins must not declare platformPresentation; use Theme Contract tokens.');if(raw.workspace||raw.window||raw.algorithmProvider===true)throw new Error('Theme plugins cannot own workspace/window/algorithm-provider contracts.');}
+    if(pluginType==='tool'){const activity=String(raw.workspace?.activity||'').trim();if(String(raw.workspace?.role||'').toLowerCase()!=='top'||!validId(activity)||String(raw.window?.activity||'')!==activity)throw new Error('Tool plugins require matching workspace.role=top and window.activity contracts.');}
+    const manifest={...raw,id,name,version,apiVersion,pluginType,entry,scripts:[...new Set(scripts)],styles:[...new Set(styles)],...(platformPresentation!==undefined?{platformPresentation}:{}),enabled:raw.enabled!==false};return {schema:1,manifest,files,installedAt:pkg.installedAt||null};
   }
   window.DKDSMobilePluginPackage=Object.freeze({normalize,validId,fileName});
 })();

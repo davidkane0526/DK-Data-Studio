@@ -63,6 +63,8 @@ Use `presentationRole` on `primary`, `prime`, and `sub` surface declarations whe
 
 `priority` is a relative ordering/retention hint. `collapsible` tells a Presenter whether the surface may be represented in a compact form. These fields do **not** prescribe `left`, `right`, or `bottom`; platform geometry belongs to the Presenter. Live `workspaceSurface` state is merged with this registered contract, so a surface keeps its semantic role even after mounting. `placement`, `placements`, and `defaultPlacement` are therefore invalid inside `ctx.ui.topWorkspace.register(...)`. Put Desktop docking choices only on the live `PluginWorkspace.registerPrime/registerSub` surface that realizes the semantic contract.
 
+A `data-control` PRIME is the shared semantic abstraction for the fixed constrained-platform control slot. The plugin-provided `label` is preserved, so the same slot may read `参数` for an analysis parameter panel or `数据` for Data Center. When the control is specifically a parameter/settings surface, declare `presentationPurpose: 'parameters'` on both the live PRIME and the matching TOP contract row as optional functional metadata. Do **not** encode that meaning as `semanticKind: 'parameters'`: `semanticKind` remains bounded to `panel | inspector`.
+
 ```js
 ctx.ui.topWorkspace.register({
   id:'my-analysis',
@@ -77,7 +79,7 @@ ctx.ui.topWorkspace.register({
 });
 ```
 
-Legacy workspace `role` values remain valid for workspace identity/layout behavior; `presentationRole` is the cross-platform semantic contract.
+`workspace.role` is the current workspace identity/host contract; `presentationRole` is the cross-platform semantic surface contract. They describe different dimensions and neither is a compatibility alias for the other.
 
 ## 2. Project data and Data Center
 

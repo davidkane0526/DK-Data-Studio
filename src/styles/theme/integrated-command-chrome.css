@@ -3,10 +3,6 @@
    owns every hit region. This file only contains theme-picker specifics and
    a few state/composition refinements that are not independent paint owners. */
 
-/* Plot navigation drag semantics only; size belongs to Structure. */
-body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
-body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
-
 /* Theme picker ---------------------------------------------------------- */
 body.dkds-modern-ui .dkds-theme-panel-head{border-bottom:1px solid var(--dkui-divider)}
 body.dkds-modern-ui .dkds-theme-panel-heading strong{font-size:12px;line-height:1.2}

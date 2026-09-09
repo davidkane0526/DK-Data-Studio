@@ -7,6 +7,10 @@
       "path": "src/app/modules/context.js"
     },
     {
+      "id": "app/style-gate",
+      "path": "src/app/modules/style-gate.js"
+    },
+    {
       "id": "app/foundation",
       "path": "src/app/modules/foundation.js"
     },

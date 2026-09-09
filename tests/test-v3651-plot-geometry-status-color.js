@@ -15,8 +15,8 @@ const groupRuntime=read('src/plugins/resonance-workbench/feature-group-runtime.j
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.8 status/geometry regression requires app 3.65.8 or newer');
-assert.equal(sdk.sdkVersion,'1.24.0');
-assert.equal(sdk.minimumAppVersion,'3.67.10');
+assert.equal(sdk.sdkVersion,'1.28.0');
+assert.equal(sdk.minimumAppVersion,'3.68.36');
 assert.equal(sdk.themeContractVersion,'3.10.0');
 for(const token of ['applyContentGeometry()','contentAspectRatio','contentMinHeight','contentMaxHeight','width/ratio','is-floating'])assert(plotView.includes(token),`PlotView responsive geometry missing ${token}`);
 assert(dts.includes('export interface DKDSPlotViewSpec')&&dts.includes('contentAspectRatio?:number')&&dts.includes('plotViews:DKDSPlotViewRuntime'),'SDK must expose responsive PlotView geometry');

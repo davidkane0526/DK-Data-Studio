@@ -22,8 +22,7 @@
   ],
   "pluginDependencies": [
     {
-      "id": "builtin.scientific-data-contracts",
-      "range": "^1.0.0"
+      "id": "builtin.scientific-data-contracts"
     }
   ]
 }

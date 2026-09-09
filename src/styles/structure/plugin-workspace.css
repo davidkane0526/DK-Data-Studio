@@ -11,6 +11,8 @@
 .dkds-scientific-marker-hit{pointer-events:all;cursor:pointer;}.dkds-scientific-marker-hit.is-manipulable:not(.is-locked){cursor:grab;}
 .dkds-scientific-width-band{pointer-events:none;}.dkds-scientific-width-line{pointer-events:none;}.dkds-scientific-baseline-line{pointer-events:none;}.dkds-scientific-width-crossing{pointer-events:none;}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all;}
 .dkds-direct-manipulation{pointer-events:none;}.dkds-direct-range-band{pointer-events:none;}.dkds-direct-axis-line{pointer-events:none;}.dkds-direct-handle{pointer-events:all;}
+.dkds-direct-range-handle{cursor:ns-resize;}.dkds-direct-range-handle.dkds-scientific-width-handle{cursor:ew-resize;}.dkds-direct-axis-handle.is-x-axis{cursor:ew-resize;}.dkds-direct-axis-handle.is-y-axis{cursor:ns-resize;}.dkds-direct-point-handle{cursor:grab;}
+.dkds-scientific-range-markers,.dkds-scientific-range-points{pointer-events:none;}
 .dkds-scientific-direct-box{pointer-events:none;}
 .dkds-scientific-persisted-range{pointer-events:none;}
 
@@ -119,6 +121,19 @@
 .dkds-plugin-canvas-left>.dkds-analysis-prime-panel,.dkds-plugin-canvas-right>.dkds-analysis-prime-panel{
   position:relative;inset:auto;flex:0 0 auto;height:auto;max-height:none;min-height:180px;overflow:hidden
 ;}
+/* Scientific PlotViews are viewport consumers, not fixed-height cards once the
+   user explicitly docks them. Put them first in a stacked dock and let them
+   consume the remaining visible side height; the dock itself remains the only
+   scroll owner when additional panels coexist. */
+.dkds-plugin-canvas-left>.dkds-plot-view.dkds-portable-view.is-docked,
+.dkds-plugin-canvas-right>.dkds-plot-view.dkds-portable-view.is-docked{
+  order:-10;
+  --dkds-portable-docked-flex:1 1 260px;
+  --dkds-portable-docked-height:100%;
+  --dkds-portable-docked-min-height:180px;
+  --dkds-portable-docked-max-height:100%;
+  --dkds-portable-docked-overflow:hidden;
+}
 .dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{flex-wrap:wrap;
   display:flex;flex-flow:column nowrap;align-items:stretch;overflow:auto;gap:8px
 ;}
@@ -136,6 +151,14 @@
 }
 .dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
   position:relative;inset:auto;width:100%;max-width:none;min-width:0;min-height:180px;height:auto;max-height:none;flex:0 0 auto;resize:none;}
+.dkds-plugin-canvas-bottom>.dkds-plot-view.dkds-portable-view.is-docked{
+  order:-10;
+  --dkds-portable-docked-flex:1 1 220px;
+  --dkds-portable-docked-height:auto;
+  --dkds-portable-docked-min-height:180px;
+  --dkds-portable-docked-max-height:100%;
+  --dkds-portable-docked-overflow:hidden;
+}
 
 /* Whole-workspace floating is deliberately different from scientific-canvas
    floating: it uses the outer analysis overlay, never edge-snaps into canvas
@@ -145,6 +168,11 @@
 /* Core PlotView — every scientific data figure receives the same
    position/export/copy/resize chrome from UI infrastructure. */
 .dkds-plot-view{min-width:0;min-height:0;}
+.dkds-plot-view > :is(.dkds-plot-view-content,.analysis-chart,.dkds-chart-plot,.dkds-scientific-chart-host){
+  flex:var(--dkds-plot-content-flex);
+  min-height:var(--dkds-plot-content-min-height);
+  height:var(--dkds-plot-content-height);
+}
 .dkds-plot-view-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;min-width:0;box-sizing:border-box;}
 .dkds-plot-view-title{min-width:0;height:100%;margin:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;align-self:stretch;line-height:1;}
 .dkds-plot-view-menu-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1;}
@@ -193,9 +221,43 @@
   height:var(--dkds-canvas-resizer-hit-size);
 }
 .dkds-plot-view-head{
+  --dkds-header-action-height:22px;
   min-height:28px;
   height:28px;
   padding:0 8px;
   gap:6px;
+  overflow:visible;
 }
 .dkds-plot-view-head .dkds-plot-view-actions{height:100%;align-items:center;}
+
+/* Header-hosted actions must leave a real vertical inset inside compact
+   28 px scientific title strips. This prevents hover paint from touching the
+   lower titlebar edge and keeps every plot/group action on one geometry. The
+   taller 32 px portable/trend headers retain the same 22 px compact hit regions
+   with additional vertical breathing room. */
+
+
+/* SUPER host composition --------------------------------------------------
+   TOP plugins keep one page/workbench implementation. When that page is
+   embedded as SUPER, Core removes window-only chrome and gives the content a
+   dense host viewport. This is host-role composition, not plugin/platform
+   branching, and applies uniformly to every TOP plugin. */
+.super-workspace-root-page{padding:0;min-width:0;min-height:0;}
+.super-workspace-root-page>.analysis-page-header .analysis-page-close,
+.super-workspace-root-page>.analysis-page-header [data-dkds-core-action="workbench-import"]{display:none;}
+.super-workspace-root-page>.analysis-page-header{min-height:42px;padding:6px 12px;gap:10px;}
+.super-workspace-root-page>.analysis-page-body{padding:0;min-width:0;min-height:0;}
+.super-workspace-root-page .dkds-plugin-workbench-root{container-type:inline-size;container-name:dkds-super-workbench;}
+@container dkds-super-workbench (min-width: 1180px){
+  .dkds-adaptive-super-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@container dkds-super-workbench (min-width: 760px) and (max-width: 1179px){
+  .dkds-adaptive-super-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@container dkds-super-workbench (max-width: 759px){
+  .dkds-adaptive-super-grid{grid-template-columns:minmax(0,1fr);}
+}
+/* Parameter PRIME stacking is semantic geometry. The surface paint remains
+   exclusively owned by Material Renderer. Desktop/Web only; Mobile projection
+   owns its independent drawer frame. */
+html:not([data-dkds-host="mobile"]) [data-dkds-presentation-purpose="parameters"][data-dkds-workspace-surface-kind="prime"]{position:relative;z-index:24}

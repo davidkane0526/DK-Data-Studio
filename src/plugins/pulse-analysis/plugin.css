@@ -7,6 +7,7 @@
   flex-direction:column;
   gap:14px;
   padding-bottom:34px;
+  container-type:inline-size;container-name:pulse-analysis-primary;
 }
 .pulse-page-header{padding-left:max(18px,calc((100vw - 1840px)/2 + 18px));padding-right:max(18px,calc((100vw - 1840px)/2 + 18px))}
 .pulse-card{
@@ -17,11 +18,20 @@
   padding:0;
   margin:0;
 }
+.pulse-control-rail{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  container-type:inline-size;
+  container-name:pulse-analysis-controls;
+}
 .pulse-control-grid{
-  padding:12px 14px 11px;
+  padding:10px 11px 11px;
   display:grid;
-  grid-template-columns:repeat(4,minmax(145px,1fr));
-  gap:9px 11px;
+  grid-template-columns:repeat(2,minmax(128px,1fr));
+  gap:8px 9px;
 }
 .pulse-control-grid label{
   display:flex;
@@ -68,12 +78,14 @@
   width:100%;
   min-width:0;
 }
-.pulse-raw-card{min-height:600px}
+.pulse-raw-card{--pulse-raw-plot-height:clamp(360px,42vh,440px);min-height:0;max-height:calc(var(--pulse-raw-plot-height) + 60px);overflow:auto}
 .pulse-raw-plot{
-  height:530px;
-  min-height:500px;
+  height:var(--pulse-raw-plot-height);
+  min-height:0;
+  max-height:var(--pulse-raw-plot-height);
   margin:0;
   padding:0 4px 6px;
+  overflow:hidden;
 }
 .pulse-results-grid{
   display:grid;
@@ -81,14 +93,14 @@
   gap:14px;
 }
 .pulse-result-card{
-  min-height:520px;
+  min-height:440px;
   display:flex;
   flex-direction:column;
 }
 .pulse-result-plot{
   flex:1 1 auto;
-  height:455px;
-  min-height:430px;
+  height:380px;
+  min-height:350px;
 }
 .pulse-results-table-card{}
 .pulse-table-heading{align-items:center}
@@ -108,10 +120,22 @@
 .pulse-result-table{
   width:100%;
 }
-@media(max-width:1220px){
-  .pulse-control-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}
+@container pulse-analysis-controls (min-width:680px){
+  .pulse-control-grid{grid-template-columns:repeat(3,minmax(128px,1fr))}
 }
-@media(max-width:980px){
+@container pulse-analysis-controls (min-width:920px){
+  .pulse-control-grid{grid-template-columns:repeat(4,minmax(128px,1fr))}
+}
+@container pulse-analysis-controls (max-width:520px){
+  .pulse-active-file-head{grid-template-columns:1fr}
+  .pulse-file-manager-card{min-height:0}
+  .pulse-file-list{max-height:250px}
+}
+@container pulse-analysis-controls (max-width:310px){
+  .pulse-control-grid{grid-template-columns:minmax(0,1fr)}
+  .pulse-file-toolbar{flex-direction:column;align-items:stretch}
+}
+@container pulse-analysis-primary (max-width:980px){
   .pulse-results-grid{grid-template-columns:1fr}
   .pulse-result-card{min-height:500px}
   .pulse-result-plot{height:440px}
@@ -120,20 +144,12 @@
   .pulse-results-splitter{display:none}
 }
 @media(max-height:780px){
-  .pulse-raw-plot{height:440px;min-height:420px}
-  .pulse-raw-card{min-height:500px}
 }
 
 
 /* ============================================================
    Pulse batch workspace
    ============================================================ */
-.pulse-batch-workspace{
-  display:grid;
-  grid-template-columns:330px minmax(0,1fr);
-  gap:14px;
-  align-items:stretch;
-}
 .pulse-file-manager-card{
   min-height:430px;
   display:flex;
@@ -174,7 +190,6 @@
   padding:8px;
   margin-bottom:6px;
   cursor:pointer;
-  transition:border-color .12s,background .12s,box-shadow .12s;
 }
 .pulse-batch-file-main{
   display:grid;
@@ -250,37 +265,11 @@
   width:100%;
   padding:8px 10px;
 }
-.pulse-compare-toolbar-card{
-  overflow:visible;
-}
-.pulse-compare-toolbar{
-  min-height:58px;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 220px auto;
-  align-items:center;
-  gap:16px;
-  padding:10px 14px;
-}
-.pulse-compare-toolbar>div:first-child{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.pulse-compare-toolbar label{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:7px;
-  white-space:nowrap;
-}
-.pulse-compare-toolbar select{
-  width:140px;
-}
-.pulse-compared-summary{
-  justify-self:end;
-  padding:5px 8px;
-  white-space:nowrap;
-}
+.pulse-compare-toolbar-card{overflow:visible}
+.pulse-compare-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;flex:0 1 auto}
+.pulse-scope-action{display:flex;align-items:center;gap:7px;white-space:nowrap;min-width:0}
+.pulse-scope-action select{width:174px;min-width:0}
+.pulse-compared-summary{padding:5px 8px;white-space:nowrap;flex:0 0 auto}
 .pulse-table-label,
 .pulse-table-source{
   max-width:190px;
@@ -288,47 +277,21 @@
   text-overflow:ellipsis;
   text-align:left;
 }
-@media(max-width:1180px){
-  .pulse-batch-workspace{
-    grid-template-columns:280px minmax(0,1fr);
-  }
-  .pulse-active-file-head{
-    grid-template-columns:1fr;
-  }
-  .pulse-compare-toolbar{
-    grid-template-columns:1fr;
-    gap:8px;
-  }
-  .pulse-compare-toolbar label{
-    justify-content:flex-start;
-  }
-  .pulse-compared-summary{
-    justify-self:start;
-  }
-}
-@media(max-width:900px){
-  .pulse-batch-workspace{
-    grid-template-columns:1fr;
-  }
-  .pulse-file-manager-card{
-    min-height:0;
-  }
-  .pulse-file-list{
-    max-height:260px;
-  }
+@container pulse-analysis-primary (max-width:1180px){
+  .pulse-compare-actions{flex-wrap:wrap}
 }
 
 
 
 
-/* Pulse keeps its domain-specific batch composition inside a full-width PRIMARY.
-   PluginWorkspace supplies lifecycle/containment; it does not turn the file list
-   into a mandatory application sidebar. */
+/* Pulse publishes file/settings as a semantic data-control Surface and keeps
+   scientific/result content in PRIMARY. Presenter geometry is host-owned; the
+   domain UI only responds to the width of the Surface it actually receives. */
 .pulse-primary-surface{
-  width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:14px;
+  width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:0 14px 14px;
 }
 .pulse-results-split{
-  --pulse-results-visual-height:620px;
+  --pulse-results-visual-height:540px;
   height:min(940px,calc(100vh - 110px));
   min-height:720px;
   display:grid;
@@ -344,16 +307,16 @@
 .pulse-results-splitter{align-self:stretch}
 
 /* Narrow viewport domain geometry. Core platform CSS remains plugin-neutral. */
-@media(max-width:980px){
-  .pulse-primary-surface{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;height:auto;padding:8px;box-sizing:border-box}
+@container pulse-analysis-primary (max-width:980px){
+  .pulse-primary-surface{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;height:auto;padding:0 8px 8px;box-sizing:border-box}
   .pulse-results-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
   .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
   .pulse-results-splitter{display:none}
   .pulse-card{position:relative;inset:auto;display:block;width:100%;min-width:0;max-width:none;height:auto;min-height:0;margin:0;box-sizing:border-box}
   .pulse-file-actions,.pulse-table-actions{position:static;inset:auto;overflow:visible}
-  .pulse-control-grid{grid-template-columns:minmax(0,1fr);padding:10px}
   .pulse-results-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
   .pulse-inline-range{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
   .pulse-table-wrap{width:100%;max-width:100%;overflow:auto}
+  .pulse-raw-card{--pulse-raw-plot-height:clamp(290px,44vh,360px)}
   .pulse-raw-plot,.pulse-result-plot{margin:0;min-height:290px}
 }

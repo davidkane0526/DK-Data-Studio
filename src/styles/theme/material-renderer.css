@@ -1,8 +1,8 @@
-/* Material Renderer 3.10.
+/* Material Renderer 3.11.
    Material role describes UI semantics. Material recipe describes optical
    rendering. Core owns selectors/composition; Theme profiles only provide
    semantic tokens and role-to-recipe policy. */
-:root{--dkds-material-renderer-version:"3.10.0"}
+:root{--dkds-material-renderer-version:"3.11.0"}
 
 /* Recipes --------------------------------------------------------------- */
 body.dkds-modern-ui [data-dkds-material-recipe="clear"]{
@@ -109,6 +109,7 @@ body.dkds-modern-ui .dkds-context-menu.dkds-material-role-popover{border-radius:
 body.dkds-modern-ui .dkds-portable-view.dkds-material-role-floating{border-radius:10px}
 body.dkds-modern-ui .dkds-portable-view:is(.dkds-material-role-surface,.dkds-material-role-sidebar):not(.is-floating):not(.is-global-floating){border-radius:8px}
 body.dkds-modern-ui .floating-panel:is(.dkds-material-role-floating,.dkds-material-role-elevated){border-radius:var(--ui-panel-radius)}
+body.dkds-modern-ui .floating-panel.dkds-material-role-popover{border-radius:var(--ui-panel-radius)}
 body.dkds-modern-ui .dkds-memory-panel.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:13px}
 body.dkds-modern-ui .dkds-floating-surface.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:var(--dkds-visual-radius)}
 body.dkds-modern-ui .dkds-surface.dkds-material-role-surface{border-radius:var(--dkds-visual-radius)}
@@ -118,7 +119,7 @@ body.dkds-modern-ui :where(.dkds-dialog,.dkds-dialog-shell).dkds-material-role-e
 body.dkds-modern-ui .dkds-settings-dialog.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
 body.dkds-modern-ui :where(.dkds-tooltip,.hover-tip,.dkds-core-tooltip,.dkds-d3-chart-tooltip){border-width:1px;border-style:solid;border-radius:7px}
 body.dkds-modern-ui :where(.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card){border-width:1px;border-style:solid}
-body.dkds-modern-ui .plugin-manager-card{border-radius:11px}
+body.dkds-modern-ui .plugin-manager-card{border-radius:11px;border-color:color-mix(in srgb,var(--dkui-divider) 55%,transparent)}
 body.dkds-modern-ui :where(.plugin-manager-stat,.plugin-manager-toolbar-card){border-radius:10px}
 body.dkds-modern-ui :where(.analysis-control-card,.analysis-large-plot,.analysis-table-wrap,.dkds-analysis-prime-panel){
   border-width:1px;border-style:solid;border-radius:9px;
@@ -140,7 +141,17 @@ body.dkds-modern-ui :where(
   background-image:none;
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
+}
+/* A presentation frame is the single outer Material owner. Reparented live
+   content keeps its semantic/component identities but must not repaint an opaque
+   second surface over the frame (notably Mobile drawers/sheets). */
+body.dkds-modern-ui [data-dkds-material-surface="core"] > [data-dkds-material-content="true"]{
+  background-color:transparent;
+  background-image:none;
+  border-color:transparent;
   box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
 }
 /* Nested semantic headers may own a tonal/gradient band but never a second
    backdrop-filter or optical shadow. Keeping the header paint intact is what
@@ -153,7 +164,6 @@ body.dkds-modern-ui :where(
 ) > :where(.dkds-surface-header,.floating-header,[data-dkds-component-identity="panelHeader"],[data-dkds-component-identity="inspectorHeader"]){
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
-  box-shadow:none;
 }
 
 /* Popover surfaces own the optical material. MenuItem Component Appearance
@@ -188,3 +198,34 @@ body.dkds-modern-ui :where(.command-menu,.dkds-material-role-popover) .plugin-ex
   body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::before{transform:none;will-change:auto}
   body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{--dkds-optical-x:50%;--dkds-optical-y:18%;--dkds-optical-shift-x:0px;--dkds-optical-shift-y:0px}
 }
+
+/* Parameter PRIME surfaces are intentionally elevated above the scientific
+   canvas on Desktop/Web. This is an explicit cross-platform presentation
+   correction requested after the v3.67.40 visual freeze, not a Mobile leak. */
+html:not([data-dkds-host="mobile"]) body.dkds-modern-ui [data-dkds-presentation-purpose="parameters"][data-dkds-workspace-surface-kind="prime"]{
+  box-shadow:var(--dkui-shadow-2)
+}
+/* Native parameter projection keeps geometry in the platform layer while
+   Material Renderer exclusively owns elevated paint, scrollbar optics and
+   the fixed resize-grip appearance. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{
+  border-width:1px;border-style:solid;border-radius:10px
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]{
+  scrollbar-color:color-mix(in srgb,var(--dkui-control-border) 60%,transparent) transparent
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-track{background:transparent}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-thumb{border-radius:999px;background:color-mix(in srgb,var(--dkui-control-border) 58%,transparent)}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-mobile-drawer-resize-handle{
+  background:transparent
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-mobile-drawer-resize-grip{
+  background:color-mix(in srgb,var(--dkui-control-border) 78%,var(--dkui-text) 12%);
+  box-shadow:0 0 4px color-mix(in srgb,var(--dkui-accent) 26%,transparent)
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-drawer-resize-handle:is(:hover,:active,.is-dragging) .dkds-mobile-drawer-resize-grip{background:var(--dkui-accent);box-shadow:0 0 7px color-mix(in srgb,var(--dkui-accent) 44%,transparent)}

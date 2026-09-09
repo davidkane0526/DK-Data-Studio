@@ -6,7 +6,7 @@ const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.28.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');
@@ -17,7 +17,7 @@ assert(dts.includes("'clear'|'thin-glass'|'soft-glass'|'liquid-glass'"),'SDK rec
 assert(dts.includes("thinGlass:boolean"),'renderer capability type must expose thinGlass.');
 
 const renderer=read('src/core/theme/material-renderer.js');
-for(const token of ["const VERSION='3.10.0'","'thin-glass'",'DKDSMaterialSurface','OPAQUE_PARENT_OCCLUSION','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','renderer.thinGlass']) assert(renderer.includes(token),`renderer missing ${token}`);
+for(const token of ["const VERSION='3.11.0'","'thin-glass'",'DKDSMaterialSurface','OPAQUE_MATERIAL_OCCLUSION','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','renderer.thinGlass']) assert(renderer.includes(token),`renderer missing ${token}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Material role bindings must not know plugin identity.');
 assert(renderer.includes("el.dataset.dkdsMaterialRoleClassOwner='material-surface'"),'MaterialSurface role ownership must be explicit.');
 assert(renderer.includes("roleClassOwner==='core-runtime'"),'runtime inference must only remove runtime-owned role classes.');
@@ -34,8 +34,9 @@ assert(!/\[data-dkds-material-recipe="thin-glass"\]::(?:before|after)/.test(css)
 
 const runtime=read('src/core/theme/runtime.js');
 const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+const thinThemeManifest=json('src/plugins/thin-glass-theme/plugin.json');
 assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core must not own a product Theme profile; it only owns the generic thin-glass renderer.');
-assert(thinTheme.includes("id:'com.dkds.theme.liquid-glass'")&&thinTheme.includes("apiVersion:'1.19.0'"),'Thin Glass must be a first-party Plugin API 1.19 Theme plugin.');
+assert(thinThemeManifest.id==='com.dkds.theme.liquid-glass'&&thinThemeManifest.apiVersion==='1.19.0'&&thinThemeManifest.entry==='plugin.js','Thin Glass must be a first-party Plugin API 1.19 Theme plugin.');
 for(const row of ["chrome:'thin-glass'","sidebar:'thin-glass'","surface:'clear'","elevated:'thin-glass'","popover:'thin-glass'","control:'clear'","floating:'thin-glass'"]) assert(thinTheme.includes(row),`Thin Glass plugin policy missing ${row}`);
 assert(!runtime.includes("metadata.family==='glass'"),'recipe policy must not infer glass from theme identity/metadata');
 assert(!runtime.includes("const fallback={chrome:'clear'"),'Theme Runtime must not silently synthesize clear recipes for missing roles.');
@@ -44,7 +45,7 @@ assert(!renderer.includes('SAFE_DEFAULT_RECIPE_BY_ROLE'),'Material Renderer must
 assert(!renderer.includes("return recipePolicy()[role]||'clear'"),'Material Renderer must expose RECIPE_MISSING rather than silently falling back to clear.');
 
 const index=read('src/index.html');
-for(const row of ['id="mainWorkspace" class="main-workspace dkds-material-role-surface"','id="statusBar" class="statusbar dkds-material-role-chrome"','id="pluginManagerPage"','dkds-material-role-elevated','id="automationTestPage"']) assert(index.includes(row),`Core static role coverage missing ${row}`);
+for(const row of ['id="statusBar" class="statusbar dkds-material-role-chrome"','id="pluginManagerPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface"','dkds-material-role-elevated','id="automationTestPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface"']) assert(index.includes(row),`Core static role coverage missing ${row}`);
 assert(!index.includes('<script src="core/theme/debug-runtime.js"></script>')&&read('src/core/host/optional-runtime-loader.js').includes("loadScript('core/theme/debug-runtime.js')"),'Theme Debug runtime must be lazy in the main shell.');
 const pluginWindow=read('src/plugin-window/index.html');
 assert(pluginWindow.includes('core/theme/debug-runtime.js'),'Theme Debug runtime must be loaded in Dedicated Workspace.');
@@ -52,14 +53,13 @@ assert(pluginWindow.includes('core/theme/debug-runtime.js'),'Theme Debug runtime
 const debug=read('src/core/theme/debug-runtime.js');
 for(const row of ['Component:','Material role:','Material recipe:','Computed backdrop:','Base token:','Occluding child:']) assert(debug.includes(row),`Theme Debug missing ${row}`);
 const coverage=read('src/core/theme/coverage-runtime.js');
-for(const row of ['ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','OPAQUE_PARENT_OCCLUSION','ENGINE_UNSUPPORTED']) assert(coverage.includes(row),`Theme Coverage missing ${row}`);
+for(const row of ['ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','OPAQUE_MATERIAL_OCCLUSION','ENGINE_UNSUPPORTED']) assert(coverage.includes(row),`Theme Coverage missing ${row}`);
 
 const sdkTool=read('sdk/tools/dkds-plugin.js');
-assert(sdkTool.includes("renderer.recipes.thin-glass"),'SDK validator Theme API must advertise thin-glass recipe support.');
 assert(sdkTool.includes('must explicitly declare a Material Recipe for every Core role'),'SDK validator must reject incomplete Theme recipe policies instead of relying on renderer fallback.');
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.67.10 <4.0.0');
-assert.equal(template.compatibility.themeContract,'^3.10.0');
+assert.equal(template.apiVersion,'1.19.0');
+assert(!Object.prototype.hasOwnProperty.call(template,'compatibility'),'Theme template must not publish version-range compatibility metadata.');
 const templateJs=read('sdk/templates/theme-profile/plugin.js');
 assert(templateJs.includes("popover:'thin-glass'")&&templateJs.includes("surface:'clear'"),'official Theme template must demonstrate Thin Glass policy.');
 

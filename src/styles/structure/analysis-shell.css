@@ -76,7 +76,7 @@
   overflow-y:hidden;
   scrollbar-width:thin;
 }
-.analysis-page-header>.dkds-plugin-header-actions.dkds-action-group{flex-wrap:nowrap;gap:8px;}
+.analysis-page-header>.dkds-plugin-header-actions.dkds-action-group{--dkds-header-action-height:30px;flex-wrap:nowrap;gap:8px;}
 .analysis-page-header>.dkds-plugin-header-actions :where(button,.dkds-action-button){flex:0 0 auto;min-width:max-content;}
 .analysis-page-header>.analysis-page-close{flex:0 0 auto;}
 .analysis-page-header h2{margin:0;}
@@ -88,8 +88,9 @@
   height:0;
   max-height:none;
   overflow:auto;
-  overscroll-behavior:contain;
-  padding:14px 18px 28px;
+  overscroll-behavior-x:contain;
+  overscroll-behavior-y:auto;
+  padding:0;
 }
 .analysis-control-card{
   display:flex;
@@ -256,7 +257,7 @@
 .update-status-message{font-size:11px;line-height:1.55;margin-top:7px;min-height:34px;}
 .update-progress-wrap{display:flex;align-items:center;gap:8px;margin-top:10px;}
 .update-progress-track{height:7px;flex:1;overflow:hidden;}
-.update-progress-bar{height:100%;width:0;transition:width .15s ease;}
+.update-progress-bar{height:100%;width:0;}
 #updateProgressText{font-size:10px;width:38px;text-align:right;}
 .update-info-grid{
   display:grid;
@@ -340,6 +341,7 @@ button.success{font-weight:700;}
 .import-header-actions,.import-footer-actions,.import-preview-actions{
   display:flex;gap:6px;align-items:center;flex-wrap:wrap;
 }
+.import-data-command,.import-footer-actions{--dkds-header-action-height:32px;}
 .import-target-bar{padding:10px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;align-items:center;}
 .import-target-heading{display:flex;flex-direction:column;gap:2px;min-width:150px;}.import-target-heading strong{font-size:var(--ui-font-size);}.import-target-heading span,.import-target-hint{font-size:var(--ui-font-small);}.import-target-options{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}.import-target-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;font-size:var(--ui-font-size);cursor:pointer;user-select:none;}.import-target-chip input{margin:0;}.import-target-icon{font-size:var(--ui-font-size);}.import-target-hint{grid-column:2/3;line-height:1.45;}
 .import-generic-importer-note{display:flex;flex-direction:column;gap:3px;margin:8px 0 2px;padding:9px 10px;}.import-generic-importer-note strong{font-size:var(--ui-font-size);}.import-generic-importer-note span{font-size:var(--ui-font-small);line-height:1.5;}
@@ -495,7 +497,11 @@ button.success{font-weight:700;}
 }
 .range-action-footer{font-size:var(--ui-font-tiny);}
 .analysis-page-header h2{font-size:var(--ui-font-page-title);font-weight:720;letter-spacing:.02em;}
-.analysis-page{top:var(--dkds-analysis-page-top,var(--dkds-analysis-fallback-top));--dkds-analysis-fallback-top:92px;
+.analysis-page{
+  --dkds-analysis-shell-gap:6px;
+  --dkds-analysis-fallback-top:92px;
+  top:calc(var(--dkds-analysis-page-top,var(--dkds-analysis-fallback-top)) + var(--dkds-analysis-shell-gap));
+  padding-top:0;
   right:0;
   bottom:var(--dkds-statusbar-height,28px);
   height:auto;

@@ -49,10 +49,10 @@ Plugin IDs are permanent once project files persist state under them.
 A plugin ID is stable identity, not an installation-location identity. A plugin shipped in the application is the **bundled baseline** for that ID. On Desktop, a `.dkplugin` with the **same ID** may update that baseline when all of the following are true:
 
 - the package passes the same Plugin API / manifest / layout validation as any external package;
-- its application and Plugin API compatibility ranges match the current host;
+- it declares Plugin API `1.19.0` exactly and satisfies the current manifest/Core requirement contract;
 - its semantic plugin version is **strictly newer than the current effective version**.
 
-Core installs such a package as a **managed override** in the user-data `plugin-overrides` layer. The application installation directory is never modified. Because a bundled plugin may already be running when the user installs an update, managed overrides activate on the next application start rather than hot-replacing executing first-party code. Plugin Manager keeps version history, can roll back to another eligible override, and can remove the override to restore the bundled baseline.
+Core installs such a package as a **managed override** in the user-data `plugin-overrides` layer. The application installation directory is never modified. Because a bundled plugin may already be running when the user installs an update, managed overrides activate on the next application start rather than hot-replacing executing first-party code. The current installed override is the only override package considered; removing it makes the bundled package active again.
 
 If a later DK Data Studio release ships the same or a newer bundled version, that bundled baseline automatically wins over a stale override. This keeps exported/upgraded plugins useful without turning the application bundle into mutable state. Unknown IDs in the reserved `builtin.*` namespace are still rejected; stable first-party IDs outside that prefix are governed by actual bundled membership, not name heuristics.
 
@@ -67,6 +67,7 @@ The bundled source and exported `.dkplugin` paths are intentionally held to the 
 - canonical Entity Registry for identity/relationship/state projection (`visible / focused / selected / locked / hidden / disabled`);
 - D3 scientific rendering through the vendor-neutral ScientificPlot API, including focus styling, chart lifecycle, resize, purge and export;
 - DOM creation/query helpers, persistent listener/observer cleanup, animation-frame/timer scheduling and declarative component primitives;
+- runtime style ownership, including CSS inline writes, SVG paint attributes (`fill`, `stroke`, `opacity`, etc.) and dynamic SVG presentation attributes (`display`, `visibility`, `pointer-events`, `cursor`); `ctx.ui.dom.style()` and `ctx.ui.dom.attr()` route managed writes through the same Style Ownership Gate, while scientific/data geometry (`x`, `y`, `cx`, `cy`, `d`, `transform`, scale-derived coordinates) remains renderer-owned geometry;
 - PRIMARY / PRIME / SUB workspaces, Grid, portable/dock/floating surfaces, z-order and resize propagation;
 - actions, shortcuts, menus, status bar, typed selection and Interaction Runtime;
 - project slices, state-store lifecycle and dedicated TOP window synchronization;
@@ -95,7 +96,7 @@ raw renderer-vendor globals such as window.d3
 window.d3
 private renderer event listeners or listener cleanup
 private scrollIntoView focus/reveal logic
-ctx.ui.charts (legacy first-party bypass; use ctx.ui.scientificPlot)
+ctx.ui.scientificPlot (the only public scientific chart runtime)
 raw document.querySelector/createElement...
 new ResizeObserver / new MutationObserver
 requestAnimationFrame / setTimeout / setInterval / queueMicrotask
@@ -370,6 +371,8 @@ In Plugin API 1.19, `PRIMARY` is exactly one semantic main surface. `leftNode` a
 
 `semanticKind` is a bounded Core semantic declaration for persistent PRIME/Portable surfaces. Use `inspector` only for a true persistent inspector; ordinary auxiliary panels use the default `panel`. Core converts this declaration into Component Identity and Material Role ownership. Plugins and themes cannot invent additional semantic kinds, selectors, or Material roles.
 
+`presentationPurpose` is orthogonal to `semanticKind`. Every `data-control` PRIME is eligible for the same constrained-platform fixed control affordance, and its plugin-provided label is preserved (`参数`, `数据`, etc.). Use `presentationPurpose: 'parameters'` only to describe a parameter/settings surface. Keep its `semanticKind` as `panel`; `parameters` is functional metadata, not a Portable/Material kind.
+
 Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Portable/PlotView APIs.
 
 ### Tooltip ownership
@@ -464,11 +467,11 @@ const check = ctx.analysis.algorithms.diagnose(locked);
 
 If `diagnose()` returns `missing-version`, the consumer must preserve the requested version and present the available alternatives. It must **not** silently replace the project lock with the current default. `versions(ref)` lists coexisting registered versions; `preferred()` / `setPreferred()` / `clearPreferred()` manage the user default for new analyses only.
 
-External plugin packages remain single-active by plugin id. Desktop Plugin Manager keeps archived package versions for update rollback, while true scientific-version coexistence is represented by multiple algorithm versions registered by the active provider package.
+External plugin packages are single-active by plugin id. Scientific-version coexistence is represented only by multiple exact algorithm versions registered by the current active provider package; package history is not an execution source.
 
-### Algorithm package catalog and recovery (v3.55+)
+### Algorithm package catalog and recovery
 
-Algorithm Provider packages should publish a metadata-only catalog in their manifest. Core can then locate an exact project-locked algorithm without executing the package:
+Algorithm Provider packages publish a metadata-only catalog in the current manifest so Core can identify which exact algorithms the **currently installed package** can provide without executing candidate JavaScript:
 
 ```json
 {
@@ -477,19 +480,15 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
   "algorithmProvides": [
     {"category":"peak-metrics","id":"baseline-fwhm-v1","version":"1.0.0","title":"局部基线 FWHM"}
   ],
-  "compatibility": {
-    "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.19.0"
-  },
   "pluginDependencies": [
-    {"id":"other.provider","range":"^2.0.0","optional":false}
+    {"id":"other.provider"}
   ]
 }
 ```
 
-`algorithmProvides` is an exact package catalog, not a substitute for runtime `register()`. Every entry must belong to a declared `algorithmCategories` value and use an exact semantic version. `compatibility.app`, `compatibility.pluginApi`, and package-level `pluginDependencies` are evaluated by the same Core compatibility service during catalog lookup, install/update, LAN update, startup loading and history rollback.
+`algorithmProvides` is an exact package catalog, not a substitute for runtime `register()`. Each entry belongs to a declared `algorithmCategories` value and uses an exact algorithm version. Package dependencies are current package IDs only. Candidate discovery is limited to providers installed under the current contract.
 
-A consumer with a missing exact project lock may use `ctx.analysis.algorithms.locate(ref)` to list compatible current/history candidates and `recover(ref, candidate)` to restore one. Recovery must preserve the original `{category,id,version}` lock, restore/enable the package, and then verify that the exact algorithm version registered successfully. An incompatible candidate may be shown diagnostically but must not be auto-activated. Override candidates are located but are not hot-swapped into a running host.
+A consumer with a missing exact project lock may use `ctx.analysis.algorithms.locate(ref)` to inspect current installed providers and `recover(ref, candidate)` to enable/reload a current provider where supported. Recovery preserves the original `{category,id,version}` lock and verifies that the exact algorithm version registered successfully. It never substitutes another algorithm version.
 
 Peak detectors are ordinary versioned Scientific Algorithms. Register them through `ctx.analysis.algorithms` with `category:'peak-detector'`; there is no detector-specific compatibility registry.
 

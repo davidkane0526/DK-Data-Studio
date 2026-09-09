@@ -27,6 +27,7 @@
   captureRuntimeErrors();
 
   function assert(condition,message){if(!condition)throw new Error(message||'Assertion failed.');}
+  const versionAtLeast=(value,minimum)=>{const a=String(value||'').split('.').map(Number),b=String(minimum||'').split('.').map(Number);for(let i=0;i<3;i++){const x=Number.isFinite(a[i])?a[i]:0,y=Number.isFinite(b[i])?b[i]:0;if(x!==y)return x>y;}return true;};
 
   async function runCase(id,title,group,fn,{skip=false,skipReason=''}={}){
     const started=now();
@@ -115,12 +116,32 @@
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
-      for(const id of ['app','activityBar','mainWorkspace','statusBar','manageMenu','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
+      for(const id of ['app','activityBar','primaryActivityBar','statusBar','manageMenu','superWorkspaceEmpty','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
     });
+    await runCase('plugins.startup-convergence','Plugin startup catalog convergence','Plugins / Runtime',async()=>{
+      const before=window.DKDSPlugins?.startupState?.()||{};
+      await window.DKDSPlugins?.ensureReady?.({includeExternal:true,reason:'automation-preflight'});
+      const after=window.DKDSPlugins?.startupState?.()||{};
+      const rows=window.DKDSPlugins?.manager?.list?.()||[];
+      const builtinRows=rows.filter(row=>String(row?.source||'builtin')==='builtin');
+      const catalogCount=Number(after.generatedCatalogCount)||0;
+      const catalogVersion=String(after.generatedCatalogVersion||'');
+      const appVersion=String(environment.appVersion||document.querySelector('.version')?.textContent||'').replace(/^v/i,'').trim();
+      assert(catalogCount>0,'Generated current-contract plugin catalog is empty.');
+      assert(!appVersion||catalogVersion===appVersion,`Generated plugin catalog belongs to ${catalogVersion||'<unknown>'}, but the running app is ${appVersion}.`);
+      assert(builtinRows.length>=catalogCount,`Plugin registry did not converge to the generated catalog: ${builtinRows.length}/${catalogCount} built-ins.`);
+      assert(Number(after.registeredBuiltinCount||0)>=catalogCount,`Plugin startup snapshot still reports a catalog gap: ${after.registeredBuiltinCount||0}/${catalogCount}.`);
+      assert(!Array.isArray(after.catalogMissing)||after.catalogMissing.length===0,`Plugin catalog still has missing built-ins after reconciliation: ${(after.catalogMissing||[]).join(', ')}`);
+      assert(after.deferredPending!==true,'Plugin registry still has deferred work after ensureReady().');
+      for(const id of ['builtin.flexible-import','builtin.resonance-detector-robust','com.dkds.theme.aurora-pop','com.dkds.theme.liquid-glass'])
+        assert(rows.some(row=>row.id===id&&row.enabled!==false),`Required current plugin is missing after startup convergence: ${id}`);
+      return {before,after,definitions:rows.length,builtinDefinitions:builtinRows.length,catalogCount,catalogVersion};
+    });
+
     await runCase('ui.visual-geometry-closure','Desktop Visual Closure · computed geometry','UI / Visual',visualGeometryClosureSmoke);
     await runCase('ui.theme-runtime-performance','Theme Runtime · idle mutation budget','UI / Theme',themeRuntimePerformanceSmoke);
     await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
-      const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.10.0'&&caps?.renderer?.backdropBlur===true&&caps?.renderer?.materialContexts===true,'Material Renderer 3.10 contextual backdrop capability unavailable.');
+      const caps=window.DKDSTheme?.rendererCapabilities?.();assert(versionAtLeast(caps?.version,'3.10.0')&&caps?.renderer?.backdropBlur===true&&caps?.renderer?.materialContexts===true,`Material Renderer 3.10+ contextual backdrop capability unavailable: ${caps?.version||'missing'}`);
       assert(window.DKDSTheme?.contractVersion==='3.10.0','Theme Contract 3.10 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('contract.appearance.component-contexts')===true,'Theme 3.10 Component Context capability unavailable.');assert(window.DKDSTheme?.supports?.('contract.material.contexts')===true,'Theme 3.10 Material Context capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.materialContexts')===true,'Material Renderer contextual projection unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
       const thin=window.DKDSThemeMaterialRenderer?.probeRecipe?.('thin-glass','popover');assert(thin?.status==='REAL_MATERIAL'&&thin?.recipe==='thin-glass',`Thin Glass probe ${thin?.status||'none'} / ${thin?.recipe||'none'}`);assert(/blur\(/.test(thin.backdropFilter||''),`Thin Glass did not compute backdrop blur: ${thin.backdropFilter||'none'}`);assert(!thin.edgeBackdropFilter&&!thin.specularBackground,'Thin Glass must not use Liquid optical layers.');
       const liquid=window.DKDSThemeMaterialRenderer?.probeRecipe?.('liquid-glass','popover');assert(liquid?.opticalStatus==='REAL_LIQUID_MATERIAL','Liquid Glass renderer regression.');
@@ -164,7 +185,7 @@
     await runCase('scalar-field.shared','Core Scientific Scalar Field renderer','Data Contract / Core',scientificScalarFieldSmoke);
     await runCase('algorithms.registry','Scientific Algorithm Registry & Version Lock','Data Contract',scientificAlgorithmRegistrySmoke);
     await runCase('algorithms.version-management','Algorithm default / lock / missing-version management','Data Contract',scientificAlgorithmVersionManagementSmoke);
-    await runCase('algorithms.package-catalog','Algorithm Package Catalog & compatibility','Data Contract',scientificAlgorithmPackageCatalogSmoke);
+    await runCase('algorithms.package-catalog','Algorithm Package Catalog & readiness','Data Contract',scientificAlgorithmPackageCatalogSmoke);
     await runCase('algorithms.transport-ter','Transport / Scalar Field / TER Algorithm Providers','Data Contract',scientificTransportAlgorithmProvidersSmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);

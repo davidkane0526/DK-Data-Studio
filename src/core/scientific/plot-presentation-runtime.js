@@ -2,6 +2,12 @@
   if (window.DKDSPlotPresentation) return;
 
   const VERSION='1.1.0';
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate must initialize before plot presentation runtime.');
+  const STYLE_OWNER='core.plot-presentation';
+  const STYLE_SOURCE='src/core/scientific/plot-presentation-runtime.js';
+  const styleSet=(el,prop,value,component='plot-presentation')=>StyleGate.set(el,prop,value,{owner:STYLE_OWNER,component,kind:'runtime-inline',source:STYLE_SOURCE});
+  const styleRemove=(el,prop,component='plot-presentation')=>StyleGate.remove(el,prop,{owner:STYLE_OWNER,component,kind:'runtime-inline',source:STYLE_SOURCE});
   const DEFAULTS=Object.freeze({
     maxRows:2,
     rowHeight:20,
@@ -116,11 +122,11 @@
     host.classList.remove('hidden','is-top','is-bottom','is-right','is-left','is-overflowing');
     if(!metrics.enabled){host.classList.add('hidden');return;}
     host.classList.add(`is-${metrics.placement}`);host.classList.toggle('is-overflowing',!!metrics.overflow);
-    for(const name of ['left','right','top','bottom','width','max-height'])host.style.removeProperty(name);
+    for(const name of ['left','right','top','bottom','width','max-height'])styleRemove(host,name,'scientific-legend');
     if(metrics.placement==='right'||metrics.placement==='left'){
-      host.style[metrics.placement]='6px';host.style.top='6px';host.style.width=`${Math.max(96,(Number(metrics.width)||112)-10)}px`;host.style.maxHeight=`${Math.max(64,Number(metrics.height)||64)}px`;
+      styleSet(host,metrics.placement,'6px','scientific-legend');styleSet(host,'top','6px','scientific-legend');styleSet(host,'width',`${Math.max(96,(Number(metrics.width)||112)-10)}px`,'scientific-legend');styleSet(host,'max-height',`${Math.max(64,Number(metrics.height)||64)}px`,'scientific-legend');
     }else{
-      host.style.left='6px';host.style.right='6px';host.style[metrics.placement]='3px';
+      styleSet(host,'left','6px','scientific-legend');styleSet(host,'right','6px','scientific-legend');styleSet(host,metrics.placement,'3px','scientific-legend');
     }
   }
 
@@ -142,7 +148,7 @@
     update(entries=[],metrics={},state={}){
       const host=this.ensure();if(!host)return null;if(!(this.buttonMap instanceof Map))this.buttonMap=new Map();this.entries=cleanEntries(entries);this.metrics={...metrics};this.state={soloKey:String(state.soloKey||''),selectedKey:String(state.selectedKey||'')};
       if(!metrics?.enabled||this.entries.length<2){host.classList.add('hidden');host.replaceChildren();this.structureSignature='';this.buttonMap.clear();return host;}
-      applyHostPlacement(host,metrics);host.style.setProperty('--dkds-legend-rows',String(Math.max(1,Number(metrics.rows)||1)));
+      applyHostPlacement(host,metrics);styleSet(host,'--dkds-legend-rows',String(Math.max(1,Number(metrics.rows)||1)),'scientific-legend');
       const groups=(metrics.placement==='top'||metrics.placement==='bottom')?(Array.isArray(metrics.rowGroups)&&metrics.rowGroups.length?metrics.rowGroups:splitRows(this.entries,Number(metrics.width)||640,Math.max(1,Number(metrics.rows)||1))):this.entries.map(row=>[row]);
       const byKey=new Map(this.entries.map(entry=>[entry.key,entry])),activeKey=document.activeElement?.closest?.('button[data-legend-key]')?.dataset?.legendKey||'';
       const nextKeys=new Set(this.entries.map(entry=>entry.key));for(const key of [...this.buttonMap.keys()])if(!nextKeys.has(key))this.buttonMap.delete(key);
@@ -165,7 +171,7 @@
       for(const [key,button] of this.buttonMap){
         const entry=byKey.get(key);if(!entry)continue;const active=!solo||solo===key;
         button.classList.toggle('is-muted',!active);button.classList.toggle('is-selected',selected===key||solo===key);button.classList.toggle('is-solo',solo===key);button.setAttribute('aria-pressed',String(solo?solo===key:selected===key));button.dataset.dkdsTooltip=solo===key?'再次点击恢复全部曲线':`只显示 ${entry.label}`;
-        const swatch=button.querySelector('.dkds-plot-legend-swatch');if(swatch)swatch.style.background=entry.color||'currentColor';const label=button.querySelector('.dkds-plot-legend-label');if(label&&label.textContent!==entry.label)label.textContent=entry.label;
+        const swatch=button.querySelector('.dkds-plot-legend-swatch');if(swatch)styleSet(swatch,'background',entry.color||'currentColor','scientific-legend-swatch');const label=button.querySelector('.dkds-plot-legend-label');if(label&&label.textContent!==entry.label)label.textContent=entry.label;
       }
       if(activeKey&&this.buttonMap.has(activeKey)&&document.activeElement!==this.buttonMap.get(activeKey))queueMicrotask(()=>this.buttonMap.get(activeKey)?.focus?.({preventScroll:true}));
       return host;

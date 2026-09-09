@@ -1,14 +1,5 @@
 (() => {
-  const manifest={
-    id:'com.dkds.tools.pulse-sampler',name:'脉冲与采样处理',version:'1.9.2',apiVersion:'1.19.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:360,
-    description:'三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。',pluginType:'tool',
-    requiresCore:['events','status','project','workspace','data.sources','data.artifacts','data.model','ui.dom','ui.workspace','ui.scientific-plot','ui.series','ui.table','ui.activities','ui.top-workspace','ui.pages'],
-    capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table','data.scoped-sources'],
-    workspace:{role:'top',activity:'pulse-sampler-tool',icon:'⌁',title:'脉冲与采样处理'},
-    window:{activity:'pulse-sampler-tool',title:'脉冲与采样处理',width:1320,height:860,minWidth:960,minHeight:640,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    data:{accepts:['data.table','science.transport.iv','science.transport.transfer']},
-    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
-  };
+  const manifest={"id":"com.dkds.tools.pulse-sampler","name":"脉冲与采样处理","version":"1.9.13","apiVersion":"1.19.0","entry":"plugin.js","scripts":["plugin.js"],"styles":["plugin.css"],"enabled":true,"order":360,"description":"三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。","pluginType":"tool","requiresCore":["runtime","events","status","project","io","workspace","data.sources","data.artifacts","data.model","ui.dom","ui.workspace","ui.scientific-plot","ui.series","ui.table","ui.activities","ui.top-workspace","ui.pages"],"capabilities":["ui.page","ui.top-workspace","ui.plugin-workspace","ui.scientific-plot","ui.table","data.scoped-sources"],"workspace":{"role":"top","activity":"pulse-sampler-tool","icon":"⌁","title":"脉冲与采样处理"},"window":{"activity":"pulse-sampler-tool","title":"脉冲与采样处理","width":1320,"height":860,"minWidth":960,"minHeight":640,"dependencies":["scientific-renderer"],"prewarm":false,"reuse":true,"persistence":"project","artifactHydration":"live"},"data":{"accepts":["data.table","science.transport.iv","science.transport.transfer"]},"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"custom","styles":["mobile.css"]}}};
 
   const EPS=1e-10;
   const CHANNELS=['Vd','Vs','Vg'];
@@ -299,7 +290,6 @@
 
     const q=(selector,root)=>ctx.ui.dom.query(selector,root||page);
     const channelFinal=c=>concatSegments(model.channels[c].segments,model.channels[c].preview);
-    const channelCommitted=c=>concatSegments(model.channels[c].segments,null);
     const allChannelData=()=>({Vd:channelFinal('Vd'),Vs:channelFinal('Vs'),Vg:channelFinal('Vg')});
     const setStatus=text=>ctx.status.set(text);
 
@@ -452,9 +442,10 @@
       for(let i=0;i<n;i++)lines.push([i<r.readCurrent.length?i+1:'',r.readVoltage[i]??'',r.readCurrent[i]??'',i<r.pulseCurrent.length?i+1:'',r.pulseVoltage[i]??'',r.pulseCurrent[i]??''].join(','));
       return lines.join('\n');
     }
-    function downloadText(name,text){
-      if(!text){setStatus('当前没有可导出的数据。');return;}
-      const blob=new Blob([text],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=ctx.ui.dom.create('a');a.href=url;a.download=name;a.style.display='none';ctx.ui.dom.append(page,a);a.click();a.remove();URL.revokeObjectURL(url);
+    async function downloadText(name,text){
+      if(!text){setStatus('当前没有可导出的数据。');return false;}
+      const ok=await ctx.io.saveText({defaultName:name,content:text,filters:[{name:'CSV',extensions:['csv']}],source:`plugin:${manifest.id}:csv-export`});
+      if(ok)setStatus(`已导出 ${name}。`);return !!ok;
     }
 
     ctx.ui.activities.add({
@@ -490,7 +481,7 @@
             <label>周期 <input class="dkds-field-control" data-field="cycle" type="number" step="0.25"></label>
             <label>拉伸系数 <input class="dkds-field-control" data-field="ratio" type="number" step="any"></label>
           </div>
-          <div class="ps-actions dkds-toolbar"><button class="primary" data-action="generate">生成预览</button><button data-action="add-segment">加入序列</button><button data-action="clear-channel">清空通道</button><button data-action="export-wave">导出合并 CSV</button></div>
+          <div class="ps-actions dkds-toolbar"><button class="primary" data-action="generate">生成预览</button><button data-action="add-segment">加入序列</button><button data-action="clear-channel">清空通道</button><button data-action="export-wave" data-dkds-native-save="export">导出合并 CSV</button></div>
           <div class="ps-segment-bar dkds-toolbar"><strong>已加入片段</strong><button data-action="remove-segment">删除最后片段</button></div>
           <div class="ps-mini-table" data-host="segments"></div>
         </section>
@@ -501,18 +492,20 @@
         </section>
         <section class="ps-card ps-analysis dkds-surface">
           <div class="ps-card-head"><div><div class="ps-kicker">SAMPLING</div><h3>测量数据提取</h3></div><span data-role="source-meta"></span></div>
-          <div class="ps-analysis-controls dkds-toolbar">
-            <label class="ps-wide">工程数据<select class="dkds-field-control" data-field="source"></select></label>
-            <label>Time 列<select class="dkds-field-control" data-field="timeColumn"></select></label>
-            <label>Current 列<select class="dkds-field-control" data-field="currentColumn"></select></label>
-            <label>前剔除点<input class="dkds-field-control" data-field="trimLeft" type="number" min="0" step="1" placeholder="自动"></label>
-            <label>后剔除点<input class="dkds-field-control" data-field="trimRight" type="number" min="0" step="1" placeholder="自动"></label>
-            <button class="primary" data-action="extract">提取稳态电流</button>
-          </div>
-          <div class="ps-result-controls dkds-toolbar">
-            <label>X<select class="dkds-field-control" data-field="xMode"><option value="readVoltage">Read Voltage</option><option value="pulseVoltage">Pulse Voltage</option><option value="readIndex">Read Index</option><option value="pulseIndex">Pulse Index</option></select></label>
-            <label>Y<select class="dkds-field-control" data-field="yMode"><option value="readCurrent">Read Current</option><option value="pulseCurrent">Pulse Current</option></select></label>
-            <button data-action="copy-result">复制结果表</button><button data-action="export-result">导出结果 CSV</button>
+          <div class="ps-analysis-command-surface dkds-surface" data-dkds-command-surface="sampling">
+            <div class="ps-analysis-controls">
+              <label class="ps-wide">工程数据<select class="dkds-field-control" data-field="source"></select></label>
+              <label>Time 列<select class="dkds-field-control" data-field="timeColumn"></select></label>
+              <label>Current 列<select class="dkds-field-control" data-field="currentColumn"></select></label>
+              <label>前剔除点<input class="dkds-field-control" data-field="trimLeft" type="number" min="0" step="1" placeholder="自动"></label>
+              <label>后剔除点<input class="dkds-field-control" data-field="trimRight" type="number" min="0" step="1" placeholder="自动"></label>
+              <button class="primary" data-action="extract">提取稳态电流</button>
+            </div>
+            <div class="ps-result-controls">
+              <label>X<select class="dkds-field-control" data-field="xMode"><option value="readVoltage">Read Voltage</option><option value="pulseVoltage">Pulse Voltage</option><option value="readIndex">Read Index</option><option value="pulseIndex">Pulse Index</option></select></label>
+              <label>Y<select class="dkds-field-control" data-field="yMode"><option value="readCurrent">Read Current</option><option value="pulseCurrent">Pulse Current</option></select></label>
+              <button data-action="copy-result" data-dkds-native-copy="clipboard">复制结果表</button><button data-action="export-result" data-dkds-native-save="export">导出结果 CSV</button>
+            </div>
           </div>
           <div class="ps-card-head ps-result-head"><div><div class="ps-kicker">RESULT</div><h3>读写电流映射</h3></div><span data-role="result-meta"></span></div>
           <div class="ps-result-grid"><div class="ps-plot" data-host="result-plot"></div><div class="ps-table ps-result-table" data-host="result-table"></div></div>
@@ -556,7 +549,7 @@
       on(action('remove-segment'),'click',()=>removeSegment(model.channels[model.activeChannel].segments.length-1));
       on(action('export-wave'),'click',()=>downloadText('pulse-waveform.csv',csvFromMerged()));
       on(action('extract'),'click',runExtraction);
-      on(action('copy-result'),'click',()=>{if(resultTable){const ok=resultTable.copyVisibleTable({includeHeader:true});setStatus(ok?'结果表已复制。':'复制结果表失败。');}else setStatus('当前没有结果表。');});
+      on(action('copy-result'),'click',async()=>{if(resultTable){const ok=await resultTable.copyVisibleTable({includeHeader:true});setStatus(ok?'结果表已复制。':'复制结果表失败。');}else setStatus('当前没有结果表。');});
       on(action('export-result'),'click',()=>downloadText('pulse-sampling-result.csv',csvFromResult()));
       on(el.source,'change',()=>{model.analysis.sourceId=el.source.value;refreshColumns();model.result=null;renderResult();});
       on(el.timeColumn,'change',()=>{model.analysis.timeKey=el.timeColumn.value;});
@@ -568,7 +561,10 @@
       return()=>{mounted=false;for(const dispose of domDisposers.splice(0))dispose?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();waveSurface=resultSurface=waveTable=resultTable=segmentTable=null;};
     }});
 
-    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[],sub:[]}});
+    const designerPanel=q('.ps-designer',page);
+    if(designerPanel){workbench.registerPrime({id:'parameters',label:'参数',title:'脉冲参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:96,collapsible:true,embedded:true,existingNode:designerPanel,autoOpen:false,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v2',chrome:false,mount:({container})=>container.classList.remove('hidden')});}
+
+    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[{id:'parameters',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:96,collapsible:true,embedded:true}],sub:[]}});
     const off=ctx.events.on('data:artifacts-changed',()=>{refreshSources();});
     return{deactivate(){off?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();workbench?.dispose?.();}};
   });

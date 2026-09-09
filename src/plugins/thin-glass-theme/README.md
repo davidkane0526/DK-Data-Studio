@@ -1,4 +1,4 @@
-# Thin Glass 1.12.2
+# Thin Glass 1.12.3
 
 Plugin API 1.19 / Theme Contract 3.10 built-in profile.
 

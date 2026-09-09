@@ -1,0 +1,66 @@
+/* Resonance Mobile composition is activated only by Presenter-owned semantic
+   surface markers. The shared plugin never detects Desktop/Mobile identity. */
+[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived{
+  position:relative;inset:auto;z-index:auto;width:100%;height:auto;min-width:0;min-height:100%;padding:8px;box-sizing:border-box;overflow:auto;container-type:inline-size
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived :where(.reswin-two-col,.reswin-gate-grid){
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:8px;align-items:start;width:100%;min-width:0
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived .reswin-feature-field-card{grid-column:auto}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived :where(.analysis-chart-card,.analysis-table-wrap){min-width:0}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived .analysis-chart{
+  width:100%;min-width:0;min-height:220px;height:clamp(230px,32vh,310px)
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived :where(.reswin-spacing-controls,.reswin-gate-controls){
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:6px;align-items:end
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="route"][data-dkds-mobile-active="true"].respar-derived .reswin-gate-controls>*{min-width:0;max-width:100%}
+
+/* SUPER gate-analysis pages are also Mobile routes, but use their historical
+   gate-analysis-grid class rather than reswin-gate-grid.  Size charts from the
+   Surface width itself instead of the old <=1050px one-column desktop media
+   rule.  The 360px floor keeps each scientific plot legible while allowing two
+   columns on ordinary tablets and three columns on wide landscape screens. */
+[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"][data-reswin-view-panel="gate"] .gate-analysis-body{container-type:inline-size;container-name:resonance-gate-mobile}
+[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"][data-reswin-view-panel="gate"] .gate-analysis-body .gate-analysis-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:8px;align-items:start;width:100%;min-width:0
+}
+[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"][data-reswin-view-panel="gate"] .gate-analysis-body .gate-analysis-grid>.analysis-chart-card{min-width:0}
+[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"][data-reswin-view-panel="gate"] .gate-analysis-body .gate-analysis-grid .analysis-chart{
+  width:100%;min-width:0;min-height:220px;height:clamp(230px,31vh,310px)
+}
+
+
+/* The Resonance data-control surface is a native parameter drawer, not a
+   squeezed Desktop rail. Reflow its local controls from the drawer's actual
+   inline size so labels, checkboxes and fields stay aligned after resizing. */
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel{
+  container-type:inline-size;container-name:resonance-parameters-mobile;padding:10px;overflow:visible
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel>section{padding:9px;margin:0 0 8px;min-width:0}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-scan-global{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:6px
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-scan-global>button{min-width:0}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-detect-actions{
+  grid-template-columns:repeat(auto-fit,minmax(min(145px,100%),1fr));gap:6px
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label{
+  display:grid;grid-template-columns:minmax(72px,max-content) minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px;margin:7px 0
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label>select{min-width:0;width:100%;margin:0}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected){
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:7px 12px;align-items:center
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected)>h3{grid-column:1/-1;margin-bottom:1px}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected)>label:not(.respar-select-label){
+  display:flex;align-items:center;gap:6px;min-width:0;margin:0;line-height:1.35
+}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected)>.respar-select-label{grid-column:1/-1}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-dataset-vg{display:grid;grid-template-columns:auto minmax(72px,110px) auto;align-items:center}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-dataset-vg input{width:100%;min-width:0}
+#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-dataset-transform{grid-template-columns:minmax(44px,max-content) minmax(0,1fr);align-items:center}
+@container resonance-parameters-mobile (max-width:360px){
+  #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label{grid-template-columns:1fr}
+  #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected){grid-template-columns:1fr}
+}

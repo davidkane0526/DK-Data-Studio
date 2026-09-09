@@ -157,7 +157,7 @@ P.configure({
 
   const windowed=P.manager.get('test.windowed');
   assert(windowed.pluginType==='task','plugin manager state must expose the SDK-declared pluginType category.');
-  assert(P.manager.get('test.stateful').pluginType==='extension','legacy/third-party manifests without pluginType must receive a safe compatibility fallback.');
+  assert(P.manager.get('test.stateful').pluginType==='extension','plugin manager must expose the manifest-declared current pluginType.');
   assert(windowed.hasWindow,'windowed plugin should expose an independent-window state row');
   assert(windowed.prewarmDefault===false&&windowed.prewarmEnabled===false,'built-in/default prewarm=false should remain off until user opts in');
   P.manager.setPrewarm('test.windowed',true);

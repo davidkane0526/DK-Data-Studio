@@ -16,7 +16,7 @@ const pkg=normalizePluginPackage({
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table'],
     workspace:{role:'top',activity:'external-tool-smoke',title:'External Tool Smoke'},
     window:{activity:'external-tool-smoke',title:'External Tool Smoke',dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    compatibility:{app:'>=3.61.38 <4.0.0',pluginApi:'^1.19.0'}
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   },
   files:{
     // Deliberately stale compact runtime metadata. The package manifest above is

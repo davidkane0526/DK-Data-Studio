@@ -1,6 +1,8 @@
 'use strict';
 const {$, state, status}=require('./context');
-const {copyTextToClipboard, ensureFloatingPanelVisible, floatingSafeBounds, hideLanWebPanel, importActiveItem, importProvider, lanWebShareUrl, loadLanWebSettings, loadUpdateSettingsIntoPanel, normalizeLanWebBaseUrl, renderLanWebQr, renderLanWebStatus, renderUpdateStatus, safeName, setStatus, showLanWebPanel}=require('./foundation');
+const {createOwner}=require('./style-gate');
+const style=createOwner('app.floating-docks','runtime-floating-docks');
+const {copyTextToClipboard, ensureFloatingPanelVisible, floatingSafeBounds, hideLanWebPanel, importActiveItem, importProvider, lanWebShareUrl, loadLanWebSettings, loadUpdateSettingsIntoPanel, normalizeLanWebBaseUrl, renderLanWebQr, renderLanWebStatus, renderUpdateStatus, setStatus, showLanWebPanel}=require('./foundation');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
 const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
@@ -25,234 +27,32 @@ const closeAnalysisPage=(...args)=>deps.workspace.closeAnalysisPage(...args);
 const resetMainView=(...args)=>deps.workspace.resetMainView(...args);
 const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
 const syncAnalysisPageViewport=(...args)=>deps.workspace.syncAnalysisPageViewport(...args);
-const setTrendColumns=(...args)=>deps.scientific.setTrendColumns(...args);
-const updateTrendLayout=(...args)=>deps.scientific.updateTrendLayout(...args);
-const zoomCsvText=(...args)=>deps.scientific.zoomCsvText(...args);
 const saveProject=(...args)=>deps.projects.saveProject(...args);
 const openPluginActivityWindow=(...args)=>deps.windows.openPluginActivityWindow(...args);
 
-function captureGroupFloatRect(){
-  const panel=$('#groupPanel');
-  if(!panel||panel.classList.contains('docked'))return;
-  const r=panel.getBoundingClientRect();
-  state.groupPanelFloatRect={left:r.left,top:r.top,width:r.width,height:Math.max(220,r.height)};
-}
-
-function applyGroupPanelLayout(){
-  const panel=$('#groupPanel');
-  const slot=$('#dockedGroupSlot');
-  const appRoot=$('#app');
-  if(!panel||!slot||!appRoot)return;
-
-  if(state.groupPanelMode==='docked'){
-    if(panel.parentElement!==slot)slot.appendChild(panel);
-    slot.classList.toggle('active',!panel.classList.contains('hidden'));
-    panel.classList.add('docked');
-    panel.style.left='';panel.style.right='';panel.style.top='';panel.style.bottom='';panel.style.transform='';
-    panel.style.width='';
-    panel.style.height=state.groupPanelCollapsed?'38px':`${state.groupPanelDockHeight}px`;
-    $('#groupDockBtn').textContent='恢复悬浮';
-    $('#groupDockBtn')?.setAttribute('aria-label','将组图恢复为可拖动悬浮窗口');
-  }else{
-    slot.classList.remove('active');
-    if(panel.parentElement!==appRoot)appRoot.appendChild(panel);
-    panel.classList.remove('docked');
-    const r=state.groupPanelFloatRect;
-    panel.style.transform='none';
-    if(r){
-      panel.style.left=`${Math.max(0,r.left)}px`;panel.style.top=`${Math.max(58,r.top)}px`;
-      panel.style.right='auto';panel.style.bottom='auto';panel.style.width=`${Math.max(480,r.width)}px`;
-      panel.style.height=state.groupPanelCollapsed?'38px':`${Math.max(260,r.height)}px`;
-    }else{
-      panel.style.left='auto';panel.style.top='auto';panel.style.right='24px';panel.style.bottom='36px';panel.style.width='880px';panel.style.height=state.groupPanelCollapsed?'38px':'620px';
-    }
-    $('#groupDockBtn').textContent='停靠底部';
-    $('#groupDockBtn')?.setAttribute('aria-label','将组图停靠到主图下方，使主图自动上移');
-  }
-
-  panel.classList.toggle('collapsed',state.groupPanelCollapsed);
-  $('#groupMinimizeBtn').textContent=state.groupPanelCollapsed?'展开':'缩小';
-  $('#groupMinimizeBtn')?.setAttribute('aria-label',state.groupPanelCollapsed?'展开组图面板':'将组图缩小为标题栏');
-
-  requestAnimationFrame(()=>{
-    scheduleMainPlotRelayout();
-    if(!state.groupPanelCollapsed&&!panel.classList.contains('hidden'))updateTrendLayout(true);
-  });
-}
-
-function toggleGroupDock(){
-  const panel=$('#groupPanel');
-  if(state.groupPanelMode==='floating'){
-    captureGroupFloatRect();
-    state.groupPanelMode='docked';
-    state.groupPanelCollapsed=false;
-    panel.classList.remove('hidden');
-    setStatus('组图已停靠到底部；主图已自动上移。拖动组图上边缘可调整高度。');
-  }else{
-    state.groupPanelMode='floating';
-    setStatus('组图已恢复为悬浮面板。');
-  }
-  applyGroupPanelLayout();
-}
-
-function toggleGroupMinimize(){
-  const panel=$('#groupPanel');
-  if(!state.groupPanelCollapsed){
-    if(state.groupPanelMode==='docked')state.groupPanelDockHeight=Math.max(180,panel.getBoundingClientRect().height);
-    else captureGroupFloatRect();
-  }
-  state.groupPanelCollapsed=!state.groupPanelCollapsed;
-  applyGroupPanelLayout();
-}
-
-function setupDockResizer(){
-  const handle=$('#groupDockResizer');
-  if(!handle)return;
-  let drag=null;
-  handle.style.touchAction='none';
-  handle.dataset.dkdsTouchGestureOwner='group-dock-resize';
-  handle.addEventListener('pointerdown',e=>{
-    if((e.button!==undefined&&e.button!==0)||state.groupPanelMode!=='docked'||state.groupPanelCollapsed)return;
-    drag={id:e.pointerId,startY:e.clientY,startH:$('#groupPanel').getBoundingClientRect().height};
-    handle.setPointerCapture?.(e.pointerId);e.preventDefault();e.stopPropagation();
-  });
-  window.addEventListener('pointermove',e=>{
-    if(!drag||drag.id!==e.pointerId)return;
-    const area=$('.main-area');
-    const maxH=Math.max(220,Math.floor(area.getBoundingClientRect().height*0.72));
-    // Dragging the top edge upward increases panel height.
-    state.groupPanelDockHeight=Math.max(180,Math.min(maxH,drag.startH+(drag.startY-e.clientY)));
-    $('#groupPanel').style.height=`${state.groupPanelDockHeight}px`;
-    scheduleMainPlotRelayout();
-    updateTrendLayout(true);
-    if(e.cancelable)e.preventDefault();
-  },{passive:false});
-  const finish=e=>{if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;handle.releasePointerCapture?.(drag.id);drag=null;};
-  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
-}
-
-function captureInspectorFloatRect(){
-  const panel=$('#inspectorPanel');
-  if(!panel||panel.classList.contains('docked-right'))return;
-  const r=panel.getBoundingClientRect();
-  state.inspectorFloatRect={
-    left:r.left,top:r.top,
-    width:Math.max(320,r.width),
-    height:Math.max(260,r.height)
-  };
-}
-
-function applyInspectorPanelLayout(){
-  const panel=$('#inspectorPanel');
-  const slot=$('#inspectorDockSlot');
-  const appRoot=$('#app');
-  if(!panel||!slot||!appRoot)return;
-
-  if(state.inspectorPanelMode==='right'){
-    if(panel.parentElement!==slot)slot.appendChild(panel);
-    slot.classList.toggle('active',!panel.classList.contains('hidden'));
-    slot.style.width=panel.classList.contains('hidden')?'0px':`${Math.max(300,state.inspectorDockWidth)}px`;
-    panel.classList.add('docked-right');
-    panel.style.left='';panel.style.right='';panel.style.top='';panel.style.bottom='';
-    panel.style.transform='';panel.style.width='';panel.style.height='';
-    $('#inspectorDockBtn').textContent='恢复悬浮';
-    $('#inspectorDockBtn')?.setAttribute('aria-label','将曲线检查器恢复为可拖动悬浮窗口');
-  }else{
-    slot.classList.remove('active');
-    slot.style.width='0px';
-    if(panel.parentElement!==appRoot)appRoot.appendChild(panel);
-    panel.classList.remove('docked-right');
-    const r=state.inspectorFloatRect;
-    panel.style.transform='none';
-    if(r){
-      panel.style.left=`${Math.max(0,r.left)}px`;
-      panel.style.top=`${Math.max(58,r.top)}px`;
-      panel.style.right='auto';panel.style.bottom='auto';
-      panel.style.width=`${Math.max(320,r.width)}px`;
-      panel.style.height=`${Math.max(260,r.height)}px`;
-    }else{
-      panel.style.left='auto';panel.style.top='86px';panel.style.right='24px';panel.style.bottom='auto';
-      panel.style.width='390px';panel.style.height='520px';
-    }
-    $('#inspectorDockBtn').textContent='停靠右侧';
-    $('#inspectorDockBtn')?.setAttribute('aria-label','将曲线检查器嵌入主图右侧');
-  }
-
-  requestAnimationFrame(()=>scheduleMainPlotRelayout());
-}
-
-function toggleInspectorDock(){
-  const panel=$('#inspectorPanel');
-  if(state.inspectorPanelMode==='floating'){
-    captureInspectorFloatRect();
-    state.inspectorPanelMode='right';
-    panel.classList.remove('hidden');
-    setStatus('曲线检查器已停靠到主图右侧；拖动其左边缘可调整宽度。');
-  }else{
-    state.inspectorPanelMode='floating';
-    setStatus('曲线检查器已恢复为悬浮窗口。');
-  }
-  applyInspectorPanelLayout();
-}
-
-function setupInspectorDockResizer(){
-  const handle=$('#inspectorDockResizer');
-  if(!handle)return;
-  let drag=null;
-  handle.style.touchAction='none';
-  handle.dataset.dkdsTouchGestureOwner='inspector-dock-resize';
-  handle.addEventListener('pointerdown',e=>{
-    if((e.button!==undefined&&e.button!==0)||state.inspectorPanelMode!=='right')return;
-    drag={id:e.pointerId,startX:e.clientX,startW:$('#inspectorDockSlot').getBoundingClientRect().width};
-    handle.setPointerCapture?.(e.pointerId);e.preventDefault();e.stopPropagation();
-  });
-  window.addEventListener('pointermove',e=>{
-    if(!drag||drag.id!==e.pointerId)return;
-    const workspace=$('#mainWorkspace');
-    const maxW=Math.max(340,Math.floor(workspace.getBoundingClientRect().width*.62));
-    state.inspectorDockWidth=Math.max(300,Math.min(maxW,drag.startW+(drag.startX-e.clientX)));
-    $('#inspectorDockSlot').style.width=`${state.inspectorDockWidth}px`;
-    scheduleMainPlotRelayout();
-    if(e.cancelable)e.preventDefault();
-  },{passive:false});
-  const finish=e=>{if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;handle.releasePointerCapture?.(drag.id);drag=null;};
-  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
-}
-
 function makeFloating(panel){
   const head=panel.querySelector('.drag-handle');if(!head)return;let drag=null;
-  head.style.touchAction='none';head.dataset.dkdsTouchGestureOwner='floating-panel-drag';
-  head.addEventListener('pointerdown',e=>{if((e.button!==undefined&&e.button!==0)||e.target.closest('button')||panel.classList.contains('docked')||panel.classList.contains('docked-right'))return;const r=panel.getBoundingClientRect();panel.style.transform='none';panel.style.left=`${r.left}px`;panel.style.top=`${r.top}px`;panel.style.right='auto';panel.style.bottom='auto';drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};head.setPointerCapture?.(e.pointerId);e.preventDefault();});
-  window.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const bounds=floatingSafeBounds(panel),r=panel.getBoundingClientRect(),maxLeft=Math.max(bounds.left,bounds.right-r.width),maxTop=Math.max(bounds.top,bounds.bottom-r.height);panel.style.left=`${Math.min(maxLeft,Math.max(bounds.left,e.clientX-drag.dx))}px`;panel.style.top=`${Math.min(maxTop,Math.max(bounds.top,e.clientY-drag.dy))}px`;if(e.cancelable)e.preventDefault();},{passive:false});
+  style.set(head,'touch-action','none',{component:'floating-panel-header'});head.dataset.dkdsTouchGestureOwner='floating-panel-drag';
+  head.addEventListener('pointerdown',e=>{if((e.button!==undefined&&e.button!==0)||e.target.closest('button')||panel.classList.contains('docked')||panel.classList.contains('docked-right'))return;const r=panel.getBoundingClientRect();style.patch(panel,{transform:'none',left:`${r.left}px`,top:`${r.top}px`,right:'auto',bottom:'auto'},{component:'floating-panel'});drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};head.setPointerCapture?.(e.pointerId);e.preventDefault();});
+  window.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const bounds=floatingSafeBounds(panel),r=panel.getBoundingClientRect(),maxLeft=Math.max(bounds.left,bounds.right-r.width),maxTop=Math.max(bounds.top,bounds.bottom-r.height);style.patch(panel,{left:`${Math.min(maxLeft,Math.max(bounds.left,e.clientX-drag.dx))}px`,top:`${Math.min(maxTop,Math.max(bounds.top,e.clientY-drag.dy))}px`},{component:'floating-panel'});if(e.cancelable)e.preventDefault();},{passive:false});
   const finish=e=>{
     if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;
     head.releasePointerCapture?.(drag.id);
     panel.dataset.dkdsUserMoved='1';
     ensureFloatingPanelVisible(panel);
-    if(panel.id==='inspectorPanel')captureInspectorFloatRect();
-    if(panel.id==='groupPanel')captureGroupFloatRect();
     drag=null;
   };
   window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
 }
 document.querySelectorAll('.floating-panel').forEach(makeFloating);
-setupDockResizer();
-setupInspectorDockResizer();
 document.querySelectorAll('.panel-close').forEach(b=>b.onclick=()=>{
   const panel=$('#'+b.dataset.target);panel.classList.add('hidden');
   if(b.dataset.target==='lanWebPanel')setStatus('局域网网页版面板已隐藏到状态栏；服务状态不受影响。');
-  if(b.dataset.target==='groupPanel')$('#dockedGroupSlot').classList.remove('active');
-  if(b.dataset.target==='inspectorPanel'){
-    $('#inspectorDockSlot').classList.remove('active');
-    $('#inspectorDockSlot').style.width='0px';
-    scheduleMainPlotRelayout();
-  }
 });
 
 // Controls
 $('#openBtn').onclick=()=>openImportWorkbench(); $('#saveProjectBtn').onclick=saveProject;
 const dataCenterSystemBtn=$('#dataCenterSystemBtn');if(dataCenterSystemBtn)dataCenterSystemBtn.onclick=()=>openPluginActivityWindow('data-center');
-$('#inspectorDockBtn').onclick=toggleInspectorDock;
 $('#importChooseFilesBtn').onclick=addImportFiles;
 $('#importCloseBtn').onclick=closeImportWorkbench;
 $('#importCancelBtn').onclick=closeImportWorkbench;
@@ -493,20 +293,6 @@ $('#projectHistoryBtn').onclick=()=>void showProjectHistory();
 document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
 
 
-$('#groupDockBtn').onclick=toggleGroupDock;
-$('#groupMinimizeBtn').onclick=toggleGroupMinimize;
-document.querySelectorAll('[data-trend-cols]').forEach(b=>{
-  b.onclick=()=>setTrendColumns(b.dataset.trendCols);
-});
-
-
-
-$('#zoomExportCsv').onclick=()=>{
-  if(!state.zoomChart)return;
-  window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.csv`,content:zoomCsvText(),filters:[{name:'CSV',extensions:['csv']}]});
-};
-$('#zoomCopyCsv').onclick=()=>{if(state.zoomChart)copyTextToClipboard(zoomCsvText(),`${state.zoomChart.title} CSV`);};
-$('#zoomExportSvg').onclick=()=>{if(!state.zoomChart)return;window.DKDSCharts.toImage('zoomPlot',{format:'svg',width:1200,height:800,scale:1}).then(data=>{const content=decodeURIComponent(data.split(',')[1]);window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.svg`,content,filters:[{name:'SVG',extensions:['svg']}]});});};
 
 window.addEventListener('keydown',e=>{
   if(isTypingTarget(e.target))return;
@@ -529,32 +315,12 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('resize',()=>{
   syncAnalysisPageViewport();
   scheduleMainPlotRelayout();
-  updateTrendLayout(true);
-  try{if(!$('#zoomPanel').classList.contains('hidden'))window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}
   window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
 });
 
 if(window.ResizeObserver){
   const mainObserver=new ResizeObserver(()=>scheduleMainPlotRelayout());
-  mainObserver.observe($('#mainPlotWrap'));
-  mainObserver.observe($('.main-area'));
-  mainObserver.observe($('.workspace'));
-  mainObserver.observe($('#dockedGroupSlot'));
-  mainObserver.observe($('#inspectorDockSlot'));
-  mainObserver.observe($('#mainWorkspace'));
-
-  const panelObserver=new ResizeObserver(entries=>{
-    for(const entry of entries){
-      if(entry.target.id==='groupPanel')updateTrendLayout(true);
-      if(entry.target.id==='inspectorPanel')scheduleMainPlotRelayout();
-      if(entry.target.id==='zoomPanel'&&!entry.target.classList.contains('hidden')){
-        try{window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}
-      }
-    }
-  });
-  panelObserver.observe($('#groupPanel'));
-  panelObserver.observe($('#inspectorPanel'));
-  panelObserver.observe($('#zoomPanel'));
+  for(const target of [$('#mainPlotWrap'),$('.main-area'),$('.workspace'),$('#mainWorkspace')])if(target)mainObserver.observe(target);
 }
 
-module.exports=Object.freeze({configure, captureGroupFloatRect, applyGroupPanelLayout, toggleGroupDock, toggleGroupMinimize, setupDockResizer, captureInspectorFloatRect, applyInspectorPanelLayout, toggleInspectorDock, setupInspectorDockResizer, makeFloating, dataCenterSystemBtn, historyRowTime, normalizeEditHistory, activeEditHistorySnapshot, activeEditHistorySnapshotSync, historyCandidate, systemHistorySnapshotSync, runSystemHistory, systemUndo, systemRedo, systemDeselect, showProjectHistory});
+module.exports=Object.freeze({configure, makeFloating, dataCenterSystemBtn, historyRowTime, normalizeEditHistory, activeEditHistorySnapshot, activeEditHistorySnapshotSync, historyCandidate, systemHistorySnapshotSync, runSystemHistory, systemUndo, systemRedo, systemDeselect, showProjectHistory});

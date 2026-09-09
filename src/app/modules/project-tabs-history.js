@@ -1,5 +1,5 @@
 'use strict';
-const {$, loadTrendColumnsPreference, state}=require('./context');
+const {$, state}=require('./context');
 const {escapeHtml, projectBaseName, setStatus}=require('./foundation');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
@@ -9,9 +9,6 @@ const renderAll=(...args)=>deps.workspace.renderAll(...args);
 const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
 const makeProject=(...args)=>deps.projects.makeProject(...args);
 const saveProject=(...args)=>deps.projects.saveProject(...args);
-const applyGroupPanelLayout=(...args)=>deps.docks.applyGroupPanelLayout(...args);
-const applyInspectorPanelLayout=(...args)=>deps.docks.applyInspectorPanelLayout(...args);
-const captureInspectorFloatRect=(...args)=>deps.docks.captureInspectorFloatRect(...args);
 const prewarmDedicatedPluginWindows=(...args)=>deps.windows.prewarmDedicatedPluginWindows(...args);
 
 function blankProjectTab(title=null){
@@ -23,14 +20,6 @@ function blankProjectTab(title=null){
     importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null,columnFieldFilter:''},
     pluginState:{},
     projectPath:null,
-    trendColumns:loadTrendColumnsPreference(),
-    groupPanelMode:'docked',
-    groupPanelCollapsed:false,
-    groupPanelDockHeight:360,
-    groupPanelFloatRect:null,
-    inspectorPanelMode:'right',
-    inspectorDockWidth:390,
-    inspectorFloatRect:null,
     mainView:{xDomain:null,yDomain:null,mode:'select'},
     history:window.DKDSProjectHistory?.create?.({limit:80})||null,
     dirty:false,
@@ -49,58 +38,42 @@ function activeProjectHistory(){
   return tab.history;
 }
 function projectHistorySnapshot(){return activeProjectHistory()?.snapshot?.()||{canUndo:false,canRedo:false,undoLabel:'',redoLabel:'',past:[],future:[]};}
-const projectAutosaveTimers=new Map();
+const projectDirtyTimers=new Map();
 function projectFingerprint(project){
   let text='';try{text=window.DKDSProjectFormat?.serializeProject?.(project)||JSON.stringify(project||{});}catch{text=JSON.stringify(project||{});}
   let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return `${text.length}:${(hash>>>0).toString(16)}`;
 }
 function markProjectClean(tab,project=null){if(!tab)return;const snapshot=project||(tab.id===state.activeProjectTabId?makeProject():null);if(snapshot)tab.lastSavedFingerprint=projectFingerprint(snapshot);tab.dirty=false;tab.autosavedAt=Date.now();}
-async function flushProjectAutosave(tab=activeProjectTab(),{force=false}={}){
+async function refreshProjectDirty(tab=activeProjectTab()){
   if(!tab||tab.id!==state.activeProjectTabId)return false;
-  const project=makeProject(),fingerprint=projectFingerprint(project);
-  if(tab.lastSavedFingerprint===null){tab.lastSavedFingerprint=fingerprint;tab.dirty=false;return false;}
-  if(!force&&fingerprint===tab.lastSavedFingerprint){tab.dirty=false;return false;}
-  tab.dirty=true;
-  const path=String(tab.projectPath||''),native=!!window.electronAPI?.isNativeClient,web=!!window.electronAPI?.isWebClient;
-  const autosaveWritable=path&&(native?path.startsWith('native-document://'):web?path.startsWith('webfs://'):!/^\w+:\/\//.test(path));
-  if(!autosaveWritable||!window.electronAPI?.saveProject)return false;
-  try{
-    const saved=await window.electronAPI.saveProject({mode:'current',path:tab.projectPath,defaultName:`${projectBaseName(tab.projectPath)}.dkds.json`,project});
-    if(saved){tab.projectPath=saved;if(tab.id===state.activeProjectTabId)state.projectPath=saved;tab.lastSavedFingerprint=fingerprint;tab.dirty=false;tab.autosavedAt=Date.now();window.dispatchEvent(new CustomEvent('dkds:project-autosaved',{detail:{id:tab.id,path:saved,at:tab.autosavedAt}}));return true;}
-  }catch(err){console.warn('[DKDS autosave]',err);}
-  return false;
+  const fingerprint=projectFingerprint(makeProject());
+  if(tab.lastSavedFingerprint===null){tab.lastSavedFingerprint=fingerprint;return false;}
+  const changed=tab.dirty!==(fingerprint!==tab.lastSavedFingerprint);
+  tab.dirty=fingerprint!==tab.lastSavedFingerprint;
+  return changed;
 }
-function scheduleProjectAutosave(tab=activeProjectTab()){
-  if(!tab)return;const old=projectAutosaveTimers.get(tab.id);if(old)clearTimeout(old);
-  const timer=setTimeout(()=>{projectAutosaveTimers.delete(tab.id);void flushProjectAutosave(tab).then(changed=>{if(changed)renderProjectTabs();});},1800);
-  projectAutosaveTimers.set(tab.id,timer);
+function scheduleProjectDirtyCheck(tab=activeProjectTab()){
+  if(!tab)return;const old=projectDirtyTimers.get(tab.id);if(old)clearTimeout(old);
+  const timer=setTimeout(()=>{projectDirtyTimers.delete(tab.id);void refreshProjectDirty(tab).then(changed=>{if(changed)renderProjectTabs();});},1800);
+  projectDirtyTimers.set(tab.id,timer);
 }
 function notifySystemHistory(reason='change',detail={}){try{window.dispatchEvent(new CustomEvent('dkds:history-changed',{detail:{scope:'project',reason,at:Date.now(),...detail}}));}catch{}}
-function recordProjectHistory(entry){const ok=activeProjectHistory()?.record?.(entry)||false;if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('record',{label:String(entry?.label||'项目修改')});}return ok;}
-async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('undo',{label});setStatus(`已撤销：${label}`);}return ok;}
-async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('redo',{label});setStatus(`已重做：${label}`);}return ok;}
+function recordProjectHistory(entry){const ok=activeProjectHistory()?.record?.(entry)||false;if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectDirtyCheck(tab);notifySystemHistory('record',{label:String(entry?.label||'项目修改')});}return ok;}
+async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectDirtyCheck(tab);notifySystemHistory('undo',{label});setStatus(`已撤销：${label}`);}return ok;}
+async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectDirtyCheck(tab);notifySystemHistory('redo',{label});setStatus(`已重做：${label}`);}return ok;}
 
 function captureActiveProjectTab(){
   const t=activeProjectTab();
   if(!t)return;
-  if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
   t.artifactStore=state.artifactStore;
   t.importDraft=state.importDraft;
   t.projectPath=state.projectPath;
-  t.trendColumns=state.trendColumns;
-  t.groupPanelMode=state.groupPanelMode;
-  t.groupPanelCollapsed=state.groupPanelCollapsed;
-  t.groupPanelDockHeight=state.groupPanelDockHeight;
-  t.groupPanelFloatRect=state.groupPanelFloatRect;
-  t.inspectorPanelMode=state.inspectorPanelMode;
-  t.inspectorDockWidth=state.inspectorDockWidth;
-  t.inspectorFloatRect=state.inspectorFloatRect;
   t.pluginState=window.DKDSPlugins?.project?.serialize?.(t.pluginState||{})||t.pluginState||{};
   t.mainView={...state.mainView,
     xDomain:state.mainView.xDomain?state.mainView.xDomain.slice():null,
     yDomain:state.mainView.yDomain?state.mainView.yDomain.slice():null};
   if(state.projectPath)t.title=projectBaseName(state.projectPath);
-  scheduleProjectAutosave(t);
+  scheduleProjectDirtyCheck(t);
 }
 
 function mountProjectTab(t){
@@ -115,26 +88,17 @@ function mountProjectTab(t){
   state.importDraft.scope=null;
   t.importDraft=state.importDraft;
   state.projectPath=t.projectPath||null;
-  state.trendColumns=t.trendColumns||loadTrendColumnsPreference();
-  state.groupPanelMode=t.groupPanelMode||'docked';
-  state.groupPanelCollapsed=!!t.groupPanelCollapsed;
-  state.groupPanelDockHeight=Number(t.groupPanelDockHeight)||360;
-  state.groupPanelFloatRect=t.groupPanelFloatRect||null;
-  state.inspectorPanelMode=t.inspectorPanelMode||'right';
-  state.inspectorDockWidth=Number(t.inspectorDockWidth)||390;
-  state.inspectorFloatRect=t.inspectorFloatRect||null;
   state.mainView={
     xDomain:t.mainView?.xDomain?t.mainView.xDomain.slice():null,
     yDomain:t.mainView?.yDomain?t.mainView.yDomain.slice():null,
     mode:t.mainView?.mode||'select'
   };
-  state.zoomChart=null;
   if(window.DKDSPlugins?.project?.restore)window.DKDSPlugins.project.restore(t.pluginState||{});
   setTimeout(()=>{if(t.id===state.activeProjectTabId&&t.lastSavedFingerprint===null&&!t.dirty){try{t.lastSavedFingerprint=projectFingerprint(makeProject());}catch{}}},0);
 }
 
 function createProjectTab(title=null,activate=true){
-  captureActiveProjectTab();void flushProjectAutosave(activeProjectTab());
+  captureActiveProjectTab();void refreshProjectDirty(activeProjectTab());
   const t=blankProjectTab(title);
   state.projectTabs.push(t);
   if(activate){
@@ -142,8 +106,6 @@ function createProjectTab(title=null,activate=true){
     mountProjectTab(t);
     clearMainView(false);
     renderAll();
-    applyGroupPanelLayout();
-    applyInspectorPanelLayout();
   }
   renderProjectTabs();
   if(activate)setTimeout(()=>prewarmDedicatedPluginWindows(),0);
@@ -152,15 +114,13 @@ function createProjectTab(title=null,activate=true){
 
 function switchProjectTab(id){
   if(id===state.activeProjectTabId)return;
-  captureActiveProjectTab();void flushProjectAutosave(activeProjectTab());
+  captureActiveProjectTab();void refreshProjectDirty(activeProjectTab());
   const t=state.projectTabs.find(q=>q.id===id);
   if(!t)return;
   state.activeProjectTabId=id;
   mountProjectTab(t);
   renderProjectTabs();
   renderAll();
-  applyGroupPanelLayout();
-  applyInspectorPanelLayout();
   scheduleMainPlotRelayout();
   refreshOpenAnalysisPage();
   setStatus(`已切换到独立项目：${t.title}`);
@@ -170,7 +130,7 @@ function switchProjectTab(id){
 async function closeProjectTab(id){
   let t=state.projectTabs.find(q=>q.id===id);if(!t)return false;
   if(t.id===state.activeProjectTabId){captureActiveProjectTab();const project=makeProject(),fp=projectFingerprint(project);if(t.lastSavedFingerprint!==null&&fp!==t.lastSavedFingerprint)t.dirty=true;}
-  const pendingBeforePrompt=projectAutosaveTimers.get(t.id);if(pendingBeforePrompt){clearTimeout(pendingBeforePrompt);projectAutosaveTimers.delete(t.id);}
+  const pendingBeforePrompt=projectDirtyTimers.get(t.id);if(pendingBeforePrompt){clearTimeout(pendingBeforePrompt);projectDirtyTimers.delete(t.id);}
   const hasContent=!!((t.artifactStore?.size?.()||0)||t.dirty||t.projectPath);
   let action='delete';
   if(window.DKDSUI?.dialogs?.show){
@@ -179,19 +139,19 @@ async function closeProjectTab(id){
       :[{id:'cancel',label:'取消'},{id:'delete',label:'删除标签',kind:'danger',autofocus:true}];
     action=await window.DKDSUI.dialogs.show({tone:t.dirty?'warning':'info',title:'删除项目标签？',subtitle:t.title,message:t.dirty?'当前项目还有未保存修改。建议先保存，再删除项目标签。':hasContent?'项目已保存或没有检测到未保存修改。删除标签不会删除磁盘上的工程文件。':'当前项目为空。确认删除此标签？',actions,defaultAction:t.dirty?'save':'delete',cancelAction:'cancel'});
   }else if(!window.confirm(`删除“${t.title}”项目标签？${t.dirty?' 当前有未保存修改。':''}`))action='cancel';
-  if(action==='cancel'||action==='dismiss'){scheduleProjectAutosave(t);return false;}
+  if(action==='cancel'||action==='dismiss'){scheduleProjectDirtyCheck(t);return false;}
   if(action==='save'){
     if(t.id!==state.activeProjectTabId)switchProjectTab(t.id);
     const saved=await saveProject({mode:t.projectPath?'current':undefined});if(!saved)return false;
     t=activeProjectTab()||t;
   }
-  const pending=projectAutosaveTimers.get(t.id);if(pending){clearTimeout(pending);projectAutosaveTimers.delete(t.id);}
+  const pending=projectDirtyTimers.get(t.id);if(pending){clearTimeout(pending);projectDirtyTimers.delete(t.id);}
   window.electronAPI?.disposeProjectActivityWindows?.(id);
   if(state.projectTabs.length===1){
-    const fresh=blankProjectTab('项目 1');fresh.id=t.id;state.projectTabs=[fresh];state.activeProjectTabId=fresh.id;mountProjectTab(fresh);renderProjectTabs();renderAll();applyGroupPanelLayout();applyInspectorPanelLayout();return true;
+    const fresh=blankProjectTab('项目 1');fresh.id=t.id;state.projectTabs=[fresh];state.activeProjectTabId=fresh.id;mountProjectTab(fresh);renderProjectTabs();renderAll();return true;
   }
   const idx=state.projectTabs.findIndex(q=>q.id===id),wasActive=id===state.activeProjectTabId;state.projectTabs.splice(idx,1);
-  if(wasActive){const next=state.projectTabs[Math.max(0,idx-1)]||state.projectTabs[0];state.activeProjectTabId=next.id;mountProjectTab(next);renderAll();applyGroupPanelLayout();scheduleMainPlotRelayout();}
+  if(wasActive){const next=state.projectTabs[Math.max(0,idx-1)]||state.projectTabs[0];state.activeProjectTabId=next.id;mountProjectTab(next);renderAll();scheduleMainPlotRelayout();}
   renderProjectTabs();return true;
 }
 
@@ -221,7 +181,11 @@ function renderProjectTabs(){
     host.appendChild(el);
   }
   const active=activeProjectTab();
+  const persistent=$('#statusBarPersistent'),separator=$('#statusBarPersistentSeparator');
+  const projectLabel=active?.title?`项目：${active.title}`:'';
+  if(persistent)persistent.textContent=projectLabel;
+  if(separator)separator.classList.toggle('hidden',!projectLabel);
   window.dispatchEvent(new CustomEvent('dkds:project-changed',{detail:{id:active?.id||'',title:active?.title||''}}));
 }
 
-module.exports=Object.freeze({configure, blankProjectTab, activeProjectTab, activeProjectHistory, projectHistorySnapshot, projectFingerprint, markProjectClean, flushProjectAutosave, scheduleProjectAutosave, notifySystemHistory, recordProjectHistory, undoProjectHistory, redoProjectHistory, captureActiveProjectTab, mountProjectTab, createProjectTab, switchProjectTab, closeProjectTab, renderProjectTabs, projectAutosaveTimers});
+module.exports=Object.freeze({configure, blankProjectTab, activeProjectTab, activeProjectHistory, projectHistorySnapshot, projectFingerprint, markProjectClean, refreshProjectDirty, scheduleProjectDirtyCheck, notifySystemHistory, recordProjectHistory, undoProjectHistory, redoProjectHistory, captureActiveProjectTab, mountProjectTab, createProjectTab, switchProjectTab, closeProjectTab, renderProjectTabs, projectDirtyTimers});

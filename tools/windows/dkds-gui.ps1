@@ -130,7 +130,12 @@ function New-Page([string]$Name) {
 function Run-Action([string]$Action,[string]$VersionArg='') {
   try {
     $runnerQuoted = '"' + $Runner + '"'
-    $commandLine = "-NoLogo -NoProfile -ExecutionPolicy Bypass -NoExit -File $runnerQuoted -Action $Action"
+    # The backend intentionally exits with a non-zero code for CLI/CI failures.
+    # When launched from this GUI that explicit `exit 1` used to override
+    # PowerShell -NoExit, making the diagnostics window flash and disappear.
+    # KeepConsoleOpen changes only the GUI failure path: the console remains
+    # available so dependency/Electron startup errors can actually be read.
+    $commandLine = "-NoLogo -NoProfile -ExecutionPolicy Bypass -NoExit -File $runnerQuoted -Action $Action -KeepConsoleOpen"
     if ($VersionArg) {
       if ($VersionArg -notmatch '^[0-9A-Za-z.+-]+$') {
         [System.Windows.Forms.MessageBox]::Show('版本号只能包含字母、数字、点、加号和连字符。','DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null

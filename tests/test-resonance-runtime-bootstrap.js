@@ -22,6 +22,7 @@ context.DKDSScience={
   parseCsv:()=>({points:[]}),
   buildSweeps:()=>[],
 };
+context.DKDSData={transportDatasetsFromArtifacts:()=>[]};
 vm.createContext(context);
 vm.runInContext(read('src/plugins/resonance-workbench/workbench-shared.js'),context,{filename:'workbench-shared.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-context.js'),context,{filename:'feature-context.js'});
@@ -38,7 +39,7 @@ assert(feature?.createTop,'Resonance feature runtime module must expose createTo
 
 (async()=>{
   const runtime=await feature.createTop({
-    project:{datasets:[]},artifacts:{list:()=>[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}
+    project:{datasets:[]},artifacts:{list:()=>[]},science:context.DKDSScience,dataModel:context.DKDSData,setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}
   });
   assert.equal(runtime.serviceName,'builtin.resonance-workbench.runtime');
   assert.equal(typeof runtime.service?.serialize,'function');

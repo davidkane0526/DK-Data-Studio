@@ -1,4 +1,9 @@
 'use strict';
+const StyleGate=require('ui/style-ownership-gate');
+const STYLE_SOURCE='src/core/ui/modules/table/surfaces.js';
+const tableSet=(el,property,value,owner='core.table-surface')=>StyleGate.set(el,property,value,{owner,scope:'runtime-table',source:STYLE_SOURCE});
+const tableToken=(el,token,value)=>StyleGate.setToken(el,token,value,{owner:'core.table-surface',scope:'runtime-table-token',source:STYLE_SOURCE});
+const tableRemove=(el,property,owner='core.table-surface')=>StyleGate.remove(el,property,{owner,scope:property.startsWith('--')?'runtime-table-token':'runtime-table',kind:property.startsWith('--')?StyleGate.KINDS.CONFIG_TOKEN:StyleGate.KINDS.RUNTIME_INLINE,source:STYLE_SOURCE});
 const {hostState, resolveElement, cleanupCall}=require('../foundation/shortcuts');
 const {ContextMenu}=require('../interaction/context-actions');
 
@@ -19,12 +24,12 @@ const {ContextMenu}=require('../interaction/context-actions');
       const stripe=appearance.stripe===false?'none':String(appearance.stripe||'subtle');this.table.dataset.dkdsTableStripe=stripe;
       const tone=['neutral','analysis','data','success','warning','danger'].includes(String(appearance.tone||''))?String(appearance.tone):'neutral';this.table.dataset.dkdsTableTone=tone;
       const emphasis=['quiet','normal','strong'].includes(String(appearance.emphasis||''))?String(appearance.emphasis):'normal';this.table.dataset.dkdsTableEmphasis=emphasis;
-      for(const name of ['--dkds-table-row-odd-bg','--dkds-table-row-even-bg','--dkds-table-row-hover-bg','--dkds-table-row-selected-bg'])this.table.style.removeProperty(name);
+      for(const name of ['--dkds-table-row-odd-bg','--dkds-table-row-even-bg','--dkds-table-row-hover-bg','--dkds-table-row-selected-bg'])tableRemove(this.table,name);
       const colors=appearance.colors&&typeof appearance.colors==='object'?appearance.colors:{};
-      if(colors.odd)this.table.style.setProperty('--dkds-table-row-odd-bg',String(colors.odd));
-      if(colors.even)this.table.style.setProperty('--dkds-table-row-even-bg',String(colors.even));
-      if(colors.hover)this.table.style.setProperty('--dkds-table-row-hover-bg',String(colors.hover));
-      if(colors.selected)this.table.style.setProperty('--dkds-table-row-selected-bg',String(colors.selected));
+      if(colors.odd)tableToken(this.table,'--dkds-table-row-odd-bg',String(colors.odd));
+      if(colors.even)tableToken(this.table,'--dkds-table-row-even-bg',String(colors.even));
+      if(colors.hover)tableToken(this.table,'--dkds-table-row-hover-bg',String(colors.hover));
+      if(colors.selected)tableToken(this.table,'--dkds-table-row-selected-bg',String(colors.selected));
       return Object.freeze({density,stripe,tone,emphasis,colors:{...colors}});
     }
     key(){
@@ -88,11 +93,11 @@ const {ContextMenu}=require('../interaction/context-actions');
     clampWidth(value){const min=Math.max(36,Number(this.spec.minColumnWidth)||56),max=Math.max(min,Number(this.spec.maxColumnWidth)||640);return Math.max(min,Math.min(max,Math.round(Number(value)||min)));}
     setColumnWidth(index,width,{persist=true}={}){
       index=this.columnIndex(index);const heads=this.columnHeaders(),th=heads[index];if(!th)return false;const key=this.columnKey(index,th),px=this.clampWidth(width);this.state.widths[key]=px;
-      for(const cell of this.columnCells(index)){cell.style.width=`${px}px`;cell.style.minWidth=`${px}px`;cell.style.maxWidth=`${px}px`;}
+      for(const cell of this.columnCells(index)){tableSet(cell,'width',`${px}px`);tableSet(cell,'min-width',`${px}px`);tableSet(cell,'max-width',`${px}px`);}
       this.table.dataset.dkdsTableUserSized='1';if(persist)this.persistState();return px;
     }
     resetColumn(index,{persist=true}={}){
-      index=this.columnIndex(index);const heads=this.columnHeaders(),th=heads[index];if(!th)return false;const key=this.columnKey(index,th);delete this.state.widths[key];for(const cell of this.columnCells(index)){cell.style.removeProperty('width');cell.style.removeProperty('min-width');cell.style.removeProperty('max-width');}if(persist)this.persistState();return true;
+      index=this.columnIndex(index);const heads=this.columnHeaders(),th=heads[index];if(!th)return false;const key=this.columnKey(index,th);delete this.state.widths[key];for(const cell of this.columnCells(index)){tableRemove(cell,'width');tableRemove(cell,'min-width');tableRemove(cell,'max-width');}if(persist)this.persistState();return true;
     }
     autoSizeColumn(index,{persist=true}={}){
       index=this.columnIndex(index);const heads=this.columnHeaders(),th=heads[index];if(!th)return false;this.resetColumn(index,{persist:false});const cells=this.columnCells(index).filter(cell=>!cell.hidden&&!cell.classList?.contains('dkds-table-column-hidden')).slice(0,220);let width=0;
@@ -128,9 +133,11 @@ const {ContextMenu}=require('../interaction/context-actions');
       const heads=this.columnHeaders();heads.forEach((th,index)=>{const key=this.columnKey(index,th),width=Number(this.state.widths[key]);if(Number.isFinite(width)&&width>0)this.setColumnWidth(index,width,{persist:false});else this.resetColumn(index,{persist:false});this.setColumnVisible(index,this.state.hidden[key]!==true,{persist:false});});this.applySortIndicators();
       if(this.state.sort?.key){const index=this.indexForKey(this.state.sort.key);if(index>=0)this.sort(index,this.state.sort.direction,{persist:false});}
     }
-    copyText(text){
-      const value=String(text??'');try{if(navigator.clipboard?.writeText){navigator.clipboard.writeText(value);hostState.status?.('已复制表格内容。');return true;}}catch{}
-      try{const area=document.createElement('textarea');area.value=value;area.style.cssText='position:fixed;left:-10000px;top:-10000px';document.body.appendChild(area);area.select();const ok=document.execCommand?.('copy')!==false;area.remove();if(ok)hostState.status?.('已复制表格内容。');return ok;}catch{return false;}
+    async copyText(text){
+      const value=String(text??'');
+      try{if(window.electronAPI?.copyText){const ok=await window.electronAPI.copyText(value);if(ok)hostState.status?.('已复制表格内容。');return !!ok;}}catch{}
+      try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);hostState.status?.('已复制表格内容。');return true;}}catch{}
+      try{const area=document.createElement('textarea');area.value=value;tableSet(area,'position','fixed','core.table-clipboard-probe');tableSet(area,'left','-10000px','core.table-clipboard-probe');tableSet(area,'top','-10000px','core.table-clipboard-probe');document.body.appendChild(area);area.select();const ok=document.execCommand?.('copy')!==false;area.remove();if(ok)hostState.status?.('已复制表格内容。');return ok;}catch{return false;}
     }
     visibleTableText({includeHeader=true}={}){
       const indices=this.columnHeaders().map((_th,index)=>index).filter(index=>!this.isColumnHidden(index)),lines=[];
@@ -138,7 +145,7 @@ const {ContextMenu}=require('../interaction/context-actions');
       for(const row of this.bodyRows())lines.push(indices.map(index=>String(row.children?.[index]?.textContent||'').trim()).join('\t'));
       return lines.join('\n');
     }
-    copyVisibleTable(options={}){return this.copyText(this.visibleTableText(options));}
+    async copyVisibleTable(options={}){return this.copyText(this.visibleTableText(options));}
     resetState({persist=true}={}){this.state={widths:{},hidden:{},sort:null};this.applyState();if(persist)this.persistState();return this.columnState();}
     menuItems(value,context){try{const rows=typeof value==='function'?value(context):value;return Array.isArray(rows)?rows.filter(Boolean):[];}catch(err){console.warn('[DKDS table menu]',err);return [];}}
     openHeaderMenu(event,th){
@@ -154,15 +161,15 @@ const {ContextMenu}=require('../interaction/context-actions');
         {type:'separator'},
         {id:'hide-column',label:`隐藏“${key}”`,enabled:this.columnHeaders().filter((_row,i)=>!this.isColumnHidden(i)).length>1,onInvoke:()=>this.setColumnVisible(index,false)},
         {id:'show-columns',label:'恢复全部列',visible:hidden,onInvoke:()=>this.showAllColumns()},
-        ...(this.spec.copyTable!==false?[{type:'separator'},{id:'copy-table',label:'复制可见表格',icon:'⧉',onInvoke:()=>this.copyVisibleTable()}]:[]),
+        ...(this.spec.copyTable!==false?[{type:'separator'},{id:'copy-table',label:'复制可见表格',icon:'⧉',nativeCopy:'clipboard',onInvoke:()=>this.copyVisibleTable()}]:[]),
         ...(custom.length?[{type:'separator'},...custom]:[])
       ];return this.menu.open({x:event.clientX,y:event.clientY,context,items});
     }
     openCellMenu(event,cell){
       const row=cell.closest('tr'),cells=[...(row?.children||[])],index=cells.indexOf(cell),text=String(cell.textContent||'').trim(),rowText=cells.filter((_node,i)=>!this.isColumnHidden(i)).map(node=>String(node.textContent||'').trim()).join('\t');
       const context={surface:this,row,cell,index,rowIndex:this.bodyRows().indexOf(row),columnKey:this.columnKey(index)};const custom=this.menuItems(this.spec.cellMenuItems||this.spec.rowMenuItems,context);return this.menu.open({x:event.clientX,y:event.clientY,context,items:[
-        {id:'copy-cell',label:'复制单元格',icon:'⧉',onInvoke:()=>this.copyText(text)},
-        {id:'copy-row',label:'复制本行',icon:'≡',onInvoke:()=>this.copyText(rowText)},
+        {id:'copy-cell',label:'复制单元格',icon:'⧉',nativeCopy:'clipboard',onInvoke:()=>this.copyText(text)},
+        {id:'copy-row',label:'复制本行',icon:'≡',nativeCopy:'clipboard',onInvoke:()=>this.copyText(rowText)},
         ...(custom.length?[{type:'separator'},...custom]:[])
       ]});
     }
@@ -201,7 +208,17 @@ const {ContextMenu}=require('../interaction/context-actions');
   const TableViewRegistry=TableSurfaceRegistry;
   const globalTableSurfaceRegistry=new TableSurfaceRegistry(null);
   let globalTableObserverCleanup=null;
-  function ensureGlobalTableSurfaceObserver(){if(globalTableObserverCleanup||typeof document==='undefined')return;const start=()=>{if(globalTableObserverCleanup)return;globalTableObserverCleanup=globalTableSurfaceRegistry.observe(document,{selector:'table:not([data-dkds-table="off"])',owner:'core.table'});};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else Promise.resolve().then(start);}
+  function ensureGlobalTableSurfaceObserver(){
+    if(globalTableObserverCleanup||typeof document==='undefined')return;
+    const start=()=>{
+      if(globalTableObserverCleanup)return;
+      globalTableSurfaceRegistry.hydrate(document,{selector:'table:not([data-dkds-table="off"])',owner:'core.table'});
+      const hub=globalThis.DKDSDOMMutationHub;
+      if(!hub?.subscribe)return;
+      globalTableObserverCleanup=hub.subscribe('core.table-surfaces',records=>{let removed=false;for(const record of records){if(record.type!=='childList')continue;for(const node of record.addedNodes||[])globalTableSurfaceRegistry.hydrateAddedNode(node,{selector:'table:not([data-dkds-table="off"])',owner:'core.table'});if(record.removedNodes?.length)removed=true;}if(removed)globalTableSurfaceRegistry.prune();},{childList:true,subtree:true});
+    };
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else Promise.resolve().then(start);
+  }
   ensureGlobalTableSurfaceObserver();
 
 module.exports=Object.freeze({TableSurface, TableSurfaceRegistry, TableView, TableViewRegistry, globalTableSurfaceRegistry, ensureGlobalTableSurfaceObserver});

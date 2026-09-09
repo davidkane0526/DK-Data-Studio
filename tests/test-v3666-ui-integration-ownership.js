@@ -57,7 +57,7 @@ assert(resonance.includes('respar-group-panel hidden')&&!resonance.includes('res
 // File IA is Import / Save / Export. The top-level Import command opens the
 // Import Workbench; source choice belongs inside that workbench beside the
 // unified Import Data/Project action.
-assert(html.includes('aria-label="导入">导入</button>')&&html.includes('aria-label="保存">保存</button>')&&html.includes('>导出</button>'),'Top file command labels must remain 导入 / 保存 / 导出.');
+assert(/id="openBtn"[^>]*aria-label="导入"[^>]*>导入<\/button>/.test(html)&&/id="saveProjectBtn"[^>]*aria-label="保存"[^>]*>保存<\/button>/.test(html)&&/id="exportMenuBtn"[^>]*>导出<\/button>/.test(html),'Top file command labels must remain 导入 / 保存 / 导出 regardless of additional semantic ownership attributes.');
 const topbarStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group"'),topbarEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topbarStart),topbarFileGroup=html.slice(topbarStart,topbarEnd);
 assert(!topbarFileGroup.includes('importSourceBtn')&&!topbarFileGroup.includes('importSourceMenu'),'Import-source selection must not occupy the top file command group.');
 const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);

@@ -23,6 +23,12 @@
 - `src/science/`: UI-independent scientific code.
 - `sdk/`: public plugin authoring contract.
 - `tests/`: regression, architecture, boundary and performance tests.
+- `mobile/src/model/`: platform-neutral Mobile Presenter state types and native-shell projection helpers.
+- `mobile/src/theme/`: semantic Theme-token mapping for React Native chrome.
+- `mobile/src/components/`: native shell chrome/navigation/status components.
+- `mobile/src/sheets/`: native project/activity/action/import/history/more sheets.
+- `mobile/src/services/`: native service-facing UI such as the local web-service popover.
+- `mobile/src/styles/`: the single React Native shell geometry/style owner.
 
 `src/core/` itself must contain directories only. Do not add another generic runtime file at the Core root.
 

@@ -8,10 +8,5 @@
   "requiresCore": [
     "ui.theme"
   ],
-  "description": "Theme Contract 3.10 contextual component/material composition, semantic states, scientific fallback palette and Core-rendered depth example",
-  "compatibility": {
-    "app": ">=3.67.10 <4.0.0",
-    "pluginApi": "^1.19.0",
-    "themeContract": "^3.10.0"
-  }
+  "description": "Theme Contract 3.10 contextual component/material composition, semantic states, scientific fallback palette and Core-rendered depth example"
 }

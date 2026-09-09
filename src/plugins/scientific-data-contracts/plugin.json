@@ -13,9 +13,5 @@
   "description": "Shared scientific semantic data contracts for transport, resonance, TER and pulse plugins. Contains no numerical algorithms or workbench UI.",
   "capabilities": [
     "data.scientific-contracts"
-  ],
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
-  }
+  ]
 }

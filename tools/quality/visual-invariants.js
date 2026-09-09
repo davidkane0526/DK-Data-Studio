@@ -60,6 +60,7 @@ function validate(){
   const componentCss=read('src/styles/theme/component-appearance.css');
   const integratedCss=read('src/styles/theme/integrated-command-chrome.css');
   const controlStatus=read('src/styles/presentation/control-status.css');
+  const statusStructure=read('src/styles/structure/super-top-contract.css');
   const materialRenderer=read('src/core/theme/material-renderer.js');
   const materialCss=read('src/styles/theme/material-renderer.css');
   const coverage=read('src/core/theme/coverage-runtime.js');
@@ -88,6 +89,7 @@ function validate(){
   const pluginWorkspaceStructure=read('src/styles/structure/plugin-workspace.css');
   const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
   const statusPlugin=read('src/plugins/status-monitor/plugin.js');
+  const statusThemeLayout=read('src/plugins/status-monitor/theme-layout.js');
   const terSharedViews=read('src/plugins/ter-analysis/shared-views.js');
   const terAnalysisService=read('src/plugins/ter-analysis/analysis-service.js');
   const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
@@ -116,7 +118,8 @@ function validate(){
   // HARD-03: Core owns tooltip rendering, while tooltip presence is explicit semantic metadata.
   requireText(tooltip,"querySelectorAll?.('[title]')",'HARD-03: Core tooltip runtime must intercept every browser-native title surface.');
   requireText(tooltip,"target.removeAttribute('title')",'HARD-03: Core must remove native title attributes before Chromium can paint them.');
-  requireText(tooltip,'MutationObserver','HARD-03: dynamically created title attributes must also be normalized.');
+  requireText(tooltip,'DKDSDOMMutationHub','HARD-03: dynamically created title attributes must be normalized through the shared Core DOM Mutation Hub.');
+  forbidText(tooltip,'new MutationObserver','HARD-03: Tooltip runtime must not create a second document-wide MutationObserver.');
   requireText(tooltip,'dkdsTooltipFromTitle','HARD-03: title-to-tooltip migration must require an explicit opt-in, never happen by default.');
   requireText(tooltip,"policy==='overflow'",'HARD-03: declarative Core tooltips must support overflow-only semantics.');
   forbidRegex(tooltip,/if\(title&&!String\(target\.dataset\?\.dkdsTooltip/,'HARD-03: native title text must never be promoted into a DKDS tooltip implicitly.');
@@ -146,7 +149,8 @@ function validate(){
 
 
   // HARD-06: one canonical component runtime; plugins cannot repaint Core chrome.
-  requireText(uiComponentRuntime,"const VERSION='2.0.0'",'HARD-06: Core component runtime 2.0 is required.');
+  requireText(uiComponentRuntime,"const VERSION='2.3.0'",'HARD-06: Core component runtime 2.3 lifecycle/motion/style-gate contract is required.');
+  requireText(uiComponentRuntime,'StyleGate.KINDS.CONFIG_TOKEN','HARD-06: Component Runtime style/token writes must classify through Style Ownership Gate.');
   for(const factory of ['action','actionGroup','tabs','surfaceHeader','field','hydrate'])requireRegex(uiComponentRuntime,new RegExp(`\\b${factory}\\(`),`HARD-06: Core component runtime must expose ${factory}().`);
   const pluginRoot=path.join(root,'src','plugins');
   if(fs.existsSync(pluginRoot))for(const entry of fs.readdirSync(pluginRoot,{withFileTypes:true})){
@@ -242,9 +246,10 @@ function validate(){
 
   // HARD-12: every desktop panel close action has one square geometry and one
   // canonical corner radius, independent of which header created it.
-  requireRegex(chromeGeometry,/\.dkds-panel-close-button\{[\s\S]*?--dkds-header-action-height:26px;[\s\S]*?width:26px;min-width:26px;max-width:26px;max-height:26px;[\s\S]*?padding:0/,'HARD-12: panel close geometry must declare the canonical 26 px header-action slot and square width.');
-  requireText(componentCss,'[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}','HARD-12: panel close radius must have one canonical 7 px owner.');
-  requireRegex(chromeGeometry,/:where\(\.dkds-integrated-action-group,\.dkds-portable-controls,\.panel-header-actions,\.dkds-plot-view-actions\)>button\{[\s\S]*?height:var\(--dkds-header-action-height,26px\);[\s\S]*?min-height:var\(--dkds-header-action-height,26px\)/,'HARD-12: desktop header actions must consume one shared hit-height property owner.');
+  requireRegex(chromeGeometry,/\.dkds-panel-close-button\{[\s\S]*?width:26px;min-width:26px;max-width:26px;max-height:26px;[\s\S]*?padding:0/,'HARD-12: panel close geometry must keep canonical square width while inheriting header hit height from its context.');
+  forbidRegex(chromeGeometry,/\.dkds-panel-close-button\{[^}]*--dkds-header-action-height\s*:/s,'HARD-12: panel close must not shadow the context-owned header-action height slot.');
+  requireText(componentCss,'[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:6px}','HARD-12: panel close radius must use the canonical 6 px titlebar radius.');
+  requireRegex(chromeGeometry,/:is\(\.dkds-integrated-action-group,\.dkds-separated-action-group,\.dkds-portable-controls,\.panel-header-actions,\.dkds-plot-view-actions\)>button\{[\s\S]*?height:var\(--dkds-header-action-height,26px\);[\s\S]*?min-height:var\(--dkds-header-action-height,26px\)/,'HARD-12: desktop header actions must consume one shared hit-height property owner.');
   forbidRegex(chromeGeometry,/dkds-fixed-popover-header>\.dkds-panel-close-button\{[^}]*(?:height|min-height|padding)\s*:/s,'HARD-12: fixed popover close must not re-own the canonical close hit box.');
 
   // HARD-13: desktop topbar uses exact geometry, not a blur approximation.
@@ -271,9 +276,16 @@ function validate(){
   requireRegex(materialCss,/#mainPlotTools\.dkds-material-role-control,[\s\S]*?#mainLegendBar\.dkds-material-role-control[\s\S]*?border-radius:9px/,'HARD-15: main tools and legend must share one Material edge contract.');
 
   // HARD-16: nested headers may own a tonal Component band, but never an
-  // independent optical material layer. Material Renderer still uniquely owns
-  // backdrop/specular/depth composition for the parent Surface.
-  forbidRegex(componentCss,/\[data-dkds-component-identity="(?:panelHeader|inspectorHeader)"\][^{]*\{[^}]*(?:backdrop-filter|filter\s*:|box-shadow\s*:(?!none))/s,'HARD-16: panel/inspector headers must not become independent optical material surfaces.');
+  // independent optical material layer. Check the header element itself, not a
+  // descendant toolbarAction rule; the previous regex produced false positives
+  // whenever a child hover legitimately used box-shadow.
+  const directHeaderOptical=[];
+  for(const match of componentCss.replace(/\/\*[\s\S]*?\*\//g,'').matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+    const selector=match[1].replace(/\s+/g,' ').trim(),body=match[2];
+    if(!/data-dkds-component-identity="(?:panelHeader|inspectorHeader)"/.test(selector)||/data-dkds-component-identity="toolbarAction"/.test(selector))continue;
+    if(/(?:backdrop-filter|(?:^|;)\s*filter\s*:|box-shadow\s*:(?!\s*none))/m.test(body))directHeaderOptical.push(selector);
+  }
+  if(directHeaderOptical.length)failures.push(`HARD-16: panel/inspector headers must not become independent optical material surfaces: ${directHeaderOptical.join(', ')}`);
   requireText(materialCss,'Header-owned command wrappers are transparent composition only.','HARD-16: Material Renderer must flatten nested command wrappers inside headers.');
 
   // HARD-17: canonical fields/actions own their own control paint, and the
@@ -336,7 +348,8 @@ function validate(){
   requireText(pluginManager,'plugin-type-badge type-${escapeHtml(typeMeta.id)}" data-dkds-component-identity="chip"','HARD-22: plugin type tags must explicitly consume canonical Chip appearance.');
   requireText(pluginManager,'plugin-status-badge" data-dkds-component-identity="chip"','HARD-22: plugin status tags must explicitly consume canonical Chip appearance.');
   requireText(pluginManager,'plugin-capability-chip" data-dkds-component-identity="chip"','HARD-22: plugin capability tags must explicitly consume canonical Chip appearance.');
-  requireText(read('src/index.html'),'plugin-manager-visible-count" data-dkds-component-identity="chip"','HARD-22: Plugin Manager visible-count tag must consume canonical Chip appearance.');
+  requireText(pluginManager,"['显示',`${visible.length} / ${total}`,'visible']",'HARD-22: Plugin Manager visible count must be a canonical summary-card metric, not a private chip.');
+  requireText(pluginManager,'plugin-manager-summary-refresh','HARD-22: Plugin Manager refresh must live in the all-plugins summary card.');
   forbidRegex(pluginChromeCss,/html\[data-dkds-theme="dark"\][^{]*\.plugin-type-badge/s,'HARD-22: plugin type tags must not fork a dark-mode palette outside Theme.');
 
   // HARD-24: Presentation is theme-neutral by default. Literal paint is
@@ -518,8 +531,8 @@ function validate(){
   requireText(automationRuntime,'visualGeometryClosureSmoke','HARD-36: Automation Runtime must dispatch the dedicated visual smoke case.');
   requireText(automationVisual,'getBoundingClientRect','HARD-36: runtime visual closure must measure actual DOM geometry.');
   requireText(automationVisual,'getComputedStyle','HARD-36: runtime visual closure must inspect computed appearance.');
-  requireText(automationVisual,"document.getElementById('inspectorDockSlot')",'HARD-36: runtime visual closure must validate the Inspector dock host.');
-  requireRegex(automationVisual,/Inspector dock host must remain transparent:[^`]*\$\{dockStyle\.backgroundColor\}/s,'HARD-36: Inspector dock transparency must be an executable runtime assertion.');
+  requireText(automationVisual,'[data-analysis-slot=\"right\"]','HARD-36: runtime visual closure must validate the current AnalysisWorkbench right-slot host.');
+  requireRegex(automationVisual,/AnalysisWorkbench right slot must consume the canonical sidebar Material Role:[^`]*\$\{role\|\|'missing'\}/s,'HARD-36: AnalysisWorkbench right-slot material ownership must be an executable runtime assertion.');
   requireRegex(automationVisual,/Topbar action must be 34px high:[^`]*\$\{r\.height\.toFixed\(2\)\}px/s,'HARD-36: runtime visual closure must protect 34px topbar actions.');
   requireRegex(automationVisual,/Topbar group envelope must be 38px:[^`]*\$\{group\.className\}/s,'HARD-36: runtime visual closure must protect the 38px topbar group envelope.');
   requireText(automationVisual,'Presenter command must be at least 48px wide and 34px high:','HARD-36: runtime visual closure must protect semantic-width Desktop Presenter commands.');
@@ -581,9 +594,11 @@ function validate(){
   // HARD-42: Component Appearance and Material Renderer consume contextual
   // declarations instead of reintroducing topbar-specific aesthetic patches.
   const contextualComponentRuntime=read('src/core/theme/component-appearance.js');
-  requireText(contextualComponentRuntime,"const VERSION='3.0.0'",'HARD-42: Component Appearance contextual resolver must be v3.0.0.');
+  requireText(contextualComponentRuntime,"const VERSION='3.1.0'",'HARD-42: Component Appearance contextual resolver must be v3.1.0 with Style Gate runtime ownership.');
+  requireText(contextualComponentRuntime,'StyleGate.setToken','HARD-42: Component Appearance runtime tokens must pass through Style Ownership Gate.');
   requireText(contextualComponentRuntime,'ThemeContract.resolveComponentAppearance','HARD-42: Component Appearance must resolve Theme Contract composition.');
-  requireText(materialRenderer,"const VERSION='3.10.0'",'HARD-42: Material Renderer must be v3.10.0.');
+  requireText(materialRenderer,"const VERSION='3.11.0'",'HARD-42: Material Renderer must be v3.11.0 with Style Gate runtime ownership.');
+  requireText(materialRenderer,'StyleGate.setToken','HARD-42: Material Renderer runtime tokens must pass through Style Ownership Gate.');
   requireText(materialRenderer,'resolveMaterialContext?.','HARD-42: Material Renderer must resolve Material Context through Theme Contract.');
   forbidRegex(componentAppearance,/\.topbar-primary[^}]*box-shadow:[^}]*0 0 0 2px/s,'HARD-42: Core must not hardcode a theme-specific topbar halo.');
   forbidRegex(componentAppearance,/\.topbar-primary[^}]*toolbar-group[^}]*box-shadow:none/s,'HARD-42: Core must not hardcode grouped action depth for every Theme.');
@@ -593,13 +608,15 @@ function validate(){
   const themeRuntime=read('src/core/theme/runtime.js');
   const thinGlassTheme=read('src/plugins/thin-glass-theme/plugin.js');
   const auroraTheme=read('src/plugins/aurora-pop-theme/plugin.js');
+  const thinGlassManifest=JSON.parse(read('src/plugins/thin-glass-theme/plugin.json'));
+  const auroraManifest=JSON.parse(read('src/plugins/aurora-pop-theme/plugin.json'));
   requireText(themeRuntime,"version:'3.10.0',contractVersion:'3.10.0'",'HARD-43: Core Default Theme runtime must expose Theme 3.10.');
   requireText(themeRuntime,'componentContexts:()=>COMPONENT_CONTEXTS.slice()','HARD-43: Core Default Theme must expose Component Contexts.');
-  requireText(thinGlassTheme,"version:'1.12.2'",'HARD-43: Thin Glass must be migrated to 1.12.2 / Theme 3.10.');
+  if(thinGlassManifest.version!=='1.12.3')failures.push('HARD-43: Thin Glass must be migrated to 1.12.3 / Theme 3.10.');
   requireText(thinGlassTheme,"contract:'theme-3.10'",'HARD-43: Thin Glass must declare Theme 3.10 contextual composition.');
   requireText(thinGlassTheme,'contexts:{grouped:', 'HARD-43: Thin Glass must author grouped Component Context depth declaratively.');
   requireText(thinGlassTheme,"'workspace-modal':{materialBlur:",'HARD-43: Thin Glass must author workspace-modal Material Context optics.');
-  requireText(auroraTheme,"version:'2.3.2'",'HARD-43: Aurora Pop must be migrated to 2.3.2 / Theme 3.10.');
+  if(auroraManifest.version!=='2.3.2')failures.push('HARD-43: Aurora Pop must be migrated to 2.3.2 / Theme 3.10.');
   requireText(auroraTheme,"contract:'component-appearance-3.10'",'HARD-43: Aurora Pop must declare Theme 3.10 contextual composition.');
   requireText(auroraTheme,'contexts:{grouped:', 'HARD-43: Aurora Pop must author grouped Component Context depth declaratively.');
   requireText(auroraTheme,"'workspace-modal':{materialBlur:",'HARD-43: Aurora Pop must author workspace-modal Material Context optics.');
@@ -609,14 +626,14 @@ function validate(){
   const sdkContract=JSON.parse(read('sdk/contract.json'));
   const sdkTypes=read('sdk/plugin-api.d.ts');
   const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
-  requireText(JSON.stringify(sdkContract),'"sdkVersion":"1.24.0"','HARD-44: public SDK must be 1.24.0.');
+  requireText(JSON.stringify(sdkContract),'"sdkVersion":"1.28.0"','HARD-44: public SDK must be 1.28.0.');
   requireText(JSON.stringify(sdkContract),'"themeContractVersion":"3.10.0"','HARD-44: SDK must publish Theme Contract 3.10.0.');
   requireText(sdkTypes,"readonly contractVersion:'3.10.0'",'HARD-44: SDK types must expose Theme Contract 3.10.0.');
   requireText(sdkTypes,'DKDSThemeComponentContext','HARD-44: SDK types must expose Component Context.');
   requireText(sdkTypes,'DKDSThemeMaterialContext','HARD-44: SDK types must expose Material Context.');
-  requireText(themeTemplate,"themeContract:'^3.10.0'",'HARD-44: official Theme template must target Theme Contract 3.10.');
-  requireText(themeTemplate,'contract.appearance.component-contexts','HARD-44: official Theme template must demonstrate Component Context capability.');
-  requireText(themeTemplate,'contract.material.contexts','HARD-44: official Theme template must demonstrate Material Context capability.');
+  forbidRegex(themeTemplate,/compatibility\s*:/,'HARD-44: current Theme template must not publish a compatibility range.');
+  requireText(themeTemplate,'contexts:{grouped:','HARD-44: official Theme template must demonstrate Component Context composition.');
+  requireText(themeTemplate,'contexts:{compact:','HARD-44: official Theme template must demonstrate Material Context composition.');
 
   // HARD-45: R4 Windows diagnostics validate composition semantics, not one
   // mandatory aesthetic. Old R3 reports cannot authorize Theme 3.10.
@@ -627,7 +644,7 @@ function validate(){
   requireText(visualVerifier,'visual.groupedContextChecked','HARD-45: R4 verifier must require grouped Component Context coverage.');
   requireText(visualVerifier,'visual.standaloneContextChecked','HARD-45: R4 verifier must require standalone Component Context coverage.');
   requireText(visualVerifier,'visual.workspaceModalChecked','HARD-45: R4 verifier must require workspace-modal Material Context coverage.');
-  requireText(visualCases,"Appearance?.version==='3.0.0'",'HARD-45: Windows visual diagnostics must inspect the contextual Component resolver.');
+  requireText(visualCases,"versionAtLeast(Appearance?.version,'3.0.0')",'HARD-45: Windows visual diagnostics must inspect the contextual Component resolver without rejecting compatible newer revisions.');
   forbidText(visualCases,'Integrated topbar action must not stack a second shadow/halo','HARD-45: R4 diagnostics must not impose R3 no-shadow aesthetics on all Themes.');
   forbidText(visualCases,'Standalone emphasized topbar action must use an exact 2px spread halo','HARD-45: R4 diagnostics must not impose a fixed halo on all Themes.');
 
@@ -644,7 +661,8 @@ function validate(){
   requireText(materialRenderer,'ignoredNonHtml','HARD-47: Material observer must track and ignore non-HTML mutation churn.');
   requireText(semanticRegistry,'htmlElement','HARD-47: Semantic observer must ignore non-HTML/SVG attribute churn.');
   requireText(contextualComponentRuntime,'pendingAppearanceRoots','HARD-47: Component Appearance must batch mutation-driven recomposition.');
-  requireText(contextualComponentRuntime,'requestFrame','HARD-47: Component Appearance recomposition must be frame-coalesced.');
+  requireText(contextualComponentRuntime,'DKDSFrameScheduler','HARD-47: Component Appearance recomposition must use the shared Frame Scheduler.');
+  forbidText(contextualComponentRuntime,'requestAnimationFrame','HARD-47: Component Appearance must not allocate a private animation frame loop.');
 
   // HARD-48: Material Context assignment must be idempotent. Rewriting the same
   // data attribute can recursively feed MutationObserver and create idle churn.
@@ -696,7 +714,8 @@ function validate(){
 
   // HARD-57: fixed status popovers stay visually anchored and inspectors publish
   // explicit semantics instead of relying on fragile ancestry/class inference.
-  requireText(statusPlugin,'a.right-box.width:a.left','HARD-57: Theme Picker must edge-align to its status-bar trigger.');
+  requireText(statusThemeLayout,'a.right-box.width:a.left','HARD-57: Theme Picker layout owner must edge-align to its status-bar trigger.');
+  requireText(statusPlugin,'ThemeLayout.positionThemePanel','HARD-57: Status Monitor must delegate Theme Picker geometry to its single helper owner.');
   requireText(resonanceView,'data-dkds-inspector-header','HARD-57: Resonance Curve Inspector must explicitly publish inspector-header semantics.');
 
   // HARD-58: dense scientific metadata is a quiet semantic Chip variant across
@@ -739,9 +758,12 @@ function validate(){
   requireText(themeRuntime,"assignSemanticRoles?.(document,{syncSemantic:false})",'HARD-62: Theme recomposition must not trigger a redundant semantic document scan.');
   requireText(contextualComponentRuntime,'if(event?.detail?.visualSynchronized)return','HARD-62: Component Appearance must not schedule a second full recomposition after synchronous Theme refresh.');
   requireText(read('src/core/ui/component-runtime.js'),'DKDSSemanticUI?.schedule?.(base)','HARD-62: Component hydration must batch Semantic composition instead of synchronously rescanning every subtree.');
-  requireText(read('src/core/ui/modules/layout/workspace.js'),'this.apply(this.previewSize,{persist:false,emit:false,notify:false})','HARD-62: Split preview must make the panel geometry follow the pointer without notifying chart/layout runtimes.');
+  requireText(read('src/core/ui/modules/layout/mobile-split-performance.js'),'if(Number.isFinite(raw))this.previewSize=raw','HARD-62: native Mobile split preview must coalesce raw pointer geometry without changing the frozen shared SplitController.');
+  requireText(read('src/core/ui/modules/layout/mobile-split-performance.js'),'this.__dkdsMobilePreviewTotal=Number.isFinite(total)&&total>0?total:null','HARD-62: native Mobile split preview must cache drag-session geometry so clamping avoids raw-event layout reads.');
   requireText(read('src/core/ui/modules/workbench/analysis.js'),"if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.syncRegions()",'HARD-62: analysis workbench resize work must short-circuit before region synchronization during split drag.');
-  requireText(read('src/styles/presentation/control-status.css'),'height:18px;\n  min-height:18px;','HARD-62: status-bar command hit regions must remain inset from the 28px status chrome.');
+  requireText(controlStatus,'--dkds-status-item-height:18px;','HARD-62: Presentation may configure the compact status hit-region height without owning the final height property.');
+  requireText(statusStructure,'height:var(--dkds-status-item-height);','HARD-62: Structure must uniquely own status item height through the configured geometry token.');
+  requireText(statusStructure,'min-height:var(--dkds-status-item-height);','HARD-62: Structure must uniquely own status item minimum height through the configured geometry token.');
   requireText(indexHtml,'file-command-group dkds-segmented-command-group','HARD-62: file commands must consume the canonical segmented group.');
   requireText(indexHtml,'system-core-tools-group dkds-segmented-command-group','HARD-62: system commands must consume the same segmented group.');
   requireText(themeRuntime,'function commitProfile(key,{emit=true,detail={}}={})','HARD-62: Theme profile activation must use one atomic visual transaction path.');
@@ -797,8 +819,9 @@ function validate(){
   const semanticSurfacesR7R=read('src/styles/structure/sdk-semantic-surfaces.css');
   const workbenchComponentsR7R=read('src/styles/structure/workbench-components.css');
   requireText(chromeGeometryR7R,'height:var(--dkds-header-action-height,26px)','HARD-67: desktop header actions must consume the canonical hit-height slot.');
-  requireText(chromeGeometryR7R,'--dkds-header-action-height:26px','HARD-67: portable action subtypes must feed the shared hit-height slot instead of rewriting height.');
-  requireText(semanticSurfacesR7R,'--dkds-scientific-nav-item-height:24px','HARD-67: scientific floating chrome must publish its compact item-height slot.');
+  forbidRegex(chromeGeometryR7R,/\.dkds-(?:portable-icon-action|panel-close-button|portable-placement-trigger|plot-view-action)\{[^}]*--dkds-header-action-height\s*:/s,'HARD-67: action leaf subtypes must inherit the context hit-height slot instead of shadowing it.');
+  forbidRegex(semanticSurfacesR7R,/\.dkds-portable-history-action\{[^}]*--dkds-header-action-height\s*:/s,'HARD-67: portable history action must inherit the context hit-height slot.');
+  requireText(read('src/styles/platform/touch.css'),'--dkds-scientific-nav-item-height:28px','HARD-67: Desktop host geometry must publish the readable 28px scientific floating item-height slot without changing the frozen shared scientific structure.');
   requireText(semanticSurfacesR7R,'--dkds-header-action-height:var(--dkds-scientific-nav-item-height)','HARD-67: scientific floating buttons must reuse the shared header-action hit-height owner.');
   forbidRegex(workbenchComponentsR7R,/\.dkds-scientific-nav-tools\s+button\{[^}]*(?:height|min-height|padding)\s*:/s,'HARD-67: Workbench Components must not re-own scientific floating button geometry.');
 
@@ -866,7 +889,7 @@ function validate(){
 
   // HARD-76: generic fallback controls must not participate in specialized
   // Plugin Manager / Settings / Dialog / Scientific floating hit geometry.
-  requireRegex(schemaUi,/button:not\(:is\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\)\)/,'HARD-76: generic button geometry must exclude specialized Core action contexts.');
+  requireRegex(schemaUi,/:where\(button\):not\(:where\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\.dkds-plot-view-actions>button[\s\S]*\)\)/,'HARD-76: generic button geometry must stay zero-specificity and exclude specialized Core action contexts.');
   requireText(schemaUi,'--dkds-plugin-manager-toolbar-action-height:34px','HARD-76: Plugin Manager toolbar actions need an explicit geometry slot.');
   requireText(schemaUi,'--dkds-plugin-card-action-height:var(--plugin-control-height,32px)','HARD-76: Plugin Manager card actions need an explicit geometry slot.');
   requireText(workbenchComponentsR7R,'--dkds-dialog-action-height:32px','HARD-76: Dialog actions need an explicit geometry slot.');
@@ -880,9 +903,10 @@ function validate(){
 
   // HARD-78: control motion has one recipe owner. Presentation/theme feature
   // files cannot move standard buttons on hover/active/focus.
-  const themeContractR7T=read('src/styles/theme/contract.css');
-  requireText(themeContractR7T,'Standard Core controls are stationary','HARD-78: standard-control motion ownership must be explicit in Theme Contract.');
-  requireText(themeContractR7T,':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)','HARD-78: stationary standard-control states must be owned centrally.');
+  const motionRecipesR7T=read('src/styles/motion/recipes.css');
+  requireText(motionRecipesR7T,'Canonical semantic recipes','HARD-78: standard-control semantic motion ownership must be explicit in Motion Recipes.');
+  requireText(motionRecipesR7T,'[data-dkds-motion-role="control"]:is(:hover,:active,:focus-visible)','HARD-78: stationary canonical control states must be owned by the semantic Motion recipe.');
+  requireText(uiComponentRuntime,"toolbarAction:'control'",'HARD-78: canonical toolbar actions must receive their Motion role from Component Runtime.');
   forbidRegex(read('src/styles/presentation/shell.css'),/button[^{}]*(?:hover|active|focus-visible)[^{]*\{[^}]*transform\s*:/s,'HARD-78: Shell presentation must not own interactive button transform.');
   forbidRegex(read('src/styles/presentation/dialogs.css'),/button[^{}]*(?:hover|active|focus-visible)[^{]*\{[^}]*transform\s*:/s,'HARD-78: Dialog presentation must not own interactive button transform.');
 
@@ -890,10 +914,11 @@ function validate(){
   // Windows regressions can report matching declarations instead of guessing
   // which stylesheet loaded last.
   const themeDebugR7T=read('src/core/theme/debug-runtime.js');
-  requireText(themeDebugR7T,'function traceOwnership(el,properties=TRACE_DEFAULT_PROPERTIES)','HARD-79: Theme Debug must expose computed property ownership tracing.');
-  requireText(themeDebugR7T,"geometryOwner:'Core Structure'",'HARD-79: ownership trace must identify the canonical geometry owner.');
-  requireText(themeDebugR7T,"paintOwner:'Core Component Appearance / Material Renderer'",'HARD-79: ownership trace must identify the canonical paint owner.');
-  requireText(themeDebugR7T,'inspect,traceOwnership,isEnabled','HARD-79: ownership trace must be exported by DKDSThemeDebug.');
+  requireRegex(themeDebugR7T,/function traceOwnership\(el,properties=TRACE_DEFAULT_PROPERTIES,\{configuration=true\}=\{\}\)/,'HARD-79: Theme Debug must expose computed property ownership tracing with optional configuration provenance.');
+  requireText(themeDebugR7T,"return'SINGLE_AUTHORED_OWNER'",'HARD-79: ownership trace must distinguish a single authored property owner from collisions.');
+  requireText(themeDebugR7T,"return'MULTIPLE_AUTHORED_OWNERS'",'HARD-79: ownership trace must report multiple authored property owners instead of returning a hard-coded owner label.');
+  requireText(themeDebugR7T,'configuration:Object.freeze(configuration?tokens.map(token=>traceTokenProvenance(target,token)):[])','HARD-79: ownership trace must report configuration-token provenance separately from final property ownership while allowing audit fast-paths.');
+  requireText(themeDebugR7T,'inspect,traceOwnership,traceStyleOwner,traceElementOwnership,auditStyleOwnership,diagnosticSources,copyDiagnosticSource,currentTrace','HARD-79: computed ownership trace, grouped Style Trace, source-copy provenance and audit APIs must be exported by DKDSThemeDebug.');
 
   // HARD-80: persistent shell command groups own one outer fill/silhouette.
   // Idle children are transparent hit regions and Import is not a primary tab.
@@ -917,12 +942,112 @@ function validate(){
   forbidText(chartRuntimeR7W,"const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag'",'HARD-81: chart-runtime drag handle may not return to a span-specific hover path.');
   forbidRegex(integratedChromeR7W,/\.dkds-scientific-nav-drag\s*\{[^}]*(?:background|border(?:-color)?|box-shadow|color)\s*:/s,'HARD-81: drag semantics CSS may not paint the handle separately from ToolbarAction.');
 
+  // HARD-82: SDK 1.25 makes platform presentation a real package/cascade owner.
+  // Mobile/desktop presentation assets must never fall back into one unconditional
+  // plugin layer or create parallel public business APIs.
+  const platformContractR7X=read('sdk/platform-presentation-contract.js');
+  const coreCssR7X=read('src/core.css');
+  const packageRuntimeR7X=read('src/core/plugins/kernel/modules/package-runtime.js');
+  requireText(platformContractR7X,"const MODES=Object.freeze(['shared','adaptive','custom'])",'HARD-82: SDK platform presentation modes must stay bounded to shared/adaptive/custom.');
+  requireText(coreCssR7X,'dkds.plugin, dkds.plugin-platform, dkds.structure','HARD-82: platform plugin CSS must cascade after shared plugin CSS and before Core Structure.');
+  requireText(packageRuntimeR7X,"{layer:'dkds.plugin-platform'}",'HARD-82: package runtime must inject selected platform CSS into dkds.plugin-platform.');
+  requireText(read('desktop/plugin-window-manager.js'),"PlatformPresentation.assetsFor(manifest,'desktop')",'HARD-82: dedicated Electron windows must explicitly select Desktop presentation.');
+  const firstPartyRuntimeR7X=fs.readdirSync(path.join(root,'src','plugins')).filter(name=>!name.startsWith('_')).map(name=>{const file=path.join(root,'src','plugins',name,'plugin.js');return fs.existsSync(file)?fs.readFileSync(file,'utf8'):'';}).join('\n');
+  forbidRegex(firstPartyRuntimeR7X,/ctx\.ui\.(?:desktop|mobile)\b/,'HARD-82: SDK 1.25 must not fork the public Plugin API into Desktop/Mobile facades.');
+
+  // HARD-83: Native touch density may feed semantic/generic geometry slots but
+  // may never become a catch-all final min-height owner. Scientific floating
+  // chrome additionally owns one explicit outer silhouette, so a future patch
+  // cannot shrink only its children while leaving the panel itself oversized.
+  const nativeShellR8=read('src/styles/platform/native-client-shell.css');
+  const analysisWorkbenchR8=read('src/styles/structure/analysis-workbench.css');
+  requireText(nativeShellR8,'--dkds-generic-button-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));','HARD-83: Native coarse touch policy must feed the generic button density slot.');
+  requireText(nativeShellR8,'--dkds-generic-field-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));','HARD-83: Native coarse touch policy must feed the generic field density slot.');
+  forbidText(nativeShellR8,'--dkds-command-height:var(--dkds-mobile-control-min-height','HARD-83: Native touch minimum must not inherit into canonical command geometry.');
+  requireText(nativeShellR8,'.dkds-pointer-coarse .dkds-analysis-workbench{','HARD-83: Native workbench touch density must be applied through a semantic workbench slot context.');
+  forbidRegex(nativeShellR8,/dkds-pointer-coarse\s+button:not\([^\{]+\)\s*\{[^}]*min-height/s,'HARD-83: Native touch minimum must not return to an exclusion-list catch-all button owner.');
+  forbidText(nativeShellR8,'.main-plot-tools button{min-height:','HARD-83: Native touch density must not directly enlarge canonical integrated main-plot actions.');
+  requireText(schemaUi,'min-height:var(--dkds-generic-field-min-height,30px)','HARD-83: generic fields must expose a platform density slot rather than receive raw Native min-height overrides.');
+  requireText(schemaUi,'min-height:var(--dkds-generic-button-min-height,30px)','HARD-83: generic buttons must inherit the platform density slot and keep 30px only as fallback.');
+  forbidText(schemaUi,'--dkds-generic-button-min-height:30px;','HARD-83: generic button structure may not shadow the Native touch-density slot with a local default.');
+  requireText(analysisWorkbenchR8,'--dkds-workbench-button-min-height:var(--plugin-control-height)','HARD-83: AnalysisWorkbench buttons must expose a bounded Native density slot.');
+  requireText(nativeShellR8,'--dkds-scientific-nav-item-height:20.4px;--dkds-scientific-nav-group-height:23.4px','HARD-83: Native scientific floating chrome must publish both child and outer heights.');
+  requireText(nativeShellR8,'height:var(--dkds-scientific-nav-group-height);min-height:var(--dkds-scientific-nav-group-height);max-height:var(--dkds-scientific-nav-group-height)','HARD-83: Native scientific floating chrome must lock its outer silhouette, not only its child buttons.');
+  requireText(nativeShellR8,'--dkds-header-action-height:26px;overflow-y:hidden','HARD-83: Native integrated action groups must preserve canonical 26px geometry and forbid vertical scrollbars.');
+
+  // HARD-84: Mobile scientific PortableView placement has one geometry owner.
+  // Only float/global expose corner resizing. Side and bottom companions use
+  // real canvas lanes plus the visible split seam; title long-press resizing is
+  // deliberately disabled on Mobile so one panel has one resize affordance.
+  const mobilePresentationR9=read('src/core/ui/modules/presentation/mobile-web-surface.js');
+  const portableViewR9=read('src/core/ui/modules/layout/portable-view.js');
+  const nativeWorkspaceR9=read('src/styles/platform/native-workspace-presentation.css');
+  requireText(mobilePresentationR9,"portableOwnsPlacement(node)",'HARD-84: Mobile Presenter must recognize PortableView-owned external geometry.');
+  requireText(mobilePresentationR9,'const detachedFromProjection=!!(frame&&node&&!frame.contains?.(node));','HARD-84: Presenter release must detect nodes already moved by another Core lifecycle.');
+  requireText(mobilePresentationR9,'externallyPlaced=detachedFromProjection&&this.portableOwnsPlacement(node)','HARD-84: Presenter release must preserve externally placed PortableViews instead of restoring stale home geometry.');
+  requireText(mobilePresentationR9,"node.parentElement?.closest?.('.dkds-analysis-parking')",'HARD-84: Presenter release must preserve parked closed PRIME nodes instead of resurrecting them into stale projection geometry.');
+  requireText(mobilePresentationR9,'releasePortable:node=>','HARD-84: PortableView must be able to release an obsolete semantic projection frame immediately.');
+  forbidText(portableViewR9,'is-mobile-bottom-shelf','HARD-84: Native bottom placement must not return to the obsolete viewport shelf workaround.');
+  forbidText(nativeWorkspaceR9,'dkds-mobile-scroll-reserved','HARD-84: Native bottom placement must not reserve phantom scroll space.');
+  requireText(nativeWorkspaceR9,'.has-canvas-bottom','HARD-84: Native bottom placement must consume the real canvas bottom lane.');
+  requireText(nativeWorkspaceR9,'var(--dkds-plugin-canvas-bottom-height)','HARD-84: Native bottom lane must consume the shared split-controller height.');
+  requireText(nativeWorkspaceR9,'.dkds-portable-view.dkds-plot-view:not(.is-floating):not(.is-global-floating)>.dkds-portable-resize-handle{display:none}','HARD-84: Docked/sticky PlotViews must not expose a floating corner resize handle.');
+  requireText(portableViewR9,"dataset?.dkdsHost==='mobile'",'HARD-84: Mobile PortableView must exit before held-title resize gesture installation.');
+  requireText(nativeWorkspaceR9,'--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)','HARD-84: Semantic side companion must expose the shared split hit track.');
+  requireText(nativeWorkspaceR9,'--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)','HARD-84: Semantic bottom companion must expose the shared split hit track.');
+  requireText(nativeWorkspaceR9,'grid-template-columns:var(--dkds-mobile-left-track) var(--dkds-mobile-left-seam) minmax(0,1fr) var(--dkds-mobile-right-seam) var(--dkds-mobile-right-track)','HARD-84: Mobile companions must retain the stable five-track canvas topology instead of rebuilding a title-resized two-column layout.');
+
+  // HARD-85: current-scroll-region sticky is a GroupArea-only placement. The
+  // sticky child must leave normal grid flow so viewport-height expansion cannot
+  // change sibling row/Y geometry, and TER must not own a private sticky model.
+  const gridControllerR10=read('src/core/ui/modules/grid/controller.js');
+  const groupCssR10=read('src/styles/structure/analysis-workbench.css');
+  const terRuntimeR10=read('src/plugins/ter-analysis/feature-runtime.js');
+  requireText(gridControllerR10,'class GroupAreaController extends GridController','HARD-85: GroupArea must be a formal Core abstraction, not only a provisional Grid flag.');
+  requireText(gridControllerR10,"className='dkds-grid-sticky-rail'",'HARD-85: Sticky GroupArea children must move into an out-of-flow rail.');
+  requireText(groupCssR10,'.dkds-managed-grid>.dkds-grid-sticky-rail{position:absolute','HARD-85: Sticky rail must not participate in grid row sizing.');
+  requireText(portableViewR9,"home?.closest?.('.dkds-group-area-grid')",'HARD-85: Standalone PlotViews must not inherit current-scroll-region sticky placement.');
+  requireText(terRuntimeR10,'workbench.groupArea(terGrid','HARD-85: TER titleless multi-plot layout must consume the formal shared GroupArea behavior.');
+  forbidText(terRuntimeR10,"id:'resistance-inspector'",'HARD-85: TER R–V must not return to a private inspector/placement owner.');
+  forbidText(terRuntimeR10,'layoutSettings.sticky','HARD-85: TER R–V must not return to private sticky state.');
+
+  // HARD-86: preserve the accepted two-triangle resize-corner silhouette while
+  // allowing the visible affordance to scale down. The 36×36 hit target stays
+  // unchanged. Optical material may use theme-owned translucency/tone, but must
+  // not reintroduce backdrop blur, a surface-colored fold plane, or hard-coded paint.
+  const portableStructureR11=read('src/styles/structure/sdk-semantic-surfaces.css');
+  const portablePaintR11=read('src/styles/presentation/plugin-chrome.css');
+  const portableShellR11=read('src/styles/presentation/shell.css');
+  requireText(portableStructureR11,'width:36px;height:36px','HARD-86: Portable resize hit target must remain 36×36.');
+  requireText(portableStructureR11,'width:18px;height:18px','HARD-86: Portable corner outer geometry must remain at the accepted smaller 18×18 scale.');
+  requireText(portableStructureR11,'width:15px;height:15px','HARD-86: Portable corner inner geometry must remain at the accepted smaller 15×15 scale.');
+  requireText(portableStructureR11,'clip-path:polygon(100% 0,100% 100%,0 100%)','HARD-86: Visible resize paint must stay genuinely non-rectangular.');
+  requireText(portablePaintR11,'.dkds-portable-resize-handle{outline:none;background:transparent}','HARD-86: The rectangular hit target itself must stay visually transparent.');
+  requireText(portablePaintR11,'color-mix(in srgb,var(--dkui-component-floating-chrome-indicator','HARD-86: The outer clipped region must derive hue from the active theme floatingChrome indicator and expose real translucency.');
+  requireText(portablePaintR11,'color-mix(in srgb,var(--dkui-component-floating-chrome-border-active','HARD-86: The inner clipped region must derive hue from the active theme floatingChrome border-active color and expose real translucency.');
+  requireText(portablePaintR11,'color-mix(in srgb,var(--dkui-component-floating-chrome-border-hover','HARD-86: Hover/drag must remain inside the active theme floatingChrome palette.');
+  forbidRegex(portablePaintR11,/\.dkds-portable-resize-handle(?::hover|:focus-visible|\.is-dragging)?\s*\{[^}]*(?:background:(?!transparent)|box-shadow|border)/s,'HARD-86: Hover/focus/drag must never paint the rectangular hit target itself.');
+  forbidText(portablePaintR11,'backdrop-filter','HARD-86: Resize-corner paint must stay flat; backdrop blur recreates a layered/folded surface.');
+  forbidText(portableShellR11,'--dkui-portable-corner-','HARD-86: Shell must not own resize-handle colors; the active Theme profile owns floatingChrome appearance.');
+  forbidRegex(portablePaintR11,/\.dkds-portable-resize-handle::(?:before|after)\s*\{[^}]*(?:rgba\(|#[0-9A-Fa-f]{3,8})/s,'HARD-86: Resize-handle paint must not hard-code color literals outside Theme profiles.');
+
+  // HARD-87: Core-authored semantic action variants must survive repeated semantic hydration.
+  // Dedicated plugin windows clone ActionGroup rows, so using any transient owner would
+  // cause a second SemanticUI pass to erase `primary` and flatten every important action.
+  const pluginWindowChromeR12=read('src/plugin-window/chrome.js');
+  const actionGroupR12=read('src/core/ui/modules/interaction/context-actions.js');
+  const pluginToolbarR12=read('src/core/plugins/kernel/modules/commands/toolbar.js');
+  requireText(pluginWindowChromeR12,"button.dataset.dkdsComponentVariantOwner='core-component'",'HARD-87: Dedicated plugin-window action variants must be explicit Core component semantics.');
+  requireText(actionGroupR12,"button.dataset.dkdsComponentVariantOwner='core-component'",'HARD-87: ActionGroup variants must remain explicit across repeated semantic hydration.');
+  requireText(pluginToolbarR12,"button.dataset.dkdsComponentVariantOwner='core-component'",'HARD-87: Plugin toolbar variants must remain explicit across repeated semantic hydration.');
+
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:81});
+  return Object.freeze({ok:true,invariants:87});
 }
 
 if(require.main===module){

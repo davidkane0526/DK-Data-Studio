@@ -1,4 +1,8 @@
 'use strict';
+const StyleGate=require('ui/style-ownership-gate');
+const STYLE_SOURCE='src/core/ui/modules/scientific-curve/model.js';
+const scientificToken=(el,token,value)=>StyleGate.setToken(el,token,value,{owner:'core.scientific-curve-model',scope:'runtime-scientific-token',source:STYLE_SOURCE});
+const scientificRemoveToken=(el,token)=>StyleGate.remove(el,token,{owner:'core.scientific-curve-model',kind:StyleGate.KINDS.CONFIG_TOKEN,scope:'runtime-scientific-token',source:STYLE_SOURCE});
 const {plotPresentation, resolveElement}=require('../foundation/shortcuts');
 const {compactSeriesLabel}=require('../series/primitives');
 const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot');
@@ -68,11 +72,11 @@ const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot')
       let rect=container.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height),fallbackApplied=false;
       const visible=container.isConnected&&getComputedStyle(container).display!=='none';
       if(visible&&height<preferredMinHeight){
-        container.style.setProperty('--dkds-scientific-preferred-min-height',`${preferredMinHeight}px`);
+        scientificToken(container,'--dkds-scientific-preferred-min-height',`${preferredMinHeight}px`);
         container.classList.add('dkds-scientific-layout-fallback');this.layoutFallbackOwned=true;fallbackApplied=true;
         rect=container.getBoundingClientRect();width=Math.round(rect.width);height=Math.round(rect.height);
       }else if(this.layoutFallbackOwned&&height>=preferredMinHeight){
-        container.classList.remove('dkds-scientific-layout-fallback');container.style.removeProperty('--dkds-scientific-preferred-min-height');this.layoutFallbackOwned=false;
+        container.classList.remove('dkds-scientific-layout-fallback');scientificRemoveToken(container,'--dkds-scientific-preferred-min-height');this.layoutFallbackOwned=false;
       }
       const compact=width<preferredMinWidth||height<preferredMinHeight;
       const renderable=width>=hardMinWidth&&height>=hardMinHeight;
@@ -113,7 +117,15 @@ const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot')
       };
     }
     ensureEntity(id,parentId=''){const key=String(id||'');if(!key)return null;try{return this.entities?.ensure?.({id:key,parents:parentId?[String(parentId)]:[]})||{id:key};}catch{return {id:key};}}
-    selectedCurveId(){const explicit=String(this.spec.getSelectedCurveId?.()||'');if(explicit)return explicit;const focus=this.focusEntityId();if(!focus)return '';const ids=this.curves().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean),set=new Set(ids);if(set.has(focus))return focus;return String(this.entities?.closestInSet?.(focus,set)||'');}
+    selectedCurveIds(){
+      const authored=this.spec.getSelectedCurveIds?.();
+      if(authored){const rows=authored instanceof Set?[...authored]:Array.isArray(authored)?authored:[];const explicitMany=new Set(rows.map(String).filter(Boolean));if(explicitMany.size)return explicitMany;}
+      const explicit=String(this.spec.getSelectedCurveId?.()||'');if(explicit)return new Set([explicit]);
+      const focus=this.focusEntityId();if(!focus)return new Set();
+      const ids=this.curves().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean),set=new Set(ids);if(set.has(focus))return new Set([focus]);
+      const closest=String(this.entities?.closestInSet?.(focus,set)||'');return closest?new Set([closest]):new Set();
+    }
+    selectedCurveId(){return [...this.selectedCurveIds()][0]||'';}
     selectedMarkerIds(){const explicit=(this.spec.getSelectedMarkerIds?.()||[]).map(String).filter(Boolean);if(explicit.length)return new Set(explicit);const markerIds=new Set(this.markers().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean)),selected=new Set((this.selectionSnapshot?.items||[]).map(item=>String(item?.id||'')).filter(id=>markerIds.has(id)));const focus=this.focusEntityId();if(markerIds.has(focus))selected.add(focus);return selected;}
     selectEntity(id,{source='scientific-curve',additive=false,value=null,type='core.entity'}={}){const key=String(id||'');if(!key||!this.interaction?.select)return false;const entity=this.entities?.get?.(key)||{id:key,type,value};try{this.interaction.select({type:entity.type||type,id:key,ref:entity.ref||null,value:entity.value??value??entity,meta:{...(entity.metadata||{})}},{source,additive});return true;}catch{return false;}}
     curveById(id){return this.curves().find(row=>String(row.id)===String(id))||null;}

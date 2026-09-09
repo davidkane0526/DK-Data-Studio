@@ -31,7 +31,7 @@ for(const token of ['DKDSPlugins?.activities','DKDSPlugins?.workspace?.top','DKD
 assert(!modelSource.includes('querySelector')&&!modelSource.includes('querySelectorAll')&&!modelSource.includes('getComputedStyle'),'Core Presentation Model must be DOM-blind.');
 
 assert(presentersSource.includes('class DesktopPresenter')&&presentersSource.includes('class MobilePresenter'),'Desktop and Mobile Presenter must be separate consumers of the same Presentation Model.');
-assert(presentersSource.includes("region:'main'")&&presentersSource.includes("region:orientation==='landscape'?'rail':'sheet'")&&presentersSource.includes("region:'route'"),'Mobile Presenter must map semantic roles instead of inheriting desktop spatial placement.');
+assert(presentersSource.includes("region:'main'")&&presentersSource.includes("region:'drawer'")&&presentersSource.includes("region:'companion-right'")&&presentersSource.includes("'companion-bottom'")&&presentersSource.includes("region:'route'"),'Mobile Presenter must map semantic roles responsively instead of inheriting desktop spatial placement.');
 assert(presentersSource.includes("present:(platform='desktop'")&&presentersSource.includes("platform==='mobile'?mobile.present(context):desktop.present(context)"),'one presentation facade must serve both platforms.');
 
 for(const type of ['navigation.activate','navigation.back','command.execute','workspace.surface.activate','workspace.action.execute','status.action.execute','keyboard.key'])assert(intentSource.includes(type),`Unified Interaction Intent must define ${type}.`);
@@ -40,7 +40,7 @@ assert(adaptersSource.includes('fromHostRequest')&&adaptersSource.includes('from
 
 assert(mobileHost.includes("const VERSION=3")&&mobileHost.includes("api.present('mobile'")&&mobileHost.includes('fromHostRequest'),'Mobile Host protocol 3 must consume the Mobile Presenter and unified input adapter.');
 assert(!mobileHost.includes('querySelector')&&!mobileHost.includes('querySelectorAll')&&!mobileHost.includes('getComputedStyle'),'Mobile Host must never reverse-read Desktop DOM for state.');
-assert(!mobileHost.includes('.analysis-page')&&!mobileHost.includes('.project-tab')&&!mobileHost.includes('#statusBarMessage')&&!mobileHost.includes('[data-dkds-mobile-summary]'),'Desktop page/project/status DOM identities must not leak back into Mobile Host.');
+assert(!mobileHost.includes('.analysis-page')&&!mobileHost.includes('.project-tab')&&!mobileHost.includes('#statusBarMessage')&&!mobileHost.includes('[data-dkds-inline-summary]'),'Desktop page/project/status DOM identities must not leak back into Mobile Host.');
 
 assert(pluginWorkspace.includes('presentationRole')&&pluginWorkspace.includes('semanticKind')&&pluginWorkspace.includes('collapsible'),'PluginWorkspace runtime registry must expose semantic presentation metadata without a second Plugin API.');
 assert(hostApi.includes('presentationRole:String(action.presentationRole')&&hostApi.includes('semanticKind:String(action.semanticKind'),'DKDSUI workspace registry must carry semantic presentation metadata in memory.');
@@ -52,7 +52,8 @@ for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile']){
   assert(!pluginApiRuntime.includes(forbidden),`${forbidden} must not exist in the executable Plugin API facade.`);
   assert(!sdkTypes.includes(forbidden),`${forbidden} must not exist in SDK authoring types.`);
 }
-assert(!/\bdesktop\s*\??\s*:/.test(sdkTypes)&&!/\bmobile\s*\??\s*:/.test(sdkTypes),'SDK ui facade must not declare desktop/mobile platform branches.');
+const uiFacade=sdkTypes.slice(sdkTypes.indexOf('readonly ui:{'),sdkTypes.indexOf('\n  };\n}',sdkTypes.indexOf('readonly ui:{')));
+assert(!/\bdesktop\s*\??\s*:/.test(uiFacade)&&!/\bmobile\s*\??\s*:/.test(uiFacade),'SDK ui facade must not declare desktop/mobile platform branches; platformPresentation belongs to manifest authoring only.');
 
 const domainPattern=/(?:resonance|\bter\b|pulse|dksmb|data-center)/i;
 for(const rel of ['src/core/ui/modules/presentation/model.js','src/core/ui/modules/presentation/presenters.js','src/core/ui/modules/interaction/intent.js','src/core/ui/modules/interaction/adapters.js']){
@@ -70,7 +71,7 @@ global.window={
   DKDSUI:{
     workspaces:{actions:()=>[
       {id:'workspace-primary:main',surfaceId:'main',kind:'primary',label:'Main',active:true},
-      {id:'workspace-prime:inspect',surfaceId:'inspect',kind:'prime',semanticKind:'inspector',label:'Inspect',active:false},
+      {id:'workspace-prime:inspect',surfaceId:'inspect',kind:'prime',semanticKind:'inspector',label:'Inspect',active:true},
       {id:'workspace-sub:detail',surfaceId:'detail',kind:'sub',label:'Detail',active:false}
     ]},
     actions:{list:()=>[{id:'run',label:'Run',enabled:true,items:[]}]}
@@ -88,8 +89,13 @@ assert.strictEqual(desktop.schema,'dkds.desktop-presentation.v1');
 assert.strictEqual(desktop.presentationModel,'dkds.presentation-model.v1');
 const mobile=presentation.present('mobile',{protocol:3,orientation:'portrait'});
 assert.strictEqual(mobile.surfaces[0].presentation.region,'main');
-assert.strictEqual(mobile.surfaces[1].presentation.region,'sheet');
+assert.strictEqual(mobile.surfaces[1].presentation.region,'companion-right');
+assert.strictEqual(mobile.surfaces[1].active,false,'desktop-mounted contextual PRIME must stay closed until the mobile route explicitly selects it');
 assert.strictEqual(mobile.surfaces[2].presentation.region,'route');
+const mobileInspect=presentation.present('mobile',{protocol:3,orientation:'landscape',viewport:{width:800,height:460},openSurfaces:{alpha:['inspect']}});
+assert.strictEqual(mobileInspect.surfaces[0].active,true,'wide PRIME companions must preserve the primary scientific surface.');
+assert.strictEqual(mobileInspect.surfaces[1].presentation.region,'companion-right');
+assert.strictEqual(mobileInspect.surfaces[1].active,true,'Mobile-owned PRIME visibility must activate the selected inspector companion in landscape.');
 delete global.window;
 
 console.log('v3.67.0 Platform Presentation Architecture Phase 1 PASS: one Core Presentation Model, Desktop/Mobile Presenters, unified Interaction Intent, platform adapters, and registry-driven Mobile Host.');

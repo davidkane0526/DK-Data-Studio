@@ -98,15 +98,13 @@ function configure(next){deps=next;return module.exports;}
     }
     const workspace=workspaceMeta(m);
     const topContract=topWorkspaceForPlugin(m.id);
-    const primeCount=[...getRegistry('ui.prime').values()].filter(row=>row.pluginId===m.id).length;
-    const subCount=[...getRegistry('ui.sub').values()].filter(row=>row.pluginId===m.id).length;
     return {
       ...m,
       enabled,
       active:isActive,
       status,
       error,
-      source:m.source || 'builtin',
+      source:definition.packageSource || 'builtin',
       pluginType:pluginTypeForManifest(m),
       systemLocked:isSystemLockedDefinition(definition),
       capabilities:Array.isArray(m.capabilities)?m.capabilities.slice():[],
@@ -122,9 +120,7 @@ function configure(next){deps=next;return module.exports;}
       workspaceTitle:workspace.title||m.name||m.id,
       icon:defaultPluginIcon(m),
       topContractReady:workspace.role==='top'?!!topContract:false,
-      isSuper:m.id===state.superPluginId,
-      primeCount,
-      subCount
+      isSuper:m.id===state.superPluginId
     };
   }
 

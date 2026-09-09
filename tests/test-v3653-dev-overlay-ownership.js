@@ -11,12 +11,17 @@ const devtools=read('src/core/plugins/devtools.js');
 const css=read('src/styles/presentation/plugin-devtools.css');
 
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.3 dev-overlay regression requires app 3.65.3 or newer');
-assert(/const VERSION='2\.[1-9]\.0'/.test(debug),'Theme Inspector runtime must remain on the 2.x developer-overlay contract or newer');
+const debugVersion=debug.match(/const VERSION='([^']+)'/)?.[1]||'0.0.0';
+const debugParts=debugVersion.split('.').map(x=>Number(x)||0);
+assert(debugParts[0]>2||(debugParts[0]===2&&debugParts[1]>=1),`Theme Inspector runtime must remain on the 2.x developer-overlay contract or newer, got ${debugVersion}`);
 for(const token of ['const pauseOwners=new Set()','function pause(owner=', 'function resume(owner=', 'isPaused', 'data-theme-debug-act="exit"', "if(event.key!=='Escape'||isPaused())return;disable()"]){
   assert(debug.includes(token),`Theme Inspector ownership missing ${token}`);
 }
 assert(!debug.includes('z-index:2147483647'),'Theme Inspector must not bypass Core DevTool stacking with maximum z-index');
-for(const token of ["const VERSION='1.2.0'","debug?.pause?.('devtools')","window.DKDSThemeDebug?.resume?.('devtools')","if(debug?.isEnabled?.()&&tab==='overview')tab='theme'","if(e.target===overlay){close();return;}","event.key==='Escape'"]){
+const devtoolsVersion=devtools.match(/const VERSION=\'([^\']+)\'/)?.[1]||'0.0.0';
+const devtoolsParts=devtoolsVersion.split('.').map(x=>Number(x)||0);
+assert(devtoolsParts[0]>1||(devtoolsParts[0]===1&&devtoolsParts[1]>=2),`Plugin DevTools developer-overlay contract must remain >=1.2.0, got ${devtoolsVersion}`);
+for(const token of ["debug?.pause?.('devtools')","window.DKDSThemeDebug?.resume?.('devtools')","if(debug?.isEnabled?.()&&tab==='overview')tab='theme'","if(e.target===overlay){close();return;}","event.key==='Escape'"]){
   assert(devtools.includes(token),`Plugin DevTools overlay ownership missing ${token}`);
 }
 assert(css.includes('.dkds-plugin-devtools{position:fixed;inset:0;z-index:12000'),'Plugin DevTools must own the higher developer-overlay stack');

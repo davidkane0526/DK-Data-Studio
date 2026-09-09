@@ -1,23 +1,19 @@
 {
-  "sdkVersion": "1.24.0",
+  "sdkVersion": "1.28.0",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.67.10",
+  "minimumAppVersion": "3.68.36",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "SDK 1.24.0 hard visual rule: scientific floating action chrome is one integrated silhouette; plugin CSS may not split it with per-child spacing, radius, border or shadow.",
-    "SDK 1.24.0 keeps Plugin API 1.19.0 and upgrades Theme Contract to 3.10.0: theme profiles can declaratively compose Component Context (standalone/grouped), Material Role, Material Context (compact/panel/dialog/workspace-modal), component variants and bounded depth slots while Core remains the single final appearance/material paint owner.",
-    "SDK 1.23.0 targets Plugin API 1.19.0 and completes Platform Presentation cutover: TOP PRIMARY no longer accepts leftNode/leftHtml; every secondary semantic region must be registered as its own PRIME/SUB surface with a declared presentationRole. The legacy Mobile workspace bridge is removed.",
-    "SDK 1.22.1 adds Core-owned menu availability for ctx.ui.menus.add(...): export/tool actions may declare synchronous availability returning boolean or { visible, enabled, reason }, and shell menus re-evaluate it when opened and when project/artifact/activity context changes.",
-    "SDK 1.22.0 finalizes Core visual ownership: canonical Action/ActionGroup/Tabs/SurfaceHeader/Field factories and hydration are public through ctx.ui.components, and package validation rejects plugin-owned application paint or standard control/header geometry. Theme Contract remains 3.9.0 and Plugin API remains 1.18.0.",
-    "SDK 1.21.0 targets Plugin API 1.18.0 and Theme Contract 3.9.0. Theme 3.9 makes Core semantic component identity and Material role resolution canonical across Gallery and real UI, adds controlled component variants/effects, real-page Theme Inspector diagnostics, expanded coverage statuses, and GroupPlot density control while preserving fallback-only scientific palette precedence.",
-    "Older project files remain loadable through the Project Compatibility Gateway; older Plugin API packages are not runtime-compatible and must be upgraded.",
-    "Multi-series ScientificPlot surfaces provide a Core-owned interactive legend scoped to the individual plot host; semantic legendgroup members isolate together even when only one member owns the visible legend item.",
-    "PluginWorkspace safe mode keeps semantic Primary content reachable inside a bounded Core-owned Primary viewport and scrollbar; auto mode is reserved for intentional document-flow growth and contained mode for bounded no-scroll surfaces.",
-    "Tool/TOP workspaces use one reusable dedicated window contract with Core-owned import, theme, viewport, navigation and status-bar geometry.",
-    "The SDK is standalone and does not require DK Data Studio source code.",
-    "Manifest requirement `ui.workspace` and capability label `ui.plugin-workspace` map to the single executable runtime facade `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not part of Plugin API 1.19.0."
+    "SDK 1.28.0 is current-contract-only: packages declare exactly Plugin API 1.19.0 and the current manifest schema; the runtime has one package/API path and one host presentation contract.",
+    "Historical project files are the only compatibility boundary. They are normalized by the Project Compatibility Gateway before current runtime/plugin code sees project state.",
+    "GroupArea is the canonical related-multi-plot container through ctx.ui.groupArea.create(...) / PluginWorkspace.groupArea(...); managed Grid has no alternate GroupArea flag.",
+    "Managed Grid orientation behavior is explicit through orientationPolicy and optional preferredColumns(...). The policy is domain-neutral and opt-in; plugins do not own final grid-template-columns geometry.",
+    "PluginWorkspace PRIMARY/PRIME/SUB plus TOP presentationRole are the current workspace composition contract. There is no second low-level workspace composition facade.",
+    "Theme packages target Theme Contract 3.10.0 exactly and validate directly against the current Theme schema.",
+    "Plugin dependencies declare current package ids only.",
+    "The SDK is standalone and does not require DK Data Studio source code."
   ],
   "themeContractVersion": "3.10.0"
 }

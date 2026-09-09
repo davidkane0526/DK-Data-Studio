@@ -52,7 +52,7 @@
   function migrateDomainRoots(out){
     const plugins={...(out.plugins||{})};
     const resonanceKeys=['scanVisibility','peaks','peakCategories','algorithms','peakDisplay','activeDetector','activeMetricAlgorithm','detectorSettings','physicsShowLabels','spacingSettings','gateAnalysisSettings','transformPreviewByDataset'];
-    if(resonanceKeys.some(key=>out[key]!==undefined)){
+    if(resonanceKeys.some(key=>out[key]!==undefined)||out.trendColumns!==undefined){
       const plugin={...(plugins['builtin.resonance-workbench']||{})};
       const workspace={...(plugin.workspace||{})};
       if(workspace.schema===undefined)workspace.schema=1;
@@ -85,7 +85,7 @@
     const resonancePlugin=plugins['builtin.resonance-workbench'],terWorkspace=plugins['builtin.ter-analysis']?.workspace;
     if(resonancePlugin?.workspace&&terWorkspace){const gate={...(resonancePlugin.workspace.gateAnalysisSettings||{})};if(gate.terSettings===undefined&&terWorkspace.settings!==undefined)gate.terSettings=clone(terWorkspace.settings);if(gate.terAlgorithmRef===undefined&&terWorkspace.algorithmRef!==undefined)gate.terAlgorithmRef=clone(terWorkspace.algorithmRef);resonancePlugin.workspace={...resonancePlugin.workspace,gateAnalysisSettings:gate};plugins['builtin.resonance-workbench']=resonancePlugin;}
     if(out.pulseAnalysis!==undefined){const plugin={...(plugins['builtin.pulse-analysis']||{})};if(plugin.workspace===undefined)plugin.workspace=clone(out.pulseAnalysis);plugins['builtin.pulse-analysis']=plugin;}
-    const host={...(out.host||{})};if(host.panelLayout===undefined&&out.panelLayout!==undefined)host.panelLayout=clone(out.panelLayout);if(host.trendColumns===undefined&&out.trendColumns!==undefined)host.trendColumns=clone(out.trendColumns);out.host=host;out.plugins=plugins;
+    out.host={...(out.host||{})};delete out.host.panelLayout;delete out.host.trendColumns;out.plugins=plugins;
     for(const key of DOMAIN_ROOT_FIELDS)delete out[key];
     return out;
   }

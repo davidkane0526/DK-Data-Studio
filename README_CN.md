@@ -1,6 +1,6 @@
 # DK Data Studio
 
-当前版本：**v3.67.21**  ·  Plugin API：**1.19.0**  ·  SDK：**1.24.0**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.68.66**  ·  Plugin API：**1.19.0**  ·  SDK：**1.28.0**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
@@ -11,9 +11,10 @@ DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron
 - **插件声明语义，Core 提供基础设施。** PlotView、ScientificPlot、Table、ActionGroup、Selection、History、Theme Material 等由 Core/SDK 统一实现。
 - **算法可替换。** 峰检测、FWHM/基线、TER、transport transform 等通过 Algorithm Provider 注册、版本化并记录 provenance。
 - **CSS 依靠所有权而不是 specificity。** 已删除 `base/modern` 双层结构和 authored CSS 中的 `!important`，统一使用 Cascade Layers。
+- **Core-managed Grid 的最终几何只允许 Core 持有。** 插件可通过 GridController 的列偏好与 `--dkds-grid-*` 配置 token 声明需求，但不得再用插件选择器写 `grid-template-columns / gap / align-items` 等最终网格属性；语义所有权审计会把这种别名覆写直接判为失败。
 - **Theme 采用 Role → Recipe → Tokens。** Core 决定 `chrome/sidebar/surface/elevated/popover/control/floating` 语义角色，主题决定 `clear/thin-glass/soft-glass/liquid-glass` recipe 与 token。
 - **语义 Surface 只有一个 base-paint owner。** Workbench 的 Sidebar/Elevated/Surface slot 由 Core 决定 Material Role 与基础 token；插件放入 slot 的直接内容默认透明，不得再用 `surfaceSoft` 覆盖父级语义 Surface。
-- **内置插件是可回退的发行版基线，不是不可升级特权。** 同 ID 且版本更高的 `.dkplugin` 可作为 managed override 安装，重启后生效；移除更新层即可恢复 bundled baseline。
+- **插件运行时只支持当前正式合同。** 插件包必须精确满足当前 Plugin API / manifest / Theme Contract；不提供旧 SDK、旧宿主或旧插件包的转换、降级或兼容执行路径。
 - **生成文件不是源码。** `src/generated/` 中的 runtime、Plugin Index、SDK Authoring Reference 和派生图标均可重建，不应手工编辑或提交 Git。
 - **自动化测试不等同于实机视觉验收。** Windows Electron 的最终布局、字体与 GPU backdrop-filter 仍需实机确认。
 
@@ -98,6 +99,8 @@ npm run algorithms:test
 npm run plugin-manager:test
 npm run mobile:test
 ```
+
+`mobile:test` 可直接在干净源码/新 clone 上运行：它会先由 canonical composition source 重建被忽略的 `src/generated/runtime/*`，再执行 Mobile 架构回归。
 
 ## 生成文件与清理
 

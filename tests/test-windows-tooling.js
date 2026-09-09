@@ -68,16 +68,21 @@ assert(!/New-Object\s+System\.Drawing\./i.test(gui), 'GUI contains fragile Syste
 assert(/\[System\.Drawing\.Point\]::new\(/.test(gui), 'GUI should use typed Point constructors.');
 assert(/FlowLayoutPanel/.test(gui) && /Resize-ActionCards/.test(gui), 'GUI should retain responsive card layout.');
 assert(/install-deps/.test(gui) && /doctor/.test(gui) && /toolchain/.test(gui), 'GUI should expose dependency repair, diagnostics and shared-toolchain inspection.');
+assert(/\[switch\]\$KeepConsoleOpen/.test(backend), 'Toolbox backend must expose a GUI-only keep-console-open switch so startup failures remain readable.');
+assert(/-NoExit[\s\S]*-KeepConsoleOpen/.test(gui), 'Developer GUI actions must preserve their diagnostics console even when the backend action fails.');
+assert(/if \(\$KeepConsoleOpen\)[\s\S]*?return[\s\S]*?exit 1/.test(backend), 'GUI failure handling must return without terminating the PowerShell host while CLI/CI failures retain a non-zero exit.');
 
 // Android packaging exposed by the toolbox must produce the final release APK,
 // not a debug build or a debug-suffixed artifact.
 assert(/assembleRelease/.test(backend), 'Android build must use Gradle assembleRelease.');
 assert(/'assembleRelease'[\s\S]*?'--no-daemon'[\s\S]*?'--max-workers=4'[\s\S]*?'-PreactNativeArchitectures=arm64-v8a'[\s\S]*?'--stacktrace'/.test(backend), 'Android release build must be non-persistent, bounded, arm64-targeted and retain stack traces.');
-assert(/Gradle release build failed once[\s\S]*?Clear-GradleProxyOptions[\s\S]*?'-Dorg\.gradle\.jvmargs='/.test(backend), 'Android release builds must retain a proxy-safe low-memory fallback for Windows process-launch failures.');
+assert(/Enable-AndroidGradleDirectNoDaemon[\s\S]*?\$env:JAVA_OPTS=\$jvmArgs[\s\S]*?'org\.gradle\.jvmargs'\s+\$jvmArgs[\s\S]*?'org\.gradle\.internal\.instrumentation\.agent'\s+'false'[\s\S]*?'org\.gradle\.daemon'\s+'false'/.test(backend), 'Android release builds must align both immutable JVM options and Gradle instrumentation-agent status before requesting an in-process --no-daemon build.');
+assert(/Test-AndroidGradleInProcess[\s\S]*?'help'[\s\S]*?'--no-daemon'[\s\S]*?'--info'/.test(backend), 'Android release builds must runtime-probe the no-fork contract before expensive APK compilation.');
+assert(!/'-Dorg\.gradle\.jvmargs='/.test(backend), 'Android release tooling must not revive the ineffective empty-jvmargs retry that still spawned a single-use daemon.');
 assert(!/assembleDebug/.test(backend), 'Android toolbox must not build the debug variant.');
 assert(/DK-Data-Studio\.apk/.test(backend), 'Android output must use the final DK Data Studio APK name.');
 assert(!/-debug\.apk/i.test(backend + gui), 'Android tooling must not expose a debug APK artifact.');
-assert(/'android-run'[\s\S]*?'assembleRelease'[\s\S]*?'adb'[\s\S]*?'install','-r'/.test(backend), 'Connected-device Android run must build the signed release without a persistent daemon and install it with adb.');
+assert(/'android-run'[\s\S]*?Invoke-AndroidReleaseGradleBuild[\s\S]*?'adb'[\s\S]*?'install','-r'/.test(backend), 'Connected-device Android run must consume the same signed release Gradle process owner and install it with adb.');
 assert(/Initialize-AndroidReleaseSigning/.test(backend), 'Android build must initialize persistent local release signing.');
 assert(/Resolve-AndroidSdk/.test(backend) && /platform-tools/.test(backend), 'Android toolbox must auto-discover the SDK and adb from standard Windows locations.');
 assert(/Ensure-AndroidSdkComponents/.test(backend) && /sdkmanager\.bat/.test(backend), 'Android builds must provision pinned SDK components through the official SDK manager.');
@@ -142,6 +147,10 @@ assert(/npm_config_prefer_offline/.test(backend),
 
 assert(/Get-DependencySignature/.test(backend) && /\.staging-/.test(backend) && /\.dkds-ready\.json/.test(backend),
   'shared node_modules must use immutable package-signature entries built through staging rather than npm reifying a project Junction.');
+assert(/Clear-StaleDependencyStaging/.test(backend) && /Get-Process -Id \$ownerPid/.test(backend),
+  'shared dependency installs must reclaim staging directories left by dead installer processes without touching active installs.');
+assert(/Test-NpmLogNoSpace/.test(backend) && /ENOSPC\|no space left on device/.test(backend) && /New-DependencyNoSpaceMessage/.test(backend),
+  'toolbox must translate npm ENOSPC extraction failures into an actionable cache-space diagnostic.');
 assert(/--ignore-scripts/.test(backend) && /Ensure-ElectronBinary/.test(backend) && /electron\\install\.js/.test(backend),
   'shared dependency installation must separate npm package extraction from Electron binary installation.');
 assert(/Test-ElectronBinaryReady/.test(backend) && /dist\\electron\.exe/.test(backend),

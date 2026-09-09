@@ -1,13 +1,12 @@
 'use strict';
-const {$, mainSvg, primePortableState, state}=require('./context');
-const {escapeHtml}=require('./foundation');
+const {$, mainSvg, state}=require('./context');
+const {createOwner}=require('./style-gate');
+const style=createOwner('app.workspace-super-shell','runtime-analysis-shell');
 let deps=null;
 function configure(next){deps=next;return module.exports;}
 const renderProjectTabs=(...args)=>deps.projectTabs.renderProjectTabs(...args);
 const renderDatasetList=(...args)=>deps.imports.renderDatasetList(...args);
 const pluginUiContext=(...args)=>deps.artifacts.pluginUiContext(...args);
-const renderTrendPanel=(...args)=>deps.scientific.renderTrendPanel(...args);
-const makeFloating=(...args)=>deps.docks.makeFloating(...args);
 
 
 function activeMainViewProvider(){
@@ -72,39 +71,9 @@ function renderAll(){
   renderProjectTabs();
   renderDatasetList();
   renderMainPlot();
-  renderInspector();
-  renderTrendPanel();
   window.DKDSPlugins?.events?.emit?.('workspace:render',{context:pluginUiContext()});
 }
 
-function activeInspectorProvider(){
-  const activityId=window.DKDSPlugins?.activities?.active?.()||null;
-  const providers=(window.DKDSPlugins?.registry?.values?.('ui.inspectors')||[])
-    .filter(p=>!p.activity||p.activity===activityId)
-    .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0));
-  const context=pluginUiContext();
-  return providers.find(p=>{
-    try{return typeof p.supports==='function'?p.supports(context)!==false:true;}catch{return false;}
-  })||null;
-}
-
-function renderInspector(){
-  const host=$('#inspectorBody');
-  if(!host)return;
-  const provider=activeInspectorProvider();
-  const header=$('#inspectorPanelHeaderTitle');
-  if(header)header.textContent=provider?.panelTitle||provider?.title||'检查器';
-  if(!provider){
-    host.innerHTML='<div class="empty-state">当前工作区没有提供检查器。</div>';
-    return;
-  }
-  try{
-    provider.render({container:host,context:pluginUiContext()});
-  }catch(err){
-    console.error('[DKDS inspector provider]',err);
-    host.innerHTML=`<div class="empty-state">检查器插件渲染失败：${escapeHtml(err.message)}</div>`;
-  }
-}
 
 
 let analysisViewportFrame=0;
@@ -138,8 +107,8 @@ function applyAnalysisPageViewport(){
   const root=document.documentElement;
   const viewportHeight=getAnalysisViewportHeight();
   const top=measureAnalysisPageTop();
-  root.style.setProperty('--dkds-viewport-height',`${viewportHeight}px`);
-  root.style.setProperty('--dkds-analysis-page-top',`${top}px`);
+  style.token(root,'--dkds-viewport-height',`${viewportHeight}px`,{component:'analysis-shell'});
+  style.token(root,'--dkds-analysis-page-top',`${top}px`,{component:'analysis-shell'});
 }
 
 function syncAnalysisPageViewport(){
@@ -174,98 +143,6 @@ function bindAnalysisShellViewportObserver(){
 }
 queueMicrotask(bindAnalysisShellViewportObserver);
 
-function primePortableKey(contribution={}){
-  return `${String(contribution.pluginId||'')}:${String(contribution.id||'')}`;
-}
-
-function resolvePrimePortableTarget(contribution={}){
-  const raw=String(contribution.target||'').trim();
-  if(!raw)return null;
-  if(raw.startsWith('#')||raw.startsWith('.')||raw.startsWith('[')){
-    try{return document.querySelector(raw);}catch{return null;}
-  }
-  return document.getElementById(raw)||(()=>{try{return document.querySelector(raw);}catch{return null;}})();
-}
-
-function refreshPrimeDockSlots(){
-  const right=$('#primeRightDockSlot');
-  const bottom=$('#primeBottomDockSlot');
-  if(right)right.classList.toggle('active',[...right.children].some(node=>!node.classList.contains('hidden')));
-  if(bottom)bottom.classList.toggle('active',[...bottom.children].some(node=>!node.classList.contains('hidden')));
-  scheduleMainPlotRelayout();
-}
-
-function rememberPortablePrime(contribution,node){
-  const key=primePortableKey(contribution);
-  if(!primePortableState.has(key)){
-    primePortableState.set(key,{
-      key,pluginId:String(contribution.pluginId||''),node,
-      parent:node.parentNode||null,next:node.nextSibling||null
-    });
-  }
-  return primePortableState.get(key);
-}
-
-function resetPortablePrimeClasses(node){
-  if(!node)return;
-  node.classList.remove('dkds-prime-portable','dkds-prime-docked-right','dkds-prime-docked-bottom','dkds-prime-floating');
-  delete node.dataset.dkdsPrimePlacement;
-}
-
-function restorePortablePrime(entry){
-  if(!entry?.node)return;
-  const {node,parent,next}=entry;
-  resetPortablePrimeClasses(node);
-  if(parent?.isConnected){
-    if(next?.parentNode===parent)parent.insertBefore(node,next);
-    else parent.appendChild(node);
-  }
-}
-
-function restorePortablePrimesExcept(pluginId=''){
-  for(const [key,entry] of [...primePortableState]){
-    if(pluginId&&entry.pluginId===pluginId)continue;
-    restorePortablePrime(entry);
-    primePortableState.delete(key);
-  }
-  refreshPrimeDockSlots();
-}
-
-function placePrimeContribution(contribution={},placement){
-  const next=String(placement||'').trim().toLowerCase();
-  if(!contribution.portable)throw new Error(`PRIME ${contribution.pluginId||''}/${contribution.id||''} 必须提供 placement adapter，或声明 portable:true。`);
-  const node=resolvePrimePortableTarget(contribution);
-  if(!node)throw new Error(`找不到 PRIME UI：${contribution.target||contribution.id||''}`);
-  const entry=rememberPortablePrime(contribution,node);
-  const right=$('#primeRightDockSlot');
-  const bottom=$('#primeBottomDockSlot');
-  const appRoot=$('#app');
-  if(!right||!bottom||!appRoot)return false;
-
-  resetPortablePrimeClasses(node);
-  node.classList.add('dkds-prime-portable');
-  node.dataset.dkdsPrimePlacement=next;
-  if(next==='right'){
-    right.appendChild(node);
-    node.classList.add('dkds-prime-docked-right');
-  }else if(next==='bottom'){
-    bottom.appendChild(node);
-    node.classList.add('dkds-prime-docked-bottom');
-  }else if(next==='float'){
-    appRoot.appendChild(node);
-    node.classList.add('dkds-prime-floating');
-    if(node.querySelector?.('.drag-handle')&&!node.dataset.dkdsPrimeDragBound){
-      makeFloating(node);
-      node.dataset.dkdsPrimeDragBound='1';
-    }
-  }else{
-    restorePortablePrime(entry);
-    throw new Error(`不支持的 PRIME placement: ${next}`);
-  }
-  refreshPrimeDockSlots();
-  return true;
-}
-
 function superWorkspaceRootPageId(contract={}){
   const rootSelector=String(contract?.layout?.root?.selector||'').trim();
   if(!rootSelector)return '';
@@ -281,7 +158,6 @@ function superWorkspaceRootPageId(contract={}){
 
 function applySuperWorkspace(superState){
   const state=superState||window.DKDSPlugins?.workspace?.super?.()||{};
-  restorePortablePrimesExcept(String(state.pluginId||''));
   const activity=String(state.activityId||'');
   document.body.dataset.superActivity=activity;
   document.body.dataset.superPlugin=String(state.pluginId||'');
@@ -292,11 +168,26 @@ function applySuperWorkspace(superState){
     const isRoot=belongsToSuper&&!!rootPageId&&page.id===rootPageId;
     page.classList.toggle('super-workspace-page',belongsToSuper);
     page.classList.toggle('super-workspace-root-page',isRoot);
+    // Workspace navigation is presented by the host command bar while a TOP is
+    // embedded as SUPER. The same plugin keeps inline navigation in its
+    // dedicated TOP window, so there is only one action owner in either host.
+    for(const nav of page.querySelectorAll('.dkds-analysis-nav'))nav.classList.toggle('host-presented',isRoot);
   });
+  if(!state.available){
+    showNoSuperWorkspace();
+    return false;
+  }
+  if(rootPageId){
+    const root=$('#'+rootPageId);
+    if(root){
+      document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!==rootPageId));
+      syncAnalysisPageViewport();
+    }
+  }
+  return true;
 }
 
 function showNoSuperWorkspace(){
-  restorePortablePrimesExcept('');
   document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!=='superWorkspaceEmpty'));
   document.body.classList.add('super-unconfigured');
   syncAnalysisPageViewport();
@@ -348,10 +239,5 @@ function closeAnalysisPage(id){
   return true;
 }
 
-function showMainWorkspace(){
-  document.querySelectorAll('.analysis-page').forEach(page=>page.classList.add('hidden'));
-  scheduleMainPlotRelayout();
-  renderAll();
-}
 
-module.exports=Object.freeze({configure, activeMainViewProvider, measureMainPlot, renderEmptyMainView, renderMainPlot, scheduleMainPlotRelayout, clearMainView, resetMainView, updateMainModeButtons, renderAll, activeInspectorProvider, renderInspector, getAnalysisViewportHeight, measureAnalysisPageTop, applyAnalysisPageViewport, syncAnalysisPageViewport, bindAnalysisShellViewportObserver, primePortableKey, resolvePrimePortableTarget, refreshPrimeDockSlots, rememberPortablePrime, resetPortablePrimeClasses, restorePortablePrime, restorePortablePrimesExcept, placePrimeContribution, superWorkspaceRootPageId, applySuperWorkspace, showNoSuperWorkspace, bindSuperWorkspaceControls, refreshOpenAnalysisPage, openAnalysisPage, ensurePluginWorkspaceVisible, closeAnalysisPage, showMainWorkspace, analysisViewportFrame, analysisViewportFollowupFrame, analysisShellResizeObserver});
+module.exports=Object.freeze({configure, activeMainViewProvider, measureMainPlot, renderEmptyMainView, renderMainPlot, scheduleMainPlotRelayout, clearMainView, resetMainView, updateMainModeButtons, renderAll, getAnalysisViewportHeight, measureAnalysisPageTop, applyAnalysisPageViewport, syncAnalysisPageViewport, bindAnalysisShellViewportObserver, superWorkspaceRootPageId, applySuperWorkspace, showNoSuperWorkspace, bindSuperWorkspaceControls, refreshOpenAnalysisPage, openAnalysisPage, ensurePluginWorkspaceVisible, closeAnalysisPage, analysisViewportFrame, analysisViewportFollowupFrame, analysisShellResizeObserver});

@@ -9,7 +9,7 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 
 const runtime=read('src/plugin-window/runtime.js');
-const prime=runtime.indexOf("measureSync('artifact-store-prime'");
+const prime=Math.max(runtime.indexOf("measureSync('artifact-store-prime'"),runtime.indexOf("measure('artifact-store-prime'"));
 const create=runtime.indexOf("measure('window-runtime-create'");
 const activate=runtime.indexOf("measure('plugins-activate'");
 assert(prime>=0&&create>=0&&activate>=0&&prime<create&&prime<activate,'Artifact Store must be primed before dedicated window runtime creation and plugin activation.');

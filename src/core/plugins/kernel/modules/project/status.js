@@ -5,6 +5,7 @@ const {eventEmit}=require('../events/history');
 const {sortContributions}=require('../activity/shell');
 const {registerContribution}=require('../commands/toolbar');
 const {restorePluginProjectState}=require('../lifecycle');
+const {pluginHostView}=require('../host-facade');
   function statusBarZone(side='right') {
     const normalized=String(side||'right').toLowerCase()==='left'?'left':'right';
     return document.querySelector(normalized==='left'?'#statusBarPluginLeft':'#statusBarPluginRight');
@@ -26,6 +27,7 @@ const {restorePluginProjectState}=require('../lifecycle');
     button.append(icon,label);
     let clickHandler=typeof current.onClick==='function'?current.onClick:null;
     const moveToZone=()=>{
+      if(current.presentationOnly===true){button.remove();return true;}
       const zone=statusBarZone(current.side);
       if(!zone)return false;
       if(button.parentElement!==zone)zone.appendChild(button);
@@ -57,7 +59,18 @@ const {restorePluginProjectState}=require('../lifecycle');
       update:patch=>apply(patch),
       invoke:event=>{
         if(button.disabled||typeof clickHandler!=='function')return false;
-        try{clickHandler({event,eventSource:'state.host',element:button,pluginId,id,host:state.host});return true;}
+        try{
+          const supplied=event&&typeof event==='object'&&event.anchorRect&&typeof event.anchorRect==='object'?event.anchorRect:null;
+          const measured=!supplied&&button?.getBoundingClientRect?button.getBoundingClientRect():null;
+          const anchorRect=supplied||measured?Object.freeze({
+            x:Number(supplied?.x??(measured?measured.left+measured.width/2:NaN)),
+            y:Number(supplied?.y??(measured?measured.top+measured.height/2:NaN)),
+            left:Number(supplied?.left??measured?.left??NaN),right:Number(supplied?.right??measured?.right??NaN),
+            top:Number(supplied?.top??measured?.top??NaN),bottom:Number(supplied?.bottom??measured?.bottom??NaN),
+            width:Number(supplied?.width??measured?.width??0),height:Number(supplied?.height??measured?.height??0)
+          }):null;
+          clickHandler({event,eventSource:'presentation',anchorRect,element:button,pluginId,id,host:pluginHostView()});return true;
+        }
         catch(err){console.error(`[DKDS status bar:${pluginId}/${id}]`,err);return false;}
       },
       remove:()=>{button.remove();eventEmit('status:changed',{pluginId,id,removed:true});},

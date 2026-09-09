@@ -6,29 +6,6 @@
   align-items:center;
   gap:3px;
 }
-/* Coarse-pointer devices need larger targets without changing desktop density. */
-.dkds-pointer-coarse button,
-.dkds-pointer-coarse input,
-.dkds-pointer-coarse select{
-  min-height:var(--dkds-touch-target,44px);
-}
-.dkds-pointer-coarse .toolbar-btn{
-  height:var(--dkds-touch-target,44px);
-  padding-left:11px;
-  padding-right:11px;
-}
-.dkds-pointer-coarse .width-handle{
-  stroke-width:12px;
-}
-.dkds-pointer-coarse .main-plot-tools button{
-  min-height:40px;
-}
-.dkds-pointer-coarse .project-tab{
-  min-height:40px;
-}
-.dkds-pointer-coarse .scan-toggle-row{
-  gap:18px;
-}
 
 /* Tablet-sized layouts: preserve the scientific canvas and allow side controls to scroll. */
 .dkds-size-medium .workspace{
@@ -142,7 +119,7 @@
   padding:8px 10px;
 }
 .dkds-size-compact .analysis-page-body{
-  padding:9px;
+  padding:0;
 }
 .dkds-size-compact .import-panel-overlay{
   padding:5px;
@@ -185,12 +162,42 @@
   padding-left:env(safe-area-inset-left,0px);
 }
 
-/* Native React Native/WebView presentation is owned by src/mobile.css and
-   its Presenter-driven platform modules. This shared touch layer retains only
-   viewport-size and coarse-pointer behavior. */
-/* Plugin Manager desktop/common layout belongs to dkds.structure.
-   Platform layer only owns coarse-pointer target sizes. */
-.dkds-pointer-coarse .plugin-switch-track{width:46px;height:26px}
-.dkds-pointer-coarse .plugin-switch-thumb{width:22px;height:22px}
-.dkds-pointer-coarse .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(20px)}
-.dkds-pointer-coarse .plugin-card-actions button{min-height:40px}
+/* React Native/WebView presentation and touch-target geometry are owned by
+   src/mobile.css platform modules. Shared touch.css intentionally contains no
+   native-client selectors. */
+
+/* Desktop scientific floating chrome is intentionally compact. Native Mobile
+   re-establishes its larger touch geometry in native-client-shell.css. */
+html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
+  /* Desktop scientific chrome scales with the CSS viewport, not physical panel
+     resolution.  The renderer therefore stays compact at 100–150% Windows
+     scaling while still retaining a slightly larger hit target on very wide
+     workspaces. Mobile owns a separate geometry contract. */
+  --dkds-scientific-nav-item-width:28px;
+  --dkds-scientific-nav-item-height:28px;
+  --dkds-scientific-nav-padding-block:1px;
+  --dkds-scientific-nav-padding-inline:2px;
+  --dkds-scientific-nav-font-size:13px;
+}
+
+/* Desktop wheel policy: workspace/document scroll regions chain vertically.
+   A local table/panel consumes the wheel while it can move; once it reaches
+   its top/bottom boundary Chromium may naturally hand the same direction to
+   the next scrollable workspace ancestor under the pointer. Popovers/menus
+   intentionally keep their own containment contracts. */
+html[data-dkds-host="desktop"] :where(
+  .analysis-page-body,
+  .dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host,
+  .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center,
+  .dkds-plugin-sub-page-host,
+  .dkds-plugin-canvas-left,
+  .dkds-plugin-canvas-right,
+  .dkds-plugin-canvas-bottom,
+  .dkds-table-surface-host,
+  .analysis-table-wrap,
+  .import-file-list,
+  .floating-body
+){overscroll-behavior-y:auto;}
+html[data-dkds-host="desktop"] .dkds-plot-view-actions>.dkds-plot-view-menu-trigger{
+  width:28px;min-width:28px;max-width:28px;padding:0 4px
+}

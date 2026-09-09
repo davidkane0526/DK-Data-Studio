@@ -100,6 +100,7 @@
     ctx.events.on('plugin:state-changed',schedule);
     ctx.events.on('plugins:ready',schedule);
     ctx.events.on('workspace:render',schedule);
+    window.addEventListener('dkds:shell-navigation-reflow',schedule);
     schedule();
 
     return {
@@ -107,6 +108,7 @@
         mutationObserver?.disconnect();
         resizeObserver?.disconnect();
         if(!window.ResizeObserver)window.removeEventListener('resize',schedule);
+        window.removeEventListener('dkds:shell-navigation-reflow',schedule);
       }
     };
   });

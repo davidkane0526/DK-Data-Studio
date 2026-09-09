@@ -1,6 +1,6 @@
 (() => {
   if(window.DKDSScientificTransforms)return;
-  const VERSION='1.1.0';
+  const VERSION='1.2.0';
   const registry=new Map();
   const ownerIndex=new Map();
   const pipelineBindings=new Map();
@@ -50,9 +50,22 @@
   }
 
   function sweepsFromInput(input){
-    const rows=safeArray(input).filter(Boolean),direct=rows.map(normalizeSweep).filter(Boolean);
-    if(direct.length===rows.length&&direct.length)return direct;
-    return direct;
+    const rows=safeArray(input).filter(Boolean),out=[];
+    const data=window.DKDSData,science=window.DKDSScience;
+    for(const row of rows){
+      // A transport data.table can contain an up sweep and a down sweep in one
+      // artifact.  Treating the complete table as one direction=0 curve makes
+      // directional scalar-field algorithms reject every sample and produces
+      // an all-missing heatmap.  Expand tables through the canonical transport
+      // dataset -> buildSweeps path before considering the direct-curve fallback.
+      if(row?.kind==='data.table'&&typeof data?.transportDatasetsFromArtifacts==='function'&&typeof science?.buildSweeps==='function'){
+        const datasets=data.transportDatasetsFromArtifacts([row])||[];
+        const expanded=datasets.flatMap(dataset=>science.buildSweeps(dataset)||[]).filter(Boolean);
+        if(expanded.length){out.push(...expanded);continue;}
+      }
+      const direct=normalizeSweep(row);if(direct)out.push(direct);
+    }
+    return out;
   }
 
   function register(owner,id,spec={}){

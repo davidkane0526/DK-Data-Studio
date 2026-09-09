@@ -2,6 +2,11 @@
   if(window.DKDSPluginContract)return;
   const VERSION='1.0.0';
   const API_VERSION='1.19.0';
+  const CURRENT_MANIFEST_FIELDS=Object.freeze(new Set([
+    'id','name','version','apiVersion','entry','pluginType','enabled','order','description','systemCritical',
+    'requiresCore','capabilities','workspace','window','data','algorithmProvider','algorithmCategories','algorithmProvides',
+    'pluginDependencies','scripts','styles','platformPresentation'
+  ]));
   const REQUIREMENTS=Object.freeze({
     'runtime':api=>!!api?.runtime,
     'events':api=>!!api?.events,
@@ -42,6 +47,7 @@
     'ui.series':api=>!!api?.ui?.series,
     'ui.legend-groups':api=>!!api?.ui?.legends,
     'ui.group-plots':api=>!!api?.ui?.groupPlots,
+    'ui.group-area':api=>!!api?.ui?.groupArea,
     'ui.tooltips':api=>!!api?.ui?.tooltips,
     'ui.design-system':api=>!!api?.ui?.designSystem,
     'ui.plot-views':api=>!!api?.ui?.plotViews,
@@ -69,14 +75,22 @@
   const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(v=>String(v||'').trim()).filter(Boolean))];
   function validateManifest(manifest={}){
     const errors=[];
+    const unknownFields=Object.keys(manifest||{}).filter(key=>!CURRENT_MANIFEST_FIELDS.has(key));
+    if(unknownFields.length)errors.push(`Unsupported current-contract manifest fields: ${unknownFields.join(', ')}`);
     const pluginType=String(manifest.pluginType||'').trim().toLowerCase();
     const allowedPluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
     if(!pluginType)errors.push(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`);
     else if(!allowedPluginTypes.has(pluginType))errors.push(`Plugin ${manifest?.id||'(unknown)'} declares invalid pluginType: ${pluginType}`);
     const requested=normalize(manifest.requiresCore);
     for(const id of requested)if(!REQUIREMENTS[id])errors.push(`Unknown Core requirement: ${id}`);
-    const api=String(manifest.apiVersion||API_VERSION);
-    if(api!==API_VERSION)errors.push(`Unsupported Plugin API: ${api}; host requires ${API_VERSION}`);
+    const api=String(manifest.apiVersion||'').trim();
+    if(!api)errors.push('Plugin manifest.apiVersion is required.');
+    else if(api!==API_VERSION)errors.push(`Unsupported Plugin API: ${api}; host requires ${API_VERSION}`);
+    if(!String(manifest.entry||'').trim())errors.push('Plugin manifest.entry is required.');
+    const presentationContract=window.DKDSPlatformPresentationContract;
+    if(!presentationContract?.validate)errors.push('DKDSPlatformPresentationContract is unavailable.');
+    else{const platformCheck=presentationContract.validate(manifest);if(!platformCheck.ok)errors.push(...platformCheck.errors);}
+    if(pluginType==='theme'&&manifest.platformPresentation!==undefined)errors.push('Theme plugins must not declare platformPresentation; use Theme Contract tokens.');
     const categories=normalize(manifest.algorithmCategories);
     if(manifest.algorithmCategories!==undefined&&!Array.isArray(manifest.algorithmCategories))errors.push('algorithmCategories must be an array.');
     for(const category of categories)if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category))errors.push(`Invalid algorithm category: ${category}`);
@@ -93,11 +107,14 @@
       const key=`${category}::${id}@${version}`;if(provideKeys.has(key))errors.push(`Duplicate algorithmProvides entry: ${key}`);provideKeys.add(key);
     }
     if(provides.length&&manifest.algorithmProvider!==true)errors.push('algorithmProvides requires algorithmProvider=true.');
-    if(manifest.compatibility!==undefined&&(!manifest.compatibility||typeof manifest.compatibility!=='object'||Array.isArray(manifest.compatibility)))errors.push('compatibility must be an object.');
     const dependencies=Array.isArray(manifest.pluginDependencies)?manifest.pluginDependencies:[];
     if(manifest.pluginDependencies!==undefined&&!Array.isArray(manifest.pluginDependencies))errors.push('pluginDependencies must be an array.');
     const dependencyIds=new Set();
-    for(const row of dependencies){const id=String(row?.id||'').trim(),range=String(row?.range||'').trim();if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)||!range)errors.push(`Invalid plugin dependency: ${id}@${range}`);if(dependencyIds.has(id))errors.push(`Duplicate plugin dependency: ${id}`);dependencyIds.add(id);}
+    for(const row of dependencies){
+      const id=String(row?.id||'').trim(),keys=row&&typeof row==='object'&&!Array.isArray(row)?Object.keys(row):[];
+      if(!row||typeof row!=='object'||Array.isArray(row)||keys.some(key=>key!=='id')||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id))errors.push(`Invalid current-contract plugin dependency: ${id||'(missing)'}`);
+      if(dependencyIds.has(id))errors.push(`Duplicate plugin dependency: ${id}`);dependencyIds.add(id);
+    }
     return Object.freeze({ok:errors.length===0,errors:Object.freeze(errors),requirements:Object.freeze(requested)});
   }
   function assertApi(api,manifest={}){

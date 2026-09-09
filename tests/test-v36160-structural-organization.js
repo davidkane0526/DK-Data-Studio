@@ -14,7 +14,8 @@ assert((pkg.build?.files||[]).includes('desktop/**/*'),'Electron packaging must 
 for(const old of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
   assert(!fs.existsSync(path.join(root,old)),`root host file must be removed: ${old}`);
 }
-for(const expected of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','plugin-override-policy.js','algorithm-package-catalog.js','semver-compat.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
+assert(!fs.existsSync(path.join(root,'desktop','semver-compat.js')),'Desktop semver compatibility bridge must stay deleted.');
+for(const expected of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','plugin-override-policy.js','algorithm-package-catalog.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
   assert(fs.existsSync(path.join(root,'desktop',expected)),`desktop host file missing: ${expected}`);
 }
 
@@ -24,7 +25,7 @@ assert(scriptFiles.includes('prepare-dev-start.js'),'fast dev-start preparation 
 assert(list('tests','.js').length>=130,'regression tests must live under tests/.');
 assert(pkg.scripts.test.includes('node tests/run.js test'),'npm test must use the centralized test runner.');
 assert(pkg.scripts.check.includes('node tests/run.js check'),'npm check must use the centralized test runner.');
-assert(pkg.scripts['mobile:test']==='node tests/run.js mobile','mobile tests must use the centralized runner.');
+assert(pkg.scripts['mobile:test']==='npm run runtime:build && npm run plugin:index && node tests/run.js mobile','mobile tests must regenerate ignored Core runtime compositions and the generated built-in plugin index before using the centralized runner.');
 
 // Authored Core is organized by responsibility. The browser still receives two
 // generated composition artifacts for legacy shared-closure subsystems, but the
@@ -45,8 +46,8 @@ assert.equal(buildCompositionSource('src/core/plugins/kernel').source,read('src/
 assert.equal(buildCompositionSource('src/app').source,read('src/generated/runtime/app.js'),'Generated App runtime must exactly match the declared composition.');
 
 const coreCss=read('src/core.css');
-assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;'),'Core CSS must declare one explicit cascade order.');
-for(const layer of ['foundation','structure','presentation','theme','platform']){
+assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.plugin-platform, dkds.structure, dkds.presentation, dkds.theme, dkds.motion, dkds.platform, dkds.window, dkds.utility;'),'Core CSS must declare one explicit cascade order.');
+for(const layer of ['foundation','structure','presentation','theme','motion','platform']){
   assert(coreCss.includes(`styles/${layer}/`),`Core CSS entry must import ${layer} modules.`);
 }
 assert(!fs.existsSync(path.join(root,'src/styles/base'))&&!fs.existsSync(path.join(root,'src/styles/modern')),'legacy base/modern specificity directories must stay removed.');

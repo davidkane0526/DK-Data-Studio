@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 
 
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.24.0');
+assert.equal(contract.sdkVersion,'1.28.0');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.67.10');
+assert.equal(contract.minimumAppVersion,'3.68.36');
 
 const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');
@@ -20,7 +20,7 @@ const plot=read('src/core/scientific/plot-runtime.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const css=readCoreCss(root);
 const modern=readCoreCss(root);
-const themeContract=read('src/styles/theme/contract.css');
+const motionRecipes=read('src/styles/motion/recipes.css');
 const index=read('src/index.html');
 const dedicated=read('src/plugin-window/runtime.js');
 
@@ -42,10 +42,10 @@ assert(!css.includes('opacity:.64'),'Permanent visible plot toolbar regression m
 assert(/\.dkds-plot-legend\.dkds-scientific-auto-legend\s*\{[^}]*overflow:hidden/s.test(css),'Horizontal legend scrollbar must not be forced visible.');
 assert(css.includes('.dkds-plot-legend-item.is-selected')&&css.includes('width:18px'),'Legend selection must use restrained swatch emphasis rather than a blue chip.');
 assert(css.includes('.dkds-plot-view-head')&&css.includes('height:28px'),'Standard plot title bars must use compact Core geometry.');
-assert(themeContract.includes(':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)')&&themeContract.includes('transform:none'),'Modern control motion must remain stationary under the central Theme motion contract.');
+assert(motionRecipes.includes(':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)')&&motionRecipes.includes('transform:none'),'Modern control motion must remain stationary under the central Motion Recipes contract.');
 
 // Execute the pure shared layout solver without a browser dependency.
-const context={window:{},console};vm.createContext(context);vm.runInContext(presentation,context);
+const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};const context={window:{DKDSStyleGate:styleGate},console,DKDSStyleGate:styleGate};context.globalThis=context;vm.createContext(context);vm.runInContext(presentation,context);
 const api=context.window.DKDSPlotPresentation;assert(api&&api.VERSION==='1.1.0');
 let solved=api.solveLegend({entries:[{key:'a',label:'原始 I–V'},{key:'b',label:'原始峰位投影'}],width:260,height:220,placement:'auto'});
 assert.equal(solved.placement,'top');assert.equal(solved.rows,1,'Two compact labels should share one row on a narrow auxiliary plot.');

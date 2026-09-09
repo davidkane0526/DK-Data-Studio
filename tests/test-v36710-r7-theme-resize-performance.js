@@ -13,6 +13,7 @@ assert(semantic.includes('const COMPONENT_SELECTOR=COMPONENTS.map(row=>row.selec
 assert(!semantic.includes("for(const node of record.addedNodes||[])if(node?.nodeType===1&&htmlElement(node))scheduleSemanticAssignment(node)"),
   'R7 Semantic UI observer must not enqueue every added node as a later root rescan.');
 const split=read('src/core/ui/modules/layout/workspace.js');
+const mobileSplit=read('src/core/ui/modules/layout/mobile-split-performance.js');
 const groupPlot=read('src/core/ui/modules/tooltip/group-plot.js');
 const terManifest=JSON.parse(read('src/plugins/ter-analysis/plugin.json'));
 
@@ -41,14 +42,14 @@ assert(componentCss.includes('border:1px solid var(--dkds-ca-menu-border);border
   'R7 menu/legend actions must own a one-pixel rounded canonical edge instead of inheriting the browser button frame or a square double border.');
 assert(split.includes('schedulePreview(value)')&&split.includes('const raf=globalThis.requestAnimationFrame')&&split.includes('this.previewFrame=raf(()=>{this.previewFrame=0;this.paintPreview();'),
   'R7 SplitController must coalesce live panel preview writes with requestAnimationFrame.');
-assert(split.includes('this.apply(this.previewSize,{persist:false,emit:false,notify:false})'),
-  'R7K split preview must make panel geometry follow the pointer while suppressing persistence and chart/layout notifications.');
+assert(mobileSplit.includes('this.__dkdsMobilePreviewTotal=Number.isFinite(total)&&total>0?total:null')&&mobileSplit.includes('if(Number.isFinite(raw))this.previewSize=raw')&&mobileSplit.includes('if(this.previewFrame)return'),
+  'R7K native Mobile split preview must cache drag geometry and coalesce raw pointer events without changing the frozen shared Desktop SplitController.');
 assert(split.includes('this.schedulePreview(this.drag.size+(point-this.drag.start)*sign)')&&!/const move=e=>[^\n]*this\.apply\(this\.drag\.size/.test(split),
   'R7 split pointermove must only schedule preview geometry, not synchronously apply every pointer event.');
 assert(split.includes('this.scope.resizeScheduler?.suspend?.()')&&split.includes('this.scope.resizeScheduler?.resume?.()'),
   'R7 split interaction must suspend shared chart/layout resize work during continuous drag and resume at commit.');
-assert(split.includes("this.apply(next,{persist:true,emit:false,notify:false})")&&split.includes("this.scope.emitResize?.({reason:'split-end'"),
-  'R7 split release must persist once and emit one authoritative resize request after preview.');
+assert(split.includes("this.apply(next,{persist,emit:false,notify:false})")&&split.includes("this.scope.emitResize?.({reason,id:this.spec.id,size:this.size})"),
+  'R7 split release must persist once and emit one authoritative resize request after preview, including shared held-title commits.');
 assert(!/const move=e=>[^\n]*(?:persist:true|emitResize)/.test(split),
   'R7 split pointermove must never persist state or emit authoritative layout resize work.');
 assert(groupPlot.includes("dkds-split-drag-active")&&groupPlot.includes('if(document.documentElement?.classList?.contains'),

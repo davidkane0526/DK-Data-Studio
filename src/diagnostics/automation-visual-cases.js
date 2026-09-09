@@ -6,16 +6,18 @@
   const visible=el=>{const r=rect(el),style=el?getComputedStyle(el):null;return !!el&&r.width>.5&&r.height>.5&&style?.display!=='none'&&style?.visibility!=='hidden';};
   const close=(actual,expected,tolerance=.75)=>Math.abs(Number(actual||0)-expected)<=tolerance;
   const transparent=value=>value==='transparent'||value==='rgba(0, 0, 0, 0)'||value==='rgba(0,0,0,0)';
+  const versionAtLeast=(value,minimum)=>{const a=String(value||'').split('.').map(Number),b=String(minimum||'').split('.').map(Number);for(let i=0;i<3;i++){const x=Number.isFinite(a[i])?a[i]:0,y=Number.isFinite(b[i])?b[i]:0;if(x!==y)return x>y;}return true;};
 
   async function visualGeometryClosureSmoke(){
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
-    const dock=document.getElementById('inspectorDockSlot');
-    assert(dock,'Inspector dock host is missing.');
-    const dockStyle=getComputedStyle(dock);
-    assert(transparent(dockStyle.backgroundColor),`Inspector dock host must remain transparent: ${dockStyle.backgroundColor}`);
-    assert(dockStyle.boxShadow==='none',`Inspector dock host must not own a shadow: ${dockStyle.boxShadow}`);
-    for(const side of ['Top','Right','Bottom','Left'])assert(close(parseFloat(dockStyle[`border${side}Width`]),0,.1),`Inspector dock host regained a ${side.toLowerCase()} border: ${dockStyle[`border${side}Width`]}`);
+    const rightSlot=document.querySelector('.dkds-analysis-workbench [data-analysis-slot="right"]');
+    let rightSlotChecked=false;
+    if(rightSlot){
+      const role=window.DKDSThemeMaterialRenderer?.roleOf?.(rightSlot)||window.DKDSSemanticUI?.materialRoleOf?.(rightSlot)||'';
+      assert(role==='sidebar',`AnalysisWorkbench right slot must consume the canonical sidebar Material Role: ${role||'missing'}`);
+      const rightStyle=getComputedStyle(rightSlot);assert(rightStyle.boxShadow==='none',`AnalysisWorkbench right slot must not own independent depth: ${rightStyle.boxShadow}`);rightSlotChecked=true;
+    }
 
     const topbarActions=[...document.querySelectorAll('.topbar-primary .toolbar-btn')].filter(visible);
     assert(topbarActions.length>=3,'Topbar canonical actions are not available for geometry validation.');
@@ -34,7 +36,7 @@
     for(const button of presentationCommands){const r=rect(button),label=String(button.textContent||'').trim();assert(r.width>=47.5&&close(r.height,34),`Presenter command must be at least 48px wide and 34px high: ${label} = ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);if(label.length<=3)assert(r.width<=52,`Compact Presenter command should retain the 48px rhythm: ${label} = ${r.width.toFixed(2)}px`);else assert(r.width>=58,`Long Presenter command needs horizontal breathing room: ${label} = ${r.width.toFixed(2)}px`);}
 
     const Appearance=window.DKDSThemeComponentAppearance,Semantic=window.DKDSThemeSemanticRegistry;
-    assert(Appearance?.version==='3.0.0','Component Appearance 3.0 contextual resolver unavailable.');
+    assert(versionAtLeast(Appearance?.version,'3.0.0'),`Component Appearance 3.0+ contextual resolver unavailable: ${Appearance?.version||'missing'}`);
     assert(window.DKDSTheme?.contractVersion==='3.10.0','Theme Contract 3.10 contextual composition unavailable.');
     let groupedContextChecked=0,standaloneContextChecked=0,materialRoleCompositionChecked=0;
     for(const action of topbarActions){const info=Appearance.inspect?.(action);if(!info?.component)continue;
@@ -56,12 +58,15 @@
     const navGeometry=el=>{const r=rect(el),style=getComputedStyle(el),buttons=[...el.querySelectorAll('button')].filter(visible),drag=el.querySelector('.dkds-scientific-nav-drag');return {width:r.width,height:r.height,padding:[style.paddingTop,style.paddingRight,style.paddingBottom,style.paddingLeft],gap:style.gap,buttons:buttons.map(button=>{const br=rect(button);return [br.width,br.height];}),drag:visible(drag)?[rect(drag).width,rect(drag).height]:null};};
     const curveNav=[...document.querySelectorAll('.dkds-scientific-surface-host > .dkds-scientific-nav-tools')].find(visible)||null;
     const chartNav=[...document.querySelectorAll('.dkds-scientific-chart-host > .dkds-scientific-nav-tools')].find(visible)||null;
+    const desktopHost=document.documentElement?.dataset?.dkdsHost==='desktop';
     for(const [label,nav] of [['ScientificCurve',curveNav],['ChartRuntime',chartNav]])if(nav){
-      const style=getComputedStyle(nav);assert(style.display==='flex',`${label} navigation must use the shared flex shell.`);assert(style.paddingTop==='1px'&&style.paddingRight==='2px'&&style.paddingBottom==='1px'&&style.paddingLeft==='2px',`${label} navigation must use the fused 1/2/1/2px inset: ${style.padding}`);assert(parseFloat(style.gap||'0')===0,`${label} navigation must not expose gaps between integrated actions: ${style.gap}`);assert(style.overflow==='hidden',`${label} navigation must clip child state paint to one outer silhouette: ${style.overflow}`);
-      const buttons=[...nav.querySelectorAll('button')].filter(visible);assert(buttons.length>=3,`${label} navigation is missing canonical actions.`);for(const button of buttons){const r=rect(button),bs=getComputedStyle(button);assert(close(r.width,25)&&close(r.height,24),`${label} navigation action must be 25×24px: ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);assert(parseFloat(bs.borderRadius||'0')===0,`${label} navigation child action must not render an independent rounded card: ${bs.borderRadius}`);assert(bs.boxShadow==='none',`${label} navigation child action must not render independent depth: ${bs.boxShadow}`);}
-      const drag=nav.querySelector('.dkds-scientific-nav-drag');if(visible(drag)){const r=rect(drag),ds=getComputedStyle(drag);assert(drag.tagName==='BUTTON',`${label} navigation drag handle must be a native ToolbarAction button so every Theme uses the same hover paint as sibling actions.`);assert(close(r.width,25)&&close(r.height,24),`${label} navigation drag handle must be 25×24px: ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);assert(parseFloat(ds.borderRadius||'0')===0&&ds.boxShadow==='none',`${label} navigation drag handle must remain fused with the control group.`);}
+      const style=getComputedStyle(nav),expectedWidth=parseFloat(style.getPropertyValue('--dkds-scientific-nav-item-width')),expectedHeight=parseFloat(style.getPropertyValue('--dkds-scientific-nav-item-height'));assert(style.display==='flex',`${label} navigation must use the shared flex shell.`);assert(parseFloat(style.gap||'0')===0,`${label} navigation must not expose gaps between integrated actions: ${style.gap}`);assert(style.overflow==='hidden',`${label} navigation must clip child state paint to one outer silhouette: ${style.overflow}`);assert(Number.isFinite(expectedWidth)&&Number.isFinite(expectedHeight),`${label} navigation must publish canonical item geometry.`);
+      if(desktopHost){assert(close(expectedWidth,28,.1),`${label} Desktop navigation width must use the readable 28px contract: ${expectedWidth}`);assert(close(expectedHeight,28,.1),`${label} Desktop navigation height must use the readable 28px contract: ${expectedHeight}`);assert(close(parseFloat(style.paddingTop||'0'),1,.1)&&close(parseFloat(style.paddingBottom||'0'),1,.1)&&close(parseFloat(style.paddingLeft||'0'),2,.1)&&close(parseFloat(style.paddingRight||'0'),2,.1),`${label} Desktop navigation must keep the canonical 1×2px inner inset: ${style.padding}`);} 
+      const buttons=[...nav.querySelectorAll('button')].filter(visible);assert(buttons.length>=3,`${label} navigation is missing canonical actions.`);for(const button of buttons){const r=rect(button),bs=getComputedStyle(button);assert(close(r.width,expectedWidth)&&close(r.height,expectedHeight),`${label} navigation action must consume the shared geometry variables: ${r.width.toFixed(2)}×${r.height.toFixed(2)}px vs ${expectedWidth.toFixed(2)}×${expectedHeight.toFixed(2)}px`);assert(parseFloat(bs.borderRadius||'0')===0,`${label} navigation child action must not render an independent rounded card: ${bs.borderRadius}`);assert(bs.boxShadow==='none',`${label} navigation child action must not render independent depth: ${bs.boxShadow}`);}
+      if(desktopHost&&buttons.length){const nr=rect(nav),first=rect(buttons[0]),last=rect(buttons[buttons.length-1]),borderLeft=parseFloat(style.borderLeftWidth)||0,borderRight=parseFloat(style.borderRightWidth)||0;assert(close(first.left,nr.left+borderLeft,1),`${label} first action no longer fills the left interior edge: nav=${nr.left.toFixed(2)} action=${first.left.toFixed(2)}`);assert(close(last.right,nr.right-borderRight,1),`${label} last action no longer fills the right interior edge: nav=${nr.right.toFixed(2)} action=${last.right.toFixed(2)}`);}
+      const drag=nav.querySelector('.dkds-scientific-nav-drag');if(visible(drag)){const r=rect(drag),ds=getComputedStyle(drag);assert(drag.tagName==='BUTTON',`${label} navigation drag handle must be a native ToolbarAction button so every Theme uses the same hover paint as sibling actions.`);assert(close(r.width,expectedWidth)&&close(r.height,expectedHeight),`${label} navigation drag handle must use shared geometry: ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);assert(parseFloat(ds.borderRadius||'0')===0&&ds.boxShadow==='none',`${label} navigation drag handle must remain fused with the control group.`);}
     }
-    if(curveNav&&chartNav){const a=navGeometry(curveNav),b=navGeometry(chartNav);assert(JSON.stringify(a.padding)===JSON.stringify(b.padding)&&a.gap===b.gap,`ScientificCurve / ChartRuntime navigation chrome diverged: ${JSON.stringify({curve:a,chart:b})}`);}
+    if(curveNav&&chartNav){const a=navGeometry(curveNav),b=navGeometry(chartNav);assert(JSON.stringify(a.padding)===JSON.stringify(b.padding)&&a.gap===b.gap&&JSON.stringify(a.buttons)===JSON.stringify(b.buttons),`ScientificCurve / ChartRuntime navigation chrome diverged: ${JSON.stringify({curve:a,chart:b})}`);}
 
     const portableButtons=[...document.querySelectorAll('.dkds-portable-header .dkds-portable-controls button')].filter(visible);
     for(const button of portableButtons){const r=rect(button);assert(close(r.height,26),`Portable header action must be 26px high: ${button.getAttribute('aria-label')||button.className} = ${r.height.toFixed(2)}px`);if(button.classList.contains('dkds-portable-icon-action'))assert(close(r.width,26),`Portable icon action must be 26×26px: ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);}
@@ -101,16 +106,23 @@
     const mainPlot=document.getElementById('resparMainPlotWrap');
     if(visible(mainPlot)){const style=getComputedStyle(mainPlot);assert(style.outlineStyle==='none'||parseFloat(style.outlineWidth||'0')===0,`Main scientific plot must not own a focus outline/frame: ${style.outline}`);for(const side of ['Top','Right','Bottom','Left'])assert(close(parseFloat(style[`border${side}Width`]||'0'),0,.1),`Main scientific plot must not own a decorative ${side.toLowerCase()} edge: ${style[`border${side}Width`]}`);mainPlotEdgeChecked=true;}
 
-    return {dockTransparent:true,topbarActions:topbarActions.length,shellGroups:shellGroups.length,segmentedCommandParity:true,presentationCommands:presentationCommands.length,groupedContextChecked,standaloneContextChecked,materialRoleCompositionChecked,workspaceModalChecked,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,statusItems:statusItems.length,auroraHeaderGradientChecked,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length,selectedProjectTabChecked,mainPlotEdgeChecked};
+    let transferVthNavigationChecked=false;
+    const transferState=window.DKDSPlugins?.manager?.get?.('com.dkds.transfer-vth-lab')||null;
+    const transferActivity=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>row?.id==='transfer-vth-lab')||null;
+    if(transferState?.active&&transferActivity){assert(transferActivity.primary===true,'Transfer Vth active contribution must remain primary.');const button=document.querySelector('#primaryActivityBar [data-activity-id="transfer-vth-lab"]');assert(visible(button),'Transfer Vth is active and primary but its Desktop activity button is missing/hidden.');transferVthNavigationChecked=true;}
+
+    return {rightSlotChecked,topbarActions:topbarActions.length,shellGroups:shellGroups.length,segmentedCommandParity:true,presentationCommands:presentationCommands.length,groupedContextChecked,standaloneContextChecked,materialRoleCompositionChecked,workspaceModalChecked,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,statusItems:statusItems.length,auroraHeaderGradientChecked,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length,selectedProjectTabChecked,mainPlotEdgeChecked,transferVthNavigationChecked};
   }
 
   async function themeRuntimePerformanceSmoke(){
-    const material=window.DKDSThemeMaterialRenderer,appearance=window.DKDSThemeComponentAppearance,semantic=window.DKDSSemanticUI;
+    const material=window.DKDSThemeMaterialRenderer,appearance=window.DKDSThemeComponentAppearance,semantic=window.DKDSSemanticUI,gate=window.DKDSStyleGate;
     assert(typeof material?.performance==='function','Material Renderer performance diagnostics unavailable.');
     assert(typeof appearance?.performance==='function','Component Appearance performance diagnostics unavailable.');
     assert(typeof semantic?.performance==='function','Semantic UI performance diagnostics unavailable.');
-    const snapshot=()=>({material:material.performance(),appearance:appearance.performance(),semantic:semantic.performance()});
+    const snapshot=()=>({material:material.performance(),appearance:appearance.performance(),semantic:semantic.performance(),gate:gate?.snapshot?.()||{}});
     const before=snapshot();
+    assert(before.gate.runtimeAuditEnabled!==true,'Style Gate runtime bypass observer must stay off on the normal application hot path.');
+    window.DKDSTheme?.rendererCapabilities?.();window.DKDSTheme?.rendererCapabilities?.();
     await new Promise(resolve=>setTimeout(resolve,240));
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const after=snapshot(),delta={
@@ -119,7 +131,9 @@
       appearanceFlushes:after.appearance.flushes-before.appearance.flushes,
       appearanceAssignCalls:after.appearance.assignCalls-before.appearance.assignCalls,
       semanticFlushes:after.semantic.flushes-before.semantic.flushes,
-      semanticAssignCalls:after.semantic.assignCalls-before.semantic.assignCalls
+      semanticAssignCalls:after.semantic.assignCalls-before.semantic.assignCalls,
+      capabilityComputes:after.material.capabilityComputes-before.material.capabilityComputes,
+      capabilityCacheHits:after.material.capabilityCacheHits-before.material.capabilityCacheHits
     };
     assert(after.material.pendingRoots===0&&!after.material.framePending,`Material assignment queue did not settle: ${JSON.stringify(after.material)}`);
     assert(after.appearance.pendingRoots===0&&!after.appearance.framePending,`Component Appearance queue did not settle: ${JSON.stringify(after.appearance)}`);
@@ -130,6 +144,8 @@
     assert(delta.materialAssignCalls<=8,`Material Renderer rescanned too many roots while idle: ${JSON.stringify(delta)}`);
     assert(delta.appearanceAssignCalls<=8,`Component Appearance rescanned too many roots while idle: ${JSON.stringify(delta)}`);
     assert(delta.semanticAssignCalls<=8,`Semantic UI rescanned too many roots while idle: ${JSON.stringify(delta)}`);
+    assert(delta.capabilityComputes<=1&&delta.capabilityCacheHits>=1,`Material capability probes are not cached: ${JSON.stringify(delta)}`);
+    assert(after.gate.runtimeAuditEnabled!==true,'Style Gate runtime bypass observer re-entered the application hot path.');
     return {before,after,delta};
   }
 

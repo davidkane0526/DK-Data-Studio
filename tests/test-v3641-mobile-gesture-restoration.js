@@ -22,11 +22,11 @@ const versionScript=read('scripts/set-version.js');
 const workspaceCss=read('src/styles/structure/plugin-workspace.css');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major===3&&(minor>64||(minor===64&&patch>=1)),'mobile restoration must remain on or beyond App v3.64.1');}
-assert(/^0\.8\.(?:1[2-9]|[2-9]\d+)$/.test(mobilePkg.version),'mobile behavior changes must remain on or beyond React Native package v0.8.12');
+assert(mobilePkg.version===require('../package.json').version||/^0\.8\.(?:1[2-9]|[2-9]\d+)$/.test(mobilePkg.version),'mobile behavior changes must retain the v0.8.12 baseline or use the synchronized app version');
 assert.strictEqual(mobileApp.version,mobilePkg.version,'Expo and mobile package versions must stay aligned');
 assert(Number(mobileApp.android.versionCode)>=23,'Android versionCode must advance for the mobile restoration build');
 
-assert(/html\.react-native-client \.topbar,\s*html\.react-native-client \.project-tabs-bar,\s*html\.react-native-client #mainWorkspace,\s*html\.react-native-client #superWorkspaceDivider,\s*html\.react-native-client #statusBar\.statusbar\{display:none\}/m.test(nativeShellCss),'native shell must hide Desktop chrome in the native shell ownership stylesheet');
+assert(nativeShellCss.includes('html[data-dkds-host="mobile"].react-native-client .topbar,')&&nativeShellCss.includes('html[data-dkds-host="mobile"].react-native-client #statusBar.statusbar{display:none}'),'native shell must hide Desktop chrome behind the dual Mobile host scope.');
 assert(!/#mainWorkspace,\s*\n\s*html\.react-native-client\{/.test(nativeShellCss),'native shell CSS must never retain the dangling selector introduced by the modular refactor');
 
 assert(inputAdapters.includes("[data-dkds-touch-gesture-owner]"),'Mobile Gesture Adapter held-swipe navigation must yield to Core-owned touch gestures');
@@ -36,7 +36,7 @@ assert(scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot
 assert(workspaceCss.includes('.dkds-scientific-curve-surface')&&workspaceCss.includes('touch-action:none'),'scientific plot surfaces must prevent browser pan arbitration during direct gestures');
 assert(scientificRender.includes("plotBg.on('pointerdown'")&&scientificRender.includes('setPointerCapture(event.pointerId)')&&scientificRender.includes("routeInteraction('box','background'")&&scientificRender.includes("decision.intent==='select-region'"),'scientific box selection must stay on Pointer Events with capture and select-region routing');
 
-assert(portable.includes('bindHeldTitleResize')&&portable.includes("header.style.touchAction='none'")&&analysisWorkbench.includes('mobileOverlay:true'),'docked PRIME views must retain long-hold title resizing while Core split limits stay mobile-aware');
+assert(portable.includes('bindHeldTitleResize')&&portable.includes("dataset?.dkdsHost==='mobile'")&&portable.includes("portableSet(header,'touch-action','none')")&&analysisWorkbench.includes('mobileOverlay:true'),'Desktop held-title resizing may remain for compatibility, but Mobile must return before gesture installation and resize through Core split seams.');
 assert(portable.includes("resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize'")&&portable.includes('bindFloatResize')&&portable.includes('setPointerCapture'),'floating PRIME/global views must retain the explicit touch resize handle');
 assert(workspace.includes("this.handle.dataset.dkdsTouchGestureOwner='split-resize'")&&workspace.includes("this.handle.dataset.dkdsTouchGestureOwner='movable-surface'")&&workspace.includes("addEventListener('pointerdown'"),'Core split and movable surfaces must keep pointer-native gesture ownership');
 

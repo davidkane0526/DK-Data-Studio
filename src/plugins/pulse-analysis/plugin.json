@@ -1,7 +1,7 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.10.8",
+  "version": "2.10.17",
   "apiVersion": "1.19.0",
   "requiresCore": [
     "runtime",
@@ -106,8 +106,18 @@
   ],
   "pluginDependencies": [
     {
-      "id": "builtin.scientific-data-contracts",
-      "range": "^1.0.0"
+      "id": "builtin.scientific-data-contracts"
     }
-  ]
+  ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "custom",
+      "styles": [
+        "mobile.css"
+      ]
+    }
+  }
 }

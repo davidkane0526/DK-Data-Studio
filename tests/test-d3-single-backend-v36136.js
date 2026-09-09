@@ -49,6 +49,7 @@ const context={console,structuredClone,setTimeout,clearTimeout,queueMicrotask,pe
  d3:{},DKDSD3Renderer:{supports:data=>Array.isArray(data)&&data.every(row=>['scatter','scattergl','heatmap'].includes(String(row?.type||'scatter'))),react:async(el,data,layout,config)=>{d3React++;el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return el;},restyle:async()=>true,relayout:async()=>true,resize:()=>true,purge:()=>true,toImage:async()=>''},
  document:{currentScript:{src:'file:///src/core/scientific/chart-runtime.js'},documentElement:{dataset:{dkdsTheme:'light'}},getElementById:id=>id==='d3-only'?target:null,querySelector:()=>null,querySelectorAll:()=>[]},
  matchMedia:()=>({matches:false}),addEventListener(){},requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame(){},localStorage:{getItem:()=>null,setItem(){},removeItem(){}}};
+context.DKDSStyleGate={set(_el,_prop,value){return value;},remove(){return true;}};
 context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(charts,context,{filename:'chart-runtime.js'});
 (async()=>{
   const state=context.DKDSCharts.configureRuntime({preferredRenderer:'d3',host:'d3-single-backend-test'});

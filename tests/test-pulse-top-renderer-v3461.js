@@ -10,14 +10,14 @@ const elements={
   pulseNoActiveFile:{classList:{toggle(){}}},
   pulseActiveEditor:{classList:{toggle(){}}}
 };
-const dom={query(selector){const id=String(selector||'').replace(/^#/,'');return elements[id]||null;},create(){return {className:'',innerHTML:'',querySelector(){return null;},appendChild(){}};},frame(fn){fn?.();}};
+const dom={query(selector){const id=String(selector||'').replace(/^#/,'');return elements[id]||null;},create(){return {className:'',innerHTML:'',querySelector(){return null;},appendChild(){}};},html(node,value=''){if(node)node.innerHTML=String(value??'');return node;},append(parent,...nodes){for(const node of nodes.flat())parent?.appendChild?.(node);return parent;},frame(fn){fn?.();}};
 const context={console,structuredClone,window:{DKDSScience:{},DKDSPluginModules:{define(_plugin,id,value){if(id==='analysis-service')moduleValue=value;}}}};
 vm.createContext(context);
 vm.runInContext(source,context,{filename:'pulse-analysis-service.js'});
 assert(moduleValue?.create,'Pulse analysis service module was not registered.');
 
 (async()=>{
-  const runtime=await moduleValue.create({setStatus(){},copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){},io:{},charts:null,dom});
+  const runtime=await moduleValue.create({science:context.window.DKDSScience,setStatus(){},copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){},io:{},charts:null,dom});
   assert(runtime?.service?.render,'Pulse service render API missing.');
   runtime.service.render();
   assert(elements.pulseNoActiveFile,'Regression fixture missing empty-state DOM.');

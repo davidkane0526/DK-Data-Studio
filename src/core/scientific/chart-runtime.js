@@ -1,6 +1,12 @@
 (() => {
   if(window.DKDSCharts)return;
   const VERSION='2.0.0';
+  const StyleGate=globalThis.DKDSStyleGate;
+  if(!StyleGate)throw new Error('DKDSStyleGate must initialize before chart runtime.');
+  const STYLE_OWNER='core.chart-runtime-navigation';
+  const STYLE_SOURCE='src/core/scientific/chart-runtime.js';
+  const navStyleSet=(el,prop,value)=>StyleGate.set(el,prop,value,{owner:STYLE_OWNER,component:'scientific-navigation',kind:'runtime-inline',source:STYLE_SOURCE});
+  const navStyleRemove=(el,prop)=>StyleGate.remove(el,prop,{owner:STYLE_OWNER,component:'scientific-navigation',kind:'runtime-inline',source:STYLE_SOURCE});
   const ownerBindings=new Map();
   const presentation=window.DKDSPlotPresentation||Object.freeze({
     solveLegend:({entries=[],enabled=true}={})=>({enabled:enabled!==false&&entries.length>1,placement:enabled!==false&&entries.length>1?'top':'none',count:entries.length,rows:entries.length>1?1:0,width:0,height:0,reserve:entries.length>1?26:0,overflow:false,entries,rowGroups:entries.length?[entries]:[],signature:entries.map(row=>row?.key||'').join('|'),reason:'fallback'}),
@@ -11,6 +17,7 @@
   const legendBaseLayouts=new WeakMap();
   const legendResizeFrames=new WeakMap();
   const plotNavigationStates=new WeakMap();
+  const nativeTouchDrag=()=>window.DKDSNativeTouchDrag||null;
   const plotLegendStates=new WeakMap();
   const plotLegendSelectionStates=new WeakMap();
   const rendererStates=new WeakMap();
@@ -86,6 +93,7 @@
     const tooltip=currentTooltipTheme();const next={...trace,hoverlabel:{...tooltip,...hover,font:{...tooltip.font,...(hover.font||{}),family:UI_FONT,size:TOOLTIP_BASE.font.size}}};
     if(trace.colorbar&&typeof trace.colorbar==='object'){const theme=plotTheme(),title=trace.colorbar.title&&typeof trace.colorbar.title==='object'?trace.colorbar.title:{text:trace.colorbar.title};next.colorbar={...trace.colorbar,outlinecolor:trace.colorbar.outlinecolor||theme.colorbar,tickfont:{family:UI_FONT,size:10,color:theme.muted,...(trace.colorbar.tickfont||{})},title:{...title,font:{family:UI_FONT,size:11,color:theme.text,...(title.font||{})}}};}
     if(typeof trace.hovertemplate==='string')next.hovertemplate=normalizeHoverTemplate(trace.hovertemplate);
+    if(document.documentElement?.classList?.contains('react-native-client')&&trace.marker&&typeof trace.marker==='object'&&Number.isFinite(Number(trace.marker.size))){next.marker={...trace.marker,size:Math.max(3,Number(trace.marker.size)*.78)};}
     return next;
   }
   function themeData(data=[]){return normalizedLegendData(Array.isArray(data)?data:[]).map(themeTrace);}
@@ -256,11 +264,65 @@
   }
   function uninstallPlotLegendSelection(el){const binding=plotLegendSelectionStates.get(el);if(!binding)return;try{el.removeEventListener?.('dkds_chart_click',binding.click);}catch{}try{el.removeEventListener?.('dkds_chart_deselect',binding.deselect);}catch{}plotLegendSelectionStates.delete(el);}
   function navigationStorageKey(el){const id=String(el?.id||el?.dataset?.dkdsScientificPlotId||'').trim();return id?`dkds.plot-nav.${id}`:'';}
-  function setPlotNavigationPosition(el,tools,x,y,{persist=false,moved=true}={}){const host=el?.getBoundingClientRect?.(),rect=tools?.getBoundingClientRect?.();if(!host||!rect||!(host.width>0&&host.height>0&&rect.width>0&&rect.height>0))return false;const pad=5,nx=Math.max(pad,Math.min(host.width-rect.width-pad,Number(x)||pad)),ny=Math.max(pad,Math.min(host.height-rect.height-pad,Number(y)||pad));tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;if(persist){const key=navigationStorageKey(el);if(key)try{localStorage.setItem(key,JSON.stringify({x:nx,y:ny}));}catch{}}return true;}
+  function setPlotNavigationPosition(el,tools,x,y,{persist=false,moved=true}={}){const host=el?.getBoundingClientRect?.(),rect=tools?.getBoundingClientRect?.();if(!host||!rect||!(host.width>0&&host.height>0&&rect.width>0&&rect.height>0))return false;const pad=5,nx=Math.max(pad,Math.min(host.width-rect.width-pad,Number(x)||pad)),ny=Math.max(pad,Math.min(host.height-rect.height-pad,Number(y)||pad));navStyleSet(tools,'left',`${Math.round(nx)}px`);navStyleSet(tools,'top',`${Math.round(ny)}px`);navStyleSet(tools,'right','auto');if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;if(persist){const key=navigationStorageKey(el);if(key)try{localStorage.setItem(key,JSON.stringify({x:nx,y:ny}));}catch{}}return true;}
   function positionPlotNavigation(el,state){const nav=plotNavigationStates.get(el),tools=nav?.tools;if(!tools||tools.dataset.moved==='1')return false;const host=el.getBoundingClientRect(),tool=tools.getBoundingClientRect();if(!(host.width>0&&host.height>0&&tool.width>0&&tool.height>0))return false;const metrics=legendLayoutStates.get(el)||{},pad=6;let x=Math.max(pad,host.width-tool.width-pad),y=pad;if(metrics.enabled&&metrics.placement==='top')y=Math.min(Math.max(pad,(Number(metrics.reserve)||0)+7),Math.max(pad,host.height-tool.height-pad));else if(metrics.enabled&&metrics.placement==='right')x=Math.max(pad,host.width-tool.width-(Number(metrics.reserve)||0)-pad);setPlotNavigationPosition(el,tools,x,y,{moved:false});return true;}
   function plotZoom(el,factor){if(!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout)){if(!/^[xy]axis\d*$/.test(key))continue;const range=el._fullLayout[key]?.range;if(!Array.isArray(range)||range.length<2||!range.every(v=>Number.isFinite(Number(v))))continue;const a=Number(range[0]),b=Number(range[1]),c=(a+b)/2,span=(b-a)*factor/2;patch[`${key}.range`]=[c-span,c+span];patch[`${key}.autorange`]=false;}return Object.keys(patch).length?Promise.resolve(relayout(el,patch)):Promise.resolve(false);}
   function plotHome(el){if(!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout))if(/^[xy]axis\d*$/.test(key)){patch[`${key}.autorange`]=true;patch[`${key}.range`]=null;}return Object.keys(patch).length?Promise.resolve(relayout(el,patch)):Promise.resolve(false);}
-  function installPlotNavigation(el,state){ensurePlotPresentationHost(el);if(!el||typeof document==='undefined'||typeof document.createElement!=='function'||typeof el.appendChild!=='function'||!el.classList?.add)return;let nav=plotNavigationStates.get(el);const enabled=state?.sourceConfig?.__dkdsNavigationTools!==false;if(!enabled){nav?.tools?.remove?.();plotNavigationStates.delete(el);return;}if(nav?.tools?.isConnected){requestAnimationFrame(()=>positionPlotNavigation(el,state));return;}el.classList.add('dkds-scientific-chart-host','dkds-chart-surface-host','dkds-d3-surface-host');const tools=document.createElement('div');tools.className='dkds-scientific-nav-tools dkds-chart-nav-tools dkds-integrated-action-group dkds-material-role-floating';tools.setAttribute('aria-label','图形操作');const drag=document.createElement('button');drag.type='button';drag.className='dkds-scientific-nav-drag';drag.dataset.dkdsComponentIdentity='toolbarAction';drag.dataset.dkdsComponentIdentityOwner='core-scientific-navigation';drag.dataset.dkdsComponentVariant='quiet';drag.dataset.dkdsComponentVariantOwner='core-scientific-navigation';drag.textContent='⋮';drag.setAttribute('aria-label','拖动工具条；双击恢复默认位置');tools.appendChild(drag);for(const [action,label,title] of [['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-scientific-navigation';button.dataset.dkdsComponentVariant='quiet';button.dataset.dkdsComponentVariantOwner='core-scientific-navigation';button.textContent=label;button.setAttribute('aria-label',title);button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')void plotHome(el);else void plotZoom(el,action==='zoom-in'?.72:1.38);});tools.appendChild(button);}el.appendChild(tools);nav={tools,drag};plotNavigationStates.set(el,nav);let ds=null;drag.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const host=el.getBoundingClientRect(),r=tools.getBoundingClientRect();ds={id:event.pointerId,cx:event.clientX,cy:event.clientY,x:r.left-host.left,y:r.top-host.top};tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}});drag.addEventListener('pointermove',event=>{if(!ds||event.pointerId!==ds.id)return;event.preventDefault();setPlotNavigationPosition(el,tools,ds.x+event.clientX-ds.cx,ds.y+event.clientY-ds.cy);});const finish=event=>{if(!ds||event.pointerId!==ds.id)return;ds=null;tools.classList.remove('is-dragging');const x=parseFloat(tools.style.left),y=parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))setPlotNavigationPosition(el,tools,x,y,{persist:true});};drag.addEventListener('pointerup',finish);drag.addEventListener('pointercancel',finish);drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}for(const prop of ['left','top','right'])tools.style.removeProperty(prop);delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));});drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));}});const key=navigationStorageKey(el);if(key)try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved)requestAnimationFrame(()=>setPlotNavigationPosition(el,tools,saved.x,saved.y));else requestAnimationFrame(()=>positionPlotNavigation(el,state));}catch{requestAnimationFrame(()=>positionPlotNavigation(el,state));}else requestAnimationFrame(()=>positionPlotNavigation(el,state));}
+  function revealPlotNavigation(nav,delay=1600){
+    if(!nav?.tools)return;nav.tools.classList.add('is-touch-visible');clearTimeout(nav.hideTimer);
+    nav.hideTimer=setTimeout(()=>{if(!nav?.tools?.classList.contains('is-dragging'))nav.tools?.classList.remove('is-touch-visible');},Math.max(500,Number(delay)||1600));
+  }
+  function removePlotNavigation(el){
+    const nav=plotNavigationStates.get(el);if(!nav)return;
+    clearTimeout(nav.hideTimer);if(nav.dragFrame)cancelAnimationFrame(nav.dragFrame);
+    if(nav.revealHandler)try{el.removeEventListener('pointerdown',nav.revealHandler,true);}catch{}
+    try{nav.touchDragCleanup?.();}catch{}
+    nav.tools?.remove?.();plotNavigationStates.delete(el);
+  }
+  function installPlotNavigation(el,state){
+    ensurePlotPresentationHost(el);
+    if(!el||typeof document==='undefined'||typeof document.createElement!=='function'||typeof el.appendChild!=='function'||!el.classList?.add)return;
+    let nav=plotNavigationStates.get(el);const enabled=state?.sourceConfig?.__dkdsNavigationTools!==false;
+    if(!enabled){removePlotNavigation(el);return;}
+    if(nav?.tools?.isConnected){requestAnimationFrame(()=>positionPlotNavigation(el,state));return;}
+    el.classList.add('dkds-scientific-chart-host','dkds-chart-surface-host','dkds-d3-surface-host');
+    const tools=document.createElement('div');tools.className='dkds-scientific-nav-tools dkds-chart-nav-tools dkds-integrated-action-group dkds-material-role-floating';tools.setAttribute('aria-label','图形操作');
+    const drag=document.createElement('button');drag.type='button';drag.className='dkds-scientific-nav-drag';drag.dataset.dkdsComponentIdentity='toolbarAction';drag.dataset.dkdsComponentIdentityOwner='core-scientific-navigation';drag.dataset.dkdsComponentVariant='quiet';drag.dataset.dkdsComponentVariantOwner='core-scientific-navigation';drag.textContent='⋮';drag.setAttribute('aria-label','拖动工具条；双击恢复默认位置');tools.appendChild(drag);
+    for(const [action,label,title] of [['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']]){
+      const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-scientific-navigation';button.dataset.dkdsComponentVariant='quiet';button.dataset.dkdsComponentVariantOwner='core-scientific-navigation';button.textContent=label;button.setAttribute('aria-label',title);
+      button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')void plotHome(el);else void plotZoom(el,action==='zoom-in'?.72:1.38);revealPlotNavigation(nav);});tools.appendChild(button);
+    }
+    el.appendChild(tools);nav={tools,drag,hideTimer:null,dragFrame:0,latest:null,revealHandler:null};plotNavigationStates.set(el,nav);
+    nav.revealHandler=event=>{if(event.pointerType&&event.pointerType!=='mouse')revealPlotNavigation(nav);};el.addEventListener('pointerdown',nav.revealHandler,true);
+    if(document.documentElement?.classList?.contains('react-native-client'))revealPlotNavigation(nav,1100);
+    let ds=null;
+    const rawPoint=event=>{const clientX=Number(event?.clientX),clientY=Number(event?.clientY);return Number.isFinite(clientX)&&Number.isFinite(clientY)?{clientX,clientY}:null;};
+    const nativeClient=document.documentElement?.classList?.contains('react-native-client')===true;
+    const dragPoint=event=>{
+      if(!nativeClient){const rows=event.getCoalescedEvents?.(),point=rows?.length?rows[rows.length-1]:event;return rawPoint(point)||rawPoint(event);}
+      const point=rawPoint(event);if(!point)return null;
+      if(point.clientX<=1&&point.clientY<=1&&ds&&(ds.startClientX>12||ds.startClientY>12))return null;
+      return point;
+    };
+    const startDrag=point=>{if(!point)return false;const r=tools.getBoundingClientRect(),host=el.getBoundingClientRect();ds={id:null,startClientX:point.clientX,startClientY:point.clientY,startX:r.left-host.left,startY:r.top-host.top};nav.latest=point;tools.classList.add('is-dragging','is-touch-visible');clearTimeout(nav.hideTimer);return true;};
+    const applyDrag=()=>{nav.dragFrame=0;if(!ds||!nav.latest)return;const x=ds.startX+(nav.latest.clientX-ds.startClientX),y=ds.startY+(nav.latest.clientY-ds.startClientY);setPlotNavigationPosition(el,tools,x,y);};
+    const queueDragPoint=point=>{if(!ds||!point)return;if(nativeClient&&point.clientX<=1&&point.clientY<=1&&(ds.startClientX>12||ds.startClientY>12))return;nav.latest=point;if(!nav.dragFrame)nav.dragFrame=requestAnimationFrame(applyDrag);};
+    const persistDrag=()=>{const x=parseFloat(tools.style.left),y=parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))setPlotNavigationPosition(el,tools,x,y,{persist:true});revealPlotNavigation(nav,1200);};
+    const completeDrag=point=>{if(!ds)return;if(point)nav.latest=point;if(nav.dragFrame){cancelAnimationFrame(nav.dragFrame);nav.dragFrame=0;}applyDrag();ds=null;nav.latest=null;tools.classList.remove('is-dragging');persistDrag();};
+    const track=event=>{if(!ds||event.pointerId!==ds.id)return;const point=dragPoint(event);if(!point)return;if(event.cancelable)event.preventDefault();queueDragPoint(point);};
+    const finish=event=>{if(!ds||event.pointerId!==ds.id)return;const point=dragPoint(event),pointerId=ds.id;completeDrag(point);try{drag.releasePointerCapture(pointerId);}catch{}};
+    drag.addEventListener('pointerdown',event=>{if(event.button!==0)return;if(nativeClient&&event.pointerType==='touch')return;const point=rawPoint(event);if(!point||!startDrag(point))return;ds.id=event.pointerId;event.preventDefault();event.stopPropagation();try{drag.setPointerCapture(event.pointerId);}catch{}});
+    drag.addEventListener('pointermove',track);drag.addEventListener('pointerup',finish);drag.addEventListener('pointercancel',finish);
+    nav.touchDragCleanup=nativeClient?nativeTouchDrag()?.bind?.(drag,{
+      onStart(point){return startDrag(point)?{}:false;},
+      onMove(point){queueDragPoint(point);},
+      onEnd(point){completeDrag(point);},
+      onCancel(point){completeDrag(point);}
+    }):null;
+    drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}for(const prop of ['left','top','right'])navStyleRemove(tools,prop);delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));revealPlotNavigation(nav);});
+    drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));}});
+    const key=navigationStorageKey(el);if(key)try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved)requestAnimationFrame(()=>setPlotNavigationPosition(el,tools,saved.x,saved.y));else requestAnimationFrame(()=>positionPlotNavigation(el,state));}catch{requestAnimationFrame(()=>positionPlotNavigation(el,state));}else requestAnimationFrame(()=>positionPlotNavigation(el,state));
+  }
   async function renderDisplay(el,state){const mode=String(state.mode||state.baseType||'linear').toLowerCase(),axis=String(state.axis||'y'),rows=legendFocusedRows(state,(state.sourceData||[]).map(trace=>displayTrace(trace,mode,axis))),logicalLayout=displayLayout(state.sourceLayout,mode,axis),layout=rendererLayout(el,logicalLayout),config=rendererConfig(state.sourceConfig||{});ensurePlotPresentationHost(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=axis;el.dataset[axis==='z'?'dkdsZScale':'dkdsYScale']=mode;}const selected=chooseRenderer(rows,state.sourceConfig||{});state.renderer=selected;const previous=rendererFor(el);if(previous&&previous!==selected)try{d3Renderer()?.purge?.(el);}catch{}const renderer=await ensureRenderer(selected);rendererStates.set(el,selected);if(el?.dataset)el.dataset.dkdsChartRenderer=selected;const result=await Promise.resolve(renderer.react(el,rows,layout,config));installPlotNavigation(el,state);installPlotLegendSelection(el,state);renderPlotLegend(el,state);await applyPlotLegendFocus(el,state);return result;}
   function installDisplayScale(el){
     if(!el)return;const state=displayState(el);if(state.handler)return;
@@ -275,7 +337,7 @@
   function restyle(target,update,traces,_options={}){const el=element(target)||target;if(!el)return Promise.resolve(false);chooseRenderer(el.data||[],el._context||{});return Promise.resolve(d3Renderer()?.restyle?.(el,update,traces)??false);}
   function relayout(target,update){const el=element(target)||target;if(!el)return Promise.resolve(false);return Promise.resolve(d3Renderer()?.relayout?.(el,update)??false);}
   function resize(target){const el=element(target);if(!el||el.offsetParent===null)return false;try{ensurePlotPresentationHost(el);const state=displayScaleStates.get(el),base=legendBaseLayouts.get(el);if(state?.sourceData?.length&&base){const previous=legendLayoutStates.get(el)||{},smart=smartLegendLayout(el,state.sourceData,base),next=themeLayout(smart),current=legendLayoutStates.get(el)||{},changed=previous.placement!==current.placement||Math.abs((previous.reserve||0)-(current.reserve||0))>2||previous.rows!==current.rows||previous.signature!==current.signature;state.sourceLayout=next;if(changed){const pending=legendResizeFrames.get(el);if(pending){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(pending);}catch{}}const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));legendResizeFrames.set(el,raf(()=>{legendResizeFrames.delete(el);if(!el.isConnected)return;void renderDisplay(el,state).catch(()=>{});}));}else{d3Renderer()?.resize?.(el);renderPlotLegend(el,state);positionPlotNavigation(el,state);}return true;}return !!d3Renderer()?.resize?.(el);}catch{return false;}}
-  function purge(target){const el=element(target);if(!el)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}plotNavigationStates.get(el)?.tools?.remove?.();plotNavigationStates.delete(el);plotLegendStates.get(el)?.controller?.dispose?.();plotLegendStates.delete(el);uninstallPlotLegendSelection(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}rendererStates.delete(el);return !!d3Renderer()?.purge?.(el);}
+  function purge(target){const el=element(target);if(!el)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}removePlotNavigation(el);plotLegendStates.get(el)?.controller?.dispose?.();plotLegendStates.delete(el);uninstallPlotLegendSelection(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}rendererStates.delete(el);return !!d3Renderer()?.purge?.(el);}
   function bind(owner,target,event,handler,{replace=false}={}){
     const el=element(target),name=String(event||'');if(!el||typeof handler!=='function')return()=>{};
     if(name.startsWith('dkds_chart_')&&el.addEventListener){
@@ -296,10 +358,10 @@
     if(type==='svg'){
       const uri=await toImage(target,{format:'svg',scale:1});
       const content=decodeURIComponent(String(uri).split(',').slice(1).join(','));
-      return window.DKDSIO.saveText({defaultName:`${baseName}.svg`,content,filters:[{name:'SVG',extensions:['svg']}]});
+      return window.DKDSIO.saveText({defaultName:`${baseName}.svg`,content,filters:[{name:'SVG',extensions:['svg']}],source:'core.scientific-chart.image.svg'});
     }
     const uri=await toImage(target,{format:'png',scale:2});
-    return window.DKDSIO.saveBase64({defaultName:`${baseName}.png`,base64:String(uri).split(',')[1]||'',mimeType:'image/png',filters:[{name:'PNG',extensions:['png']}]});
+    return window.DKDSIO.saveBase64({defaultName:`${baseName}.png`,base64:String(uri).split(',')[1]||'',mimeType:'image/png',filters:[{name:'PNG',extensions:['png']}],source:'core.scientific-chart.image.png'});
   }
   function d3Symbol(name='circle'){
     const d3=window.d3;if(!d3)return null;

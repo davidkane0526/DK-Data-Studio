@@ -16,8 +16,8 @@ for(const name of files.filter(name=>name!=='control-status.css')){
 for(const token of ['.dkds-analysis-nav-btn','#statusBar.statusbar','.plugin-status-item'])assert(text['control-status.css'].includes(token),`control-status.css is missing geometry owner ${token}.`);
 assert(!text['control-status.css'].includes('.plugin-status-item.active')&&!text['control-status.css'].includes('.dkds-analysis-nav-btn.active'),'Presentation must not own Theme-managed active paint for status or analysis navigation controls.');
 assert(!text['scientific.css'].includes('body.dkds-modern-ui button:hover:not(:disabled)'),'Scientific presentation must not own generic button hover geometry.');
-const motion=fs.readFileSync(path.join(root,'src/styles/theme/contract.css'),'utf8');
-assert(motion.includes(':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)')&&motion.includes('transform:none'),'Theme Contract must be the single stationary-control motion owner.');
+const motion=fs.readFileSync(path.join(root,'src/styles/motion/recipes.css'),'utf8');
+assert(motion.includes(':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)')&&motion.includes('transform:none'),'Motion Recipes must be the single stationary-control motion owner.');
 const component=fs.readFileSync(path.join(root,'src/styles/theme/component-appearance.css'),'utf8');
 assert(!text['shell.css'].includes('box-shadow:var(--dkui-selected-shadow)')&&!text['plugin-chrome.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Presentation modules must not own semantic selected-state shadow paint.');
 assert(component.includes('--dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected,var(--dkds-ca-action-shadow))')&&component.includes('box-shadow:var(--dkds-ca-action-shadow-selected)'),'Canonical Component Appearance must be the single consumer of Theme 3.10 selected-state depth.');

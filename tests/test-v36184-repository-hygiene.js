@@ -54,6 +54,7 @@ for(const token of ["'src\\generated'","'mobile\\assets\\web'","'assets\\dkds-ic
 }
 const mobileSync=read('mobile/scripts/sync-web-assets.js');
 assert(mobileSync.includes("generate-runtime-compositions.js"),'Mobile sync must regenerate Core runtime compositions before packaging a clean checkout.');
+assert(pkg.scripts['mobile:test'].startsWith('npm run runtime:build && '),'Clean-checkout mobile:test must regenerate ignored Core runtime compositions before architecture tests read them.');
 
 const parityTest = read('tests/verify-science-parity.js');
 assert(!parityTest.includes("git show"), 'Scientific parity must not depend on git show or a moving branch');

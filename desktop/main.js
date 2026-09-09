@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme, session } = require('electron');
 const { safeStorage } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { ProjectFileSafety } = require('./project-file-safety');
@@ -18,6 +18,8 @@ const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry'
 const { createAgentRuntime } = require('./main-modules/agent-runtime');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
+const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
+const { createNativeSaveRuntime } = require('./main-modules/native-save-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
@@ -55,11 +57,10 @@ const {readPersistedAppearanceTheme,nativeWindowBackground,applyNativeAppearance
 const pluginPackageRuntime=createPluginPackageRuntime({app,BrowserWindow});
 const {
   PLUGIN_API_VERSION,pendingPluginInstalls,
-  ensureExternalPluginDirectory,pluginHistoryDirectory,listPluginHistory,
-  pluginInstallErrorPayload,sweepPendingPluginInstalls,
+  ensureExternalPluginDirectory,pluginInstallErrorPayload,sweepPendingPluginInstalls,
   algorithmPackageCatalog,readInstalledExternalPlugins,installedExternalPluginPackages,
-  readInstalledPluginOverrides,classifyInstalledPluginOverrides,installedPluginOverridePackages,
-  currentPluginPackage,packageCompatibility,assertPackageCompatible,pluginInstallPlan,pluginRollbackPlan,commitPluginInstall,restoreInstalledPackage,installLanPluginPackage
+  readInstalledPluginOverrides,installedPluginOverridePackages,
+  currentPluginPackage,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage,installLanPluginPackage
 }=pluginPackageRuntime;
 const {enforcePackagedExpiry}=createPackagedExpiryRuntime({app,appRoot:APP_ROOT});
 const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});
@@ -88,10 +89,13 @@ const auxiliaryWindowRuntime=createAuxiliaryWindowRuntime({
 const {
   auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
   projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
-  runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,createOrFocusAuxiliaryWindow
+  runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
 }=auxiliaryWindowRuntime;
 
 const visualClosureRuntime=createVisualClosureRuntime({app,appRoot:APP_ROOT,diagnosticsDirectory});
+const nativeDialogBroker=createNativeDialogBroker({BrowserWindow,logger:console});
+const nativeSaveRuntime=createNativeSaveRuntime({session,nativeDialogBroker});
+nativeSaveRuntime.installIntentTrace(ipcMain);
 
 
 function dispatchMcpToRenderer(request){
@@ -131,6 +135,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  nativeSaveRuntime.installRendererDownloadGuard();
   enforcePackagedExpiry();
   const persistedAppearance=readPersistedAppearanceTheme();
   if(persistedAppearance)applyNativeAppearance(persistedAppearance,{persist:false,broadcast:false});
@@ -151,7 +156,8 @@ app.whenReady().then(() => {
     title:spec.title,
     prewarm:spec.prewarm,
     reuse:spec.reuse,
-    persistence:spec.persistence
+    persistence:spec.persistence,
+    artifactHydration:spec.artifactHydration
   })));
   ipcMain.handle('diagnostics:getEnvironment', async () => diagnosticEnvironment());
   ipcMain.handle('diagnostics:runActivitySmoke', async (event,payload={}) => {
@@ -345,30 +351,7 @@ app.whenReady().then(() => {
       options: payload?.options && typeof payload.options === 'object' ? payload.options : payload || {}
     });
   });
-  ipcMain.on('windows:ownerArtifactDelta', (event, payload={}) => {
-    const owner = BrowserWindow.fromWebContents(event.sender);
-    const ownerId = owner?.webContents?.id;
-    const projectTabId = String(payload?.projectTabId || '').trim();
-    const excludeActivityId = String(payload?.excludeActivityId || '').trim();
-    const delta = payload?.artifactDelta && typeof payload.artifactDelta === 'object' ? payload.artifactDelta : null;
-    if (!ownerId || !projectTabId || !delta) return;
-    for (const win of auxiliaryWindows.values()) {
-      if (!win || win.isDestroyed()) continue;
-      const row = auxiliaryBootstrap.get(win.webContents.id);
-      if (row?.ownerWebContentsId !== ownerId || String(row?.projectTabId || '') !== projectTabId) continue;
-      if (excludeActivityId && String(row?.activityId || '') === excludeActivityId) continue;
-      // Runtime-only prewarm has no hydrated domain store yet. The current
-      // project snapshot will be supplied when that renderer is promoted.
-      if (row?.prewarm === true) continue;
-      try {
-        win.webContents.send('windows:ownerArtifactDelta', {
-          projectTabId,
-          reason:String(payload?.reason || 'owner-artifact-change'),
-          artifactDelta:delta
-        });
-      } catch {}
-    }
-  });
+  ipcMain.on('windows:ownerArtifactDelta', (event, payload={}) => { routeArtifactDelta(event,payload); });
   ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
     if (!bootstrap) return;
@@ -442,9 +425,9 @@ app.whenReady().then(() => {
     }
   }
 
-  ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
-  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides(),classified=classifyInstalledPluginOverrides(result);return {...result,packages:classified.active.map(pkg=>({...pkg,effective:true,compatibilityStatus:packageCompatibility(pkg.manifest)})),shadowed:classified.shadowed.map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest)}))};});
-  const installPlanError=(err,manifest=null,compatibility=null,fallbackCode='PLUGIN_PACKAGE_INVALID',fallbackTitle='无法读取插件包')=>{const code=String(err?.code||fallbackCode),showCompatibility=!['PLUGIN_VERSION_NOT_NEWER','PLUGIN_HISTORY_SHADOWED_BY_BUNDLED','PLUGIN_SOURCE_CONTRACT'].includes(code);return pluginInstallErrorPayload(err,{code,title:String(err?.title||fallbackTitle),manifest,compatibility:showCompatibility?compatibility:null});};
+  ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
+  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,effective:true})),shadowed:[]};});
+  const installPlanError=(err,manifest=null,fallbackCode='PLUGIN_PACKAGE_INVALID',fallbackTitle='无法读取插件包')=>pluginInstallErrorPayload(err,{code:String(err?.code||fallbackCode),title:String(err?.title||fallbackTitle),manifest});
   ipcMain.handle('plugins:selectPackage', async () => {
     sweepPendingPluginInstalls();let manifest=null;
     try{
@@ -453,74 +436,57 @@ app.whenReady().then(() => {
       const sourcePath=result.filePaths[0],stat=fs.statSync(sourcePath);
       if(stat.size>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
       const raw=JSON.parse(fs.readFileSync(sourcePath,'utf8'));manifest=raw?.manifest||null;const plan=pluginInstallPlan(raw);manifest=plan.manifest;
-      const compatibility=plan.compatibility;
-      if(!compatibility.compatible){
-        const details=(compatibility.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required}（当前 ${issue.actual}）`:`${issue.kind} ${issue.required}（当前 ${issue.actual}）`).join('；');
-        return {ok:false,error:pluginInstallErrorPayload(`插件与当前 DK Data Studio 环境不兼容：${details}`,{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
-      }
       const token=crypto.randomUUID();pendingPluginInstalls.set(token,{...plan,createdAt:Date.now()});
-      return {ok:true,canceled:false,token,manifest,exists:plan.exists,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion,compatibility:{appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,requiredApp:String(manifest.compatibility?.app||'*'),requiredPluginApi:String(manifest.compatibility?.pluginApi||manifest.apiVersion||'*')}};
-    }catch(err){return {ok:false,error:installPlanError(err,manifest,manifest?packageCompatibility(manifest):null)};}
+      return {ok:true,canceled:false,token,manifest,exists:plan.exists,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};
+    }catch(err){return {ok:false,error:installPlanError(err,manifest)};}
   });
   ipcMain.handle('plugins:cancelInstall', async (_event, token) => {pendingPluginInstalls.delete(String(token||''));return true;});
   ipcMain.handle('plugins:installPackage', async (_event, token) => {
     sweepPendingPluginInstalls();const key=String(token||''),pending=pendingPluginInstalls.get(key);
     if(!pending)return {ok:false,error:pluginInstallErrorPayload('安装会话已失效，请重新选择插件包。',{code:'PLUGIN_INSTALL_SESSION_EXPIRED',title:'安装会话已失效'})};
     pendingPluginInstalls.delete(key);const manifest=pending.pkg.manifest;
-    try{
-      const plan=pluginInstallPlan(pending.pkg),compatibility=plan.compatibility;
-      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('插件环境兼容性在确认期间发生变化，请重新选择插件包。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
-      const installed=commitPluginInstall(plan,{archiveReason:plan.installationKind==='override'?'override-upgrade':'upgrade'});
-      return {ok:true,package:installed,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart};
-    }catch(err){
-      try{restoreInstalledPackage(manifest.id,pending.previousPackage||null);}catch(restoreErr){return {ok:false,error:pluginInstallErrorPayload(`${err.message||err}；写入失败后的自动恢复也失败：${restoreErr.message||restoreErr}`,{code:'PLUGIN_INSTALL_AND_RESTORE_FAILED',title:'插件安装与自动恢复均失败',manifest,compatibility:packageCompatibility(manifest)})};}
-      return {ok:false,error:installPlanError(err,manifest,packageCompatibility(manifest),'PLUGIN_INSTALL_FAILED','插件安装失败')};
+    try{const plan=pluginInstallPlan(pending.pkg),installed=commitPluginInstall(plan);return {ok:true,package:installed,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart};}
+    catch(err){
+      try{restoreInstalledPackage(manifest.id,pending.previousPackage||null);}catch(restoreErr){return {ok:false,error:pluginInstallErrorPayload(`${err.message||err}；写入失败后的自动恢复也失败：${restoreErr.message||restoreErr}`,{code:'PLUGIN_INSTALL_AND_RESTORE_FAILED',title:'插件安装与自动恢复均失败',manifest})};}
+      return {ok:false,error:installPlanError(err,manifest,'PLUGIN_INSTALL_FAILED','插件安装失败')};
     }
   });
   ipcMain.handle('plugins:validateGeneratedPackage', async (_event, raw) => {
-    let manifest=null;
-    try{
-      const serialized=JSON.stringify(raw||{});if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
-      manifest=raw?.manifest||null;const plan=pluginInstallPlan(raw);manifest=plan.manifest;
-      if(!plan.compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility:plan.compatibility})};
-      return {ok:true,package:plan.pkg,manifest,compatibility:plan.compatibility,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};
-    }catch(err){return {ok:false,error:installPlanError(err,manifest,manifest?packageCompatibility(manifest):null,'PLUGIN_PACKAGE_INVALID','生成插件包无效')};}
+    let manifest=null;try{const serialized=JSON.stringify(raw||{});if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};manifest=raw?.manifest||null;const plan=pluginInstallPlan(raw);manifest=plan.manifest;return {ok:true,package:plan.pkg,manifest,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};}
+    catch(err){return {ok:false,error:installPlanError(err,manifest,'PLUGIN_PACKAGE_INVALID','生成插件包无效')};}
   });
   ipcMain.handle('plugins:installGeneratedPackage', async (_event, payload={}) => {
-    let manifest=null,plan=null;
-    try{
-      const raw=payload?.package||payload,serialized=JSON.stringify(raw||{});if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
-      manifest=raw?.manifest||null;plan=pluginInstallPlan(raw);manifest=plan.manifest;
-      if(!plan.compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility:plan.compatibility})};
-      const installed=commitPluginInstall(plan,{archiveReason:plan.installationKind==='override'?'override-agent-update':'agent-update',generatedBy:String(payload?.source||'studio-kernel')});
-      return {ok:true,package:installed,compatibility:plan.compatibility,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart};
-    }catch(err){
-      try{if(plan)restoreInstalledPackage(manifest.id,plan.previousPackage||null);}catch{}
-      return {ok:false,error:installPlanError(err,manifest,manifest?packageCompatibility(manifest):null,'PLUGIN_GENERATED_INSTALL_FAILED','生成插件安装失败')};
-    }
+    let manifest=null,plan=null;try{const raw=payload?.package||payload,serialized=JSON.stringify(raw||{});if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');manifest=raw?.manifest||null;plan=pluginInstallPlan(raw);manifest=plan.manifest;const installed=commitPluginInstall(plan,{generatedBy:String(payload?.source||'studio-kernel')});return {ok:true,package:installed,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart};}
+    catch(err){try{if(plan)restoreInstalledPackage(manifest.id,plan.previousPackage||null);}catch{}return {ok:false,error:installPlanError(err,manifest,'PLUGIN_GENERATED_INSTALL_FAILED','生成插件安装失败')};}
   });
-  ipcMain.handle('plugins:historyList', async (_event, id) => listPluginHistory(String(id||'')));
   ipcMain.handle('plugins:algorithmCatalog', async (_event, ref) => algorithmPackageCatalog(ref||{}));
-  ipcMain.handle('plugins:rollbackVersion', async (_event, payload) => {
-    const id=String(payload?.id||''),token=path.basename(String(payload?.token||''));
-    if(!validPluginId(id)||!token.toLowerCase().endsWith('.dkplugin'))throw new Error('无效的插件回退请求。');
-    const historyPath=path.join(pluginHistoryDirectory(id),token);if(!fs.existsSync(historyPath))throw new Error('指定的插件历史版本不存在。');
-    const plan=pluginRollbackPlan(id,JSON.parse(fs.readFileSync(historyPath,'utf8')));assertPackageCompatible(plan.manifest,'rollback');
-    const restored=commitPluginInstall(plan,{archiveReason:plan.installationKind==='override'?'override-rollback':'rollback'});
-    return {...restored,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart};
-  });
   ipcMain.handle('plugins:restorePackage', async (_event, payload) => restoreInstalledPackage(String(payload?.id||payload?.package?.manifest?.id||''),payload?.package||null));
   ipcMain.handle('plugins:uninstall', async (_event, id) => {
     const pluginId=String(id||'');if(!validPluginId(pluginId))throw new Error('无效的插件 ID。');
     return restoreInstalledPackage(pluginId,null);
   });
-  ipcMain.handle('plugins:exportPackage', async (_event, id) => {
-    const pluginId=String(id||'');if(!validPluginId(pluginId))throw new Error('无效的插件 ID。');
+  ipcMain.handle('plugins:exportPackage', async (event, payload={}) => {
+    const pluginId=String(payload?.id||'');if(!validPluginId(pluginId))throw new Error('无效的插件 ID。');
+    if(!nativeSaveRuntime.authorized(payload,'export')){nativeSaveRuntime.blockMissing({...payload,source:payload?.source||'core.plugin-manager.export-package'},'export');return null;}
     const pkg=currentPluginPackage(pluginId);if(!pkg)throw new Error(`未找到插件包：${pluginId}`);
     const safeId=pluginId.replace(/[^0-9A-Za-z._-]/g,'_'),safeVersion=String(pkg.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
-    const result=await dialog.showSaveDialog({title:`导出插件 · ${pkg.manifest.name||pluginId}`,defaultPath:path.join(app.getPath('downloads'),`${safeId}-${safeVersion}.dkplugin`),filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']}]});
-    if(result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
+    const defaultName=`${safeId}-${safeVersion}.dkplugin`;
+    const result=await nativeDialogBroker.run(event,{kind:'pluginExportPackage',source:payload?.source||'core.plugin-manager.export-package',defaultName},async parent=>{
+      const options={title:`导出插件 · ${pkg.manifest.name||pluginId}`,defaultPath:path.join(app.getPath('downloads'),defaultName),filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']}]};
+      return parent?dialog.showSaveDialog(parent,options):dialog.showSaveDialog(options);
+    },{blockedValue:null});
+    if(!result||result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
   });
+  ipcMain.handle('plugins:readBuiltinScript', async (_event, rawSrc) => {
+    const src=String(rawSrc||'').replace(/\\/g,'/').replace(/^\.\//,'');
+    if(!/^plugins\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.js$/.test(src))throw new Error('Invalid built-in plugin script path.');
+    const pluginRoot=path.resolve(APP_ROOT,'src','plugins');
+    const target=path.resolve(APP_ROOT,'src',src);
+    if(target===pluginRoot||!target.startsWith(pluginRoot+path.sep))throw new Error('Built-in plugin script path escaped plugin root.');
+    if(!fs.existsSync(target)||!fs.statSync(target).isFile())throw new Error(`Built-in plugin script not found: ${src}`);
+    return {src,text:fs.readFileSync(target,'utf8')};
+  });
+
   ipcMain.handle('plugins:openFolder', async () => {
     const dir=ensureExternalPluginDirectory();
     const error=await shell.openPath(dir);
@@ -567,10 +533,11 @@ app.whenReady().then(() => {
     const result = await dialog.showOpenDialog({
       title: '选择数据 / 项目文件', properties: ['openFile', 'multiSelections'],
       filters: [
-        { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
+        { name: '项目 / 数据（自动识别）', extensions: ['json', 'csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
         { name: '项目文件', extensions: ['json'] },
+        { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
         { name: 'CSV', extensions: ['csv'] },
-        { name: 'Text / DAT', extensions: ['txt', 'dat', 'tsv', 'asc', 'xy', 'iv'] },
+        { name: 'Text / DAT', extensions: ['txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
         { name: 'All Files', extensions: ['*'] }
       ]
     });
@@ -624,42 +591,57 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.handle('clipboard:writeText', async (_event, text) => {
-    clipboard.writeText(String(text ?? ''));
+  ipcMain.handle('clipboard:writeText', async (_event, payload) => {
+    const intent=payload?.__dkdsClipboardIntent;
+    if(intent?.authorized!==true||intent?.kind!=='clipboard')return false;
+    clipboard.writeText(String(payload?.text??''));
     return true;
   });
 
-  ipcMain.handle('files:saveText', async (_event, payload) => {
-    const { defaultName, content, filters } = payload;
-    const result = await dialog.showSaveDialog({defaultPath:defaultName,filters:filters || [{ name: 'Text', extensions: ['txt'] }]});
+  ipcMain.handle('files:saveText', async (event, payload={}) => {
+    if(!nativeSaveRuntime.authorized(payload,'export')){nativeSaveRuntime.blockMissing(payload,'export');return false;}
+    return nativeDialogBroker.run(event,{
+    kind:'saveText',source:payload.source||'renderer.saveText',defaultName:payload.defaultName||'export.txt'
+  },async parent=>{
+    const options={defaultPath:payload.defaultName||'export.txt',filters:payload.filters || [{ name: 'Text', extensions: ['txt'] }]};
+    const result = parent ? await dialog.showSaveDialog(parent,options) : await dialog.showSaveDialog(options);
     if (result.canceled || !result.filePath) return false;
-    fs.writeFileSync(result.filePath, content, 'utf8');
+    fs.writeFileSync(result.filePath, String(payload.content??''), 'utf8');
     return true;
+  },{blockedValue:false});
   });
 
-  ipcMain.handle('files:saveBase64', async (_event, payload) => {
-    const result = await dialog.showSaveDialog({
-      defaultPath: payload.defaultName || 'dk_data.png',
-      filters: payload.filters || [{ name: 'PNG Image', extensions: ['png'] }]
-    });
+  ipcMain.handle('files:saveBase64', async (event, payload={}) => {
+    if(!nativeSaveRuntime.authorized(payload,'export')){nativeSaveRuntime.blockMissing(payload,'export');return false;}
+    return nativeDialogBroker.run(event,{
+    kind:'saveBase64',source:payload.source||'renderer.saveBase64',defaultName:payload.defaultName||'dk_data.png'
+  },async parent=>{
+    const options={defaultPath:payload.defaultName || 'dk_data.png',filters:payload.filters || [{ name: 'PNG Image', extensions: ['png'] }]};
+    const result = parent ? await dialog.showSaveDialog(parent,options) : await dialog.showSaveDialog(options);
     if (result.canceled || !result.filePath) return false;
-    fs.writeFileSync(result.filePath, Buffer.from(payload.base64, 'base64'));
+    fs.writeFileSync(result.filePath, Buffer.from(String(payload.base64||''), 'base64'));
     return result.filePath;
+  },{blockedValue:false});
   });
 
-  ipcMain.handle('files:saveProject', async (_event, payload = {}) => {
+  ipcMain.handle('files:saveProject', async (event, payload = {}) => {
     const mode = payload.mode === 'saveAs' ? 'saveAs' : 'current';
     const currentPath = typeof payload.path === 'string' && !/^(?:web|webfs|native):\/\//i.test(payload.path)
       ? payload.path
       : null;
     let filePath = mode === 'current' ? currentPath : null;
     if (!filePath) {
-      const result = await dialog.showSaveDialog({
-        title: mode === 'saveAs' ? '项目另存为' : '保存 DK Data Studio 项目',
-        defaultPath: currentPath || payload.defaultName || 'dk_data_project.dkds.json',
-        filters: [{ name: 'DK Data Studio Project', extensions: ['dkds.json', 'json'] }]
-      });
-      if (result.canceled || !result.filePath) return null;
+      if(!nativeSaveRuntime.authorized(payload,'project')){nativeSaveRuntime.blockMissing(payload,'project');return null;}
+      const defaultName=currentPath || payload.defaultName || 'dk_data_project.dkds.json';
+      const result=await nativeDialogBroker.run(event,{kind:'saveProject',source:payload.source||'core.project.save',defaultName},async parent=>{
+        const options={
+          title: mode === 'saveAs' ? '项目另存为' : '保存 DK Data Studio 项目',
+          defaultPath: defaultName,
+          filters: [{ name: 'DK Data Studio Project', extensions: ['dkds.json', 'json'] }]
+        };
+        return parent ? dialog.showSaveDialog(parent,options) : dialog.showSaveDialog(options);
+      },{blockedValue:null});
+      if (!result || result.canceled || !result.filePath) return null;
       filePath = result.filePath;
     }
     const serialized=DKDSProjectFormat.serializeProject(payload.project || {});
@@ -751,7 +733,8 @@ app.whenReady().then(() => {
       isPackaged:app.isPackaged,
       processCount:metrics.length,
       memory,
-      components
+      components,
+      nativeDialogs:nativeDialogBroker.diagnostics()
     };
   });
 

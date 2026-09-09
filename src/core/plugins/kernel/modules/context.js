@@ -28,6 +28,7 @@ const externalPackages=new Map();
 const overridePackages=new Map();
 const overrideLoadErrors=[];
 const externalLoadErrors=[];
+const builtinLoadErrors=[];
 const commandMenuPortals=new WeakMap();
 
 module.exports=Object.freeze({
@@ -43,5 +44,6 @@ module.exports=Object.freeze({
   overridePackages,
   overrideLoadErrors,
   externalLoadErrors,
+  builtinLoadErrors,
   commandMenuPortals
 });

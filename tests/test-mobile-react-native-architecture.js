@@ -2,11 +2,13 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
+const {readMobileShell}=require('./mobile-shell-source');
+const {readMobileApp}=require('./mobile-app-source');
 const root = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 
-const app = read('mobile/App.tsx');
-const shell = read('mobile/src/Shell.tsx');
+const app = readMobileApp(root);
+const shell = readMobileShell(root);
 const bridge = read('src/web-bridge.js');
 const mobileHost = read('src/core/host/mobile-host-runtime.js');
 const presentationModel = read('src/core/ui/modules/presentation/model.js');
@@ -26,7 +28,7 @@ const index = read('src/index.html');
 const mobilePackage = JSON.parse(read('mobile/package.json'));
 const appConfig = JSON.parse(read('mobile/app.json')).expo;
 
-assert(app.includes('BottomNavigation') && app.includes('NavigationRail') && app.includes('NativeStatusBar'), 'Android shell must provide native portrait/landscape navigation and status chrome');
+assert(app.includes('NativeHeader') && app.includes('NativeStatusBar') && !app.includes('<BottomNavigation') && !app.includes('<NavigationRail'), 'Android shell must keep top command chrome plus the desktop-style status bar while removing the redundant global icon navigation bar');
 assert(app.includes('BackHandler.addEventListener') && app.includes("hostRequest('back')"), 'Android system back must route through the Mobile Host Adapter first');
 assert(app.includes("AppState.addEventListener('change'") && app.includes("postHostEvent('lifecycle'") && app.includes('pauseHostTimeouts') && app.includes('resumeHostTimeouts'), 'native lifecycle must be a fire-and-forget Core event and pause request timers while Android is backgrounded');
 assert(app.includes("import type { AppStateStatus } from 'react-native';") && app.includes('useRef<AppStateStatus>(AppState.currentState)') && app.includes('publishLifecycle = useCallback((state: AppStateStatus)'), 'Android lifecycle state must keep the React Native AppStateStatus type through refs and lifecycle publishing');
@@ -41,15 +43,16 @@ assert(app.includes('10 * 60 * 1000') && app.includes('interactiveFileCommand'),
 assert(app.includes('hostReady.current') && app.includes('hostQueue.current') && app.includes('flushHostQueue'), 'Core requests must wait for an explicit renderer-ready handshake before their timeout starts');
 assert(!/assets\.push\([\s\S]{0,300}base64/.test(app), 'file picker must not eagerly collect every selected file as Base64');
 
-assert(shell.includes("const navigationItems") && shell.includes("id: 'activities'"), 'mobile navigation must include a plugin-workspace entry');
-assert(shell.includes('shell.activities.map'), 'analysis sheet must be projected from the plugin activity registry');
+assert(shell.includes('GLOBAL_ACTIONS') && shell.includes("{ id: 'activities', label: '分析' }") && !shell.includes('SystemGlyph'), 'mobile top command chrome must include theme-colored text analysis after the retired bottom navigation family is removed');
+assert(shell.includes('shell.activities.filter') && shell.includes('.map(activity =>'), 'analysis sheet must be projected from the plugin activity registry while excluding system entries such as Data Center');
 assert(shell.includes('shell.surfaces') && shell.includes("run('surface'"), 'PRIMARY, PRIME and SUB surfaces must be reachable from native navigation');
 assert(shell.includes('shell.actions') && shell.includes("run('workspace-action'"), 'plugin header actions such as TER calculation must be reachable from native navigation');
 assert(shell.includes('activeProject') && !shell.includes('onLongPress') && shell.includes("onSheet('projects')"), 'native header must show only the active project and open project management only on tap');
 assert(shell.includes('headerHistoryButton') && shell.includes("onAction('history-undo')") && shell.includes("onAction('history-redo')"), 'native header must expose undo/redo immediately before the data/parameter control');
 assert(shell.includes('unifiedHeaderRow') && shell.includes('projectTabGroup') && shell.includes('pluginButtonGroup'), 'project tabs and plugin buttons must share one clearly divided mobile header row');
-assert(!shell.includes('navLabel:'), 'portrait bottom navigation must be icon-only');
-assert(!shell.includes("run('history-undo')") && !shell.includes("run('history-redo')"), 'undo/redo controls must exist only in the top software header; More must not duplicate them');
+assert(shell.includes("{ id: 'import-sheet', label: '导入' }") && shell.includes("{ id: 'data', label: '数据' }") && shell.includes("{ id: 'home', label: '工作区' }") && shell.includes("{ id: 'activities', label: '分析' }") && shell.includes("{ id: 'plugins', label: '插件' }") && shell.indexOf("label: '导入'") < shell.indexOf("label: '数据'") && shell.indexOf("label: '数据'") < shell.indexOf("label: '工作区'") && shell.indexOf("label: '工作区'") < shell.indexOf("label: '分析'") && shell.indexOf("label: '分析'") < shell.indexOf("label: '插件'"), 'global mobile commands must be compact theme-colored text buttons ordered Import, Data, Workspace, Analysis, Plugins');
+assert(shell.includes("synthetic: 'history'") && shell.includes("onSheet('history')") && shell.includes("visible === 'history'") && shell.includes("run('history-undo')") && shell.includes("run('history-redo')"), 'bottom desktop-style status chrome must expose History and route its undo/redo through the same unified history commands as Desktop.');
+assert(!shell.includes("id: 'more', label: '更多'"), 'the retired global More navigation item must not return when History is added to the status bar.');
 assert(!shell.includes('readyDot'), 'the unexplained green readiness dot must not consume mobile header space');
 assert(!/builtin\.(resonance|ter|pulse|data-center)/.test(shell), 'native shell must not hard-code domain plugins');
 
@@ -68,6 +71,9 @@ assert(mobileHost.includes('processingIds') && mobileHost.includes("'project.swi
 assert(inputAdapters.includes('fromHeldSwipe') && inputAdapters.includes("key='ArrowUp'") && inputAdapters.includes("key='ArrowLeft'"), 'Mobile Gesture Adapter must map held upward/left swipes to unified keyboard intents');
 assert(!mobileHost.includes('querySelector') && !mobileHost.includes('querySelectorAll'), 'Mobile Host must not reverse-read Desktop DOM to derive presentation state');
 assert(mobileHost.includes('DKDSMobileWebPresentation?.apply?.(state)') && mobileWebPresentation.includes('workspace?.presentationComplete===true') && mobileWebPresentation.includes('surface.presentation?.region'), 'Mobile WebView geometry must be projected downstream from MobilePresenter rather than inferred from Desktop placement.');
+assert(mobileHost.includes('currentOrientation') && mobileHost.includes('DKDSPlatform?.profile?.orientation') && mobileHost.includes("addEventListener('dkds:platform-change',publish)"), 'Mobile Host must publish the actual WebView orientation so contextual surfaces do not use portrait sheets in landscape.');
+assert(presenters.includes('mobileViewportProfile') && presenters.includes('openSurfaces') && presenters.includes("kind==='prime'") && presenters.includes("kind==='sub'"), 'Mobile Presenter must derive responsive geometry while keeping PRIME visibility independent from SUB route navigation and Desktop mounted state.');
+assert(infrastructure.includes('activate(activity,id)') || read('src/core/ui/modules/host/api.js').includes('activate(activity,id)'), 'Core UI workspace registry must support idempotent surface activation for Mobile Host routing.');
 assert(mobileHost.includes("present('mobile'") && presenters.includes('class DesktopPresenter') && presenters.includes('class MobilePresenter'), 'mobile state must come from the Mobile Presenter while Desktop and Mobile Presenter share one Core model');
 assert(kernel.includes('activateEmbedded:') && kernel.includes("options?.presentation==='mobile'"), 'plugin kernel must expose an explicit embedded platform presentation');
 assert(infrastructure.includes('workspaces:{') && infrastructure.includes('navigationActions?.()'), 'Core UI infrastructure must project PluginWorkspace navigation without domain hard-coding');
@@ -77,21 +83,22 @@ new Function(mobileHost);
 new Function(mobilePluginPackage);
 
 assert(index.includes('href="mobile.css"') && index.includes('src="core/host/mobile-host-runtime.js"'), 'mobile adapter and final-cascade layout must load from the shared renderer');
-assert(nativeShellStyle.includes('#mainWorkspace') && nativeShellStyle.includes('display:none'), 'React Native must own phone command chrome and hide the desktop workspace shell');
+assert(nativeShellStyle.includes('.topbar')&&nativeShellStyle.includes('.project-tabs-bar')&&nativeShellStyle.includes('#statusBar.statusbar')&&nativeShellStyle.includes('display:none'),'React Native must own phone command chrome and hide only the actual Desktop command/status shell.');
 assert(!fs.existsSync(path.join(root,'src/styles/platform/native-legacy-workspace.css')) && !mobileStyle.includes('native-legacy-workspace.css'), 'Plugin API 1.19 must remove the PRIMARY-left mobile fallback stylesheet and import.');
 assert(!/dkds-mobile-panel-open|dkds-mobile-panel-edge|--dkds-mobile-left-width/.test(nativeStyle+inputAdapters+shell+app), 'native mobile shell must not retain the retired PRIMARY-left drawer or width resizer path.');
 assert(nativeSemanticStyle.includes('.dkds-plugin-canvas-right-resizer') && nativeSemanticStyle.includes('display:none'), 'Presenter-driven mobile surfaces must hide Desktop split handles');
-assert(infrastructure.includes('bindHeldTitleResize') && infrastructure.includes('is-held-resizing') && infrastructure.includes('mobileOverlay:true'), 'docked PRIME sizing must use title-hold gestures while retaining Core split constraints');
+assert(infrastructure.includes('bindHeldTitleResize') && infrastructure.includes("dataset?.dkdsHost==='mobile'") && infrastructure.includes('is-held-resizing') && infrastructure.includes('mobileOverlay:true'), 'Desktop held-title compatibility may remain, but Mobile must exit before installing it and use Core split seams instead.');
 assert(nativeShellStyle.includes('#statusBar.statusbar{display:none}') && shell.includes('NativeStatusBar'), 'React Native must own the mobile status bar instead of stacking desktop status chrome');
-assert(shell.includes('BlurView') && mobilePackage.dependencies['expo-blur'], 'portrait bottom navigation must use native blur/translucency instead of an opaque web-style bar');
+assert(!app.includes('<BottomNavigation') && !Object.prototype.hasOwnProperty.call(mobilePackage.dependencies||{},'expo-blur'), 'the obsolete bottom global navigation must stay detached from the active shell and the retired native LAN blur dependency must stay removed');
 assert(shell.includes('surfaceHover: string;') && shell.includes("surfaceHover: '#29313d'") && shell.includes("surfaceHover: '#e9f0f8'") && shell.includes('divider: string;') && shell.includes('controlBorder: string;'), 'mobile Palette must declare hover plus separate divider/control-border channels so native chrome follows Theme Contract 2.0');
 assert(shell.includes('ProjectDrawer') && shell.includes('ProjectRow') && shell.includes('projectDeleteIcon') && shell.includes('translateX: slide') && !shell.includes('PanResponder.create') && shell.includes('删除前会提醒保存'), 'project management must open from the left and use a deterministic X delete action with save warning instead of fragile swipe animation');
-assert(shell.includes('WebServicePopover') && app.includes("payload?.id === 'lan-web'"), 'Android LAN status must open a small native popup rather than the desktop always-on-top panel');
+assert(!shell.includes('WebServicePopover') && app.includes("host.hostRequest('status', { pluginId: 'builtin.status-monitor', id: 'lan-web' })"), 'Android LAN status must open the single Core Material LAN panel rather than a duplicate React Native popup');
 assert(bridge.includes("nativeCall('runtimeStatus')"), 'runtime memory on Android must come from the native process bridge when available');
-assert(nativeShellStyle.includes('[data-dkds-mobile-summary]') && !/#reswinSummary|#terSummary|\.respar-status-row/.test(nativeStyle), 'space-consuming analysis summaries must leave renderer layout through the plugin-neutral mobile-summary contract');
+assert(nativeShellStyle.includes('[data-dkds-inline-summary]') && !/#reswinSummary|#terSummary|\.respar-status-row/.test(nativeStyle), 'space-consuming analysis summaries must leave renderer layout through the plugin-neutral inline-summary contract');
 assert(nativeShellStyle.includes('min-height:280px'), 'scientific plots must retain a usable phone viewport');
 assert(nativeShellStyle.includes('@media (orientation:landscape)'), 'shared renderer must retain graph-first landscape behavior.');
-assert(nativeSemanticStyle.includes('[data-dkds-mobile-region="rail"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="sheet"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="route"]'), 'mobile workspace geometry must come only from Presenter semantic regions.');
+assert(nativeSemanticStyle.includes('[data-dkds-mobile-region="drawer"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="sheet"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="companion-right"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="companion-bottom"]') && nativeSemanticStyle.includes('[data-dkds-mobile-region="route"]'), 'mobile workspace geometry must come only from responsive Presenter semantic regions.');
+assert(nativeSemanticStyle.includes('.dkds-portable-placement-trigger{display:none}')&&nativeSemanticStyle.includes('.dkds-plot-view-actions .dkds-portable-placement-trigger{display:inline-flex'), 'Presenter-owned mobile surfaces must hide outer Desktop placement controls while PlotView action-host context preserves chart position controls without changing shared PortableView chrome.');
 assert(!/\.pulse-|#pulse/i.test(nativeStyle), 'mobile Core CSS must not hard-code Pulse layout; domain geometry belongs to the plugin stylesheet');
 assert(nativeShellStyle.includes('.command-menu'), 'web command menus need a touch bottom-sheet presentation');
 assert(bridge.includes('isNativeClient:!!nativeBridge') && bridge.includes('pluginSelectPackage'), 'Android must be a native plugin host, not a web client');
@@ -108,10 +115,10 @@ assert(generatedKotlin.includes('@ReactMethod fun runtimeStatus') && generatedKo
 assert(infrastructure.includes('dkds-portable-resize-handle') && infrastructure.includes('bindFloatResize') && infrastructure.includes('initialBounds'), 'global floating views must retain bounded source dimensions and provide a touch resize handle');
 assert(!infrastructure.includes('dkds-portable-history-action') && !infrastructure.includes("DKDSCapabilities?.invoke?.('core.project-history',kind)"), 'portable/plugin chrome must not duplicate the top-level undo/redo controls');
 assert(!infrastructure.includes("header.addEventListener('contextmenu',openPlacementMenu)") && infrastructure.includes("placementButton.addEventListener('click',showPlacementMenu)"), 'title hold-resize must never open placement; placement opens only from its explicit button');
-assert(infrastructure.includes('inScrollbarGutter') && infrastructure.includes("header.style.touchAction='none'") && inputAdapters.includes(".dkds-portable-header,.drag-handle"), 'held PRIME resizing must own the title gesture and ignore Mobile Gesture Adapter held-swipe arbitration');
+assert(infrastructure.includes('inScrollbarGutter') && infrastructure.includes("portableSet(header,'touch-action','none')") && inputAdapters.includes(".dkds-portable-header,.drag-handle"), 'held PRIME resizing must own the title gesture and ignore Mobile Gesture Adapter held-swipe arbitration');
 assert(shell.includes("run('file-open')") && shell.includes("run('file-folder')") && shell.includes("run('smb-open')") && !shell.includes("run('smb-project')"), 'mobile file entry must be semantic-neutral and let Studio auto-detect project versus data');
 assert(app.includes("'file.open'") && app.includes("'file.folder'") && mobileHost.includes("'file.open':configured.openAnyFiles") && mobileHost.includes("'file.folder':configured.openAnyDirectory"), 'mobile file picker/folder picker must route into Core automatic classification');
-assert(shell.includes("nativeStatusScroller: { flexGrow: 0, flexShrink: 1, marginLeft: 'auto' }") && shell.includes("justifyContent: 'flex-end'"), 'native status controls must form a far-right command cluster');
+assert(shell.includes('packPriorityControls') && shell.includes('preservationPriority') && shell.includes('nativeStatusItems') && shell.includes("justifyContent: 'flex-end'"), 'native status controls must use measured priority packing in a far-right command cluster');
 assert(app.includes('<NavigationBar hidden') && mobilePackage.dependencies['expo-navigation-bar'], 'Android gesture navigation must be hidden through the native system-bar API');
 
 assert.strictEqual(appConfig.android.softwareKeyboardLayoutMode, 'resize', 'Android keyboard must resize the scientific viewport');

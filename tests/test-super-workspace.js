@@ -45,17 +45,16 @@ function makeSandbox(initial={}){
 
 function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,failActivate=false}={}){
   P.define({
-    id,pluginType:'workbench',name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.19.0',
+    id,pluginType:'workbench',name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.19.0',entry:'plugin.js',
     workspace:{role:'top',activity,icon:'T',title:id}
   },async ctx=>{
     ctx.ui.activities.add({id:activity,label:activity,openMode:'window',onActivate:failActivate?async()=>{throw new Error(`activate failed: ${id}`);}:undefined});
     if(complete){
       ctx.ui.topWorkspace.register({
         id:activity,activity,label:activity,
-        layout:{mode:'native',root:{selector:'#root'},primary:{id:'main',presentationRole:'scientific-primary'}}
+        layout:{mode:'native',root:{selector:'#root'},primary:{id:'main',presentationRole:'scientific-primary'},...(prime?{prime:[{id:'inspector',presentationRole:'inspector',priority:80,collapsible:true}]}:{})}
       });
     }
-    if(prime)ctx.ui.prime.register('inspector',{activity,placements:['float','right','bottom']});
     return {};
   });
 }
@@ -64,17 +63,15 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   {
     const {P,store}=makeSandbox();
     const opened=[];
-    const placed=[];
     const transitions=[];
     defineTop(P,'builtin.resonance-workbench','resonance',{prime:true});
     defineTop(P,'test.top-b','top-b');
     defineTop(P,'test.incomplete','broken',{complete:false});
     defineTop(P,'test.fail-top','fail-top',{failActivate:true});
-    P.define({id:'test.support',pluginType:'extension',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.19.0'},async()=>({}));
+    P.define({id:'test.support',pluginType:'extension',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.19.0',entry:'plugin.js'},async()=>({}));
     P.configure({
       openActivityWindow:async id=>opened.push(id),
       prepareSuperTransition:async change=>{transitions.push({...change});return {snapshots:[],closed:0};},
-      placePrime:(value,placement)=>{placed.push(`${value.pluginId}:${value.id}:${placement}`);return true;},
       applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{},setStatus:()=>{},
       getActiveProjectTab:()=>({pluginState:{}}),captureActiveProjectTab:()=>{}
     });
@@ -84,11 +81,6 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     assert(P.workspace.super().available===true,'initialized SUPER must be available.');
     assert(store.get(P.manager.superStorageKey)==='builtin.resonance-workbench','SUPER selection must persist locally.');
     assert(P.activities.active()==='resonance','current SUPER activity must be embedded as active workspace.');
-    assert(placed.includes('builtin.resonance-workbench:inspector:float'),'SUPER activation must apply PRIME default placement through the generic host adapter.');
-    await P.workspace.placePrime('builtin.resonance-workbench','inspector','right');
-    assert(P.workspace.primePlacement('builtin.resonance-workbench','inspector')==='right','generic PRIME placement API must report the selected placement.');
-    const savedPrime=JSON.parse(store.get(P.manager.primePlacementStorageKey)||'{}');
-    assert(savedPrime['builtin.resonance-workbench:inspector']==='right','generic PRIME placement must persist locally by default.');
 
     const rows=P.activities.list();
     assert(rows.find(x=>x.pluginId==='builtin.resonance-workbench')?.isSuper===true,'activity list must identify the current SUPER.');
@@ -101,9 +93,6 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     await P.manager.setSuper('test.top-b');
     assert(P.workspace.super().pluginId==='test.top-b'&&P.activities.active()==='top-b','explicit SUPER switch must replace the embedded main workspace.');
     assert(transitions.at(-1)?.pluginId==='test.top-b'&&transitions.at(-1)?.activityId==='top-b','SUPER promotion must ask the host to retire/synchronize the target TOP renderer before embedding it.');
-    let foreignPrimeBlocked=false;
-    try{await P.workspace.placePrime('builtin.resonance-workbench','inspector','float');}catch(err){foreignPrimeBlocked=/当前 SUPER/.test(err.message);}
-    assert(foreignPrimeBlocked,'main-window PRIME placement must be scoped to the current SUPER.');
     assert(store.get(P.manager.superStorageKey)==='test.top-b','explicit SUPER switch must persist.');
 
     let activationRolledBack=false;
@@ -128,8 +117,6 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     await P.manager.disable('test.top-b');
     assert(!P.manager.get('test.top-b').active,'former SUPER must become a normal TOP and may be disabled after another TOP is selected.');
 
-    const prime=P.workspace.prime().find(x=>x.pluginId==='builtin.resonance-workbench');
-    assert(prime&&Array.isArray(prime.placements)&&prime.placements.join(',')==='float,right,bottom','PRIME must expose normalized allowed placements.');
 
     // Restore defaults must preserve the SUPER invariant even if a selected
     // TOP plugin declares enabled:false in its manifest.
@@ -141,17 +128,31 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   }
 
   {
-    // A stale SUPER preference can survive an upgrade/uninstall. It must never
-    // strand the desktop in an empty PRIMARY/PRIME shell: migrate to the current
-    // valid default while preserving valid persisted choices elsewhere.
+    // A saved SUPER identity is deterministic. If it is missing or broken, the
+    // host must present the neutral no-SUPER page and preserve the preference;
+    // another healthy TOP must never be promoted silently for this session.
     const {P,store}=makeSandbox({'dkds.workspace.super.v1':'missing.plugin'});
+    let neutralShown=0;
     defineTop(P,'builtin.resonance-workbench','resonance');
     defineTop(P,'test.top-b','top-b');
-    P.configure({applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{},setStatus:()=>{}});
+    P.configure({applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{neutralShown++;},setStatus:()=>{}});
     await P.activateAll();
-    assert(P.workspace.super().pluginId==='builtin.resonance-workbench'&&P.workspace.super().available===true,'invalid saved SUPER must migrate to the valid default TOP.');
-    assert(P.activities.active()==='resonance','invalid saved SUPER must recover a usable embedded workspace.');
-    assert(store.get(P.manager.superStorageKey)==='builtin.resonance-workbench','SUPER migration must replace the stale persisted preference.');
+    assert(P.workspace.super().pluginId==='missing.plugin'&&P.workspace.super().available===false,'missing saved SUPER must remain the selected unavailable identity instead of migrating to another TOP.');
+    assert(P.activities.active()==null,'missing saved SUPER must not activate a random healthy TOP.');
+    assert(neutralShown>0,'missing saved SUPER must render the neutral no-SUPER host.');
+    assert(store.get(P.manager.superStorageKey)==='missing.plugin','neutral fallback must preserve the saved SUPER preference for a later retry.');
+  }
+
+  {
+    const {P,store}=makeSandbox({'dkds.workspace.super.v1':'test.incomplete'});
+    let neutralShown=0;
+    defineTop(P,'builtin.resonance-workbench','resonance');
+    defineTop(P,'test.incomplete','broken',{complete:false});
+    P.configure({applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{neutralShown++;},setStatus:()=>{}});
+    await P.activateAll();
+    assert(P.workspace.super().pluginId==='test.incomplete'&&P.workspace.super().available===false,'known but incomplete saved SUPER must stay selected and unavailable.');
+    assert(P.activities.active()==null&&neutralShown>0,'broken saved SUPER must show the neutral host without a session fallback TOP.');
+    assert(store.get(P.manager.superStorageKey)==='test.incomplete','broken saved SUPER preference must survive unchanged.');
   }
 
   // Source-level invariants for the main shell and manager UI.
@@ -194,8 +195,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   assert(source.includes('await state.host?.prepareSuperTransition?.({previous,pluginId:id,activityId})'),'SUPER promotion must execute the host transition barrier before changing role ownership.');
   assert(source.includes('state.superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
 
-  assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
-  assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
+  assert(!app.includes('placePrimeContribution')&&!source.includes('primePlacementStorageKey'),'Retired low-level PRIME placement compatibility must stay out of the host/kernel; current placement belongs to PluginWorkspace/PortableView.');
   const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
   assert(resonanceViews.includes("placements:['float','global','left','right','bottom']")&&resonanceViews.includes("const groupDefault=")&&resonanceViews.includes(":'bottom'"),'resonance shared View composition must preserve canvas/global float and local docks while allowing a settings-driven default placement.');
 

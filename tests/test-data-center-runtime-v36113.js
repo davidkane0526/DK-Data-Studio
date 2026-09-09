@@ -75,7 +75,16 @@ const ctx={
   },
   ui:{
     activities:{add:noop},pages:{add:()=>page},
-    dom:{create:()=>new FakeNode('created'),frame:fn=>{frameCalls+=1;return fn?.();}},
+    dom:{
+      query:(selector,root=page)=>root?.querySelector?.(selector)||null,
+      all:(selector,root=page)=>Array.from(root?.querySelectorAll?.(selector)||[]),
+      create:(tag='div',spec={})=>{const node=new FakeNode(tag);if(spec.html!==undefined)node.innerHTML=spec.html;if(spec.text!==undefined)node.textContent=String(spec.text);if(spec.dataset)Object.assign(node.dataset,spec.dataset);return node;},
+      html:(node,value='')=>{if(node)node.innerHTML=value;return node;},
+      append:(parent,...nodes)=>{for(const node of nodes.flat())parent?.appendChild?.(node);return parent;},
+      replace:(parent,...nodes)=>{parent?.replaceChildren?.(...nodes.flat());return parent;},
+      on:()=>noop,delegate:()=>noop,
+      frame:fn=>{frameCalls+=1;return fn?.();}
+    },
     actions:{mount:noop},topWorkspace:{register:noop},plotViews:{bind:noop},portable:{create:noop},
     scientificPlot:{resize:()=>{resizeCalls+=1;},get:()=>null},styles:{add:noop},
     interactionBehaviors:{create:()=>({bind:noop})},tables:{bind:noop},contextMenus:{open:()=>null}

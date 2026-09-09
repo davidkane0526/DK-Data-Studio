@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const json=rel=>JSON.parse(read(rel));
+
+const app=json('package.json');
+const atLeast=(v,min)=>{const a=v.split('.').map(Number),b=min.split('.').map(Number);for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
+assert(atLeast(app.version,'3.68.58'));
+const structure=read('src/styles/structure/sdk-semantic-surfaces.css');
+const paint=read('src/styles/presentation/plugin-chrome.css');
+const shell=read('src/styles/presentation/shell.css');
+const native=read('src/styles/platform/native-workspace-presentation.css');
+
+assert(structure.includes('width:36px;height:36px'),'Resize hit target must remain 36×36.');
+assert(structure.includes('.dkds-portable-resize-handle::before,.dkds-portable-resize-handle::after'),'Accepted visual geometry must use the paired clipped edge/glass regions.');
+assert(structure.includes('width:18px;height:18px')&&structure.includes('width:15px;height:15px'),'Keep the accepted 3.68.52 silhouette at the current smaller 18/15 geometry.');
+assert(structure.includes('clip-path:polygon(100% 0,100% 100%,0 100%)'),'Both visible regions must remain genuinely non-rectangular and corner-anchored.');
+assert(paint.includes('.dkds-portable-resize-handle{outline:none;background:transparent}'),'The rectangular hit target must remain invisible.');
+assert(paint.includes('.dkds-portable-resize-handle::before{background:color-mix(in srgb,var(--dkui-component-floating-chrome-indicator'),'Outer 18px geometry must use active Theme floatingChrome indicator.');
+assert(paint.includes('.dkds-portable-resize-handle::after{background:color-mix(in srgb,var(--dkui-component-floating-chrome-border-active'),'Inner 15px geometry must use active Theme floatingChrome border-active color.');
+assert(!paint.includes('backdrop-filter'),'The v3.68.58 surface-glass blur treatment is explicitly retired.');
+assert(paint.includes('.dkds-portable-resize-handle:hover::before')&&paint.includes('.dkds-portable-resize-handle.is-dragging::before'),'Hover/drag may strengthen only the narrow outer edge.');
+assert(!/\.dkds-portable-resize-handle(?::hover|:focus-visible|\.is-dragging)?\s*\{[^}]*(?:box-shadow|border|background:(?!transparent))/s.test(paint),'No state may paint the rectangular 36×36 hit target.');
+assert(!shell.includes('--dkui-portable-corner-'),'Shell-level Portable handle color tokens must stay retired.');
+assert(!shell.includes('--dkui-portable-corner-edge:')&&!shell.includes('--dkui-portable-corner-glass:')&&!shell.includes('--dkui-portable-corner-blur:'),'Rejected edge/glass/blur tokens must stay retired.');
+assert(!shell.includes('--dkui-portable-corner-fill'),'Rejected full-triangle fill token must stay removed.');
+assert(!native.includes('>.dkds-portable-resize-handle::before')&&!native.includes('>.dkds-portable-resize-handle::after'),'Mobile must not fork Core resize-corner paint.');
+console.log('v3.68.58 regression: wrong surface-glass material remains retired PASS.');

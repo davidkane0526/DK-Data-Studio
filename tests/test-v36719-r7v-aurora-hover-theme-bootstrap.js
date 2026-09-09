@@ -26,5 +26,7 @@ assert(runtime.includes("const BOOT_STATE_KEY='dkds.theme-boot.v1';")&&runtime.i
 assert(runtime.includes('const canPreservePendingBoot=theme=>!!pendingProfile'),'Runtime must recognize a restored pending Theme profile during startup.');
 assert(runtime.includes('if(!canPreservePendingBoot(next)){applyProfileTokens(next);refreshVisualComposition();}'),'Core must not overwrite a valid restored profile snapshot with builtin.default while the startup-critical Theme plugin is pending.');
 assert(runtime.includes("if(!pendingProfile||activeProfile===preferredProfile)persistBootState(theme);"),'Only the resolved preferred profile may replace the persisted first-frame snapshot.');
+assert(runtime.includes('resolved:Object.freeze({tokens:resolved.tokens')&&runtime.includes('recipes:computeRecipePolicy(profile,mode)')&&runtime.includes('recipeContexts:profile?.recipes?.contexts'),'Boot snapshot must persist resolved material/appearance plus recipe policy, not CSS variables alone.');
+assert(runtime.includes('function pendingBootMatches')&&runtime.includes('bootState?.recipes')&&runtime.includes('const resolved=bootState.resolved||{}'),'Pending Theme composition must consume the cached resolved profile before the selected Theme plugin registers.');
 assert(changelog.includes(pkg.version)&&changelog.includes('Desktop Visual Closure'),'Current patch identity and Desktop Visual Closure history must remain explicit.');
 console.log('v3.67.19 R7V Aurora segmented hover + first-frame Theme bootstrap PASS.');

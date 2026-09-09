@@ -5,6 +5,16 @@ const {DesktopMouseKeyboardAdapter}=require('../interaction/adapters');
 
 const text=value=>String(value??'');
 
+function normalizePrimaryViewport(){
+  const primary=document.querySelector?.('#primaryActivityBar');
+  if(!primary)return false;
+  // Chromium can retain a focus-induced horizontal scroll after a dedicated
+  // TOP window closes. When the complete primary set fits, that offset is not
+  // meaningful state and must never move the whole toolbar.
+  if(primary.scrollWidth<=primary.clientWidth+1&&primary.scrollLeft!==0)primary.scrollLeft=0;
+  return true;
+}
+
 class DesktopPresentationShell {
   constructor(){
     this.adapter=new DesktopMouseKeyboardAdapter({dispatch:(intent,context)=>this.dispatch(intent,context)});
@@ -72,20 +82,22 @@ class DesktopPresentationShell {
   }
   surfaceButton(item,activityId){
     const button=document.createElement('button');button.type='button';button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command';
-    button.dataset.dkdsPresentationSurface='1';button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection='presentation-surfaces';button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,110-(Number(item.priority)||0)));
+    button.dataset.dkdsPresentationSurface='1';button.dataset.dkdsPresentationSurfaceId=text(item.surfaceId||item.id||'surface');button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection='presentation-surfaces';button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,110-(Number(item.priority)||0)));
     button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-presentation-shell';button.dataset.dkdsComponentVariant=item.active?'active':'quiet';button.dataset.dkdsComponentVariantOwner='core-presentation-shell';
     const label=text(item.label||item.surfaceId);button.dataset.dkdsPresentationCompact=[...label].length<=3?'true':'false';button.textContent=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',item.active?'true':'false');button.classList.toggle('active',!!item.active);this.bindSurfaceButton(button,{...item,activityId});return button;
   }
   renderWorkspaceSurfaces(context={}){
     if(typeof document==='undefined')return false;
     const toolbar=document.querySelector('#pluginToolbarAnalysis');if(!toolbar)return false;
+    const overflow=document.querySelector('#contextOverflowMenu');
     toolbar.querySelectorAll('[data-dkds-presentation-surface]').forEach(node=>node.remove());
+    overflow?.querySelectorAll?.('[data-dkds-presentation-surface]')?.forEach?.(node=>node.remove());
     const snapshot=Presentation.present('desktop',{...context,isAuxiliaryWindow:!!context.isAuxiliaryWindow}),activityId=text(snapshot.activity?.id);
     for(const item of snapshot.workspaceSurfaces||[])toolbar.appendChild(this.surfaceButton(item,activityId));
     const buttons=[...toolbar.querySelectorAll(':scope > .plugin-toolbar-btn')];
     buttons.sort((a,b)=>(Number(a.dataset.pluginOrder)||100)-(Number(b.dataset.pluginOrder)||100)||String(a.id||'').localeCompare(String(b.id||'')));
     let lastSection='';for(const button of buttons){toolbar.appendChild(button);const section=String(button.dataset.pluginSection||'');button.classList.toggle('plugin-section-start',!!section&&section!==lastSection);if(section)lastSection=section;}
-    queueMicrotask(()=>{try{window.dispatchEvent(new Event('resize'));}catch{}});return snapshot.workspaceSurfaces;
+    queueMicrotask(()=>{try{window.dispatchEvent(new CustomEvent('dkds:context-toolbar-changed'));}catch{}});return snapshot.workspaceSurfaces;
   }
   renderNavigation(context={}){
     if(typeof document==='undefined')return false;
@@ -96,6 +108,7 @@ class DesktopPresentationShell {
     tools?.querySelectorAll?.('[data-tool-workspace-entry]')?.forEach?.(node=>node.remove());
     for(const item of snapshot.navigation.primary)primary?.appendChild(this.activityButton(item));
     for(const item of snapshot.navigation.secondary)secondary.appendChild(this.activityButton(item));
+    queueMicrotask(normalizePrimaryViewport);
     for(const item of snapshot.navigation.tools)tools?.appendChild(this.activityButton(item,{tool:true}));
     this.renderWorkspaceSurfaces(context);
     return snapshot.navigation;
@@ -104,5 +117,9 @@ class DesktopPresentationShell {
 
 const shell=new DesktopPresentationShell();
 const api=Object.freeze({version:'1.1.0',DesktopPresentationShell,shell,renderNavigation:context=>shell.renderNavigation(context),renderWorkspaceSurfaces:context=>shell.renderWorkspaceSurfaces(context),dispatch:intent=>shell.dispatch(intent)});
-if(typeof window!=='undefined'){window.DKDSDesktopPresentationShell=api;window.addEventListener?.('dkds:workspace-presentation-changed',()=>shell.renderWorkspaceSurfaces());}
+if(typeof window!=='undefined'){
+  window.DKDSDesktopPresentationShell=api;
+  window.addEventListener?.('dkds:workspace-presentation-changed',()=>shell.renderWorkspaceSurfaces());
+  window.addEventListener?.('focus',()=>requestAnimationFrame(normalizePrimaryViewport));
+}
 module.exports=api;

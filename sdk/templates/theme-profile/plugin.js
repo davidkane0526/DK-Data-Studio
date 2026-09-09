@@ -1,15 +1,15 @@
 DKDSPlugins.define({
-  id:'example.theme-profile',
-  name:'Example Theme Profile',
-  version:'1.0.0',
-  apiVersion:'1.19.0',
-  pluginType:'theme',
-  requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.67.10 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.10.0'}
+  "id": "example.theme-profile",
+  "name": "Example Theme Profile",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "pluginType": "theme",
+  "requiresCore": [
+    "ui.theme"
+  ],
+  "description": "Theme Contract 3.10 contextual component/material composition, semantic states, scientific fallback palette and Core-rendered depth example"
 }, async ctx => {
-  const required=['contract:3.10.0','contract.appearance.roles','contract.appearance.components','contract.appearance.variants','contract.appearance.component-contexts','contract.appearance.material-role-composition','contract.material.contexts','contract.material.context-recipes','contract.effects.controlled','contract.scientific.seriesPalette','contract.scientific.precedence','contract.material.recipes','contract.theme.settings','renderer.materialContexts'];
-  const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
-  if(missing.length)throw new Error(`Theme Contract 3.10 contextual composition features required: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   const profile=ctx.ui.theme.register('default',{
     label:'Example Theme',
     recipes:{chrome:'thin-glass',sidebar:'thin-glass',surface:'clear',elevated:'thin-glass',popover:'thin-glass',control:'clear',floating:'thin-glass',contexts:{'workspace-modal':{elevated:'thin-glass'},compact:{popover:'thin-glass',floating:'thin-glass'}}},

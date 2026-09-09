@@ -12,4 +12,11 @@ const ROLE_VALUES=Object.freeze(Object.values(ROLES));
 const ROLE_SET=new Set(ROLE_VALUES);
 const isPresentationRole=value=>ROLE_SET.has(String(value??'').trim().toLowerCase());
 
-module.exports=Object.freeze({ROLES,ROLE_VALUES,isPresentationRole});
+const PURPOSES=Object.freeze({
+  PARAMETERS:'parameters'
+});
+const PURPOSE_VALUES=Object.freeze(Object.values(PURPOSES));
+const PURPOSE_SET=new Set(PURPOSE_VALUES);
+const isPresentationPurpose=value=>PURPOSE_SET.has(String(value??'').trim().toLowerCase());
+
+module.exports=Object.freeze({ROLES,ROLE_VALUES,isPresentationRole,PURPOSES,PURPOSE_VALUES,isPresentationPurpose});

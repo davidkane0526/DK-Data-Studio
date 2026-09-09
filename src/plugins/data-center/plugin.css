@@ -1,5 +1,6 @@
 /* Data Center owns only domain layout. Shared control/header geometry and all
    Theme paint come from Core semantic UI contracts. */
+.data-center-body{container-type:inline-size;container-name:data-center-workspace;}
 .data-center-body:not(.dkds-unified-workbench-body){
   display:grid;
   grid-template-columns:290px minmax(0,1fr);
@@ -7,17 +8,6 @@
   padding:12px;
   overflow:auto;
 }
-.dc-native-layout{
-  --dc-artifact-width:336px;
-  width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  display:grid;
-  grid-template-columns:var(--dc-artifact-width) 8px minmax(0,1fr);
-  align-items:start;
-  padding:12px;
-}
-.dc-data-divider{height:min(720px,calc(100vh - 140px));align-self:start}
 .dc-card{min-width:0}
 .dc-artifact-pane{position:sticky;top:0;align-self:start;max-height:calc(100vh - 105px);display:flex;flex-direction:column}
 
@@ -41,12 +31,50 @@
 .dc-artifact-item.is-excluded .dc-artifact-name{text-decoration:line-through;text-decoration-thickness:1px}
 .dc-artifact-meta{margin-top:3px}
 
-.dc-main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dc-main{
+  --dc-main-columns:minmax(0,1fr);
+  --dc-main-areas:"source" "tool" "chart";
+  --dc-main-gap:10px;
+  --dc-chart-params-padding:6px 9px;
+  --dc-chart-height:clamp(180px,42dvh,340px);
+  --dc-chart-min-height:180px;
+  display:grid;
+  grid-template-columns:var(--dc-main-columns);
+  grid-template-areas:var(--dc-main-areas);
+  gap:var(--dc-main-gap);
+  min-width:0;
+  container-type:inline-size;
+  container-name:data-center-primary;
+}
+.dkds-plugin-workbench-root .dc-artifact-pane{
+  position:static;
+  top:auto;
+  max-height:none;
+  height:100%;
+  align-self:stretch;
+}
+.dkds-plugin-workbench-root .dc-artifact-list{flex:1 1 auto;min-height:220px}
+.dc-source-preview{grid-area:source;grid-column:1 / -1}
+@container data-center-workspace (min-width:1180px){
+  .dc-main:has(>.dc-chart-pane[data-placement="home"]){--dc-main-columns:minmax(360px,520px) minmax(520px,1fr);--dc-main-areas:"source source" "tool chart";align-items:start}
+}
 .dc-table-preview{max-height:250px;overflow:auto}
 .dc-json-preview{margin:0;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
 .dc-preview-table{width:100%}
-.dc-tool-pane{padding-bottom:10px}
-.dc-tool-pane>.schema-parameter-panel,.dc-chart-pane>.schema-parameter-panel{padding:10px 12px}
+.dc-tool-pane{grid-area:tool;padding-bottom:6px;container-type:inline-size;container-name:data-center-tool}
+.dc-tool-pane>.schema-parameter-panel{padding:6px 9px}
+.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:start;height:auto;min-height:0;max-height:none;flex:none}
+.dc-chart-pane[data-placement="home"]>.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height);max-height:none;flex:none}
+.dc-chart-pane>.schema-parameter-panel{padding:var(--dc-chart-params-padding)}
+#dcFormulaParams{--dkds-field-control-min-height:28px;--dkds-field-control-padding-block:3px;--dkds-field-control-padding-inline:7px}
+#dcFormulaParams .schema-parameter-panel{display:grid;grid-template-columns:minmax(112px,.72fr) minmax(210px,1.3fr) minmax(90px,.5fr) minmax(118px,.64fr);gap:4px 6px;align-items:start}
+#dcFormulaParams .schema-param-field{min-width:0;margin:0}
+#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:2 / span 2}
+#dcFormulaParams .schema-param-field[data-param-id="replace"]{align-self:end}
+#dcFormulaParams .schema-param-help{margin-top:2px;line-height:1.25}
+@container data-center-tool (max-width:620px){#dcFormulaParams .schema-parameter-panel{grid-template-columns:repeat(2,minmax(0,1fr))}#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:1 / -1}}
+/* Chart preview opts into Core ParameterSchema autoFit geometry. The actual
+   one-row/wrap decision is owned by the generic Surface-aware form contract. */
 .dc-inline-actions{display:flex;gap:5px;align-items:center}
 .dc-formula-refs{padding:0 12px;display:flex;gap:5px;flex-wrap:wrap}
 .dc-ref-chip{padding:3px 6px;cursor:pointer}
@@ -63,15 +91,22 @@
 .dc-prov-item{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:8px 0}
 .dc-prov-main strong{display:block}
 .dc-prov-main div{margin-top:2px;word-break:break-word}
-.dc-chart{height:430px;min-height:320px}
+.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height)}
 
 @media(max-width:1000px){
   .data-center-body:not(.dkds-unified-workbench-body){grid-template-columns:230px minmax(0,1fr)}
-  .dc-native-layout{grid-template-columns:minmax(0,1fr);gap:12px}
-  .dc-native-layout>.dc-data-divider{display:none}
-  .dc-artifact-pane{position:static;max-height:330px}
 }
 .dkds-size-compact .data-center-body:not(.dkds-unified-workbench-body){grid-template-columns:1fr;padding:7px}
 .dkds-size-compact .dc-artifact-pane{position:static;max-height:250px}
 .dkds-size-compact .dc-recipe-bar,.dkds-size-compact .dc-add-step{flex-wrap:wrap}
-.dkds-size-compact .dc-chart{height:360px}
+
+/* Data Center responds to the space its Surface actually receives.  The
+   plugin never asks which Presenter or operating system owns that Surface. */
+.dc-source-preview{container-type:inline-size}
+@container (max-width:760px){
+  .dc-source-preview>.dkds-surface-header{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:6px}
+  .dc-source-preview .dkds-surface-heading{min-width:0;overflow:hidden}
+  .dc-source-preview .dkds-surface-heading>.dkds-meta{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dc-source-actions{width:100%;min-width:0;max-width:100%;display:flex;justify-content:flex-start;flex-wrap:wrap;gap:5px}
+  .dc-source-actions>.dc-tabs{flex-wrap:wrap}
+}

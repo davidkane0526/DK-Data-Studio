@@ -11,10 +11,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.28.0');
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('contract.material.roles.chrome')&&Theme.supports('contract.platform.logical-units'));assert(!Theme.supports('materialBlur')&&!Theme.supports('material.roles.chrome')&&!Theme.supports('platform.logical-units'));
-assert(Theme.supports('contract:3.8.0'),'Theme 3.8 must expose only its explicit contract namespace/version.');
+assert.equal(Theme.supports('contract:3.8.0'),false,'Theme Contract must not negotiate historical contract versions; only current feature capabilities are queryable.');
 for(const role of ['chrome','sidebar','surface','elevated','popover','control','floating'])assert(Theme.materialRoles().includes(role));
 
 // Strict token and value validation.
@@ -42,7 +42,7 @@ const nativeMaterial=Theme.projectMaterial(dark.material,'native');assert.equal(
 // Runtime capability is independent from Plugin API.
 const props=new Map();const rootStyle={setProperty:(k,v)=>props.set(k,String(v)),removeProperty:k=>props.delete(k),colorScheme:''};
 const sandbox={console,Map,Set,Object,String,Promise,CustomEvent:function(){},localStorage:{getItem:()=>'',setItem:()=>{}},document:{documentElement:{style:rootStyle,dataset:{}}},getComputedStyle:()=>({getPropertyValue:k=>props.get(k)||''}),matchMedia:()=>({matches:false}),addEventListener:()=>{},dispatchEvent:()=>{},window:null,globalThis:null};
-sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox);vm.runInContext(read('src/core/theme/runtime.js'),sandbox);
+sandbox.DKDSStyleGate={KINDS:{CONFIG_TOKEN:'configuration-token'},set(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},setToken(el,prop,value){el?.style?.setProperty?.(prop,String(value));return value;},remove(el,prop){el?.style?.removeProperty?.(prop);return true;}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox);vm.runInContext(read('src/core/theme/runtime.js'),sandbox);
 assert.equal(sandbox.DKDSTheme.contractVersion,'3.10.0');
 assert.equal(sandbox.DKDSTheme.supports('contract.materialBlur'),true);assert.equal(sandbox.DKDSTheme.supports('materialBlur'),false);
 assert.equal(sandbox.DKDSTheme.supports('contract.material.roles.popover'),true);assert.equal(sandbox.DKDSTheme.supports('material.roles.popover'),false);
@@ -54,20 +54,20 @@ assert.equal(props.get('--dkui-material-blur'),'11px');
 assert.equal(props.get('--dkui-material-chrome-blur'),'17px');
 sandbox.DKDSTheme.set('dark');assert.equal(props.get('--dkui-material-tint-opacity'),'8%');h.dispose();
 
-// Official template must pin app + theme contract compatibility.
+// Official template must target only the exact current Plugin/Theme contract.
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.67.10 <4.0.0');
-assert.equal(template.compatibility.themeContract,'^3.10.0');
-const schema=json('sdk/plugin-manifest.schema.json');assert(schema.properties.compatibility.properties.themeContract);
+assert.equal(template.apiVersion,'1.19.0');
+assert(!Object.prototype.hasOwnProperty.call(template,'compatibility'));
+const schema=json('sdk/plugin-manifest.schema.json');assert(!schema.properties.compatibility,'SDK schema must not expose version-range compatibility metadata.');
 
-// Standalone SDK validator must execute/register the profile and reject malformed data/ranges.
+// Standalone SDK validator must execute/register the profile and reject malformed/current-contract-invalid data.
 function tempTheme(mutator){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-theme32-'));fs.cpSync(path.join(root,'sdk/templates/theme-profile'),dir,{recursive:true});mutator?.(dir);return dir;}
 function validateDir(dir){return cp.spawnSync(process.execPath,[path.join(root,'sdk/tools/dkds-plugin.js'),'validate',dir],{encoding:'utf8'});}
 let dir=tempTheme(d=>{const p=path.join(d,'plugin.js');fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('materialBlur:12','materialBlurr:12'));});let r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('materialBlurr'));fs.rmSync(dir,{recursive:true,force:true});
 dir=tempTheme(d=>{const p=path.join(d,'plugin.js');fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('materialBlur:12',"materialBlur:'banana'"));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('finite number'));fs.rmSync(dir,{recursive:true,force:true});
-dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSync(p,'utf8'));j.compatibility.app='definitely-not-a-semver-range';fs.writeFileSync(p,JSON.stringify(j,null,2));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('valid semver range'));fs.rmSync(dir,{recursive:true,force:true});
+dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSync(p,'utf8'));j.compatibility={app:'>=3.0.0'};fs.writeFileSync(p,JSON.stringify(j,null,2));});r=validateDir(dir);assert.notEqual(r.status,0);assert(/compatibility|unsupported/i.test(r.stderr+r.stdout));fs.rmSync(dir,{recursive:true,force:true});
 dir=tempTheme(d=>{const p=path.join(d,'plugin.js');fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('materialTintOpacity:.66',"materialTintOpacity:'900%'"));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('finite number'));fs.rmSync(dir,{recursive:true,force:true});
-dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSync(p,'utf8'));j.compatibility.themeContract='definitely-not-a-semver-range';fs.writeFileSync(p,JSON.stringify(j,null,2));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('valid semver range'));fs.rmSync(dir,{recursive:true,force:true});
+dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSync(p,'utf8'));j.apiVersion='1.18.0';fs.writeFileSync(p,JSON.stringify(j,null,2));});r=validateDir(dir);assert.notEqual(r.status,0);assert(/1\.19\.0|apiVersion|Plugin API/i.test(r.stderr+r.stdout));fs.rmSync(dir,{recursive:true,force:true});
 
 const roleCss=read('src/styles/theme/material-roles.css');
 for(const role of ['chrome','sidebar','surface','elevated','popover','control','floating'])assert(roleCss.includes(`material-${role}-blur`));
@@ -76,6 +76,6 @@ const gallery=read('src/core/theme/test-gallery.js');const manager=read('src/cor
 assert(gallery.includes("data-gallery-mode=\"${mode}\"")&&gallery.includes('ScientificPlot')&&gallery.includes('Popover')&&gallery.includes('Floating'));
 assert(manager.includes('plugin-theme-gallery-btn')&&manager.includes('DKDSThemeGallery'));
 const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Ownership model')&&docs.includes('Role-specific appearance')&&docs.includes('Scientific series palette'));
-const kernel=read('src/generated/runtime/plugin-kernel.js');assert(kernel.includes('contractVersion: window.DKDSTheme')&&kernel.includes('supports: feature => window.DKDSTheme'));
+const kernel=read('src/generated/runtime/plugin-kernel.js');assert(kernel.includes('contractVersion: window.DKDSTheme')&&!kernel.includes('supports: feature => window.DKDSTheme'),'Plugin Theme API must expose the current contract version directly, without historical capability/version negotiation.');
 const presentationModel=read('src/core/ui/modules/presentation/model.js'),mobilePresenter=read('src/core/ui/modules/presentation/presenters.js');assert(presentationModel.includes('contractVersion:window.DKDSTheme')&&presentationModel.includes("material:window.DKDSTheme?.materials?.('native')")&&mobilePresenter.includes('themeContractVersion:core.theme.contractVersion')&&mobilePresenter.includes('themeMaterial:core.theme.material'),'Native shell bridge must receive Theme Contract version and normalized material roles through the Core Presentation Model.');
-console.log('Theme Contract 3.8 strict validation + material roles + gallery checks passed.');
+console.log('Theme Contract 3.10 current-only validation + material roles + gallery checks passed.');

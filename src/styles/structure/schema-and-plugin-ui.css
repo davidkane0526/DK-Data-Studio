@@ -7,16 +7,21 @@ button{cursor:pointer;
 /* Generic fallback geometry is intentionally excluded from standard Core action
    contexts that own their own hit boxes. This prevents Plugin Manager/Dialog
    controls from depending on a later override of the global button baseline. */
-button:not(:is(
+/* Generic button geometry is deliberately zero-specificity and excludes every
+   canonical action context. It is a fallback only; it must never win against
+   a semantic component owner merely because :not(:is(...)) carries descendant
+   selector specificity. */
+:where(button):not(:where(
   .toolbar-btn,.plugin-toolbar-btn,.plugin-main-tool-btn,.dkds-action-button,.dkds-icon-button,
-  .dkds-panel-close-button,.dkds-portable-icon-action,.dkds-plot-view-action,.dkds-plot-legend-item,
+  .project-tab-close,.dkds-panel-close-button,.dkds-portable-icon-action,.dkds-plot-view-action,.dkds-plot-legend-item,
   .plugin-manager-page button,.dkds-settings-dialog button,.dkds-dialog button,
-  .command-menu button,.dkds-scientific-nav-tools>button
+  .command-menu button,.dkds-scientific-nav-tools>button,
+  .dkds-integrated-action-group>button,.dkds-separated-action-group>button,.dkds-portable-controls>button,
+  .panel-header-actions>button,.dkds-plot-view-actions>button
 )){
-  --dkds-generic-button-min-height:30px;
   --dkds-generic-button-padding-block:6px;
   --dkds-generic-button-padding-inline:10px;
-  min-height:var(--dkds-generic-button-min-height);
+  min-height:var(--dkds-generic-button-min-height,30px);
   padding-block:var(--dkds-generic-button-padding-block);
   padding-inline:var(--dkds-generic-button-padding-inline);
 }
@@ -44,7 +49,7 @@ button.wide{ width:100%;
 }
 .floating-panel:not(.dkds-portable-view){position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
 }
-.dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + 8px);width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
+.dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + var(--dkds-status-popover-gap,8px));width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
 .floating-header{display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none;
 }
 .floating-body{overflow:auto;
@@ -55,7 +60,7 @@ button.wide{ width:100%;
 }
 .trend-card{overflow:hidden;min-width:0;min-height:0;cursor:zoom-in;display:grid;grid-template-rows:auto auto auto;
 }
-.trend-card-header{height:32px;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;
+.trend-card-header{--dkds-header-action-height:22px;height:32px;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;
 }
 .group-panel-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;top:0;z-index:3;
 }
@@ -98,6 +103,32 @@ button.wide{ width:100%;
   min-width:0;
 }
 .schema-parameter-panel.compact{grid-template-columns:repeat(2,minmax(130px,1fr));}
+/* autoFit is a Core geometry contract, not a plugin-layer override. Small parameter
+   sets pack into content-sized tracks and only wrap when their actual Surface no
+   longer has enough room. */
+.schema-parameter-panel.auto-fit{
+  grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax(140px,205px)));
+  justify-content:start;align-items:end;gap:5px 8px;
+}
+/* compact + autoFit is deliberately much denser than an ordinary form. It is
+   intended for short option rows such as chart axes/mode/legend controls, where
+   stretching each field to 200+ px wastes scarce horizontal workspace. */
+.schema-parameter-panel.auto-fit.compact{
+  grid-template-columns:var(--dkds-parameter-auto-fit-compact-columns,repeat(auto-fit,minmax(96px,1fr)));
+  justify-content:stretch;
+  gap:4px 6px;
+}
+.schema-parameter-panel.auto-fit>.schema-param-group-title{grid-column:1/-1}
+.schema-parameter-panel.auto-fit.compact .schema-param-field{
+  --dkds-schema-field-min-height:26px;
+  --dkds-schema-field-padding-block:2px;
+  --dkds-schema-field-padding-inline:6px;
+  --dkds-field-control-min-height:26px;
+  --dkds-field-control-padding-block:2px;
+  --dkds-field-control-padding-inline:6px;
+  gap:2px;margin:0;
+}
+.schema-parameter-panel.auto-fit .schema-param-field.type-boolean{align-self:end}
 .schema-param-group{display:contents;}
 .schema-param-group-title{grid-column:1/-1;font-size:var(--plugin-font-meta,11px);font-weight:700;padding-top:2px;}
 .schema-param-field{
@@ -116,7 +147,7 @@ button.wide{ width:100%;
 }
 .schema-param-field select[multiple]{min-height:88px;}
 .schema-param-field select.dkds-multiselect-source{display:none}
-.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;box-sizing:border-box;min-height:var(--dkds-schema-field-min-height);padding-block:var(--dkds-schema-field-padding-block);padding-inline:var(--dkds-schema-field-padding-inline)}
 .dkds-multiselect-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dkds-multiselect-caret{flex:0 0 auto;line-height:1}
 .schema-param-field textarea{resize:vertical;line-height:1.45;}
@@ -125,7 +156,7 @@ button.wide{ width:100%;
 .dkds-pointer-coarse .schema-param-field{--dkds-schema-field-min-height:var(--dkds-touch-target,44px);}
 .dkds-pointer-coarse .schema-param-field :where(input,select,textarea):not(.dkds-field-control){font-size:12px;}
 .dkds-pointer-coarse{--dkds-field-control-min-height:var(--dkds-touch-target,44px);}
-.dkds-size-compact .schema-parameter-panel,.dkds-size-compact .schema-parameter-panel.compact{grid-template-columns:1fr;}
+.dkds-size-compact .schema-parameter-panel:not(.auto-fit),.dkds-size-compact .schema-parameter-panel.compact:not(.auto-fit){grid-template-columns:1fr;}
 .schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;}
 .dkds-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}
 
@@ -380,10 +411,9 @@ button,input,select,textarea{font-family:inherit;font-size:var(--ui-font-size);}
 
 input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
 select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
-textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *){min-height:30px;
+textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *){min-height:var(--dkds-generic-field-min-height,30px);
 }
 
-.dataset-item,.plugin-manager-card,.trend-card{transition:background .12s,border-color .12s,box-shadow .12s,opacity .12s;}
 
 /* Small, unobtrusive scrollbars across desktop and plugin windows. */
 *{scrollbar-width:thin;}
@@ -398,7 +428,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
 
 /* Core linked-selection presentation. Plugins register semantic entities with
    SelectionViewBinding; the platform owns focus/selection/dimming/reveal UI. */
-.dkds-selection-item{transition:opacity .14s ease,background-color .14s ease,border-color .14s ease,box-shadow .14s ease;}
 .dkds-selection-item.dkds-selection-chip.dkds-selection-focused{font-weight:700;}
 
 @media(max-width:1160px){
@@ -419,16 +448,18 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   flex-wrap:wrap;
 }
 .plugin-manager-body{
-  width:min(1500px,100%);
-  margin:0 auto;
+  width:100%;
+  max-width:none;
+  margin:0;
+  box-sizing:border-box;
   display:flex;
   flex-direction:column;
   gap:12px;
-  padding-bottom:34px;
+  padding:0 12px 34px;
 }
 .plugin-manager-summary{
   display:grid;
-  grid-template-columns:repeat(4,minmax(130px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
   gap:10px;
 }
 .plugin-manager-stat{
@@ -439,14 +470,16 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   gap:4px;
   padding:12px 14px;
 }
+.plugin-manager-stat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
 .plugin-manager-stat span{font-size:var(--plugin-font-meta,11px)}
+.plugin-manager-summary-refresh{width:24px;min-width:24px;height:24px;min-height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
 .plugin-manager-stat strong{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
 .plugin-manager-toolbar-card{
   --dkds-plugin-manager-toolbar-action-height:34px;
   --dkds-plugin-manager-toolbar-action-padding-block:6px;
   --dkds-plugin-manager-toolbar-action-padding-inline:10px;
   display:grid;
-  grid-template-columns:minmax(240px,1fr) auto auto auto auto auto;
+  grid-template-columns:minmax(240px,1fr) auto auto auto auto;
   align-items:center;
   gap:9px;
   padding:10px 12px;
@@ -484,11 +517,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   min-height:var(--dkds-plugin-manager-toolbar-action-height);
   padding-block:var(--dkds-plugin-manager-toolbar-action-padding-block);
   padding-inline:var(--dkds-plugin-manager-toolbar-action-padding-inline);
-}
-.plugin-manager-visible-count{
-  padding:5px 8px;
-  font-size:var(--plugin-font-meta,11px);
-  white-space:nowrap;
 }
 .plugin-manager-note{
   padding:9px 11px;
@@ -582,7 +610,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   position:relative;
   width:36px;
   height:20px;
-  transition:background .15s;
 }
 .plugin-switch-thumb{
   position:absolute;
@@ -590,7 +617,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   height:16px;
   left:2px;
   top:2px;
-  transition:transform .15s;
 }
 .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(16px)}
 .plugin-switch-label{min-width:24px;font-size:var(--plugin-font-meta,11px)}
@@ -650,14 +676,12 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   .plugin-manager-search-wrap{grid-column:1/-1}
   .plugin-manager-toolbar-card>label{justify-content:flex-start}
   .plugin-manager-toolbar-card>button{width:100%}
-  .plugin-manager-visible-count{justify-self:start}
-}
+  }
 @media(max-width:760px){
   .plugin-manager-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
   .plugin-manager-toolbar-card{grid-template-columns:1fr 1fr}
   .plugin-manager-search-wrap{grid-column:1/-1}
-  .plugin-manager-visible-count{justify-self:start}
-  .plugin-card-head{grid-template-columns:40px minmax(0,1fr)}
+    .plugin-card-head{grid-template-columns:40px minmax(0,1fr)}
   .plugin-enable-switch{justify-self:end}
   .plugin-card-footer{align-items:flex-start;flex-direction:column}
   .plugin-card-actions{width:100%;justify-content:flex-end}

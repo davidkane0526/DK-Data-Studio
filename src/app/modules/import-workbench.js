@@ -701,6 +701,12 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
       state.importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path,columnFieldFilter:''};
       renderImportWorkbench();
+      panel?.classList.remove('hidden');
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const chooseRect=$('#importChooseFilesBtn')?.getBoundingClientRect?.()||{height:0};
+      if(Math.abs(chooseRect.height-32)>.75)throw new Error(`Import primary action must be 32px high, got ${chooseRect.height.toFixed(2)}px.`);
+      const material=window.DKDSThemeMaterialRenderer?.inspect?.(document.querySelector('.import-workbench'),'elevated')||null;
+      if(material&&material.recipe==='thin-glass'&&(!(material.backgroundAlpha>.58)||!/blur\(/.test(material.backdropFilter||'')))throw new Error(`Thin Glass import surface lost usable optical depth: alpha=${material.backgroundAlpha} filter=${material.backdropFilter||'none'}`);
 
       const checkbox=$('#importFileList input[type="checkbox"]');
       const checkedSummary=$('#importGlobalSummary')?.textContent||'';
@@ -720,7 +726,7 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
       checkbox.click();
       const restoredSummary=$('#importGlobalSummary')?.textContent||'';
       if(!restoredSummary.includes('1/1 个文件已勾选'))throw new Error(`Checkbox did not restore selected summary: ${restoredSummary}`);
-      return {selectedSummary:checkedSummary,uncheckedSummary,restoredSummary,previewRows,commitEnabled};
+      return {selectedSummary:checkedSummary,uncheckedSummary,restoredSummary,previewRows,commitEnabled,primaryActionHeight:chooseRect.height,material};
     }finally{
       state.importDraft=savedDraft;
       renderImportWorkbench();

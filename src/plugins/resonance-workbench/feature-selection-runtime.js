@@ -4,7 +4,7 @@
   // feature coordinator or become a snapshot in FeatureContext.
   function create(context){
     const {live,services,actions,utils}=context;
-    const {$,setStatus}=services;
+    const {$,setStatus,dom}=services;
     const {peakLabel}=actions;
     let selectedSweepId='';
     let selectedPeakId='';
@@ -17,21 +17,25 @@
 
     const selectedSweep=()=>actions.sweepById(selectedSweepId);
     const selectedPeak=()=>actions.peakById(selectedPeakId);
+    function selectionDatasetItem(path){const dataset=live.datasets.find(row=>String(row?.path)===String(path));return path?{type:'resonance.dataset',id:actions.datasetEntityId(path),role:'dataset',value:{id:actions.datasetEntityId(path),path:String(path),name:dataset?.name||String(path),vg:dataset?.vg}}:null;}
     function selectionSweepItem(sw){return sw?{type:'resonance.sweep',id:String(sw.id),role:'sweep',value:{id:sw.id,datasetPath:sw.datasetPath,datasetName:sw.datasetName,vg:sw.vg,direction:sw.direction}}:null;}
     function selectionPeakItem(p){return p?{type:'resonance.peak',id:String(p.id),role:'peak',value:{id:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction,v:p.v,i:p.i,peakOrder:p.peakOrder,peakLabel:peakLabel(p)}}:null;}
     function bindLinkedSelectionViews(){
       if(!actions.isUiBound()||!interactionRuntime?.bindView)return false;
       const list=$('#reswinDatasetList'),legend=$('#resparMainLegend');
-      if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');const current=selectedSweep();const visible=actions.visibleSweeps(),rows=(visible.length?visible:live.sweeps).filter(sw=>String(sw.datasetPath)===path);const preferred=current&&String(current.datasetPath)===path?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]);if(preferred)publishSweepSelection(preferred,'resonance-dataset');}});
+      if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');if(path)publishDatasetSelection(path,'resonance-dataset');}});
       if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=actions.sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
       return true;
     }
     function renderLinkedSelection({includeGroup=true,controls=false}={}){
       if(controls)actions.renderControls();
       actions.renderSummary();
+      // Queue the primary scientific paint before expensive inspector work. A
+      // group-point click used to synchronously rebuild controls + inspector,
+      // delaying the visible main-plot linkage by seconds on larger projects.
       if($('#reswinMainPlot')?.offsetParent!==null)actions.ensureMainSurface()?.requestRender?.('entity-selection');
-      if($('#reswinInspectPlot')?.offsetParent!==null)actions.renderInspection();
-      if(includeGroup)actions.updateGroupContext();
+      const deferred=()=>{if($('#reswinInspectPlot')?.offsetParent!==null)actions.renderInspection();if(includeGroup)actions.updateGroupContext();};
+      dom.frame(deferred);
     }
     function publishSweepSelection(sw,source='resonance-main'){
       if(!sw)return false;selectedSweepId=String(sw.id);selectedPeakId='';selectedPeakIds.clear();
@@ -40,10 +44,20 @@
       if(interactionSelection&&!applyingExternalSelection){const item=autoPeak?selectionPeakItem(autoPeak):selectionSweepItem(sw);interactionSelection.select(item,{source,context:{datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction,autoPeak:!!autoPeak}});}else renderLinkedSelection({includeGroup:true,controls:true});
       return true;
     }
+    function publishDatasetSelection(path,source='resonance-dataset'){
+      const key=String(path||'');if(!key)return false;
+      const current=selectedSweep(),visible=actions.visibleSweeps(),rows=(visible.length?visible:live.sweeps).filter(sw=>String(sw.datasetPath)===key);
+      const preferred=current&&String(current.datasetPath)===key?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]||null);
+      if(preferred)selectedSweepId=String(preferred.id);selectedPeakId='';selectedPeakIds.clear();
+      const item=selectionDatasetItem(key);
+      if(interactionSelection&&!applyingExternalSelection&&item)interactionSelection.select(item,{source,context:{datasetPath:key,curveIds:rows.map(sw=>String(sw.id))}});
+      else renderLinkedSelection({includeGroup:true,controls:false});
+      return true;
+    }
     function publishPeakSelection(p,source='resonance-main',{openInspector=false,additive=false}={}){
       if(!p)return false;selectedPeakId=String(p.id);selectedSweepId=String(p.sweepId||selectedSweepId);if(additive)selectedPeakIds.add(selectedPeakId);else selectedPeakIds=new Set([selectedPeakId]);
       if(interactionSelection&&!applyingExternalSelection)interactionSelection.select(selectionPeakItem(p),{source,additive,context:{sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction}});else renderLinkedSelection({includeGroup:true});
-      if(openInspector)live.workspaceNavigator?.('inspect');
+      if(openInspector)dom.frame(()=>live.workspaceNavigator?.('inspect'));
       return true;
     }
     function publishRangeSelection(range,source='resonance-main'){
@@ -58,8 +72,9 @@
         selectedPeakIds=new Set((snapshot.items||[]).filter(item=>item.type==='resonance.peak').map(item=>String(item.id||item.value?.id||'')).filter(Boolean));
         if(focus.type==='resonance.peak'){const p=actions.peakById(focus.id)||actions.peakById(focus.value?.id);if(p){selectedPeakId=p.id;selectedSweepId=p.sweepId;selectedPeakIds.add(String(p.id));}}
         else if(focus.type==='resonance.sweep'){const sw=actions.sweepById(focus.id)||actions.sweepById(focus.value?.id);if(sw){selectedSweepId=sw.id;selectedPeakId='';selectedPeakIds.clear();}}
+        else if(focus.type==='resonance.dataset'){const path=String(focus.value?.path||focus.ref?.datasetPath||meta?.context?.datasetPath||'');const rows=actions.visibleSweeps().filter(sw=>String(sw.datasetPath)===path);const preferred=rows.find(sw=>Number(sw.direction)>0)||rows[0];if(preferred)selectedSweepId=preferred.id;selectedPeakId='';selectedPeakIds.clear();}
         const changed=previousSweep!==selectedSweepId||previousPeak!==selectedPeakId;
-        if(changed)renderLinkedSelection({includeGroup:meta?.source!=='resonance-group',controls:previousSweep!==selectedSweepId});
+        if(changed)renderLinkedSelection({includeGroup:meta?.source!=='resonance-group',controls:meta?.source!=='resonance-group'&&previousSweep!==selectedSweepId});
         else{if($('#reswinMainPlot')?.offsetParent!==null)actions.ensureMainSurface()?.requestRender?.('resonance-host-resize');if($('#reswinTrendPlot')?.offsetParent!==null)actions.renderTrend();if($('#reswinInspectPlot')?.offsetParent!==null)actions.renderInspection();}
       }finally{applyingExternalSelection=false;}
     }
@@ -99,7 +114,7 @@
     return Object.freeze({
       get selectedSweepId(){return selectedSweepId;},get selectedPeakId(){return selectedPeakId;},get selectedRange(){return selectedRange?{...selectedRange}:null;},
       selectedSweep,selectedPeak,selectedPeakIds:()=>new Set(selectedPeakIds),interactionRuntime:()=>interactionRuntime,interactionSelection:()=>interactionSelection,selection:()=>interactionSelection?.get?.()||null,
-      bindLinkedSelectionViews,renderLinkedSelection,publishSweepSelection,publishPeakSelection,publishRangeSelection,peaksInRange,setRangeLocked,applyRangeIdentity,deleteRangePeaks,
+      bindLinkedSelectionViews,renderLinkedSelection,publishDatasetSelection,publishSweepSelection,publishPeakSelection,publishRangeSelection,peaksInRange,setRangeLocked,applyRangeIdentity,deleteRangePeaks,
       switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,clearSelection,clearIds,reconcileAfterRebuild,setInteractionRuntime,setSelectedSweepId,setSelectedPeakId,clearRangeState,setRangeState
     });
   }

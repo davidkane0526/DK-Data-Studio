@@ -10,6 +10,14 @@
   "styles": [
     "plugin.css"
   ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
   "enabled": true,
   "order": 920,
   "description": "Tool Workspace using the same dedicated-window contract as TOP, grouped under the Core Tools button.",
@@ -49,9 +57,5 @@
     "reuse": true,
     "persistence": "project",
     "artifactHydration": "live"
-  },
-  "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
-    "pluginApi": "^1.19.0"
   }
 }

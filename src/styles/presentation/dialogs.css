@@ -30,13 +30,7 @@
 .dkds-settings-field small{color:var(--text-tertiary)}
 .dkds-settings-dialog>footer{border-top:1px solid var(--divider-subtle,transparent);background:transparent;box-shadow:none}
 
-body.dkds-modern-ui .command-menu{z-index:1650}
 body.dkds-modern-ui .menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px}
-body.dkds-modern-ui .dkds-settings-dialog button,
-body.dkds-modern-ui .command-menu button{transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}
-body.dkds-modern-ui .dkds-settings-field input[type="text"],
-body.dkds-modern-ui .dkds-settings-field input[type="number"],
-body.dkds-modern-ui .dkds-settings-field select{transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease}
 .command-menu-separator{background:var(--divider-subtle,transparent)}
 .command-menu kbd{border:0;background:transparent;color:var(--text-tertiary)}
 .dkds-tooltip-key{color:var(--text-secondary)}

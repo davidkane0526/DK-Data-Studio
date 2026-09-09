@@ -31,7 +31,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'src/plugins/pulse-analysis/analy
   const artifact={id:'pulse-test',kind:'data.table',semanticType:'science.pulse.trace',name:'periodic',rowCount:1200,metadata:{importedSource:true,sourceFormat:'pulse-text',dataAssignments:['builtin.pulse-analysis']},source:{path:'periodic.csv',name:'periodic.csv',encoding:'utf-8',text:periodicCsv()},columns:[]};
   const artifacts={list:()=>[artifact],get:id=>String(id)===artifact.id?artifact:null};
   const runtime=await pulseAnalysis.create({
-    setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,saveChartImage:()=>true,scheduleSnapshot:()=>{},artifacts
+    science:Analysis,setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,saveChartImage:()=>true,scheduleSnapshot:()=>{},artifacts
   });
   const file={
     id:'pulse-test',artifactId:'pulse-test',path:'periodic.csv',name:'periodic.csv',size:0,label:'periodic',checked:true,

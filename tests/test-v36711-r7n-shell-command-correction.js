@@ -8,7 +8,7 @@ const runtime=read('src/core/theme/runtime.js');
 const thin=read('src/plugins/thin-glass-theme/plugin.js');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
 const updater=read('desktop/update-client.js'),main=read('desktop/main.js');
-const version=JSON.parse(read('package.json')).version;assert(/^3\.67\.(?:1[1-9]|[2-9]\d|\d{3,})$/.test(version),'R7N+ must remain on the 3.67 patch line at or above 3.67.11.');
+const version=JSON.parse(read('package.json')).version;{const [major,minor,patch]=String(version).split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=11))),'R7N+ must remain available from 3.67.11 onward.');}
 for(const asset of ['core/theme/settings-ui.js','core/theme/coverage-runtime.js','core/theme/debug-runtime.js','core/theme/test-gallery.js'])assert(!index.includes(`<script src="${asset}"></script>`),`${asset} must not block first-paint Theme bootstrap.`);
 assert(optional.includes('async function ensureThemeTooling()')&&optional.includes("loadScript('core/theme/coverage-runtime.js')")&&optional.includes('await ensureThemeTooling();'),'Theme authoring/coverage/debug/gallery tooling must be lazy but automation-deterministic.');
 assert(index.includes('class="toolbar-group file-command-group dkds-segmented-command-group"')&&index.includes('class="toolbar-group system-core-tools-group dkds-segmented-command-group" role="group"'),'File and system command clusters keep their semantic DOM roles while sharing the same segmented visual contract.');

@@ -6,7 +6,6 @@ const {pluginTypeOf}=require('./manifest');
   const preferenceStorageKey = 'dkds.plugin.state.preferences.v1';
   const prewarmPreferenceStorageKey = 'dkds.plugin.prewarm.v1';
   const superPreferenceStorageKey = 'dkds.workspace.super.v1';
-  const primePlacementStorageKey = 'dkds.workspace.prime-placement.v1';
 
   const API_VERSION = '1.19.0';
 
@@ -30,7 +29,7 @@ const {pluginTypeOf}=require('./manifest');
   }
 
   function isSystemLockedDefinition(definition) {
-    if(!definition?.manifest)return false;const manifest=definition.manifest;return String(manifest.source||'builtin')==='builtin'&&(pluginTypeOf(manifest)==='foundation'||manifest.systemCritical===true);
+    if(!definition?.manifest)return false;const manifest=definition.manifest;return String(definition.packageSource||'builtin')==='builtin'&&(pluginTypeOf(manifest)==='foundation'||manifest.systemCritical===true);
   }
 
   function isDefinitionEnabled(definition) {
@@ -126,20 +125,6 @@ const {pluginTypeOf}=require('./manifest');
     try { localStorage.setItem(superPreferenceStorageKey,String(pluginId||'')); } catch {}
   }
 
-  function readPrimePlacements() {
-    if(state.primePlacements)return state.primePlacements;
-    let saved={};
-    try { saved=JSON.parse(localStorage.getItem(primePlacementStorageKey)||'{}')||{}; } catch {}
-    state.primePlacements=saved&&typeof saved==='object'?saved:{};
-    return state.primePlacements;
-  }
-
-  function writePrimePlacements() {
-    try { localStorage.setItem(primePlacementStorageKey,JSON.stringify(readPrimePlacements())); } catch {}
-  }
-
-  function primePlacementKey(pluginId,id) { return `${pluginId}:${id}`; }
-
   function topWorkspaceRows() {
     return listContributions('ui.topWorkspaces').slice();
   }
@@ -170,4 +155,4 @@ const {pluginTypeOf}=require('./manifest');
     };
   }
 
-module.exports=Object.freeze({preferenceStorageKey, prewarmPreferenceStorageKey, superPreferenceStorageKey, primePlacementStorageKey, API_VERSION, readPreferences, writePreferences, preferenceFor, isSystemLockedDefinition, isDefinitionEnabled, setPreference, clearPreference, readPrewarmPreferences, writePrewarmPreferences, prewarmPreferenceFor, defaultPrewarmFor, isPrewarmEnabled, setPrewarmPreference, clearPrewarmPreference, definitionById, DEFAULT_PLUGIN_ICONS, defaultPluginIcon, workspaceMeta, isTopDefinition, isSuperEligibleDefinition, readSuperPreference, writeSuperPreference, readPrimePlacements, writePrimePlacements, primePlacementKey, topWorkspaceRows, topWorkspaceForPlugin, topActivityIdForPlugin, superState});
+module.exports=Object.freeze({preferenceStorageKey, prewarmPreferenceStorageKey, superPreferenceStorageKey, API_VERSION, readPreferences, writePreferences, preferenceFor, isSystemLockedDefinition, isDefinitionEnabled, setPreference, clearPreference, readPrewarmPreferences, writePrewarmPreferences, prewarmPreferenceFor, defaultPrewarmFor, isPrewarmEnabled, setPrewarmPreference, clearPrewarmPreference, definitionById, DEFAULT_PLUGIN_ICONS, defaultPluginIcon, workspaceMeta, isTopDefinition, isSuperEligibleDefinition, readSuperPreference, writeSuperPreference, topWorkspaceRows, topWorkspaceForPlugin, topActivityIdForPlugin, superState});

@@ -3,13 +3,14 @@
   "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.19.json",
   "title": "DK Data Studio Plugin Manifest",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [
     "id",
     "name",
     "version",
     "apiVersion",
     "entry",
+    "pluginType",
     "requiresCore"
   ],
   "properties": {
@@ -96,6 +97,7 @@
           "ui.series",
           "ui.legend-groups",
           "ui.group-plots",
+          "ui.group-area",
           "ui.tooltips",
           "ui.design-system",
           "ui.plot-views",
@@ -258,24 +260,6 @@
         }
       }
     },
-    "compatibility": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "app": {
-          "type": "string",
-          "minLength": 1
-        },
-        "pluginApi": {
-          "type": "string",
-          "minLength": 1
-        },
-        "themeContract": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
-    },
     "pluginDependencies": {
       "type": "array",
       "uniqueItems": true,
@@ -283,20 +267,12 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "id",
-          "range"
+          "id"
         ],
         "properties": {
           "id": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
-          },
-          "range": {
-            "type": "string",
-            "minLength": 1
-          },
-          "optional": {
-            "type": "boolean"
           }
         }
       }
@@ -360,6 +336,25 @@
           }
         }
       }
+    },
+    "platformPresentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "desktop",
+        "mobile"
+      ],
+      "properties": {
+        "desktop": {
+          "$ref": "#/$defs/platformPresentationPolicy"
+        },
+        "mobile": {
+          "$ref": "#/$defs/platformPresentationPolicy"
+        }
+      }
+    },
+    "systemCritical": {
+      "type": "boolean"
     }
   },
   "allOf": [
@@ -404,5 +399,39 @@
         }
       }
     }
-  ]
+  ],
+  "$defs": {
+    "platformPresentationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "shared",
+            "adaptive",
+            "custom"
+          ]
+        },
+        "scripts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[^/\\\\]+\\.js$"
+          }
+        },
+        "styles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[^/\\\\]+\\.css$"
+          }
+        }
+      }
+    }
+  }
 }

@@ -1,10 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
-  DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.7',apiVersion:'1.19.0',requiresCore:requiresCore,
-    order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
-    capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
-  }, async ctx => {
+  const platformPresentation={desktop:{mode:'shared'},mobile:{mode:'adaptive'}};
+  DKDSPlugins.define({"id":"builtin.connectivity-center","name":"SMB & AI Services","version":"1.2.8","apiVersion":"1.19.0","requiresCore":["runtime","status","io","services","capabilities","data.import-workbench","ui.dom","ui.menus","ui.status-bar","ui.workspace"],"entry":"plugin.js","enabled":true,"order":34,"description":"SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.","capabilities":["network.smb","ai.agent.kernel","ai.chat.mentions","mcp.kernel-server","ui.status-bar"],"pluginType":"foundation","styles":["plugin.css"],"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"adaptive"}}}, async ctx => {
     const dom=ctx.ui.dom;
     const connectivity=ctx.services.require('connectivity');
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -16,7 +13,7 @@
     const savePrefs=value=>{const current=loadPrefs(),next={...current,...value,password:''};localStorage.setItem(prefsKey,JSON.stringify(next));return next;};
 
     const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground'},html:`
-      <div class="dksvc-window dksmb-window dkds-dialog-shell dkds-material-role-elevated" role="dialog" aria-modal="true">
+      <div class="dksvc-window dksmb-window dkds-dialog-shell dkds-material-role-elevated" data-dkds-action-density="regular" role="dialog" aria-modal="true">
         <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button dkds-panel-close-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">
           <aside class="dksmb-nav dkds-material-role-sidebar"><div class="dksmb-nav-title"><span>网络位置</span><button id="dksmbDiscover" class="dksmb-btn dkds-action-button">扫描</button></div><div id="dksmbNav"></div></aside>
@@ -38,8 +35,8 @@
             <div class="dkai-field dkds-field"><label>Provider</label><select id="dkaiPreset"></select></div><div class="dkai-field dkds-field"><label>模型</label><input id="dkaiModel" placeholder="model id"></div>
             <div class="dkai-field dkds-field full"><label>Endpoint</label><input id="dkaiEndpoint" placeholder="https://.../chat/completions"></div>
             <div class="dkai-field dkds-field"><label>API Key</label><input id="dkaiKey" type="password" autocomplete="off" placeholder="保存在系统安全存储"></div><div class="dkai-field dkds-field"><label>权限</label><select id="dkaiAccess"><option value="full">完整内核（推荐）</option><option value="read-only">只读分析</option></select></div>
-          </div><div class="dkai-actions dkds-toolbar"><button id="dkaiSave" class="primary">保存</button><button id="dkaiTest">测试连接</button><span id="dkaiAgentState" class="dkai-statusline dkds-meta">未测试</span></div></section>
-          <section class="dkai-section"><div class="dkai-section-title">MCP Server</div><div class="dkai-grid"><div class="dkai-field dkds-field full"><label>访问 Token</label><input id="dkaiMcpToken" autocomplete="off" placeholder="任意非空 Token；建议使用随机长 Token"></div></div><div class="dkai-actions dkds-toolbar"><button id="dkaiMcpStart" class="primary">启动 MCP</button><button id="dkaiMcpStop">停止</button><button id="dkaiMcpCopy">复制地址</button></div><div id="dkaiMcpState" class="dkai-mcp-state dkds-status">检查中…</div></section>
+          </div><div class="dkai-actions dkds-toolbar"><button id="dkaiSave" class="primary">保存</button><button id="dkaiTest">测试连接</button><span id="dkaiAgentState" class="dkai-statusline dkds-chip quiet" title="未测试">未测试</span></div></section>
+          <section class="dkai-section"><div class="dkai-section-title">MCP Server</div><div class="dkai-grid"><div class="dkai-field dkds-field full"><label>访问 Token</label><input id="dkaiMcpToken" autocomplete="off" placeholder="任意非空 Token；建议使用随机长 Token"></div></div><div class="dkai-actions dkds-toolbar"><button id="dkaiMcpStart" class="primary">启动 MCP</button><button id="dkaiMcpStop">停止</button><button id="dkaiMcpCopy" data-dkds-native-copy="clipboard">复制地址</button><span id="dkaiMcpState" class="dkai-mcp-state dkai-statusline dkds-chip quiet" title="检查中…">检查中…</span></div></section>
           <section class="dkai-section dkai-help dkds-note">AI Agent 与 MCP 共用 Studio Kernel Registry。完整模式可以读取/清洗数据、分析与绘制数据图、运行算法与 Workflow、访问文件/SMB、编写/验证/安装插件。Token 仅要求非空且不超过 256 字符，没有人为的最小位数限制。</section>
         </div>
       </div>`});
@@ -55,7 +52,7 @@
     const $=sel=>dom.query(sel);
     const smbMove=ctx.ui.layout.move({id:'smb-browser-dialog',target:$('.dksmb-window'),handle:$('.dksmb-window .dksvc-head'),bounds:smbOverlay});
     const settingsMove=ctx.ui.layout.move({id:'agent-settings-dialog',target:$('.dkai-window'),handle:$('.dkai-window .dksvc-head'),bounds:settingsOverlay});
-    const setText=(sel,value)=>{const el=$(sel);if(el)el.textContent=String(value??'');};
+    const setText=(sel,value)=>{const el=$(sel);if(el){const text=String(value??'');el.textContent=text;if(el.classList?.contains('dkai-statusline'))el.title=text;}};
     const hide=el=>el?.classList.add('hidden');
     const show=el=>el?.classList.remove('hidden');
     const setBusy=async(sel,fn,label='处理中')=>{const button=$(sel),original=button?.textContent||'';if(button){button.disabled=true;button.dataset.busy='true';button.textContent=label;}try{return await fn();}finally{if(button){button.disabled=false;button.dataset.busy='false';button.textContent=original;}}};
@@ -132,7 +129,7 @@
       const settings=connectivity.agent.loadSettings(),mcpSettings=connectivity.mcp.loadSettings?.()||{};$('#dkaiPreset').value=settings.presetId||'openai';$('#dkaiEndpoint').value=settings.endpoint||'';$('#dkaiModel').value=settings.model||'';$('#dkaiAccess').value=settings.accessMode||'full';$('#dkaiKey').value=await connectivity.agent.getSecret(settings.presetId||'default')||'';$('#dkaiMcpToken').value=mcpSettings.token||'';setText('#dkaiChatModel',settings.model||settings.presetId||'');await refreshMcp();
     }
     async function saveAiSettings(){const preset=presetById($('#dkaiPreset').value),settings=connectivity.agent.saveSettings({presetId:preset.id,provider:preset.provider,endpoint:$('#dkaiEndpoint').value.trim(),model:$('#dkaiModel').value.trim(),accessMode:$('#dkaiAccess').value});await connectivity.agent.setSecret(settings.presetId,$('#dkaiKey').value);setText('#dkaiChatModel',settings.model);aiHealth='idle';aiPhase='idle';await refreshAiStatus();return settings;}
-    async function refreshMcp(){try{lastMcp=await connectivity.mcp.status()||{running:false};const line=lastMcp.running?`运行中\n${lastMcp.url||lastMcp.lanUrl||lastMcp.localUrl||''}\nHeader: ${lastMcp.tokenHeader||'x-dkds-token'}`:`未启动${lastMcp.error?`\n${lastMcp.error}`:''}`;setText('#dkaiMcpState',line);}catch(err){lastMcp={running:false,error:err.message};setText('#dkaiMcpState',`状态不可用：${err.message}`);}return lastMcp;}
+    async function refreshMcp(){try{lastMcp=await connectivity.mcp.status()||{running:false};const el=$('#dkaiMcpState'),url=lastMcp.url||lastMcp.lanUrl||lastMcp.localUrl||'';const line=lastMcp.running?`运行中${url?` · ${url}`:''}`:`未启动${lastMcp.error?` · ${lastMcp.error}`:''}`;setText('#dkaiMcpState',line);if(el)el.title=lastMcp.running?`${url||'MCP Server'} · Header: ${lastMcp.tokenHeader||'x-dkds-token'}`:line;}catch(err){lastMcp={running:false,error:err.message};setText('#dkaiMcpState',`状态不可用：${err.message}`);const el=$('#dkaiMcpState');if(el)el.title=String(err.message||err);}return lastMcp;}
     async function refreshAiStatus(){
       const settings=connectivity.agent.loadSettings();let hasKey=false;try{hasKey=!!(await connectivity.agent.getSecret(settings.presetId||'default'));}catch{}await refreshMcp();
       const configured=!!(settings.endpoint&&settings.model&&hasKey);

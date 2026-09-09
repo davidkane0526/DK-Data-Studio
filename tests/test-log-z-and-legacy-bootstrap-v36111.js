@@ -16,7 +16,8 @@ function assert(v,m){if(!v)throw new Error(m);}
   const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
   const fakeWindow={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(true);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
   const fakeDocument={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
-  const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
+  const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
+  const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){},DKDSStyleGate:styleGate};context.globalThis=context;fakeWindow.DKDSStyleGate=styleGate;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
 
   const lineY=[-1e-5,-1e-6,0,1e-7];
   await fakeWindow.DKDSCharts.react('plot',[{type:'scatter',y:lineY}],{yaxis:{type:'linear'}},{});
