@@ -1,0 +1,376 @@
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.19 / UI Core v6.7
+
+## Design boundary
+
+DK Data Studio core owns the mechanics that every scientific plugin needs. Plugins own domain state, domain calculations and domain-specific view descriptions.
+
+Core owns:
+
+- workspace regions and responsive layout;
+- portable/pinnable/floating panels and persistent placement;
+- scientific surface lifecycle and resize;
+- dynamic action/button groups;
+- activity-aware shortcuts;
+- mouse / pointer / wheel / context-menu bindings;
+- typed Interaction/Selection runtime and plugin-owned data/result type registry;
+- common context menus;
+- View/Controller mounting lifecycle;
+- plugin state stores, project-slice persistence and migration;
+- Data Model, Formula, Workflow, Parameter Schema and project portability.
+
+Plugins should not reimplement those mechanisms.
+
+
+## Unified AnalysisWorkbench v5
+
+Complex analysis plugins must mount their content through `ctx.ui.workspaceSurface.create(...)` and call `compose({primary, primes, subs})`. Core owns the outer frame and does **not** rewrite the plugin's internal DOM layout.
+
+```js
+const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'example'});
+wb.compose({
+  primary:{id:'main',label:'主分析',mainNode:main},
+  primes:[{id:'inspector',label:'检查器',defaultPlacement:'right',mount:mountInspector}],
+  subs:[{id:'physics',label:'物理分析',mount:mountPhysics}]
+});
+```
+
+Plugin API 1.19 does not expose a PRIMARY left slot. A file list, batch queue, plot/table stack, or other domain workflow may live inside `mainNode` when it is one main task. A persistent control/data rail whose semantics are independent of the main task must be registered as its own PRIME surface with a platform-neutral `presentationRole`. Core owns the outer workbench mechanics; the plugin owns its domain layout.
+
+`PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/sticky/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
+
+Right/bottom docking is real layout geometry: docking a PRIME reduces the main surface rather than overlaying it. Floating coordinates are local to the workbench overlay. Split sizes and portable placement are UI preferences, not scientific project state.
+
+## Capability Runtime v2
+
+Plugins register portable providers with `ctx.capabilities.register`. Other plugins can use `list(query)`, `require(id, options)`, `proxy(id)`, `invoke(...)`, and `watch(...)`. Dedicated TOP windows receive provider snapshots and invoke main-renderer providers over the generic IPC bridge, so detector/workflow/chart/service capabilities do not need a second implementation in the TOP renderer.
+
+## Resizable workspace splits
+
+Core also owns persisted split panes. A plugin supplies only the container, handle and target:
+
+```js
+ctx.ui.layout.split({
+  id:'controls-main', container:root, handle:divider, target:leftPane,
+  axis:'x', min:220, defaultSize:340, reserve:420
+});
+```
+For movable dialogs or domain surfaces, use `ctx.ui.layout.move({id,target,handle,bounds})`. Core owns pointer capture, viewport bounds, persistence and double-click reset; plugins must not implement private drag loops.
+
+
+Double-click resets the divider. Resize and persistence behavior are core-owned. When a plot and a table/inspector share one axis and users may reasonably need to trade space between them, prefer this persisted splitter instead of fixing both pane sizes. On narrow/mobile layouts the plugin may collapse the panes into normal document flow and hide the splitter.
+
+## Portable scientific views
+
+Any existing chart/card can be registered without changing its home DOM structure:
+
+```js
+const panel = ctx.ui.portable.create('result-map', card, {
+  title: 'Result map',
+  useTargetAsWrapper: true,
+  handle: '.analysis-chart-title',
+  placements: ['home', 'sticky', 'left', 'right', 'bottom', 'float']
+});
+
+panel.place('sticky'); // remains in its home scroll layout and sticks while scrolling
+panel.float();
+panel.pin('right');
+```
+
+Placement and floating bounds are persisted by core. Floating panels can be dragged, resized, and optionally snap to an allowed dock edge.
+
+## Dynamic action groups
+
+```js
+const actions = ctx.ui.actions.mount(container, {
+  activity: 'my-analysis',
+  actions: [
+    { id:'run', label:'运行', shortcut:'Ctrl+Enter', onInvoke:run },
+    { id:'export', label:'导出', enabled:()=>hasResult(), onInvoke:exportResult }
+  ]
+});
+
+actions.update({ hasResult:true });
+```
+
+Buttons and keyboard shortcuts use one command description instead of separate UI and keydown implementations.
+
+## Interaction Behavior
+
+Plugin API 1.19 uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
+
+```js
+ctx.ui.interactionBehaviors.create('my-analysis-input', {
+  activity:'my-analysis',
+  bindings:[
+    { gesture:'key', chord:'Ctrl+Enter', command:'example.run' },
+    { gesture:'context', target:'marker', intent:'context-menu', contextActions:[/* ... */] },
+    { gesture:'box', target:'background', modifiers:['shift'], command:'example.define-region' }
+  ]
+});
+```
+
+`ctx.ui.interactions.bind(...)` is a low-level Core interaction primitive for infrastructure-level bindings. Domain interaction policy belongs in `ctx.ui.interactionBehaviors`; plugins must never install permanent global mouse or keyboard listeners.
+
+## Plugin-registered data types and typed interaction
+
+Core deliberately does not prescribe one scientific data schema. Plugins register types and relationships:
+
+```js
+ctx.data.types.register('example.spectrum', {
+  parent:'data.series', kind:'data', key:v=>v.id,
+  selection:v=>({id:v.id, ref:ctx.ui.selection.refs.artifact(v.id), meta:{label:v.name}})
+});
+ctx.data.types.register('example.fit', {
+  parents:['result.analysis','data.point'], kind:'result', key:v=>v.id
+});
+```
+
+Multiple parents are supported. This lets processed data participate in more than one semantic family without Core knowing the domain. Registered types may also define `normalize`, `describe`, `match`, compact `selection` projection and optional `resolve` hooks. Cross-plugin type ids are owner-protected and cannot be silently overwritten.
+
+Create one interaction runtime for a scientific workbench:
+
+```js
+const interaction=ctx.ui.interaction.create('analysis',{
+  selection:{multiple:true,defaultType:'example.spectrum'}
+});
+interaction.bind('inspector',{
+  types:['result.analysis','data.series'],
+  onSelection:(selection,meta)=>renderInspector(selection,meta)
+});
+```
+
+A Selection document contains heterogeneous `items`, one `focus`, typed `ranges`, `context` and `source`. Consumers can bind to an exact type, any registered parent type, role or kind. `interaction.region(...)` atomically publishes a box/lasso range together with the selected raw or processed items.
+
+### Linked selection views
+
+Do not make charts, legends and data lists keep independent `selected` state. Register every visual projection of the same semantic entity with the Core interaction runtime:
+
+```js
+const datasetKey = selection => String(selection?.focus?.ref?.datasetPath || '');
+interaction.bindView('dataset-list', listElement, {
+  selector:'.dataset-row', itemVariant:'row',
+  itemKey:el=>el.dataset.datasetPath,
+  focusKey:datasetKey,
+  revealFocus:true
+});
+interaction.bindView('legend', legendElement, {
+  selector:'.legend-chip', itemVariant:'chip',
+  itemKey:el=>el.dataset.datasetPath,
+  focusKey:datasetKey,
+  dimOthers:true, revealFocus:true,
+  horizontalWheel:true, hideScrollbar:true
+});
+```
+
+Core owns `dkds-selection-focused / selected / dimmed`, focus reveal and DOM-mutation refresh. A plugin only declares how one domain entity maps to a view item. Clicking a chart, legend or list should publish to the **same** `InteractionRuntime`; subscribers and linked views then synchronize automatically. This is required for complex plugins and prevents a chart from showing one focused curve while its legend/list still indicates another.
+
+For horizontally overflowing legend/tab strips, prefer `horizontalWheel:true`. Core hides the scrollbar and converts a normal mouse wheel over the strip into horizontal scrolling; plugins must not add private scrollbar CSS or wheel handlers.
+
+**Selection is reference-only.** Selection is an interaction document, not a second data store. Large arrays, tables, raw sweep points and preview objects remain in the canonical Artifact/project/plugin store. A data type selection projection may return only `id`, `ref` and bounded `meta`; returning `value` is a contract error. Resolve the reference only when a consumer actually needs the complete object.
+
+Use the one Core reference contract exposed at `ctx.ui.selection.refs`:
+
+```js
+const refs = ctx.ui.selection.refs;
+const artifactRef = refs.artifact(artifact.id, {artifactRevision});
+const seriesRef = refs.series(artifact.id, column.id);
+const rowRef = refs.row(artifact.id, sourceRowId, {seriesId:column.id});
+interaction.selectRef(rowRef, {type:'example.point'});
+```
+
+`artifactId`, `seriesId` and source `rowId` are permanent semantic identities. `artifactRevision` is only an expected snapshot/version condition and is deliberately ignored by `refs.identity(...)`. DataTable columns expose their stable column `id` as the natural `seriesId`; `ctx.data.model.rowId(table,index)` returns the source-row identity without requiring a second row object store.
+
+For large brush/lasso selections, publish a source-referenced range instead of thousands or millions of point IDs:
+
+```js
+interaction.region({min:x0,max:x1}, [], {
+  rangeType:'data.range',
+  sourceRef:refs.series(artifact.id, column.id)
+});
+```
+
+Selection documents are bounded by Core. The existing `dkds:selection-changed` event remains the **single cross-scope Interaction bridge**; Phase E does not introduce another global event bus. The bridge is internally channel-discriminated: Selection uses `channel:'selection'`, while SDK 1.43.0 viewport envelopes use `channel:'viewport'`. `ctx.ui.selection.observe(...)` ignores every non-Selection channel, so viewport state never enters Selection schema 2.
+
+### Project-scoped link transactions
+
+When two independent views need to consume the same Selection, join an explicit link group instead of installing another global event channel:
+
+```js
+const interaction=ctx.ui.interaction.create('analysis-selection',{
+  selection:{multiple:true,defaultType:'data.series'}
+});
+const unlink=interaction.link('analysis-selection',{acceptTypes:['data.series','data.point']});
+```
+
+Core adds `meta.transaction` to Interaction callbacks. The transaction carries one `transactionId`, current `projectId`, `linkGroup`, immutable origin owner/scope/runtime and the current applying source owner/scope/runtime. Transaction metadata is transport state and is **not stored in Selection schema 2**.
+
+A remote linked state must enter through `interaction.applyRemoteSelection(snapshot,{transaction,...})`. Core deduplicates the transaction before applying it and dispatches the resulting Selection to that Runtime's local bindings/subscribers with `remote:true`, but does not rebroadcast `dkds:selection-changed`. This is the canonical A→B→A cycle-suppression boundary. Calling ordinary `select*()` for a remote state intentionally creates a new local transaction and is therefore incorrect for link adapters.
+
+Link groups are project-scoped. Project identity is resolved at event time, so long-lived plugin scopes do not retain cross-project links after a project switch. `ctx.ui.selection.scope()` reports the current owner/scope/project identity for diagnostics, and scope disposal removes link observers through the normal plugin lifecycle. The per-Runtime recent transaction set is bounded.
+
+### Scientific dimension/unit gate for numeric linking
+
+Selection identity compatibility and numeric-axis compatibility are separate concerns. A shared `artifactId/seriesId/rowId` tells Core what source entity is being referenced; it does not prove that two numeric axes use compatible physical quantities. Before a future viewport/range adapter applies remote numeric state, use the Core Scientific Units gate:
+
+```js
+const sourceAxis=ctx.science.units.artifactAxis(sourceArtifact,'x');
+const targetAxis=ctx.science.units.artifactAxis(targetArtifact,'x');
+const compatibility=interaction.axisCompatibility(sourceAxis,targetAxis);
+if(!compatibility.compatible)return;
+const converted=interaction.convertAxisRange(sourceRange,sourceAxis,targetAxis);
+```
+
+Core deliberately ignores labels when deciding compatibility. `mV` and `V` can link despite different axis names; `V` and `A` cannot link even if both axes are labelled `Signal`. Unknown or nonlinear display units fail closed. Plugins must not maintain private prefix/unit tables, and they must not use `parseFloat`, label suffixes, or string equality to infer conversions. The one owner is `ctx.science.units`; InteractionRuntime only delegates to it.
+
+This gate uses the existing project-scoped Interaction transaction path. It creates no event channel and does not itself broadcast or apply viewport state.
+
+## Sticky versus Dock
+
+`sticky` is intentionally different from `right` / `bottom` docking. A sticky view remains in its home layout and follows its own scroll container. Docking reparents the view into a workbench region and changes main-surface geometry. TER's R–V inspector is the reference use case.
+
+## Resize scheduling
+
+`layout:resize` is a frame signal, not a synchronous command. Core coalesces resize sources and refuses recursive layout emissions while dispatching one. Plugins should resize visible custom canvases in response, but must never emit another `layout:resize` from that listener. `ctx.ui.charts` surfaces are resized by Core automatically.
+
+## State and project persistence
+
+```js
+const store = ctx.state.create(initialState, {
+  projectSlice: 'workspace',
+  migrate(data) { return migrateOldProjectState(data); }
+});
+```
+
+The core handles activation cleanup and project restore/reset. Project files remain self-contained: dataset source text and parsed values are still saved by the host project format, so a project can be opened on another computer without the original CSV/TXT/DAT files.
+
+## View / Controller boundary
+
+Recommended complex-plugin structure:
+
+```text
+plugin/
+  controller.js       domain state + commands + ViewModels
+  views.js            domain view components
+  feature-runtime.js  connects shared views to core infrastructure
+  super-layout.js     maps SUPER host containers only
+  window-runtime.js   maps TOP window containers/lifecycle only
+  plugin.js           registration only
+```
+
+`super-layout.js` and `window-runtime.js` must not contain renderer trace objects, science calculations, domain HTML templates, peak/TER logic, or feature-specific event handlers.
+
+## Host adapters
+
+SUPER and TOP are presentation hosts, not separate product implementations. Their adapters may provide only:
+
+- root/container mapping;
+- window close/focus lifecycle;
+- resize notification;
+- host-specific status surface.
+
+Feature behavior must remain in plugin Controller/View/feature-runtime layers.
+
+## v3.28 migration baseline
+
+The built-in first-level analysis plugins now follow the same host contract:
+
+- `resonance-workbench`
+- `ter-analysis`
+- `pulse-analysis`
+- `data-center`
+
+Core does not identify resonance (or any other domain plugin) when selecting or rendering a SUPER. A plugin may declare `workspace.defaultSuper: true`; otherwise the generic TOP ordering decides the one-time initial selection.
+
+TER, Pulse and Data Center use the same split:
+
+```text
+controller.js       shared state / selection / domain command boundary
+shared-views.js     reusable plugin-owned DOM + Workbench mapping
+feature-runtime.js  feature wiring, scientific interactions and rendering
+super-layout.js     SUPER host adapter only
+window-runtime.js   TOP service/lifecycle adapter only (when required)
+plugin.js           registration/composition only
+```
+
+Primary commands must be declared once with `ctx.ui.actions`; do not duplicate the same action in a page header and again inside the body. Contextual/export commands may remain beside the data they affect.
+
+Portable plot placement is rendered by Core. Plugins declare allowed placements and a controls host; Core owns the placement menu, restoration, docking/floating mechanics, split geometry and persistence. Plugins must not implement a second docking manager.
+
+A TOP promoted to SUPER must behave identically to every other TOP. Core derives the single non-dismissible SUPER root from the registered TOP contract. Plugin-owned derived/SUB pages remain dismissible so controls such as `返回主图` continue to work.
+## v3.34 plugin visual contract
+
+Built-in analysis plugins share a visual contract at the workbench boundary. New plugin UI should consume these Core tokens rather than inventing a private type scale:
+
+```css
+--plugin-font-body: 12.5px;
+--plugin-font-label: 12px;
+--plugin-font-meta: 11px;
+--plugin-font-title: 13.5px;
+--plugin-font-section: 14px;
+--plugin-control-height: 32px;
+--plugin-control-pad-x: 9px;
+--plugin-action-gap: 6px;
+```
+
+Rules:
+
+- Ordinary plugin body text is 12.5 px; form labels are 12 px. Auxiliary/meta/help text must not fall below 11 px in normal desktop layouts.
+- Buttons and compact form controls use a 32 px minimum height and inherit the shared plugin font.
+- Toolbars and action clusters are **single-row-first** (`flex-wrap: nowrap`). If the host is truly narrower than the action set, the row may scroll/overflow horizontally or move low-priority commands into a Core ActionGroup menu; it must not wrap early into two or three rows while usable horizontal space remains.
+- First-party plugins do not own application chrome. Plugin identity selectors may keep domain layout, state hooks and scientific geometry, but must not set theme paint (`background`, `color`, borders, radii, shadows), typography, or private button/input/select sizing.
+- Compose plugin markup with Core semantic roles such as `.dkds-surface`, `.dkds-surface-header`, `.dkds-surface-heading`, `.dkds-surface-actions`, `.dkds-surface-tabs`, `.dkds-toolbar`, `.dkds-field`, `.dkds-chip`, `.dkds-list-item`, `.dkds-metric`, `.dkds-table`, `.dkds-dialog-shell`, `.dkds-status`, `.dkds-message` and `.dkds-floating-surface`. `ctx.ui.designSystem.classes` exposes the same roles to code that should not hard-code class names.
+- There is no visual parity opt-out. Mature workspaces may preserve their domain composition and interaction model, but the active theme still owns application chrome. Resonance follows the same rule as every other first-party TOP/SUPER workspace.
+- ScientificPlot presentation is Core-owned. Plugins do not pass theme-specific plot backgrounds, grid colors or zero-line colors; only data-semantic series/category colors belong to the plugin.
+- Renderer dependencies are part of the TOP contract. If a shared View uses ScientificPlot, declare `scientific-renderer` in `plugin.json.window.dependencies`; the generic window host loads the Core D3 renderer instead of exposing a renderer vendor to plugins.
+
+The visual contract belongs to UI infrastructure. `scripts/test-v36159-visual-contract-finalization.js` makes this boundary executable for all first-party plugins.
+
+## v3.35 GRS-derived base capabilities
+
+Core UI infrastructure v6 adds `PluginWorkspace` and `ScientificCurveSurface`. `PluginWorkspace` retains the semantic AnalysisWorkbench contract but is now the preferred name and reference design system. `ScientificCurveSurface` extracts reusable GRS main-plot interaction (Turbo palette, directional dashes, direct selection, range/zoom, wheel zoom, marker drag, width handles) so measurement plugins provide domain callbacks instead of duplicating pointer/D3 plumbing.
+
+## v3.36 canvas-local portable views and drag fast paths
+
+The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with local left/right/bottom/overlay zones. This is the canonical docking coordinate space for scientific PRIME/SUB/child plots. `PortableView.stateVersion` can invalidate obsolete geometry persistence.
+
+`ScientificCurveSurface` marker/FWHM drag paths update the affected SVG geometry directly during pointer movement and defer expensive complete rendering to drag completion or an animation-frame request.
+
+
+## v3.37 workspace/floating/edit contracts
+
+- `PluginWorkspace.create(..., { primaryScroll: 'contained' | 'auto' })` defines PRIMARY viewport ownership. A PRIMARY entry may also declare `scroll`.
+- `SplitController` preserves a canonical intent state (`preferredSize`, `preferredRatio`, placement and collapsed state) separately from its viewport-clamped `effectiveSize`. Native Mobile and Desktop constraints use the same pure resolver; hidden or zero-sized regions do not change the preference.
+- Every registered workspace region declares one scroll policy. `layoutDiagnostics()` is an on-demand bounded inspection of those regions, not an automatic mutation/resize subtree recovery pass.
+- Portable placement `float` is scientific-canvas managed and edge-snappable; `global` is whole-plugin free floating and never auto-snaps to canvas docks.
+- Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
+- Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
+- SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
+- `ctx.ui.edit.register({ id, order, canUndo, canRedo, historyState, undo, redo, deselect, ... })` supplies reversible workspace editing to the System History Coordinator. Undo/Redo handlers may be async and must return `false` when nothing was handled; `historyState()` exposes timestamped local entries so Core can order workspace and project history chronologically. Escape remains an active-plugin edit action.
+## v3.40 automatic PlotView lifecycle and layered PortableView
+
+`PluginWorkspace` automatically observes its connected view tree and hydrates standard scientific figure cards through the Core `PlotViewRegistry`. Plugins no longer need one-shot `querySelectorAll(...).bind(...)` passes for generic plot capabilities. This matters for PRIME/SUB content because those nodes can be detached at plugin initialization and connected only later.
+
+`PlotViewRegistry.bind()` is idempotent, and generic chrome is resolved strictly within the owning card. Standard capabilities are position, CSV, copy, SVG, PNG and resize. A PRIME-owned figure does not receive a second PortableView/position control. Plugins may provide domain actions such as TER `清除高亮`, but these are composed next to rather than replacing Core figure chrome.
+
+PortableView has a Core layer policy: fixed dock < canvas float < global float < context menu/modal. Global free-floating views can cross the control/science boundary and are raised on focus/drag; they must not be hidden below group docks. Close/collapse actions use the shared icon chrome and collapsed dock geometry returns unused space to PRIMARY.
+
+Architecture guards in `scripts/test-plot-view-foundation.js` treat plugin-private generic SVG/PNG/location chrome, document-wide PlotView action-host fallback, and one-shot SUB PlotView scans as regressions.
+
+### Linked viewport state
+
+SDK 1.43.0 uses `interaction.publishState('viewport', ...)` / `interaction.linkState('viewport', ...)` behind the Core Scientific Viewport Link owner. This is bounded transport metadata, not a second Selection model. A remote viewport envelope preserves the existing project-scoped transaction id and is applied without rebroadcast, so A→B→A terminates under the same cycle-suppression rule as linked Selection. ScientificPlot only participates when `viewportPolicy.link === true`; each linked axis must pass the Scientific Units compatibility/conversion gate.
+
+Plugins should normally declare `viewportPolicy` and `axisSemantics` on ScientificPlot rather than call the generic linked-state methods directly. Do not create `dkds:viewport-changed`, `dkds:axis-changed`, or another global event.
+
+### DOM delegation is also Interaction Behavior
+
+Plugin API 1.19 provides `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
+
+### Scientific plot container contract
+
+`ctx.ui.scientificPlot.create(...)` accepts an `<svg>` or a normal container element. If the target is not SVG, Core creates/owns the internal SVG and observes the container size. This keeps third-party workbenches independent of D3/SVG implementation details.
+
+
+### History state notifications
+
+When a plugin keeps a fine-grained local undo/redo stack, call `ctx.ui.edit.changed({reason, label})` whenever that stack changes. Core uses this notification to refresh the unified System History state in the desktop shell, dedicated TOP windows and the Android native shell. Do not rely on incidental DOM changes to refresh Undo/Redo availability.

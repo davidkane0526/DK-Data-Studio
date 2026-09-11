@@ -1,0 +1,36 @@
+ 'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const walk=(dir,out=[])=>{for(const row of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,row.name);if(row.isDirectory())walk(full,out);else out.push(full);}return out;};
+assert(fs.existsSync(path.join(root,'src','diagnostics')),'Diagnostics must remain an integration layer.');
+assert(!fs.existsSync(path.join(root,'src','core','diagnostics')),'Diagnostics must not be owned by Core.');
+assert(!fs.existsSync(path.join(root,'src','migrations')),'Legacy-Free Cut must not retain a runtime migrations directory.');
+const gateway=read('src/project-importers/compatibility-gateway.js');
+assert(gateway.includes('SCHEMA_VERSION=3')&&gateway.includes('function canonicalize('),'External Project Compatibility Gateway must own old-project -> Schema v3 canonicalization.');
+const format=read('src/core/project/format.js');
+assert(format.includes('registerCompatibilityImporter')&&!format.includes('registerMigration')&&!format.includes('applyMigrations'),'Project Format must expose only a generic compatibility-importer registry without a migration registry.');
+for(const token of ['DOMAIN_ROOT_FIELDS','scanVisibility','terMaxSettings','pulseAnalysis'])assert(!format.includes(token),`Core Project Format must not own domain compatibility token ${token}.`);
+const model=read('src/core/data/model.js');
+for(const token of ['fromLegacyDataset','syncLegacyDatasetArtifacts','toLegacyDataset','legacyDatasetsFromArtifacts','removeLegacyDatasets'])assert(!model.includes(token),`Core Data Model must not own removed bridge ${token}.`);
+assert(model.includes('transportDatasetFromTable')&&model.includes('transportDatasetsFromArtifacts'),'Canonical Data Model must expose ephemeral scientific transport projections.');
+const runtimeRoots=['src/app','src/core','src/plugin-window','src/plugins','desktop'];
+const forbidden=/state\.datasets|syncLegacy|fromLegacyDataset|toLegacyDataset|legacyDatasetsFromArtifacts|legacy-dataset|legacyDatasetPath|sourceExcluded|ui\.workbench|ui\.split|ui\.analysis-workbench|ui\.analysis-surface|runtime\.capabilities\.v2|ui\.chart-surface|onMarkerDrag(?:Preview|Commit|End)?|onWidthDrag(?:Start|Preview|End)?|onWidthWindowCommit|mountExistingSplit|dkds-workbench|dkds-portable-zone/;
+for(const base of runtimeRoots){const dir=path.join(root,base);if(!fs.existsSync(dir))continue;for(const file of walk(dir).filter(f=>f.endsWith('.js')&&!f.includes(`${path.sep}generated${path.sep}`)&&!f.endsWith(`${path.sep}compatibility-gateway.js`))){const source=fs.readFileSync(file,'utf8');assert(!forbidden.test(source),`${path.relative(root,file)} reintroduces a legacy runtime bridge.`);if(path.resolve(file)!==path.resolve(root,'src/core/project/format.js'))assert(!source.includes('project.datasets'),`${path.relative(root,file)} must not consume project.datasets after canonicalization.`);}}
+assert((format.match(/project\.datasets/g)||[]).length===1&&format.includes('if(project.datasets!==undefined)throw new Error'),'Core Project Format may mention project.datasets only to reject an uncanonicalized current project.');
+
+const resonanceDir=path.join(root,'src','plugins','resonance-workbench');
+for(const file of walk(resonanceDir).filter(f=>/\.(?:js|css)$/.test(f))){
+  const source=fs.readFileSync(file,'utf8');
+  assert(!/#[0-9a-f]{6}\b/i.test(source),`${path.relative(root,file)} hard-codes an application color; Resonance visual identity must come from Core semantic/Series contracts.`);
+}
+const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
+assert(resonanceManifest.requiresCore.includes('ui.series'),'Resonance must declare the Core Series Registry rather than own a private palette.');
+const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+assert(resonanceFeature.includes('series?.register?.')&&resonanceFeature.includes('colorForPhysicsCode'),'Resonance peak/physics colors must be resolved by the Core Series Registry.');
+
+const transport=read('src/plugins/standard-transport-algorithms/plugin.js');assert(transport.includes('ctx.data.transforms.register'),'Transport transforms must remain plugin-owned.');
+const contracts=JSON.parse(read('src/plugins/scientific-data-contracts/plugin.json'));assert.equal(contracts.pluginType,'foundation');assert.equal(contracts.apiVersion,'1.19.0');
+console.log('v3.62 Legacy-Free Core/plugin ownership checks passed.');

@@ -1,0 +1,175 @@
+{
+  "output": "src/generated/runtime/ui-infrastructure.js",
+  "preludeScripts": [
+    "src/core/theme/style-ownership-gate-runtime.js"
+  ],
+  "moduleRuntimeName": "DKDSUIRuntimeModules",
+  "importableModules": [
+    {
+      "id": "ui/frame-scheduler",
+      "path": "src/core/ui/frame-scheduler.js"
+    },
+    {
+      "id": "ui/dom-mutation-hub",
+      "path": "src/core/ui/dom-mutation-hub.js"
+    },
+    {
+      "id": "ui/style-ownership-gate",
+      "path": "src/core/ui/style-ownership-gate.js"
+    },
+    {
+      "id": "contracts/style-ownership",
+      "path": "src/core/contracts/style-ownership.js"
+    },
+    {
+      "id": "contracts/style-ownership-semantics",
+      "path": "src/core/contracts/style-ownership-semantics.js"
+    },
+    {
+      "id": "contracts/presentation",
+      "path": "src/core/contracts/presentation.js"
+    },
+    {
+      "id": "host/platform-boundary",
+      "path": "src/core/host/platform-boundary.js"
+    },
+    {
+      "id": "ui/foundation/shortcuts",
+      "path": "src/core/ui/modules/foundation/shortcuts.js"
+    },
+    {
+      "id": "ui/selection/data-interaction",
+      "path": "src/core/ui/modules/selection/data-interaction.js"
+    },
+    {
+      "id": "ui/selection/view-binding",
+      "path": "src/core/ui/modules/selection/view-binding.js"
+    },
+    {
+      "id": "ui/series/primitives",
+      "path": "src/core/ui/modules/series/primitives.js"
+    },
+    {
+      "id": "ui/series/layout",
+      "path": "src/core/ui/modules/series/layout.js"
+    },
+    {
+      "id": "host/native-touch-drag",
+      "path": "src/core/host/native-touch-drag.js"
+    },
+    {
+      "id": "ui/interaction/context-actions",
+      "path": "src/core/ui/modules/interaction/context-actions.js"
+    },
+    {
+      "id": "ui/interaction/intent",
+      "path": "src/core/ui/modules/interaction/intent.js"
+    },
+    {
+      "id": "ui/interaction/adapters",
+      "path": "src/core/ui/modules/interaction/adapters.js"
+    },
+    {
+      "id": "ui/controls/select-popup",
+      "path": "src/core/ui/modules/controls/select-popup.js"
+    },
+    {
+      "id": "ui/interaction/behavior",
+      "path": "src/core/ui/modules/interaction/behavior.js"
+    },
+    {
+      "id": "ui/layout/docking",
+      "path": "src/core/ui/modules/layout/docking.js"
+    },
+    {
+      "id": "ui/layout/portable-view",
+      "path": "src/core/ui/modules/layout/portable-view.js"
+    },
+    {
+      "id": "ui/layout/workspace",
+      "path": "src/core/ui/modules/layout/workspace.js"
+    },
+    {
+      "id": "ui/layout/state-resolver",
+      "path": "src/core/ui/modules/layout/state-resolver.js"
+    },
+    {
+      "id": "ui/plot-view/chart",
+      "path": "src/core/ui/modules/plot-view/chart.js"
+    },
+    {
+      "id": "ui/workbench/view-host",
+      "path": "src/core/ui/modules/workbench/view-host.js"
+    },
+    {
+      "id": "ui/grid/controller",
+      "path": "src/core/ui/modules/grid/controller.js"
+    },
+    {
+      "id": "ui/dialog/settings",
+      "path": "src/core/ui/modules/dialog/settings.js"
+    },
+    {
+      "id": "ui/table/surfaces",
+      "path": "src/core/ui/modules/table/surfaces.js"
+    },
+    {
+      "id": "ui/tooltip/group-plot",
+      "path": "src/core/ui/modules/tooltip/group-plot.js"
+    },
+    {
+      "id": "ui/scientific-curve/surface",
+      "path": "src/core/ui/modules/scientific-curve/surface.js"
+    },
+    {
+      "id": "ui/workbench/analysis",
+      "path": "src/core/ui/modules/workbench/analysis.js"
+    },
+    {
+      "id": "ui/workbench/plugin",
+      "path": "src/core/ui/modules/workbench/plugin.js"
+    },
+    {
+      "id": "ui/scope/plugin-scope",
+      "path": "src/core/ui/modules/scope/plugin-scope.js"
+    },
+    {
+      "id": "ui/presentation/model",
+      "path": "src/core/ui/modules/presentation/model.js"
+    },
+    {
+      "id": "ui/presentation/presenters",
+      "path": "src/core/ui/modules/presentation/presenters.js"
+    },
+    {
+      "id": "ui/presentation/desktop-shell",
+      "path": "src/core/ui/modules/presentation/desktop-shell.js"
+    },
+    {
+      "id": "ui/presentation/mobile-web-surface",
+      "path": "src/core/ui/modules/presentation/mobile-web-surface.js"
+    },
+    {
+      "id": "ui/host/api",
+      "path": "src/core/ui/modules/host/api.js"
+    },
+    {
+      "id": "ui/scientific-curve/model",
+      "path": "src/core/ui/modules/scientific-curve/model.js"
+    },
+    {
+      "id": "ui/scientific-curve/navigation",
+      "path": "src/core/ui/modules/scientific-curve/navigation.js"
+    },
+    {
+      "id": "ui/scientific-curve/render",
+      "path": "src/core/ui/modules/scientific-curve/render.js"
+    },
+    {
+      "id": "ui/runtime",
+      "path": "src/core/ui/modules/runtime.js"
+    }
+  ],
+  "entryModule": "ui/runtime",
+  "modules": []
+}

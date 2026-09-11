@@ -1,0 +1,343 @@
+/* ============================================================
+   SUPER / TOP / PRIME / SUB workspace contract
+   ============================================================ */
+/* A SUPER is the main native PluginWorkspace surface, not a dismissible child page. */
+/* Canonical geometry migrated from the former Foundation baseline. */
+.analysis-page.super-workspace-root-page .analysis-page-close{display:none;}
+
+/* No implicit fallback: if SUPER is unavailable, present a deliberate choice. */
+.super-empty-page{display:grid;place-items:center;padding:28px;}
+
+.super-empty-card{width:min(560px,calc(100vw - 48px));padding:30px;text-align:center;}
+.super-empty-icon{width:52px;height:52px;margin:0 auto 12px;display:grid;place-items:center;font-size:24px;font-weight:800;}
+.super-empty-card h2{margin:0 0 8px;font-size:20px;}
+.super-empty-card p{margin:0 auto 18px;max-width:460px;font-size:12px;line-height:1.7;}
+
+/* Plugin manager: TOP icon is the only SUPER selector; one selected at a time. */
+.plugin-card-icon.plugin-super-selector{position:relative;padding:0;cursor:pointer;}
+.plugin-card-icon.plugin-super-selector:disabled{cursor:default;}
+.plugin-super-home-mark{position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;display:grid;place-items:center;font-size:var(--ui-font-tiny,10px);line-height:1;}
+.plugin-role-badge{flex:0 0 auto;padding:2px 6px;font-size:var(--ui-font-tiny,10px);font-weight:760;letter-spacing:.02em;}
+.plugin-enable-switch:has(.plugin-enable-input:disabled){cursor:default;}
+
+/* Activity content-box geometry is owned by shell-navigation.css. */
+
+/* PRIME placement host: future portable PRIME panels can use the same right / bottom / float grammar. */
+
+.prime-right-dock-slot{
+  display:none;min-width:0;min-height:0;width:min(36vw,420px);height:100%;overflow:auto;
+  flex-direction:column;align-items:stretch;gap:1px;
+}
+.prime-right-dock-slot.active{display:flex;}
+.prime-bottom-dock-slot{
+  display:none;min-width:0;min-height:0;max-height:44vh;overflow:auto;
+  flex-direction:column;align-items:stretch;gap:1px;
+}
+.prime-bottom-dock-slot.active{display:flex;}
+.dkds-prime-portable.dkds-prime-docked-right,
+.dkds-prime-portable.dkds-prime-docked-bottom{
+  position:relative;left:auto;right:auto;top:auto;bottom:auto;
+  transform:none;margin:0;max-width:none;resize:none;z-index:70;
+}
+.dkds-prime-portable.dkds-prime-docked-right{width:100%;min-width:0;flex:1 1 0;height:auto;min-height:180px;}
+.dkds-prime-portable.dkds-prime-docked-bottom{width:100%;min-width:0;height:auto;min-height:180px;}
+.dkds-prime-portable.dkds-prime-floating{
+  position:absolute;z-index:175;right:24px;top:86px;
+  width:min(420px,calc(100vw - 48px));height:min(560px,calc(100vh - 120px));
+  max-width:calc(100vw - 20px);max-height:calc(100vh - 76px);resize:both;overflow:hidden;
+}
+@media(max-width:900px){
+  .prime-right-dock-slot.active{display:flex;width:100%;height:auto;max-height:40vh}
+  .prime-bottom-dock-slot.active{display:flex}
+  .dkds-prime-portable.dkds-prime-docked-right{grid-column:1}
+}
+
+/* ============================================================
+   Status bar, project save choice and LAN panel controls
+   ============================================================ */
+#statusBar.statusbar{
+  --dkds-statusbar-gap:8px;
+  --dkds-statusbar-padding-left:10px;
+  --dkds-statusbar-padding-right:7px;
+  --dkds-statusbar-zone-height:100%;
+  --dkds-statusbar-zone-gap:3px;
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:1180;
+  height:var(--dkds-statusbar-height);
+  min-height:var(--dkds-statusbar-height);
+  display:flex;
+  align-items:center;
+  gap:var(--dkds-statusbar-gap);
+  padding:0 var(--dkds-statusbar-padding-right) 0 var(--dkds-statusbar-padding-left);
+  overflow:hidden;
+  white-space:nowrap;
+}
+.statusbar-persistent,.statusbar-separator{flex:0 0 auto;min-width:0;white-space:nowrap}
+.statusbar-persistent{overflow:hidden;text-overflow:ellipsis;max-width:min(34vw,440px)}
+.statusbar-message{
+  flex:1 1 auto;
+  min-width:60px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.statusbar-plugin-zone{
+  flex:0 0 auto;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:var(--dkds-statusbar-zone-gap);
+  height:var(--dkds-statusbar-zone-height);
+}
+.statusbar-plugin-left:empty,.statusbar-plugin-right:empty{display:none;}
+/* The command-cluster itself owns right-edge alignment. Plugin zones are adjacent
+   children inside that cluster and must not add a second spacer. */
+.statusbar-plugin-left,
+.statusbar-plugin-right{margin-left:0;}
+.plugin-status-item{
+  --dkds-status-item-height:22px;
+  --dkds-status-item-gap:5px;
+  --dkds-status-item-padding-inline:6px;
+  position:relative;
+  min-width:0;
+  height:var(--dkds-status-item-height);
+  min-height:var(--dkds-status-item-height);
+  display:inline-flex;
+  align-items:center;
+  gap:var(--dkds-status-item-gap);
+  padding-block:0;
+  padding-inline:var(--dkds-status-item-padding-inline);
+  font-size:10px;
+  line-height:1;
+  white-space:nowrap;
+  cursor:default;
+}
+button.plugin-status-item{cursor:pointer;}
+.plugin-status-icon{display:inline-grid;place-items:center;min-width:12px;font-weight:750;}
+.plugin-status-label{overflow:hidden;text-overflow:ellipsis;max-width:190px;}
+.plugin-status-item.compact .plugin-status-label{max-width:130px;}
+
+.project-save-choice-backdrop{padding:22px;}
+.project-save-choice-card{width:min(520px,calc(100vw - 36px));}
+.project-save-choice-body{display:flex;flex-direction:column;gap:10px;}
+.project-save-choice-summary{display:flex;flex-direction:column;gap:8px;padding:12px 13px;}
+.project-save-choice-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;}
+.project-save-choice-label{font-size:10px;font-weight:720;letter-spacing:.025em;}
+#projectSaveChoiceProjectName{max-width:min(270px,62vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.project-save-choice-hint{margin:0;}
+.project-save-choice-shortcuts{display:flex;align-items:center;gap:14px;padding:0 2px;font-size:10px;}
+.project-save-choice-shortcuts span{display:inline-flex;align-items:center;gap:5px;}
+.project-save-choice-shortcuts kbd{min-width:26px;padding:2px 5px;text-align:center;font:600 10px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;}
+.project-save-choice-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;justify-content:stretch;}
+.project-save-choice-actions .dkds-dialog-action{width:100%;min-width:0;min-height:34px;}
+@media(max-width:560px){
+  .project-save-choice-backdrop{padding:12px;}
+  .project-save-choice-card{width:min(100%,520px);}
+  .project-save-choice-actions{grid-template-columns:1fr;}
+  #projectSaveChoiceProjectName{max-width:54vw;}
+}
+
+#lanWebMinimizeBtn{
+  width:32px;
+  min-width:32px;
+  height:30px;
+  min-height:30px;
+  padding:0;
+  display:inline-grid;
+  place-items:center;
+  line-height:1;
+}
+
+
+/* Floating LAN management is a shell overlay.  Keep it above SUPER/TOP
+   splitters and analysis surfaces, but below the persistent status bar and
+   modal save prompts.  This prevents the SUPER divider from visually cutting
+   through the panel after the user has resized the workspace. */
+
+/* The edit dropdown belongs to the same file-command cluster visually.  Its
+   anchor used to inherit the wider generic dropdown minimum, making it the
+   only oversized command in the left toolbar group. */
+.global-commandbar .compact-menu-anchor>#editMenuBtn{min-width:72px;}
+
+@media(max-width:760px){
+  #statusBar.statusbar{--dkds-statusbar-gap:3px;--dkds-statusbar-padding-left:7px;--dkds-statusbar-padding-right:4px}
+  .statusbar-message{font-size:var(--ui-font-tiny,10px)}
+  .plugin-status-item{--dkds-status-item-padding-inline:4px;--dkds-status-item-gap:3px;font-size:var(--ui-font-tiny,10px)}
+  .plugin-status-label{max-width:105px}
+  .project-save-choice-actions{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .statusbar-message{display:none}
+  .statusbar-plugin-right{margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .statusbar-plugin-right::-webkit-scrollbar{display:none}
+  .plugin-status-label{max-width:92px}
+}
+.plugin-status-item.passive{cursor:default;}
+
+/* Plugin-manager cards are rebuilt when a plugin is enabled, disabled or
+   reloaded. Chromium scroll anchoring can otherwise treat the replacement as
+   a layout shift and jump the manager body toward the bottom. JS restores the
+   exact scroll position; disabling anchoring makes that repair deterministic. */
+
+/* ============================================================
+   Toolbar outline alignment and LAN icon geometry
+   ============================================================ */
+/* The LAN minimize action keeps the same hit target as Close, but uses a
+   compact drawn glyph instead of a long em dash. */
+#lanWebMinimizeBtn{
+  font-size:0;
+}
+#lanWebMinimizeBtn .lan-web-minimize-glyph{
+  display:block;
+  width:8px;
+  height:1px;
+  pointer-events:none;
+}
+
+/* Shell toolbar groups share one vertical silhouette. Standalone commands keep
+   the 34 px action rhythm and remain optically centered inside the 38 px envelope. */
+.global-commandbar>.compact-menu-anchor>#editMenuBtn{
+  height:var(--dkds-shell-action-height,34px);
+  min-height:var(--dkds-shell-action-height,34px);
+}
+
+/* Plugin prewarm preference and stable manager viewport. */
+.plugin-card-switches{display:flex;flex-direction:column;align-items:flex-end;gap:6px;justify-self:end;}
+.plugin-prewarm-switch{display:flex;align-items:center;gap:5px;font-size:var(--ui-font-tiny,10px);cursor:pointer;user-select:none;}
+.plugin-prewarm-switch input{position:absolute;pointer-events:none;}
+.plugin-prewarm-box{width:13px;height:13px;display:grid;place-items:center;box-sizing:border-box;}
+.plugin-prewarm-switch input:checked + .plugin-prewarm-box::after{content:"✓";font-size:var(--ui-font-tiny,10px);line-height:1;font-weight:800;}
+
+@media(max-width:760px){.plugin-card-switches{grid-column:1/-1;justify-self:end}}
+
+/* =========================================================
+   DKDS UI Infrastructure — plugin-neutral workspace layer
+   ========================================================= */
+.dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
+.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
+/* Core-owned semantic action density. Plugins may request a density on a
+   container, but the Core component owner remains the only geometry writer. */
+[data-dkds-action-density="regular"] .dkds-action-button{
+  min-height:var(--dkds-action-regular-height,32px);
+  padding-block:var(--dkds-action-regular-padding-block,4px);
+  line-height:1.15;
+}
+
+.dkds-action-icon{font-size:12px;line-height:1;}.dkds-action-caret{font-size:var(--ui-font-tiny,10px);}.dkds-action-separator{width:1px;height:20px;margin:0 2px;}
+.dkds-ui-workspace{min-width:0;min-height:0;position:relative;}.dkds-ui-region{min-width:0;min-height:0;}
+/* Core layout splitter geometry. Presentation is owned by the visual layer. */
+.dkds-split-handle{position:relative;flex:0 0 auto;touch-action:none;user-select:none;}
+.dkds-split-handle[data-axis="y"]{height:8px;cursor:row-resize;}
+.dkds-split-handle[data-axis="x"]{width:8px;cursor:col-resize;}
+.dkds-split-handle::after{content:"";position:absolute;}
+.dkds-split-handle[data-axis="y"]::after{left:50%;top:3px;width:44px;height:2px;transform:translateX(-50%);}
+.dkds-split-handle[data-axis="x"]::after{left:3px;top:50%;width:2px;height:44px;transform:translateY(-50%);}
+.dkds-portable-view{
+  --dkds-portable-fill-height:initial;
+  --dkds-portable-fill-min-height:initial;
+  --dkds-portable-fill-max-height:initial;
+  --dkds-portable-fill-flex:initial;
+  --dkds-portable-fill-overflow:initial;
+  --dkds-portable-header-height:32px;
+  --dkds-analysis-prime-head-min-height:34px;
+  min-width:var(--dkds-portable-base-min-width,260px);
+  min-height:var(--dkds-portable-base-min-height,100px);
+  overflow:hidden;display:flex;flex-direction:column;z-index:20;
+}
+.dkds-portable-header{
+  --dkds-header-action-height:22px;
+  height:var(--dkds-portable-header-height);min-height:var(--dkds-portable-header-height);flex:0 0 var(--dkds-portable-header-height);
+  display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;cursor:default;user-select:none;
+}
+.dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dkds-portable-view.is-floating{
+  position:var(--dkds-portable-floating-position,fixed);
+  max-width:var(--dkds-portable-floating-max-width,calc(100vw - 12px));
+  max-height:var(--dkds-portable-floating-max-height,calc(100vh - 42px));
+  min-width:var(--dkds-portable-floating-min-width,300px);
+  min-height:var(--dkds-portable-floating-min-height,180px);
+  z-index:var(--dkds-portable-floating-z,1100);
+  resize:var(--dkds-portable-floating-resize,none);
+  overflow:var(--dkds-portable-floating-overflow,auto);
+}
+
+/* A Portable PlotView is a resizable scientific window. Its header/meta rows keep
+   intrinsic height while the plot consumes the remaining user-sized viewport. */
+.dkds-plot-view.dkds-portable-view:is(.is-floating,.is-docked,.is-sticky){
+  --dkds-plot-content-flex:1 1 0;
+  --dkds-plot-content-min-height:0;
+  --dkds-plot-content-height:auto;
+}
+.dkds-plot-view.dkds-portable-view.is-floating{--dkds-portable-floating-overflow:hidden;}
+.dkds-portable-view.is-collapsed{
+  --dkds-portable-header-height:36px;
+  --dkds-analysis-prime-head-min-height:36px;
+}
+.dkds-portable-view.is-floating>:is(.dkds-portable-header,.dkds-portable-inline-header){cursor:move;}
+/* Fill is an explicit dock sizing policy; content remains the default. */
+.dkds-portable-view.is-docked[data-dkds-portable-sizing="fill"]:not([data-dkds-mobile-region]){
+  --dkds-portable-fill-height:100%;
+  --dkds-portable-fill-min-height:0px;
+  --dkds-portable-fill-max-height:100%;
+  --dkds-portable-fill-flex:1 1 0px;
+  --dkds-portable-fill-overflow:auto;
+}
+.dkds-portable-view.is-docked{
+  position:var(--dkds-portable-docked-position,relative);
+  inset:var(--dkds-portable-docked-inset,auto);
+  width:var(--dkds-portable-docked-width,100%);
+  min-width:var(--dkds-portable-docked-min-width,var(--dkds-portable-base-min-width,260px));
+  height:var(--dkds-portable-fill-height,var(--dkds-portable-docked-height,auto));
+  min-height:var(--dkds-portable-fill-min-height,var(--dkds-portable-docked-min-height,var(--dkds-portable-base-min-height,100px)));
+  max-width:var(--dkds-portable-docked-max-width,none);
+  max-height:var(--dkds-portable-fill-max-height,var(--dkds-portable-docked-max-height,none));
+  margin:var(--dkds-portable-docked-margin,0);
+  flex:var(--dkds-portable-fill-flex,var(--dkds-portable-docked-flex,0 0 auto));
+  overflow:var(--dkds-portable-fill-overflow,var(--dkds-portable-docked-overflow,hidden));
+  resize:var(--dkds-portable-docked-resize,none);
+}
+.dkds-portable-view.dock-right{--dkds-portable-docked-max-height:100%;}
+.dkds-portable-view.dock-bottom{--dkds-portable-docked-max-width:100%;}
+.dkds-portable-view.is-sticky{
+  position:var(--dkds-portable-sticky-position,sticky);
+  top:var(--dkds-portable-sticky-top,0px);
+  z-index:var(--dkds-portable-sticky-z,34);
+  align-self:var(--dkds-portable-sticky-align-self,start);
+  height:var(--dkds-portable-sticky-height,auto);
+  min-height:var(--dkds-portable-sticky-min-height,var(--dkds-portable-base-min-height,100px));
+  max-height:var(--dkds-portable-sticky-max-height,none);
+  overflow:hidden;
+}
+.dkds-chart-surface{min-width:0;min-height:220px;display:flex;flex-direction:column;}.dkds-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:3px 6px 3px 10px;}.dkds-chart-title{font-size:12px;}.dkds-chart-actions{display:flex;align-items:center;}.dkds-chart-plot{flex:1 1 auto;min-height:180px;min-width:0;}
+@media(max-width:900px){}
+.dkds-portable-inline-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}.dkds-portable-inline-header>.dkds-portable-controls{margin-left:auto;flex:0 0 auto;}
+.dkds-plugin-header-actions{margin-left:auto;display:flex;align-items:center;min-width:0;}.analysis-page-header>.dkds-plugin-header-actions+.analysis-page-close{margin-left:6px;}
+
+/* Core plugin UI infrastructure: shared context menu / pinned scientific surfaces. */
+.dkds-context-item{min-height:32px;padding:5px 8px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left;}
+.dkds-context-item kbd{font:inherit;font-size:11px;}
+.dkds-context-separator{height:1px;margin:3px 5px;}
+
+/* Compact portable-view location breadcrumb. One control replaces the
+   old six-icon strip so chart titles keep their horizontal space. */
+
+/* Portable placement controls are Core-owned and shared by current AnalysisWorkbench/PluginWorkspace surfaces. */
+
+/* =========================================================
+   Portable workbench placement contract
+   ========================================================= */
+/* Portable placement is a compact icon breadcrumb. The active icon is always
+   visible (◫ at home); the caret opens the complete placement menu. */
+.dkds-portable-controls.dkds-portable-breadcrumb{flex:0 0 auto;margin-left:0;}
+.dkds-portable-location-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1;}
+.dkds-portable-caret{font-size:var(--ui-font-tiny,10px);margin-top:1px;}
+
+
+@media(max-width:860px){
+}
+
+/* Lightweight floating-panel chrome: these are window affordances, not primary
+   content buttons. */

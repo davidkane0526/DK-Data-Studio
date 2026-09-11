@@ -1,0 +1,63 @@
+/* App-native Plugin DevTools presentation.
+   The window itself is the elevated Material owner. Internal chrome stays
+   transparent so glass/clear recipes are never occluded by local cards. */
+.dkds-plugin-devtools{position:fixed;inset:0;z-index:12000;display:flex;align-items:stretch;justify-content:flex-end;background:color-mix(in srgb,#0e141f 18%,transparent);backdrop-filter:blur(2px)}
+.dkds-plugin-devtools-window{width:min(720px,92vw);height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr);border-left:1px solid var(--dkui-divider);color:var(--dkui-text);overflow:hidden}
+.dkds-plugin-devtools-window>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--dkui-divider);background:transparent;box-shadow:none}
+.dkds-plugin-devtools-window>header>div:first-child{display:grid;gap:2px;min-width:0}
+.dkds-plugin-devtools-window>header strong{font-size:14px}
+.dkds-plugin-devtools-window>header span{font-size:10px;color:var(--dkui-muted)}
+.dkds-plugin-devtools-actions{display:flex;flex:0 0 auto;gap:6px;position:relative;z-index:1}
+.dkds-plugin-devtools-actions button:not(.dkds-panel-close-button){min-height:28px;padding:3px 9px}
+.dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-divider);overflow:auto;background:transparent;box-shadow:none}
+.dkds-plugin-devtools-window>nav button{padding:6px 9px}
+.dkds-plugin-devtools-window>main{overflow:auto;padding:12px;background:transparent}
+.dkds-devtools-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
+.dkds-devtools-metric{display:grid;gap:2px;padding:9px 10px;border:1px solid var(--dkui-divider);border-radius:9px;background:var(--dkui-surface-soft);box-shadow:none}
+.dkds-devtools-metric>span,.dkds-devtools-metric>small{font-size:10px;color:var(--dkui-muted)}
+.dkds-devtools-metric>strong{font-size:18px}
+.dkds-devtools-section{padding:10px 1px 12px;margin-bottom:8px;border:0;border-bottom:1px solid var(--dkui-divider);border-radius:0;background:transparent;box-shadow:none}
+.dkds-devtools-section:last-child{border-bottom:0;margin-bottom:0}
+.dkds-devtools-section h3{margin:0 0 8px;font-size:12px}
+.dkds-devtools-section p,.dkds-devtools-section li{font-size:11px;line-height:1.55;color:var(--dkui-muted)}
+.dkds-devtools-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:11px}
+.dkds-devtools-kv span{color:var(--dkui-muted)}
+.dkds-devtools-chiprow{display:flex;flex-wrap:wrap;gap:6px}
+.dkds-devtools-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;background:var(--dkui-surface-soft);font-size:var(--ui-font-tiny,10px)}
+.dkds-devtools-badge[data-tone="success"]{color:var(--dkui-success)}
+.dkds-devtools-badge[data-tone="warning"]{color:var(--dkui-warning)}
+.dkds-devtools-badge[data-tone="danger"]{color:var(--dkui-danger)}
+.dkds-devtools-badge[data-tone="info"]{color:var(--dkui-accent)}
+.dkds-devtools-table{width:100%;border-collapse:collapse;font-size:10px}
+.dkds-devtools-table th,.dkds-devtools-table td{padding:6px 7px;border-bottom:1px solid var(--dkui-divider);text-align:left}
+.dkds-devtools-swatch{display:inline-block;width:16px;height:3px;margin-right:6px;border-radius:9px;vertical-align:middle}
+.dkds-devtools-history-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--dkui-divider);font-size:11px}
+.dkds-devtools-history-row small,.dkds-devtools-empty{color:var(--dkui-muted);font-size:10px}
+.dkds-devtools-actions-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.dkds-devtools-actions-row button{min-height:30px;padding:4px 10px}
+
+
+/* Theme Inspector stays below Plugin DevTools and exposes a direct exit path. */
+.dkds-theme-debug-overlay{position:fixed;z-index:11900;right:10px;top:10px;width:min(430px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;padding:10px 12px;border-radius:9px;color:var(--dkui-text);font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;pointer-events:none;white-space:normal;word-break:break-word}
+.dkds-theme-debug-overlay[hidden]{display:none}
+.dkds-theme-debug-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;pointer-events:auto;cursor:move;user-select:none;touch-action:none}
+.dkds-theme-debug-overlay.is-dragging{cursor:grabbing}
+.dkds-theme-debug-overlay.is-dragging .dkds-theme-debug-header{cursor:grabbing}
+.dkds-theme-debug-exit{pointer-events:auto;cursor:default;display:grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0}
+.dkds-theme-debug-exit>svg{display:block;width:12px;height:12px;overflow:visible}
+.dkds-theme-debug-exit>svg path{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.dkds-theme-debug-hint{margin-top:2px;opacity:.72}
+
+.dkds-theme-style-trace{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--dkui-divider)}
+.dkds-theme-trace-group{padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--dkui-divider) 65%,transparent)}
+.dkds-theme-trace-group:last-child{border-bottom:0}
+.dkds-theme-trace-group[data-status="CONFLICT"]>b{color:var(--dkui-danger)}
+.dkds-theme-trace-group>small,.dkds-theme-trace-empty{color:var(--dkui-muted)}
+.dkds-theme-trace-props{margin-top:3px;padding-left:8px;color:var(--dkui-muted)}
+.dkds-theme-trace-filters{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0;pointer-events:auto}
+.dkds-theme-trace-filters>button{min-height:24px;padding:2px 7px;font:inherit}
+.dkds-theme-trace-diagnostic{padding:3px 0}
+.dkds-theme-trace-diagnostic[data-status="OWNER_CONFLICT"]>b,
+.dkds-theme-trace-diagnostic[data-status="UNEXPECTED_OWNER"]>b,
+.dkds-theme-trace-diagnostic[data-status="UNAUTHORIZED"]>b{color:var(--dkui-danger)}
+.dkds-theme-trace-diagnostic[data-status="UNOWNED"]>b{color:var(--dkui-warning)}

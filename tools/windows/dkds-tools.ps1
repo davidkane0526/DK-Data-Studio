@@ -1,0 +1,1903 @@
+﻿param(
+  [Parameter(Position=0)][string]$Action = 'menu',
+  [string]$Version = '',
+  [string]$PluginPath = '',
+  [string]$OutputPath = '',
+  [string]$ProxyMode = '',
+  [string]$Proxy = '',
+  [string]$NoProxy = '',
+  [switch]$KeepConsoleOpen
+)
+
+Set-StrictMode -Version 2.0
+$ErrorActionPreference = 'Stop'
+$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$Mobile = Join-Path $Root 'mobile'
+$UpdateServer = Join-Path $Root 'services\update-server'
+$MobileDist = if ($env:DKDS_ANDROID_OUTPUT_ROOT) {
+  [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($env:DKDS_ANDROID_OUTPUT_ROOT))
+} elseif (Test-Path -LiteralPath 'D:\PyDroidTemp' -PathType Container) {
+  'D:\PyDroidTemp\builds\dk-data-studio'
+} elseif ($env:LOCALAPPDATA) {
+  Join-Path $env:LOCALAPPDATA 'DKDataStudio\mobile-dist'
+} else {
+  Join-Path ([IO.Path]::GetTempPath()) 'DKDataStudio\mobile-dist'
+}
+
+function Get-DeveloperConfigPath {
+  if ($env:DKDS_TOOLBOX_CONFIG) { return [IO.Path]::GetFullPath($env:DKDS_TOOLBOX_CONFIG) }
+  if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKDataStudio\developer-toolbox.json') }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dkds-developer-toolbox.json') }
+  return (Join-Path $Root '.dkds-developer-toolbox.json')
+}
+
+function Read-DeveloperConfig {
+  $configPath = Get-DeveloperConfigPath
+  if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) { return $null }
+  try { return (Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json) }
+  catch {
+    Write-Host "WARN invalid developer toolbox config: $configPath" -ForegroundColor Yellow
+    return $null
+  }
+}
+
+function Get-DeveloperConfigValue([string]$Name) {
+  if (-not $script:DeveloperConfig) { return $null }
+  $property = $script:DeveloperConfig.PSObject.Properties[$Name]
+  if (-not $property) { return $null }
+  $value = [string]$property.Value
+  if ([string]::IsNullOrWhiteSpace($value)) { return $null }
+  return $value.Trim()
+}
+
+function Get-ProcessEnvFirst([string[]]$Names) {
+  foreach ($name in $Names) {
+    $value = [Environment]::GetEnvironmentVariable($name,'Process')
+    if (-not [string]::IsNullOrWhiteSpace($value)) { return $value.Trim() }
+  }
+  return $null
+}
+
+function Normalize-ProxyUrl([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  $candidate = $Value.Trim()
+  if ($candidate -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://') { $candidate = 'http://' + $candidate }
+  try { $uri = [Uri]$candidate } catch { throw "Invalid proxy URL: $Value" }
+  if (-not $uri.Host) { throw "Invalid proxy URL: $Value" }
+  return $uri.AbsoluteUri.TrimEnd('/')
+}
+
+function Protect-ProxyForDisplay([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return '(none)' }
+  try {
+    $uri = [Uri]$Value
+    if (-not $uri.UserInfo) { return $Value }
+    $builder = [UriBuilder]$uri
+    $builder.UserName = '***'
+    $builder.Password = '***'
+    return $builder.Uri.AbsoluteUri.TrimEnd('/')
+  } catch { return '(configured)' }
+}
+
+function Resolve-ProxyMode {
+  $mode = if ($ProxyMode) { $ProxyMode } else { Get-ProcessEnvFirst @('DKDS_PROXY_MODE') }
+  if (-not $mode) { $mode = Get-DeveloperConfigValue 'proxyMode' }
+  if (-not $mode) { $mode = 'auto' }
+  $mode = $mode.Trim().ToLowerInvariant()
+  switch ($mode) {
+    'disabled' { return 'off' }
+    'direct' { return 'off' }
+    'none' { return 'off' }
+    'environment' { return 'inherit' }
+    'env' { return 'inherit' }
+    'on' { return 'auto' }
+    'auto' { return 'auto' }
+    'inherit' { return 'inherit' }
+    'custom' { return 'custom' }
+    'off' { return 'off' }
+    default { throw "Unknown proxy mode: $mode. Use auto, inherit, custom or off." }
+  }
+}
+
+function Get-EffectiveNetworkConfig {
+  $mode = Resolve-ProxyMode
+  $cliProxy = if ($Proxy) { Normalize-ProxyUrl $Proxy } else { $null }
+  $dkdsProxy = Get-ProcessEnvFirst @('DKDS_PROXY')
+  if ($dkdsProxy) { $dkdsProxy = Normalize-ProxyUrl $dkdsProxy }
+  $configuredProxy = Get-DeveloperConfigValue 'proxyUrl'
+  if ($configuredProxy) { $configuredProxy = Normalize-ProxyUrl $configuredProxy }
+
+  if ($mode -eq 'auto') {
+    if ($cliProxy -or $dkdsProxy -or $configuredProxy) { $mode = 'custom' }
+    else { $mode = 'inherit' }
+  }
+
+  $httpProxy = $null
+  $httpsProxy = $null
+  $allProxy = $null
+  $source = 'direct'
+  if ($mode -eq 'custom') {
+    $customProxy = if ($cliProxy) { $cliProxy } elseif ($dkdsProxy) { $dkdsProxy } else { $configuredProxy }
+    if (-not $customProxy) { throw 'Proxy mode is custom, but no proxy URL is configured. Use -Proxy, DKDS_PROXY or the Developer Toolbox network page.' }
+    $httpProxy = $customProxy
+    $httpsProxy = $customProxy
+    $allProxy = $customProxy
+    $source = if ($cliProxy) { 'command line' } elseif ($dkdsProxy) { 'DKDS_PROXY' } else { 'developer-toolbox.json' }
+  } elseif ($mode -eq 'inherit') {
+    $httpProxy = Get-ProcessEnvFirst @('HTTP_PROXY','http_proxy','npm_config_proxy','NPM_CONFIG_PROXY')
+    $httpsProxy = Get-ProcessEnvFirst @('HTTPS_PROXY','https_proxy','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')
+    $allProxy = Get-ProcessEnvFirst @('ALL_PROXY','all_proxy')
+    if (-not $httpProxy -and $allProxy) { $httpProxy = $allProxy }
+    if (-not $httpsProxy -and $allProxy) { $httpsProxy = $allProxy }
+    if ($httpProxy) { $httpProxy = Normalize-ProxyUrl $httpProxy }
+    if ($httpsProxy) { $httpsProxy = Normalize-ProxyUrl $httpsProxy }
+    if ($allProxy) { $allProxy = Normalize-ProxyUrl $allProxy }
+    $source = if ($httpProxy -or $httpsProxy -or $allProxy) { 'process environment' } else { 'direct (no inherited proxy)' }
+  }
+
+  $noProxyValue = if ($NoProxy) { $NoProxy.Trim() } else { Get-ProcessEnvFirst @('DKDS_NO_PROXY') }
+  if (-not $noProxyValue) { $noProxyValue = Get-DeveloperConfigValue 'noProxy' }
+  if (-not $noProxyValue -and $mode -eq 'inherit') { $noProxyValue = Get-ProcessEnvFirst @('NO_PROXY','no_proxy','npm_config_noproxy','NPM_CONFIG_NOPROXY') }
+
+  return [ordered]@{
+    Mode = $mode
+    Source = $source
+    HttpProxy = $httpProxy
+    HttpsProxy = $httpsProxy
+    AllProxy = $allProxy
+    NoProxy = $noProxyValue
+  }
+}
+
+function Set-ProcessEnvAliases([string[]]$Names,[string]$Value) {
+  foreach ($name in $Names) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { Remove-Item ("Env:" + $name) -ErrorAction SilentlyContinue }
+    else { Set-Item ("Env:" + $name) -Value $Value }
+  }
+}
+
+function Convert-NoProxyToJavaPattern([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  $patterns = @()
+  foreach ($raw in ($Value -split ',')) {
+    $item = $raw.Trim()
+    if (-not $item) { continue }
+    if ($item -eq '*') { return '*' }
+    if ($item -match '^\[[^\]]+\](?::\d+)?$') { $item = $item -replace ':\d+$','' }
+    elseif ($item -match '^[^:]+:\d+$') { $item = $item -replace ':\d+$','' }
+    if ($item.StartsWith('.')) { $item = '*' + $item }
+    $patterns += $item
+  }
+  if ($patterns.Count -eq 0) { return $null }
+  return (($patterns | Select-Object -Unique) -join '|')
+}
+
+function Clear-GradleProxyOptions {
+  if (-not $env:GRADLE_OPTS) { return }
+  $pattern = '(?i)(?<!\S)-D(?:http|https)\.(?:proxyHost|proxyPort|proxyUser|proxyPassword|nonProxyHosts)=(?:"[^"]*"|''[^'']*''|\S+)'
+  $cleaned = [Regex]::Replace($env:GRADLE_OPTS, $pattern, ' ')
+  $cleaned = [Regex]::Replace($cleaned, '\s+', ' ').Trim()
+  if ($cleaned) { $env:GRADLE_OPTS = $cleaned }
+  else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+}
+
+function Remove-GradleJvmSystemProperty([string]$Name) {
+  if (-not $env:GRADLE_OPTS) { return }
+  $escaped=[Regex]::Escape($Name)
+  $pattern='(?i)(?<!\S)(?:"-D' + $escaped + '=(?:\\.|[^"])*"|-D' + $escaped + '=\S+)'
+  $cleaned=[Regex]::Replace($env:GRADLE_OPTS,$pattern,' ')
+  $cleaned=[Regex]::Replace($cleaned,'\s+',' ').Trim()
+  if ($cleaned) { $env:GRADLE_OPTS=$cleaned }
+  else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+}
+
+function Add-GradleJvmSystemProperty([string]$Name,[string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return }
+  Remove-GradleJvmSystemProperty $Name
+  $rawToken = "-D$Name=$Value"
+  # gradlew.bat expands GRADLE_OPTS through cmd.exe. Quote values containing
+  # spaces or cmd metacharacters so a single JVM system property reaches Java.
+  $token = if ($rawToken -match '[\s&|<>^()]') { '"' + $rawToken.Replace('"','\"') + '"' } else { $rawToken }
+  if (-not $env:GRADLE_OPTS) { $env:GRADLE_OPTS = $token; return }
+  $env:GRADLE_OPTS = ($env:GRADLE_OPTS.Trim() + ' ' + $token)
+}
+
+function Add-GradleProxyOption([string]$Name,[string]$Value) {
+  Add-GradleJvmSystemProperty $Name $Value
+}
+
+function Apply-GradleProxy([string]$HttpProxy,[string]$HttpsProxy,[string]$NoProxyValue) {
+  Clear-GradleProxyOptions
+  foreach ($entry in @(@('http',$HttpProxy),@('https',$HttpsProxy))) {
+    $scheme = $entry[0]
+    $value = $entry[1]
+    if (-not $value) { continue }
+    try { $uri = [Uri]$value } catch { continue }
+    if ($uri.Scheme -notin @('http','https')) { continue }
+    Add-GradleProxyOption "$scheme.proxyHost" $uri.Host
+    if ($uri.Port -gt 0) { Add-GradleProxyOption "$scheme.proxyPort" ([string]$uri.Port) }
+    if ($uri.UserInfo) {
+      $parts = $uri.UserInfo -split ':',2
+      if ($parts.Count -ge 1 -and $parts[0]) { Add-GradleProxyOption "$scheme.proxyUser" ([Uri]::UnescapeDataString($parts[0])) }
+      if ($parts.Count -ge 2 -and $parts[1]) { Add-GradleProxyOption "$scheme.proxyPassword" ([Uri]::UnescapeDataString($parts[1])) }
+    }
+  }
+  $javaNoProxy = Convert-NoProxyToJavaPattern $NoProxyValue
+  if ($javaNoProxy) {
+    Add-GradleProxyOption 'http.nonProxyHosts' $javaNoProxy
+    Add-GradleProxyOption 'https.nonProxyHosts' $javaNoProxy
+  }
+}
+
+function Initialize-NetworkEnvironment {
+  $script:NetworkConfig = Get-EffectiveNetworkConfig
+  if ($script:NetworkConfig.Mode -eq 'off') {
+    Set-ProcessEnvAliases @('HTTP_PROXY','http_proxy','HTTPS_PROXY','https_proxy','ALL_PROXY','all_proxy','npm_config_proxy','NPM_CONFIG_PROXY','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY','npm_config_noproxy','NPM_CONFIG_NOPROXY','GLOBAL_AGENT_HTTP_PROXY','GLOBAL_AGENT_HTTPS_PROXY','ELECTRON_GET_USE_PROXY') $null
+    Set-ProcessEnvAliases @('NO_PROXY','no_proxy') $null
+    Clear-GradleProxyOptions
+    return
+  }
+
+  Set-ProcessEnvAliases @('HTTP_PROXY','http_proxy') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('HTTPS_PROXY','https_proxy') $script:NetworkConfig.HttpsProxy
+  Set-ProcessEnvAliases @('ALL_PROXY','all_proxy') $script:NetworkConfig.AllProxy
+  Set-ProcessEnvAliases @('npm_config_proxy','NPM_CONFIG_PROXY') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY') $script:NetworkConfig.HttpsProxy
+  Set-ProcessEnvAliases @('NO_PROXY','no_proxy','npm_config_noproxy','NPM_CONFIG_NOPROXY') $script:NetworkConfig.NoProxy
+  Set-ProcessEnvAliases @('GLOBAL_AGENT_HTTP_PROXY') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('GLOBAL_AGENT_HTTPS_PROXY') $script:NetworkConfig.HttpsProxy
+  if ($script:NetworkConfig.HttpProxy -or $script:NetworkConfig.HttpsProxy -or $script:NetworkConfig.AllProxy) { $env:ELECTRON_GET_USE_PROXY = '1' }
+  else { Remove-Item Env:ELECTRON_GET_USE_PROXY -ErrorAction SilentlyContinue }
+  Apply-GradleProxy $script:NetworkConfig.HttpProxy $script:NetworkConfig.HttpsProxy $script:NetworkConfig.NoProxy
+}
+
+function Test-NoProxyForUri([Uri]$Uri,[string]$NoProxyValue) {
+  if (-not $Uri -or [string]::IsNullOrWhiteSpace($NoProxyValue)) { return $false }
+  $hostName = $Uri.Host.ToLowerInvariant()
+  foreach ($raw in ($NoProxyValue -split ',')) {
+    $item = $raw.Trim().ToLowerInvariant()
+    if (-not $item) { continue }
+    if ($item -eq '*') { return $true }
+    $hostPart = $item
+    if ($hostPart -match '^\[[^\]]+\](?::\d+)?$') { $hostPart = $hostPart -replace ':\d+$','' }
+    elseif ($hostPart -match '^[^:]+:\d+$') { $hostPart = $hostPart -replace ':\d+$','' }
+    if ($hostPart.StartsWith('*.')) { $hostPart = $hostPart.Substring(1) }
+    if ($hostPart.StartsWith('.')) {
+      if ($hostName.EndsWith($hostPart) -or $hostName -eq $hostPart.Substring(1)) { return $true }
+    } elseif ($hostName -eq $hostPart -or $hostName.EndsWith('.' + $hostPart)) {
+      return $true
+    }
+  }
+  return $false
+}
+
+function Get-PowerShellProxyForUri([string]$UriText) {
+  if (-not $script:NetworkConfig -or $script:NetworkConfig.Mode -eq 'off') { return $null }
+  try { $uri = [Uri]$UriText } catch { return $null }
+  if (Test-NoProxyForUri $uri $script:NetworkConfig.NoProxy) { return $null }
+  $candidate = if ($uri.Scheme -eq 'https') { $script:NetworkConfig.HttpsProxy } else { $script:NetworkConfig.HttpProxy }
+  if (-not $candidate) { $candidate = $script:NetworkConfig.AllProxy }
+  if (-not $candidate) { return $null }
+  try {
+    $proxyUri = [Uri]$candidate
+    if ($proxyUri.Scheme -notin @('http','https')) { return $null }
+  } catch { return $null }
+  return $candidate
+}
+
+function Invoke-DkdsWebRequest {
+  param(
+    [Parameter(Mandatory=$true)][string]$Uri,
+    [string]$OutFile = '',
+    [Nullable[int]]$MaximumRedirection = $null
+  )
+  $arguments = @{ Uri=$Uri; UseBasicParsing=$true; ErrorAction='Stop' }
+  if ($OutFile) { $arguments.OutFile = $OutFile }
+  if ($null -ne $MaximumRedirection) { $arguments.MaximumRedirection = [int]$MaximumRedirection }
+  $webProxy = Get-PowerShellProxyForUri $Uri
+  if ($webProxy) {
+    $proxyUri = [Uri]$webProxy
+    $proxyBuilder = [UriBuilder]$proxyUri
+    $proxyBuilder.UserName = ''
+    $proxyBuilder.Password = ''
+    $arguments.Proxy = $proxyBuilder.Uri.AbsoluteUri.TrimEnd('/')
+    if ($proxyUri.UserInfo) {
+      $parts = $proxyUri.UserInfo -split ':',2
+      $userName = [Uri]::UnescapeDataString($parts[0])
+      $password = if ($parts.Count -ge 2) { [Uri]::UnescapeDataString($parts[1]) } else { '' }
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $arguments.ProxyCredential = New-Object System.Management.Automation.PSCredential($userName,$securePassword)
+    }
+  }
+  return (Invoke-WebRequest @arguments)
+}
+
+function Show-EffectiveNetwork {
+  if (-not $script:NetworkConfig) { return }
+  Write-Host 'Effective network / proxy:' -ForegroundColor Cyan
+  Write-Host ("  mode             : {0}" -f $script:NetworkConfig.Mode) -ForegroundColor DarkGray
+  Write-Host ("  source           : {0}" -f $script:NetworkConfig.Source) -ForegroundColor DarkGray
+  Write-Host ("  HTTP proxy       : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.HttpProxy)) -ForegroundColor DarkGray
+  Write-Host ("  HTTPS proxy      : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.HttpsProxy)) -ForegroundColor DarkGray
+  Write-Host ("  ALL proxy        : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.AllProxy)) -ForegroundColor DarkGray
+  Write-Host ("  NO_PROXY         : {0}" -f $(if ($script:NetworkConfig.NoProxy) { $script:NetworkConfig.NoProxy } else { '(none)' })) -ForegroundColor DarkGray
+}
+
+function Resolve-ConfiguredPath([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  return [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Value.Trim()))
+}
+
+$script:DeveloperConfig = Read-DeveloperConfig
+
+function Get-SharedToolRoot {
+  if ($env:DK_TOOL_ROOT) { return (Resolve-ConfiguredPath $env:DK_TOOL_ROOT) }
+  $configured = Get-DeveloperConfigValue 'toolRoot'
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($env:PYDROID_TOOL_ROOT -and $env:PYDROID_TOOL_ROOT -ine 'D:\Code\Language') { return (Resolve-ConfiguredPath $env:PYDROID_TOOL_ROOT) }
+  if (Test-Path 'D:\Code\NodeJs\node.exe') { return 'D:\Code' }
+  if ($env:PYDROID_TOOL_ROOT) { return (Resolve-ConfiguredPath $env:PYDROID_TOOL_ROOT) }
+  if (Test-Path 'D:\Code') { return 'D:\Code' }
+  if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKSharedToolchain') }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dk-toolchain') }
+  return $null
+}
+
+function Get-SharedCacheRoot {
+  if ($env:DK_CACHE_ROOT) { return (Resolve-ConfiguredPath $env:DK_CACHE_ROOT) }
+  $configured = Get-DeveloperConfigValue 'cacheRoot'
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  $toolRoot = Get-SharedToolRoot
+  if ($toolRoot) { return (Join-Path $toolRoot 'BuildCache') }
+  return $null
+}
+
+function Get-CachePathMode {
+  $configured = Get-DeveloperConfigValue 'cachePathMode'
+  if ($configured) { return $configured.ToLowerInvariant() }
+  # v1 configs wrote the derived child paths as if they were explicit overrides.
+  # Treat them as root-derived by default so changing cacheRoot actually moves the cache.
+  return 'derived'
+}
+
+function Get-ConfiguredCachePath([string]$ConfigName,[string]$DefaultLeaf,[string]$DkEnvName='',[string]$StandardEnvName='') {
+  if ($DkEnvName) {
+    $dkValue = [Environment]::GetEnvironmentVariable($DkEnvName,'Process')
+    if ($dkValue) { return (Resolve-ConfiguredPath $dkValue) }
+  }
+  $configured = Get-DeveloperConfigValue $ConfigName
+  $mode = Get-CachePathMode
+  if ($mode -eq 'custom' -and $configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot $DefaultLeaf) }
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($StandardEnvName) {
+    $standardValue = [Environment]::GetEnvironmentVariable($StandardEnvName,'Process')
+    if ($standardValue) { return (Resolve-ConfiguredPath $standardValue) }
+  }
+  return $null
+}
+
+function Get-SharedNodeModulesRoot {
+  if ($env:DK_NODE_MODULES_ROOT) { return (Resolve-ConfiguredPath $env:DK_NODE_MODULES_ROOT) }
+  $mode = Get-CachePathMode
+  $configured = Get-DeveloperConfigValue 'nodeModulesRoot'
+  if ($mode -eq 'custom' -and $configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot 'node_modules') }
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  return $null
+}
+
+$SharedToolRoot = Get-SharedToolRoot
+$SharedCacheRoot = Get-SharedCacheRoot
+$SharedNodeModulesRoot = Get-SharedNodeModulesRoot
+$script:BuildCachePaths = $null
+$script:NetworkConfig = $null
+$script:BinaryMirrorFallbackEnabled = $false
+
+function Write-SectionTitle([string]$Text) {
+  Write-Host ''
+  Write-Host ('=' * 68) -ForegroundColor DarkGray
+  Write-Host (' DKDS · ' + $Text) -ForegroundColor Cyan
+  Write-Host ('=' * 68) -ForegroundColor DarkGray
+}
+
+function Require-Command([string]$Name,[string]$Hint='') {
+  $command = Get-Command $Name -ErrorAction SilentlyContinue
+  if (-not $command) {
+    throw "$Name not found. $Hint"
+  }
+  return $command
+}
+
+function Invoke-Step {
+  param(
+    [Parameter(Mandatory=$true)][string]$FilePath,
+    [string[]]$Arguments = @(),
+    [string]$WorkingDirectory = $Root
+  )
+
+  if (-not (Test-Path $WorkingDirectory)) {
+    throw "Working directory not found: $WorkingDirectory"
+  }
+
+  Push-Location $WorkingDirectory
+  try {
+    $display = if ($Arguments.Count -gt 0) { $FilePath + ' ' + ($Arguments -join ' ') } else { $FilePath }
+    Write-Host ('> ' + $display) -ForegroundColor DarkGray
+    & $FilePath @Arguments | Out-Host
+    $exitCode = $LASTEXITCODE
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+      throw "$FilePath exited with code $exitCode"
+    }
+  } finally {
+    Pop-Location
+  }
+}
+
+function Get-NodeModulesSlot([string]$Dir) {
+  if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) { return 'mobile' }
+  $packagePath=Join-Path $Dir 'package.json'
+  if (Test-Path -LiteralPath $packagePath -PathType Leaf) {
+    try {
+      $package=Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json
+      if ([string]$package.name -eq 'dk-data-studio-mobile') { return 'mobile' }
+    } catch {}
+  }
+  return 'desktop'
+}
+
+function Get-FileSha256([string]$Path) {
+  $stream=[IO.File]::OpenRead([IO.Path]::GetFullPath($Path))
+  $sha=[Security.Cryptography.SHA256]::Create()
+  try {
+    return [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','').ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
+  }
+}
+
+function Get-DependencySignature([string]$Dir=$Root) {
+  $packagePath = Join-Path $Dir 'package.json'
+  if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
+    throw "package.json not found: $Dir"
+  }
+
+  $parts = New-Object System.Collections.Generic.List[string]
+  $parts.Add((Get-FileSha256 $packagePath)) | Out-Null
+  $lockPath = Join-Path $Dir 'package-lock.json'
+  if (Test-Path -LiteralPath $lockPath -PathType Leaf) {
+    $parts.Add((Get-FileSha256 $lockPath)) | Out-Null
+  }
+  $parts.Add([string]$env:PROCESSOR_ARCHITECTURE) | Out-Null
+  $parts.Add((Get-NodeModulesSlot $Dir)) | Out-Null
+  $payload = [Text.Encoding]::UTF8.GetBytes(($parts -join '|'))
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $hash = [BitConverter]::ToString($sha.ComputeHash($payload)).Replace('-','').ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+  }
+  return $hash.Substring(0,20)
+}
+
+function Get-SharedDependencyEntry([string]$Dir=$Root) {
+  if (-not $SharedNodeModulesRoot) { return $null }
+  $slot = Get-NodeModulesSlot $Dir
+  $signature = Get-DependencySignature $Dir
+  return (Join-Path (Join-Path $SharedNodeModulesRoot $slot) $signature)
+}
+
+function Get-SharedNodeModulesTarget([string]$Dir=$Root) {
+  $entry = Get-SharedDependencyEntry $Dir
+  if (-not $entry) { return $null }
+  return (Join-Path $entry 'node_modules')
+}
+
+function Remove-NodeModulesPath([string]$PathToRemove) {
+  if (-not (Test-Path -LiteralPath $PathToRemove)) { return }
+  for ($attempt = 1; $attempt -le 4; $attempt++) {
+    try {
+      $existing = Get-Item -LiteralPath $PathToRemove -Force -ErrorAction Stop
+      if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        # Never recurse through a Junction and never let Remove-Item prompt for
+        # child deletion. Directory.Delete(path, false) removes only the link.
+        [IO.Directory]::Delete($PathToRemove, $false)
+      } else {
+        Remove-Item -LiteralPath $PathToRemove -Recurse -Force -ErrorAction Stop
+      }
+      return
+    } catch {
+      if ($attempt -ge 4) {
+        throw "Cannot replace node_modules at $PathToRemove. Close running DK Data Studio / Electron processes and retry. $($_.Exception.Message)"
+      }
+      Start-Sleep -Milliseconds (250 * $attempt)
+    }
+  }
+}
+
+function Ensure-SharedNodeModulesLink([string]$Dir=$Root,[string]$TargetPath='') {
+  if (-not $SharedNodeModulesRoot) { return }
+  if (-not $TargetPath) { $TargetPath = Get-SharedNodeModulesTarget $Dir }
+  if (-not $TargetPath) { return }
+
+  $target = [IO.Path]::GetFullPath($TargetPath)
+  $link = Join-Path $Dir 'node_modules'
+  if (-not (Test-Path -LiteralPath $target -PathType Container)) {
+    throw "Shared node_modules target is not ready: $target"
+  }
+
+  if (Test-Path -LiteralPath $link) {
+    $item = Get-Item -LiteralPath $link -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+      $currentTarget = $null
+      try {
+        $rawTargets = @($item.Target)
+        if ($rawTargets.Count -gt 0 -and $rawTargets[0]) { $currentTarget = [string]$rawTargets[0] }
+      } catch {}
+      if ($currentTarget) {
+        if (-not [IO.Path]::IsPathRooted($currentTarget)) {
+          $currentTarget = Join-Path (Split-Path $link -Parent) $currentTarget
+        }
+        $currentTarget = [IO.Path]::GetFullPath($currentTarget)
+        if ($currentTarget -ieq $target) { return }
+        Write-Host "INFO shared dependency version changed; rebinding Junction:" -ForegroundColor Cyan
+        Write-Host "     old: $currentTarget" -ForegroundColor DarkGray
+        Write-Host "     new: $target" -ForegroundColor DarkGray
+      } else {
+        Write-Host "INFO replacing an uninspectable node_modules reparse point: $link" -ForegroundColor Cyan
+      }
+      Remove-NodeModulesPath $link
+    } else {
+      # npm treats a Junction at the project root as a non-directory during reify
+      # and may delete it. Older toolbox releases therefore left a real, partial
+      # node_modules in the extracted project after a failed Electron download.
+      # A configured shared cache is authoritative, so replace that disposable
+      # local dependency tree with the immutable shared entry.
+      Write-Host "INFO replacing local node_modules with shared immutable cache:" -ForegroundColor Cyan
+      Write-Host "     local : $link" -ForegroundColor DarkGray
+      Write-Host "     shared: $target" -ForegroundColor DarkGray
+      Remove-NodeModulesPath $link
+    }
+  }
+
+  New-Item -ItemType Junction -Path $link -Target $target | Out-Null
+  Write-Host "Shared node_modules: $link -> $target" -ForegroundColor DarkGray
+}
+
+function Test-ElectronBinaryReady([string]$ModulesPath) {
+  $electronDir = Join-Path $ModulesPath 'electron'
+  if (-not (Test-Path -LiteralPath (Join-Path $electronDir 'package.json') -PathType Leaf)) { return $false }
+  if (-not (Test-Path -LiteralPath (Join-Path $electronDir 'path.txt') -PathType Leaf)) { return $false }
+  return (Test-Path -LiteralPath (Join-Path $electronDir 'dist\electron.exe') -PathType Leaf)
+}
+
+function Get-BinaryMirrorMode {
+  $processValue = [Environment]::GetEnvironmentVariable('DK_BINARY_MIRROR_MODE','Process')
+  if ($processValue) { return $processValue.Trim().ToLowerInvariant() }
+  $configured = Get-DeveloperConfigValue 'binaryMirrorMode'
+  if ($configured) { return $configured.Trim().ToLowerInvariant() }
+  return 'auto'
+}
+
+function Enable-BinaryMirrorFallback {
+  if ((Get-BinaryMirrorMode) -eq 'official') { return $false }
+  if (-not $env:ELECTRON_MIRROR) {
+    $configuredElectronMirror = Get-DeveloperConfigValue 'electronMirror'
+    $env:ELECTRON_MIRROR = if ($configuredElectronMirror) { $configuredElectronMirror } else { 'https://cdn.npmmirror.com/binaries/electron/' }
+  }
+  if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR) {
+    $configuredBuilderMirror = Get-DeveloperConfigValue 'electronBuilderMirror'
+    $env:ELECTRON_BUILDER_BINARIES_MIRROR = if ($configuredBuilderMirror) { $configuredBuilderMirror } else { 'https://cdn.npmmirror.com/binaries/electron-builder-binaries/' }
+  }
+  $script:BinaryMirrorFallbackEnabled = $true
+  Write-Host "INFO binary mirror fallback enabled:" -ForegroundColor Yellow
+  Write-Host "     Electron        : $env:ELECTRON_MIRROR" -ForegroundColor DarkGray
+  Write-Host "     electron-builder: $env:ELECTRON_BUILDER_BINARIES_MIRROR" -ForegroundColor DarkGray
+  return $true
+}
+
+function Ensure-ElectronBinary([string]$ModulesPath) {
+  if (Test-ElectronBinaryReady $ModulesPath) { return }
+  $installer = Join-Path $ModulesPath 'electron\install.js'
+  if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
+    throw "Electron npm package is missing its installer: $installer"
+  }
+
+  Write-SectionTitle 'Prepare Electron binary'
+  $mode = Get-BinaryMirrorMode
+  if ($mode -eq 'mirror') { [void](Enable-BinaryMirrorFallback) }
+
+  $lastError = $null
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      Write-Host ("Electron binary attempt {0}/3" -f $attempt) -ForegroundColor DarkGray
+      Invoke-Step -FilePath 'node' -Arguments @($installer) -WorkingDirectory (Split-Path $installer -Parent)
+      if (Test-ElectronBinaryReady $ModulesPath) { return }
+      throw 'Electron installer returned without producing dist\electron.exe.'
+    } catch {
+      $lastError = $_
+      if ($attempt -eq 1 -and $mode -eq 'auto' -and -not $script:BinaryMirrorFallbackEnabled) {
+        [void](Enable-BinaryMirrorFallback)
+      }
+      if ($attempt -lt 3) { Start-Sleep -Seconds $attempt }
+    }
+  }
+
+  throw "Electron binary installation failed after retries. npm package downloads are cached separately from Electron's binary ZIP. Cache=$env:electron_config_cache Mirror=$env:ELECTRON_MIRROR Error=$($lastError.Exception.Message)"
+}
+
+function Clear-StaleDependencyStaging([string]$SlotRoot) {
+  if (-not $SlotRoot -or -not (Test-Path -LiteralPath $SlotRoot -PathType Container)) { return }
+  foreach ($candidate in @(Get-ChildItem -LiteralPath $SlotRoot -Directory -Filter '*.staging-*' -ErrorAction SilentlyContinue)) {
+    $match=[Regex]::Match($candidate.Name,'\.staging-(\d+)$')
+    if (-not $match.Success) { continue }
+    $ownerPid=[int]$match.Groups[1].Value
+    if (Get-Process -Id $ownerPid -ErrorAction SilentlyContinue) { continue }
+    Write-Host "INFO removing stale dependency staging left by dead process $ownerPid`: $($candidate.FullName)" -ForegroundColor Yellow
+    try { Remove-NodeModulesPath $candidate.FullName }
+    catch { Write-Host "WARN could not remove stale dependency staging: $($_.Exception.Message)" -ForegroundColor Yellow }
+  }
+}
+
+function Get-AvailableBytesForPath([string]$PathValue) {
+  if ([string]::IsNullOrWhiteSpace($PathValue)) { return $null }
+  try {
+    $full=[IO.Path]::GetFullPath($PathValue)
+    $rootPath=[IO.Path]::GetPathRoot($full)
+    if ([string]::IsNullOrWhiteSpace($rootPath)) { return $null }
+    $drive=[IO.DriveInfo]::new($rootPath)
+    if (-not $drive.IsReady) { return $null }
+    return [Int64]$drive.AvailableFreeSpace
+  } catch { return $null }
+}
+
+function Format-StorageBytes([Nullable[Int64]]$Bytes) {
+  if ($null -eq $Bytes) { return 'unknown' }
+  if ($Bytes.Value -ge 1GB) { return ('{0:N2} GiB' -f ($Bytes.Value / 1GB)) }
+  if ($Bytes.Value -ge 1MB) { return ('{0:N0} MiB' -f ($Bytes.Value / 1MB)) }
+  return ('{0:N0} KiB' -f ($Bytes.Value / 1KB))
+}
+
+function Get-LatestNpmDebugLog([DateTime]$SinceUtc) {
+  if (-not $env:npm_config_cache) { return $null }
+  $logRoot=Join-Path $env:npm_config_cache '_logs'
+  if (-not (Test-Path -LiteralPath $logRoot -PathType Container)) { return $null }
+  $logs=@(Get-ChildItem -LiteralPath $logRoot -File -Filter '*-debug-0.log' -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTimeUtc -ge $SinceUtc } |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1)
+  if ($logs.Count -eq 0) { return $null }
+  return $logs[0]
+}
+
+function Test-NpmLogNoSpace([string]$LogPath) {
+  if (-not $LogPath -or -not (Test-Path -LiteralPath $LogPath -PathType Leaf)) { return $false }
+  try { return [bool](Select-String -LiteralPath $LogPath -Pattern 'ENOSPC|no space left on device' -Quiet) }
+  catch { return $false }
+}
+
+function New-DependencyNoSpaceMessage([string]$StagingPath,[Nullable[Int64]]$AvailableBytes,[string]$LogPath='') {
+  $message="npm ran out of storage while extracting desktop dependencies. Staging=$StagingPath Available=$(Format-StorageBytes $AvailableBytes)."
+  if ($LogPath) { $message += " npmLog=$LogPath." }
+  $message += ' Free space or move Developer Toolbox > 路径与缓存 > shared cache root / node_modules root to a larger drive, then retry. Stale .staging-* directories from dead installs are cleaned automatically.'
+  return $message
+}
+
+function Install-SharedDependencyEntry([string]$Dir=$Root) {
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
+  if (-not $SharedNodeModulesRoot) { return $null }
+
+  $entry = Get-SharedDependencyEntry $Dir
+  $modulesTarget = Join-Path $entry 'node_modules'
+  $readyMarker = Join-Path $entry '.dkds-ready.json'
+  $isDesktop = (Get-NodeModulesSlot $Dir) -eq 'desktop'
+  if ((Test-Path -LiteralPath $readyMarker -PathType Leaf) -and
+      (Test-Path -LiteralPath $modulesTarget -PathType Container) -and
+      ((-not $isDesktop) -or (Test-ElectronBinaryReady $modulesTarget))) {
+    return $modulesTarget
+  }
+
+  $slotRoot = Split-Path $entry -Parent
+  New-Item -ItemType Directory -Force -Path $slotRoot | Out-Null
+  Clear-StaleDependencyStaging $slotRoot
+
+  if (Test-Path -LiteralPath $entry) {
+    Write-Host "INFO removing incomplete shared dependency cache: $entry" -ForegroundColor Yellow
+    Remove-NodeModulesPath $entry
+  }
+
+  $staging = $entry + '.staging-' + $PID.ToString()
+  if (Test-Path -LiteralPath $staging) { Remove-NodeModulesPath $staging }
+  New-Item -ItemType Directory -Force -Path $staging | Out-Null
+
+  try {
+    Copy-Item -LiteralPath (Join-Path $Dir 'package.json') -Destination (Join-Path $staging 'package.json') -Force
+    $sourceLock = Join-Path $Dir 'package-lock.json'
+    $hasLock = Test-Path -LiteralPath $sourceLock -PathType Leaf
+    if ($hasLock) { Copy-Item -LiteralPath $sourceLock -Destination (Join-Path $staging 'package-lock.json') -Force }
+
+    Write-SectionTitle "Install shared dependencies · $(Get-NodeModulesSlot $Dir)"
+    Write-Host "Dependency cache entry: $entry" -ForegroundColor DarkGray
+    $installArguments = if ($hasLock) {
+      @('ci','--ignore-scripts','--prefer-offline','--no-audit','--no-fund')
+    } else {
+      @('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund','--package-lock=false')
+    }
+    if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
+    $installStartedAt=[DateTime]::UtcNow.AddSeconds(-2)
+    $availableBefore=Get-AvailableBytesForPath $staging
+    if ($null -ne $availableBefore -and $availableBefore -lt 512MB) {
+      throw (New-DependencyNoSpaceMessage -StagingPath $staging -AvailableBytes $availableBefore)
+    }
+    try {
+      Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $staging
+    } catch {
+      $latestLog=Get-LatestNpmDebugLog -SinceUtc $installStartedAt
+      if ($latestLog -and (Test-NpmLogNoSpace $latestLog.FullName)) {
+        $availableAfter=Get-AvailableBytesForPath $staging
+        throw (New-DependencyNoSpaceMessage -StagingPath $staging -AvailableBytes $availableAfter -LogPath $latestLog.FullName)
+      }
+      throw
+    }
+
+    $stagingModules = Join-Path $staging 'node_modules'
+    if (-not (Test-Path -LiteralPath $stagingModules -PathType Container)) {
+      throw "npm did not create node_modules in shared staging workspace: $stagingModules"
+    }
+    if ($isDesktop) { Ensure-ElectronBinary $stagingModules }
+
+    [ordered]@{
+      schema = 1
+      signature = Get-DependencySignature $Dir
+      source = [IO.Path]::GetFullPath($Dir)
+      createdAt = [DateTime]::UtcNow.ToString('o')
+      node = (& node --version | Select-Object -Last 1)
+      npm = (& npm.cmd --version | Select-Object -Last 1)
+    } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $staging '.dkds-ready.json') -Encoding UTF8
+
+    Move-Item -LiteralPath $staging -Destination $entry
+  } catch {
+    if (Test-Path -LiteralPath $staging) {
+      try { Remove-NodeModulesPath $staging } catch {}
+    }
+    throw
+  }
+
+  return (Join-Path $entry 'node_modules')
+}
+
+function Install-NodeDeps([string]$Dir=$Root) {
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
+  if (-not (Test-Path (Join-Path $Dir 'package.json'))) {
+    throw "package.json not found: $Dir"
+  }
+
+  if ($SharedNodeModulesRoot) {
+    $target = Install-SharedDependencyEntry $Dir
+    Ensure-SharedNodeModulesLink -Dir $Dir -TargetPath $target
+    return
+  }
+
+  # Fallback for machines that deliberately disable shared node_modules.
+  # Keep Electron's binary download outside npm reify here as well, so a
+  # timeout cannot turn node_modules into a half-installed dependency tree.
+  Write-SectionTitle "Install dependencies · $Dir"
+  $installArguments = @('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund')
+  if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
+  Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $Dir
+  if ((Get-NodeModulesSlot $Dir) -eq 'desktop') {
+    Ensure-ElectronBinary (Join-Path $Dir 'node_modules')
+  }
+}
+
+function Test-NodeDepsReady([string]$Dir=$Root) {
+  $modules = Join-Path $Dir 'node_modules'
+  if (-not (Test-Path -LiteralPath $modules -PathType Container)) { return $false }
+  if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) {
+    return (Test-Path -LiteralPath (Join-Path $modules 'expo\package.json') -PathType Leaf)
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $modules 'electron\package.json') -PathType Leaf)) { return $false }
+  return (Test-ElectronBinaryReady $modules)
+}
+
+function Ensure-NodeDeps([string]$Dir=$Root) {
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
+
+  if ($SharedNodeModulesRoot) {
+    $target = Get-SharedNodeModulesTarget $Dir
+    if ($target -and (Test-Path -LiteralPath $target -PathType Container)) {
+      Ensure-SharedNodeModulesLink -Dir $Dir -TargetPath $target
+    }
+  }
+
+  if (-not (Test-NodeDepsReady -Dir $Dir)) {
+    Install-NodeDeps -Dir $Dir
+  }
+}
+
+function Show-DesktopDoctor {
+  Write-SectionTitle 'Desktop tooling diagnostics'
+  $ok = $true
+  foreach ($name in @('node','npm.cmd','git')) {
+    $command = Get-Command $name -ErrorAction SilentlyContinue
+    if ($command) {
+      Write-Host ("OK  {0}: {1}" -f $name,$command.Source) -ForegroundColor Green
+    } else {
+      Write-Host ("ERR {0}: not found" -f $name) -ForegroundColor Red
+      $ok = $false
+    }
+  }
+
+  if (Get-Command node -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'node' -Arguments @('--version')
+  }
+  if (Get-Command npm.cmd -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'npm.cmd' -Arguments @('--version')
+  }
+  if (Get-Command git -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'git' -Arguments @('--version')
+  }
+
+  $modules = Join-Path $Root 'node_modules'
+  if (Test-Path $modules) {
+    Write-Host "OK  dependencies: $modules" -ForegroundColor Green
+  } else {
+    Write-Host 'WARN node_modules is missing. Run install-deps or start dev to install it.' -ForegroundColor Yellow
+  }
+
+  Write-Host "ROOT: $Root" -ForegroundColor DarkGray
+  Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor DarkGray
+  Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor DarkGray
+  Write-Host "DK_NODE_MODULES_ROOT: $SharedNodeModulesRoot" -ForegroundColor DarkGray
+  Write-Host "Toolbox config: $(Get-DeveloperConfigPath)" -ForegroundColor DarkGray
+  Show-EffectiveNetwork
+  if ($env:ELECTRON_CACHE) { Write-Host "Electron cache: $env:ELECTRON_CACHE" -ForegroundColor DarkGray }
+  if ($env:GRADLE_USER_HOME) { Write-Host "Gradle cache: $env:GRADLE_USER_HOME" -ForegroundColor DarkGray }
+  if (-not $ok) { return $false }
+  return $true
+}
+
+function Add-PathEntry([string]$PathEntry) {
+  if (-not $PathEntry -or -not (Test-Path $PathEntry)) { return }
+  $parts = @($env:PATH -split ';' | Where-Object { $_ })
+  if ($parts -notcontains $PathEntry) { $env:PATH = $PathEntry + ';' + $env:PATH }
+}
+
+function Get-EffectiveBuildCachePaths {
+  $npmCache = Get-ConfiguredCachePath 'npmCache' 'npm' 'DK_NPM_CACHE' 'npm_config_cache'
+  $pnpmStore = Get-ConfiguredCachePath 'pnpmStore' 'pnpm-store' 'DK_PNPM_STORE' 'PNPM_CONFIG_STORE_DIR'
+  $electronCache = Get-ConfiguredCachePath 'electronCache' 'electron' 'DK_ELECTRON_CACHE' 'electron_config_cache'
+  $electronBuilderCache = Get-ConfiguredCachePath 'electronBuilderCache' 'electron-builder' 'DK_ELECTRON_BUILDER_CACHE' 'ELECTRON_BUILDER_CACHE'
+  $gradleCache = Get-ConfiguredCachePath 'gradleCache' 'gradle' 'DK_GRADLE_CACHE' 'GRADLE_USER_HOME'
+  return [ordered]@{
+    Npm = $npmCache
+    Pnpm = $pnpmStore
+    Electron = $electronCache
+    ElectronBuilder = $electronBuilderCache
+    Gradle = $gradleCache
+  }
+}
+
+function Initialize-SharedBuildEnvironment {
+  Initialize-NetworkEnvironment
+  if ($SharedToolRoot) {
+    foreach ($nodeDir in @(
+      (Join-Path $SharedToolRoot 'NodeJs'),
+      (Join-Path $SharedToolRoot 'NodeJS'),
+      (Join-Path $SharedToolRoot 'node'),
+      (Join-Path $SharedToolRoot 'Language\NodeJS')
+    )) {
+      if (Test-Path (Join-Path $nodeDir 'node.exe')) { Add-PathEntry $nodeDir; break }
+    }
+  }
+
+  $script:BuildCachePaths = Get-EffectiveBuildCachePaths
+  foreach ($cachePath in $script:BuildCachePaths.Values) {
+    if ($cachePath) { New-Item -ItemType Directory -Force -Path $cachePath | Out-Null }
+  }
+
+  if ($script:BuildCachePaths.Npm) {
+    $env:npm_config_cache = $script:BuildCachePaths.Npm
+    $env:NPM_CONFIG_CACHE = $script:BuildCachePaths.Npm
+    $env:npm_config_prefer_offline = 'true'
+  }
+  if ($script:BuildCachePaths.Pnpm) {
+    # pnpm reads pnpm_config_* / PNPM_CONFIG_* settings. Keep the historical
+    # PNPM_STORE_DIR alias too for older local toolchains.
+    $env:pnpm_config_store_dir = $script:BuildCachePaths.Pnpm
+    $env:PNPM_CONFIG_STORE_DIR = $script:BuildCachePaths.Pnpm
+    $env:PNPM_STORE_DIR = $script:BuildCachePaths.Pnpm
+  }
+  if ($script:BuildCachePaths.Electron) {
+    # Current Electron installer documentation uses electron_config_cache,
+    # while electron-builder and older Electron tooling commonly use
+    # ELECTRON_CACHE. Bind both names to the same user-selected directory.
+    $env:electron_config_cache = $script:BuildCachePaths.Electron
+    $env:ELECTRON_CACHE = $script:BuildCachePaths.Electron
+  }
+  if ($script:BuildCachePaths.ElectronBuilder) {
+    $env:ELECTRON_BUILDER_CACHE = $script:BuildCachePaths.ElectronBuilder
+  }
+  $configuredElectronMirror = Get-DeveloperConfigValue 'electronMirror'
+  if (-not $env:ELECTRON_MIRROR -and $configuredElectronMirror) { $env:ELECTRON_MIRROR = $configuredElectronMirror }
+  $configuredBuilderMirror = Get-DeveloperConfigValue 'electronBuilderMirror'
+  if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR -and $configuredBuilderMirror) { $env:ELECTRON_BUILDER_BINARIES_MIRROR = $configuredBuilderMirror }
+  if ((Get-BinaryMirrorMode) -eq 'mirror') { [void](Enable-BinaryMirrorFallback) }
+  if ($script:BuildCachePaths.Gradle) {
+    $env:GRADLE_USER_HOME = $script:BuildCachePaths.Gradle
+  }
+}
+
+function Show-EffectiveBuildCaches([switch]$VerifyNpm) {
+  Show-EffectiveNetwork
+  Write-Host 'Effective build caches:' -ForegroundColor Cyan
+  Write-Host ("  npm              : {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
+  Write-Host ("  pnpm store       : {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
+  Write-Host ("  Electron         : {0}" -f $env:electron_config_cache) -ForegroundColor DarkGray
+  Write-Host ("  electron-builder : {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  Write-Host ("  mirror mode      : {0}" -f (Get-BinaryMirrorMode)) -ForegroundColor DarkGray
+  Write-Host ("  Electron mirror  : {0}" -f $env:ELECTRON_MIRROR) -ForegroundColor DarkGray
+  Write-Host ("  builder mirror   : {0}" -f $env:ELECTRON_BUILDER_BINARIES_MIRROR) -ForegroundColor DarkGray
+  Write-Host ("  Gradle           : {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
+  Write-Host ("  node_modules root: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray
+
+  if ($VerifyNpm -and (Get-Command 'npm.cmd' -ErrorAction SilentlyContinue) -and $env:npm_config_cache) {
+    $npmResolved = $null
+    try {
+      $npmResolved = [string]((& npm.cmd config get cache 2>$null | Select-Object -Last 1))
+      if ($npmResolved) { $npmResolved = $npmResolved.Trim() }
+    } catch {}
+    if ($npmResolved) {
+      Write-Host ("  npm resolved     : {0}" -f $npmResolved) -ForegroundColor DarkGray
+      try {
+        if ([IO.Path]::GetFullPath($npmResolved) -ine [IO.Path]::GetFullPath($env:npm_config_cache)) {
+          throw "npm ignored the configured cache. expected=$($env:npm_config_cache) actual=$npmResolved"
+        }
+      } catch {
+        if ($_.Exception.Message -like 'npm ignored*') { throw }
+      }
+    }
+  }
+}
+
+Initialize-SharedBuildEnvironment
+
+function Show-SharedToolchain {
+  Write-SectionTitle 'Shared toolchain'
+  Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor Cyan
+  Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor Cyan
+  Write-Host "DK_NODE_MODULES_ROOT: $SharedNodeModulesRoot" -ForegroundColor Cyan
+  Write-Host "Toolbox config: $(Get-DeveloperConfigPath)" -ForegroundColor DarkGray
+  foreach ($pair in @(
+    @('node','node.exe'), @('npm','npm.cmd'), @('pnpm','pnpm.cmd'), @('git','git.exe')
+  )) {
+    $command = Get-Command $pair[1] -ErrorAction SilentlyContinue
+    if ($command) { Write-Host ("OK  {0}: {1}" -f $pair[0],$command.Source) -ForegroundColor Green }
+    else { Write-Host ("--  {0}: not found" -f $pair[0]) -ForegroundColor DarkYellow }
+  }
+  $jdk = Resolve-JavaToolchain
+  if ($jdk) { Write-Host ("OK  JDK: {0}" -f $jdk.Home) -ForegroundColor Green }
+  else { Write-Host '--  JDK: not found (android-build can provision shared Temurin 21)' -ForegroundColor DarkYellow }
+  $sdk = Resolve-AndroidSdk
+  if ($sdk) { Write-Host ("OK  Android SDK: {0}" -f $sdk) -ForegroundColor Green }
+  else { Write-Host '--  Android SDK: not found' -ForegroundColor DarkYellow }
+  Write-Host ("npm cache: {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
+  Write-Host ("pnpm store: {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
+  Write-Host ("Electron cache: {0}" -f $env:electron_config_cache) -ForegroundColor DarkGray
+  Write-Host ("electron-builder cache: {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  if ($SharedNodeModulesRoot) { Write-Host ("shared node_modules: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray }
+  Write-Host ("Gradle cache: {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
+}
+
+function Resolve-AndroidSdk {
+  $candidates = @()
+  if ($env:ANDROID_HOME) { $candidates += $env:ANDROID_HOME }
+  if ($env:ANDROID_SDK_ROOT) { $candidates += $env:ANDROID_SDK_ROOT }
+  if ($SharedCacheRoot) {
+    $candidates += (Join-Path $SharedCacheRoot 'PyDroid\tools\android-sdk')
+    $candidates += (Join-Path $SharedCacheRoot 'android-sdk')
+  }
+  if ($SharedToolRoot) {
+    $candidates += (Join-Path $SharedToolRoot 'Android\Sdk')
+    $candidates += (Join-Path $SharedToolRoot 'Android')
+    $candidates += (Join-Path $SharedToolRoot 'android-sdk')
+  }
+  if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+  if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE 'AppData\Local\Android\Sdk') }
+
+  # SDK discovery must also return an incomplete installation. Otherwise a new
+  # workstation with command-line tools but without this project's pinned
+  # platform/NDK can never reach the automatic component installer.
+  $available=@($candidates | Select-Object -Unique | Where-Object {
+    $_ -and (Test-Path -LiteralPath $_ -PathType Container)
+  })
+  $completePlatform=@($available | Where-Object {
+    Test-Path -LiteralPath (Join-Path $_ 'platforms\android-36') -PathType Container
+  })
+  $completeNdk=@($available | Where-Object {
+    Test-Path -LiteralPath (Join-Path $_ 'ndk\27.1.12297006\source.properties') -PathType Leaf
+  })
+  # Prefer an already complete SDK/NDK installation. This prevents Gradle from
+  # selecting a half-created NDK directory and attempting an in-build download.
+  foreach ($candidate in (@($completeNdk) + @($completePlatform | Where-Object { $_ -notin $completeNdk }) + @($available | Where-Object { $_ -notin $completeNdk -and $_ -notin $completePlatform }))) {
+    $env:ANDROID_HOME = $candidate
+    $env:ANDROID_SDK_ROOT = $candidate
+    Add-PathEntry (Join-Path $candidate 'platform-tools')
+    Add-PathEntry (Join-Path $candidate 'cmdline-tools\latest\bin')
+    return $candidate
+  }
+  return $null
+}
+
+function Get-AndroidSdkManager([string]$Sdk) {
+  if (-not $Sdk) { return $null }
+  $candidates=@(
+    (Join-Path $Sdk 'cmdline-tools\latest\bin\sdkmanager.bat'),
+    (Join-Path $Sdk 'tools\bin\sdkmanager.bat')
+  )
+  $commandLineRoot=Join-Path $Sdk 'cmdline-tools'
+  if (Test-Path -LiteralPath $commandLineRoot -PathType Container) {
+    $candidates += @(Get-ChildItem -LiteralPath $commandLineRoot -Directory -ErrorAction SilentlyContinue |
+      Sort-Object Name -Descending |
+      ForEach-Object { Join-Path $_.FullName 'bin\sdkmanager.bat' })
+  }
+  return ($candidates | Select-Object -Unique | Where-Object {
+    Test-Path -LiteralPath $_ -PathType Leaf
+  } | Select-Object -First 1)
+}
+
+function Ensure-AndroidSdkComponents {
+  $sdk=Resolve-AndroidSdk
+  if (-not $sdk) {
+    throw 'Android SDK was not found. Install Android Studio command-line tools or set ANDROID_HOME/ANDROID_SDK_ROOT.'
+  }
+
+  $required=[ordered]@{
+    'Platform-Tools' = (Join-Path $sdk 'platform-tools\adb.exe')
+    'Platform 36' = (Join-Path $sdk 'platforms\android-36\android.jar')
+    'Build-Tools 36.0.0' = (Join-Path $sdk 'build-tools\36.0.0\aapt2.exe')
+    'NDK 27.1.12297006' = (Join-Path $sdk 'ndk\27.1.12297006\source.properties')
+    'CMake 3.22.1' = (Join-Path $sdk 'cmake\3.22.1\bin\cmake.exe')
+  }
+  $missing=@($required.GetEnumerator() | Where-Object {
+    -not (Test-Path -LiteralPath $_.Value -PathType Leaf)
+  } | ForEach-Object { $_.Key })
+  if (-not $missing.Count) { return $sdk }
+  if ($env:DKDS_DISABLE_ANDROID_SDK_INSTALL -eq '1') {
+    throw "Android SDK components are missing and automatic installation is disabled: $($missing -join ', ')"
+  }
+
+  $sdkManager=Get-AndroidSdkManager $sdk
+  if (-not $sdkManager) {
+    throw "Android SDK components are missing ($($missing -join ', ')), but sdkmanager.bat was not found below $sdk. Install Android SDK Command-line Tools (latest)."
+  }
+  Write-SectionTitle 'Prepare pinned Android SDK components'
+  Write-Host ("SDK: {0}" -f $sdk) -ForegroundColor Cyan
+  Write-Host ("Installing: {0}" -f ($missing -join ', ')) -ForegroundColor DarkYellow
+
+  # License input is generated in memory; no acceptance or response file is
+  # written into the repository. sdkmanager stores its normal SDK license state
+  # inside the selected external SDK root.
+  $licenseAnswers=@(1..30 | ForEach-Object { 'y' })
+  $licenseAnswers | & $sdkManager "--sdk_root=$sdk" '--licenses' | Out-Host
+  if ($LASTEXITCODE -ne 0) { throw "sdkmanager license acceptance exited with code $LASTEXITCODE" }
+  Invoke-Step -FilePath $sdkManager -Arguments @(
+    "--sdk_root=$sdk",
+    'platform-tools',
+    'platforms;android-36',
+    'build-tools;36.0.0',
+    'ndk;27.1.12297006',
+    'cmake;3.22.1'
+  )
+
+  foreach ($entry in $required.GetEnumerator()) {
+    if (-not (Test-Path -LiteralPath $entry.Value -PathType Leaf)) {
+      throw "Android SDK component installation did not complete: $($entry.Key) ($($entry.Value))"
+    }
+  }
+  [void](Resolve-AndroidSdk)
+  return $sdk
+}
+
+function Get-DkdsToolchainRoot {
+  return $SharedToolRoot
+}
+
+function Get-DkdsManagedJdkHome {
+  $toolchainRoot = Get-DkdsToolchainRoot
+  if (-not $toolchainRoot) { return $null }
+  $managedHome = Join-Path $toolchainRoot 'Java\temurin-21\current'
+  if ((Test-Path (Join-Path $managedHome 'bin\java.exe')) -and (Test-Path (Join-Path $managedHome 'bin\keytool.exe'))) {
+    return $managedHome
+  }
+  return $null
+}
+
+function Resolve-JavaToolchain {
+  # Do not use $home here: PowerShell variable names are case-insensitive and
+  # $HOME is a read-only automatic variable under Windows PowerShell 5.1.
+  # Keep this function pipeline-clean as well: it must return either one
+  # toolchain hashtable or $null, never List.Add() indices or discovery noise.
+  $javaHomes = @()
+
+  foreach ($configuredJavaHome in @($env:JAVA_HOME,$env:JDK_HOME,$env:STUDIO_JDK)) {
+    if ($configuredJavaHome) { $javaHomes += [string]$configuredJavaHome }
+  }
+
+  $javaOnPath = Get-Command 'java.exe' -ErrorAction SilentlyContinue
+  if ($javaOnPath -and $javaOnPath.Source) {
+    try { $javaHomes += (Split-Path (Split-Path $javaOnPath.Source -Parent) -Parent) } catch {}
+  }
+
+  $managedJdkHome = Get-DkdsManagedJdkHome
+  if ($managedJdkHome) { $javaHomes += $managedJdkHome }
+
+  if ($SharedToolRoot) {
+    foreach ($sharedJdk in @(
+      'Java\temurin-21\current','Java\jdk-21','JDK\21','jdk-21',
+      'Java\temurin-17\current','Java\jdk-17','JDK\17','jdk-17',
+      'Language\Java'
+    )) { $javaHomes += (Join-Path $SharedToolRoot $sharedJdk) }
+  }
+
+  foreach ($programRoot in @($env:ProgramFiles,${env:ProgramFiles(x86)},$env:LOCALAPPDATA)) {
+    if (-not $programRoot) { continue }
+    $javaHomes += (Join-Path $programRoot 'Android\Android Studio\jbr')
+    $javaHomes += (Join-Path $programRoot 'Android\Android Studio\jre')
+    $javaHomes += (Join-Path $programRoot 'Programs\Android Studio\jbr')
+  }
+
+  $studio = Get-Command 'studio64.exe' -ErrorAction SilentlyContinue
+  if ($studio -and $studio.Source) {
+    try { $javaHomes += (Join-Path (Split-Path (Split-Path $studio.Source -Parent) -Parent) 'jbr') } catch {}
+  }
+
+  foreach ($uninstallRoot in @(
+    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+    'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+  )) {
+    if (-not (Test-Path $uninstallRoot)) { continue }
+    foreach ($uninstallEntry in @(Get-ChildItem $uninstallRoot -ErrorAction SilentlyContinue)) {
+      try {
+        $item = Get-ItemProperty $uninstallEntry.PSPath -ErrorAction Stop
+        if ([string]$item.DisplayName -match 'Android Studio') {
+          $installLocation = [string]$item.InstallLocation
+          if ($installLocation) { $javaHomes += (Join-Path $installLocation 'jbr') }
+          $displayIcon = [string]$item.DisplayIcon
+          if ($displayIcon) {
+            $studioExe = $displayIcon.Trim('"').Split(',')[0]
+            $studioRoot = Split-Path (Split-Path $studioExe -Parent) -Parent
+            if ($studioRoot) { $javaHomes += (Join-Path $studioRoot 'jbr') }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  if ($env:ProgramFiles) {
+    foreach ($vendorFolder in @('Java','Eclipse Adoptium','Microsoft')) {
+      $vendorBase = Join-Path $env:ProgramFiles $vendorFolder
+      if (Test-Path $vendorBase) {
+        $vendorJdks = @(Get-ChildItem $vendorBase -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+        foreach ($vendorJdk in $vendorJdks) { $javaHomes += $vendorJdk.FullName }
+      }
+    }
+  }
+
+  foreach ($jdkRegistryRoot in @(
+    'HKLM:\SOFTWARE\JavaSoft\JDK',
+    'HKLM:\SOFTWARE\WOW6432Node\JavaSoft\JDK'
+  )) {
+    if (-not (Test-Path $jdkRegistryRoot)) { continue }
+    foreach ($jdkRegistryEntry in @(Get-ChildItem $jdkRegistryRoot -ErrorAction SilentlyContinue)) {
+      try {
+        $registryJavaHome = (Get-ItemProperty $jdkRegistryEntry.PSPath -ErrorAction Stop).JavaHome
+        if ($registryJavaHome) { $javaHomes += [string]$registryJavaHome }
+      } catch {}
+    }
+  }
+
+  foreach ($javaHomeCandidate in ($javaHomes | Where-Object { $_ } | Select-Object -Unique)) {
+    $javaPath = Join-Path $javaHomeCandidate 'bin\java.exe'
+    $keytoolPath = Join-Path $javaHomeCandidate 'bin\keytool.exe'
+    if ((Test-Path $javaPath) -and (Test-Path $keytoolPath)) {
+      $env:JAVA_HOME = $javaHomeCandidate
+      Add-PathEntry (Join-Path $javaHomeCandidate 'bin')
+      return @{ Home=$javaHomeCandidate; Java=$javaPath; Keytool=$keytoolPath; Managed=$false }
+    }
+  }
+  return $null
+}
+
+function Install-DkdsManagedJdk {
+  $existingManagedHome = Get-DkdsManagedJdkHome
+  if ($existingManagedHome) {
+    $env:JAVA_HOME = $existingManagedHome
+    Add-PathEntry (Join-Path $existingManagedHome 'bin')
+    return @{
+      Home = $existingManagedHome
+      Java = (Join-Path $existingManagedHome 'bin\java.exe')
+      Keytool = (Join-Path $existingManagedHome 'bin\keytool.exe')
+      Managed = $true
+    }
+  }
+
+  $toolchainRoot = Get-DkdsToolchainRoot
+  if (-not $toolchainRoot) {
+    throw 'Cannot resolve a persistent shared tool directory for JDK provisioning.'
+  }
+
+  $architectureName = [string]$env:PROCESSOR_ARCHITECTURE
+  if ($env:PROCESSOR_ARCHITEW6432) { $architectureName = [string]$env:PROCESSOR_ARCHITEW6432 }
+  switch -Regex ($architectureName.ToUpperInvariant()) {
+    'ARM64' { $adoptiumArch = 'aarch64'; break }
+    'AMD64|X64' { $adoptiumArch = 'x64'; break }
+    default { throw "Unsupported Windows architecture for automatic JDK provisioning: $architectureName" }
+  }
+
+  $jdkRoot = Join-Path $toolchainRoot 'Java\temurin-21'
+  $currentHome = Join-Path $jdkRoot 'current'
+  $downloadPath = Join-Path $jdkRoot 'temurin-21.zip'
+  $extractRoot = Join-Path $jdkRoot ('extract-' + [Guid]::NewGuid().ToString('N'))
+  $apiUrl = "https://api.adoptium.net/v3/binary/latest/21/ga/windows/$adoptiumArch/jdk/hotspot/normal/eclipse"
+
+  New-Item -ItemType Directory -Force -Path $jdkRoot | Out-Null
+  Write-SectionTitle 'Prepare shared JDK 21'
+  Write-Host 'No complete JDK was found. DKDS will download Eclipse Temurin JDK 21 once in the shared tool root and reuse it across projects.' -ForegroundColor Yellow
+  Write-Host "Managed JDK directory: $currentHome" -ForegroundColor DarkGray
+
+  try {
+    try {
+      $previousSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+      [Net.ServicePointManager]::SecurityProtocol = $previousSecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    } catch {}
+
+    $redirectResponse = $null
+    try {
+      $redirectResponse = Invoke-DkdsWebRequest -Uri $apiUrl -MaximumRedirection 0
+    } catch {
+      if ($_.Exception.Response) { $redirectResponse = $_.Exception.Response }
+      else { throw }
+    }
+
+    $downloadUrl = $null
+    if ($redirectResponse -and $redirectResponse.Headers) {
+      try { $downloadUrl = [string]$redirectResponse.Headers['Location'] } catch {}
+    }
+    if (-not $downloadUrl) {
+      throw 'Adoptium API did not return a JDK download redirect.'
+    }
+
+    Write-Host 'Downloading Eclipse Temurin JDK 21...' -ForegroundColor Cyan
+    Invoke-DkdsWebRequest -Uri $downloadUrl -OutFile $downloadPath | Out-Null
+
+    Write-Host 'Verifying JDK SHA-256...' -ForegroundColor Cyan
+    $checksumResponse = Invoke-DkdsWebRequest -Uri ($downloadUrl + '.sha256.txt')
+    $checksumText = [string]$checksumResponse.Content
+    $expectedHash = (($checksumText -split '\s+')[0]).Trim().ToUpperInvariant()
+    if ($expectedHash -notmatch '^[0-9A-F]{64}$') {
+      throw 'Adoptium checksum response was invalid.'
+    }
+    $actualHash = (Get-FileSha256 $downloadPath).ToUpperInvariant()
+    if ($actualHash -ne $expectedHash) {
+      throw "Managed JDK checksum verification failed. Expected $expectedHash but got $actualHash."
+    }
+
+    New-Item -ItemType Directory -Force -Path $extractRoot | Out-Null
+    Expand-Archive -Path $downloadPath -DestinationPath $extractRoot -Force
+    $javaExecutable = Get-ChildItem -Path $extractRoot -Filter 'java.exe' -File -Recurse -ErrorAction SilentlyContinue |
+      Where-Object { $_.FullName -match '[\\/]bin[\\/]java\.exe$' } |
+      Select-Object -First 1
+    if (-not $javaExecutable) { throw 'Downloaded JDK archive does not contain bin\java.exe.' }
+
+    $discoveredHome = Split-Path (Split-Path $javaExecutable.FullName -Parent) -Parent
+    $discoveredKeytool = Join-Path $discoveredHome 'bin\keytool.exe'
+    if (-not (Test-Path $discoveredKeytool)) { throw 'Downloaded JDK archive does not contain bin\keytool.exe.' }
+
+    if (Test-Path $currentHome) { Remove-Item -Recurse -Force $currentHome }
+    Move-Item -Path $discoveredHome -Destination $currentHome
+
+    @{
+      javaMajor = 21
+      distribution = 'Eclipse Temurin'
+      source = 'Adoptium API'
+      apiUrl = $apiUrl
+      sha256 = $actualHash
+      installedAt = (Get-Date).ToString('o')
+    } | ConvertTo-Json | Set-Content -Path (Join-Path $jdkRoot 'managed-jdk.json') -Encoding UTF8
+  } finally {
+    if (Test-Path $downloadPath) { Remove-Item -Force $downloadPath -ErrorAction SilentlyContinue }
+    if (Test-Path $extractRoot) { Remove-Item -Recurse -Force $extractRoot -ErrorAction SilentlyContinue }
+  }
+
+  if (-not ((Test-Path (Join-Path $currentHome 'bin\java.exe')) -and (Test-Path (Join-Path $currentHome 'bin\keytool.exe')))) {
+    throw "Managed JDK installation is incomplete: $currentHome"
+  }
+
+  $env:JAVA_HOME = $currentHome
+  Add-PathEntry (Join-Path $currentHome 'bin')
+  Write-Host 'Shared Eclipse Temurin JDK 21 is ready.' -ForegroundColor Green
+  return @{
+    Home = $currentHome
+    Java = (Join-Path $currentHome 'bin\java.exe')
+    Keytool = (Join-Path $currentHome 'bin\keytool.exe')
+    Managed = $true
+  }
+}
+
+function Ensure-JavaToolchain([bool]$AutoProvision=$true) {
+  $jdk = Resolve-JavaToolchain
+  if ($jdk) { return $jdk }
+  if (-not $AutoProvision -or $env:DKDS_DISABLE_MANAGED_JDK -eq '1') { return $null }
+  return Install-DkdsManagedJdk
+}
+
+function Check-AndroidEnvironment {
+  param(
+    [bool]$RequireJdk = $true,
+    [bool]$AutoProvisionJdk = $true
+  )
+
+  Write-SectionTitle 'Android environment check'
+  $ok = $true
+  $sdk = Resolve-AndroidSdk
+  $jdk = $null
+  $jdkProvisionError = $null
+  if ($RequireJdk) {
+    try { $jdk = Ensure-JavaToolchain -AutoProvision $AutoProvisionJdk }
+    catch { $jdkProvisionError = $_.Exception.Message }
+  }
+
+  $node = Get-Command 'node' -ErrorAction SilentlyContinue
+  if ($node) { Write-Host ("OK  node: {0}" -f $node.Source) -ForegroundColor Green }
+  else { Write-Host 'ERR node: not found' -ForegroundColor Red; $ok=$false }
+
+  if (-not $RequireJdk) {
+    Write-Host 'INFO java/keytool: not required for this action.' -ForegroundColor DarkGray
+  } elseif ($jdk) {
+    Write-Host ("OK  java: {0}" -f $jdk.Java) -ForegroundColor Green
+    Write-Host ("OK  keytool: {0}" -f $jdk.Keytool) -ForegroundColor Green
+    Write-Host ("JAVA_HOME: {0}" -f $jdk.Home) -ForegroundColor Green
+    if ($jdk.Managed) { Write-Host 'OK  JDK source: shared Eclipse Temurin 21' -ForegroundColor Green }
+  } else {
+    Write-Host 'ERR java/keytool: no complete JDK was found.' -ForegroundColor Red
+    if ($jdkProvisionError) { Write-Host ("    Automatic JDK preparation failed: {0}" -f $jdkProvisionError) -ForegroundColor Yellow }
+    elseif (-not $AutoProvisionJdk -or $env:DKDS_DISABLE_MANAGED_JDK -eq '1') { Write-Host '    Automatic managed-JDK preparation is disabled for this action.' -ForegroundColor Yellow }
+    else { Write-Host '    DKDS could not prepare the shared Eclipse Temurin JDK 21.' -ForegroundColor Yellow }
+    $ok=$false
+  }
+
+  $adb = Get-Command 'adb.exe' -ErrorAction SilentlyContinue
+  if ($adb) { Write-Host ("OK  adb: {0}" -f $adb.Source) -ForegroundColor Green }
+  elseif ($sdk -and (Test-Path (Join-Path $sdk 'platform-tools\adb.exe'))) {
+    $adbPath=Join-Path $sdk 'platform-tools\adb.exe'
+    Add-PathEntry (Split-Path $adbPath -Parent)
+    Write-Host ("OK  adb: {0}" -f $adbPath) -ForegroundColor Green
+  } else {
+    Write-Host 'ERR adb: Android SDK Platform-Tools is missing.' -ForegroundColor Red
+    $ok=$false
+  }
+
+  if ($node) { Invoke-Step -FilePath $node.Source -Arguments @('--version') }
+  if ($jdk) { Invoke-Step -FilePath $jdk.Java -Arguments @('-version') }
+
+  if ($sdk) {
+    Write-Host "ANDROID_HOME: $sdk" -ForegroundColor Green
+    if (Test-Path (Join-Path $sdk 'platforms\android-36')) { Write-Host 'OK  Android SDK Platform 36' -ForegroundColor Green }
+    else { Write-Host 'ERR Android SDK Platform 36 is missing.' -ForegroundColor Red; $ok=$false }
+    $ndkProperties=Join-Path $sdk 'ndk\27.1.12297006\source.properties'
+    if (Test-Path -LiteralPath $ndkProperties -PathType Leaf) { Write-Host 'OK  Android NDK 27.1.12297006' -ForegroundColor Green }
+    else { Write-Host 'ERR Android NDK 27.1.12297006 is missing or incomplete.' -ForegroundColor Red; $ok=$false }
+  } else {
+    Write-Host 'ERR Android SDK was not found.' -ForegroundColor Red
+    $ok=$false
+  }
+
+  if (-not $ok) {
+    Write-Host ''
+    Write-Host 'See docs\guides\ANDROID_QUICK_START_CN.txt and mobile\README_ANDROID_CN.md.' -ForegroundColor Yellow
+    return $false
+  }
+  return $true
+}
+
+
+function Initialize-AndroidReleaseSigning {
+  $jdk = Ensure-JavaToolchain -AutoProvision $true
+  if (-not $jdk) { throw 'A complete JDK is required for Android release signing.' }
+
+  $base = if ($env:LOCALAPPDATA) {
+    Join-Path $env:LOCALAPPDATA 'DKDataStudio\android-signing'
+  } elseif ($env:USERPROFILE) {
+    Join-Path $env:USERPROFILE '.dkds\android-signing'
+  } else {
+    throw 'Cannot resolve a persistent user directory for Android release signing.'
+  }
+
+  New-Item -ItemType Directory -Force -Path $base | Out-Null
+  $keystore = Join-Path $base 'dkds-release.jks'
+  $metadata = Join-Path $base 'signing.json'
+  $alias = 'dkdsrelease'
+
+  if ((Test-Path $keystore) -xor (Test-Path $metadata)) {
+    throw "Incomplete Android release signing state in $base. Restore both dkds-release.jks and signing.json, or remove both to generate a new signing identity."
+  }
+
+  if (-not (Test-Path $keystore)) {
+    Write-SectionTitle 'Create local Android release signing key'
+    $password = ([Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N'))
+    $keytoolArgs = @(
+      '-genkeypair','-noprompt',
+      '-keystore',$keystore,
+      '-storetype','JKS',
+      '-storepass',$password,
+      '-alias',$alias,
+      '-keypass',$password,
+      '-keyalg','RSA',
+      '-keysize','4096',
+      '-validity','10000',
+      '-dname','CN=DK Data Studio, OU=Local Release, O=DK Data Studio'
+    )
+    & $jdk.Keytool @keytoolArgs | Out-Host
+    $exitCode = $LASTEXITCODE
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+      throw "keytool exited with code $exitCode"
+    }
+    @{
+      storePassword = $password
+      keyAlias = $alias
+      keyPassword = $password
+    } | ConvertTo-Json | Set-Content -Path $metadata -Encoding UTF8
+    Write-Host "Created persistent release signing identity: $keystore" -ForegroundColor Green
+    Write-Host 'Back up this signing directory if you need future APKs to update the same installed app.' -ForegroundColor Yellow
+  }
+
+  $signing = Get-Content -Raw -Path $metadata | ConvertFrom-Json
+  if (-not $signing.storePassword -or -not $signing.keyAlias -or -not $signing.keyPassword) {
+    throw "Invalid Android signing metadata: $metadata"
+  }
+
+  $env:DKDS_LOCAL_RELEASE_SIGNING = '1'
+  $env:DKDS_ANDROID_RELEASE_STORE_FILE = $keystore
+  $env:DKDS_ANDROID_RELEASE_STORE_PASSWORD = [string]$signing.storePassword
+  $env:DKDS_ANDROID_RELEASE_KEY_ALIAS = [string]$signing.keyAlias
+  $env:DKDS_ANDROID_RELEASE_KEY_PASSWORD = [string]$signing.keyPassword
+  Write-Host "Release signing: $keystore" -ForegroundColor DarkGray
+}
+
+function Write-AndroidSigningMigrationHint {
+  Write-Host ''
+  Write-Host 'If an older DKDS Android build with a different signing identity is already installed, Android cannot replace it in place.' -ForegroundColor Yellow
+  Write-Host 'One-time migration command: adb uninstall com.dk.datastudio' -ForegroundColor Yellow
+  Write-Host 'Then run DKDS.cmd android-install again. This uninstall removes the old app data.' -ForegroundColor Yellow
+}
+
+function Invoke-WindowsDist {
+  try {
+    Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') -WorkingDirectory $Root
+    return
+  } catch {
+    $firstFailure = $_
+    if ((Get-BinaryMirrorMode) -eq 'official' -or $script:BinaryMirrorFallbackEnabled) { throw }
+    Write-Host 'WARN Windows packaging failed once. Retrying with binary mirror fallback; npm package cache and shared node_modules are preserved.' -ForegroundColor Yellow
+    [void](Enable-BinaryMirrorFallback)
+    try {
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') -WorkingDirectory $Root
+      return
+    } catch {
+      throw "Windows packaging failed with both official and fallback binary sources. First=$($firstFailure.Exception.Message) Retry=$($_.Exception.Message)"
+    }
+  }
+}
+
+function Get-AndroidBuildWorkspaceRoot {
+  if ($env:DKDS_ANDROID_WORK_ROOT) {
+    return [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($env:DKDS_ANDROID_WORK_ROOT))
+  }
+  if (Test-Path -LiteralPath 'D:\PyDroidTemp' -PathType Container) {
+    return 'D:\PyDroidTemp\builds\dk-data-studio-work'
+  }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot 'android\dk-data-studio-work') }
+  return (Join-Path ([IO.Path]::GetTempPath()) 'DKDataStudio\android-work')
+}
+
+function Test-PathInside([string]$Path,[string]$Parent) {
+  $resolvedPath=[IO.Path]::GetFullPath($Path).TrimEnd('\')
+  $resolvedParent=[IO.Path]::GetFullPath($Parent).TrimEnd('\')
+  return $resolvedPath.StartsWith($resolvedParent + '\',[StringComparison]::OrdinalIgnoreCase)
+}
+
+function New-AndroidBuildWorkspace {
+  $workRoot=Get-AndroidBuildWorkspaceRoot
+  $stagedMobile=Join-Path $workRoot 'mobile'
+  New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
+  if (-not (Test-PathInside -Path $stagedMobile -Parent $workRoot)) {
+    throw "Refusing to prepare Android workspace outside the configured work root: $stagedMobile"
+  }
+  New-Item -ItemType Directory -Force -Path $stagedMobile | Out-Null
+
+  # Keep only generated/dependency directories that make a later build
+  # incremental. All staged source/configuration is replaced from mobile/, so
+  # deleted source files cannot linger in the external workspace.
+  $preserve=@('android','node_modules','.expo')
+  foreach ($item in Get-ChildItem -LiteralPath $stagedMobile -Force) {
+    if ($item.Name -in $preserve) { continue }
+    if (-not (Test-PathInside -Path $item.FullName -Parent $stagedMobile)) {
+      throw "Refusing to clean Android staging item outside the workspace: $($item.FullName)"
+    }
+    Remove-Item -LiteralPath $item.FullName -Recurse -Force
+  }
+  if ($env:DKDS_ANDROID_CLEAN -eq '1') {
+    $generatedAndroid=Join-Path $stagedMobile 'android'
+    if (Test-Path -LiteralPath $generatedAndroid) {
+      if (-not (Test-PathInside -Path $generatedAndroid -Parent $stagedMobile)) {
+        throw "Refusing to clean Android project outside the workspace: $generatedAndroid"
+      }
+      Remove-Item -LiteralPath $generatedAndroid -Recurse -Force
+    }
+    Write-Host 'Android clean build requested: external generated project will be recreated.' -ForegroundColor DarkYellow
+  }
+
+  foreach ($item in Get-ChildItem -LiteralPath $Mobile -Force) {
+    if ($item.Name -in @('android','ios','node_modules')) { continue }
+    if ($item.Name -eq 'assets' -and $item.PSIsContainer) {
+      $stagedAssets=Join-Path $stagedMobile 'assets'
+      New-Item -ItemType Directory -Force -Path $stagedAssets | Out-Null
+      foreach ($asset in Get-ChildItem -LiteralPath $item.FullName -Force) {
+        if ($asset.Name -eq 'web') { continue }
+        Copy-Item -LiteralPath $asset.FullName -Destination $stagedAssets -Recurse -Force
+      }
+      continue
+    }
+    Copy-Item -LiteralPath $item.FullName -Destination $stagedMobile -Recurse -Force
+  }
+
+  $env:DKDS_REPO_ROOT=$Root
+  Write-Host "Android build workspace: $stagedMobile" -ForegroundColor Cyan
+  Write-Host 'Repository mobile source remains free of node_modules, generated native projects and bundled web assets.' -ForegroundColor DarkGray
+  return $stagedMobile
+}
+
+function Invoke-AndroidSourceChecks([string]$AndroidMobile) {
+  Write-SectionTitle 'Validate Android source contracts'
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','mobile:test') -WorkingDirectory $Root
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','typecheck') -WorkingDirectory $AndroidMobile
+}
+
+function Invoke-AndroidPrebuild([string]$AndroidMobile) {
+  Write-SectionTitle 'Expo prebuild'
+  $arguments=@('expo','prebuild','--platform','android')
+  if ($env:DKDS_ANDROID_CLEAN -eq '1') { $arguments += '--clean' }
+  Invoke-Step -FilePath 'npx.cmd' -Arguments $arguments -WorkingDirectory $AndroidMobile
+}
+
+function Get-AndroidGradleBuildJvmArgs([string]$AndroidDirectory) {
+  $propertiesPath=Join-Path $AndroidDirectory 'gradle.properties'
+  $jvmArgs=$null
+  if (Test-Path -LiteralPath $propertiesPath -PathType Leaf) {
+    foreach ($line in Get-Content -LiteralPath $propertiesPath) {
+      if ($line -match '^\s*org\.gradle\.jvmargs\s*=\s*(.+?)\s*$') {
+        $jvmArgs=$Matches[1].Trim()
+        break
+      }
+    }
+  }
+  if ([string]::IsNullOrWhiteSpace($jvmArgs)) {
+    # Gradle's documented fallback. React Native normally emits an explicit
+    # 2 GiB / 512 MiB value, but the toolbox remains valid if the template moves.
+    $jvmArgs='-Xmx512m -XX:MaxMetaspaceSize=384m'
+  }
+
+  # gradlew.bat itself starts the client with a 64 MiB minimum heap and UTF-8.
+  # Include those immutable settings in the requested build JVM so --no-daemon
+  # can execute the build in the already-running client instead of forking a
+  # disposable Java child process.
+  if ($jvmArgs -notmatch '(?i)(?:^|\s)-Xms\S+') { $jvmArgs += ' -Xms64m' }
+  if ($jvmArgs -notmatch '(?i)(?:^|\s)-Dfile\.encoding=\S+') { $jvmArgs += ' -Dfile.encoding=UTF-8' }
+  return ([Regex]::Replace($jvmArgs,'\s+',' ').Trim())
+}
+
+function Enable-AndroidGradleDirectNoDaemon([string]$AndroidDirectory) {
+  $jvmArgs=Get-AndroidGradleBuildJvmArgs $AndroidDirectory
+
+  # Gradle's in-process compatibility check has TWO independent owners:
+  #   1) immutable JVM args; and
+  #   2) instrumentation-agent status.
+  #
+  # v3.68.13 closed only (1). The generated Gradle wrapper client does not
+  # start with Gradle's instrumentation javaagent, while DaemonParameters asks
+  # for that agent by default. Even with byte-for-byte JVM-argument parity,
+  # Gradle therefore still rejected the launcher JVM and tried to create a
+  # single-use daemon. On the user's locked-down Windows host that nested
+  # java.exe launch is rejected with CreateProcess error=5.
+  #
+  # For a --no-daemon in-process build, keep the wrapper client uninstrumented
+  # and make the requested build context explicitly uninstrumented as well.
+  # This aligns the agent-status criterion instead of trying to attach an
+  # internal Gradle javaagent from the toolbox.
+  $env:JAVA_OPTS=$jvmArgs
+  Add-GradleJvmSystemProperty 'org.gradle.jvmargs' $jvmArgs
+  Add-GradleJvmSystemProperty 'org.gradle.internal.instrumentation.agent' 'false'
+  Add-GradleJvmSystemProperty 'org.gradle.daemon' 'false'
+
+  Write-Host 'Gradle process mode: direct client JVM requested (JVM + agent parity enforced)' -ForegroundColor DarkGray
+  Write-Host ("Gradle build JVM  : {0}" -f $jvmArgs) -ForegroundColor DarkGray
+  Write-Host 'Gradle agent mode : disabled for this no-daemon build' -ForegroundColor DarkGray
+  return $jvmArgs
+}
+
+function Test-AndroidGradleInProcess([string]$AndroidDirectory) {
+  Write-SectionTitle 'Verify Gradle direct no-daemon process contract'
+  $arguments=@('help','--no-daemon','--max-workers=1','--info')
+  Write-Host ('> .\gradlew.bat ' + ($arguments -join ' ')) -ForegroundColor DarkGray
+
+  Push-Location $AndroidDirectory
+  try {
+    $lines=@()
+    & '.\gradlew.bat' @arguments 2>&1 | ForEach-Object {
+      $lines += [string]$_
+    }
+    $exitCode=$LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+
+  $text=($lines -join "`n")
+  $forkRequested=($text -match 'single-use Daemon process will be forked') -or ($text -match "Starting process 'Gradle build daemon'")
+  if ($forkRequested) {
+    $relevant=@($lines | Where-Object {
+      $_ -match 'launcher JVM|single-use Daemon|Gradle build daemon|Wanted:|Actual:|Agent status|CreateProcess|Could not start'
+    })
+    if (-not $relevant.Count) { $relevant=@($lines | Select-Object -Last 24) }
+    throw ("Gradle no-fork preflight failed: Gradle still requested a child build daemon after JVM + instrumentation-agent parity. `n" + ($relevant -join "`n"))
+  }
+  if ($null -ne $exitCode -and $exitCode -ne 0) {
+    $tail=@($lines | Select-Object -Last 30)
+    throw ("Gradle no-fork preflight exited with code $exitCode before APK compilation. `n" + ($tail -join "`n"))
+  }
+
+  Write-Host 'Gradle no-fork preflight: PASS (project help executed without a child Gradle build daemon).' -ForegroundColor Green
+}
+
+function Test-AndroidApkArtifact([string]$Path) {
+  $resolved=[IO.Path]::GetFullPath($Path)
+  if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) { throw "Android APK was not generated: $resolved" }
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $assetManifestPath=Join-Path $Root 'mobile\runtime-assets.json'
+  if (-not (Test-Path -LiteralPath $assetManifestPath -PathType Leaf)) { throw "Android runtime asset manifest is missing: $assetManifestPath" }
+  $assetManifest=Get-Content -LiteralPath $assetManifestPath -Raw | ConvertFrom-Json
+  $required=@($assetManifest.apkAssets | ForEach-Object { [string]$_ })
+  if (-not $required.Count) { throw "Android runtime asset manifest is empty: $assetManifestPath" }
+  $archive=[IO.Compression.ZipFile]::OpenRead($resolved)
+  try {
+    $entries=@{};foreach ($entry in $archive.Entries) { $entries[$entry.FullName]=$true }
+    $missing=@($required | Where-Object { -not $entries.ContainsKey($_) })
+    if ($missing.Count) { throw "APK is missing required mobile runtime assets: $($missing -join ', ')" }
+  } finally { $archive.Dispose() }
+  $item=Get-Item -LiteralPath $resolved
+  $hash=(Get-FileSha256 $resolved).ToUpperInvariant()
+  Write-Host ("APK: {0}" -f $resolved) -ForegroundColor Green
+  Write-Host ("Size: {0:N2} MiB" -f ($item.Length / 1MB)) -ForegroundColor Green
+  Write-Host ("SHA-256: {0}" -f $hash) -ForegroundColor Green
+}
+
+function Invoke-AndroidReleaseGradleBuild([string]$AndroidDirectory) {
+  # Both android-build and android-run must use the same Gradle process contract.
+  # Keeping this in one owner prevents the connected-device path from silently
+  # reintroducing the single-use daemon that the release-packaging path forbids.
+  $savedJavaOptions=$env:JAVA_OPTS
+  $savedGradleOptions=$env:GRADLE_OPTS
+  try {
+    [void](Enable-AndroidGradleDirectNoDaemon -AndroidDirectory $AndroidDirectory)
+    Test-AndroidGradleInProcess -AndroidDirectory $AndroidDirectory
+    Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
+      'assembleRelease',
+      '--no-daemon',
+      '--max-workers=4',
+      '-PreactNativeArchitectures=arm64-v8a',
+      '--stacktrace'
+    ) -WorkingDirectory $AndroidDirectory
+  } catch {
+    throw "Android Gradle release build failed in direct no-daemon mode. $($_.Exception.Message)"
+  } finally {
+    if ($null -ne $savedJavaOptions -and $savedJavaOptions -ne '') { $env:JAVA_OPTS=$savedJavaOptions }
+    else { Remove-Item Env:JAVA_OPTS -ErrorAction SilentlyContinue }
+    if ($null -ne $savedGradleOptions -and $savedGradleOptions -ne '') { $env:GRADLE_OPTS=$savedGradleOptions }
+    else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+  }
+}
+
+function Build-AndroidRelease {
+  Show-EffectiveBuildCaches -VerifyNpm
+  [void](Ensure-JavaToolchain -AutoProvision $true)
+  [void](Ensure-AndroidSdkComponents)
+  if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
+  $androidMobile=New-AndroidBuildWorkspace
+  Ensure-NodeDeps -Dir $androidMobile
+  Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
+  Initialize-AndroidReleaseSigning
+  Write-SectionTitle 'Prepare Android offline renderer'
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
+  Invoke-AndroidPrebuild -AndroidMobile $androidMobile
+  Write-SectionTitle 'Build release APK'
+  $env:NODE_ENV='production'
+  # Android delivery targets current arm64 devices. Building all four React Native
+  # ABIs needlessly multiplies the native/C++ cold-build cost. The shared Gradle
+  # release owner below also enforces JVM + instrumentation-agent parity before
+  # either packaging or connected-device installation may compile the APK.
+  $androidDirectory=Join-Path $androidMobile 'android'
+  Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDirectory
+  New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
+  $src = Join-Path $androidMobile 'android\app\build\outputs\apk\release\app-release.apk'
+  if (-not (Test-Path $src)) { throw "Release APK was not generated: $src" }
+  $dst = Join-Path $MobileDist 'DK-Data-Studio.apk'
+  Copy-Item -Force $src $dst
+  Test-AndroidApkArtifact -Path $dst
+}
+
+function Install-UpdateServerAutostart {
+  $node = (Require-Command 'node' 'Install Node.js first.').Source
+  $serverScript = Join-Path $UpdateServer 'server.js'
+  $taskName = 'DKDS LAN Update Server'
+  $taskAction = New-ScheduledTaskAction -Execute $node -Argument ('"' + $serverScript + '"') -WorkingDirectory $Root
+  $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+  $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
+  Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $trigger -Settings $settings -Description 'DK Data Studio local LAN update push server' -Force | Out-Null
+  Start-ScheduledTask -TaskName $taskName
+  Write-Host "Installed and started scheduled task: $taskName" -ForegroundColor Green
+}
+
+function Remove-UpdateServerAutostart {
+  $taskName = 'DKDS LAN Update Server'
+  Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+  Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+  Write-Host "Removed scheduled task: $taskName" -ForegroundColor Green
+}
+
+function Resolve-ReleaseVersion {
+  if ($Version) { return $Version }
+  $v = Read-Host 'Release version, e.g. 3.22.0'
+  if (-not $v) { throw 'A release version is required.' }
+  return $v
+}
+
+function Show-Menu {
+  Write-SectionTitle 'Developer toolbox'
+  Write-Host '  1  Start desktop development'
+  Write-Host '  2  Install/repair desktop dependencies'
+  Write-Host '  3  Run desktop tooling diagnostics'
+  Write-Host '  4  Show shared toolchain/cache locations'
+  Write-Host '  5  Run complete project check'
+  Write-Host '  6  Run regression tests'
+  Write-Host '  7  Build Windows Setup + Portable'
+  Write-Host '  8  Check Android environment'
+  Write-Host '  9  Build Android release APK'
+  Write-Host ' 10  Run/install Android on connected device'
+  Write-Host ' 11  Install existing Android APK'
+  Write-Host ' 12  Start LAN update server'
+  Write-Host ' 13  Build + publish LAN update'
+  Write-Host ' 14  Publish existing Windows build'
+  Write-Host ' 15  Validate plugins'
+  Write-Host ' 16  Open project folder'
+  Write-Host ' 17  Open documentation'
+  Write-Host ' 18  Push one plugin over LAN'
+  Write-Host ' 19  Show effective network / proxy'
+  Write-Host '  0  Exit'
+  $choice = Read-Host 'Select'
+  $map = @{
+    '1'='dev';'2'='install-deps';'3'='doctor';'4'='toolchain';'5'='check';'6'='test';'7'='build-windows';
+    '8'='android-check';'9'='android-build';'10'='android-run';'11'='android-install';'12'='update-server';
+    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'18'='plugin-publish-lan';'19'='network';'0'='exit'
+  }
+  if ($map.ContainsKey($choice)) { return $map[$choice] }
+  return 'menu'
+}
+
+try {
+  if (-not $Action -or $Action -eq 'menu') { $Action = Show-Menu }
+  switch ($Action.ToLowerInvariant()) {
+    'exit' { exit 0 }
+    'install-deps' { Install-NodeDeps -Dir $Root }
+    'doctor' { if (-not (Show-DesktopDoctor)) { exit 2 } }
+    'toolchain' { Show-SharedToolchain }
+    'network' { Show-EffectiveNetwork }
+    'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
+    'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
+    'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }
+    'build-windows' { Show-EffectiveBuildCaches -VerifyNpm; Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-WindowsDist }
+    'android-check' { if (-not (Check-AndroidEnvironment)) { exit 2 } }
+    'android-build' { Build-AndroidRelease }
+    'android-run' {
+      if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
+      $androidMobile=New-AndroidBuildWorkspace
+      Ensure-NodeDeps -Dir $androidMobile
+      Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
+      Initialize-AndroidReleaseSigning
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
+      Invoke-AndroidPrebuild -AndroidMobile $androidMobile
+      try {
+        $env:NODE_ENV='production'
+        $androidDir=Join-Path $androidMobile 'android'
+        Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDir
+        $runApk=Join-Path $androidDir 'app\build\outputs\apk\release\app-release.apk'
+        Test-AndroidApkArtifact -Path $runApk
+        Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$runApk)
+      } catch {
+        Write-AndroidSigningMigrationHint
+        throw
+      }
+    }
+    'android-install' {
+      if (-not (Check-AndroidEnvironment -RequireJdk $false -AutoProvisionJdk $false)) { throw 'Android environment is incomplete.' }
+      [void](Require-Command 'adb' 'Install Android SDK Platform Tools.')
+      $apk = Join-Path $MobileDist 'DK-Data-Studio.apk'
+      if (-not (Test-Path $apk)) { throw "APK not found: $apk. Run android-build first." }
+      Invoke-Step -FilePath 'adb' -Arguments @('devices')
+      try {
+        Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$apk)
+      } catch {
+        Write-AndroidSigningMigrationHint
+        throw
+      }
+    }
+    'update-server' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'LAN update server'; Invoke-Step -FilePath 'node' -Arguments @('services/update-server/server.js') }
+    'build-publish-update' {
+      Ensure-NodeDeps -Dir $Root
+      $release = Resolve-ReleaseVersion
+      Write-SectionTitle "Build + publish $release"
+      Invoke-Step -FilePath 'node' -Arguments @('scripts/set-version.js',$release)
+      Invoke-WindowsDist
+      Invoke-Step -FilePath 'node' -Arguments @('services/update-server/publish-release.js','dist')
+    }
+    'publish-update' {
+      Ensure-NodeDeps -Dir $Root
+      if (-not (Test-Path (Join-Path $Root 'dist\latest.yml'))) { throw 'dist\latest.yml not found. Build Windows first.' }
+      Write-SectionTitle 'Publish existing Windows build'
+      Invoke-Step -FilePath 'node' -Arguments @('services/update-server/publish-release.js','dist')
+    }
+    'update-autostart-install' { Ensure-NodeDeps -Dir $Root; Install-UpdateServerAutostart }
+    'update-autostart-remove' { Remove-UpdateServerAutostart }
+    'plugin-index' { Write-SectionTitle 'Generate plugin index'; Invoke-Step -FilePath 'node' -Arguments @('scripts/generate-plugin-index.js') }
+    'plugin-validate' { Write-SectionTitle 'Validate plugins'; Invoke-Step -FilePath 'node' -Arguments @('scripts/generate-plugin-index.js'); Invoke-Step -FilePath 'node' -Arguments @('scripts/validate-plugins.js') }
+    'plugin-package' {
+      if (-not $PluginPath) { throw 'Use -PluginPath <folder>.' }
+      $pluginArguments = @('scripts/package-plugin.js',$PluginPath)
+      if ($OutputPath) { $pluginArguments += $OutputPath }
+      Invoke-Step -FilePath 'node' -Arguments $pluginArguments
+    }
+    'plugin-publish-lan' {
+      Ensure-NodeDeps -Dir $Root
+      Write-SectionTitle 'Push plugin update over LAN'
+      $publisher = Join-Path $Root 'tools\windows\publish-plugin-to-lan.ps1'
+      $publisherArguments = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$publisher)
+      if ($PluginPath) { $publisherArguments += @('-PluginPath',$PluginPath) }
+      if ($OutputPath) { $publisherArguments += @('-OutputPath',$OutputPath) }
+      Invoke-Step -FilePath 'powershell.exe' -Arguments $publisherArguments
+    }
+    'open-root' { Start-Process explorer.exe -ArgumentList ('"' + $Root + '"') }
+    'open-docs' { Start-Process explorer.exe -ArgumentList ('"' + (Join-Path $Root 'docs') + '"') }
+    'open-examples' { Start-Process explorer.exe -ArgumentList ('"' + (Join-Path $Root 'examples\external-plugins') + '"') }
+    'open-dist' { $d=Join-Path $Root 'dist'; New-Item -ItemType Directory -Force -Path $d|Out-Null; Start-Process explorer.exe -ArgumentList ('"' + $d + '"') }
+    'open-mobile-dist' { New-Item -ItemType Directory -Force -Path $MobileDist|Out-Null; Start-Process explorer.exe -ArgumentList ('"' + $MobileDist + '"') }
+    'git-status' { Invoke-Step -FilePath 'git' -Arguments @('status','--short','--branch') }
+    default { throw "Unknown action: $Action" }
+  }
+  if ($Action -ne 'dev' -and $Action -ne 'update-server') {
+    Write-Host ''
+    Write-Host 'Done.' -ForegroundColor Green
+  }
+} catch {
+  Write-Host ''
+  Write-Host ('FAILED: ' + $_.Exception.Message) -ForegroundColor Red
+  if ($KeepConsoleOpen) {
+    Write-Host ''
+    Write-Host 'Developer Toolbox kept this console open so the failure above remains visible.' -ForegroundColor Yellow
+    return
+  }
+  exit 1
+}

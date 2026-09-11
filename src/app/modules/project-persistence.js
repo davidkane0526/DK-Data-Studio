@@ -1,0 +1,185 @@
+'use strict';
+const {$, state}=require('./context');
+const {diffArtifactRows, projectBaseName, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectHistory=(...args)=>deps.projectTabs.activeProjectHistory(...args);
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const blankProjectTab=(...args)=>deps.projectTabs.blankProjectTab(...args);
+const captureActiveProjectTab=(...args)=>deps.projectTabs.captureActiveProjectTab(...args);
+const markProjectClean=(...args)=>deps.projectTabs.markProjectClean(...args);
+const mountProjectTab=(...args)=>deps.projectTabs.mountProjectTab(...args);
+const renderProjectTabs=(...args)=>deps.projectTabs.renderProjectTabs(...args);
+const base64ImportBytes=(...args)=>deps.imports.base64ImportBytes(...args);
+const clearMainView=(...args)=>deps.workspace.clearMainView(...args);
+const renderAll=(...args)=>deps.workspace.renderAll(...args);
+const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
+
+function comparableProjectData(value, provenance=false){
+  if(Array.isArray(value))return value.map(row=>comparableProjectData(row,provenance));
+  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().filter(key=>!['createdAt','updatedAt'].includes(key)&&!(provenance&&['id','timestamp'].includes(key))).map(key=>[key,comparableProjectData(value[key],key==='provenance')]));
+  return value;
+}
+function preserveSavedMetadata(dataModel, saved){
+  if(!saved?.dataModel)return dataModel;
+  const previous=new Map((saved.dataModel.artifacts||[]).map(row=>[row.id,row]));
+  return {...dataModel,artifacts:(dataModel.artifacts||[]).map(row=>{
+    const old=previous.get(row.id);
+    return old&&JSON.stringify(comparableProjectData(old))===JSON.stringify(comparableProjectData(row))?JSON.parse(JSON.stringify(old)):row;
+  })};
+}
+function makeProject(){
+  const tab=activeProjectTab(),dataModel=preserveSavedMetadata(window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),tab?.savedProject);
+  const unchanged=tab?.savedProject&&JSON.stringify(comparableProjectData(dataModel))===JSON.stringify(comparableProjectData(tab.savedProject.dataModel));
+  return {
+    format:'dk-data-studio-project',
+    schemaVersion:3,
+    version:unchanged?tab.savedProject.version:'3.69.4',
+    dataModel:dataModel,
+    plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
+    host:{}
+  };
+}
+
+let projectSaveChoicePromise=null;
+function chooseProjectSaveMode(){
+  if(projectSaveChoicePromise)return projectSaveChoicePromise;
+  const dialog=$('#projectSaveChoiceDialog');
+  if(!dialog)return Promise.resolve('current');
+  const currentBtn=$('#projectSaveCurrentBtn');
+  const saveAsBtn=$('#projectSaveAsBtn');
+  const cancelBtn=$('#projectSaveCancelBtn');
+  const closeBtn=$('#projectSaveCloseBtn');
+  const hint=$('#projectSaveChoiceHint');
+  const projectName=$('#projectSaveChoiceProjectName');
+  const currentName=state.projectPath?projectBaseName(state.projectPath):'';
+  if(projectName){projectName.textContent=currentName||'未命名项目';projectName.title=currentName||'尚未保存到项目文件';}
+  if(window.electronAPI?.isWebClient){
+    hint.textContent=currentName
+      ? `当前工程：${currentName}。网页版工程内容与桌面版一致；浏览器允许原位写入时会直接覆盖，否则保存当前会下载同名工程文件。`
+      : '网页版工程内容与桌面版一致；首次保存会选择文件位置，普通 HTTP 局域网页在浏览器限制下可能改为下载工程文件。';
+  }else{
+    hint.textContent=currentName
+      ? `当前工程：${currentName}。保存当前会覆盖此文件；另存为会创建新工程文件并切换到新路径。`
+      : '当前工程尚未保存过。选择“保存当前”时会先要求选择保存位置。';
+  }
+  dialog.classList.remove('hidden');
+  projectSaveChoicePromise=new Promise(resolve=>{
+    let settled=false;
+    const finish=mode=>{
+      if(settled)return;settled=true;
+      dialog.classList.add('hidden');
+      window.removeEventListener('keydown',onKey,true);
+      projectSaveChoicePromise=null;
+      resolve(mode);
+    };
+    const onKey=e=>{
+      if(e.key==='Escape'){e.preventDefault();finish('cancel');}
+      else if(e.key==='Enter'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();finish('current');}
+    };
+    currentBtn.onclick=()=>finish('current');
+    saveAsBtn.onclick=()=>finish('saveAs');
+    cancelBtn.onclick=()=>finish('cancel');
+    if(closeBtn)closeBtn.onclick=()=>finish('cancel');
+    dialog.onclick=e=>{if(e.target===dialog)finish('cancel');};
+    window.addEventListener('keydown',onKey,true);
+    requestAnimationFrame(()=>currentBtn.focus());
+  });
+  return projectSaveChoicePromise;
+}
+
+async function saveProject(options={}){
+  const mode=options.mode||await chooseProjectSaveMode();
+  if(!mode||mode==='cancel')return null;
+  const project=makeProject();
+  const tab=activeProjectTab();
+  if(mode==='current'&&state.projectPath&&tab?.savedProject&&JSON.stringify(project)===JSON.stringify(tab.savedProject)){setStatus('工程内容未变化，无需写入。');return state.projectPath;}
+  const saved=await window.electronAPI.saveProject({
+    mode,
+    path:state.projectPath,
+    defaultName:state.projectPath?`${projectBaseName(state.projectPath)}.dkds.json`:'dk_data_project.dkds.json',
+    project,
+    source:options.source||`core.project.${mode}`
+  });
+  if(saved){
+    state.projectPath=saved;
+    const tab=activeProjectTab();
+    if(tab){tab.projectPath=saved;tab.title=projectBaseName(saved);tab.savedProject=JSON.parse(JSON.stringify(project));}
+    captureActiveProjectTab();
+    markProjectClean(tab,makeProject());
+    renderProjectTabs();
+    const verb=mode==='saveAs'?'工程已另存为':'工程已保存';
+    const browserDownload=window.electronAPI?.isWebClient&&String(saved).startsWith('web://');
+    setStatus(`${verb}：${saved}${browserDownload?'（浏览器下载模式）':''}`);
+    return saved;
+  }
+  return null;
+}
+function loadProjectIntoActive(pr,path){
+  activeProjectHistory()?.clear?.('project-load');
+  const previousArtifacts=snapshotArtifactRows();
+  state.projectPath=path||null;
+  state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:2,artifacts:[]});
+  const artifactTab=activeProjectTab();
+  if(artifactTab){artifactTab.artifactStore=state.artifactStore;artifactTab.savedProject=JSON.parse(JSON.stringify(pr));}
+  // Project Compatibility Gateway guarantees a canonical Schema v3 payload
+  // before runtime restore, so every renderer receives the same Artifact diff.
+  const projectRestoreDelta=diffArtifactRows(previousArtifacts,snapshotArtifactRows());
+  if(projectRestoreDelta.upserts.length||projectRestoreDelta.removedIds.length){
+    window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'project-restore',artifactDelta:projectRestoreDelta,artifacts:snapshotArtifactRows()});
+    pushArtifactDeltaToActivityWindows(projectRestoreDelta,'project-restore');
+  }
+
+  const currentTab=activeProjectTab();
+  if(currentTab)currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}));
+  window.DKDSPlugins?.project?.restore?.(pr.plugins||{});
+
+  clearMainView(false);
+}
+
+function openProjectPayload(r){
+  if(!r?.project)return false;
+  const path=String(r.path||'remote://dk-data-project.dkds.json');
+  captureActiveProjectTab();
+  const tab=blankProjectTab(projectBaseName(path));
+  state.projectTabs.push(tab);
+  state.activeProjectTabId=tab.id;
+  mountProjectTab(tab);
+  loadProjectIntoActive(r.project,path);
+  tab.title=projectBaseName(path);
+  captureActiveProjectTab();
+  markProjectClean(tab,makeProject());
+  renderProjectTabs();
+  renderAll();
+  scheduleMainPlotRelayout();
+  setStatus(`已在新标签页打开工程：${path}`);
+  return true;
+}
+
+function openProjectBase64({base64,path,name}={}){
+  const bytes=base64ImportBytes(base64||'');
+  if(!bytes.length)throw new Error('工程文件为空。');
+  const parsed=window.DKDSProjectFormat?.parseProjectBytes?.(bytes);
+  if(!parsed?.project)throw new Error('无法解析 DK Data Studio 工程文件。');
+  return openProjectPayload({project:parsed.project,path:String(path||name||'remote://dk-data-project.dkds.json')});
+}
+
+async function showProjectOpenFailure(err){
+  const message=String(err?.message||err||'未知错误');
+  console.error('Project open failed',err);
+  setStatus(`打开工程失败：${message}`);
+  await window.DKDSUI?.dialogs?.alert?.({tone:'error',title:'无法打开项目',message,detail:String(err?.stack||''),detailLabel:'技术详情'});
+}
+
+async function openProject(){
+  try{
+    const r=await window.electronAPI.openProject();
+    if(!r)return false;
+    return openProjectPayload(r);
+  }catch(err){
+    await showProjectOpenFailure(err);
+    return false;
+  }
+}
+
+module.exports=Object.freeze({configure, makeProject, chooseProjectSaveMode, saveProject, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});

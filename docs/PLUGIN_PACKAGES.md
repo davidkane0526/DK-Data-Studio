@@ -1,0 +1,248 @@
+# Installable Plugin Packages (`.dkplugin`)
+
+## Purpose
+
+The `plugin` branch supports installable desktop plugins so a new algorithm or scientific workflow does not require rebuilding the application.
+
+A package is a text-only JSON container with the extension `.dkplugin`.
+
+```text
+DK Data Studio desktop
+        ↓ Plugin Manager → Install Plugin
+<userData>/plugins/<plugin-id>.dkplugin
+        ↓
+Plugin Kernel
+        ↓
+commands / activities / UI / detectors / workflows / charts
+```
+
+This mechanism is intentionally separate from built-in plugins. External plugins **cannot** use the reserved `builtin.*` namespace and cannot overwrite a built-in plugin.
+
+## Package format
+
+Schema version 1:
+
+```json
+{
+  "schema": 1,
+  "manifest": {
+    "id": "com.example.strong-detector",
+    "name": "Strong Detector",
+    "version": "1.0.0",
+    "apiVersion": "1.19.0",
+    "entry": "plugin.js",
+    "scripts": ["plugin.js"],
+    "styles": ["style.css"],
+    "enabled": true,
+    "requiresCore": ["analysis.algorithms"],
+  "capabilities": ["analysis.peak-detector"]
+  },
+  "files": {
+    "plugin.js": "...JavaScript source...",
+    "style.css": "...CSS source..."
+  }
+}
+```
+
+Limits and Plugin API 1.19 layout safety are enforced before installation:
+
+- package id must be valid and cannot start with `builtin.`;
+- all paths must be relative and cannot traverse outside the package;
+- JavaScript entries must end in `.js`;
+- styles must end in `.css`;
+- only text files are accepted;
+- file count and total package size are bounded;
+- the declared Plugin API must be exactly `1.19.0`; earlier 1.x packages are rejected before activation;
+- API 1.16 workspace CSS cannot own Core shell selectors/viewport geometry or silently clip semantic UI; the same rules are checked by the standalone SDK and again by the application installer.
+- SDK packages target Plugin API `1.19.0`; packages declaring any other Plugin API version are rejected before activation.
+
+## Build a package
+
+A complete external detector template is in:
+
+```text
+examples/external-plugins/resonance-detector-template/
+```
+
+For application maintainers, package any external plugin folder with:
+
+```bash
+npm run plugin:package -- examples/external-plugins/resonance-detector-template detector.dkplugin
+```
+
+For third-party developers, the standalone SDK requires no application source tree:
+
+```bash
+node sdk/tools/dkds-plugin.js validate my-plugin
+node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
+```
+
+The distributable SDK contains the manifest schema, API declarations, validator/packager, standalone-workbench, true-TOP-workbench, tool and algorithm templates. For a dedicated TOP start from `sdk/templates/top-workspace-plugin/` and read `sdk/TOP_WORKSPACES.md`.
+
+The folder must contain `plugin.json` and its declared source/style files.
+
+## Install / update / uninstall
+
+Desktop application:
+
+```text
+Plugins
+→ Install Plugin
+→ choose *.dkplugin
+```
+
+The application displays a warning before installation because the package contains executable JavaScript.
+
+Installing another package with the same external plugin id is treated as an update. Runtime loading/activation is part of the transaction. If the updated plugin fails to load, the kernel restores the previous installed package and runtime definition when possible.
+
+External plugin cards expose:
+
+```text
+enable / disable
+reload / retry
+uninstall
+```
+
+Uninstalling a plugin does **not** delete its namespaced project data. Installing the current-contract plugin with the same id can access that plugin namespace again.
+
+## Peak detector plugin contract
+
+Peak detectors are normal plugins. A detector registers a provider:
+
+```js
+ctx.analysis.algorithms.register('my-detector-v1', {
+  category: 'peak-detector',
+  name: 'My Detector',
+  description: '...',
+  default: false,
+
+  defaultSettings() {
+    return { threshold: 3 };
+  },
+
+  parameterSchema: {
+    fields: [
+      { id: 'threshold', type: 'number', label: 'Threshold', default: 3 }
+    ]
+  },
+
+  evidence: {
+    custom: { key: 'custom', label: 'Custom evidence', glyph: '◆', symbol: 'diamond' }
+  },
+
+  detect(sweep, settings, options) {
+    // Return peak candidate objects using raw sampled V/I coordinates.
+  }
+});
+```
+
+The Resonance Workbench discovers `peak.detectors` dynamically. It does not know the detector id in advance. Therefore a stronger detector can replace the built-in robust detector without editing the workbench or core application.
+
+### Scientific invariant
+
+For resonance analysis, an external detector must preserve the established contract:
+
+> transformed/derived signals may locate candidate regions, but the final reported `Vpk` must map back to a real raw I–V sample coordinate.
+
+Do not return derivative extrema as physical `Vpk` values.
+
+## UI plugins
+
+An external package can also customize its own user interface through Plugin API contributions:
+
+```text
+ui.activities
+ui.sidebar
+ui.toolbar
+ui.mainTools
+ui.mainOverlays
+ui.mainViews
+ui.inspectors
+ui.groupViews
+ui.groupCharts
+ui.pages
+ui.panels
+ui.shortcuts
+ui.styles
+```
+
+This is the preferred route for new experimental workflows. Do not patch `src/index.html` or the global toolbar merely to add a domain feature.
+
+## Security model
+
+An external plugin is **executable JavaScript**, not a passive data file.
+
+Renderer context isolation prevents it from directly importing Node/Electron modules, but a plugin can use documented host/plugin APIs, inspect data made available to it, manipulate its DOM UI, and use ordinary browser capabilities.
+
+Therefore:
+
+- install only plugins you trust or whose source you have reviewed;
+- do not install unknown `.dkplugin` files received from untrusted sources;
+- the application deliberately shows a warning before installation.
+
+This is not a cryptographically signed marketplace system.
+
+## Web and Android
+
+LAN Web remains a non-installing client. Android/React Native is a distinct native host and can install the same SDK-produced text-only `.dkplugin` through Android's document picker. The package is validated and stored in the application's private IndexedDB storage, then loaded by the same Core plugin kernel; there is no Android source conversion step.
+
+Algorithm/data/workbench packages using documented Plugin API contracts are portable. `ctx.ui.actions` is projected into the native action sheet, and PluginWorkspace PRIMARY/PRIME/SUB plus true-TOP window contracts are mapped to Android routes/layout. Direct Electron/Node access, private desktop DOM coupling and mouse-only controls are not portable and must be replaced with Core host/platform/input services.
+
+Android and Desktop both execute one current package per plugin id. LAN distribution may transfer the current package, but neither host maintains an executable compatibility/history chain. Scientific algorithms remain shared; do not create a separate Android-only implementation.
+
+## Optional dedicated window in an external package
+
+Installed `.dkplugin` packages may use the same `manifest.window` contract as built-in plugins. When present, `scripts/package-plugin.js` automatically includes `window.runtime` and `window.scripts` in the package in addition to the ordinary plugin scripts/styles.
+
+```json
+"window": {
+  "activity": "my-analysis",
+  "title": "My Analysis",
+  "prewarm": true,
+  "reuse": true,
+  "persistence": "project",
+  "runtime": "window-runtime.js",
+  "scripts": ["analysis-engine.js"],
+  "dependencies": ["scientific-renderer", "platform", "plugin-kernel"]
+}
+```
+
+The package still registers its Activity normally with `openMode:'window'`. Project-safe results should be registered through `ctx.project.registerSlice(...)` or stored as Data Model artifacts. The dedicated renderer merges only the external plugin's namespace and artifact deltas back into the project, so it cannot replace unrelated plugin state with an older prewarmed project snapshot.
+
+If an installed package is updated while DK Data Studio is running, the package installation revision changes. Any hidden renderer from the previous revision is destroyed and a fresh dedicated renderer is created/prewarmed from the updated package.
+
+## Current package and algorithm catalog
+
+DK Data Studio executes one current package per plugin id. Updating an external package is transactional: if activation of the newly written package fails during that install operation, the installer may restore the file it just replaced so the transaction does not leave a broken installation. That immediate transaction restore is scoped to the in-progress write and does not create selectable prior package versions.
+
+Algorithm Provider packages may register multiple exact versions of a scientific algorithm in the **current active package** for reproducible project locks. Publish those versions through `algorithmProvides`:
+
+```json
+{
+  "algorithmProvider": true,
+  "algorithmCategories": ["transport-transform", "ter-analysis"],
+  "algorithmProvides": [
+    {"category":"transport-transform","id":"transport.didv","version":"1.0.0"},
+    {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
+  ],
+  "pluginDependencies": [
+    {"id":"other.provider"}
+  ]
+}
+```
+
+`pluginDependencies` contains current package IDs only. Algorithm lookup considers currently installed providers only. When a project locks an unavailable algorithm version, Workbench code uses the Core Algorithm API to inspect/reload currently installed providers and must keep the exact project lock unchanged.
+
+### Standalone workbench defaults and data ownership (Plugin API 1.19)
+
+A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...)` and does not declare a `workspace.role` is a standalone primary activity by default. It appears in the main activity strip according to `order`; it is not inserted into another workbench's contextual toolbar. Set `presentation: "toolbar"` only when a page is intentionally a contextual sub-tool.
+
+`icon` is optional in the manifest. Core provides a category default icon when neither `manifest.icon` nor `workspace.icon` is supplied.
+
+Imported project data is stored once and assigned to zero, one, or multiple analysis workbenches. New plugins should require `data.sources` and read sources through `ctx.data.sources.list()`. A workbench receives its own scoped view automatically. Source assignment is centralized in Import/Data Center rather than implemented by each plugin.
+
+### True TOP workbench contract (Plugin API 1.19)
+
+A workbench does not become TOP merely because it uses `ctx.ui.workspaceSurface` / PluginWorkspace. A true TOP must declare `workspace.role: "top"`, a matching dedicated `window.activity`, register an Activity with `openMode: "window"`, and register one `ctx.ui.topWorkspace` layout. Core uses that same implementation in a dedicated window or, when promoted, as SUPER in the main shell. The standalone SDK validator rejects incomplete/mismatched TOP packages.
+
+Viewport-owned scientific plots in TOP workbenches should use `PluginWorkspace(primaryScroll: "contained")` and a bounded CSS height chain (`height:100%; min-height:0`, with chart rows such as `minmax(0,1fr)`). Do not use an intrinsic-height parent plus a positive-minimum `1fr` responsive chart; that can create a ResizeObserver feedback loop.

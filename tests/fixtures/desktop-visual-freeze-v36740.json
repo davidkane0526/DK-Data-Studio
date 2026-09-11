@@ -1,0 +1,100 @@
+{
+  "baseline": "v3.67.40 Desktop accepted visual/geometry baseline",
+  "policy": "Mobile-only work must not modify shared/Desktop owners. Explicit user-reported Desktop regressions may be recorded as bounded authorized deltas with base/current hashes; v3.67.48 records the project-tab and touch-host corrections while real-device acceptance remains WIP.",
+  "algorithm": "sha256",
+  "files": {
+    "src/app/modules/floating-docks.js": "214bc0545e4f668cfe018c3bc078f48de327f4b6b2c250c8d94262a24fb46611",
+    "src/app/modules/foundation.js": "f9539f314ac2838a97637e40c427e7e367c00fde3d6562ba0f2625861039bc03",
+    "src/app/modules/import-workbench.js": "8b645bb40f23de8a49aeb7ae1659a1823b2b3cef7da93116d92a79c421e7451e",
+    "src/app/modules/project-tabs-history.js": "6aed08c94f24ec4ca9eeeb733fe8ed62ab8ab0c5b28006c44aa1866092fa4d11",
+    "src/app/modules/runtime.js": "b280cb2ebe6560c0a5f1a510bfc871fe88825cf3b9e6be8721e74c0d06055b7f",
+    "src/app/modules/scientific-panels-export.js": "adc35d0565096c854a2fd39279c6571146b9c60842f698f768d124685103b6bf",
+    "src/app/modules/startup.js": "f539caa395bcf710440abfa6fdd41c0221d8b6aa0c6ffce4dfd8c7de6e0eb43f",
+    "src/app/modules/window-chrome.js": "edbecb428d34f557ea9a1640db34a7b12b27adef3d08f5be811a5a782f39a08f",
+    "src/app/modules/workspace-super-shell.js": "f994fb6e01293e78a025326ab26321546893dc5873e45c0aa6231151306a7618",
+    "src/core/host/platform.js": "f6f6f1a2c92e927ab68e98e22284d70d58bda460a4cb0077b39ac1a20aff493c",
+    "src/core/ui/modules/layout/docking.js": "e6eb667a732e4e7987939c5a24e5851c74cdbffbc485c8620cbd3b982c8ffd7d",
+    "src/core/ui/modules/layout/portable-view.js": "d31ff77e6ca1315d52ca98e3da62d7ab353e355e7746e24714c9e9d32f748d4e",
+    "src/core/ui/modules/layout/workspace.js": "42579b2b9a0701ec1e582a82b255e9468344ec3d4b45dd55b11c72b245911b67",
+    "src/core/ui/modules/presentation/desktop-shell.js": "7c1a3c813fd0267b7cdb06f470a2893ce4e00641e7ddce94412da4f2526034ee",
+    "src/core/ui/modules/presentation/presenters.js": "e4f85cd6f29c3a3df05e6dd3ad24717ae303679fdaf3d833a8042d1c8d96970d",
+    "src/plugin-window/style.css": "0e56b00f3bfe37629928262e3b27b6da8dc562cb8f6b65a5e5d36da4edb60b13",
+    "src/plugins/connectivity-center/plugin.css": "29c6d8add3ee753153472aac26ae2880ffcb368a6503ba8624d1ad165c63e830",
+    "src/plugins/data-center/plugin.css": "76ce4911a325de5367dc7ada604843bdadfbaf15bf00553bf169b7048e967ee1",
+    "src/plugins/pulse-analysis/plugin.css": "01af38d381ad89c173e68c6b2b56de028710412afab17d50c86719263a08f440",
+    "src/plugins/pulse-sampler-tool/plugin.css": "f15df7c7320b02781998c31b98b70300c4606f91809a01860d0eb63d3427a600",
+    "src/plugins/resonance-workbench/plugin.css": "893c8abacc77ad41b899d92ab706fdb2e02fbe25458757733c4c555f5efe42f9",
+    "src/plugins/ter-analysis/plugin.css": "c4e161405c0b5ac8c989c9d6f0a5f997bfbca4f1d788d6ed6cbbd79f872a2bbe",
+    "src/plugins/transfer-vth-lab/plugin.css": "0059585ac113cc5e3d0561b3a3a0d5570631ef2fdef3cc1ec4451281ac68bd4f",
+    "src/styles/foundation/foundation.css": "f60e38f0e4d1b07224f132156f424757d2a73098c37a71c8618f5c77bcd73130",
+    "src/styles/presentation/analysis.css": "fd8ad6e9df4b3f09ce0add1e1c363d14bfa419f1e152465a8a9b52e7c260ff00",
+    "src/styles/presentation/connectivity.css": "aa6c7e1cd78444c3ae354fab4982ed30fb49c3abe60a430fd0fcb3c7733c3b1e",
+    "src/styles/presentation/control-status.css": "3c8d0228ab67cb7a7b7e8bad40003321f08b36257688cb828009aac799a4194d",
+    "src/styles/presentation/dialogs.css": "a091ac8b5fa5e42cd5fd91288d452209dac62a7d364eb7104152672b56b1e1be",
+    "src/styles/presentation/import-workbench.css": "4b9ae42dbf6e6ae57b8ddd9283113fac1c03b0486bc9d879f02ad76fc5a7cd0b",
+    "src/styles/presentation/plugin-chrome.css": "b67a9c97831bfc26d3e110197c580e7514e7f9e57fac7f713105111c3d531bb7",
+    "src/styles/presentation/plugin-devtools.css": "a4998ceae241a17f558bbacb705a8af51cc971ae1102c48eb5645fcbc3803290",
+    "src/styles/presentation/scientific.css": "f572c24be55eeee9bf1dc596c2d2a1b29109b2c4c7bd45b77b251f4f59a3b51b",
+    "src/styles/presentation/shell.css": "cb7198765bd9a229f6baa6017436cf007988b74377c66199cb28597a9efb4377",
+    "src/styles/structure/analysis-shell.css": "d403cb3db4ce7c853c5fe7269eacfb0bb55841659585960a47ae6f702268eaad",
+    "src/styles/structure/analysis-workbench.css": "a89057d621bb735457a5faf8359e723bc20bbe49a3d036226c8945551af3308e",
+    "src/styles/structure/connectivity-panels.css": "291e4094e85d15b542a55fe222b03224435ab102de7695b785831544a5d53d85",
+    "src/styles/structure/desktop-chrome-geometry.css": "5879ac4d12977e1c84c8cfc44218fe9910f737afd6571bd6b8f1beeb6517def5",
+    "src/styles/structure/import-workbench.css": "c27c7b0408a2e2437894ffa117cfeca90a78c0dc02908d00a3f2dffa2831bd7a",
+    "src/styles/structure/metrics.css": "cfc24806bb8451f32081804d394b251ec00b0a83eda6a2200d6463fd1006520d",
+    "src/styles/structure/sdk-semantic-surfaces.css": "e306b32ffaa43b7d00ac982da56e8a441b4e37b074d93d5145e73167e8755ddd",
+    "src/styles/structure/super-top-contract.css": "166e9b62025c75db47f28ff13dcc6756aefa2ef73c0672131aded11edcbef459",
+    "src/styles/structure/workbench-components.css": "4e24595ab7c25537005c04fb939907c1dbb6f122cebb89d731e9b378388173f1",
+    "src/styles/structure/workspace-interaction.css": "63dcf57d33cf1584feb21ba1e1658e04611873f8f0e35b8448d13a01ece0fc5c",
+    "src/styles/structure/workspace-safeguards.css": "2c87262cbf8aafb1f702bd9dc5d8fa7e809877107b80fd3ffc999dc04ba67a81",
+    "src/styles/theme/contract.css": "f904b9c2c4f14ca99155d6896968a79f49754f2d541f873b6adaa3c8fb6c3e80",
+    "src/styles/theme/integrated-command-chrome.css": "1639b60921522c9ba546b7c10175bca658828ebdf324166dcd606db427a0b3c2",
+    "src/styles/theme/material-roles.css": "51767f640d70cbd75928ddf7c654905b0252c96519dab988945d72ac962960de",
+    "src/styles/theme/settings-ui.css": "0f1366c2bbaa22892bb242affec913101e44154132276ff965e09f8a222724dc",
+    "src/styles/theme/test-gallery.css": "ed96fb0a29a33746adaa41bddf96a1e4f8a19e622501cce8133de0853d0369f5",
+    "src/styles/utility/visibility.css": "5fabcff774a88fc6e2413d9d9955f69bfd34c358c48b1fa19c772acd0ccd7f80"
+  },
+  "authorizedDeltas": {
+    "src/styles/theme/material-renderer.css": {
+      "baseSha256": "32a4bb4b687b161c75de0d380dc7e953db33345410c3be4c4914d2f688afdcbf",
+      "currentSha256": "f9429ad0ee4c2373e00ccbba79521ea0168809650a6a41eeacc0e4ca15f69b0b",
+      "reason": "Explicit user-authorized Desktop parameter PRIME elevation; the same Core Material owner also paints the Mobile parameter projection so platform geometry CSS remains paint-free. Pending visual acceptance before folding into a new Desktop baseline. v3.67.48 additionally removes the native drawer resize-handle gradient so only the edge grip is visible; this addition is Mobile-host scoped."
+    },
+    "src/core/ui/modules/workbench/analysis.js": {
+      "baseSha256": "dccd2fcef2afdd34fd1673c5fb1cac709279f06091092c005075725345162454",
+      "currentSha256": "bf5af7205630c8a9bf5f0748d03efd194d14c56b2e56f56882e63897dcf024de",
+      "reason": "Platform-neutral presentationPurpose/presentationRole metadata is now stamped synchronously when an existing PRIME is registered, so Mobile data-control surfaces are suppressible before first paint without a DOM relocation flash; Desktop composition semantics are otherwise unchanged."
+    },
+    "src/styles/structure/plugin-workspace.css": {
+      "baseSha256": "db8a2134a84db64ff6c987553f30f51133122933ff896b7c60a306aa99e0348a",
+      "currentSha256": "e038b59a3be5ae8cc9c0ad7c87f53e2607f4ddd75d6f36f9be2af8dfcef2a9c6",
+      "reason": "Explicit user-reported Desktop titlebar correction: compact 28 px PlotView/GroupPlot title strips now keep 24 px action hit regions centered with a real vertical inset, preventing hover paint from touching/clipping against the lower titlebar edge. Existing parameter PRIME geometry and prior reviewed cleanup remain preserved."
+    },
+    "src/styles/platform/touch.css": {
+      "baseSha256": "dadd49b25a6abae17f1d30d278386a9bb42e1abb54fdf686b32de3862ca58947",
+      "currentSha256": "65dbe7724ad2591993493231c0511dd41c2e616feb22512783aa8daebd9f20e5",
+      "reason": "Explicit user-reported Desktop refinement: scientific floating chrome is reduced again to a denser CSS-viewport-adaptive 16–18 × 13–15 geometry; Desktop workspace/table scroll regions also release vertical overscroll to ancestor workspace scroll containers for natural wheel handoff. Mobile retains its independent touch geometry and containment policy."
+    },
+    "src/styles/structure/shell-navigation.css": {
+      "baseSha256": "19d0048130a5e65373aadcaabc87148157886aafc5cc750c1285d7ea80974cda",
+      "currentSha256": "07c60381cf34ed4ddeb3177d32c312016f5dc140c26eb9a5e88ac2aa48cf63dc",
+      "reason": "Explicit user-reported Desktop correction: the project-tab close hit region is restored to a compact 20 px integrated control instead of the visibly oversized tab-end close button shown in real-device Desktop screenshots."
+    },
+    "src/styles/theme/component-appearance.css": {
+      "baseSha256": "056aa6a821ebee61557690a5712781cdc86eb712150f15ec8f12a2f1eb73851c",
+      "currentSha256": "e0807204de7a6a07d9cd16b103fbd130b39654cd9c1e0d4240fe470a1342e567",
+      "reason": "Explicit user-reported Desktop appearance correction: all plot/group/portable titlebar actions continue to share one canonical hover surface/border/elevation, with the titlebar hover radius normalized to 6 px so compact scientific headers expose the same corner geometry once vertically inset. Existing row-selection and field appearance fixes remain preserved."
+    },
+    "src/styles/structure/schema-and-plugin-ui.css": {
+      "baseSha256": "59eef93ef1c9db1613dd56db8dca2b45f6ff65eaa57b6a00c695d2d5a16833ab",
+      "currentSha256": "f548ecae077512b54bddca4f59bf027a58518176247bf42dd9b10b977aa0f175",
+      "reason": "Explicit user-reported Desktop correction: the canonical generic button fallback now excludes project-tab-close so its dedicated compact Structure geometry cannot be re-expanded to 30 px by a more specific generic selector."
+    },
+    "src/core.css": {
+      "baseSha256": "3bc467f901a9b3928e01bdec82a035f1fa2c23dcf65eeee17e10d673e1667d95",
+      "currentSha256": "74714850d270998a455287b12e20a57dcadcc9f98f3643bbbf22bc018cc0b046",
+      "reason": "SDK 1.25 Platform Presentation Authoring Contract adds only the bounded dkds.plugin-platform cascade slot between shared plugin CSS and Core Structure so host-selected platform assets have deterministic ownership without !important or Desktop/Mobile API forks; no Desktop geometry or paint rules are changed in core.css."
+    }
+  },
+  "touchIsolationCorrection": "v3.67.47: selector-only host exclusion restores the already accepted Desktop geometry on touch-capable Windows hardware; no Desktop control dimensions or paint tokens were changed."
+}

@@ -1,0 +1,273 @@
+/* ============================================================
+   Unified AnalysisWorkbench
+   Core owns shell geometry. Plugins only populate semantic surfaces.
+   ============================================================ */
+.analysis-page-body.dkds-unified-workbench-body{
+  flex:1 1 auto;
+  height:auto;
+  min-height:0;
+  padding:0;
+  overflow:hidden;
+}
+.dkds-unified-workbench-body>.dkds-plugin-workbench-root{
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+.dkds-analysis-workbench-host,.dkds-analysis-workbench{
+  width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+}
+.dkds-analysis-workbench{display:flex;flex-direction:column;}
+.dkds-analysis-nav{
+  flex:0 0 auto;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  white-space:nowrap;
+}
+.dkds-analysis-nav>div{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
+}
+.dkds-analysis-nav.empty{display:none;}
+.dkds-analysis-frame{
+  --dkds-analysis-left-width:280px;
+  --dkds-analysis-right-width:390px;
+  --dkds-analysis-bottom-height:320px;
+  flex:1 1 auto;
+  min-width:0;min-height:0;
+  display:grid;
+  grid-template-columns:0 0 minmax(0,1fr) 0 0;
+  grid-template-rows:minmax(0,1fr) 0 0;
+  grid-template-areas:
+    "left lsplit main rsplit right"
+    "bsplit bsplit bsplit bsplit bsplit"
+    "bottom bottom bottom bottom bottom";
+  gap:0;
+  padding:0;
+  overflow:hidden;
+  position:relative;
+  box-sizing:border-box;
+}
+.dkds-analysis-workbench{--dkds-analysis-resizer-track-size:7px;--dkds-analysis-resizer-seam-size:1px;}
+.dkds-analysis-workbench.has-left .dkds-analysis-frame{
+  grid-template-columns:var(--dkds-analysis-left-width) var(--dkds-analysis-resizer-track-size) minmax(0,1fr) 0 0;
+}
+.dkds-analysis-workbench.has-right .dkds-analysis-frame{
+  grid-template-columns:0 0 minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-right-width);
+}
+.dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
+  grid-template-columns:var(--dkds-analysis-left-width) var(--dkds-analysis-resizer-track-size) minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-right-width);
+}
+.dkds-analysis-workbench.has-bottom .dkds-analysis-frame{
+  grid-template-rows:minmax(0,1fr) var(--dkds-analysis-resizer-track-size) var(--dkds-analysis-bottom-height);
+}
+.dkds-analysis-left{grid-area:left;width:auto;min-width:0;max-width:none;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;}
+.dkds-analysis-main{grid-area:main;min-width:0;min-height:0;overflow:auto;position:relative;padding:0;}
+.dkds-analysis-right{grid-area:right;width:auto;min-width:0;max-width:none;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:0;}
+.dkds-analysis-bottom{grid-area:bottom;min-width:0;min-height:0;max-height:none;overflow:auto;display:flex;gap:8px;padding:0;align-items:stretch;}
+.dkds-analysis-workbench:not(.has-left) .dkds-analysis-left,
+.dkds-analysis-workbench:not(.has-right) .dkds-analysis-right,
+.dkds-analysis-workbench:not(.has-bottom) .dkds-analysis-bottom{display:none;}
+.dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-analysis-bottom-resizer{
+  display:none;position:relative;inset:auto;z-index:40;touch-action:none;
+}
+.dkds-analysis-left-resizer.active{display:block;grid-area:lsplit;cursor:col-resize;}
+.dkds-analysis-right-resizer.active{display:block;grid-area:rsplit;cursor:col-resize;}
+.dkds-analysis-bottom-resizer.active{display:block;grid-area:bsplit;cursor:row-resize;}
+.dkds-analysis-left-resizer::before,.dkds-analysis-right-resizer::before{
+  content:"";position:absolute;top:0;bottom:0;
+  left:calc((var(--dkds-analysis-resizer-track-size) - var(--dkds-analysis-resizer-seam-size)) / 2);
+  width:var(--dkds-analysis-resizer-seam-size)
+;}
+.dkds-analysis-bottom-resizer::before{
+  content:"";position:absolute;left:0;right:0;
+  top:calc((var(--dkds-analysis-resizer-track-size) - var(--dkds-analysis-resizer-seam-size)) / 2);
+  height:var(--dkds-analysis-resizer-seam-size)
+;}
+.dkds-analysis-primary-host,.dkds-analysis-sub-host{width:100%;min-width:0;min-height:0;box-sizing:border-box;}
+.dkds-analysis-primary-host{display:flex;flex-direction:column;gap:10px;overflow:visible;}
+.dkds-analysis-sub-host:not(.hidden){display:block;min-height:100%;}
+.dkds-analysis-parking{display:none;}
+.dkds-analysis-overlay{grid-column:1/-1;grid-row:1/-1;position:relative;inset:auto;pointer-events:none;z-index:120;min-width:0;min-height:0;}
+.dkds-analysis-overlay>.dkds-portable-view,.dkds-analysis-overlay>.dkds-analysis-prime-panel{pointer-events:auto;}
+
+/* PRIME surface structure belongs to AnalysisWorkbench, not SUPER/TOP chrome. */
+.dkds-analysis-prime-panel{min-width:0;overflow:hidden;display:flex;flex-direction:column;}
+.dkds-analysis-prime-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;min-height:var(--dkds-analysis-prime-head-min-height,34px);box-sizing:border-box;}
+.dkds-analysis-prime-body{min-width:0;min-height:0;overflow:auto;padding:8px;}
+.dkds-analysis-prime-chrome{display:flex;align-items:center;gap:2px;}
+.dkds-prime-hidden{display:none;}
+.dkds-analysis-workbench .dkds-portable-view.is-docked{
+  --dkds-portable-docked-position:relative;
+  --dkds-portable-docked-inset:auto;
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-max-width:none;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-margin:0;
+  --dkds-portable-docked-flex:0 0 auto;
+}
+.dkds-analysis-right>.dkds-portable-view{
+  --dkds-portable-docked-width:100%;
+  --dkds-portable-docked-min-width:0px;
+}
+.dkds-analysis-right>.dkds-analysis-prime-panel{width:100%;min-width:0;}
+.dkds-analysis-bottom>.dkds-portable-view{
+  --dkds-portable-docked-min-width:min(520px,100%);
+  --dkds-portable-docked-flex:1 1 520px;
+  --dkds-portable-docked-max-width:none;
+}
+.dkds-analysis-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%);flex:1 1 520px;max-width:none;}
+.dkds-analysis-workbench .dkds-portable-view.is-floating{
+  --dkds-portable-floating-position:absolute;
+  --dkds-portable-floating-max-width:calc(100% - 16px);
+}
+.dkds-analysis-workbench .dkds-portable-controls{flex:0 0 auto;}
+.dkds-managed-grid{display:grid;grid-template-columns:repeat(var(--dkds-grid-columns,3),minmax(0,1fr));grid-auto-flow:var(--dkds-grid-auto-flow,row dense);grid-auto-rows:var(--dkds-grid-auto-rows,auto);gap:var(--dkds-grid-gap,10px);align-items:var(--dkds-grid-align-items,stretch);min-width:0;width:100%;}
+.dkds-managed-grid>*{min-width:0;max-width:none;margin:0;position:relative;inset:auto;}
+.dkds-managed-grid.dkds-grid-sticky-avoidance{position:relative;}
+.dkds-managed-grid>.dkds-grid-sticky-rail{position:absolute;z-index:80;top:0;right:0;bottom:0;width:var(--dkds-grid-sticky-rail-width,calc((100% - (var(--dkds-grid-columns,3) - 1)*10px)/var(--dkds-grid-columns,3)));min-width:0;pointer-events:none;}
+.dkds-managed-grid>.dkds-grid-sticky-rail>.dkds-portable-view{width:100%;max-width:100%;pointer-events:auto;margin:0;}
+.dkds-analysis-workbench .analysis-chart-card{min-width:0;max-width:none;}
+.dkds-analysis-workbench .analysis-chart-card.dkds-portable-view{
+  --dkds-portable-base-min-height:340px;
+  --dkds-portable-docked-min-height:340px;
+  --dkds-portable-docked-height:auto;
+}
+.dkds-analysis-primary-host>.dkds-analysis-primary-node{width:100%;min-width:0;max-width:none;}
+.dkds-analysis-left>.dkds-analysis-left-node{width:100%;min-width:0;max-width:none;position:static;inset:auto;}
+@media(max-width:1000px){
+  .dkds-analysis-frame,
+  .dkds-analysis-workbench.has-left .dkds-analysis-frame,
+  .dkds-analysis-workbench.has-right .dkds-analysis-frame,
+  .dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto auto;
+    grid-template-areas:"left" "main" "right" "bottom";
+    gap:0;overflow:auto;
+  }
+  .dkds-analysis-left,.dkds-analysis-right,.dkds-analysis-bottom{width:100%;max-width:none;max-height:none;padding:0}
+  .dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-analysis-bottom-resizer{display:none}
+  .dkds-analysis-main{padding:0;overflow:visible}
+}
+
+/* ============================================================
+   Shared AnalysisWorkbench typography. PluginWorkspace extends this contract;
+   domain plugins own content while Core owns typography and workspace geometry.
+   ============================================================ */
+.dkds-analysis-workbench,
+body.plugin-window-host{
+  font-size:var(--plugin-font-body);
+  line-height:1.45;
+}
+.dkds-analysis-workbench button,
+.dkds-analysis-workbench input,
+.dkds-analysis-workbench select,
+.dkds-analysis-workbench textarea{
+  font-size:var(--plugin-font-body);
+}
+.dkds-analysis-workbench{
+  --dkds-workbench-field-height:var(--plugin-control-height);
+  --dkds-workbench-button-min-height:var(--plugin-control-height);
+  --dkds-workbench-field-padding-block:4px;
+  --dkds-workbench-field-padding-inline:8px;
+  --dkds-workbench-field-line-height:1.2;
+}
+.dkds-analysis-workbench :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select):not(.dkds-field-control):not(.schema-param-field *){
+  box-sizing:border-box;
+  min-height:var(--dkds-workbench-field-height);
+  height:var(--dkds-workbench-field-height);
+  padding-block:var(--dkds-workbench-field-padding-block);
+  padding-inline:var(--dkds-workbench-field-padding-inline);
+  line-height:var(--dkds-workbench-field-line-height);
+}
+.dkds-analysis-workbench textarea{
+  box-sizing:border-box;
+  min-height:64px;
+  padding:6px 8px;
+}
+.dkds-analysis-workbench button:not(
+  .dkds-integrated-action-group button,
+  .dkds-separated-action-group button,
+  .dkds-portable-controls button,
+  .panel-header-actions button,
+  .dkds-plot-view-actions button
+){
+  min-height:var(--dkds-workbench-button-min-height);
+  padding:4px var(--plugin-control-pad-x);
+  white-space:nowrap;
+}
+.dkds-analysis-workbench label,
+.dkds-analysis-workbench .schema-param-label{
+  font-size:var(--plugin-font-label);
+}
+.dkds-analysis-workbench .analysis-subtitle,
+.dkds-analysis-workbench [class$="-meta"],
+.dkds-analysis-workbench [class$="-hint"],
+.dkds-analysis-workbench [class$="-description"],
+.dkds-analysis-workbench .schema-param-help,
+.dkds-analysis-workbench .plugin-card-id{
+  font-size:var(--plugin-font-meta);
+  line-height:1.45;
+}
+.dkds-analysis-workbench .analysis-chart-title,
+.dkds-analysis-workbench .analysis-plot-card-header strong{
+  font-size:var(--plugin-font-title);
+}
+.dkds-analysis-workbench .schema-param-group-title,
+.dkds-analysis-workbench .schema-param-error{
+  font-size:var(--plugin-font-meta);
+}
+.dkds-analysis-workbench .dkds-table th,
+.dkds-analysis-workbench .dkds-table td{
+  padding:7px 8px;
+}
+.dkds-analysis-workbench .dkds-plugin-header-actions,
+.dkds-analysis-workbench .analysis-control-card{
+  gap:var(--plugin-action-gap);
+}
+/* Single-row first: toolbars consume horizontal room before wrapping. */
+.dkds-analysis-workbench .dkds-plugin-header-actions{
+  display:flex;
+  flex-flow:row nowrap;
+  align-items:center;
+  min-width:0;
+}
+.dkds-analysis-workbench .dkds-toolbar{
+  gap:var(--plugin-action-gap);
+  display:flex;
+  flex-flow:row nowrap;
+  align-items:center;
+  min-width:0;
+}
+.dkds-analysis-workbench .analysis-control-card{
+  display:flex;
+  flex-flow:row wrap;
+  align-items:flex-end;
+}
+.dkds-analysis-workbench .analysis-control-card>button,
+.dkds-analysis-workbench .analysis-control-card>.dkds-portable-controls{
+  flex:0 0 auto;
+}
+@media(max-width:900px){
+  .dkds-analysis-workbench .dkds-toolbar{overflow-x:auto;scrollbar-width:thin}
+}
+/* Consolidated geometry from former secondary owners. */
+.dkds-analysis-workbench{
+  --dkds-layer-canvas-float:1400;
+  --dkds-layer-global-float:2400;
+  --dkds-layer-context-menu:3900;
+}
+.dkds-analysis-workbench .dkds-portable-view.is-floating{
+  --dkds-portable-floating-overflow:auto;
+  --dkds-portable-floating-max-height:calc(100% - 16px);
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
+}

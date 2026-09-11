@@ -1,0 +1,37 @@
+/* Core dialog/menu presentation.
+   Elevated/popover optical material is owned by Material Renderer. This layer
+   keeps semantic content wells, separators, typography and stationary motion. */
+.dkds-tooltip,.hover-tip{font-size:12px;line-height:1.5}
+
+/* One neutral scrim for all dialog modes. The dialog itself owns no optical
+   fill here: DKDSMaterialSurface(elevated) is the single surface renderer. */
+.dkds-dialog-overlay{background:color-mix(in srgb,#0f172a 24%,transparent);backdrop-filter:blur(5px)}
+.dkds-dialog-header{border-bottom:1px solid var(--border-subtle);background:transparent;box-shadow:none}
+.dkds-dialog-footer{border-top:1px solid var(--border-subtle);background:transparent;box-shadow:none}
+
+.dkds-dialog-icon{border-radius:9px;background:var(--accent-soft);color:var(--accent-primary);border:1px solid color-mix(in srgb,var(--accent-primary) 18%,var(--border-subtle))}
+.dkds-dialog-error .dkds-dialog-icon{background:var(--danger-soft);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 22%,var(--border-subtle))}
+.dkds-dialog-warning .dkds-dialog-icon{background:var(--warning-soft);color:var(--warning);border-color:color-mix(in srgb,var(--warning) 22%,var(--border-subtle))}
+.dkds-dialog-success .dkds-dialog-icon{background:var(--success-soft);color:var(--success);border-color:color-mix(in srgb,var(--success) 22%,var(--border-subtle))}
+.dkds-dialog-subtitle{color:var(--text-tertiary)}
+.dkds-dialog-message{color:var(--text-secondary)}
+.dkds-dialog-meta{border:1px solid var(--border-subtle);border-radius:10px;background:var(--surface-secondary)}
+.dkds-dialog-meta dt{color:var(--text-tertiary)}
+.dkds-dialog-meta dd{color:var(--text-primary)}
+.dkds-dialog-details{border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-secondary)}
+.dkds-dialog-details summary{color:var(--text-secondary)}
+.dkds-dialog-details pre{border-top:1px solid var(--border-subtle);color:var(--text-secondary)}
+.dkds-dialog-field{color:var(--text-secondary)}
+
+/* Settings dialogs consume the same elevated parent material. */
+.dkds-settings-dialog>header{border-bottom:1px solid var(--divider-subtle,transparent);background:transparent;box-shadow:none}
+.dkds-settings-dialog>header span{color:var(--text-secondary)}
+.dkds-settings-label{color:var(--text-secondary)}
+.dkds-settings-field small{color:var(--text-tertiary)}
+.dkds-settings-dialog>footer{border-top:1px solid var(--divider-subtle,transparent);background:transparent;box-shadow:none}
+
+body.dkds-modern-ui .menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px}
+.command-menu-separator{background:var(--divider-subtle,transparent)}
+.command-menu kbd{border:0;background:transparent;color:var(--text-tertiary)}
+.dkds-tooltip-key{color:var(--text-secondary)}
+.plugin-export-context{color:var(--dkui-text-soft);border-bottom:1px solid var(--dkui-divider);background:var(--dkui-surface-soft)}

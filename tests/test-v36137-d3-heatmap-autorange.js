@@ -1,0 +1,67 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const {readCoreCss}=require('./css-source');
+const vm=require('vm');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const json=rel=>JSON.parse(read(rel));
+
+
+const contract=json('sdk/contract.json');
+assert.equal(contract.sdkVersion,'1.47.0');
+assert.equal(contract.pluginApiVersion,'1.19.0');
+assert.equal(contract.minimumAppVersion,'3.68.103');
+
+const scientific=read('src/core/scientific/plot-runtime.js');
+const displayRuntime=read('src/core/scientific/display-runtime.js');
+const renderer=read('src/core/scientific/d3-chart-renderer.js');
+const heatmapRuntime=read('src/core/scientific/heatmap-canvas-runtime.js');
+const heatmapSelectionRuntime=read('src/core/scientific/heatmap-selection-overlay-runtime.js');
+const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const terUtils=read('src/plugins/ter-analysis/feature-utils.js');
+const css=readCoreCss(root);
+
+assert(scientific.includes("const VERSION='2.5.0'"),'ScientificPlot must advance for nullable scalar-field limits.');
+assert(renderer.includes("const VERSION='1.2.0'"),'D3 renderer must advance for heatmap and autorange corrections.');
+assert(renderer.includes('function paddedLinearDomain')&&renderer.includes('autorangepadding')&&renderer.includes(':.045'),'D3 Cartesian autorange must add restrained Core-owned headroom before nice ticks.');
+assert(renderer.includes('function scaleForHeatmapAxis')&&renderer.includes('numericEdges(values)'),'Heatmap axes must use cell edges instead of Cartesian point padding.');
+assert(renderer.includes('function normalizedColorDomain')&&renderer.includes('trace.zmin,trace.zmax'),'Heatmap color domains must recover from absent or degenerate limits.');
+assert(renderer.includes('function configuredAxis')&&renderer.includes('linearTickValues')&&renderer.includes("configuredAxis(d3,'right',cbScale,cb,5)"),'D3 axes/colorbars must honor explicit tick values and linear dtick controls.');
+assert(renderer.includes("key.includes('cividis')")&&renderer.includes("key.includes('jet')")&&renderer.includes("key.includes('hot')"),'D3 heatmaps must support every first-party TER palette option.');
+assert(heatmapRuntime.includes('if(!finite(raw)){offset+=4;continue;}')&&heatmapRuntime.includes('finite:finite(value)'),'Missing heatmap cells must remain transparent/non-finite in the Canvas owner instead of rendered as zero.');
+assert(renderer.includes('return manual?scale:scale.nice()'),'Explicit Cartesian ranges must remain exact while automatic ranges use nice ticks.');
+assert(renderer.includes("value!==null&&value!==undefined&&!(typeof value==='string'&&!value.trim())"),'D3 missing scalar values must not silently become numeric zero.');
+assert(terUtils.includes("if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;"),'TER optional display limits must preserve automatic heatmap scaling.');
+assert(css.includes('--dkds-scientific-nav-item-width:28px')&&css.includes('--dkds-scientific-nav-item-height:28px')&&css.includes('--dkds-header-action-height:var(--dkds-scientific-nav-item-height)'),'Scientific floating navigation chrome must consume the shared slot-owned 28 × 28 px Core hit-region geometry for drag and actions.');
+
+// scalarFieldSpec is pure enough to execute without a browser. Null/blank optional
+// limits must stay absent so the D3 renderer derives the real matrix extent.
+const context={window:{},console,structuredClone};
+context.window.window=context.window;
+vm.createContext(context);
+vm.runInContext(scientific,context,{filename:'scientific-plot-runtime.js'});
+const spec=context.window.DKDSScientificPlot.scalarFieldSpec({x:[-1,0,1],y:[-2,2],z:[[1,2,3],[4,5,6]],valueName:'TER',valueUnit:'%'},{zmin:null,zmax:'',colorscale:'Viridis'});
+assert(!Object.prototype.hasOwnProperty.call(spec.traces[0],'zmin'),'Null zmin must mean automatic color scale, not zero.');
+assert(!Object.prototype.hasOwnProperty.call(spec.traces[0],'zmax'),'Blank zmax must mean automatic color scale, not zero.');
+assert.deepEqual(spec.traces[0].z,[[1,2,3],[4,5,6]]);
+
+const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
+const rendererContext={console,structuredClone,queueMicrotask,DKDSStyleGate:styleGate};
+rendererContext.window=rendererContext;rendererContext.globalThis=rendererContext;
+vm.createContext(rendererContext);
+vm.runInContext(displayRuntime,rendererContext,{filename:'display-runtime.js'});
+vm.runInContext(heatmapRuntime,rendererContext,{filename:'heatmap-canvas-runtime.js'});
+vm.runInContext(heatmapSelectionRuntime,rendererContext,{filename:'heatmap-selection-overlay-runtime.js'});
+vm.runInContext(renderer,rendererContext,{filename:'d3-chart-renderer.js'});
+const geometry=rendererContext.window.DKDSD3Renderer.geometry;
+assert(geometry,'D3 renderer must expose pure geometry diagnostics for regression testing.');
+const padded=Array.from(geometry.paddedLinearDomain([-40,40],{}));
+assert(Math.abs(padded[0]+43.6)<1e-9&&Math.abs(padded[1]-43.6)<1e-9,'Default Cartesian auto padding must add 4.5% headroom before nice ticks.');
+assert.deepEqual(Array.from(geometry.paddedLinearDomain([-40,40],{autorangepadding:0})),[-40,40]);
+assert.deepEqual(Array.from(geometry.numericEdges([-2,-1,0,1,2])),[-2.5,-1.5,-0.5,0.5,1.5,2.5]);
+assert.deepEqual(Array.from(geometry.normalizedColorDomain([1,2,3,6],null,'')),[1,6]);
+assert.deepEqual(Array.from(geometry.linearTickValues([-2,2],1)),[-2,-1,0,1,2]);
+
+console.log('v3.61.38 D3 heatmap + autorange contract PASS');

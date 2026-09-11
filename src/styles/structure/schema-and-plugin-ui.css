@@ -1,0 +1,711 @@
+/* ============================================================
+   Schema-driven parameter controls
+   ============================================================ */
+/* Canonical geometry migrated from the former Foundation baseline. */
+button{cursor:pointer;
+}
+/* Generic fallback geometry is intentionally excluded from standard Core action
+   contexts that own their own hit boxes. This prevents Plugin Manager/Dialog
+   controls from depending on a later override of the global button baseline. */
+/* Generic button geometry is deliberately zero-specificity and excludes every
+   canonical action context. It is a fallback only; it must never win against
+   a semantic component owner merely because :not(:is(...)) carries descendant
+   selector specificity. */
+:where(button):not(:where(
+  .toolbar-btn,.plugin-toolbar-btn,.plugin-main-tool-btn,.dkds-action-button,.dkds-icon-button,
+  .project-tab-close,.dkds-panel-close-button,.dkds-portable-icon-action,.dkds-plot-view-action,.dkds-plot-legend-item,
+  .plugin-manager-page button,.dkds-settings-dialog button,.dkds-dialog button,
+  .command-menu button,.dkds-scientific-nav-tools>button,
+  .dkds-integrated-action-group>button,.dkds-separated-action-group>button,.dkds-portable-controls>button,
+  .panel-header-actions>button,.dkds-plot-view-actions>button
+)){
+  --dkds-generic-button-padding-block:6px;
+  --dkds-generic-button-padding-inline:10px;
+  min-height:var(--dkds-generic-button-min-height,30px);
+  padding-block:var(--dkds-generic-button-padding-block);
+  padding-inline:var(--dkds-generic-button-padding-inline);
+}
+button.wide{ width:100%;
+}
+.toolbar-group{display:flex;align-items:center;flex:0 0 auto;gap:3px;padding:2px;box-sizing:border-box;
+}
+.toolbar-btn.icon-btn{--dkds-command-padding-block:0px;--dkds-command-padding-inline:0px;
+}
+.left-panel{overflow:auto;
+}
+.left-panel h3{margin:0 0 8px;
+}
+.dataset-item{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:7px;cursor:pointer;
+}
+.dataset-meta{margin-top:2px;
+}
+.scan-toggle-row{display:flex;gap:12px;margin-top:5px;
+}
+.scan-global-buttons{display:grid;grid-template-columns:1fr 1fr;
+}
+.scan-global-buttons button{width:100%;
+}
+.preset-row button{flex:1;
+}
+.floating-panel:not(.dkds-portable-view){position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
+}
+.dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + var(--dkds-status-popover-gap,8px));width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
+.floating-header{display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none;
+}
+.floating-body{overflow:auto;
+}
+.inspector-section h4{margin:0 0 7px;
+}
+.kv{display:grid;grid-template-columns:130px 1fr;
+}
+.trend-card{overflow:hidden;min-width:0;min-height:0;cursor:zoom-in;display:grid;grid-template-rows:auto auto auto;
+}
+.trend-card-header{--dkds-header-action-height:22px;height:32px;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;
+}
+.group-panel-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;top:0;z-index:3;
+}
+.project-tabs-bar{
+  --dkds-project-tabs-height:40px;
+  --dkds-project-tabs-padding-left:10px;
+  --dkds-project-tabs-padding-right:10px;
+  position:relative;
+  z-index:1300;
+  display:flex;
+  align-items:end;
+  height:var(--dkds-project-tabs-height);
+  min-height:var(--dkds-project-tabs-height);
+  gap:5px;
+  padding:5px var(--dkds-project-tabs-padding-right) 0 var(--dkds-project-tabs-padding-left);
+  overflow:hidden;
+}
+.project-tab{
+  --dkds-project-tab-height:34px;
+  --dkds-project-tab-min-width:126px;
+  --dkds-project-tab-padding-left:10px;
+  --dkds-project-tab-padding-right:7px;
+  max-width:260px;
+  min-width:var(--dkds-project-tab-min-width);
+  height:var(--dkds-project-tab-height);
+  min-height:var(--dkds-project-tab-height);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:0 var(--dkds-project-tab-padding-right) 0 var(--dkds-project-tab-padding-left);
+}
+.new-project-tab{
+  min-width:34px;
+  padding:0 9px;
+}
+.schema-parameter-panel{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(160px,1fr));
+  gap:8px 10px;
+  min-width:0;
+}
+.schema-parameter-panel.compact{grid-template-columns:repeat(2,minmax(130px,1fr));}
+/* autoFit is a Core geometry contract, not a plugin-layer override. Small parameter
+   sets pack into content-sized tracks and only wrap when their actual Surface no
+   longer has enough room. */
+.schema-parameter-panel.auto-fit{
+  grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax(140px,205px)));
+  justify-content:start;align-items:end;gap:5px 8px;
+}
+/* compact + autoFit is deliberately much denser than an ordinary form. It is
+   intended for short option rows such as chart axes/mode/legend controls, where
+   stretching each field to 200+ px wastes scarce horizontal workspace. */
+.schema-parameter-panel.auto-fit.compact{
+  grid-template-columns:var(--dkds-parameter-auto-fit-compact-columns,repeat(auto-fit,minmax(96px,1fr)));
+  justify-content:stretch;
+  gap:4px 6px;
+}
+.schema-parameter-panel.auto-fit>.schema-param-group-title{grid-column:1/-1}
+.schema-parameter-panel.auto-fit.compact .schema-param-field{
+  --dkds-schema-field-min-height:26px;
+  --dkds-schema-field-padding-block:2px;
+  --dkds-schema-field-padding-inline:6px;
+  --dkds-field-control-min-height:26px;
+  --dkds-field-control-padding-block:2px;
+  --dkds-field-control-padding-inline:6px;
+  gap:2px;margin:0;
+}
+.schema-parameter-panel.auto-fit .schema-param-field.type-boolean{align-self:end}
+.schema-param-group{display:contents;}
+.schema-param-group-title{grid-column:1/-1;font-size:var(--plugin-font-meta,11px);font-weight:700;padding-top:2px;}
+.schema-param-field{
+  --dkds-schema-field-min-height:var(--plugin-control-height,32px);
+  --dkds-schema-field-padding-block:5px;
+  --dkds-schema-field-padding-inline:8px;
+  display:flex;flex-direction:column;gap:3px;min-width:0;
+}
+.schema-param-label{font-size:var(--plugin-font-label,12px);}
+.schema-param-field :where(input,select,textarea):not(.dkds-field-control){
+  width:100%;box-sizing:border-box;
+  padding-block:var(--dkds-schema-field-padding-block);
+  padding-inline:var(--dkds-schema-field-padding-inline);
+  font-size:var(--plugin-font-label,12px);
+  min-height:var(--dkds-schema-field-min-height);
+}
+.schema-param-field select[multiple]{min-height:88px;}
+.schema-param-field select.dkds-multiselect-source{display:none}
+.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;box-sizing:border-box;min-height:var(--dkds-schema-field-min-height);padding-block:var(--dkds-schema-field-padding-block);padding-inline:var(--dkds-schema-field-padding-inline)}
+.dkds-multiselect-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dkds-multiselect-caret{flex:0 0 auto;line-height:1}
+.schema-param-field textarea{resize:vertical;line-height:1.45;}
+.schema-param-help{font-size:var(--plugin-font-meta,11px);line-height:1.4;}
+.schema-param-error{min-height:10px;font-size:var(--plugin-font-meta,11px);line-height:1.35;}
+.dkds-pointer-coarse .schema-param-field{--dkds-schema-field-min-height:var(--dkds-touch-target,44px);}
+.dkds-pointer-coarse .schema-param-field :where(input,select,textarea):not(.dkds-field-control){font-size:12px;}
+.dkds-pointer-coarse{--dkds-field-control-min-height:var(--dkds-touch-target,44px);}
+.dkds-size-compact .schema-parameter-panel:not(.auto-fit),.dkds-size-compact .schema-parameter-panel.compact:not(.auto-fit){grid-template-columns:1fr;}
+.schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;}
+.dkds-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}
+
+/* ============================================================
+   Plugin-native workspace shell
+   ============================================================ */
+.plugin-activity-hidden{display:none;}
+
+.activity-more-anchor,.menu-anchor{position:relative;flex:0 0 auto;}
+.activity-more-menu{right:0;left:auto;top:calc(100% + 4px);}
+.activity-more-menu .activity-tab{display:flex;width:100%;justify-content:flex-start;}
+
+.context-overflow-menu{right:0;left:auto;top:calc(100% + 4px);}
+.context-overflow-menu .plugin-toolbar-btn{display:flex;width:100%;--dkds-command-height:30px;--dkds-command-padding-block:5px;--dkds-command-padding-inline:8px;justify-content:flex-start;font-size:10px;}
+
+.command-menu{
+  position:absolute;
+
+  max-width:min(360px,90vw);
+}
+.command-menu>button:not([hidden]),.command-menu>div>.plugin-menu-item:not(.plugin-activity-hidden):not([hidden]){
+  width:100%;
+
+  display:flex;
+  align-items:center;
+}
+.command-menu>button[hidden],.command-menu>div>.plugin-menu-item.plugin-activity-hidden,.command-menu>div>.plugin-menu-item[hidden]{display:none;}
+
+.command-menu-separator{height:1px;margin:4px 2px;}
+
+.plugin-sidebar-sections{display:flex;flex-direction:column;gap:0;}
+.plugin-sidebar-section h3{margin:0 0 7px;}
+.plugin-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.plugin-section-title h3{margin:0 0 7px;}
+.plugin-owned-badge{font-size:var(--ui-font-tiny,10px);padding:2px 5px;}
+.compact-note{line-height:1.55;padding:7px 8px;margin-top:6px;}
+.compact-empty{padding:10px;font-size:10px;}
+.plugin-dataset-list{max-height:310px;}
+
+.plugin-main-tools{display:flex;align-items:center;min-width:0;}
+.plugin-main-tool-btn{white-space:nowrap;}
+.plugin-main-tool-btn.active{font-weight:650;}
+
+.main-plot-tools>#mainResetViewBtn{flex:0 0 auto;}
+
+/* Plugin-owned inspector/group content remains inside generic dock hosts. */
+.inspector-panel[data-generic-panel="inspector"] .floating-header>span::after,
+.group-panel[data-generic-panel="group"] .floating-header>span::after{content:" · 插件内容";font-size:var(--ui-font-tiny,10px);font-weight:500;}
+
+/* Adaptive context-toolbar grouping. */
+.context-overflow-menu .plugin-toolbar-btn.plugin-section-start{
+  margin-top:4px;
+}
+.context-overflow-menu .plugin-toolbar-btn.plugin-section-start:first-child{
+  margin-top:0;
+}
+
+/* ============================================================
+   Single-row shell and compact semantic type scale
+   ============================================================ */
+
+.compact-note{font-size:var(--ui-font-small);}
+.inspector-section h4,
+.trend-card-header{font-size:var(--ui-font-title);}
+.topbar-primary{
+  min-width:0;
+  display:flex;
+  align-items:center;
+
+  overflow:visible;
+}
+.topbar-primary .brand{
+  white-space:nowrap;
+}
+
+.global-commandbar{display:flex;align-items:center;flex:0 0 auto;}
+
+.system-commandbar{display:flex;align-items:center;}
+
+.toolbar-btn.icon-btn{width:29px;}
+.compact-menu-anchor{position:relative;flex:0 0 auto;}
+.command-menu{min-width:184px;}
+.command-menu>button,.command-menu>div>.plugin-menu-item{
+  padding:5px 8px;
+  gap:12px;
+  justify-content:space-between;
+}
+.command-menu kbd{
+  margin-left:auto;
+  font:9px/1 var(--ui-font-family);
+}
+.update-menu-btn{display:flex;align-items:center;justify-content:space-between;}
+
+.left-panel{padding:9px;}
+.plugin-sidebar-section{padding-bottom:9px;margin-bottom:9px;}
+.plugin-sidebar-section h3{margin-bottom:6px;}
+.preset-row button{min-height:28px;padding:3px 6px;font-size:var(--ui-font-size);}
+button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
+.scan-global-buttons{gap:4px;}
+.scan-global-buttons button{min-height:27px;padding:3px 5px;font-size:var(--ui-font-size);}
+.floating-header{height:34px;}
+.floating-body{height:calc(100% - 34px);padding:8px;}
+.inspector-section{padding-bottom:8px;margin-bottom:8px;}
+.inspector-section h4{margin-bottom:6px;}
+.kv{font-size:var(--ui-font-size);gap:3px 7px;}
+.group-panel-toolbar{flex-wrap:wrap;font-size:var(--ui-font-size);padding-bottom:6px;margin-bottom:8px;}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;
+}
+
+@media(max-width:1450px){
+  .topbar-primary .brand{flex-basis:150px;max-width:150px}
+}
+@media(max-width:1160px){
+  .topbar-primary .brand{flex-basis:76px;max-width:76px}
+}
+@media(max-width:820px){
+  .topbar-primary{flex-wrap:nowrap}
+  .file-command-group{padding:1px}
+  .file-command-group .toolbar-btn{--dkds-command-padding-inline:5px}
+  .system-commandbar{gap:2px}
+  .project-tabs-bar{--dkds-project-tabs-padding-left:5px;--dkds-project-tabs-padding-right:5px}
+  .project-tab{--dkds-project-tab-height:32px;--dkds-project-tab-min-width:128px}
+}
+@media(max-width:520px){
+  .global-commandbar{gap:2px}
+  .file-command-group .toolbar-btn{font-size:10px;--dkds-command-padding-inline:4px}
+  .compact-menu-anchor .toolbar-btn,.system-commandbar .toolbar-btn,.activity-more-anchor .toolbar-btn,.context-overflow-anchor .toolbar-btn{font-size:10px;--dkds-command-padding-inline:5px}
+}
+
+/* ============================================================
+   Spacious plugin-native desktop shell
+   ============================================================ */
+.topbar-primary{
+  --dkds-shell-action-height:34px;
+  --dkds-shell-group-height:38px;
+  --dkds-command-height:34px;
+  --dkds-command-line-height:20px;
+  --dkds-command-padding-block:6px;
+  height:52px;
+  min-height:52px;
+  gap:9px;
+  padding:6px 12px;
+  -webkit-app-region:drag;
+}
+.topbar-primary .brand{
+  text-overflow:ellipsis;
+  flex:0 0 auto;
+  max-width:none;
+  min-width:150px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  overflow:visible;
+  padding-right:14px;
+  margin-right:1px;
+
+  font-size:14px;
+  line-height:1;
+  font-weight:760;
+}
+.brand-mark{width:26px;height:26px;flex:0 0 26px;display:block;}
+.brand-full{display:inline;margin-left:0;letter-spacing:.05px;}
+.version{margin-left:0;font-weight:600;}
+
+.global-commandbar,.system-commandbar{gap:6px;}
+.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}
+.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;--dkds-command-padding-inline:9px;}
+.dkds-segmented-command-group>.menu-anchor{display:flex;align-items:stretch;}
+.compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}
+
+.activity-icon{
+  width:18px;
+  height:20px;
+  flex:0 0 18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  overflow:visible;
+  font-size:15px;
+  line-height:20px;
+  transform:translateY(-.25px);
+}
+.activity-label{display:inline-flex;align-items:center;line-height:20px;}
+
+.system-commandbar{margin-left:auto;padding-left:0;flex:0 0 auto;}
+.command-menu>button,.command-menu>div>.plugin-menu-item{
+
+  text-align:left;min-height:34px;font-size:11.5px;}
+
+.project-tab{user-select:none;cursor:pointer;font-size:12px;}
+.new-project-tab{height:33px;min-height:33px;margin-bottom:1px;}
+.main-plot-tools::-webkit-scrollbar{display:none;}
+.plugin-main-tools{gap:4px;overflow:visible;}
+.plugin-main-tool-btn{
+  min-height:32px;
+  height:32px;
+  padding:5px 9px;
+  line-height:20px;
+}
+.main-legend-bar::-webkit-scrollbar{height:4px;}
+.analysis-page-header .analysis-subtitle{margin-top:5px;}
+.analysis-page-header>button,.analysis-page-header .plugin-manager-header-actions button{min-height:34px;padding:5px 11px;}
+
+@media(max-width:1450px){
+  .topbar-primary .brand{min-width:126px;padding-right:10px}
+  .file-command-group .toolbar-btn{min-width:auto}
+}
+@media(max-width:1160px){
+  .topbar-primary{gap:5px;padding-left:8px;padding-right:8px}
+  .topbar-primary .brand{display:flex;min-width:42px;padding-right:8px}
+  .brand-full{display:none}
+}
+@media(max-width:820px){
+  .topbar-primary{height:52px;min-height:52px;padding:6px 5px}
+  .topbar-primary .brand{display:none}
+}
+
+/* ============================================================
+   Unified typography and light visual foundation
+   ============================================================ */
+html,body,#app{font-family:var(--ui-font-family);font-size:var(--ui-font-size);}
+button,input,select,textarea{font-family:inherit;font-size:var(--ui-font-size);}
+
+/* Stable type scale shared by the shell and built-in/external plugin surfaces. */
+.plugin-toolbar-btn,.plugin-main-tool-btn,.left-panel,.plugin-sidebar-section,.floating-panel,.command-menu,.plugin-manager-page,.plugin-window-host{font-size:var(--ui-font-size);}
+.left-panel h3,
+.plugin-sidebar-section h3,
+.floating-header,
+.analysis-plot-card-header strong{font-size:var(--ui-font-title);}
+.hint,
+.dataset-meta,
+.scan-toggle-row,
+.analysis-page-header .analysis-subtitle,
+.group-panel-hint,
+.statusbar{
+  font-size:var(--ui-font-small);line-height:1.55;
+}
+.plugin-card-meta{line-height:1.55;
+}
+.version,
+.analysis-plot-card-header span{font-size:var(--ui-font-tiny);}
+
+/* Lighter structural surfaces; hierarchy comes from spacing and borders, not heavy shadows. */
+/* Cards, panels and tables share one visual grammar. */
+.command-menu{
+  right:0;
+  top:calc(100% + 5px);
+  z-index:1650;padding:5px;}
+
+input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
+select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
+textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *){min-height:var(--dkds-generic-field-min-height,30px);
+}
+
+
+/* Small, unobtrusive scrollbars across desktop and plugin windows. */
+*{scrollbar-width:thin;}
+*::-webkit-scrollbar{width:7px;height:7px;}
+/* Core compact horizontal strip: legends/tab-like scrollers can opt into a
+   lighter horizontal thumb without defining plugin-local scrollbar chrome. */
+.dkds-scroll-x-compact{scrollbar-width:none;-ms-overflow-style:none;}
+.dkds-scroll-x-compact::-webkit-scrollbar{display:none;width:0;height:0;}
+.dkds-horizontal-wheel-scroll{overscroll-behavior-inline:contain;}
+.dkds-scrollbar-hidden{scrollbar-width:none;-ms-overflow-style:none;}
+.dkds-scrollbar-hidden::-webkit-scrollbar{display:none;width:0;height:0;}
+
+/* Core linked-selection presentation. Plugins register semantic entities with
+   SelectionViewBinding; the platform owns focus/selection/dimming/reveal UI. */
+.dkds-selection-item.dkds-selection-chip.dkds-selection-focused{font-weight:700;}
+
+@media(max-width:1160px){
+}
+@media(max-width:820px){
+  .plugin-toolbar-btn{font-size:var(--ui-font-size)}
+}
+
+/* Plugin manager typography belongs to the plugin/schema UI owner, not shell navigation. */
+.plugin-card-title-line h3{line-height:1.35}
+/* Core Plugin Manager layout. Theme paint is supplied by dkds.theme;
+   this structure owner intentionally precedes the Theme layer. */
+.plugin-manager-header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.plugin-manager-body{
+  width:100%;
+  max-width:none;
+  margin:0;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:0 12px 34px;
+}
+.plugin-manager-summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:10px;
+}
+.plugin-manager-stat{
+  min-height:74px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  padding:12px 14px;
+}
+.plugin-manager-stat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.plugin-manager-stat span{font-size:var(--plugin-font-meta,11px)}
+.plugin-manager-summary-refresh{width:24px;min-width:24px;height:24px;min-height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.plugin-manager-stat strong{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.plugin-manager-toolbar-card{
+  --dkds-plugin-manager-toolbar-action-height:34px;
+  --dkds-plugin-manager-toolbar-action-padding-block:6px;
+  --dkds-plugin-manager-toolbar-action-padding-inline:10px;
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) auto auto auto auto;
+  align-items:center;
+  gap:9px;
+  padding:10px 12px;
+}
+.plugin-manager-search-wrap{
+  min-width:0;
+  height:34px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 9px;
+}
+.plugin-manager-search-wrap input{
+  width:100%;
+  min-width:0;
+  height:30px;
+  padding:0;
+  font-size:var(--plugin-font-body,12.5px);
+}
+.plugin-manager-toolbar-card>label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:var(--plugin-font-meta,11px);
+  white-space:nowrap;
+}
+.plugin-manager-toolbar-card select{
+  min-width:110px;
+  height:34px;
+  padding:3px 7px;
+  font-size:var(--plugin-font-body,12.5px);
+}
+.plugin-manager-toolbar-card>button{
+  height:var(--dkds-plugin-manager-toolbar-action-height);
+  min-height:var(--dkds-plugin-manager-toolbar-action-height);
+  padding-block:var(--dkds-plugin-manager-toolbar-action-padding-block);
+  padding-inline:var(--dkds-plugin-manager-toolbar-action-padding-inline);
+}
+.plugin-manager-note{
+  padding:9px 11px;
+  font-size:var(--plugin-font-meta,11px);
+  line-height:1.55;
+}
+.plugin-manager-section{grid-column:1/-1;display:grid;gap:8px;min-width:0}
+.plugin-manager-section+.plugin-manager-section{margin-top:8px}
+.plugin-manager-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 2px 0}
+.plugin-manager-section-head>div{display:grid;gap:2px;min-width:0}
+.plugin-manager-section-head strong{font-size:var(--plugin-font-section,14px)}
+.plugin-manager-section-head span{font-size:var(--plugin-font-meta,11px)}
+.plugin-manager-section-count{flex:0 0 auto;min-width:24px;text-align:center;padding:2px 7px;font-size:var(--plugin-font-meta,11px)}
+.plugin-manager-section-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.plugin-manager-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;
+}
+.plugin-manager-empty{
+  grid-column:1/-1;
+  min-height:190px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:var(--plugin-font-body,12.5px);
+}
+.plugin-manager-card{
+  min-width:0;
+  overflow:hidden;
+}
+.plugin-card-head{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px 9px;
+}
+.plugin-card-icon{
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  font-size:16px;
+  font-weight:800;
+}
+.plugin-card-title-wrap{min-width:0}
+.plugin-card-title-line{display:flex;align-items:center;gap:7px;min-width:0}
+.plugin-card-title-line h3{
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:var(--plugin-font-section,14px);
+}
+.plugin-type-badge{
+  display:inline-flex;
+  align-items:center;
+  height:20px;
+  padding:0 7px;
+  font-size:var(--ui-font-tiny,10px);
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
+}
+.plugin-card-id{
+  margin-top:3px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:var(--plugin-font-meta,11px);
+}
+.plugin-status-badge{
+  flex:0 0 auto;
+  padding:2px 6px;
+  font-size:var(--plugin-font-meta,11px);
+  font-weight:700;
+  white-space:nowrap;
+}
+.plugin-enable-switch{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+.plugin-enable-switch input{position:absolute;pointer-events:none}
+.plugin-switch-track{
+  position:relative;
+  width:36px;
+  height:20px;
+}
+.plugin-switch-thumb{
+  position:absolute;
+  width:16px;
+  height:16px;
+  left:2px;
+  top:2px;
+}
+.plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(16px)}
+.plugin-switch-label{min-width:24px;font-size:var(--plugin-font-meta,11px)}
+.plugin-card-body{padding:0 13px 10px}
+.plugin-card-description{
+  min-height:31px;
+  margin:0 0 8px;
+  font-size:var(--plugin-font-label,12px);
+  line-height:1.55;
+}
+.plugin-capability-row{display:flex;flex-wrap:wrap;gap:5px}
+.plugin-capability-chip{
+  padding:3px 6px;
+  font-size:var(--plugin-font-meta,11px);
+}
+.plugin-error-box{
+  margin-top:8px;
+  padding:7px 8px;
+  font-size:var(--plugin-font-meta,11px);
+  line-height:1.45;
+  word-break:break-word;
+}
+.plugin-card-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:42px;
+  padding:7px 10px 7px 13px;
+}
+.plugin-card-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:var(--plugin-font-meta,11px)}
+.plugin-card-actions{
+  --dkds-plugin-card-action-height:var(--plugin-control-height,32px);
+  --dkds-plugin-card-action-padding-block:3px;
+  --dkds-plugin-card-action-padding-inline:8px;
+  display:flex;align-items:center;gap:5px
+}
+.plugin-card-actions button{
+  height:var(--dkds-plugin-card-action-height);
+  min-height:var(--dkds-plugin-card-action-height);
+  padding-block:var(--dkds-plugin-card-action-padding-block);
+  padding-inline:var(--dkds-plugin-card-action-padding-inline);
+  font-size:var(--plugin-font-meta,11px)
+}
+.plugin-card-details{
+  padding:9px 13px 10px;
+  font-size:var(--plugin-font-meta,11px);
+  line-height:1.65;
+  word-break:break-word;
+}
+
+@media(max-width:1050px){
+  .plugin-manager-list{grid-template-columns:1fr}.plugin-manager-section-list{grid-template-columns:1fr}
+}
+@media(max-width:920px){
+  .plugin-manager-toolbar-card{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+  .plugin-manager-toolbar-card>label{justify-content:flex-start}
+  .plugin-manager-toolbar-card>button{width:100%}
+  }
+@media(max-width:760px){
+  .plugin-manager-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plugin-manager-toolbar-card{grid-template-columns:1fr 1fr}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+    .plugin-card-head{grid-template-columns:40px minmax(0,1fr)}
+  .plugin-enable-switch{justify-self:end}
+  .plugin-card-footer{align-items:flex-start;flex-direction:column}
+  .plugin-card-actions{width:100%;justify-content:flex-end}
+  .plugin-manager-header-actions{width:100%;justify-content:flex-start}
+}
+@media(max-width:480px){
+  .plugin-manager-toolbar-card{grid-template-columns:1fr}
+  .plugin-manager-search-wrap{grid-column:auto}
+  .plugin-manager-summary{gap:7px}
+  .plugin-manager-stat{min-height:62px;padding:9px 10px}
+}
+
+/* Theme Contract 3.8 · Plugin Manager profile control */
+.plugin-theme-profile-block{margin-top:9px;padding:8px 9px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.plugin-theme-profile-block>div:first-child{display:grid;gap:2px;min-width:0}
+.plugin-theme-profile-block strong{font-size:10px}
+.plugin-theme-profile-block span{font-size:var(--ui-font-tiny,10px)}
+.plugin-theme-profile-actions{display:flex;align-items:center;gap:6px;min-width:min(320px,48%)}
+.plugin-theme-profile-select{height:28px;min-width:140px;flex:1 1 auto;padding:0 24px 0 8px;font-size:var(--ui-font-tiny,10px)}
+.plugin-theme-profile-actions{--dkds-plugin-theme-action-height:28px;--dkds-plugin-theme-action-padding-inline:9px}
+.plugin-theme-profile-actions button{height:var(--dkds-plugin-theme-action-height);min-height:var(--dkds-plugin-theme-action-height);padding:0 var(--dkds-plugin-theme-action-padding-inline)}
+.plugin-theme-profile-block.is-disabled,.plugin-theme-profile-block.is-empty{justify-content:flex-start}
+@media(max-width:760px){.plugin-theme-profile-block{align-items:stretch;flex-direction:column}.plugin-theme-profile-actions{min-width:0;width:100%}}
+/* Consolidated geometry from former secondary owners. */
+#pluginManagerList,.plugin-manager-card{overflow-anchor:none;}
+@media (max-width:760px){.plugin-enable-switch{grid-column:auto;margin-top:0}
+}

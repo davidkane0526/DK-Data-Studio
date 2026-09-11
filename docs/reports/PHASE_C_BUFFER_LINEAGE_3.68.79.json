@@ -1,0 +1,54 @@
+{
+  "schema": "dkds.phase-c-buffer-lineage-comparison/1",
+  "appVersion": "3.68.79",
+  "baselineVersion": "3.68.78",
+  "artifacts": 1000,
+  "samples": 5,
+  "method": "same-host Node benchmark; setup excluded from timed operation; medians are trend evidence, not release thresholds",
+  "baseline": {
+    "lineageCreate": {
+      "medianMs": 140.523,
+      "p95Ms": 146.772
+    },
+    "lineageBatchMove": {
+      "medianMs": 143.119,
+      "p95Ms": 151.619
+    },
+    "correctness": {
+      "createSize": true,
+      "tailAncestors": true,
+      "moveFinalEdges": true,
+      "preciseSupported": false
+    }
+  },
+  "current": {
+    "lineageCreate": {
+      "medianMs": 33.398,
+      "p95Ms": 35.816
+    },
+    "lineageBatchMove": {
+      "medianMs": 37.849,
+      "p95Ms": 39.151
+    },
+    "correctness": {
+      "createSize": true,
+      "tailAncestors": true,
+      "moveFinalEdges": true,
+      "preciseSupported": true,
+      "artifactAdvanced": true,
+      "xStable": true,
+      "yAdvanced": true,
+      "xTransactionStillValid": true
+    }
+  },
+  "speedup": {
+    "lineageCreate": {
+      "x": 4.208,
+      "medianReductionPercent": 76.2
+    },
+    "lineageBatchMove": {
+      "x": 3.781,
+      "medianReductionPercent": 73.6
+    }
+  }
+}

@@ -1,0 +1,5 @@
+/* Final UI state utilities.
+   Component/layout layers may choose display:grid/flex/block while active, but
+   hidden state is global application state and must always win the authored
+   cascade. Keep this layer paint-free: it owns visibility only. */
+:where(.hidden,[hidden]){display:none;}

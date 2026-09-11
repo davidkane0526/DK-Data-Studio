@@ -1,0 +1,4 @@
+/* Foundation owns reset primitives only. Component geometry belongs to structure; visual chrome belongs to presentation/theme. */
+* { box-sizing: border-box; }
+html, body, #app { width:100%; height:100%; margin:0; overflow:hidden; }
+button, input, select { font: inherit; }

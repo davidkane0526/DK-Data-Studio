@@ -1,0 +1,203 @@
+/* ============================================================
+   plugin branch: platform-adaptive shell / touch foundations
+   ============================================================ */
+.plugin-toolbar-slot{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+}
+
+/* Tablet-sized layouts: preserve the scientific canvas and allow side controls to scroll. */
+.dkds-size-medium .workspace{
+  grid-template-columns:minmax(230px,260px) minmax(0,1fr);
+}
+.dkds-size-medium .left-panel{
+  padding:9px;
+}
+.dkds-size-medium .brand{
+  max-width:170px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.dkds-size-medium .inspector-dock-slot.active{
+  max-width:38vw;
+}
+
+/* Compact portrait/mobile: two-stage layout rather than squeezing the desktop grid. */
+.dkds-size-compact .topbar{
+  height:auto;
+  min-height:58px;
+  flex-wrap:wrap;
+  align-content:center;
+  gap:3px 8px;
+  padding:5px 7px;
+}
+.dkds-size-compact .brand{
+  width:100%;
+  max-width:none;
+  height:27px;
+  display:flex;
+  align-items:center;
+  font-size:12px;
+}
+.dkds-size-compact .toolbar{
+  width:100%;
+  flex:1 0 100%;
+  justify-content:flex-start;
+  padding:2px 0 4px;
+  scroll-snap-type:x proximity;
+}
+.dkds-size-compact .toolbar-group{
+  scroll-snap-align:start;
+}
+.dkds-size-compact .project-tabs-bar{
+  height:42px;
+  padding-left:6px;
+  padding-right:6px;
+}
+.dkds-size-compact .project-tab{
+  min-width:145px;
+}
+.dkds-size-compact .workspace{
+  height:calc(100% - 126px);
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,34vh) minmax(0,1fr);
+}
+.dkds-size-compact .left-panel{
+  min-height:0;
+  border-right:0;
+  border-bottom:1px solid var(--border-subtle);
+  padding:8px;
+}
+.dkds-size-compact .left-panel section{
+  margin-bottom:9px;
+  padding-bottom:9px;
+}
+.dkds-size-compact .dataset-list{
+  max-height:175px;
+}
+.dkds-size-compact .main-area{
+  min-height:0;
+}
+.dkds-size-compact .main-plot-header{
+  left:10px;
+  right:8px;
+  top:6px;
+  align-items:flex-start;
+}
+.dkds-size-compact .main-plot-tools{
+  max-width:62vw;
+  overflow-x:auto;
+}
+.dkds-size-compact .main-legend-bar{
+  max-width:35vw;
+}
+.dkds-size-compact .group-panel.docked:not(.collapsed){
+  height:min(42vh,330px);
+}
+.dkds-size-compact .inspector-dock-slot.active{
+  position:absolute;
+  z-index:115;
+  right:6px;
+  top:58px;
+  bottom:34px;
+  width:min(92vw,420px);
+  max-width:none;
+  height:auto;
+}
+.dkds-size-compact .main-workspace{
+  position:relative;
+  grid-template-columns:minmax(0,1fr);
+}
+.dkds-size-compact .floating-panel{
+  max-width:calc(100vw - 12px);
+  max-height:calc(100vh - 80px);
+}
+.dkds-size-compact .analysis-page-header{
+  min-height:56px;
+  height:auto;
+  padding:8px 10px;
+}
+.dkds-size-compact .analysis-page-body{
+  padding:0;
+}
+.dkds-size-compact .import-panel-overlay{
+  padding:5px;
+}
+.dkds-size-compact .import-workbench{
+  width:100%;
+  height:100%;
+  border-radius:8px;
+}
+.dkds-size-compact .import-workbench-body{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,28vh) minmax(0,1fr);
+}
+.dkds-size-compact .import-file-pane{
+  border-right:0;
+  border-bottom:1px solid #dfe5ef;
+}
+.dkds-size-compact .import-basic-grid,
+.dkds-size-compact .import-mapping-grid{
+  grid-template-columns:1fr;
+}
+/* Landscape phones/tablets prioritize the graph and keep controls as a narrower rail. */
+.dkds-size-compact.dkds-orientation-landscape .workspace{
+  grid-template-columns:minmax(220px,30vw) minmax(0,1fr);
+  grid-template-rows:1fr;
+}
+.dkds-size-compact.dkds-orientation-landscape .left-panel{
+  border-right:1px solid var(--border-subtle);
+  border-bottom:0;
+}
+.dkds-size-compact.dkds-orientation-landscape .dataset-list{
+  max-height:230px;
+}
+
+/* Android/WebView safe-area support. */
+.dkds-platform-android body{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-right:env(safe-area-inset-right,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:env(safe-area-inset-left,0px);
+}
+
+/* React Native/WebView presentation and touch-target geometry are owned by
+   src/mobile.css platform modules. Shared touch.css intentionally contains no
+   native-client selectors. */
+
+/* Desktop scientific floating chrome is intentionally compact. Native Mobile
+   re-establishes its larger touch geometry in native-client-shell.css. */
+html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
+  /* Desktop scientific chrome scales with the CSS viewport, not physical panel
+     resolution.  The renderer therefore stays compact at 100–150% Windows
+     scaling while still retaining a slightly larger hit target on very wide
+     workspaces. Mobile owns a separate geometry contract. */
+  --dkds-scientific-nav-item-width:28px;
+  --dkds-scientific-nav-item-height:28px;
+  --dkds-scientific-nav-padding-block:1px;
+  --dkds-scientific-nav-padding-inline:2px;
+  --dkds-scientific-nav-font-size:13px;
+}
+
+/* Desktop wheel policy: workspace/document scroll regions chain vertically.
+   A local table/panel consumes the wheel while it can move; once it reaches
+   its top/bottom boundary Chromium may naturally hand the same direction to
+   the next scrollable workspace ancestor under the pointer. Popovers/menus
+   intentionally keep their own containment contracts. */
+html[data-dkds-host="desktop"] :where(
+  .analysis-page-body,
+  .dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host,
+  .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center,
+  .dkds-plugin-sub-page-host,
+  .dkds-plugin-canvas-left,
+  .dkds-plugin-canvas-right,
+  .dkds-plugin-canvas-bottom,
+  .dkds-table-surface-host,
+  .analysis-table-wrap,
+  .import-file-list,
+  .floating-body
+){overscroll-behavior-y:auto;}
+html[data-dkds-host="desktop"] .dkds-plot-view-actions>.dkds-plot-view-menu-trigger{
+  width:28px;min-width:28px;max-width:28px;padding:0 4px
+}

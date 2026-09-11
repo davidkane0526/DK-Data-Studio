@@ -1,0 +1,231 @@
+/* Material Renderer 3.11.
+   Material role describes UI semantics. Material recipe describes optical
+   rendering. Core owns selectors/composition; Theme profiles only provide
+   semantic tokens and role-to-recipe policy. */
+:root{--dkds-material-renderer-version:"3.11.0"}
+
+/* Recipes --------------------------------------------------------------- */
+body.dkds-modern-ui [data-dkds-material-recipe="clear"]{
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  background-color:var(--dkds-material-base,var(--dkui-surface));
+  background-image:var(--dkds-material-theme-overlay,none);
+  border-color:var(--dkds-material-border,var(--dkui-divider));
+  box-shadow:var(--dkds-material-shadow,var(--dkui-shadow-1));
+}
+body.dkds-modern-ui [data-dkds-material-recipe="thin-glass"]{
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),linear-gradient(145deg,color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 42%,transparent),transparent 30%,transparent 72%,color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 24%,transparent));
+  border-color:var(--dkds-material-border,var(--dkui-divider));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 48%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-1));
+  filter:none;
+}
+body.dkds-modern-ui [data-dkds-material-recipe="soft-glass"]{
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .45px,transparent .55px);
+  background-size:3px 3px;
+  border-color:var(--dkds-material-border,var(--dkui-divider));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 62%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-1));
+}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{
+  --dkds-optical-x:50%;--dkds-optical-y:18%;--dkds-optical-shift-x:0px;--dkds-optical-shift-y:0px;
+  isolation:isolate;
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .42px,transparent .55px);
+  background-size:3px 3px;
+  border-color:color-mix(in srgb,var(--dkds-material-border,var(--dkui-divider)) 82%,transparent);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 66%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-float));
+}
+
+body.dkds-modern-ui .dkds-optical-position-anchor{position:relative}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur-strong,var(--dkui-material-blur-strong))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation))) brightness(1.025);
+  backdrop-filter:blur(var(--dkds-material-blur-strong,var(--dkui-material-blur-strong))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation))) brightness(1.025);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,transparent 0 55%,rgba(0,0,0,.16) 67%,rgba(0,0,0,.72) 84%,#000 100%);
+  mask-image:radial-gradient(ellipse at 50% 50%,transparent 0 55%,rgba(0,0,0,.16) 67%,rgba(0,0,0,.72) 84%,#000 100%);
+  transform:translate3d(var(--dkds-optical-shift-x),var(--dkds-optical-shift-y),0) scale(1.012);
+  transform-origin:var(--dkds-optical-x) var(--dkds-optical-y);opacity:.78;
+}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"].dkds-optical-active::before{will-change:transform}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle at var(--dkds-optical-x) var(--dkds-optical-y),color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 82%,transparent) 0,transparent 34%),linear-gradient(145deg,color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 72%,transparent) 0,transparent 24%,transparent 72%,color-mix(in srgb,var(--dkds-material-edge,var(--dkui-glass-edge)) 42%,transparent) 100%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dkds-material-edge,var(--dkui-glass-edge)) 58%,transparent),inset 0 1px 0 color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 58%,transparent);
+  opacity:.72;
+}
+
+
+/* Theme expression remains declarative: profiles provide controlled effect
+   tokens, while Material Renderer is the only owner that composes them into
+   painted optical layers. Missing effect tokens resolve to transparent, so
+   Default and neutral themes keep their existing appearance. */
+body.dkds-modern-ui .dkds-material-role-chrome{
+  --dkds-material-theme-overlay:none;
+}
+html[data-dkds-theme-header-effect="true"] body.dkds-modern-ui .dkds-material-role-chrome{
+  --dkds-material-theme-overlay:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start),var(--dkui-effect-header-gradient-end));
+}
+/* Nested semantic headers are parent-owned chrome, but they still consume the
+   theme's controlled header effect layer. Default/Thin Glass resolve both
+   endpoints to transparent; Aurora restores its original title-band gradient
+   across chart cards, inspectors and curve-checker headers. */
+html[data-dkds-theme-header-effect="true"] body.dkds-modern-ui :where(
+  [data-dkds-component-identity="panelHeader"],
+  [data-dkds-component-identity="inspectorHeader"]
+){
+  background-image:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start,transparent),var(--dkui-effect-header-gradient-end,transparent));
+}
+body.dkds-modern-ui .dkds-material-role-sidebar{
+  --dkds-material-theme-overlay:linear-gradient(180deg,var(--dkui-effect-ambient-tint,transparent),transparent 58%);
+}
+body.dkds-modern-ui :where(.dkds-material-role-elevated,.dkds-material-role-popover){
+  --dkds-material-theme-overlay:radial-gradient(circle at 14% 0%,color-mix(in srgb,var(--dkui-effect-accent-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent),transparent 44%),linear-gradient(160deg,var(--dkui-effect-ambient-tint,transparent),transparent 52%);
+}
+body.dkds-modern-ui .dkds-material-role-floating{
+  --dkds-material-theme-overlay:radial-gradient(circle at 82% 18%,color-mix(in srgb,var(--dkui-effect-edge-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent),transparent 48%),linear-gradient(145deg,var(--dkui-effect-ambient-tint,transparent),transparent 58%);
+}
+
+/* Composition ----------------------------------------------------------- */
+/* Canonical material edge geometry for compact command/popover surfaces.
+   Optical fill, edge color and depth continue to come from the active recipe. */
+body.dkds-modern-ui :where(
+  .dkds-integrated-action-group.dkds-material-role-control,
+  .dkds-scientific-nav-tools.dkds-material-role-floating,
+  #mainPlotTools.dkds-material-role-control,
+  #mainLegendBar.dkds-material-role-control
+){border-width:1px;border-style:solid;border-radius:9px;overflow:hidden}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]:is(.dkds-material-role-surface,.dkds-material-role-floating){border-width:1px;border-style:solid;border-radius:var(--dkui-radius)}
+body.dkds-modern-ui .dkds-theme-panel.dkds-material-role-popover{border-width:1px;border-style:solid;border-radius:12px}
+body.dkds-modern-ui .range-action-menu.dkds-material-role-popover{border-width:1px;border-style:solid;border-radius:10px}
+body.dkds-modern-ui .command-menu.dkds-material-role-popover{border-radius:9px}
+body.dkds-modern-ui .dkds-context-menu.dkds-material-role-popover{border-radius:10px}
+body.dkds-modern-ui .dkds-portable-view.dkds-material-role-floating{border-radius:10px}
+body.dkds-modern-ui .dkds-portable-view:is(.dkds-material-role-surface,.dkds-material-role-sidebar):not(.is-floating):not(.is-global-floating){border-radius:8px}
+body.dkds-modern-ui .floating-panel:is(.dkds-material-role-floating,.dkds-material-role-elevated){border-radius:var(--ui-panel-radius)}
+body.dkds-modern-ui .floating-panel.dkds-material-role-popover{border-radius:var(--ui-panel-radius)}
+body.dkds-modern-ui .dkds-memory-panel.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:13px}
+body.dkds-modern-ui .dkds-floating-surface.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:var(--dkds-visual-radius)}
+body.dkds-modern-ui .dkds-surface.dkds-material-role-surface{border-radius:var(--dkds-visual-radius)}
+body.dkds-modern-ui [data-dkds-surface-edge="none"]{border-width:0;outline:none;box-shadow:none}
+body.dkds-modern-ui .import-workbench.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
+body.dkds-modern-ui :where(.dkds-dialog,.dkds-dialog-shell).dkds-material-role-elevated{border-radius:14px}
+body.dkds-modern-ui .dkds-settings-dialog.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
+body.dkds-modern-ui :where(.dkds-tooltip,.hover-tip,.dkds-core-tooltip,.dkds-d3-chart-tooltip){border-width:1px;border-style:solid;border-radius:7px}
+body.dkds-modern-ui :where(.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card){border-width:1px;border-style:solid}
+body.dkds-modern-ui .plugin-manager-card{border-radius:11px;border-color:color-mix(in srgb,var(--dkui-divider) 55%,transparent)}
+body.dkds-modern-ui :where(.plugin-manager-stat,.plugin-manager-toolbar-card){border-radius:10px}
+body.dkds-modern-ui :where(.analysis-control-card,.analysis-large-plot,.analysis-table-wrap,.dkds-analysis-prime-panel){
+  border-width:1px;border-style:solid;border-radius:9px;
+}
+
+/* Header-owned command wrappers are transparent composition only. */
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head)
+  :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.dkds-surface-actions){
+  background:transparent;background-image:none;border-color:transparent;box-shadow:none;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+}
+
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) > :where([data-dkds-material-content="true"],.dkds-dialog-body){
+  background-color:transparent;
+  background-image:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+/* A presentation frame is the single outer Material owner. Reparented live
+   content keeps its semantic/component identities but must not repaint an opaque
+   second surface over the frame (notably Mobile drawers/sheets). */
+body.dkds-modern-ui [data-dkds-material-surface="core"] > [data-dkds-material-content="true"]{
+  background-color:transparent;
+  background-image:none;
+  border-color:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+/* Nested semantic headers may own a tonal/gradient band but never a second
+   backdrop-filter or optical shadow. Keeping the header paint intact is what
+   lets Theme effects (Aurora) survive inside a glass/floating Material while
+   neutral themes remain neutral through the explicit header-effect flag. */
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) > :where(.dkds-surface-header,.floating-header,[data-dkds-component-identity="panelHeader"],[data-dkds-component-identity="inspectorHeader"]){
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+
+/* Popover surfaces own the optical material. MenuItem Component Appearance
+   owns row paint in every popover context. */
+
+/* Layout-only descendants must not put an opaque sheet between a glass owner
+   and its backdrop. */
+body.dkds-modern-ui :where(.analysis-page-body,.plugin-manager-body,.automation-test-body,.dkds-settings-body,.floating-body,.dkds-plugin-canvas-frame,.dkds-plugin-canvas-center,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom,.dkds-analysis-primary-host){
+  background-color:transparent;background-image:none;
+}
+
+/* Integrated actions inside translucent surfaces retain Core component paint;
+   only the enclosing MaterialSurface owns optical composition. */
+
+
+
+/* Portal is a rendering capability, not a theme identity. */
+body.dkds-modern-ui .command-menu.dkds-command-menu-portal{
+  position:fixed;right:auto;margin:0;z-index:1900;max-height:min(70vh,620px);overflow:auto;
+}
+
+body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item){background-color:transparent;background-image:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu,.dkds-material-role-popover){color:var(--dkui-role-popover-text,var(--dkds-on-popover,var(--dkui-text)))}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip) :where(b,strong,span,div){color:inherit}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip) .dkds-tooltip-key{color:color-mix(in srgb,var(--dkui-role-popover-text,var(--dkds-on-popover,var(--dkui-text))) 72%,transparent)}
+
+/* Selected modes are semantic state, not elevation. Use a centered accent halo
+   so every Theme Profile may recolor the state without shifting the control. */
+body.dkds-modern-ui :where(.command-menu,.dkds-material-role-popover) .plugin-export-context{background:transparent;color:var(--dkui-text-soft);border-bottom-color:color-mix(in srgb,var(--dkui-divider) 78%,transparent);box-shadow:none}
+
+@media(prefers-reduced-motion:reduce){
+  body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::before{transform:none;will-change:auto}
+  body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{--dkds-optical-x:50%;--dkds-optical-y:18%;--dkds-optical-shift-x:0px;--dkds-optical-shift-y:0px}
+}
+
+/* Parameter PRIME surfaces are intentionally elevated above the scientific
+   canvas on Desktop/Web. This is an explicit cross-platform presentation
+   correction requested after the v3.67.40 visual freeze, not a Mobile leak. */
+html:not([data-dkds-host="mobile"]) body.dkds-modern-ui [data-dkds-presentation-purpose="parameters"][data-dkds-workspace-surface-kind="prime"]{
+  box-shadow:var(--dkui-shadow-2)
+}
+/* Native parameter projection keeps geometry in the platform layer while
+   Material Renderer exclusively owns elevated paint, scrollbar optics and
+   the fixed resize-grip appearance. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{
+  border-width:1px;border-style:solid;border-radius:10px
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]{
+  scrollbar-color:color-mix(in srgb,var(--dkui-control-border) 60%,transparent) transparent
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-track{background:transparent}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-thumb{border-radius:999px;background:color-mix(in srgb,var(--dkui-control-border) 58%,transparent)}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-mobile-drawer-resize-handle{
+  background:transparent
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-mobile-drawer-resize-grip{
+  background:color-mix(in srgb,var(--dkui-control-border) 78%,var(--dkui-text) 12%);
+  box-shadow:0 0 4px color-mix(in srgb,var(--dkui-accent) 26%,transparent)
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-drawer-resize-handle:is(:hover,:active,.is-dragging) .dkds-mobile-drawer-resize-grip{background:var(--dkui-accent);box-shadow:0 0 7px color-mix(in srgb,var(--dkui-accent) 44%,transparent)}

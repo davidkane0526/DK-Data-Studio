@@ -1,0 +1,139 @@
+/* Core-owned material role variables.
+   Runtime assigns semantic Material Roles. CSS consumes those roles only;
+   selectors for concrete UI components must not independently assign roles.
+   Material composition maps each role base surface -> role-specific fill/blur.
+   Theme opacity is authored input; Core applies a role-specific legibility floor only
+   when the active recipe is translucent. */
+
+body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome){
+  --dkds-material-role:chrome;
+  --dkds-material-base:var(--dkui-role-chrome-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-chrome-border,var(--dkui-divider));
+  color:var(--dkui-role-chrome-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-chrome-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-chrome-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-chrome-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-chrome-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:58%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-chrome-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-chrome-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-chrome-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-chrome-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-1);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="sidebar"],.dkds-material-role-sidebar){
+  --dkds-material-role:sidebar;
+  --dkds-material-base:var(--dkui-role-sidebar-surface,var(--dkui-surface-sidebar));
+  --dkds-material-border:var(--dkui-role-sidebar-border,var(--dkui-divider));
+  color:var(--dkui-role-sidebar-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-sidebar-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-sidebar-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-sidebar-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-sidebar-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:62%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-sidebar-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-sidebar-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-sidebar-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-sidebar-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="surface"],.dkds-material-role-surface){
+  --dkds-material-role:surface;
+  --dkds-material-base:var(--dkui-role-surface-surface,var(--dkui-surface));
+  --dkds-material-border:var(--dkui-role-surface-border,var(--dkui-divider));
+  color:var(--dkui-role-surface-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-surface-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-surface-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-surface-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-surface-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:100%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-surface-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-surface-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-surface-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-surface-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-1);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="elevated"],.dkds-material-role-elevated){
+  --dkds-material-role:elevated;
+  --dkds-material-base:var(--dkui-role-elevated-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-elevated-border,var(--dkui-divider));
+  color:var(--dkui-role-elevated-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-elevated-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-elevated-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-elevated-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-elevated-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:72%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-elevated-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-elevated-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-elevated-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-elevated-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-2);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover){
+  --dkds-material-role:popover;
+  --dkds-material-base:var(--dkui-role-popover-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-popover-border,var(--dkui-divider));
+  color:var(--dkui-role-popover-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-popover-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-popover-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-popover-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-popover-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:78%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-popover-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-popover-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-popover-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-popover-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-float);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control){
+  --dkds-material-role:control;
+  --dkds-material-base:var(--dkui-role-control-surface,var(--dkui-control-bg));
+  --dkds-material-border:var(--dkui-role-control-border,var(--dkui-control-border));
+  color:var(--dkui-role-control-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-control-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-control-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-control-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-control-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:100%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-control-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-control-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-control-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-control-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="floating"],.dkds-material-role-floating){
+  --dkds-material-role:floating;
+  --dkds-material-base:var(--dkui-role-floating-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-floating-border,var(--dkui-divider));
+  color:var(--dkui-role-floating-text,var(--dkui-text));
+  --dkds-material-blur:var(--dkui-material-floating-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-floating-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-floating-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-floating-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:58%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-specular:var(--dkui-material-floating-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-floating-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-floating-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-floating-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-float);
+}
+
+/* Semantic Material state overlays. Runtime surfaces opt in through
+   data-dkds-material-state; recipes remain the only background/border painter. */
+body.dkds-modern-ui [data-dkds-material-state="active"]{
+  --dkds-material-border:color-mix(in srgb,var(--dkui-accent) 22%,var(--dkui-role-surface-border,var(--dkui-divider)));
+}
+body.dkds-modern-ui [data-dkds-material-state="error"]{
+  --dkds-material-border:color-mix(in srgb,var(--danger) 34%,var(--dkui-role-surface-border,var(--dkui-divider)));
+  --dkds-material-base:color-mix(in srgb,var(--danger) 7%,var(--dkui-role-surface-surface,var(--dkui-surface)));
+}
+body.dkds-modern-ui [data-dkds-material-state="disabled"]{
+  --dkds-material-base:var(--dkui-surface-soft);
+}

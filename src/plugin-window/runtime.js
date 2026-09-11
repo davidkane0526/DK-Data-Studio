@@ -1,0 +1,855 @@
+(() => {
+  const STARTUP_PROFILE_VERSION='1.1.0';
+  const startupStartedAt=performance.now();
+  const startupProfile={version:STARTUP_PROFILE_VERSION,startedAt:0,totalMs:0,phases:[],dependencies:[],scripts:[]};
+  const roundMs=value=>Math.round(Number(value||0)*10)/10;
+  const measure=async(name,fn,bucket=startupProfile.phases,meta={})=>{const started=performance.now();try{return await fn();}finally{bucket.push({name,...meta,startMs:roundMs(started-startupStartedAt),durationMs:roundMs(performance.now()-started)});}};
+  const measureSync=(name,fn,bucket=startupProfile.phases,meta={})=>{const started=performance.now();try{return fn();}finally{bucket.push({name,...meta,startMs:roundMs(started-startupStartedAt),durationMs:roundMs(performance.now()-started)});}};
+  const $ = selector => document.querySelector(selector);
+  const statusEl = $('#statusBarMessage') || $('#statusBar');
+  const errorEl = $('#pluginWindowError');
+  const errorTextEl = $('#pluginWindowErrorText');
+
+  const DEPENDENCY_SCRIPTS = Object.freeze({
+    d3:'../../node_modules/d3/dist/d3.min.js',
+    'scientific-display-runtime':'../core/scientific/display-runtime.js',
+    'heatmap-canvas-runtime':'../core/scientific/heatmap-canvas-runtime.js',
+    'heatmap-selection-overlay-runtime':'../core/scientific/heatmap-selection-overlay-runtime.js',
+    'd3-chart-renderer':'../core/scientific/d3-chart-renderer.js',
+    'science-common':'../science/common.js',
+    'science-import':'../science/import.js',
+    'science-presets':'../science/presets.js',
+    'science-peaks':'../science/peaks.js',
+    'science-identity':'../science/identity.js',
+    'science-physics':'../science/physics.js',
+    'science-gate':'../science/gate.js',
+    'science-pulse':'../science/pulse.js',
+    'science-ter':'../science/ter.js',
+    'scientific-unit-runtime':'../core/scientific/unit-runtime.js',
+    'scientific-viewport-link-runtime':'../core/scientific/viewport-link-runtime.js',
+    'scientific-legend-link-runtime':'../core/scientific/legend-link-runtime.js',
+    'data-model':'../core/data/model.js',
+    'entity-runtime':'../core/data/entity-runtime.js',
+    'formula-engine':'../core/data/formula-engine.js',
+    'parameter-schema':'../core/data/parameter-schema.js',
+    'workflow-engine':'../core/workflow/engine.js',
+    platform:'../core/host/platform.js',
+    'native-touch-drag':'../core/host/native-touch-drag.js',
+    'state-store':'../core/data/state-store.js',
+    'io-runtime':'../core/host/io-runtime.js',
+    'plot-presentation-runtime':'../core/scientific/plot-presentation-runtime.js',
+    'chart-runtime':'../core/scientific/chart-runtime.js',
+    'performance-runtime':'../core/performance/runtime.js',
+    'scientific-plot-runtime':'../core/scientific/plot-runtime.js',
+    'component-runtime':'../core/ui/component-runtime.js',
+    'data-flow-runtime':'../core/data/flow-runtime.js',
+    'scientific-reactive-runtime':'../core/scientific/reactive-runtime.js',
+    'scientific-pipeline-runtime':'../core/scientific/pipeline-runtime.js',
+    'scientific-transform-runtime':'../core/scientific/transform-runtime.js',
+    'scientific-algorithm-runtime':'../core/scientific/algorithm-runtime.js',
+    'service-runtime':'../core/services/service-runtime.js',
+    'plugin-contract-runtime':'../core/plugins/contract-runtime.js',
+    'plugin-module-runtime':'../core/plugins/module-runtime.js',
+    'ui-infrastructure':'../generated/runtime/ui-infrastructure.js',
+    'capability-runtime':'../core/host/capability-runtime.js',
+    'plugin-devtools':'../core/plugins/devtools.js',
+    'plugin-kernel':'../generated/runtime/plugin-kernel.js'
+  });
+
+  let bootstrap = null;
+  let project = {};
+  let artifactStore = null;
+  let pluginRuntime = null;
+  let ready = false;
+  let projectHydrated = false;
+  let activityOpened = false;
+  let snapshotTimer = null;
+  let roleTransitionSnapshotTaken = false;
+  let artifactUpserts = new Map();
+  let artifactRemovals = new Set();
+  let artifactStorePrimedForBootstrap = false;
+  let ownerArtifactRevision = -1;
+  let ownerArtifactReconcilePromise = null;
+
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = String(el.tagName || '').toLowerCase();
+    return ['input','textarea','select'].includes(tag) || !!el.isContentEditable;
+  }
+
+  const historyRowTime=row=>Number(row?.updatedAt||row?.createdAt)||0;
+  async function runWindowHistory(direction){
+    const edit=window.DKDSPlugins?.edit;
+    let local=null,project=null;
+    try{if(edit?.history)local=await Promise.resolve(edit.history());}catch(err){console.warn('[DKDS window edit history]',err);}
+    try{project=await window.DKDSCapabilities?.invoke?.('core.project-history','state');}catch(err){console.warn('[DKDS window project history]',err);}
+    const candidate=(state,source)=>{const rows=direction==='undo'?state?.past:state?.future,row=Array.isArray(rows)?rows.at(-1):null,allowed=direction==='undo'?state?.canUndo:state?.canRedo;return allowed&&row?{source,time:historyRowTime(row)}:null;};
+    const rows=[candidate(project,'project'),candidate(local,'workspace')].filter(Boolean).sort((a,b)=>b.time-a.time);
+    for(const row of rows){
+      if(row.source==='workspace'&&edit?.supports?.(direction)){
+        if(typeof edit.can==='function'&&edit.can(direction)===false)continue;
+        if(await Promise.resolve(edit.invoke(direction))!==false)return true;
+      }else if(row.source==='project'){
+        if(await window.DKDSCapabilities?.invoke?.('core.project-history',direction))return true;
+      }
+    }
+    if(edit?.supports?.(direction)&&!rows.some(row=>row.source==='workspace'))if(await Promise.resolve(edit.invoke(direction))!==false)return true;
+    if(!rows.some(row=>row.source==='project'))return !!(await window.DKDSCapabilities?.invoke?.('core.project-history',direction));
+    return false;
+  }
+
+  window.addEventListener('keydown', event => {
+    if (isTypingTarget(event.target)) return;
+    const edit = window.DKDSPlugins?.edit;
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 's') {
+      event.preventDefault();
+      const payload=buildSnapshotPayload(true);
+      if(window.electronAPI?.requestOwnerProjectSave)window.electronAPI.requestOwnerProjectSave(payload||{});
+      else pushSnapshot(true);
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) void runWindowHistory('redo');
+      else void runWindowHistory('undo');
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'y') {
+      event.preventDefault();
+      void runWindowHistory('redo');
+      return;
+    }
+    if (event.key === 'Escape' && edit?.supports?.('deselect')) {
+      event.preventDefault(); edit.invoke('deselect');
+    }
+  });
+
+  function clone(value) {
+    if (value === undefined) return undefined;
+    try { return structuredClone(value); }
+    catch { return JSON.parse(JSON.stringify(value)); }
+  }
+
+  function setStatus(text) {
+    if (statusEl) statusEl.textContent = String(text || '');
+  }
+
+  let hostDevToolsButton=null;
+  function installHostDevToolsStatusItem(){
+    if(hostDevToolsButton||!window.electronAPI?.toggleDevTools)return hostDevToolsButton;
+    const zone=$('#statusBarPluginRight');if(!zone)return null;
+    const button=document.createElement('button');button.type='button';button.className='plugin-status-item compact devtools-status-item';button.dataset.state='info';button.title='打开/关闭当前插件窗口 DevTools';button.innerHTML='<span class="plugin-status-icon">⌘</span><span class="plugin-status-label">DevTool</span>';
+    const apply=state=>{const open=!!state?.open;button.classList.toggle('active',open);button.setAttribute('aria-pressed',String(open));button.title=open?'关闭当前插件窗口 DevTools':'打开当前插件窗口 DevTools';};
+    button.addEventListener('click',async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();return;}apply(await window.electronAPI.toggleDevTools());}catch(err){setStatus(`DevTool：${err?.message||err}`);}});
+    zone.appendChild(button);hostDevToolsButton=button;void window.electronAPI.getDevToolsState?.().then(apply).catch(()=>{});return button;
+  }
+
+  function showStartupError(err) {
+    const message = err?.message || String(err || '未知错误');
+    if (errorTextEl) errorTextEl.textContent = message;
+    errorEl?.classList.remove('hidden');
+    setStatus(`启动失败：${message}`);
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = false;
+      script.onload = () => resolve(src);
+      script.onerror = () => reject(new Error(`无法加载插件窗口脚本：${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  function loadInlineScript(source,label) {
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.async=false;
+      script.dataset.dkdsExternalWindow=label;
+      script.textContent=`${String(source||'')}\n//# sourceURL=dkds-window-plugin://${encodeURIComponent(label)}`;
+      let runtimeError=null;
+      const onError=event=>{runtimeError=event?.error||new Error(event?.message||`外部插件窗口脚本失败：${label}`);};
+      window.addEventListener('error',onError);
+      try{document.head.appendChild(script);}catch(err){runtimeError=err;}
+      finally{window.removeEventListener('error',onError);script.remove();}
+      if(runtimeError)reject(runtimeError);else resolve(label);
+    });
+  }
+
+  function loadInlineStyle(source,label,layer='dkds.plugin') {
+    const style=document.createElement('style');
+    const resolvedLayer=String(layer||'')==='dkds.plugin-platform'?'dkds.plugin-platform':'dkds.plugin';
+    style.dataset.dkdsExternalWindowStyle=label;
+    style.dataset.dkdsExternalWindowStyleLayer=resolvedLayer;
+    style.textContent=`@layer ${resolvedLayer} {\n${String(source||'')}\n}`;
+    document.head.appendChild(style);
+    return style;
+  }
+
+
+  function externalPackageFile(spec,fileName) {
+    const source=spec?.packageFiles?.[fileName];
+    if(typeof source!=='string')throw new Error(`外部插件窗口文件缺失：${fileName}`);
+    return source;
+  }
+
+  async function loadDependencies(spec) {
+    const requested = Array.isArray(spec?.dependencies) ? spec.dependencies : [];
+    const requestedIds=requested.map(id=>String(id||'').trim());
+    const ordered = [];
+    if(requestedIds.includes('scientific-renderer'))ordered.push('d3');
+    for (const id of requested) {
+      const key = String(id || '').trim();
+      if(key==='scientific-renderer')continue;
+      if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
+      if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
+    }
+    if (!ordered.includes('platform')) ordered.push('platform');
+    if (!ordered.includes('state-store')) ordered.push('state-store');
+    for(const id of ['scientific-unit-runtime','scientific-viewport-link-runtime','scientific-legend-link-runtime','entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','scientific-display-runtime','heatmap-canvas-runtime','heatmap-selection-overlay-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
+    if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
+    if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
+    ordered.push('plugin-kernel');
+
+    for (const id of ordered) await measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies,{src:DEPENDENCY_SCRIPTS[id]});
+    window.DKDSCharts?.configureRuntime?.({preferredRenderer:'d3',host:'dedicated-top'});
+    if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
+    window.DKDSUI?.host?.configure?.({
+      root:'#app',
+      activity:()=>window.DKDSPlugins?.activities?.active?.()||String(bootstrap?.pluginWindow?.activity||''),
+      status:setStatus,
+      zones:{overlay:'#app',main:'#app',left:'#pluginWindowLeftDock',right:'#pluginWindowRightDock',bottom:'#pluginWindowBottomDock'}
+    });
+    window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
+  }
+
+  function beginDeclaredChartPreload() {}
+  function scheduleDeclaredChartWarmup() {}
+
+  function safeSegment(value) {
+    const s = String(value || '').trim();
+    if (!/^[A-Za-z0-9._-]+$/.test(s) || s === '.' || s === '..') {
+      throw new Error(`非法插件路径：${s || '(empty)'}`);
+    }
+    return s;
+  }
+
+  function pluginUrl(fileName, pluginFolder=null) {
+    const folder = safeSegment(pluginFolder||bootstrap?.pluginWindow?.pluginFolder);
+    const file = String(fileName || '').trim();
+    if (!file || file.includes('/') || file.includes('\\') || file === '.' || file === '..') {
+      throw new Error(`非法插件入口：${file || '(empty)'}`);
+    }
+    return new URL(`../plugins/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`, location.href).href;
+  }
+
+  function ensureProjectShape(next) {
+    const p = clone(next || {});
+    if (!p || typeof p !== 'object') return { format:'dk-data-studio-project',schemaVersion:3,plugins:{},dataModel:{schema:2,artifacts:[]} };
+    if (!p.plugins || typeof p.plugins !== 'object') p.plugins = {};
+    if (!p.dataModel || typeof p.dataModel !== 'object') p.dataModel = { schema:2, artifacts:[] };
+    return p;
+  }
+
+  function restoreArtifactStore() {
+    const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null;
+    artifactStore = window.DKDSData?.restoreStore
+      ? window.DKDSData.restoreStore(liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}:(project.dataModel || { schema:1, artifacts:[] }))
+      : null;
+    artifactUpserts = new Map();
+    artifactRemovals = new Set();
+    return artifactStore;
+  }
+
+  async function reconcileOwnerArtifactStore({force=false,reason='owner-reconcile'}={}) {
+    if(bootstrap?.prewarm===true||String(bootstrap?.pluginWindow?.artifactHydration||'')!=='live')return false;
+    if(ownerArtifactReconcilePromise)return ownerArtifactReconcilePromise;
+    const remote=window.DKDSCapabilities?.proxy?.('core.project-artifacts')||null;
+    if(!remote?.revision||!remote?.list)return false;
+    ownerArtifactReconcilePromise=(async()=>{
+      try{
+        const revision=Number(await remote.revision())||0;
+        if(!force&&revision===ownerArtifactRevision)return false;
+        const rows=await remote.list({includeTransient:true});
+        if(!Array.isArray(rows))return false;
+        artifactStore=window.DKDSData?.restoreStore?window.DKDSData.restoreStore({schema:2,artifacts:rows}):artifactStore;
+        artifactUpserts=new Map();artifactRemovals=new Set();ownerArtifactRevision=revision;
+        if(projectHydrated)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'owner-live-reconcile',reason,artifacts:artifactStore?.list?.({includeTransient:true})||[]});
+        return true;
+      }catch(err){console.warn('[DKDS owner artifact reconcile]',err);return false;}
+      finally{ownerArtifactReconcilePromise=null;}
+    })();
+    return ownerArtifactReconcilePromise;
+  }
+
+  async function primeArtifactStoreForRuntime() {
+    if (bootstrap?.prewarm === true) {
+      artifactStore = window.DKDSData?.restoreStore
+        ? window.DKDSData.restoreStore({schema:2,artifacts:[]})
+        : null;
+      artifactUpserts = new Map();
+      artifactRemovals = new Set();
+      artifactStorePrimedForBootstrap = false;
+      return artifactStore;
+    }
+    restoreArtifactStore();
+    artifactStorePrimedForBootstrap = true;
+    const initialRows=artifactStore?.list?.({includeTransient:true})||[];
+    if(!initialRows.length)await reconcileOwnerArtifactStore({force:true,reason:'initial-live-empty'});
+    else{
+      const remote=window.DKDSCapabilities?.proxy?.('core.project-artifacts')||null;
+      try{if(remote?.revision)ownerArtifactRevision=Number(await remote.revision())||0;}catch{}
+    }
+    return artifactStore;
+  }
+
+  function pluginWindowDiagnosticSnapshot() {
+    const rows=artifactStore?.list?.({includeTransient:true})||[];
+    const tables=rows.filter(row=>row?.kind==='data.table');
+    const visiblePage=[...document.querySelectorAll?.('.analysis-page:not(.hidden)')||[]][0]||null;
+    const dataCenterList=document.querySelector?.('#dcArtifactList')||null;
+    const dataCenterChart=document.querySelector?.('#dcChart')||null;
+    const dataCenterChartRuntime=window.DKDSCharts?.runtimeState?.()||null;
+    const sourceDescriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
+    const sourceSync=sourceDescriptor?.metadata?.syncSnapshot&&typeof sourceDescriptor.metadata.syncSnapshot==='object'?sourceDescriptor.metadata.syncSnapshot:null;
+    const resonanceDiagnostics=window.DKDSServices?.get?.('builtin.resonance-workbench.runtime')?.getGroupDiagnostics?.()||null;
+    return {
+      projectHydrated:!!projectHydrated,
+      activityOpened:!!activityOpened,
+      prewarm:bootstrap?.prewarm===true,
+      projectDatasetCount:tables.filter(row=>String(row?.semanticType||'')==='science.transport.iv').length,
+      projectDataModelCount:Array.isArray(project?.dataModel?.artifacts)?project.dataModel.artifacts.length:0,
+      artifactCount:rows.length,
+      dataTableCount:tables.length,
+      transientArtifactCount:rows.filter(row=>row?.transient===true).length,
+      totalTableRows:tables.reduce((sum,row)=>sum+(Number(row?.rowCount)||0),0),
+      activeActivityId:String(window.DKDSPlugins?.activities?.active?.()||''),
+      visiblePageId:String(visiblePage?.id||''),
+      visiblePagePluginId:String(visiblePage?.dataset?.pluginId||''),
+      windowChrome:window.DKDSPluginWindowChrome?.snapshot?.()||null,
+      targetPluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+      targetPluginState:window.DKDSPlugins?.manager?.get?.(String(bootstrap?.pluginWindow?.pluginId||''))||null,
+      topWorkspaceRegistered:(window.DKDSPlugins?.workspace?.top?.()||[]).some(row=>String(row?.pluginId||'')===String(bootstrap?.pluginWindow?.pluginId||'')&&String(row?.activity||'')===String(bootstrap?.activityId||'')),
+      renderedArtifactRows:Number(dataCenterList?.querySelectorAll?.('.dc-artifact-item')?.length)||0,
+      dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||''),
+      dataCenterChartTraceCount:Array.isArray(dataCenterChart?.data)?dataCenterChart.data.length:0,
+      dataCenterChartSvgCount:Number(dataCenterChart?.querySelectorAll?.('.main-svg')?.length)||0,
+      dataCenterChartProvider:String(document.querySelector?.('#dcChartProvider')?.value||''),
+      dataCenterChartRuntimeReady:dataCenterChartRuntime?.ready===true,
+      dataCenterChartRuntimeStatus:String(dataCenterChartRuntime?.status||''),
+      dataCenterChartRuntimeError:String(dataCenterChartRuntime?.error||''),
+      dataSourceSyncSnapshot:!!sourceSync,
+      dataSourceSourceCount:Array.isArray(sourceSync?.sources)?sourceSync.sources.length:0,
+      dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0,
+      resonanceGroupDiagnostics:resonanceDiagnostics?clone(resonanceDiagnostics):null,
+      themeRenderer:window.DKDSTheme?.rendererCapabilities?.()||null,
+      themeMaterialProbe:(()=>{const el=document.querySelector?.('.dkds-material-role-surface,.dkds-plugin-workspace,.dkds-analysis-workbench,.dkds-material-role-sidebar');return el?window.DKDSThemeMaterialRenderer?.inspect?.(el)||null:null;})()
+    };
+  }
+  window.DKDSPluginWindowDiagnostics=Object.freeze({snapshot:pluginWindowDiagnosticSnapshot});
+
+  function recordArtifactChange(payload={}) {
+    const type=String(payload.type||'');
+    if(type==='batch'){
+      for(const entry of payload.events||payload.changes||[])recordArtifactChange(entry);
+      return;
+    }
+    if((type==='add'||type==='upsert')&&payload.artifact?.id){
+      artifactRemovals.delete(String(payload.artifact.id));
+      artifactUpserts.set(String(payload.artifact.id),clone(payload.artifact));
+    }else if(type==='remove'&&payload.id){
+      const id=String(payload.id);
+      artifactUpserts.delete(id);
+      artifactRemovals.add(id);
+    }else if(type==='clear'){
+      for(const id of payload.ids||[]){
+        artifactUpserts.delete(String(id));
+        artifactRemovals.add(String(id));
+      }
+    }
+  }
+
+  function artifactDeltaPayload() {
+    return {
+      upserts:[...artifactUpserts.values()].map(clone),
+      removedIds:[...artifactRemovals]
+    };
+  }
+
+  function artifactDeltaForChange(payload={}) {
+    const type=String(payload?.type||'');
+    if(['add','upsert','publish'].includes(type)&&payload?.artifact?.id)return {upserts:[clone(payload.artifact)],removedIds:[]};
+    if(type==='remove'&&payload?.id)return {upserts:[],removedIds:[String(payload.id)]};
+    if(type==='clear')return {upserts:[],removedIds:(payload.ids||[]).map(String).filter(Boolean)};
+    if(type==='batch'){
+      const upserts=new Map(),removedIds=new Set();
+      for(const event of payload.events||[]){
+        const delta=artifactDeltaForChange(event);
+        for(const row of delta.upserts||[]){removedIds.delete(String(row.id));upserts.set(String(row.id),row);}
+        for(const id of delta.removedIds||[]){upserts.delete(String(id));removedIds.add(String(id));}
+      }
+      return {upserts:[...upserts.values()],removedIds:[...removedIds]};
+    }
+    return {upserts:[],removedIds:[]};
+  }
+
+  function emitArtifactsChanged(payload={}) {
+    recordArtifactChange(payload);
+    const delta=artifactDeltaForChange(payload);
+    if((delta.upserts.length||delta.removedIds.length)&&bootstrap?.prewarm!==true){
+      try{window.electronAPI?.pushActivityArtifactDelta?.({projectTabId:String(bootstrap?.projectTabId||''),activityId:String(bootstrap?.activityId||''),reason:String(payload?.type||'activity-artifact-change'),artifactDelta:delta});}
+      catch(err){console.warn('[DKDS activity artifact delta]',err);}
+    }
+    window.DKDSPlugins?.events?.emit?.('data:artifacts-changed', payload);
+    scheduleSnapshot();
+  }
+
+  function applyOwnerArtifactDelta(payload={}) {
+    if (!projectHydrated || !artifactStore) return false;
+    const delta=payload?.artifactDelta&&typeof payload.artifactDelta==='object'?payload.artifactDelta:null;
+    if(!delta)return false;
+    let changed=false;
+    const upserts=Array.isArray(delta.upserts)?delta.upserts:[];
+    const removedIds=Array.isArray(delta.removedIds)?delta.removedIds:[];
+    artifactStore.batch?.(()=>{
+      for(const artifact of upserts){
+        if(!artifact?.id)continue;
+        try{artifactStore.upsert(artifact);changed=true;}catch(err){console.warn('[DKDS owner artifact sync:upsert]',err);}
+      }
+      for(const id of removedIds){
+        try{changed=artifactStore.remove(String(id))||changed;}catch(err){console.warn('[DKDS owner artifact sync:remove]',err);}
+      }
+    });
+    if(changed){
+      // Owner-originated changes are already canonical in the main project. Do
+      // not record them as local plugin-window deltas or echo them back.
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+        type:'owner-sync',
+        reason:String(payload?.reason||'owner-artifact-change'),
+        artifactDelta:{upserts:upserts.map(clone),removedIds:[...removedIds]},
+        artifacts:artifactStore.list?.({includeTransient:true})||[]
+      });
+    }
+    return changed;
+  }
+
+  const artifactsApi = {
+    list: options => artifactStore?.list?.(options) || [],listMetadata:options=>artifactStore?.listMetadata?.(options)||[],
+    revision: kind => artifactStore?.revision?.(kind) || 0,
+    artifactRevision: id => artifactStore?.artifactRevision?.(id) || 0,
+    columnRevision: (id, ref) => artifactStore?.columnRevision?.(id,ref) || 0,
+    fingerprint: id => artifactStore?.fingerprint?.(id) || '',
+    get: id => artifactStore?.get?.(id) || null,
+    columnMetadata:id=>artifactStore?.columnMetadata?.(id)||null,readColumnRange:(id,ref,options)=>artifactStore?.readColumnRange?.(id,ref,options)||null,columnBuffer:(id,ref)=>artifactStore?.columnBuffer?.(id,ref)||null,
+    parents: id => artifactStore?.parents?.(id) || [],
+    children: id => artifactStore?.children?.(id) || [],
+    lineage: id => artifactStore?.lineage?.(id) || null,
+    add(artifact, options) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const id = artifactStore.add(artifact, options);
+      emitArtifactsChanged({type:'add', artifact:artifactStore.get(id)});
+      return id;
+    },
+    upsert(artifact) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const id = artifactStore.upsert(artifact);
+      emitArtifactsChanged({type:'upsert', artifact:artifactStore.get(id)});
+      return id;
+    },
+    publish(artifact, options={}) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const result=artifactStore.publish?.(artifact,options)||{id:artifactStore.upsert(artifact),changed:true};
+      if(result.changed)emitArtifactsChanged({type:'publish',artifact:artifactStore.get(result.id)});
+      return result;
+    },
+    transactColumn(buffer,mutate,options={}){const r=artifactStore.transactColumn(buffer,mutate,options);if(r.changed)emitArtifactsChanged({type:'upsert',artifact:artifactStore.get(r.artifactId)});return r;},
+    batch(fn) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const events=[];
+      const batchApi={...artifactsApi,add(artifact,options){const id=artifactStore.add(artifact,options);events.push({type:'add',artifact:artifactStore.get(id)});return id;},upsert(artifact){const id=artifactStore.upsert(artifact);events.push({type:'upsert',artifact:artifactStore.get(id)});return id;},publish(artifact,options={}){const result=artifactStore.publish?.(artifact,options)||{id:artifactStore.upsert(artifact),changed:true};if(result.changed)events.push({type:'publish',artifact:artifactStore.get(result.id)});return result;},transactColumn(buffer,mutate,options={}){const r=artifactStore.transactColumn(buffer,mutate,options);if(r.changed)events.push({type:'upsert',artifact:artifactStore.get(r.artifactId)});return r;},remove(id){const ok=artifactStore.remove(id);if(ok)events.push({type:'remove',id});return ok;}};
+      const result=artifactStore.batch?artifactStore.batch(()=>fn?.(batchApi)):fn?.(batchApi);if(events.length)emitArtifactsChanged({type:'batch',events});return result;
+    },
+    remove(id) {
+      const ok = artifactStore?.remove?.(id) || false;
+      if (ok) emitArtifactsChanged({type:'remove', id});
+      return ok;
+    },
+    clear() {
+      const ids=(artifactStore?.list?.({includeTransient:true})||[]).map(a=>a.id).filter(Boolean);
+      artifactStore?.clear?.();
+      emitArtifactsChanged({type:'clear',ids});
+    },
+
+  };
+
+  function openAnalysisPage(id) {
+    const target = String(id || '');
+    document.querySelectorAll('.analysis-page').forEach(page => {
+      page.classList.toggle('hidden', page.id !== target);
+    });
+    const page = document.getElementById(target);
+    if (page) {
+      window.DKDSPlugins?.events?.emit?.('analysis:opened', {id:target});
+      window.DKDSPlugins?.events?.emit?.('analysis:refresh', {id:target});
+      queueMicrotask(()=>window.DKDSPluginWindowChrome?.sync?.(page));
+      requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize', {reason:'page-open'}));
+    }
+    return !!page;
+  }
+
+  function closeAnalysisPage() {
+    pushSnapshot(true);
+    return window.electronAPI?.closeCurrentWindow?.();
+  }
+
+  async function copyTextToClipboard(text, label='文本') {
+    const value = String(text ?? '');
+    if (!value) return false;
+    const ok = await window.electronAPI?.copyText?.(value);
+    if (ok) setStatus(`${label}已复制。`);
+    return !!ok;
+  }
+
+  async function saveChartImage(plotId, defaultName, format='png') {
+    const data = await window.DKDSCharts.toImage(plotId, {
+      format,
+      width:1500,
+      height:950,
+      scale:format === 'png' ? 2 : 1
+    });
+    if (format === 'svg') {
+      const content = decodeURIComponent(data.split(',')[1] || '');
+      return window.electronAPI.saveText({
+        defaultName:`${defaultName}.svg`,
+        content,
+        filters:[{name:'SVG',extensions:['svg']}]
+      });
+    }
+    const base64 = data.split(',')[1] || '';
+    return window.electronAPI.saveBase64({
+      defaultName:`${defaultName}.png`,
+      base64,
+      filters:[{name:'PNG',extensions:['png']}]
+    });
+  }
+
+  function syncProjectFromWindow() {
+    if (!project || typeof project !== 'object') project = {};
+    try {
+      project.plugins = window.DKDSPlugins?.project?.serialize?.(project.plugins || {}) || project.plugins || {};
+    } catch (err) {
+      console.warn('[DKDS plugin window] plugin serialization failed', err);
+    }
+    if (artifactStore && window.DKDSData?.serializeStore) {
+      project.dataModel = window.DKDSData.serializeStore(artifactStore, {includeTransient:false});
+    }
+    try { pluginRuntime?.syncProject?.(project); }
+    catch (err) { console.warn('[DKDS plugin window] runtime sync failed', err); }
+    return project;
+  }
+
+  function buildSnapshotPayload(final=false) {
+    if (!bootstrap) return null;
+    const persistence=bootstrap?.pluginWindow?.persistence||'project';
+    if(persistence!=='project')return null;
+    syncProjectFromWindow();
+    const pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+    return {
+      project:clone(project),
+      pluginState:pluginId ? clone(project.plugins?.[pluginId] ?? null) : null,
+      artifactDelta:artifactDeltaPayload(),
+      final:!!final
+    };
+  }
+
+  function pushSnapshot(final=false) {
+    clearTimeout(snapshotTimer);
+    snapshotTimer = null;
+    if (!bootstrap || bootstrap.prewarm === true || roleTransitionSnapshotTaken || !window.electronAPI?.pushActivityProjectSnapshot) return;
+    try {
+      const payload=buildSnapshotPayload(final);
+      if(payload)window.electronAPI.pushActivityProjectSnapshot(payload);
+    } catch (err) {
+      console.warn('[DKDS plugin window snapshot]', err);
+    }
+  }
+
+  function scheduleSnapshot() {
+    clearTimeout(snapshotTimer);
+    snapshotTimer = setTimeout(() => pushSnapshot(false), 120);
+  }
+
+  function baseHost() {
+    return {
+      appVersion:'3.69.4',
+      isAuxiliaryWindow:true,
+      isWebClient:false,
+      renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
+      closeCurrentWindow:closeAnalysisPage,
+      openActivityWindow:()=>false,
+      openImportWorkbench:options=>{
+        if(!window.electronAPI?.requestOwnerImportWorkbench)return false;
+        window.electronAPI.requestOwnerImportWorkbench({options:clone(options||{})});
+        setStatus('已在主窗口打开数据导入工作台。');
+        return true;
+      },
+      getState:()=>pluginRuntime?.getState?.() || project,
+      getActiveProjectTab:()=>({id:bootstrap?.projectTabId||'plugin-window', title:bootstrap?.title||'', pluginState:project.plugins||{}}),
+      captureActiveProjectTab:scheduleSnapshot,
+      setStatus,
+      renderAll:()=>pluginRuntime?.render?.(),
+      scheduleMainPlotRelayout:()=>window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'plugin-window'}),
+      openAnalysisPage,
+      closeAnalysisPage,
+      copyTextToClipboard,
+      saveChartImage,
+      makeFloating:()=>{},
+      artifacts:artifactsApi,
+      panels:{},
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})})}
+    };
+  }
+
+  async function hydrateProjectAndOpenActivity(nextProject,{reason='project-hydrate'}={}) {
+    project=ensureProjectShape(nextProject||{});
+    if (reason==='initial' && artifactStorePrimedForBootstrap && artifactStore) {
+      measureSync(`${reason}:artifact-store`,()=>artifactStore);
+    } else {
+      measureSync(`${reason}:artifact-store`,()=>restoreArtifactStore());
+    }
+    artifactStorePrimedForBootstrap=false;
+    await measure(`${reason}:owner-artifact-reconcile`,()=>reconcileOwnerArtifactStore({force:true,reason:`${reason}:pre-mount`}));
+    await measure(`${reason}:plugin-project-set`,()=>pluginRuntime?.setProject?.(project));
+    await measure(`${reason}:project-restore`,()=>window.DKDSPlugins.project.restore(project.plugins || {}));
+    projectHydrated=true;
+    const opened=await measure(`${reason}:activity-open`,()=>window.DKDSPlugins.activities.set(bootstrap.activityId));
+    if(!opened){
+      const state=window.DKDSPlugins?.manager?.get?.(String(bootstrap?.pluginWindow?.pluginId||''))||null;
+      const activationError=String(state?.error||'').trim();
+      throw new Error(activationError?`插件工作区不可用：${bootstrap.activityId} · ${activationError}`:`插件没有注册工作区：${bootstrap.activityId}`);
+    }
+    const visiblePage=[...document.querySelectorAll('.analysis-page:not(.hidden)')][0]||null;
+    const expectedPluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+    if(!visiblePage)throw new Error(`插件工作区已激活但没有显示页面：${bootstrap.activityId}`);
+    if(expectedPluginId&&String(visiblePage.dataset?.pluginId||'')!==expectedPluginId)throw new Error(`插件工作区显示了错误页面：${bootstrap.activityId}`);
+    window.DKDSPluginWindowChrome?.sync?.(visiblePage);
+    activityOpened=true;
+    window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
+    window.DKDSPlugins?.events?.emit?.('layout:resize',{reason});
+    return true;
+  }
+
+  async function ensureDeclaredChartWarm(){return !!window.DKDSCharts?.runtimeState?.()?.d3Ready;}
+
+  async function loadTargetPlugin() {
+    const spec = bootstrap?.pluginWindow;
+    document.body.dataset.pluginId=String(spec?.pluginId||'');
+    const packagedSource=spec?.source==='external'||spec?.source==='override';
+    if (!spec?.entry || (!packagedSource&&!spec?.pluginFolder)) throw new Error('插件窗口缺少入口信息。');
+
+    await measure('dependencies',()=>loadDependencies(spec));
+    beginDeclaredChartPreload();
+    await measure('artifact-store-prime',()=>primeArtifactStoreForRuntime());
+
+    const loadedTargetScripts=new Set();
+    const loadTargetScript=async(file,kind='support')=>measure(file,async()=>{
+      if(loadedTargetScripts.has(file))return;
+      if(packagedSource)await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
+      else await loadScript(pluginUrl(file));
+      loadedTargetScripts.add(file);
+    },startupProfile.scripts,{kind});
+    const loadedProviderScripts=new Set();
+    const loadProviderScript=async(provider,file,kind='algorithm-provider')=>measure(`${provider.pluginId}:${file}`,async()=>{
+      const token=`${provider.pluginId}::${file}`;if(loadedProviderScripts.has(token))return;
+      if(provider.source==='external'||provider.source==='override')await loadInlineScript(externalPackageFile(provider,file),`${provider.pluginId}/${file}`);
+      else await loadScript(pluginUrl(file,provider.pluginFolder));
+      loadedProviderScripts.add(token);
+    },startupProfile.scripts,{kind,providerId:provider.pluginId});
+    const loadProviderStyles=provider=>{
+      if(provider.source==='external'||provider.source==='override'){
+        for(const file of (provider.styles||[]))loadInlineStyle(externalPackageFile(provider,file),`${provider.pluginId}/${file}`);
+      }else{
+        for(const row of (provider.styles||[]))loadInlineStyle(row.css,`${provider.pluginId}/${row.file}`);
+      }
+    };
+    const host = baseHost();
+    window.DKDSPlugins.configure(host);
+    installHostDevToolsStatusItem();
+    for(const provider of (spec.themeProviders||[])){
+      loadProviderStyles(provider);
+      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file,'theme-provider');
+      if(provider.source==='external'||provider.source==='override')window.DKDSPlugins?.packageRuntime?.applyManifest?.(provider.pluginId,provider.packageManifest||{},provider.source);
+    }
+    if((spec.themeProviders||[]).length)await measure('theme-providers-activate',()=>window.DKDSPlugins.activateAll());
+
+    for(const file of (spec.scripts||[]))await loadTargetScript(file,'support');
+
+    if (spec.runtime) await loadTargetScript(spec.runtime,'window-runtime');
+
+    const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
+    if (windowRuntime?.create) {
+      pluginRuntime = await measure('window-runtime-create',()=>windowRuntime.create({
+        project,
+        bootstrap:clone(bootstrap),
+        setStatus,
+        scheduleSnapshot,
+        copyTextToClipboard,
+        saveChartImage,
+        artifacts:artifactsApi
+      }));
+      if (pluginRuntime?.serviceName && pluginRuntime?.service) {
+        window.DKDSServices?.register?.(String(spec.pluginId||'plugin-window'),pluginRuntime.serviceName,pluginRuntime.service,{replace:true,metadata:{scope:'dedicated-window'}});
+      }
+    }
+
+    for(const provider of (spec.algorithmProviders||[])){
+      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
+    }
+    if(packagedSource){
+      for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin');
+      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
+      for(const file of (spec.platformStyles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin-platform');
+      for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
+      window.DKDSPlugins?.packageRuntime?.applyManifest?.(spec.pluginId,spec.packageManifest||{},spec.source||'external');
+    }else{
+      for(const row of (spec.styleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin');
+      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
+      for(const row of (spec.platformStyleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin-platform');
+      for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
+    }
+
+    await measure('plugins-activate',()=>window.DKDSPlugins.activateAll());
+    window.DKDSPluginWindowChrome?.connectRuntimeEvents?.();
+    for(const provider of (spec.algorithmProviders||[])){
+      const state=window.DKDSPlugins?.manager?.get?.(String(provider.pluginId||''))||null;
+      if(!state?.active){const error=String(state?.error||'').trim();throw new Error(error?`算法 Provider 激活失败：${provider.pluginId} · ${error}`:`算法 Provider 激活失败：${provider.pluginId}`);}
+    }
+    const targetPluginState=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||null;
+    if(!targetPluginState)throw new Error(`插件包没有注册目标插件：${spec.pluginId}`);
+    if(!targetPluginState.active){
+      const activationError=String(targetPluginState.error||'').trim();
+      throw new Error(activationError
+        ? `插件激活失败：${spec.pluginId} · ${activationError}`
+        : `插件激活失败：${spec.pluginId}`);
+    }
+    const targetActivity=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(bootstrap.activityId||'')&&String(row?.pluginId||'')===String(spec.pluginId||''));
+    if(!targetActivity)throw new Error(`插件没有注册声明的独立工作区：${bootstrap.activityId}`);
+    if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'){
+      const top=(window.DKDSPlugins?.workspace?.top?.()||[]).find(row=>String(row?.activity||'')===String(bootstrap.activityId||'')&&String(row?.pluginId||'')===String(spec.pluginId||''));
+      if(!top)throw new Error(`插件没有注册 TOP Workspace 契约：${bootstrap.activityId}`);
+    }
+    if(bootstrap.prewarm===true){
+      await measure('declared-chart-prewarm',()=>ensureDeclaredChartWarm());
+      startupProfile.prewarmMode='runtime-only';
+      projectHydrated=false;activityOpened=false;
+    }else{
+      await hydrateProjectAndOpenActivity(project,{reason:'initial'});
+      startupProfile.prewarmMode='full-open';
+    }
+
+    ready = true;
+    setStatus(`${spec.title || bootstrap.activityId} 已就绪`);
+    requestAnimationFrame(() => window.DKDSPlugins.events.emit('layout:resize',{reason:'initial'}));
+    startupProfile.totalMs=roundMs(performance.now()-startupStartedAt);
+    startupProfile.pluginId=String(spec.pluginId||'');
+    startupProfile.activityId=String(bootstrap.activityId||'');
+    startupProfile.dependencyCount=startupProfile.dependencies.length;
+    startupProfile.scriptCount=startupProfile.scripts.length;
+    startupProfile.themeProviders=(spec.themeProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,source:provider.source}));
+    startupProfile.algorithmProviders=(spec.algorithmProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.algorithmCategories||[])],source:provider.source}));
+    if(spec.selfAlgorithmProvider){
+      const self=spec.selfAlgorithmProvider;
+      const registered=window.DKDSScientificAlgorithms?.list?.({owner:String(self.pluginId||'')})||[];
+      const registeredCategories=new Set(registered.map(row=>String(row?.category||'')).filter(Boolean));
+      const categories=(self.algorithmCategories||[]).filter(category=>registeredCategories.has(String(category)));
+      if(!categories.length)throw new Error(`目标插件声明为算法 Provider，但未注册声明类别：${self.pluginId}`);
+      startupProfile.algorithmProviders.unshift({pluginId:self.pluginId,version:self.version,categories:[...categories],source:self.source||spec.source||'builtin',local:true});
+    }
+    startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
+    window.electronAPI?.markActivityWindowReady?.({startupProfile});
+    scheduleDeclaredChartWarmup();
+  }
+
+
+  async function replaceProjectFromBootstrap(nextBootstrap) {
+    if (!nextBootstrap?.project) return;
+    const previousBootstrap=bootstrap;
+    const sameProject = previousBootstrap?.projectDigest
+      && previousBootstrap.projectDigest === nextBootstrap.projectDigest
+      && previousBootstrap.projectPath === nextBootstrap.projectPath;
+    const liveArtifactsChanged = String(previousBootstrap?.artifactDigest||'') !== String(nextBootstrap?.artifactDigest||'');
+    const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true;
+    bootstrap = nextBootstrap;
+    DKDSPluginWindowChrome?.configure?.(bootstrap);
+    window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
+    try {
+      if(promoteFromPrewarm||!projectHydrated||!activityOpened){
+        await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:promoteFromPrewarm?'prewarm-open':'project-hydrate'});
+        setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
+        window.electronAPI?.markActivityWindowReady?.({startupProfile:{...startupProfile,prewarmMode:'hydrated-open'}});
+        return;
+      }
+      if(sameProject&&liveArtifactsChanged&&Array.isArray(nextBootstrap.artifactSnapshot)){
+        project=ensureProjectShape(nextBootstrap.project);
+        restoreArtifactStore();
+        window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+          type:'owner-live-replace',reason:'bootstrap-artifact-refresh',
+          artifacts:artifactStore?.list?.({includeTransient:true})||[]
+        });
+        setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 数据已同步`);
+        return;
+      }
+      if(sameProject){await reconcileOwnerArtifactStore({reason:'bootstrap-refresh'});setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);return;}
+      await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:'project-replace'});
+      setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 项目已同步`);
+    } catch (err) {
+      console.error('[DKDS plugin window project replace]',err);
+      setStatus(`项目同步失败：${err.message}`);
+      if(promoteFromPrewarm)window.electronAPI?.markActivityWindowFailed?.({activityId:String(bootstrap?.activityId||''),pluginId:String(bootstrap?.pluginWindow?.pluginId||''),error:err?.stack||err?.message||String(err),startupProfile});
+    }
+  }
+
+async function start() {
+    try {
+      bootstrap = await measure('bootstrap',()=>window.electronAPI?.getActivityWindowBootstrap?.());
+      if (!bootstrap?.project) throw new Error('没有收到主窗口项目快照。');
+      if (!bootstrap?.pluginWindow) throw new Error('当前插件没有独立窗口定义。');
+
+      project = ensureProjectShape(bootstrap.project);
+      await measure('window-chrome-ready',()=>window.DKDSPluginWindowChrome?.ready?.()||true);
+      DKDSPluginWindowChrome?.configure?.(bootstrap);
+      DKDSPluginWindowDockLayout?.install?.();
+
+      window.electronAPI?.onActivityBootstrapChanged?.(async () => {
+        const next = await window.electronAPI?.getActivityWindowBootstrap?.();
+        if (next) await replaceProjectFromBootstrap(next);
+      });
+      window.DKDSPluginWindowLifecycle?.install?.({
+        isProjectHydrated:()=>projectHydrated,reconcileOwnerArtifacts:reconcileOwnerArtifactStore,
+        projectTabId:()=>bootstrap?.projectTabId,applyOwnerArtifactDelta,pushSnapshot,buildSnapshotPayload,
+        onRoleSnapshot:()=>{roleTransitionSnapshotTaken=true;},isReady:()=>ready
+      });
+
+      await loadTargetPlugin();
+    } catch (err) {
+      console.error('[DKDS plugin window startup]', err);
+      showStartupError(err);
+      startupProfile.totalMs=roundMs(performance.now()-startupStartedAt);
+      startupProfile.pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+      startupProfile.activityId=String(bootstrap?.activityId||'');
+      startupProfile.dependencyCount=startupProfile.dependencies.length;
+      startupProfile.scriptCount=startupProfile.scripts.length;
+      startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
+      window.electronAPI?.markActivityWindowFailed?.({
+        activityId:String(bootstrap?.activityId||''),
+        pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+        error:err?.stack||err?.message||String(err||'插件独立窗口启动失败。'),
+        startupProfile
+      });
+    }
+  }
+
+  start();
+})();

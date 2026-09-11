@@ -1,0 +1,20 @@
+{
+  "id": "com.dkds.theme.aurora-pop",
+  "name": "Aurora Pop",
+  "version": "2.3.2",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "pluginType": "theme",
+  "requiresCore": [
+    "ui.theme"
+  ],
+  "description": "Built-in Aurora Pop 2.3 theme for Theme Contract 3.10: expressive violet/emerald contextual component and material composition with Core-owned final paint.",
+  "scripts": [
+    "plugin.js"
+  ],
+  "enabled": true,
+  "order": 31,
+  "capabilities": [
+    "ui.theme"
+  ]
+}

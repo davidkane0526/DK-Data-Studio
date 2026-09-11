@@ -1,0 +1,39 @@
+/* Core-owned metrics geometry. *//* Consolidated geometry from former secondary owners. */
+@media (max-width:900px){
+  :root{--plugin-font-body:12px;--plugin-font-label:11.5px;--plugin-font-meta:11px}
+}
+@media (max-width:1160px){
+  :root{--ui-font-size:11.5px;--ui-font-small:10.5px;--ui-font-title:12.5px}
+}
+@media (max-width:820px){
+  :root{--ui-font-size:11px;--ui-font-small:10px;--ui-font-title:12px}
+}
+:root{
+  --plugin-font-body:12.5px;
+  --plugin-font-label:12px;
+  --plugin-font-meta:11px;
+  --plugin-font-title:13.5px;
+  --plugin-font-section:14px;
+  --plugin-control-height:32px;
+  --plugin-control-pad-x:9px;
+  --plugin-action-gap:6px;
+  --plugin-workspace-sidebar-width:260px;
+  --plugin-workspace-panel-radius:8px;
+  --plugin-workspace-panel-border:var(--divider-subtle,transparent);
+  --plugin-workspace-tool-gap:4px;
+  --plugin-workspace-panel-gap:8px;
+  --ui-font-family:"Microsoft YaHei UI","Segoe UI",system-ui,-apple-system,sans-serif;
+  --ui-font-size:12px;
+  --ui-font-small:11px;
+  --ui-font-tiny:10px;
+  --ui-font-title:13px;
+  --ui-font-page-title:18px;
+  --ui-control-h:34px;
+  --ui-control-radius:8px;
+  --ui-panel-radius:10px;
+  --ui-gap:7px;
+  --dkds-visual-radius:9px;
+  --dkds-visual-radius-sm:7px;
+  --dkds-visual-gap:8px;
+  --dkds-visual-pad-x:10px;
+  --dkds-visual-pad-y:8px;--dkds-shell-top-height:92px;--dkds-statusbar-height:28px;--dkds-status-popover-gap:8px;}

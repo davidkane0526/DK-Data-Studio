@@ -1,0 +1,66 @@
+/* Control/status presentation geometry.
+   Theme Component Appearance and Material Renderer own all state paint.
+   This layer only defines layout, sizing and semantic status accents. */
+
+body.dkds-modern-ui .dkds-analysis-nav{
+  gap:8px;
+  padding:5px 10px;
+}
+body.dkds-modern-ui .dkds-analysis-nav>div{gap:4px}
+body.dkds-modern-ui .dkds-analysis-nav-prime:not(:empty),
+body.dkds-modern-ui .dkds-analysis-nav-sub:not(:empty){
+  padding-left:4px;
+  border-left:0;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn{
+  min-height:30px;
+  border-radius:8px;
+}
+
+/* The status bar is one Core chrome surface. Its command cluster and plugin
+   zones are layout/hit regions only; they never own a nested capsule. */
+body.dkds-modern-ui #statusBar.statusbar{
+  --dkds-statusbar-gap:8px;
+  --dkds-statusbar-padding-left:9px;
+  --dkds-statusbar-padding-right:14px;
+}
+body.dkds-modern-ui .statusbar-command-cluster{
+  flex:0 0 auto;
+  min-width:0;
+  height:20px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0;
+}
+body.dkds-modern-ui .statusbar-plugin-zone{
+  --dkds-statusbar-zone-height:18px;
+  --dkds-statusbar-zone-gap:8px;
+}
+body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
+body.dkds-modern-ui .statusbar-separator{color:var(--dkui-divider);opacity:.6}
+body.dkds-modern-ui .plugin-status-item{
+  --dkds-status-item-height:18px;
+  --dkds-status-item-padding-inline:7px;
+  border-radius:6px;
+  --status-accent:currentColor;
+}
+body.dkds-modern-ui .plugin-status-item::before{display:none}
+/* Status icons inherit the Theme-owned Status Bar text by default. A status
+   contribution may opt into semantic state color through the Core status-bar
+   contract; labels stay visually uniform so the bar remains one command row. */
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-icon{color:var(--status-accent,currentColor)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="running"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="done"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="ok"]{--status-accent:var(--dkui-success)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="ready"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="mcp"]{--status-accent:var(--dkui-accent-alt,var(--dkui-info))}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="checking"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="starting"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="info"]{--status-accent:var(--dkui-info)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="waiting"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="busy"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="warn"]{--status-accent:var(--dkui-warning)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="error"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="danger"]{--status-accent:var(--dkui-danger)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="stopped"]{--status-accent:var(--dkui-muted,var(--dkui-text-soft))}

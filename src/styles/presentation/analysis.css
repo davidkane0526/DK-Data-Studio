@@ -1,0 +1,52 @@
+/* Analysis workspace presentation.
+   Core owns shared analysis semantics; Structure owns geometry and Material
+   Renderer owns canonical surfaces. This file only expresses content/state
+   presentation that is specific to the shared analysis vocabulary. */
+
+
+.dkds-analysis-left-resizer::before,
+.dkds-analysis-right-resizer::before,
+.dkds-analysis-bottom-resizer::before{background:transparent;}
+.dkds-analysis-left-resizer:hover::before,
+.dkds-analysis-right-resizer:hover::before,
+.dkds-analysis-bottom-resizer:hover::before{background:var(--divider-active);}
+
+/* Informational notes are semantic states rather than generic Material cards. */
+.analysis-note{
+  background:color-mix(in srgb,var(--accent-primary) 7%,var(--surface-secondary));
+  border-left:3px solid color-mix(in srgb,var(--accent-primary) 58%,var(--border-strong));
+  color:var(--text-secondary);
+}
+
+/* Table internals are content paint. The table host itself is Material-owned. */
+.analysis-table{border-collapse:collapse;}
+.analysis-table th,.analysis-table td{border-bottom:1px solid var(--border-subtle);}
+.analysis-table th{background:var(--surface-secondary);color:var(--text-secondary);}
+
+.dataset-item{border-radius:7px;border:1px solid transparent;}
+.dataset-meta,.kv .k,.peak-class-grid label{color:var(--text-secondary);}
+.peak-color-legend,.peak-class-grid label{font-size:11px;}
+.scan-toggle-row{color:var(--text-secondary);}
+.algorithm-shape{font-size:15px;color:var(--text-primary);font-weight:700;}
+.peak-color-legend{border:1px solid var(--border-subtle);border-radius:7px;background:var(--surface-secondary);}
+.peak-order-chip i{border-radius:50%;}
+
+.inspector-section{border-bottom:1px solid var(--border-subtle);}
+
+.analysis-subtitle{color:var(--text-secondary);}
+.analysis-control-card label,
+.analysis-table,
+.analysis-section-title{color:var(--text-secondary);}
+
+body.dkds-modern-ui .dkds-analysis-workbench{
+  --plugin-workspace-panel-border:var(--border-subtle);
+  --plugin-workspace-surface:var(--surface-primary);
+  --plugin-workspace-muted-surface:var(--surface-secondary);
+  --plugin-workspace-grid:var(--border-subtle);
+  --plugin-workspace-shadow:var(--surface-shadow-raised);
+  --plugin-surface-bg:var(--surface-primary);
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench{
+  --plugin-workspace-panel-border:var(--dkui-border);
+}
+body.dkds-modern-ui .inspector-section{border:0;}

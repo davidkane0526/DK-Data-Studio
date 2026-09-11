@@ -1,0 +1,68 @@
+{
+  "output": "src/generated/runtime/app.js",
+  "moduleRuntimeName": "DKDSAppRuntimeModules",
+  "importableModules": [
+    {
+      "id": "app/context",
+      "path": "src/app/modules/context.js"
+    },
+    {
+      "id": "app/style-gate",
+      "path": "src/app/modules/style-gate.js"
+    },
+    {
+      "id": "app/foundation",
+      "path": "src/app/modules/foundation.js"
+    },
+    {
+      "id": "app/project-tabs-history",
+      "path": "src/app/modules/project-tabs-history.js"
+    },
+    {
+      "id": "app/import-stream-runtime",
+      "path": "src/app/modules/import-stream-runtime.js"
+    },
+    {
+      "id": "app/import-workbench",
+      "path": "src/app/modules/import-workbench.js"
+    },
+    {
+      "id": "app/data-artifact-host",
+      "path": "src/app/modules/data-artifact-host.js"
+    },
+    {
+      "id": "app/workspace-super-shell",
+      "path": "src/app/modules/workspace-super-shell.js"
+    },
+    {
+      "id": "app/scientific-panels-export",
+      "path": "src/app/modules/scientific-panels-export.js"
+    },
+    {
+      "id": "app/project-persistence",
+      "path": "src/app/modules/project-persistence.js"
+    },
+    {
+      "id": "app/floating-docks",
+      "path": "src/app/modules/floating-docks.js"
+    },
+    {
+      "id": "app/dedicated-plugin-windows",
+      "path": "src/app/modules/dedicated-plugin-windows.js"
+    },
+    {
+      "id": "app/window-chrome",
+      "path": "src/app/modules/window-chrome.js"
+    },
+    {
+      "id": "app/startup",
+      "path": "src/app/modules/startup.js"
+    },
+    {
+      "id": "app/runtime",
+      "path": "src/app/modules/runtime.js"
+    }
+  ],
+  "entryModule": "app/runtime",
+  "modules": []
+}

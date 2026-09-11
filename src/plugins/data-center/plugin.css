@@ -1,0 +1,141 @@
+/* Data Center owns only domain layout. Shared control/header geometry and all
+   Theme paint come from Core semantic UI contracts. */
+.data-center-body{container-type:inline-size;container-name:data-center-workspace;}
+.data-center-body:not(.dkds-unified-workbench-body){
+  display:grid;
+  grid-template-columns:290px minmax(0,1fr);
+  gap:12px;
+  padding:12px;
+  overflow:auto;
+}
+.dc-card{min-width:0}
+.dc-artifact-pane{position:sticky;top:0;align-self:start;max-height:calc(100vh - 105px);display:flex;flex-direction:column}
+
+.dc-chart-provider[hidden]{display:none}
+.dc-chart-provider{flex:0 1 180px}
+#dcPlotViewActions{display:inline-flex;align-items:center;min-width:0}
+
+/* Filter controls are grouped by task instead of being compressed into a
+   single toolbar. */
+.dc-assignment-filter{width:132px;max-width:42%}
+.dc-filter-stack{display:grid;gap:7px;padding:8px 9px 9px}
+.dc-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0}
+.dc-field-filter{min-width:0}
+.dc-selection-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;min-width:0}
+.dc-selection-tools>button{width:100%;min-width:0}
+
+.dc-artifact-list{overflow:auto;padding:7px;min-height:180px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.dc-artifact-item{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;width:100%;text-align:left;padding:8px;margin-bottom:6px;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.dc-artifact-copy{display:block;min-width:0}.dc-artifact-name,.dc-artifact-meta{display:block}.dc-artifact-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dc-artifact-check{display:none;margin:2px 0 0;align-self:start}.dc-artifact-list.is-multi-select .dc-artifact-item{grid-template-columns:auto minmax(0,1fr);gap:8px}.dc-artifact-list.is-multi-select .dc-artifact-check{display:block}
+.dc-artifact-item.is-excluded{opacity:.58}
+.dc-artifact-item.is-excluded .dc-artifact-name{text-decoration:line-through;text-decoration-thickness:1px}
+.dc-artifact-meta{margin-top:3px}
+
+.dc-main{
+  --dc-main-columns:minmax(0,1fr);
+  --dc-main-areas:"source" "tool" "chart";
+  --dc-main-gap:10px;
+  display:grid;
+  grid-template-columns:var(--dc-main-columns);
+  grid-template-areas:var(--dc-main-areas);
+  gap:var(--dc-main-gap);
+  min-width:0;
+  container-type:inline-size;
+  container-name:data-center-primary;
+}
+.dkds-plugin-workbench-root .dc-artifact-pane{
+  position:static;
+  top:auto;
+  max-height:none;
+  height:100%;
+  align-self:stretch;
+}
+.dkds-plugin-workbench-root .dc-artifact-list{flex:1 1 auto;min-height:220px}
+.dc-source-preview{grid-area:source;grid-column:1 / -1}
+@container data-center-workspace (min-width:1180px){
+  .dc-main:has(>.dc-chart-pane[data-placement="home"]){--dc-main-columns:minmax(360px,520px) minmax(520px,1fr);--dc-main-areas:"source source" "tool chart";align-items:start}
+}
+.dc-table-preview{max-height:250px;overflow:auto}
+.dc-json-preview{margin:0;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+.dc-preview-table{width:100%}
+.dc-tool-pane{grid-area:tool;padding-bottom:6px;container-type:inline-size;container-name:data-center-tool}
+.dc-chart-pane{
+  /* PortableView reparents this Surface when it floats. Geometry tokens that
+     belong to the preview must therefore live on the movable Surface itself,
+     not on .dc-main, otherwise inheritance disappears after reparenting. */
+  --dc-chart-params-padding:6px 9px;
+  --dc-chart-height:clamp(180px,42dvh,340px);
+  --dc-chart-min-height:180px;
+}
+.dc-tool-pane>.schema-parameter-panel{padding:6px 9px}
+.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:start;height:auto;min-height:0;max-height:none;flex:none}
+/* Inline Data Center preview has one bounded block-size owner.  Do not use
+   size containment here: a size-contained child is removed from its parent's
+   intrinsic block-size calculation, which can collapse the PortableView and
+   clip the chart even though the chart itself still has a CSS height.  The
+   explicit height/max-height/flex contract is sufficient to break renderer ->
+   host feedback without suppressing the child's contribution to home layout. */
+.dc-chart-pane[data-placement="home"]>.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height);max-height:var(--dc-chart-height);flex:0 0 var(--dc-chart-height);overflow:hidden;contain:layout paint}
+.dc-chart-pane>.schema-parameter-panel{padding:var(--dc-chart-params-padding,6px 9px)}
+
+/* The preview controls are one semantic four-field row. Their geometry must not
+   be recomputed merely because the same panel changes PortableView placement.
+   All Desktop placements therefore use the same four tracks; the controls may
+   shrink with the panel, but they do not reorder when going home <-> floating. */
+.dc-chart-params.schema-parameter-panel.auto-fit.compact{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(72px,.55fr);
+  justify-content:stretch;align-items:end;gap:4px 6px;
+}
+.dc-chart-params .schema-param-field{min-width:0}
+.dc-chart-params .schema-param-field .dkds-field-control{min-width:0;width:100%;max-width:100%}
+
+/* Floating is a viewport consumer: title + parameter row keep intrinsic height,
+   while the chart alone consumes the remaining user-sized panel. */
+.dc-chart-pane[data-placement="float"]>.dc-chart,.dc-chart-pane[data-placement="global"]>.dc-chart{
+  height:auto;min-height:0;max-height:none;flex:1 1 0;overflow:hidden;contain:layout paint;
+}
+#dcFormulaParams{--dkds-field-control-min-height:28px;--dkds-field-control-padding-block:3px;--dkds-field-control-padding-inline:7px}
+#dcFormulaParams .schema-parameter-panel{display:grid;grid-template-columns:minmax(112px,.72fr) minmax(210px,1.3fr) minmax(90px,.5fr) minmax(118px,.64fr);gap:4px 6px;align-items:start}
+#dcFormulaParams .schema-param-field{min-width:0;margin:0}
+#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:2 / span 2}
+#dcFormulaParams .schema-param-field[data-param-id="replace"]{align-self:end}
+#dcFormulaParams .schema-param-help{margin-top:2px;line-height:1.25}
+@container data-center-tool (max-width:620px){#dcFormulaParams .schema-parameter-panel{grid-template-columns:repeat(2,minmax(0,1fr))}#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:1 / -1}}
+/* Chart preview opts into Core ParameterSchema autoFit geometry. The actual
+   one-row/wrap decision is owned by the generic Surface-aware form contract. */
+.dc-inline-actions{display:flex;gap:5px;align-items:center}
+.dc-formula-refs{padding:0 12px;display:flex;gap:5px;flex-wrap:wrap}
+.dc-ref-chip{padding:3px 6px;cursor:pointer}
+.dc-recipe-bar,.dc-add-step{display:flex;gap:7px;align-items:end;padding:9px 12px}
+.dc-recipe-bar label{display:flex;flex-direction:column;gap:3px}
+.dc-recipe-bar input,.dc-recipe-bar select,.dc-add-step select{min-width:150px}
+.dc-workflow-steps{padding:10px 12px}
+.dc-step-card{margin-bottom:8px}
+.dc-step-head{display:flex;align-items:center;justify-content:space-between}
+.dc-step-actions{display:flex;gap:4px}
+.dc-step-params{padding:7px}
+.dc-workflow-status{margin:0 12px;padding:8px}
+.dc-provenance-list{padding:10px 12px;max-height:430px;overflow:auto}
+.dc-prov-item{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:8px 0}
+.dc-prov-main strong{display:block}
+.dc-prov-main div{margin-top:2px;word-break:break-word}
+.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height);box-sizing:border-box;overflow:hidden}
+
+@media(max-width:1000px){
+  .data-center-body:not(.dkds-unified-workbench-body){grid-template-columns:230px minmax(0,1fr)}
+}
+.dkds-size-compact .data-center-body:not(.dkds-unified-workbench-body){grid-template-columns:1fr;padding:7px}
+.dkds-size-compact .dc-artifact-pane{position:static;max-height:250px}
+.dkds-size-compact .dc-recipe-bar,.dkds-size-compact .dc-add-step{flex-wrap:wrap}
+
+/* Data Center responds to the space its Surface actually receives.  The
+   plugin never asks which Presenter or operating system owns that Surface. */
+.dc-source-preview{container-type:inline-size}
+@container (max-width:760px){
+  .dc-source-preview>.dkds-surface-header{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:6px}
+  .dc-source-preview .dkds-surface-heading{min-width:0;overflow:hidden}
+  .dc-source-preview .dkds-surface-heading>.dkds-meta{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dc-source-actions{width:100%;min-width:0;max-width:100%;display:flex;justify-content:flex-start;flex-wrap:wrap;gap:5px}
+  .dc-source-actions>.dc-tabs{flex-wrap:wrap}
+}

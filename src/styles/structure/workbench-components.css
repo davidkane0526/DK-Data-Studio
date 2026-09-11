@@ -1,0 +1,223 @@
+/* ============================================================
+   Strong View Contract
+   Core owns floating layers, portable chrome, collapsed dock geometry and
+   standard PlotView chrome. Plugin CSS must not invent competing z-index or
+   collapse geometry for reusable scientific views.
+   ============================================================ */
+/* Consolidated geometry from earlier structure owners. */
+/* Canonical geometry migrated from the former Foundation baseline. */
+.dkds-tooltip{position:absolute;z-index:80;pointer-events:none;padding:8px 10px;max-width:320px;}
+.hover-tip{position:absolute;z-index:80;pointer-events:none;padding:8px 10px;max-width:320px;}
+.inspector-panel:not(.dkds-portable-view){right:24px;top:86px;width:390px;height:520px;}
+.group-panel:not(.dkds-portable-view){right:24px;bottom:36px;width:880px;height:620px;}
+.group-panel.docked:not(.dkds-portable-view){position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;height:360px;resize:none;min-width:0;min-height:38px;z-index:60;}
+.group-panel.collapsed:not(.dkds-portable-view){height:38px;min-height:38px;resize:none;}
+.group-panel.collapsed:not(.dkds-portable-view) .floating-body{display:none;}
+.group-panel.docked:not(.dkds-portable-view) .floating-header{cursor:default;}
+.group-panel.docked:not(.dkds-portable-view) .floating-body{overflow:auto;padding:8px 10px;}
+.dock-resizer{display:none;}
+.group-panel.docked:not(.dkds-portable-view):not(.collapsed) .dock-resizer{display:block;position:absolute;left:0;right:0;top:0;height:7px;cursor:ns-resize;z-index:8;}
+.zoom-panel{left:50%;top:50%;transform:translate(-50%,-50%);width:980px;height:720px;z-index:180;}
+.panel-close{padding:2px 7px;}
+.zoom-body{display:grid;grid-template-rows:1fr auto;}
+.zoom-plot{min-height:0;}
+.zoom-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:8px;}
+.group-panel-title-wrap{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap;}
+@media (max-width:1300px){
+.group-panel:not(.dkds-portable-view):not(.docked){width:720px;}}
+.dkds-analysis-overlay>.dkds-portable-view.is-global-floating{pointer-events:auto;}
+.dkds-plugin-workspace .dkds-portable-view.is-floating{
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-canvas-float));
+}
+.dkds-analysis-overlay>.dkds-portable-view.is-global-floating,
+.dkds-plugin-workspace .dkds-portable-view.is-global-floating{
+  --dkds-portable-floating-z:var(--dkds-portable-z,var(--dkds-layer-global-float));
+}
+
+/* A collapsed bottom dock consumes only its title bars. The scientific canvas
+   immediately reclaims the former fixed split height. */
+.dkds-plugin-canvas-frame.has-canvas-bottom.canvas-bottom-collapsed-only{
+  grid-template-rows:minmax(0,1fr) 0 auto;
+}
+.dkds-plugin-canvas-frame.canvas-bottom-collapsed-only>.dkds-plugin-canvas-bottom-resizer{display:none;}
+.dkds-plugin-canvas-bottom>.dkds-portable-view.is-collapsed{
+  --dkds-portable-docked-min-height:0px;
+  --dkds-portable-docked-height:auto;
+  --dkds-portable-docked-max-height:none;
+  --dkds-portable-docked-flex:0 0 auto;
+  --dkds-portable-docked-overflow:hidden;
+}
+.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel.is-collapsed{
+  min-height:0;height:auto;max-height:none;flex:0 0 auto;overflow:hidden;}
+
+/* Standard plot chrome is card-local. It may never spill into another chart. */
+.dkds-plot-view-head>.dkds-plot-view-actions{margin-left:auto;}
+.dkds-plot-view-actions:empty{display:none;}
+
+/* Built-in automation test center. */
+.automation-test-header-actions{display:flex;align-items:center;gap:6px;}
+.automation-test-body{display:flex;flex-direction:column;gap:10px;overflow:auto;}
+.automation-test-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;}
+.automation-test-hero strong{font-size:15px;}.automation-test-hero p{margin:4px 0 0;font-size:11px;}
+.automation-test-note,.automation-test-log-path{padding:10px 12px;font-size:11px;line-height:1.55;}
+.automation-test-results{display:grid;gap:6px;}
+.automation-empty{padding:24px;text-align:center;}
+.automation-test-row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;}
+.automation-test-status{display:inline-flex;align-items:center;justify-content:center;height:24px;font-size:10px;font-weight:700;}
+.automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px;}.automation-test-main strong{font-size:12px;}.automation-test-main span{font-size:10px;}.automation-test-main small{font-size:10px;white-space:pre-wrap;overflow-wrap:anywhere;}
+@media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}
+
+.plugin-algorithm-version-block{margin-top:6px;display:grid;gap:5px;}
+.plugin-algorithm-version-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);gap:8px;align-items:center;}
+.plugin-algorithm-version-row>span{display:grid;gap:1px;}
+.plugin-algorithm-version-row small{font-size:var(--ui-font-tiny,10px);}
+.plugin-algorithm-version-row select{min-width:0;height:28px;}
+@media(max-width:720px){.plugin-algorithm-version-row{grid-template-columns:1fr}}
+
+/* Core TableSurface: one visual + interaction contract for every data/scientific table.
+   Plugins declare appearance through ctx.ui.tables(...).appearance instead of styling
+   Core-owned table internals directly. */
+.dkds-table-surface-host{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+.dkds-managed-table{
+  --dkds-table-row-odd-bg:transparent;
+  --dkds-table-font-size:var(--ui-font-small,11px);
+  --dkds-table-head-padding-block:7px;
+  --dkds-table-head-padding-inline:9px;
+  --dkds-table-cell-padding-block:6px;
+  --dkds-table-cell-padding-inline:9px;
+  --dkds-table-column-padding-right:18px;
+  --dkds-table-resizer-hit-width:8px;
+  --dkds-table-resizer-line-width:1px;
+  width:max-content;min-width:100%;
+  font-family:var(--ui-font-family,"Microsoft YaHei UI","Segoe UI",sans-serif);
+  font-size:var(--dkds-table-font-size);line-height:1.35;
+}
+.dkds-managed-table[data-dkds-table-density="compact"]{
+  --dkds-table-font-size:10px;
+  --dkds-table-cell-padding-block:4px;
+  --dkds-table-cell-padding-inline:7px;
+}
+.dkds-managed-table thead th{
+  position:sticky;top:0;z-index:3;
+  padding-block:var(--dkds-table-head-padding-block);
+  padding-left:var(--dkds-table-head-padding-inline);
+  padding-right:var(--dkds-table-head-padding-inline);
+  font:inherit;font-weight:680;text-align:left;white-space:nowrap;
+}
+.dkds-managed-table thead th.dkds-table-column{--dkds-table-head-padding-right:var(--dkds-table-column-padding-right);padding-right:var(--dkds-table-head-padding-right);position:sticky;}
+.dkds-managed-table thead th.dkds-table-sortable{cursor:pointer;user-select:none;}
+.dkds-managed-table thead th.dkds-table-sortable::before{content:"↕";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--ui-font-tiny,10px);pointer-events:none;}
+.dkds-managed-table thead th[data-dkds-sort="asc"]::before{content:"↑";}
+.dkds-managed-table thead th[data-dkds-sort="desc"]::before{content:"↓";}
+.dkds-table-column-resizer{position:absolute;top:0;right:calc(var(--dkds-table-resizer-hit-width,8px) / -2);width:var(--dkds-table-resizer-hit-width,8px);height:100%;cursor:col-resize;z-index:4;touch-action:none;}
+.dkds-table-column-resizer::after{content:"";position:absolute;top:16%;bottom:16%;left:calc((var(--dkds-table-resizer-hit-width,8px) - var(--dkds-table-resizer-line-width,1px)) / 2);width:var(--dkds-table-resizer-line-width,1px);}
+.dkds-managed-table .dkds-table-column-hidden{display:none;}
+.dkds-managed-table tbody td,.dkds-managed-table tbody th{
+  padding-block:var(--dkds-table-cell-padding-block);
+  padding-inline:var(--dkds-table-cell-padding-inline);
+  font:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+body.dkds-table-resizing{cursor:col-resize;user-select:none;}
+body.dkds-table-resizing *{cursor:col-resize;}
+
+/* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
+.dkds-scientific-surface-host{position:relative;}
+.dkds-scientific-auto-legend{
+  --dkds-legend-gap:5px;
+  --dkds-legend-padding-block:3px;
+  --dkds-legend-padding-inline:4px;
+  position:absolute;z-index:12;display:flex;align-items:center;
+  gap:var(--dkds-legend-gap);
+  padding-block:var(--dkds-legend-padding-block);
+  padding-inline:var(--dkds-legend-padding-inline);
+  overflow:auto;pointer-events:auto;font-size:10px;line-height:1.15;
+}
+@media (hover:none),(pointer:coarse){}
+
+/* Core plugin settings surface */
+.dkds-settings-overlay{position:fixed;inset:0;z-index:2400;display:flex;align-items:center;justify-content:center;padding:24px;}
+.dkds-settings-dialog{width:min(520px,calc(100vw - 40px));max-height:min(720px,calc(100vh - 48px));display:flex;flex-direction:column;overflow:hidden;}
+.dkds-settings-dialog>header{--dkds-settings-header-action-size:28px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:15px 16px 12px;}.dkds-settings-dialog>header>div{display:flex;flex-direction:column;gap:3px;}.dkds-settings-dialog>header strong{font-size:14px;}.dkds-settings-dialog>header span{font-size:10px;}.dkds-settings-dialog>header button{width:var(--dkds-settings-header-action-size);min-width:var(--dkds-settings-header-action-size);height:var(--dkds-settings-header-action-size);min-height:var(--dkds-settings-header-action-size);padding:0;font-size:18px;}
+.dkds-settings-body{overflow:auto;padding:14px 16px;display:grid;gap:11px;}
+.dkds-settings-field{
+  --dkds-settings-field-height:32px;
+  --dkds-settings-field-padding-block:4px;
+  --dkds-settings-field-padding-inline:8px;
+  display:grid;grid-template-columns:minmax(150px,.8fr) minmax(180px,1fr);gap:6px 12px;align-items:center;
+}
+.dkds-settings-field.is-check{grid-template-columns:auto minmax(0,1fr);justify-content:start;}
+.dkds-settings-label{font-size:11px;font-weight:650;}
+.dkds-settings-field select,.dkds-settings-field input[type="text"],.dkds-settings-field input[type="number"]{
+  width:100%;min-width:0;
+  height:var(--dkds-settings-field-height);min-height:var(--dkds-settings-field-height);
+  padding-block:var(--dkds-settings-field-padding-block);padding-inline:var(--dkds-settings-field-padding-inline);
+}
+.dkds-settings-field small{grid-column:1/-1;font-size:var(--ui-font-tiny,10px);line-height:1.45;}
+.dkds-settings-dialog>footer{--dkds-settings-footer-action-height:31px;--dkds-settings-footer-action-padding-block:6px;--dkds-settings-footer-action-padding-inline:10px;display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;padding:11px 16px;}.dkds-settings-dialog>footer button{height:var(--dkds-settings-footer-action-height);min-height:var(--dkds-settings-footer-action-height);padding-block:var(--dkds-settings-footer-action-padding-block);padding-inline:var(--dkds-settings-footer-action-padding-inline);}
+
+/* Core-owned per-workbench data import action (Plugin API 1.19). */
+.dkds-core-workbench-import-slot{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0;}
+.dkds-core-workbench-import-slot+.dkds-plugin-header-actions{margin-left:6px;}
+.dkds-core-import-action{white-space:nowrap;}
+
+/* System commands opt into the same segmented-command geometry as file commands.
+   The shared structure lives in schema-and-plugin-ui.css; this file owns no
+   second sizing contract for the same shell component. */
+.system-core-tools-group{display:flex;align-items:center;flex:0 0 auto;}
+
+/* Core split action: one visual command with independently clickable primary
+   action and compact source caret. The popup anchor stays positioned while the
+   two hit regions share one outer silhouette. */
+.dkds-split-action-group{display:inline-flex;align-items:stretch;gap:0;position:relative;}
+.dkds-split-action-group>.menu-anchor{display:flex;align-items:stretch;margin-left:-1px;}
+.dkds-split-action-group>.menu-anchor>.dkds-split-action-caret{width:18px;min-width:18px;padding-left:0;padding-right:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1;}
+
+/* Compact exact-column filtering in the Core Import Workbench. */
+.import-column-field-filter{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);align-items:center;gap:10px;margin:8px 0 10px;padding:7px 9px;}
+
+.import-column-field-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}.import-column-field-copy strong{font-size:var(--ui-font-size);}.import-column-field-copy span{font-size:var(--ui-font-small);white-space:normal;line-height:1.45;}
+#importColumnFieldSelect{width:100%;height:30px;min-height:30px;padding:0 26px 0 7px;font-size:var(--ui-font-size);}
+@media(max-width:900px){.import-column-field-filter{grid-template-columns:1fr}}
+
+/* Every Core workspace region declares one scroll policy. These attributes
+   affect scroll chaining only; the region's layout owner still decides whether
+   it is a scroller. Runtime subtree recovery is intentionally absent. */
+[data-dkds-scroll-policy="chain"],[data-dkds-scroll-policy="viewport"]{overscroll-behavior-x:contain;overscroll-behavior-y:auto;}
+[data-dkds-scroll-policy="contain"]{overscroll-behavior:contain;}
+[data-dkds-scroll-policy="none"]{overscroll-behavior:none;}
+.dkds-scientific-surface-host.dkds-scientific-layout-fallback{
+  min-height:var(--dkds-scientific-preferred-min-height,180px);}
+
+/* Core modal surface. Application-level confirmations and blocking errors use
+   this renderer-owned dialog instead of Electron/native message boxes. */
+.dkds-dialog-overlay{position:fixed;inset:0;z-index:2650;display:grid;place-items:center;padding:22px;}
+.dkds-dialog{width:min(540px,calc(100vw - 36px));max-height:min(720px,calc(100vh - 44px));display:flex;flex-direction:column;overflow:hidden;}
+.dkds-dialog-header{display:grid;grid-template-columns:34px minmax(0,1fr) 30px;align-items:start;gap:10px;padding:16px 17px 13px;}
+.dkds-dialog-icon{display:grid;place-items:center;width:32px;height:32px;font-size:15px;font-weight:800;}
+.dkds-dialog-title-wrap{display:flex;flex-direction:column;gap:3px;min-width:0;padding-top:1px;}.dkds-dialog-title{font-size:14px;line-height:1.35;font-weight:720;letter-spacing:.005em;}.dkds-dialog-subtitle{font-size:10px;line-height:1.45;}
+.dkds-dialog-close{width:29px;height:29px;min-width:29px;padding:0;font-size:18px;line-height:1;cursor:pointer;}
+.dkds-dialog-body{overflow:auto;padding:15px 17px 16px;min-height:0;}.dkds-dialog-message{margin:0;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;}
+.dkds-dialog-meta{display:grid;grid-template-columns:minmax(92px,auto) minmax(0,1fr);gap:7px 12px;margin:14px 0 0;padding:11px 12px;font-size:10px;line-height:1.45;}.dkds-dialog-meta dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;}
+.dkds-dialog-details{margin-top:12px;overflow:hidden;}.dkds-dialog-details summary{padding:8px 10px;cursor:pointer;font-size:10px;user-select:none;}.dkds-dialog-details pre{margin:0;padding:9px 10px 11px;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:9px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;}
+.dkds-dialog-footer{--dkds-dialog-action-height:32px;--dkds-dialog-action-padding-block:6px;--dkds-dialog-action-padding-inline:13px;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:11px 16px;}.dkds-dialog-action{height:var(--dkds-dialog-action-height);min-height:var(--dkds-dialog-action-height);padding-block:var(--dkds-dialog-action-padding-block);padding-inline:var(--dkds-dialog-action-padding-inline);font-size:10px;font-weight:650;cursor:pointer;}
+@media(max-width:620px){.dkds-dialog-overlay{padding:12px}.dkds-dialog{width:min(100%,540px);max-height:calc(100vh - 24px)}.dkds-dialog-meta{grid-template-columns:1fr;gap:2px}.dkds-dialog-meta dd{margin-bottom:6px}}
+.dkds-dialog-field{
+  --dkds-dialog-field-height:34px;
+  --dkds-dialog-field-padding-block:6px;
+  --dkds-dialog-field-padding-inline:9px;
+  display:flex;flex-direction:column;gap:6px;margin-top:13px;font-size:10px;
+}
+.dkds-dialog-field>input,.dkds-dialog-field>select{
+  width:100%;box-sizing:border-box;
+  height:var(--dkds-dialog-field-height);min-height:var(--dkds-dialog-field-height);
+  padding-block:var(--dkds-dialog-field-padding-block);padding-inline:var(--dkds-dialog-field-padding-inline);
+  font-size:10px;
+}
+
+/* Bottom dock owns no decorative spacer. Its resize hit target is
+   overlaid around a 1px structural seam so the scientific canvas meets the
+   dock/status chrome without a visible empty strip. */
+.dkds-plugin-canvas-frame.has-canvas-bottom{grid-template-rows:minmax(0,1fr) var(--dkds-canvas-resizer-seam-size,1px) var(--dkds-plugin-canvas-bottom-height);}
+/* Consolidated geometry from former secondary owners. */
+.dkds-context-menu{position:fixed;z-index:3900;min-width:180px;max-width:min(320px,calc(100vw - 12px));padding:5px;display:grid;gap:2px;}
+.dkds-context-menu.dkds-select-popup{max-width:min(460px,calc(100vw - 12px));overscroll-behavior:contain;}

@@ -1,0 +1,45 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+const read=p=>fs.readFileSync(p,'utf8');
+function load(file,deps={},extras={},suffix=''){
+ const c={module:{exports:{}},console,setTimeout,clearTimeout,...extras};c.globalThis=c;c.require=id=>{if(id in deps)return deps[id];throw Error(id);};vm.runInNewContext(read(file)+suffix,c,{filename:file});return c.module.exports;
+}
+const classes=(...initial)=>{const set=new Set(initial);return {add:(...xs)=>xs.forEach(x=>set.add(x)),remove:(...xs)=>xs.forEach(x=>set.delete(x)),contains:x=>set.has(x)};};
+const node=(...cls)=>({nodeType:1,classList:classes(...cls),dataset:{},styles:{}});
+const gate={set:(n,k,v)=>n.styles[k]=v,setToken:(n,k,v)=>n.styles[k]=v,remove:(n,k)=>delete n.styles[k]};
+let membershipCallback,disconnected=false;
+class Observer{constructor(cb){membershipCallback=cb;}observe(){}disconnect(){disconnected=true;}}
+const {GridController}=load('src/core/ui/modules/grid/controller.js',{'../foundation/shortcuts':{resolveElement:x=>x},'ui/style-ownership-gate':gate},{window:{MutationObserver:Observer},MutationObserver:Observer});
+const a=node(),b=node(),pinned=node('is-sticky'),grid=node();grid.children=[pinned,a,b];grid.clientWidth=900;
+const ctrl=new GridController({requestChartResize(){},emitResize(){}},grid,{columns:3,minItemWidth:200});
+assert.equal(pinned.styles['grid-column'],'3','Sticky lane must be rightmost even after reopen appends/reorders nodes');
+grid.children=[a,b];membershipCallback([{type:'childList',target:grid}]);assert.equal(a.styles['grid-column'],undefined);assert.equal(b.styles['grid-row'],undefined);assert.equal(pinned.styles['grid-column'],undefined,'Detached nodes must release Core grid geometry');
+grid.children=[a,b,pinned];ctrl.apply();assert.equal(pinned.styles['grid-column'],'3');pinned.hidden=true;ctrl.apply();assert.equal(a.styles['grid-column'],undefined,'Hidden sticky plots cannot reserve a blank lane');
+ctrl.dispose();assert(disconnected,'Grid observer must be released with its owner');
+const roles={INSPECTOR:'inspector',DATA_CONTROL:'data-control',SCIENTIFIC_PRIMARY:'scientific-primary',DATA_PRIMARY:'data-primary',UTILITY_PRIMARY:'utility-primary',SCIENTIFIC_SECONDARY:'scientific-secondary'};
+const model={};const presenters=load('src/core/ui/modules/presentation/presenters.js',{'./model':{model,roles}},{},'\nmodule.exports={mobilePlacement};');
+for(const orientation of ['portrait','landscape'])for(const embedded of [false,true])assert.equal(presenters.mobilePlacement({kind:'prime',role:'inspector',embedded},{orientation}).region,'companion-right');
+const {PortableView}=load('src/core/ui/modules/layout/portable-view.js',{'../foundation/shortcuts':{},'../interaction/context-actions':{},'./docking':{},'../../../host/native-touch-drag':{bind:()=>()=>{}},'ui/style-ownership-gate':gate});
+const view=Object.create(PortableView.prototype);view.node={classList:classes('dkds-plot-view')};view.allowed=['home','sticky','left','right','global'];view.original={parent:{closest:()=>null,querySelectorAll:()=>[{}]}};
+assert(!view.availablePlacements().includes('sticky'),'Standalone plot must not expose sticky');view.original.parent.closest=()=>grid;assert(view.availablePlacements().includes('sticky'),'A grouped subplot must expose sticky');
+let writes=0;const tab={id:'one',projectPath:'/existing.json',lastSavedFingerprint:'old'},state={activeProjectTabId:'one',projectTabs:[tab]};
+const tabs=load('src/app/modules/project-tabs-history.js',{'./context':{state},'./foundation':{}},{window:{electronAPI:{saveProject(){writes++;}}}});
+tabs.configure({projects:{makeProject:()=>({dataModel:{artifacts:[]}})}});
+(async()=>{await tabs.refreshProjectDirty(tab);assert.equal(writes,0,'Dirty-state refresh must never write the opened file');assert(tab.dirty);
+const persistence=load('src/app/modules/project-persistence.js',{'./context':{state:{}},'./foundation':{}},{window:{}},'\nmodule.exports={preserveSavedMetadata};');
+const artifact={id:'a',kind:'data.table',createdAt:'old',updatedAt:'old',values:[1,2],provenance:[{id:'old-prov',timestamp:'old',type:'import',parameters:{x:1}}]};
+const rehydrated=JSON.parse(JSON.stringify(artifact));rehydrated.createdAt='new';rehydrated.updatedAt='new';rehydrated.provenance[0].id='new-prov';rehydrated.provenance[0].timestamp='new';
+const saved={dataModel:{artifacts:[artifact]}};
+const result=persistence.preserveSavedMetadata({artifacts:[rehydrated]},saved);assert.equal(JSON.stringify(result.artifacts[0]),JSON.stringify(artifact),'No-op hydration must retain all original metadata');
+rehydrated.values[0]=9;assert.equal(persistence.preserveSavedMetadata({artifacts:[rehydrated]},saved).artifacts[0].values[0],9,'Actual data changes must remain saveable');
+let saveCalls=0;
+const fileState={projectPath:'/existing.json',artifactStore:{}};
+const saveTab={};let stored={artifacts:[artifact]};
+const saver=load('src/app/modules/project-persistence.js',{'./context':{state:fileState},'./foundation':{setStatus(){},projectBaseName:()=> 'existing'}},{window:{DKDSData:{serializeStore:()=>JSON.parse(JSON.stringify(stored))},electronAPI:{saveProject:async()=>{saveCalls++;return '/existing.json';}}}});
+saver.configure({projectTabs:{activeProjectTab:()=>saveTab,captureActiveProjectTab(){},markProjectClean(){},renderProjectTabs(){}}});
+saveTab.savedProject=saver.makeProject();saveTab.savedProject.version='3.60.0';
+await saver.saveProject({mode:'current'});assert.equal(saveCalls,0,'Explicit no-op save should not rewrite file');assert.equal(saver.makeProject().version,'3.60.0');
+stored={artifacts:[{...artifact,values:[9,2]}]};await saver.saveProject({mode:'current'});assert.equal(saveCalls,1,'A real data change must be written once on explicit save');assert.equal(saveTab.savedProject.version,JSON.parse(read('package.json')).version,'Changed project save must stamp the current application version.');
+const css=read('src/styles/platform/native-workspace-presentation.css');assert(css.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)'));assert(css.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'));assert(css.includes('grid-template-columns:var(--dkds-mobile-left-track) var(--dkds-mobile-left-seam) minmax(0,1fr) var(--dkds-mobile-right-seam) var(--dkds-mobile-right-track)'));assert(!css.includes('grid-template-areas:"center" "cright" "cbottom"'));
+console.log('v3.68 executable owner regressions PASS: grid sticky release/right lane, placement eligibility, seam-owned Mobile resizing, no background file writes, metadata stability. UI/device visual acceptance remains WIP.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,0 +1,12 @@
+/* Integrated command chrome.
+   Material Renderer owns standalone command surfaces; Component Appearance
+   owns every hit region. This file only contains theme-picker specifics and
+   a few state/composition refinements that are not independent paint owners. */
+
+/* Theme picker ---------------------------------------------------------- */
+body.dkds-modern-ui .dkds-theme-panel-head{border-bottom:1px solid var(--dkui-divider)}
+body.dkds-modern-ui .dkds-theme-panel-heading strong{font-size:12px;line-height:1.2}
+body.dkds-modern-ui .dkds-theme-panel-heading span{font-size:var(--ui-font-tiny,10px);color:var(--dkui-text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.dkds-modern-ui .dkds-theme-profile-check{color:var(--dkui-accent);font-weight:700}
+body.dkds-modern-ui .dkds-theme-profile-name{font-size:10px}
+body.dkds-modern-ui .dkds-theme-mode-row{border-top:1px solid var(--dkui-divider);font-size:10px;color:var(--dkui-text-soft)}

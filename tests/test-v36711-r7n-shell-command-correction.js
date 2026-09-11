@@ -1,0 +1,23 @@
+"use strict";
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const index=read('src/index.html'),optional=read('src/core/host/optional-runtime-loader.js');
+const shell=read('src/styles/structure/schema-and-plugin-ui.css'),navigation=read('src/styles/structure/shell-navigation.css');
+const component=read('src/styles/theme/component-appearance.css');
+const runtime=read('src/core/theme/runtime.js');
+const thin=read('src/plugins/thin-glass-theme/plugin.js');
+const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
+const updater=read('desktop/update-client.js'),main=read('desktop/main.js');
+const version=JSON.parse(read('package.json')).version;{const [major,minor,patch]=String(version).split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=11))),'R7N+ must remain available from 3.67.11 onward.');}
+for(const asset of ['core/theme/settings-ui.js','core/theme/coverage-runtime.js','core/theme/debug-runtime.js','core/theme/test-gallery.js'])assert(!index.includes(`<script src="${asset}"></script>`),`${asset} must not block first-paint Theme bootstrap.`);
+assert(optional.includes('async function ensureThemeTooling()')&&optional.includes("loadScript('core/theme/coverage-runtime.js')")&&optional.includes('await ensureThemeTooling();'),'Theme authoring/coverage/debug/gallery tooling must be lazy but automation-deterministic.');
+assert(index.includes('class="toolbar-group file-command-group dkds-segmented-command-group"')&&index.includes('class="toolbar-group system-core-tools-group dkds-segmented-command-group" role="group"'),'File and system command clusters keep their semantic DOM roles while sharing the same segmented visual contract.');
+assert(shell.includes('.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}'),'Both shell command groups must share one geometry rhythm without forcing overflow clipping.');
+assert(component.includes('.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]')&&component.includes(':first-child:is([data-dkds-component-identity="toolbarAction"])')&&component.includes(':last-child:is([data-dkds-component-identity="toolbarAction"])')&&component.includes('box-shadow:none'),'Segmented children must have no private shadow, while the first/last state fill follows the shared group silhouette instead of becoming a square block.');
+assert(/data-dkds-presentation-compact="true"\]\{[^}]*--dkds-command-padding-inline:0px;[\s\S]*?width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px;/.test(navigation),'Compact presentation commands must center short labels in the full 48 px hit box through canonical geometry slots.');
+assert(runtime.includes("surfaceHover:'#303640',surfaceActive:'#3a4049',surfaceSelected:'#3a4049'")&&runtime.includes("borderActive:'transparent',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none'")&&!runtime.includes("surfaceActive:'#202d55'"),'Default dark active/selected commands must use a neutral solid graphite surface with no Thin-Glass-like blue border or glow.');
+assert(thin.includes("shadowHover:'0 0 8px rgba(180,202,238,.11)'")&&thin.includes("shadowActive:'0 0 10px rgba(77,125,232,.16)'"),'Thin Glass dark controls must use a restrained cool glow.');
+assert(aurora.includes("shadowHover:'0 0 9px rgba(126,90,232,.16)'")&&aurora.includes("shadowActive:'0 0 10px rgba(36,211,217,.17)'")&&aurora.includes("shadow:'0 3px 12px rgba(35,40,70,.10)'"),'Aurora dark hover depth must be coherent and the light toolbar group must not carry a persistent violet halo.');
+assert(updater.includes("networkConsent: user.networkConsent === true")&&updater.includes("ensureNetworkActive(reason='user-network')")&&updater.includes("更新网络按需启动；首次“检查更新”时才访问局域网")&&updater.includes("this.ensureNetworkActive('manual-check')"),'Fresh startup must not bind UDP/update sockets before explicit network use.');
+assert(main.includes('lanUpdater.start();'),'Desktop boot may initialize the updater state object, but network binding must be consent-gated inside LanUpdateClient.');
+console.log('v3.67.11 R7N segmented shell + centered compact commands + neutral Default dark contract PASS.');

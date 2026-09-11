@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DK Data Studio</title>
+  <script>
+    (() => {
+      const root=document.documentElement;
+      const query=new URLSearchParams(location.search);
+      const mobile=!!window.ReactNativeWebView?.postMessage||query.has('reactNative');
+      const host=mobile?'mobile':(window.electronAPI?'desktop':'web');
+      root.dataset.dkdsHost=host;
+      root.classList.toggle('react-native-client',host==='mobile');
+      try{Object.defineProperty(window,'__DKDS_HOST_KIND__',{value:host,writable:false,configurable:false,enumerable:false});}
+      catch{window.__DKDS_HOST_KIND__=host;}
+    })();
+  </script>
+  <script>
+    (() => {
+      const THEME_KEY='dkds.appearance.v1';
+      const PROFILE_KEY='dkds.theme-profile.v1';
+      const BOOT_STATE_KEY='dkds.theme-boot.v1';
+      const VALID=new Set(['light','dark']);
+      const root=document.documentElement;
+      let theme='light',profile='builtin.default';
+      try{
+        const saved=String(localStorage.getItem(THEME_KEY)||'').trim().toLowerCase();
+        theme=VALID.has(saved)?saved:(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches?'dark':'light');
+        profile=String(localStorage.getItem(PROFILE_KEY)||'').trim()||'builtin.default';
+        root.dataset.dkdsTheme=theme;
+        root.style.colorScheme=theme;
+      }catch{}
+      try{
+        const parsed=JSON.parse(localStorage.getItem(BOOT_STATE_KEY)||'null');
+        const matches=parsed&&typeof parsed==='object'&&parsed.theme===theme&&parsed.profile===profile;
+        if(matches){
+          root.dataset.dkdsThemeProfile=profile;
+          if(parsed.headerEffect==='true'||parsed.headerEffect==='false')root.dataset.dkdsThemeHeaderEffect=parsed.headerEffect;
+          const vars=parsed.vars&&typeof parsed.vars==='object'?parsed.vars:null;
+          if(vars)for(const [name,value] of Object.entries(vars))if(typeof name==='string'&&name.startsWith('--')&&value!==undefined&&value!==null&&String(value)!=='')root.style.setProperty(name,String(value));
+        }
+      }catch{}
+    })();
+  </script>
+  <link rel="icon" href="../assets/dkds-icon.png" />
+<link rel="stylesheet" href="core.css" />
+  <link id="dkdsMobileStyle" rel="stylesheet" href="mobile.css" media="not all" />
+  <script>
+    if(window.__DKDS_HOST_KIND__==='mobile')document.getElementById('dkdsMobileStyle').media='all';
+  </script>
+  <script src="../sdk/platform-presentation-contract.js"></script>
+  <script src="../sdk/theme-contract.js"></script>
+  <script src="core/ui/frame-scheduler.js"></script>
+  <script src="core/ui/dom-mutation-hub.js"></script>
+  <script src="core/contracts/style-ownership-semantics.js"></script>
+  <script src="core/theme/style-ownership-gate-runtime.js"></script>
+  <script src="core/theme/semantic-registry.js"></script>
+  <script src="../sdk/theme-coverage-contract.js"></script>
+  <script src="core/theme/material-renderer.js"></script>
+  <script src="core/theme/runtime.js"></script>
+<script src="core/theme/component-appearance.js"></script>
+</head>
+<body class="dkds-modern-ui">
+  <div id="app">
+    <header class="topbar dkds-material-role-chrome">
+      <div class="topbar-primary">
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.69.4</span></div>
+
+        <div class="global-commandbar" aria-label="全局命令">
+          <div class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作">
+            <button id="openBtn" class="toolbar-btn" type="button" aria-label="导入">导入</button>
+            <button id="saveProjectBtn" class="toolbar-btn" type="button" aria-label="保存" data-dkds-native-save="project">保存</button>
+            <div class="menu-anchor" data-menu-align="left">
+              <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出</button>
+              <div id="exportMenu" class="command-menu hidden">
+                <div id="pluginExportMenu" data-plugin-menu="export"></div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-anchor compact-menu-anchor">
+            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
+            <div id="editMenu" class="command-menu hidden">
+              <button id="undoBtn" type="button"><span>撤销操作</span><kbd>Ctrl+Z</kbd></button>
+              <button id="redoBtn" type="button"><span>重做操作</span><kbd>Ctrl+Y</kbd></button>
+              <button id="deselectBtn" type="button"><span>退出选中</span><kbd>Esc</kbd></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="workspace-commandbar" aria-label="插件工作区与命令">
+          <div class="primary-activity-cluster">
+            <nav id="primaryActivityBar" class="activity-bar primary-activity-bar" aria-label="主工作区"></nav>
+            <div class="context-commandbar" aria-label="当前工作区命令">
+              <span id="activityContextTitle" class="sr-only">工作区</span>
+              <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
+              <div class="context-overflow-anchor">
+                <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多功能 ▾</button>
+                <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="activity-switcher">
+            <nav id="activityBar" class="activity-bar" aria-label="扩展工作区"></nav>
+            <div class="activity-more-anchor">
+              <button id="activityMoreBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多工作区 ▾</button>
+              <div id="activityMoreMenu" class="command-menu activity-more-menu hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="system-commandbar">
+          <div class="toolbar-group system-core-tools-group dkds-segmented-command-group" role="group" aria-label="系统数据、工具与软件管理">
+            <button id="dataCenterSystemBtn" class="toolbar-btn" type="button">数据管理</button>
+            <div class="menu-anchor">
+              <button id="toolsMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="pluginToolsMenu" aria-haspopup="true" aria-expanded="false" disabled>工具 ▾</button>
+              <div id="pluginToolsMenu" class="command-menu hidden" data-plugin-menu="tools"></div>
+            </div>
+            <div class="menu-anchor">
+              <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
+              <div id="manageMenu" class="command-menu hidden">
+                <button id="projectHistoryBtn" type="button">操作历史</button>
+                <button id="pluginManagerBtn" type="button">插件管理</button>
+                <button id="automationTestBtn" type="button">自动化测试</button>
+                <button id="lanWebBtn" type="button">局域网网页版</button>
+                <div data-plugin-menu="manage"></div>
+                <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="windowCommandbar" class="window-commandbar hidden" aria-label="窗口控制">
+          <button id="windowMinimizeBtn" class="window-control-btn" type="button" aria-label="最小化窗口">−</button>
+          <button id="windowMaximizeBtn" class="window-control-btn" type="button" aria-label="最大化窗口">□</button>
+          <button id="windowCloseBtn" class="window-control-btn window-control-close" type="button" aria-label="关闭窗口">×</button>
+        </div>
+      </div>
+    </header>
+    <div class="project-tabs-bar">
+      <div id="projectTabs" class="project-tabs" role="tablist" aria-label="项目"></div>
+      <button id="newProjectTabBtn" class="new-project-tab dkds-mini-action" data-dkds-tooltip="新建独立项目标签页 · Ctrl+N" aria-label="新建项目"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.25v9.5M3.25 8h9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
+
+
+
+    <footer id="statusBar" class="statusbar dkds-material-role-chrome" aria-label="应用状态栏">
+      <div id="statusBarPersistent" class="statusbar-persistent" aria-live="polite"></div>
+      <span id="statusBarPersistentSeparator" class="statusbar-separator hidden" aria-hidden="true">|</span>
+      <div id="statusBarMessage" class="statusbar-message" aria-live="polite">未加载数据</div>
+      <div class="statusbar-command-cluster" aria-label="状态与快捷操作">
+        <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left" aria-label="插件状态"></div>
+        <div id="statusBarPluginRight" class="statusbar-plugin-zone statusbar-plugin-right" aria-label="系统状态"></div>
+      </div>
+    </footer>
+
+
+    <section id="superWorkspaceEmpty" class="analysis-page hidden core-analysis-page super-empty-page">
+      <div class="super-empty-card">
+        <div class="super-empty-icon">⌂</div>
+        <h2>尚未指定 / 当前主界面不可用</h2>
+        <p>请选择一个已启用且完成 TOP 工作区契约的插件作为 SUPER。若当前 SUPER 加载失败，DK Data Studio 会保留该选择并停留在此页，不会自动切换到其他 TOP。</p>
+        <button id="superEmptyOpenManagerBtn" class="primary" type="button">打开插件管理</button>
+      </div>
+    </section>
+
+    <section id="pluginManagerPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface">
+      <div class="analysis-page-header plugin-manager-header">
+        <div>
+          <h2>插件管理</h2>
+          <div class="analysis-subtitle">启用、停用、重新加载和诊断插件。插件开关属于本机全局设置，不随工程切换。</div>
+        </div>
+        <div class="plugin-manager-header-actions">
+          <button id="pluginManagerDiagnosticsBtn" data-dkds-native-copy="clipboard">复制诊断</button>
+          <button id="pluginManagerResetBtn">恢复默认</button>
+          <button class="analysis-page-close" data-analysis-target="pluginManagerPage">返回主图</button>
+        </div>
+      </div>
+      <div class="analysis-page-body plugin-manager-body">
+        <div id="pluginManagerSummary" class="plugin-manager-summary"></div>
+        <div class="plugin-manager-toolbar-card">
+          <div class="plugin-manager-search-wrap dkds-material-role-control" data-dkds-component-identity="field" data-dkds-component-identity-owner="core-plugin-manager">
+            <span aria-hidden="true">⌕</span>
+            <input id="pluginManagerSearch" data-dkds-field-layout="integrated" type="search" placeholder="搜索插件名称、ID、能力…" autocomplete="off">
+          </div>
+          <label>状态
+            <select id="pluginManagerFilter">
+              <option value="all">全部</option>
+              <option value="active">已启用</option>
+              <option value="disabled">已停用</option>
+              <option value="error">错误</option>
+            </select>
+          </label>
+          <label>类型
+            <select id="pluginManagerTypeFilter">
+              <option value="all">全部类型</option>
+              <option value="foundation">基座与系统</option>
+              <option value="data">数据能力</option>
+              <option value="algorithm">算法</option>
+              <option value="workbench">分析工作台</option>
+              <option value="task">任务与自动化</option>
+              <option value="tool">工具</option>
+              <option value="theme">主题</option>
+              <option value="extension">其他扩展</option>
+              <option value="developer">开发与示例</option>
+            </select>
+          </label>
+          <button id="pluginManagerInstallBtn" class="primary">安装插件</button>
+          <button id="pluginManagerOpenFolderBtn">插件目录</button>
+        </div>
+        <div id="pluginManagerNote" class="plugin-manager-note">
+          停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。
+        </div>
+        <div id="pluginManagerList" class="plugin-manager-list"></div>
+      </div>
+    </section>
+
+
+
+
+
+
+
+    <section id="automationTestPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface">
+      <div class="analysis-page-header automation-test-header">
+        <div>
+          <h2>自动化测试</h2>
+          <div class="analysis-subtitle">在当前构建出的真实运行环境中检查 Core、插件、数据契约、绘图和 TOP 独立窗口。测试日志不包含当前工程的实验数据。</div>
+        </div>
+        <div class="automation-test-header-actions">
+          <button id="automationTestCopyBtn" data-dkds-native-copy="clipboard" disabled>复制日志</button>
+          <button id="automationTestFolderBtn">日志目录</button>
+          <button class="analysis-page-close" data-analysis-target="automationTestPage">返回主图</button>
+        </div>
+      </div>
+      <div class="analysis-page-body automation-test-body">
+        <div class="automation-test-hero">
+          <div>
+            <strong>构建后验收</strong>
+            <p id="automationTestSummary">测试不会读取或导出当前工程中的实验数据。</p>
+          </div>
+          <button id="automationTestRunBtn" class="primary">运行全部自动化测试</button>
+        </div>
+        <div class="automation-test-note">桌面版会逐个创建已启用 TOP 的独立 renderer，等待其真正进入 ready / failed，再自动关闭测试窗口。测试结束后 JSON 日志会自动保存到应用诊断目录。</div>
+        <div id="automationTestResults" class="automation-test-results"><div class="automation-empty">尚未运行测试。</div></div>
+        <div id="automationTestLogPath" class="automation-test-log-path"></div>
+      </div>
+    </section>
+
+    <div id="importPanel" class="import-panel-overlay hidden">
+      <div class="import-workbench dkds-material-role-elevated" data-dkds-material-context="workspace-modal" data-dkds-action-density="regular">
+        <div class="import-workbench-header">
+          <div>
+            <h2>数据导入工作台</h2>
+            <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
+          </div>
+          <div class="import-header-actions">
+            <div class="import-data-command dkds-split-action-group dkds-separated-action-group" data-dkds-split-variant="primary">
+              <button id="importChooseFilesBtn" class="dkds-action-button primary dkds-split-action-main" type="button">导入数据/项目</button>
+              <div class="menu-anchor import-source-anchor" data-menu-align="right">
+                <button id="importSourceBtn" class="dkds-action-button primary menu-trigger import-source-trigger dkds-split-action-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
+                <div id="importSourceMenu" class="command-menu hidden">
+                  <div data-plugin-menu="import-data"></div>
+                </div>
+              </div>
+            </div>
+            <button id="importCloseBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">关闭</button>
+          </div>
+        </div>
+
+        <div class="import-target-bar">
+          <div class="import-target-heading">
+            <strong>数据用途</strong>
+            <span>选择哪些分析工作台可以看到这批数据</span>
+          </div>
+          <div id="importTargetOptions" class="import-target-options"></div>
+          <div id="importTargetHint" class="import-target-hint"></div>
+        </div>
+
+        <div class="import-workbench-body">
+          <aside class="import-file-pane">
+            <div class="import-pane-title">待导入文件</div>
+            <div class="import-selection-hint">Shift 连选 · Ctrl/Cmd+A 全选 · Ctrl/Cmd+I 反选</div>
+            <div id="importFileList" class="import-file-list" tabindex="0" aria-label="待导入文件列表"></div>
+            <div class="import-file-actions">
+              <button id="importCheckAllBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">全选</button>
+              <button id="importInvertBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">反选</button>
+              <button id="importUncheckAllBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">全不选</button>
+              <button id="importRemoveBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">移除</button>
+            </div>
+          </aside>
+
+          <main class="import-main-pane">
+            <div id="importNoFile" class="import-empty">
+              点击“导入数据/项目”选择本地数据或项目文件，或使用旁边的来源按钮从 SMB 等来源导入。
+            </div>
+
+            <div id="importEditor" class="hidden">
+              <div class="import-section import-basic-grid">
+                <label>解析器
+                  <select id="importProvider"></select>
+                </label>
+                <label>编码
+                  <select id="importEncoding">
+                    <option value="auto">自动</option>
+                    <option value="utf-8">UTF-8</option>
+                    <option value="gb18030">GB18030 / GBK</option>
+                    <option value="big5">Big5</option>
+                    <option value="shift_jis">Shift-JIS</option>
+                    <option value="utf-16le">UTF-16 LE</option>
+                    <option value="utf-16be">UTF-16 BE</option>
+                    <option value="windows-1252">Latin-1 / Windows-1252</option>
+                  </select>
+                </label>
+                <label>跳过前 N 行
+                  <input id="importSkipRows" type="number" min="0" step="1" value="0">
+                </label>
+                <label>结束行
+                  <input id="importEndRow" type="number" min="0" step="1" value="0" data-dkds-tooltip="0 = 读到文件末尾">
+                </label>
+                <label>分隔符
+                  <select id="importDelimiter">
+                    <option value="auto">自动</option>
+                    <option value="comma">逗号 ,</option>
+                    <option value="tab">Tab</option>
+                    <option value="semicolon">分号 ;</option>
+                    <option value="whitespace">空格 / 连续空白</option>
+                    <option value="pipe">竖线 |</option>
+                  </select>
+                </label>
+                <label>表头
+                  <select id="importHeaderMode">
+                    <option value="auto">自动识别</option>
+                    <option value="first">跳行后的第一行</option>
+                    <option value="none">无表头</option>
+                  </select>
+                </label>
+                <label>小数格式
+                  <select id="importDecimal">
+                    <option value="auto">自动</option>
+                    <option value="dot">小数点 .</option>
+                    <option value="comma">小数逗号 ,</option>
+                  </select>
+                </label>
+                <label>注释前缀
+                  <input id="importCommentPrefix" type="text" value="auto" placeholder="auto / # / % / //">
+                </label>
+                <label id="importLayoutWrap">数据排列
+                  <select id="importLayout">
+                    <option value="auto">自动识别</option>
+                    <option value="single">单组 V / I</option>
+                    <option value="sharedX">共享一个 V + 多个 I</option>
+                    <option value="paired">V1/I1, V2/I2… 成对列</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="importGenericImporterNote" class="import-section import-generic-importer-note hidden"></div>
+
+              <div id="importFlexibleMappingSection" class="import-section">
+                <div class="import-section-head">
+                  <strong>列映射</strong>
+                  <span id="importAutoDiagnosis" class="import-diagnosis"></span>
+                </div>
+                <div class="import-mapping-grid">
+                  <label>X / V 列
+                    <select id="importXCol"></select>
+                  </label>
+                  <label id="importYSingleWrap">Y / I 列
+                    <select id="importYCol"></select>
+                  </label>
+                  <label id="importPairStartWrap" class="hidden">成对起始列
+                    <select id="importPairStart"></select>
+                  </label>
+                  <label>V 单位
+                    <select id="importVoltageUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="V">V</option>
+                      <option value="mV">mV</option>
+                      <option value="uV">µV</option>
+                    </select>
+                  </label>
+                  <label>I 单位
+                    <select id="importCurrentUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="A">A</option>
+                      <option value="mA">mA</option>
+                      <option value="uA">µA</option>
+                      <option value="nA">nA</option>
+                      <option value="pA">pA</option>
+                    </select>
+                  </label>
+                  <label>Vg 来源
+                    <select id="importVgMode">
+                      <option value="auto">自动：优先列标题</option>
+                      <option value="header">列标题</option>
+                      <option value="filename">文件名 / 文件头</option>
+                      <option value="manual">手动</option>
+                    </select>
+                  </label>
+                  <label id="importManualVgWrap" class="hidden">手动 Vg (V)
+                    <input id="importManualVg" type="number" step="any">
+                  </label>
+                </div>
+
+                <div id="importColumnFieldFilter" class="import-column-field-filter hidden">
+                  <div class="import-column-field-copy"><strong>信号列</strong><span>按实际列标题选择要导入的 Y / 信号列；X 列始终保留。</span></div>
+                  <select id="importColumnFieldSelect">
+                    <option value="">全部 / 自动</option>
+                  </select>
+                </div>
+
+                <div id="importYMultiWrap" class="import-y-multi hidden">
+                  <div class="import-y-multi-head">
+                    <span>选择要导入的 I 列</span>
+                    <button id="importYAllBtn">全部数值列</button>
+                    <button id="importYNoneBtn">清空</button>
+                  </div>
+                  <div id="importYColumns" class="import-y-columns"></div>
+                </div>
+
+                <div class="import-series-vg">
+                  <div class="import-y-multi-head">
+                    <span>每组数据的 Vg</span>
+                    <span class="import-series-vg-hint">留空 = 按当前 Vg 来源自动识别；填写后优先使用该值</span>
+                  </div>
+                  <div id="importSeriesVgRows" class="import-series-vg-rows"></div>
+                </div>
+              </div>
+
+              <div class="import-section import-preview-section">
+                <div class="import-section-head">
+                  <strong>解析预览</strong>
+                  <div class="import-preview-actions">
+                    <button id="importResetAutoBtn">恢复自动识别</button>
+                    <button id="importApplyAllBtn">当前设置应用到全部文件</button>
+                  </div>
+                </div>
+                <div id="importPreviewSummary" class="import-preview-summary"></div>
+                <div class="import-preview-table-wrap">
+                  <table id="importPreviewTable" class="import-preview-table"></table>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+
+        <div class="import-workbench-footer">
+          <div id="importGlobalSummary" class="import-global-summary">尚未选择文件</div>
+          <div class="import-footer-actions dkds-separated-action-group">
+            <button id="importCancelBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">取消</button>
+            <button id="importCommitBtn" class="dkds-action-button primary" type="button">导入勾选文件</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="projectSaveChoiceDialog" class="project-save-choice-backdrop dkds-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="projectSaveChoiceTitle" aria-describedby="projectSaveChoiceHint">
+      <section class="project-save-choice-card dkds-dialog dkds-material-role-elevated">
+        <header class="dkds-dialog-header project-save-choice-header">
+          <div class="project-save-choice-icon dkds-dialog-icon" aria-hidden="true">▣</div>
+          <div class="dkds-dialog-title-wrap">
+            <strong id="projectSaveChoiceTitle" class="dkds-dialog-title">保存项目</strong>
+            <span class="dkds-dialog-subtitle">选择项目文件的保存方式</span>
+          </div>
+          <button id="projectSaveCloseBtn" class="dkds-dialog-close dkds-panel-close-button dkds-action-button" type="button" aria-label="关闭保存项目面板"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="quiet" data-dkds-component-variant-owner="core-component">×</button>
+        </header>
+        <div class="dkds-dialog-body project-save-choice-body" data-dkds-material-content="true">
+          <div class="project-save-choice-summary dkds-note">
+            <div class="project-save-choice-summary-head">
+              <span class="project-save-choice-label">当前项目</span>
+              <span id="projectSaveChoiceProjectName" class="dkds-chip"
+                data-dkds-component-identity="chip" data-dkds-component-identity-owner="core-component">未命名项目</span>
+            </div>
+            <p id="projectSaveChoiceHint" class="dkds-dialog-message">请选择保存方式。</p>
+          </div>
+          <div class="project-save-choice-shortcuts dkds-meta" aria-hidden="true">
+            <span><kbd>Enter</kbd> 保存当前</span>
+            <span><kbd>Esc</kbd> 取消</span>
+          </div>
+        </div>
+        <footer class="project-save-choice-actions dkds-dialog-footer" data-dkds-action-density="regular">
+          <button id="projectSaveCurrentBtn" class="dkds-dialog-action dkds-action-button primary" type="button" data-dkds-native-save="project" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="primary" data-dkds-component-variant-owner="core-component">保存当前</button>
+          <button id="projectSaveAsBtn" class="dkds-dialog-action dkds-action-button" type="button" data-dkds-native-save="project" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="secondary" data-dkds-component-variant-owner="core-component">另存为</button>
+          <button id="projectSaveCancelBtn" class="dkds-dialog-action dkds-action-button danger-soft" type="button" data-dkds-action-layout="standalone"
+            data-dkds-component-identity="toolbarAction" data-dkds-component-identity-owner="core-component"
+            data-dkds-component-variant="destructive" data-dkds-component-variant-owner="core-component">取消</button>
+        </footer>
+      </section>
+    </div>
+
+    <div id="lanWebPanel" class="floating-panel lan-web-panel hidden dkds-material-role-elevated">
+      <div class="floating-header drag-handle">
+        <div class="lan-web-panel-title">
+          <span>局域网网页版</span>
+          <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
+        </div>
+        <div class="panel-header-actions dkds-integrated-action-group">
+          <button id="lanWebMinimizeBtn" type="button" data-dkds-tooltip="隐藏到状态栏" aria-label="隐藏到状态栏"><span class="lan-web-minimize-glyph" aria-hidden="true"></span></button>
+          <button class="panel-close dkds-panel-close-button" data-target="lanWebPanel" aria-label="隐藏面板，网页版服务继续运行">×</button>
+        </div>
+      </div>
+
+      <div class="floating-body lan-web-body" data-dkds-material-content="true">
+        <div class="lan-web-grid">
+
+          <section class="lan-web-section lan-web-control-section">
+            <div class="lan-web-status-card">
+              <div class="lan-web-status-row">
+                <span id="lanWebStatusDot" class="lan-web-dot"></span>
+                <div>
+                  <strong id="lanWebStatusTitle">未启动</strong>
+                  <div id="lanWebStatusText" class="lan-web-status-text">
+                    启动后，同一局域网中的设备可直接用浏览器运行完整分析界面。
+                  </div>
+                </div>
+              </div>
+              <div class="lan-web-session-count">
+                已配对会话 <strong id="lanWebClientCount">0</strong>
+              </div>
+            </div>
+
+            <div class="lan-web-settings-card">
+              <div class="lan-web-section-title">服务设置</div>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>开启局域网网页版</strong>
+                  <small>保存设置后，下次启动软件继续保持</small>
+                </span>
+                <input id="lanWebEnabled" type="checkbox">
+              </label>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>免 Key 访问</strong>
+                  <small>仅建议在可信实验室 / 办公室局域网中使用</small>
+                </span>
+                <input id="lanWebNoKey" type="checkbox">
+              </label>
+
+              <div class="lan-web-port-row">
+                <div>
+                  <strong>服务端口</strong>
+                  <small>修改端口后会自动重启网页版服务</small>
+                </div>
+                <div class="lan-web-port-control">
+                  <input id="lanWebPort" type="number" min="1024" max="65535" value="45910">
+                  <div class="lan-web-port-stepper" aria-label="调整服务端口">
+                    <button id="lanWebPortUp" class="dkds-control-hit-region" type="button" aria-label="增加服务端口"><span aria-hidden="true"></span></button>
+                    <button id="lanWebPortDown" class="dkds-control-hit-region" type="button" aria-label="减少服务端口"><span aria-hidden="true"></span></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lan-web-key-card">
+                <div>
+                  <span>当前 4 位配对 Key</span>
+                  <small id="lanWebKeyHint">扫码二维码可自动携带 Key；手动输入地址时使用此 Key。</small>
+                </div>
+                <strong id="lanWebKey">----</strong>
+                <button id="lanWebNewKeyBtn">换一个 Key</button>
+              </div>
+
+              <div class="lan-web-actions">
+                <button id="lanWebApplyBtn" class="primary">应用设置</button>
+                <button id="lanWebOpenBtn" class="hidden">在浏览器打开</button>
+                <button id="lanWebStopBtn">停止服务</button>
+              </div>
+            </div>
+
+            <div class="lan-web-address-card">
+              <div class="lan-web-section-title-row">
+                <div>
+                  <div class="lan-web-section-title">可用局域网地址</div>
+                  <small>多网卡时选择与你同学处于同一网络的地址。</small>
+                </div>
+                <button id="lanWebCopyBaseUrlBtn" data-dkds-native-copy="clipboard">复制地址</button>
+              </div>
+              <div id="lanWebUrls" class="lan-web-urls" role="listbox" aria-label="可用局域网地址">
+                <div class="lan-web-empty-address">服务启动后显示</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="lan-web-section lan-web-share-section">
+            <div class="lan-web-share-heading">
+              <div>
+                <div class="lan-web-section-title">扫码连接</div>
+                <small id="lanWebQrHint">启动服务后自动生成二维码。</small>
+              </div>
+              <span id="lanWebQrModeBadge" class="lan-web-mode-badge">等待服务</span>
+            </div>
+
+            <div class="lan-web-qr-frame">
+              <div id="lanWebQrPlaceholder" class="lan-web-qr-placeholder">
+                <span>QR</span>
+                <small>服务启动后显示</small>
+              </div>
+              <img id="lanWebQrImage" class="lan-web-qr-image hidden" alt="DK Data Studio LAN web QR code">
+            </div>
+
+            <div class="lan-web-share-url-card">
+              <div class="lan-web-share-url-label">当前连接地址</div>
+              <code id="lanWebSelectedUrl">—</code>
+            </div>
+
+            <div class="lan-web-share-actions">
+              <button id="lanWebCopyShareLinkBtn" class="primary" data-dkds-native-copy="clipboard">复制扫码链接</button>
+              <button id="lanWebRefreshQrBtn">刷新二维码</button>
+            </div>
+
+            <div class="lan-web-share-note">
+              <strong>扫码逻辑</strong>
+              <span id="lanWebQrSecurityText">
+                启用 Key 时，二维码会把本次 4 位 Key 一并带入链接，扫码后自动配对；Key 更新后旧二维码立即失效。
+              </span>
+            </div>
+
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="updatePanel" class="floating-panel update-panel dkds-material-role-elevated hidden">
+      <div class="floating-header drag-handle">
+        <span>局域网热更新</span>
+        <div class="panel-header-actions dkds-integrated-action-group">
+          <button class="panel-close dkds-panel-close-button" data-target="updatePanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body update-panel-body">
+        <div class="update-status-card">
+          <div class="update-status-line">
+            <span id="updatePhaseDot" class="update-phase-dot idle"></span>
+            <strong id="updateStatusTitle">等待更新服务</strong>
+          </div>
+          <div id="updateStatusMessage" class="update-status-message">正在读取更新状态…</div>
+          <div class="update-progress-wrap">
+            <div class="update-progress-track"><div id="updateProgressBar" class="update-progress-bar"></div></div>
+            <span id="updateProgressText">0%</span>
+          </div>
+        </div>
+
+        <div class="update-info-grid">
+          <div>当前版本</div><div id="updateCurrentVersion">—</div>
+          <div>可用版本</div><div id="updateAvailableVersion">—</div>
+          <div>服务器</div><div id="updateServerDisplay">尚未发现</div>
+          <div>完整性</div><div id="updateIntegrityState">SHA512 下载校验</div>
+          <div>模式</div><div id="updateRuntimeMode">—</div>
+          <div>上次检查</div><div id="updateLastCheck">—</div>
+        </div>
+
+        <div class="update-actions">
+          <button id="updateCheckNowBtn" class="primary">立即检查</button>
+          <button id="updateDownloadBtn" class="hidden">开始下载</button>
+          <button id="updateInstallBtn" class="primary hidden">保存工程并重启安装</button>
+        </div>
+
+        <details class="update-settings-details">
+          <summary>服务器设置</summary>
+          <div class="update-settings-body">
+            <label>手动服务器地址
+              <input id="updateServerUrlInput" type="text" placeholder="留空 = 自动发现，例如 http://192.168.1.10:45880">
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDiscover" type="checkbox" checked>
+              自动发现局域网服务器（multicast）
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDownload" type="checkbox" checked>
+              验证通过后自动下载
+            </label>
+            <button id="updateSaveSettingsBtn">保存更新设置</button>
+          </div>
+        </details>
+
+        <div class="update-security-note">
+          当前采用“可信局域网简化模式”：无需任何密钥。客户端从你指定/自动发现的局域网服务器读取
+          latest.yml，并由 electron-updater 使用其中的 SHA512 校验下载安装包完整性。
+          请只连接你信任的实验室或办公室局域网服务器。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../node_modules/d3/dist/d3.min.js"></script>
+  <script src="core/project/format.js"></script>
+  <script src="project-importers/compatibility-gateway.js"></script>
+  <script src="core/host/mobile-plugin-package.js"></script>
+  <script src="core/host/native-user-intent.js"></script>
+  <script src="web-bridge.js"></script>
+  <script src="science/common.js"></script>
+  <script src="science/presets.js"></script>
+  <script src="science/import.js"></script>
+  <script src="science/peaks.js"></script>
+  <script src="science/pulse.js"></script>
+  <script src="science/ter.js"></script>
+  <script src="science/identity.js"></script>
+  <script src="science/physics.js"></script>
+  <script src="science/gate.js"></script>
+  <script src="core/scientific/unit-runtime.js"></script>
+  <script src="core/scientific/viewport-link-runtime.js"></script>
+  <script src="core/scientific/legend-link-runtime.js"></script>
+  <script src="core/data/model.js"></script>
+  <script src="core/project/history.js"></script>
+  <script src="core/data/entity-runtime.js"></script>
+  <script src="core/data/formula-engine.js"></script>
+  <script src="core/data/parameter-schema.js"></script>
+  <script src="core/workflow/engine.js"></script>
+  <script src="core/host/platform.js"></script>
+  <script src="core/host/native-touch-drag.js"></script>
+  <script src="core/data/state-store.js"></script>
+  <script src="core/host/io-runtime.js"></script>
+  <script src="core/scientific/plot-presentation-runtime.js"></script>
+  <script src="core/scientific/display-runtime.js"></script>
+  <script src="core/scientific/heatmap-canvas-runtime.js"></script>
+  <script src="core/scientific/heatmap-selection-overlay-runtime.js"></script>
+  <script src="core/scientific/d3-chart-renderer.js"></script>
+  <script src="core/scientific/chart-runtime.js"></script>
+  <script src="core/performance/runtime.js"></script>
+  <script src="core/execution/task-runtime.js"></script>
+  <script src="core/scientific/plot-runtime.js"></script>
+  <script src="core/ui/component-runtime.js"></script>
+  <script src="core/data/flow-runtime.js"></script>
+  <script src="core/scientific/reactive-runtime.js"></script>
+  <script src="core/scientific/pipeline-runtime.js"></script>
+  <script src="core/scientific/transform-runtime.js"></script>
+  <script src="core/scientific/algorithm-runtime.js"></script>
+  <script src="core/services/service-runtime.js"></script>
+  <script src="core/plugins/module-runtime.js"></script>
+    <script src="core/plugins/contract-runtime.js"></script>
+  <script src="core/host/recipe-runtime.js"></script>
+  <script src="core/recipes/shell-navigation.js"></script>
+  <script src="core/recipes/workspace-safeguards.js"></script>
+  <script src="generated/runtime/ui-infrastructure.js"></script>
+  <script src="core/host/capability-runtime.js"></script>
+  <script src="generated/runtime/plugin-kernel.js"></script>
+  <script src="core/host/mobile-host-runtime.js"></script>
+  <script src="core/host/optional-runtime-loader.js"></script>
+  <script src="core/host/studio-kernel-runtime.js"></script>
+  <script src="core/services/connectivity-runtime.js"></script>
+  <script src="core/services/mcp-runtime.js"></script>
+  <script src="core/plugins/devtools.js"></script>
+  <script src="core/plugins/manager-ui.js"></script>
+  <script src="generated/plugin-index.js"></script>
+  <script src="generated/runtime/app.js"></script>
+</body>
+</html>

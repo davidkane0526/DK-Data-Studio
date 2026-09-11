@@ -1,0 +1,39 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+
+const touch=read('src/styles/platform/touch.css');
+const nativeShell=read('src/styles/platform/native-client-shell.css');
+const schema=read('src/styles/structure/schema-and-plugin-ui.css');
+const dialogs=read('src/styles/presentation/dialogs.css');
+assert(!touch.includes('.plugin-manager-stat{')&&!touch.includes('.plugin-manager-toolbar-card{'),'Plugin Manager desktop layout must not return to platform/touch.css.');
+assert(!touch.includes('.plugin-switch-track')&&nativeShell.includes('.dkds-pointer-coarse .plugin-switch-track'),'Shared touch CSS must stay host-neutral while the native-client platform owner retains coarse-pointer Plugin Manager deltas.');
+assert(schema.includes('Core Plugin Manager layout')&&schema.includes('.plugin-manager-stat{')&&schema.includes('.plugin-manager-toolbar-card{'),'Plugin Manager common layout must belong to the structure owner.');
+const semantic=read('src/core/theme/semantic-registry.js');
+const appearance=read('src/styles/theme/component-appearance.css');
+assert(semantic.includes("id:'menuItem'")&&semantic.includes('.command-menu>button'),'Command-menu rows must resolve as canonical MenuItem components.');
+assert(semantic.includes("component==='chip'?'danger':'destructive'")&&appearance.includes('[data-dkds-component-identity="menuItem"][data-dkds-component-variant="destructive"]'),'Danger menu rows must resolve through the canonical destructive MenuItem variant.');
+assert(!/\.command-menu>button[^\{]*\{[^}]*(?:background|border-color|box-shadow|color)\s*:/s.test(dialogs),'Presentation CSS must not repaint command-menu row semantics.');
+
+const split=read('src/core/ui/modules/layout/workspace.js');
+for(const token of ['dkds-split-drag-active','notify:false','reason:\'split-end\''])assert(split.includes(token),`Split drag coalescing missing ${token}`);
+const plotView=read('src/core/ui/modules/plot-view/chart.js');
+const curve=read('src/core/ui/modules/scientific-curve/model.js');
+const analysis=read('src/core/ui/modules/workbench/analysis.js');
+const portable=read('src/core/ui/modules/layout/portable-view.js');
+for(const [name,text] of [['PlotView',plotView],['ScientificCurve',curve],['AnalysisWorkbench',analysis],['PortableView',portable]])assert(text.includes('dkds-split-drag-active'),`${name} ResizeObserver must stay quiet during split drag.`);
+assert(portable.includes('DKDSThemeMaterialRenderer?.assignSemanticRoles?.(this.wrapper)'),'Portable placement must resync material role after docking/floating class changes.');
+
+const group=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+const groupCss=read('src/plugins/resonance-workbench/plugin.css');
+assert(plotView.includes('applyContentGeometry()')&&plotView.includes('contentAspectRatio'),'Core PlotView must own responsive scientific content geometry.');
+assert(group.includes('contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226'),'Resonance group charts must consume the Core landscape geometry contract.');
+assert(!group.includes('--reswin-group-height')&&!groupCss.includes('--reswin-group-height'),'Resonance group layout must not restore a plugin-local height solver.');
+assert(group.includes('focusPolicy:{inactiveOpacity:.28,pointInactiveOpacity:.34,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must keep selection linkage explicit without erasing dark-mode context.');
+
+const theme=read('src/core/theme/runtime.js');
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+assert(!theme.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtime must not own the Thin Glass profile.');
+for(const token of ["surfaceSidebar:","surfaceElevated:","controlBorder:","glassEdge:","text:'#172033'"])assert(thinTheme.includes(token),`Thin Glass Theme hierarchy contract missing ${token}`);
+console.log('v3.61.108 visual/layout ownership regression passed.');

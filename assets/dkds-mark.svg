@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DK Data Studio">
+  <rect x="34" y="34" width="444" height="444" rx="96" fill="#f7faff" stroke="#123a8c" stroke-width="16"/>
+  <line x1="176" y1="82" x2="176" y2="430" stroke="#d8e9f8" stroke-width="9"/>
+  <line x1="336" y1="82" x2="336" y2="430" stroke="#d8e9f8" stroke-width="9"/>
+  <line x1="82" y1="320" x2="430" y2="320" stroke="#d8e9f8" stroke-width="9"/>
+  <path d="M88 374C172 374 206 358 234 288C251 245 264 176 291 176C318 176 331 245 348 288C376 358 410 374 424 374" fill="none" stroke="#155eef" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

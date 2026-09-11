@@ -1,0 +1,41 @@
+{
+  "id": "com.example.raw-prominence-detector",
+  "name": "Raw Prominence Detector Example",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "pluginType": "algorithm",
+  "entry": "plugin.js",
+  "styles": [
+    "style.css"
+  ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "shared"
+    }
+  },
+  "enabled": false,
+  "order": 500,
+  "description": "External versioned peak-detector SDK example. Not intended to outperform the built-in robust detector.",
+  "capabilities": [
+    "analysis.algorithm",
+    "analysis.peak-detector"
+  ],
+  "requiresCore": [
+    "analysis.algorithms"
+  ],
+  "algorithmProvider": true,
+  "algorithmCategories": [
+    "peak-detector"
+  ],
+  "algorithmProvides": [
+    {
+      "category": "peak-detector",
+      "id": "example-raw-prominence-v1",
+      "version": "1.0.0",
+      "title": "Example · Raw Prominence"
+    }
+  ]
+}

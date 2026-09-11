@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const {spawnSync}=require('child_process');
+const root=path.resolve(__dirname,'..');
+const source=fs.readFileSync(path.join(root,'scripts/check-project.js'),'utf8');
+assert(source.includes("require('vm')")&&source.includes('new vm.Script'),'Project syntax gate must parse JS in-process.');
+assert(!/execFile|child_process/.test(source),'Project syntax gate must not restore one Node process per JavaScript file.');
+const started=process.hrtime.bigint();
+const run=spawnSync(process.execPath,[path.join(root,'scripts/check-project.js')],{cwd:root,encoding:'utf8',timeout:15000});
+const elapsedMs=Number(process.hrtime.bigint()-started)/1e6;
+assert.equal(run.status,0,run.stderr||run.stdout||'check-project should pass.');
+assert(elapsedMs<5000,`In-process project syntax gate should stay lightweight; observed ${elapsedMs.toFixed(1)} ms.`);
+console.log(`v3.68.0 check-project in-process syntax regression passed (${elapsedMs.toFixed(1)} ms).`);

@@ -1,0 +1,10 @@
+/* Core-owned recipe geometry. Runtime recipe JS owns behavior only. */
+      /* The import file list is the scroll region. The action row must never be
+         pushed below the visible workbench when many files are selected. */
+
+      .import-duplicate-warning{
+        flex:0 0 auto;margin:0;padding:7px 9px;font-size:var(--plugin-font-meta,11px);line-height:1.45;
+      }
+      .import-duplicate-badge{
+        flex:0 0 auto;margin-left:auto;padding:2px 5px;font-size:var(--plugin-font-meta,11px);font-weight:700;
+      }

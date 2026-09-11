@@ -1,0 +1,109 @@
+const fs=require('fs');
+const path=require('path');
+const {readCoreCss}=require('./css-source');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const css=readCoreCss(root);
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const app=read('src/generated/runtime/app.js');
+const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+const resonanceSelectionFeature=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
+const pulse=read('src/plugins/pulse-analysis/analysis-service.js');
+const pulseTask=read('src/plugins/pulse-analysis/pulse-analysis-task.js');
+
+// PRIMARY is a viewport contract, not a plugin-specific overflow patch.
+assert(ui.includes("['contained','auto','safe'].includes(String(spec.primaryScroll||'safe'))")&&ui.includes("this.setPrimaryScrollMode(this.primaryScrollMode)"),'PluginWorkspace must expose safe/auto/contained PRIMARY scrolling, defaulting new workspaces to Host-safe recovery.');
+assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto'),'Auto PRIMARY workspaces must own a real scroll viewport.');
+assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center')&&/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow:hidden[^}]*min-height:0[^}]*align-items:stretch/.test(css),'Contained and safe scientific canvases must remain bounded interaction surfaces.');
+assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host'),'Safe PRIMARY must expose a Host-owned fallback scroll viewport for third-party content.');
+for(const folder of ['ter-analysis','pulse-analysis']){
+  const views=read(`src/plugins/${folder}/shared-views.js`);
+  assert(views.includes("primaryScroll:'auto'"),`${folder} must use the scrollable PRIMARY contract.`);
+}
+const dataCenterMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
+assert(dataCenterMobilePresentation.includes("primaryScroll:'auto'"),'Data Center Mobile platform presentation must use the scrollable PRIMARY contract while Desktop keeps its established static page.');
+assert(resonanceViews.includes("primaryScroll:'contained'"),'Resonance main plot must explicitly use the contained scientific canvas contract.');
+
+// SUB is a full workspace page, not another scientific-canvas dock target.
+assert(ui.includes('main.replaceChildren(frame,sub)')&&ui.includes("sub.classList.add('dkds-plugin-sub-page-host')"),'SUB host must live outside the scientific-canvas frame.');
+assert(ui.includes("openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden')"),'Opening a SUB must replace/hide the scientific canvas rather than squeeze into it.');
+assert(css.includes('.dkds-plugin-workspace .dkds-plugin-sub-page-host{flex:1 1 0%;height:0;max-height:100%'),'SUB pages must fill and independently scroll inside the workspace page.');
+
+// Floating has two intentionally different semantics.
+assert(ui.includes("['home','sticky','left','right','bottom','main','float','global']"),'Core placement grammar must distinguish canvas float and global float.');
+assert(ui.includes("placement==='global'?(this.zone('global')"),'Global float must use the outer workspace overlay.');
+assert(ui.includes("if(mode==='float'&&this.spec.snap!==false)"),'Only canvas-managed float may edge-snap into scientific docks.');
+assert(css.includes('.dkds-analysis-overlay>.dkds-portable-view.is-global-floating'),'Whole-workspace float must have a dedicated overlay visual contract.');
+for(const folder of ['ter-analysis','pulse-analysis','data-center']){
+  const feature=read(`src/plugins/${folder}/feature-runtime.js`);
+  assert(feature.includes("'global'"),`${folder} portable plots must offer whole-workspace free float.`);
+}
+assert(resonanceGroupFeature.includes("placements:['home','left','right','bottom','float','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
+
+// Dock locations are stacks, not absolute piles.
+assert(css.includes('A dock slot is a stack, never a pile'),'Core must document same-location dock ordering.');
+assert(css.includes('flex-flow:column nowrap')&&css.includes('.dkds-plugin-canvas-bottom>.dkds-portable-view'),'Bottom dock must flow multiple panels sequentially.');
+assert(ui.includes('syncCanvasRegions()'),'Dock geometry must be recomputed from live portable contents.');
+
+// PRIME close/minimize is a generic Core lifecycle.
+assert(ui.includes('bindChromeAction(this.spec.closeSelector')&&ui.includes('bindChromeAction(this.spec.collapseSelector'),'PortableView must own generic close/collapse chrome events.');
+assert(ui.includes('setCollapsed(value')&&ui.includes("savedState.collapsed===true"),'PortableView collapse state must be functional and persistent.');
+assert(resonanceViews.includes("closeSelector:'[data-respar-close=\"inspect\"]'")&&resonanceViews.includes("closeSelector:'[data-respar-close=\"group\"]'"),'Resonance inspector/group must consume Core close lifecycle.');
+
+// Undo/cancel is a true system edit contract routed to the active plugin.
+assert(kernel.includes("registerTypedContribution(pluginId,'ui.editActions'")&&kernel.includes('invokeEditAction(action,payload={})'),'Plugin kernel must own active-plugin edit contributions.');
+assert(app.includes('const systemUndo=')&&app.includes('const systemDeselect=')&&app.includes('runSystemHistory')&&app.includes('historyCandidate(workspace')&&app.includes('historyCandidate(project'),'Global edit controls must coordinate active-workspace and project history chronologically rather than blindly prioritizing one scope.');
+assert(resonanceViews.includes('ctx.ui.edit?.register?.')&&!resonanceViews.includes("id:'undo',label:'↶'")&&!resonanceViews.includes("id:'deselect',label:'取消'"),'Resonance must consume system edit commands instead of duplicating them among PRIME/SUB actions.');
+
+// Group plots are live reusable chart surfaces rather than snapshot/recreate UI.
+assert(resonanceGroupFeature.includes('const groupCards=new Map()')&&!resonanceGroupFeature.includes('const groupCharts=new Map()'),'Group cards stay stable while renderer ownership belongs to Core ScientificPlot, not a plugin-local groupCharts registry.');
+assert(resonanceGroupFeature.includes('groupDataFingerprint()')&&resonanceGroupFeature.includes('nextKey===groupRenderKey'),'Group data refresh must avoid redundant renderer work when only selection emphasis changes.');
+assert(resonanceGroupFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceGroupFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
+assert(resonanceGroupFeature.includes('visibleSweepIds().map(String)')&&resonanceGroupFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
+assert(resonanceSelectionFeature.includes('if(includeGroup)actions.updateGroupContext()')&&!resonanceSelectionFeature.includes('updateGroupHighlights()'),'Selection runtime must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
+assert(ui.includes("this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')")&&ui.includes('window.DKDSCharts?.resize?.(plot)'),'PortableView resize must resize renderer-neutral scientific charts by default.');
+
+// Pulse analysis must be repeatable and must not destroy the last valid result on a failed rerun.
+assert(pulseTask.includes("A.estimatePulseCycleSamples?.")&&pulseTask.includes('options.__autoEstimatedCycle=true'),'Pulse Task Runner worker must honor the UI-promised automatic cycle estimate.');
+assert(pulse.includes('const previousResult=item?.result||null')&&pulse.includes('item.result=previousResult'),'A failed pulse rerun must preserve the last valid result.');
+assert(pulseTask.includes('cycleSamples:0')&&pulseTask.includes('delete fallback.__autoEstimatedCycle'),'Ambiguous estimated-cycle analysis must fall back to the mature auto parser inside the Core-managed task worker.');
+assert(pulse.includes('重算失败，保留上次结果'),'Pulse UI must distinguish rerun failure from loss of a valid result.');
+
+// Internal implementation notes must not leak into product UI.
+for(const phrase of ['GRS 工作台交互 · SUPER / TOP 共用同一渲染器','SUPER / TOP 共用同一渲染器']){
+  assert(!resonanceViews.includes(phrase),`Product UI leaked implementation note: ${phrase}`);
+}
+
+const topRuntime=read('src/plugin-window/runtime.js');
+assert(topRuntime.includes('runWindowHistory') && topRuntime.includes("edit?.supports?.('deselect')"), 'TOP window routes Ctrl+Z/Y through the chronological History Coordinator and Escape through the active-plugin Edit Contract');
+
+
+// Restoring a portable view must return to its stable original slot, not append
+// after siblings that happened to remain in the home container.
+assert(ui.includes('document.createComment(`dkds-portable-home:')&&ui.includes('anchor.parentNode.insertBefore(this.wrapper,anchor.nextSibling)'),'PortableView home placement must use a stable anchor so group subplots return to their original slot.');
+
+// Resonance group layout selector is a real Core ContextMenu action, not dead chrome.
+assert(resonanceViews.includes('data-respar-group-cols-menu-host')&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`"),'Resonance group column control must use the Core ActionGroup menu and expose auto/1-6 columns.');
+
+// Export remains contextual after moving into the unified file-command group: each
+// TOP-capable plugin contributes semantic export targets and the shell keeps one trigger.
+const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
+const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
+assert(kernel.includes('data-plugin-export-context')&&kernel.includes('active?.contextLabel||active?.label')&&kernel.includes("trigger.textContent='导出'"),'Contextual export must identify the active plugin workspace while keeping the shortened unified file-command trigger.');
+assert(resonanceViews.includes('共振 I–V 主图 · SVG')&&!resonanceViews.includes("label:'主图 SVG'"),'Resonance exports must name the actual I–V plot rather than an ambiguous main plot.');
+assert(pulseFeature.includes('当前文件 · 原始波形数据 CSV')&&pulseFeature.includes('当前可见结果 · 读取电流图 SVG')&&pulseFeature.includes("activity:'pulse'"),'Pulse must dynamically register semantically named system export items.');
+assert(terFeature.includes('TER 全组合热图 · Long CSV')&&terFeature.includes('R–V 联动图 · SVG')&&terFeature.includes("activity:'ter'"),'TER must dynamically register semantically named system export items.');
+assert(dataCenterFeature.includes('当前数据表 · CSV')&&dataCenterFeature.includes('数据中心图形预览 · PNG')&&dataCenterFeature.includes("activity:'data-center'"),'Data Center must dynamically register its own system export items.');
+
+
+assert(ui.includes('raiseLayer()')&&ui.includes("global?'globalSeq':'canvasSeq'"),'PortableView must maintain Core-owned canvas/global floating layers and raise active floating views.');
+assert(css.includes('--dkds-layer-global-float:2400')&&css.includes('--dkds-layer-canvas-float:1400'),'Whole-interface floats must always live above scientific-canvas floats/docks.');
+assert(ui.includes("collapseButton.textContent='−'")&&ui.includes("this.spec.expandIcon||'+'"),'Portable collapse chrome must use the shared icon-only minus/plus contract.');
+assert(ui.includes('bottomCollapsedOnly')&&css.includes('canvas-bottom-collapsed-only'),'Dock geometry must collapse to title-bar height when every bottom view is minimized.');
+console.log('v3.40 workspace ordering/export semantics checks passed.');

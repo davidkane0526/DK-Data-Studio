@@ -1,0 +1,44 @@
+{
+  "id": "example.plugin",
+  "name": "Example Plugin",
+  "version": "0.4.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 900,
+  "description": "Core-first Plugin API 1.19 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
+  "capabilities": [
+    "ui.page",
+    "ui.interaction",
+    "ui.interaction-behavior",
+    "data.types",
+    "state.store",
+    "workflow.processor",
+    "ui.plugin-workspace"
+  ],
+  "requiresCore": [
+    "status",
+    "capabilities",
+    "state",
+    "data.types",
+    "data.model",
+    "data.formula",
+    "workflow",
+    "ui.dom",
+    "ui.components",
+    "ui.workspace",
+    "ui.actions",
+    "ui.interaction",
+    "ui.interaction-behavior",
+    "ui.pages"
+  ],
+  "pluginType": "developer",
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  }
+}

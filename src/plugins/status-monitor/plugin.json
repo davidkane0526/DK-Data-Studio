@@ -1,0 +1,40 @@
+{
+  "id": "builtin.status-monitor",
+  "name": "Status Monitor",
+  "version": "1.3.6",
+  "apiVersion": "1.19.0",
+  "requiresCore": [
+    "runtime",
+    "events",
+    "status",
+    "services",
+    "workspace",
+    "ui.dom",
+    "ui.status-bar",
+    "ui.theme"
+  ],
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 7,
+  "description": "Unified bottom status bar for theme selection, runtime memory, DevTools, and LAN web service state.",
+  "capabilities": [
+    "ui.status-bar",
+    "system.runtime-status",
+    "lan.web-status",
+    "ui.theme"
+  ],
+  "pluginType": "foundation",
+  "systemCritical": true,
+  "platformPresentation": {
+    "desktop": {
+      "mode": "adaptive"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "scripts": [
+    "theme-layout.js",
+    "plugin.js"
+  ]
+}

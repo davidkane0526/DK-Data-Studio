@@ -1,0 +1,33 @@
+{
+  "schema": "dkds.phase-c-column-access/1",
+  "appVersion": "3.68.78",
+  "points": 1000000,
+  "rangeLimit": 2048,
+  "samples": 3,
+  "results": {
+    "fullList": {
+      "medianMs": 207.913,
+      "p95Ms": 208.671,
+      "peakHeapMiB": 30.525
+    },
+    "metadataList": {
+      "medianMs": 0.17,
+      "p95Ms": 0.475,
+      "peakHeapMiB": 0.023
+    },
+    "fullColumn": {
+      "medianMs": 185.016,
+      "p95Ms": 193.167,
+      "peakHeapMiB": 7.647
+    },
+    "boundedRange": {
+      "medianMs": 0.23,
+      "p95Ms": 0.449,
+      "peakHeapMiB": 0.103
+    }
+  },
+  "correctness": {
+    "metadataHasNoValues": true,
+    "rangeLength": true
+  }
+}

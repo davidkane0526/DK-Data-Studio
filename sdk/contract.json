@@ -1,0 +1,49 @@
+{
+  "sdkVersion": "1.47.0",
+  "pluginApiVersion": "1.19.0",
+  "packageSchema": 1,
+  "minimumAppVersion": "3.68.103",
+  "manifestSchema": "plugin-manifest.schema.json",
+  "entryGlobal": "DKDSPlugins",
+  "notes": [
+    "SDK 1.47.0 adds explicit PortableView / PRIME sizing: content (default) or fill (bounded dock remainder). Core owns root geometry and plugins own separate content layout. No new interaction channel.",
+    "SDK 1.46.0 formalizes the runtime service releaseActivityWindow(payload) contract for explicit cold teardown of hidden reusable plugin windows. Hiding keeps managed scientific plots warm for fast reopen; releasing closes only hidden child renderers owned by the requesting main window and the next open is a cold start.",
+    "SDK 1.45.0 adds explicit ScientificPlot focus visual ownership: focusPolicy.enabled / controllers.focus.enabled can disable Core generic selection paint while preserving the same InteractionRuntime selection, viewport and legend transport. This is intended for domain views such as TER R–V that must render a richer paired-curve and exact-point selection without competing visual owners.",
+    "SDK 1.44.0 adds Phase E legend visibility linking as a bounded legend channel on the existing Interaction bridge: explicit legendPolicy opt-in, stable artifactId/seriesId targets, compact isolate/restore state, project-scoped transactions, cycle suppression, and no Selection/viewport mutation or legend-specific global event bus.",
+    "SDK 1.43.0 adds Phase E scientific viewport linking as a bounded generic Interaction state channel on the existing single cross-scope bridge: explicit viewportPolicy/axisSemantics, project-scoped transactions, cycle suppression, scientific quantity/unit conversion, per-axis fail-closed compatibility, and no Selection mutation or viewport-specific global event bus.",
+    "SDK 1.42.0 adds Phase E heatmap-cell ↔ source-scan reference selection through ScientificPlot scalar fields: Y-aligned sourceScans, lazy cell-to-source resolution, bounded row overlays, and explicit series targeting for source-scan views without per-cell Entity allocation or a second Selection bus.",
+    "SDK 1.41.0 adds Phase E table↔curve reference selection through existing TableSurface/ScientificPlot/ScientificCurveSurface and InteractionRuntime: source-row projection, exact point identity, no payload copies, and no second Selection event path.",
+    "SDK 1.40.0 adds the Phase E scientific dimension/unit compatibility contract through the single Core Scientific Units owner: semantic dimensions, fail-closed unknown units, explicit SI/compound/affine conversion, Artifact axis metadata, and InteractionRuntime delegation without a second event channel.",
+    "SDK 1.39.0 adds Phase E interaction transactions on the existing Selection path: project-scoped link groups, explicit scope/runtime origin metadata, bounded per-runtime transaction deduplication, and remote Selection application that never rebroadcasts the same transaction.",
+    "SDK 1.38.0 formalizes Phase E reference-only selection: stable artifactId/seriesId/rowId references, artifactRevision as a snapshot condition rather than identity, bounded source-referenced ranges, and ctx.ui.selection.refs on the existing Entity/Selection/Interaction Runtime path without a second global event bus.",
+    "SDK 1.37.0 formalizes validated domain commands through ctx.commands: UI, scripts and MCP share one execution path with bounded history, input Artifact revision/fingerprint capture, exact algorithm/provider identity, parameters, status/output references and opt-in revision-checked replay.",
+    "SDK 1.47.0 is current-contract-only: packages declare exactly Plugin API 1.19.0 and the current manifest schema; the runtime has one package/API path and one host presentation contract.",
+    "SDK 1.36.0 adds optional createStreamParser() importer sessions. Core owns tokenized 256 KiB file reads, host-specific in-flight bounds, decoding, line framing, cancellation and importer backpressure.",
+    "SDK 1.35.0 adds the bounded Core Task Runner through ctx.tasks and manifest-declared task workers. Core owns concurrency, cancellation and latest-generation stale publication protection; plugins must not create private Worker pools.",
+    "DataTable columns expose Store-local bufferRevision/columnRevision stamps. Trusted transactColumn writes advance only the changed column; unrestricted full-Artifact writes conservatively invalidate all columns without payload-wide diff scans.",
+    "Artifact Store exposes metadata-only Artifact/column enumeration and explicit bounded readColumnRange() snapshots capped at 65536 values; default get/list remains unchanged.",
+    "Artifact Store exposes Store-owned immutable Column Buffer snapshots and synchronous fixed-length transactions with dtype, ownership, optimistic revision and rollback validation; default get/list remains unchanged.",
+    "Artifact Store exposes typed artifactRevision(id), revision(kind) and fingerprint(id) identities for Store-local, aggregate and persistence-stable invalidation respectively.",
+    "SplitController preserves preferred size/ratio, placement and collapse intent separately from the viewport-clamped effective size; Desktop and Native Mobile use one pure resolver.",
+    "Workspace regions declare an explicit scroll policy, and layoutDiagnostics performs bounded read-only inspection instead of automatic full-subtree recovery.",
+    "Numeric Artifact factory inputs accept arrays or TypedArrays, copy them into the current serializable representation, and reject malformed matrix shapes.",
+    "Performance callbacks execute at most once per facade call; fulfilled Promise caches store resolved values and rejected Promise caches are evicted for retry.",
+    "Historical project files are the only compatibility boundary. They are normalized by the Project Compatibility Gateway before current runtime/plugin code sees project state.",
+    "GroupArea is the canonical related-multi-plot container through ctx.ui.groupArea.create(...) / PluginWorkspace.groupArea(...); managed Grid has no alternate GroupArea flag.",
+    "Managed Grid orientation behavior is explicit through orientationPolicy and optional preferredColumns(...). The policy is domain-neutral and opt-in; plugins do not own final grid-template-columns geometry.",
+    "PluginWorkspace PRIMARY/PRIME/SUB plus TOP presentationRole are the current workspace composition contract. There is no second low-level workspace composition facade.",
+    "Theme packages target Theme Contract 3.10.0 exactly and validate directly against the current Theme schema.",
+    "Plugin dependencies declare current package ids only.",
+    "The SDK is standalone and does not require DK Data Studio source code."
+  ],
+  "themeContractVersion": "3.10.0",
+  "portableSizing": {
+    "values": [
+      "content",
+      "fill"
+    ],
+    "default": "content",
+    "scope": "docked PortableView and PluginWorkspace PRIME",
+    "fill": "Consumes remaining dock height, ignores saved intrinsic card height. Content must use a separate inner layout node. Floating and mobile projection retain their platform sizing."
+  }
+}

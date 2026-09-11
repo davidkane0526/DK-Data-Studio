@@ -1,0 +1,79 @@
+/* Core-owned Import Workbench presentation.
+   The workbench itself is the Material owner. Internal regions are layout/list
+   semantics, not nested card surfaces. Their visual separators stay in this
+   presentation owner; canonical component/material paint stays in Theme. */
+body.dkds-modern-ui .import-panel-overlay{background:rgba(15,23,42,.28);backdrop-filter:blur(8px) saturate(.96);}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .import-panel-overlay{background:rgba(3,8,15,.68);}
+
+/* Layout regions stay optically flat so elevated/glass recipes remain visible. */
+body.dkds-modern-ui :where(
+  .import-workbench-header,.import-target-bar,.import-file-pane,.import-main-pane,
+  .import-workbench-footer,.import-file-actions
+){background:transparent;background-image:none;box-shadow:none;}
+body.dkds-modern-ui .import-workbench{--dkds-material-fill-floor:94%;}
+body.dkds-modern-ui .import-workbench-header{border-bottom:1px solid color-mix(in srgb,var(--border-subtle,var(--dkui-divider)) 76%,transparent);}
+body.dkds-modern-ui .import-workbench-footer{border-top:1px solid color-mix(in srgb,var(--border-subtle,var(--dkui-divider)) 76%,transparent);}
+body.dkds-modern-ui .import-target-bar{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-target-chip{border:1px solid transparent;border-radius:7px;background:color-mix(in srgb,var(--surface-secondary,var(--dkui-surface-soft)) 58%,transparent);}
+body.dkds-modern-ui .import-target-chip:hover{background:var(--surface-hover,var(--dkui-control-hover));}
+body.dkds-modern-ui .import-target-chip:has(input:checked){background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 28%,var(--border-subtle));color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-file-pane{border-right:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-selection-hint{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-file-actions{border-top:1px solid var(--border-subtle,var(--dkui-divider));}
+
+body.dkds-modern-ui :where(
+  .import-workbench-header h2,.import-target-heading strong,.import-file-name,
+  .import-section-head strong,.import-column-field-copy strong
+){color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui :where(
+  .import-workbench-subtitle,.import-target-heading span,.import-target-hint,
+  .import-file-meta,.import-global-summary,.import-diagnosis,.import-basic-grid label,
+  .import-mapping-grid label,.import-y-multi-head,.import-column-field-copy span,
+  .import-series-vg-input-wrap,.import-empty
+){color:var(--text-secondary,var(--dkui-text-soft));}
+body.dkds-modern-ui :where(.import-series-vg-hint){color:var(--text-tertiary,var(--dkui-muted));}
+
+/* Files are list items. Only interaction/status state owns paint. */
+body.dkds-modern-ui .import-file-item{border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-file-item:hover{background:var(--surface-hover,var(--dkui-control-hover));}
+body.dkds-modern-ui .import-file-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 36%,var(--border-subtle));color:var(--accent-primary);}
+body.dkds-modern-ui .import-file-item.error{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 38%,var(--border-subtle));}
+body.dkds-modern-ui .import-file-item.import-name-warning{background:var(--warning-soft);border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));}
+body.dkds-modern-ui .import-file-item.import-replace-warning{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));}
+
+/* Sections are one continuous editor, separated by rhythm/dividers rather than
+   independent white cards. Callouts remain intentionally soft. */
+body.dkds-modern-ui .import-section{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));border-radius:0;background:transparent;border-color:var(--border-subtle,var(--dkui-divider));color:var(--text-primary,var(--dkui-text));box-shadow:none;}
+body.dkds-modern-ui .import-generic-importer-note{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:8px;}
+body.dkds-modern-ui .import-column-field-filter{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:8px;}
+body.dkds-modern-ui .import-series-vg-row{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:7px;}
+body.dkds-modern-ui .import-preview-chip{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:999px;}
+body.dkds-modern-ui :where(.import-generic-importer-note,.import-column-field-filter,.import-series-vg-row,.import-preview-chip){
+  background:var(--surface-secondary,var(--dkui-surface-soft));
+  border-color:var(--border-subtle,var(--dkui-divider));
+  color:var(--text-secondary,var(--dkui-text-soft));
+}
+body.dkds-modern-ui :where(.import-y-multi,.import-series-vg){border-top:1px dashed var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-y-column{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:6px;}
+
+/* Preview table is a data surface, not another floating card. */
+body.dkds-modern-ui .import-preview-table-wrap{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:7px;background:transparent;}
+body.dkds-modern-ui .import-preview-table{border-collapse:collapse;background:transparent;color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-preview-table th{
+  border-right:1px solid var(--border-subtle,var(--dkui-divider));border-bottom:1px solid var(--border-subtle,var(--dkui-divider));
+  background:var(--surface-secondary,var(--dkui-surface-soft));
+  border-color:var(--border-subtle,var(--dkui-divider));
+  color:var(--text-secondary,var(--dkui-text-soft));
+}
+body.dkds-modern-ui .import-preview-table td{border-right:1px solid var(--border-subtle,var(--dkui-divider));border-bottom:1px solid var(--border-subtle,var(--dkui-divider));color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-preview-table tbody tr:hover td{background:var(--surface-hover,var(--dkui-control-hover));}
+body.dkds-modern-ui .import-preview-table td.import-nan{color:var(--text-tertiary,var(--dkui-muted));background:var(--surface-secondary,var(--dkui-surface-soft));}
+body.dkds-modern-ui .import-section:last-child{border-bottom:0;}
+body.dkds-modern-ui .import-preview-table th:last-child,body.dkds-modern-ui .import-preview-table td:last-child{border-right:0;}
+body.dkds-modern-ui .import-empty{background:transparent;background-image:none;}
+
+/* Duplicate-name status is semantic state and intentionally survives Material
+   flattening. */
+body.dkds-modern-ui .import-duplicate-warning{border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));background:var(--warning-soft);color:var(--warning);}
+body.dkds-modern-ui .import-duplicate-badge{border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));border-radius:999px;background:var(--warning-soft);color:var(--warning);}
+body.dkds-modern-ui .import-file-item.import-replace-warning .import-duplicate-badge{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger);}

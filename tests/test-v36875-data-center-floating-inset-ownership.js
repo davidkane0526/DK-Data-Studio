@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+const root=path.resolve(__dirname,'..');
+const desktop=fs.readFileSync(path.join(root,'src/plugins/data-center/plugin.css'),'utf8').replace(/\s+/g,' ');
+const mobile=fs.readFileSync(path.join(root,'src/plugins/data-center/mobile.css'),'utf8').replace(/\s+/g,' ');
+const mainRule=(desktop.match(/\.dc-main\{([^}]*)\}/)||[])[1]||'';
+const paneRule=(desktop.match(/\.dc-chart-pane\{([^}]*)\}/)||[])[1]||'';
+const mobileMain=(mobile.match(/\.dc-main\{([^}]*)\}/)||[])[1]||'';
+const mobilePane=(mobile.match(/\.dc-chart-pane\{([^}]*)\}/)||[])[1]||'';
+assert(!mainRule.includes('--dc-chart-params-padding'),'Preview inset token must not live on .dc-main because PortableView reparents the chart pane when floating.');
+assert(paneRule.includes('--dc-chart-params-padding:6px 9px'),'Desktop preview inset token must be owned by the movable .dc-chart-pane Surface.');
+assert(desktop.includes('.dc-chart-pane>.schema-parameter-panel{padding:var(--dc-chart-params-padding,6px 9px)}'),'Preview parameter row must retain an explicit fallback inset after reparenting.');
+assert(!mobileMain.includes('--dc-chart-params-padding'),'Native preview inset token must not depend on .dc-main inheritance.');
+assert(mobilePane.includes('--dc-chart-params-padding:6px 8px'),'Native preview inset token must also live on the movable .dc-chart-pane Surface.');
+console.log('v3.68.75 Data Center floating inset ownership: PASS');

@@ -1,0 +1,111 @@
+@layer dkds.window {
+body.plugin-window-host{background:var(--app-bg);padding:0}
+body.plugin-window-host #app{min-height:0}
+body.plugin-window-host .analysis-page{inset:0;z-index:1000}
+.plugin-window-status{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:28px;
+  z-index:1200;
+}
+.plugin-window-error{
+  position:fixed;
+  inset:0 0 28px 0;
+  z-index:1400;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:24px;
+  background:var(--app-bg);
+  color:#b42318;
+  text-align:center;
+}
+.plugin-window-error strong{font-size:18px}
+.plugin-window-error span{max-width:760px;font-size:12px;color:var(--text-secondary);line-height:1.6}
+/* v3.22 plugin-window visual consistency */
+body.plugin-window-host{
+  background:var(--app-bg,#f6f8fb);
+}
+body.plugin-window-host #app{background:var(--app-bg,#f6f8fb)}
+body.plugin-window-host .analysis-page-body{background:var(--app-bg,#f6f8fb)}
+.plugin-window-status{font-size:var(--ui-font-small,11px);background:var(--surface-primary);color:var(--text-tertiary);border-top:1px solid var(--border-subtle)}
+.plugin-window-error strong{font-size:var(--ui-font-page-title,18px)}
+.plugin-window-error span{font-size:var(--ui-font-small,11px)}
+/* Dedicated TOP windows use the same docking semantics as PluginWorkspace:
+   docking reserves real layout tracks; it never overlays the data workspace. */
+body.plugin-window-host{
+  --dkds-plugin-window-left-dock-width:min(420px,36vw);
+  --dkds-plugin-window-right-dock-width:min(420px,36vw);
+  --dkds-plugin-window-bottom-dock-height:min(320px,38vh);
+  --dkds-plugin-window-left-track:0px;
+  --dkds-plugin-window-right-track:0px;
+  --dkds-plugin-window-bottom-track:0px;
+  --dkds-plugin-window-left-seam:0px;
+  --dkds-plugin-window-right-seam:0px;
+  --dkds-plugin-window-bottom-seam:0px;
+  width:100vw;height:100vh;min-width:0;min-height:0;overflow:hidden;
+  display:grid;
+  grid-template-columns:var(--dkds-plugin-window-left-track) var(--dkds-plugin-window-left-seam) minmax(0,1fr) var(--dkds-plugin-window-right-seam) var(--dkds-plugin-window-right-track);
+  --dkds-plugin-window-shell-gap:6px;
+  grid-template-rows:52px var(--dkds-plugin-window-shell-gap) minmax(0,1fr) var(--dkds-plugin-window-bottom-seam) var(--dkds-plugin-window-bottom-track) 28px;
+  grid-template-areas:
+    "title title title title title"
+    ". . . . ."
+    "left lsplit main rsplit right"
+    "left lsplit bsplit bsplit right"
+    "left lsplit bottom bottom right"
+    "status status status status status";
+}
+body.plugin-window-host:has(#pluginWindowLeftDock:not(:empty)){--dkds-plugin-window-left-track:var(--dkds-plugin-window-left-dock-width);--dkds-plugin-window-left-seam:7px}
+body.plugin-window-host:has(#pluginWindowRightDock:not(:empty)){--dkds-plugin-window-right-track:var(--dkds-plugin-window-right-dock-width);--dkds-plugin-window-right-seam:7px}
+body.plugin-window-host:has(#pluginWindowBottomDock:not(:empty)){--dkds-plugin-window-bottom-track:var(--dkds-plugin-window-bottom-dock-height);--dkds-plugin-window-bottom-seam:7px}
+body.plugin-window-host #app{grid-area:main;position:relative;width:auto;height:auto;min-width:0;min-height:0;overflow:hidden}
+body.plugin-window-host .analysis-page{position:absolute;inset:0}
+.plugin-window-status{grid-area:status;position:relative;inset:auto;width:100%;height:28px;z-index:1200}
+.plugin-window-universal-dock{position:relative;inset:auto;z-index:1150;background:var(--app-bg,#f6f8fb);padding:0;overflow:hidden;display:flex;gap:0;min-width:0;min-height:0}
+.plugin-window-universal-dock:empty{display:none}
+.plugin-window-left-dock{grid-area:left;flex-direction:column;width:100%;height:100%}
+.plugin-window-right-dock{grid-area:right;flex-direction:column;width:100%;height:100%}
+.plugin-window-bottom-dock{grid-area:bottom;flex-direction:column;width:100%;height:100%}
+.plugin-window-universal-dock>.dkds-portable-view{min-width:0;min-height:0;max-width:100%;max-height:100%;width:100%;height:100%;flex:1 1 0}
+.plugin-window-universal-dock>.dkds-plot-view.dkds-portable-view{order:-10;--dkds-plot-content-flex:1 1 0;--dkds-plot-content-min-height:0;--dkds-plot-content-height:auto}
+.plugin-window-dock-resizer{display:none;position:relative;z-index:1190;touch-action:none;user-select:none}
+body.plugin-window-host:has(#pluginWindowLeftDock:not(:empty)) .plugin-window-left-dock-resizer{display:block;grid-area:lsplit;cursor:col-resize}
+body.plugin-window-host:has(#pluginWindowRightDock:not(:empty)) .plugin-window-right-dock-resizer{display:block;grid-area:rsplit;cursor:col-resize}
+body.plugin-window-host:has(#pluginWindowBottomDock:not(:empty)) .plugin-window-bottom-dock-resizer{display:block;grid-area:bsplit;cursor:row-resize}
+.plugin-window-dock-resizer::before{content:"";position:absolute;background:var(--border-subtle);opacity:.82}
+.plugin-window-left-dock-resizer::before,.plugin-window-right-dock-resizer::before{top:0;bottom:0;left:3px;width:1px}
+.plugin-window-bottom-dock-resizer::before{left:0;right:0;top:3px;height:1px}
+.plugin-window-dock-resizer::after{content:"";position:absolute}
+.plugin-window-left-dock-resizer::after,.plugin-window-right-dock-resizer::after{inset:0 -5px}
+.plugin-window-bottom-dock-resizer::after{inset:-5px 0}
+
+}
+
+@layer dkds.window {
+.plugin-window-titlebar{grid-area:title;width:100%;height:52px;min-height:52px;min-width:0;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,max-content) auto minmax(0,1fr) auto auto;align-items:center;column-gap:8px;padding:0 4px 0 14px;overflow:hidden;-webkit-app-region:drag;user-select:none;z-index:1300}
+.plugin-window-heading{display:flex;align-items:baseline;gap:8px;min-width:0;max-width:min(38vw,520px);white-space:nowrap;overflow:hidden}
+.plugin-window-heading strong{font-size:15px;overflow:hidden;text-overflow:ellipsis}
+.plugin-window-version{font-size:10px;color:var(--dkui-text-soft);font-variant-numeric:tabular-nums}
+.plugin-window-heading-divider,.plugin-window-action-divider{flex:0 0 auto;color:var(--dkui-divider);opacity:.9}
+.plugin-window-drag-spacer{min-width:0;align-self:stretch;-webkit-app-region:drag}
+.plugin-window-actions{min-width:0;max-width:100%;display:flex;align-items:center;justify-content:flex-end;gap:8px;overflow:hidden;justify-self:end}
+.plugin-window-action-zone{display:flex;align-items:center;gap:4px;min-width:0;flex:0 1 auto}
+.plugin-window-plugin-actions{margin-left:0}
+.plugin-window-core-actions{display:flex;align-items:center;gap:6px}
+.plugin-window-core-actions>#pluginWindowCoreUtilityActions,.plugin-window-core-actions>#pluginWindowWorkspaceNav{display:flex;align-items:center;gap:6px}
+.plugin-window-titlebar .window-commandbar{justify-self:end;align-self:stretch;flex:0 0 auto;margin:0;padding:0 2px;height:52px;min-width:98px;box-sizing:border-box;-webkit-app-region:drag;pointer-events:auto}
+.plugin-window-titlebar :where(button,a,input,select,textarea,[role="button"]){-webkit-app-region:no-drag;pointer-events:auto}
+.plugin-window-titlebar .window-control-btn{position:relative;z-index:2;cursor:default;user-select:none}
+body.plugin-window-host #app{width:100%;height:100%;align-self:stretch;justify-self:stretch}
+body.plugin-window-host .analysis-page{width:100%;height:100%;min-width:0;min-height:0}
+body.plugin-window-host .analysis-page-body{min-width:0;min-height:0}
+body.plugin-window-host .plugin-window-page-header-hosted{display:none}
+body.plugin-window-host .plugin-window-page-close-suppressed{display:none}
+body.plugin-window-host .dkds-analysis-nav{display:none}
+body.plugin-window-host .plugin-window-titlebar .toolbar-btn{height:34px;min-height:34px;padding:5px 9px;white-space:nowrap}
+body.plugin-window-host .plugin-window-titlebar .dkds-action-icon{display:inline-flex;align-items:center;justify-content:center;margin-right:4px}
+body.plugin-window-host .plugin-window-titlebar .dkds-action-caret{margin-left:4px;font-size:9px;opacity:.78}
+}

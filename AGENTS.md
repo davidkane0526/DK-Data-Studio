@@ -1,0 +1,246 @@
+# AI Development Rules — DK Data Studio
+
+This repository uses a plugin-first architecture.
+
+## 第一工程准则 / Primary engineering principle
+
+**保持代码结构干净，禁止用补丁形式解决问题。Core 与插件边界必须清楚，样式必须保持单一 owner。**
+
+Every change must satisfy this rule before functional convenience:
+
+- fix the owning abstraction or contract instead of stacking an override, compatibility alias, higher-specificity selector, duplicate event path, temporary bridge, or silent fallback;
+- Core owns generic runtime/platform/data/UI infrastructure, while plugins own domain workflow/state/content; neither side may reach into the other side's private implementation;
+- CSS Structure owns geometry only, Presentation/Theme own paint, and one semantic selector/property must have one owner; no `!important`, no catch-all override layer, no specificity race;
+- historical project compatibility is isolated to `src/project-importers/compatibility-gateway.js`; legacy runtime/API compatibility must not leak back into Core or SDK;
+- public Plugin API runtime facades are canonical and singular: capability/manifest labels must never be guessed into JavaScript property names; SDK validation and Desktop package ingestion share the same source-contract audit, and unsupported paths are rejected instead of receiving compatibility aliases;
+- if a requested fix cannot be implemented cleanly under these boundaries, stop and refactor the owner first rather than shipping a patch.
+
+## Branch and stabilization rule
+
+- Current delivered architecture baseline is **v3.69.4 Final Archive**, with Phase A–E completed. The checked-out branch may be a focused `fix/*` or `chore/*` branch; do not infer that an older `main`/`dev` ref is the active runtime baseline.
+- Remote branch publication is explicit. Do not create, move, merge or push a GitHub branch unless the user requests it.
+- v3.69.4 is the archived architecture baseline. Apply only demonstrated maintenance fixes on this line; new capabilities or reopened cross-view contracts belong in an explicit **3.70.x** plan. Do not reintroduce compatibility bridges removed by the Legacy-Free Cut.
+- New domain feature work should normally be implemented as a plugin or versioned Algorithm Provider; generic behavior shared by all plugins belongs in Core.
+- Reusable scientific calculations belong in `src/science/*` or a versioned Algorithm Provider; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms or domain recovery rules into `app.js`.
+
+## Before changing code
+
+1. Read `docs/ARCHITECTURE.md`.
+2. Read `docs/PLUGIN_API.md`.
+3. Read `docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md`.
+4. For mobile/touch work, also read `docs/ANDROID_PORTING.md`.
+5. Run:
+   ```bash
+   npm run check
+   npm test
+   ```
+6. If Android is affected, also inspect `mobile/README_ANDROID_CN.md` and keep the shared renderer compatible with the React Native bridge.
+
+## Plugin-first decision rule
+
+Create or extend a plugin when the feature is any of the following:
+
+- a new scientific analysis algorithm;
+- a new data format / importer;
+- a new chart or chart family;
+- a new analysis page;
+- a new floating/docked panel;
+- a workflow specific to a measurement type;
+- a domain-specific project-state slice;
+- a UI layout/presentation variation for a particular workflow;
+- export logic specific to a feature.
+
+Core changes are appropriate only for:
+
+- plugin lifecycle / registry;
+- platform bridges (Electron/browser/Android);
+- project shell and plugin project-state orchestration;
+- generic file/clipboard/save APIs;
+- generic window/layout primitives;
+- generic chart host primitives;
+- security/update/LAN infrastructure;
+- accessibility and input abstraction;
+- bug fixes that affect every plugin.
+
+## Forbidden shortcuts
+
+- Do not add a feature button directly to the core analysis toolbar. Register it from a plugin.
+- Do not hard-code a new analysis page into `openAnalysisPage()`. Register a plugin page.
+- Do not add feature-specific project fields to the root project JSON. Register a plugin project slice.
+- Do not make a plugin import Electron/Node APIs from the renderer. Use host/platform services.
+- Do not assume mouse input. Use Pointer Events and the platform interaction profile.
+- Do not assume a desktop width.
+- Do not silently change existing peak/TER definitions.
+
+## Definition of done for a new plugin
+
+A plugin is complete only when it has:
+
+- `plugin.json`;
+- `plugin.js`;
+- a README;
+- a unique plugin id;
+- API version declaration;
+- tests;
+- project-state migration when persistence is used;
+- responsive/touch behavior;
+- clean deactivation behavior when resources are registered;
+- no direct dependency on another plugin's internal variables.
+
+Run `npm run plugin:index` after adding/removing plugin folders. Normal `npm start`, `npm test`, `npm run check`, and `npm run dist` already regenerate the index.
+
+## Shared science and algorithm-provider rule (v3.52+)
+
+Stable runtime-independent mathematical primitives may live in `src/science/`. Historical project/data conversion belongs only in `src/project-importers/compatibility-gateway.js` and must terminate at canonical Schema v3 Artifacts before runtime state is created. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
+
+Examples already moved there:
+- import/parser primitives;
+- sweep reconstruction and peak detection;
+- cross-Vg peak identity tracking;
+- physical-family classification;
+- gate-voltage calculations;
+- TER;
+- pulse/read extraction.
+
+Do not copy an algorithm between feature plugins. A versioned Algorithm Plugin owns the implementation; Workbench plugins resolve it through `ctx.analysis.algorithms`. `DKDSScience` is the canonical runtime-independent science entry; do not recreate the removed `Analysis` global or `ctx.analysis.detectors` compatibility facades.
+
+Algorithm version rule (v3.54+): versionless resolution is only for a new analysis choice. Once an analysis/project stores an algorithm reference, persist an exact `category + id + version`. If that exact version is unavailable, report `missing-version` and alternatives; never silently migrate the project to a newer/default algorithm. External provider package rollback is managed by Core Plugin Manager history; do not build per-workbench update/rollback UI.
+
+Algorithm package rule (v3.55+): every first-party `algorithmProvider` must declare an exact metadata-only `algorithmProvides` catalog plus an explicit host/API compatibility range. Use `pluginDependencies` for package-level provider dependencies. Missing project locks must be resolved through Core `ctx.analysis.algorithms.locate()/recover()` and the Algorithm Package Catalog; Workbench plugins must not scan plugin/history directories, execute arbitrary candidate code, or rewrite a project lock during recovery. Incompatible candidates may be reported but must not be auto-activated.
+
+Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
+
+## Shared scientific scalar-field rule (v3.56+)
+
+A matrix/scalar-field scientific result and its heatmap renderer are separate contracts. Plugins publish typed `science.scalar-field` (or subtype) data/Artifacts and render them through `ctx.ui.scientificPlot.scalarField()`. Do not create plugin-private renderer lifecycle/hover/export infrastructure. Core renders scalar fields through the single D3 scientific backend. Domain-specific click behavior may map a field cell back to its source Entity/Artifact through stable IDs, but Selection must remain the real scientific object when one exists. Cross-curve feature computation must be headless/data-first and must not require an attached View/Controller.
+
+## Android build rule
+
+React Native source lives in `mobile/`.
+
+Do not commit generated `mobile/android`, `mobile/ios`, `mobile/node_modules`, `mobile/assets/web` or `mobile-dist`.
+
+For Android changes, preserve these routes:
+
+```text
+DKDS.cmd android-build
+DKDS.cmd android-run
+DKDS.cmd android-install
+```
+
+The Android shell must remain a consumer of the same plugins and `src/science/*` engine.
+
+## Plugin Manager
+
+The core Plugin Manager already owns enable/disable/reload/preferences. Do not build a second manager inside a feature plugin.
+
+When a built-in plugin is added, its runtime manifest should include `name`, `version`, `description`, `capabilities`, `source`, and `order` so the manager can present it clearly.
+
+Disabling a plugin must never delete that plugin's namespaced project state.
+
+## Data Center / Workflow rule (v3.18+)
+
+Before adding a feature-specific state object or settings form, inspect:
+
+- `docs/DATA_MODEL.md`
+- `docs/WORKFLOW_RECIPES.md`
+- `docs/PARAMETER_SCHEMA.md`
+- `docs/FORMULA_ENGINE.md`
+
+New reusable processing operations should normally be `workflow.processors` or `workflow.analyzers` that consume/return `DKDSData` artifacts.
+
+New ordinary parameter UIs should use `parameterSchema`; do not hand-build repetitive form markup.
+
+New user-defined numeric columns must use the safe `DKDSFormula` parser; never use `eval()` or `new Function()`.
+
+
+## Workspace ownership rule (v3.19+)
+
+Read `docs/WORKSPACE_PLUGIN_API.md` before changing any scientific workspace UI.
+
+Do not put domain-specific content in `src/index.html` merely because it is convenient.
+
+For a measurement plugin, the plugin should normally own:
+- activity;
+- sidebar;
+- algorithm/provider selectors;
+- main-view provider;
+- main-view tools/overlays;
+- inspector provider;
+- group view/chart providers;
+- domain analysis pages;
+- domain floating panels;
+- domain export actions.
+
+Algorithms that are alternatives to one another should be separate versioned Algorithm Providers/plugins. In particular, peak detectors and peak-metrics/FWHM implementations register `ctx.analysis.algorithms` with a category, algorithm id and version; algorithm-specific parameters belong to the provider through `parameterSchema`.
+
+The generic workbench may select a detector; it must not contain special-case controls for a particular detector implementation.
+
+Run `node scripts/check-plugin-boundaries.js` (included in `npm run check`) before committing workspace changes.
+
+
+Domain keyboard shortcuts belong to `ctx.ui.shortcuts`; only universal project/file commands belong in the core key handler.
+
+Domain canvases own their resize behavior via the generic `layout:resize` event. Never add lists of feature-specific renderer element IDs to Core resize code.
+
+## Installable plugins
+
+Desktop runtime supports trusted local `.dkplugin` packages. Read `docs/PLUGIN_PACKAGES.md` before adding package installation, update, uninstall, or external detector behavior. New algorithm plugins should be independently installable when practical; never reserve a hard-coded detector id in the Resonance Workbench.
+
+## v3.20 shell / tooling / repository hygiene
+
+Before changing the desktop header, read `docs/DEVELOPMENT_GUIDE.md` and `docs/ARCHITECTURE.md`.
+
+The top command shell is intentionally one row above project tabs. Do not restore a permanent second context-toolbar row. Plugin actions must use `activity`, `priority`, `order`, and `section`; the host moves lower-priority actions into overflow.
+
+Ordinary controls should use the semantic size tokens defined in `src/style.css` (`--ui-font-size`, `--ui-font-small`, `--ui-font-title`, `--ui-control-h`) instead of inventing arbitrary font/control sizes.
+
+Windows developer tooling is consolidated. The only root CMD files are:
+
+```text
+DKDS.cmd
+DKDS_GUI.cmd
+```
+
+Do not add another root CMD. Add an action to `tools/windows/dkds-tools.ps1` and, when useful, a button in `tools/windows/dkds-gui.ps1`.
+
+Repository layout is documented in `docs/PROJECT_STRUCTURE.md`. Operational update-server code belongs under `services/update-server/`; default configuration belongs under `config/`; user/developer operation guides belong under `docs/guides/`.
+
+## Performance and cache rule (v3.47+)
+
+Before adding plugin-private memoization, inspect `docs/PERFORMANCE_RUNTIME.md`.
+
+- Reusable cache/measurement plumbing belongs to Core `DKDSPerformance`; scientific definitions remain in `src/science/*`.
+- Reusable plugin computations should use namespaced `ctx.performance.stage()`; do not add plugin-private memo Maps when Core stage caching is sufficient.
+- Cache budgets, TTL, trim and hidden-TOP cache contraction are Core lifecycle policy. Plugins may trim only their own namespace.
+- A cache key must contain every scientific input that changes the result. Prefer `artifacts.revision(kind)` over invalidating on every project/Artifact mutation.
+- Never improve performance by reducing numerical precision, silently downsampling scientific data, or changing a published scientific definition.
+- Plot plugins using `ScientificPlot` may provide `renderKey`/`revisionKey`, but that key must change whenever the rendered trace/layout result changes.
+- Reusable TOP renderer hide/show is Core-owned. Do not add plugin-private D3 purge/rebuild or resize-suspension code; route plots through ScientificPlot and keep recoverable state in Controller/ViewModel/Core interaction state.
+- Scientific rendering is single-backend from v3.61.36: Core owns D3 loading and chart lifecycle behind `scientific-renderer`. Plugins must not declare renderer-vendor dependencies or call raw D3 chart lifecycle/export APIs; use `ctx.ui.scientificPlot` / `DKDSCharts` so startup, lifecycle, presentation and diagnostics remain Core-owned.
+- Plugin disable/reload must not depend on Core performance caches surviving deactivation; Core trims the plugin namespace as part of cleanup.
+- Keep Performance Runtime metrics diagnostics-safe: counters and timing only, never experiment values or source paths.
+- Run `npm run performance:test` together with the normal `npm test` / `npm run check` regression suites.
+
+
+### Mandatory two-pass / two-evidence acceptance rule (v3.68.0+)
+
+For every user-reported issue or requested correction:
+
+- perform at least **two independent reasoning passes** before concluding the root cause is understood; the second pass must actively look for an alternative owner, cascade/lifecycle/data-path explanation, regression mechanism, or hidden interaction that could invalidate the first conclusion;
+- verify the fix using at least **two materially different validation methods**. A static source/contract test and a runtime/computed/DOM/event/data-flow/device check count as different evidence; two similar grep/static tests do not;
+- do **not** declare an item solved unless both evidence classes pass; if the second evidence is unavailable in the current environment, keep that item WIP and state the limitation;
+- record the two reasoning passes and the two validation results item-by-item in the current handoff when the issue is part of an active acceptance round.
+
+This rule is mandatory even when a broad regression suite passes. A passing static gate is not a substitute for runtime/visual acceptance of a UI defect.
+
+## User acceptance / delivery rule (v3.67.45+)
+
+For every DK Data Studio iteration requested by the user:
+
+- implement every enumerated user correction accurately at its owning abstraction; do not silently skip items or substitute a nearby change;
+- before calling the iteration complete, re-check the user's items one by one against source/runtime evidence and use the strongest practical validation available in the current environment, including installing/using required runtime tooling and visual inspection when possible;
+- never claim Desktop/Mobile visual acceptance from static tests alone; state device/runtime limitations explicitly;
+- every response after code work must provide a complete, clean, continue-ready project ZIP, even when the iteration is still WIP;
+- a WIP project must contain exactly one current root `HANDOFF_*.md`; delete superseded handoffs instead of accumulating historical transfer files in the development ZIP;
+- Mobile work must not alter Desktop behavior or visuals unless the user explicitly authorizes that Desktop change; the executable semantic platform firewall must remain active; historical whole-file SHA visual freezes are not release gates and visual acceptance requires runtime/computed evidence.

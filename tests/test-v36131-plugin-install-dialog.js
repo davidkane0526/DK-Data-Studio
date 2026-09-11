@@ -1,0 +1,59 @@
+const fs=require('fs');
+const path=require('path');
+const {readCoreCss}=require('./css-source');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const json=p=>JSON.parse(read(p));
+
+const pkg=json('package.json');
+const sdk=json('sdk/contract.json');
+const main=read('desktop/main.js');
+const pluginPackages=read('desktop/main-modules/plugin-package-runtime.js');
+const preload=read('desktop/preload.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const manager=read('src/core/plugins/manager-ui.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const css=readCoreCss(root)+'\n'+readCoreCss(root);
+const coreContract=read('src/core/plugins/contract-runtime.js');
+const apiTypes=read('sdk/plugin-api.d.ts');
+const sdkTool=read('sdk/tools/dkds-plugin.js');
+const manifestSchema=json('sdk/plugin-manifest.schema.json');
+const {normalizePluginPackage}=require(path.join(root,'desktop/plugin-package.js'));
+
+
+assert.equal(sdk.pluginApiVersion,'1.19.0','Plugin SDK contract must target the exact current Plugin API 1.19.0.');
+assert(pluginPackages.includes("const PluginSdkContract=require('../../sdk/contract.json');"),'Plugin package runtime must consume the published SDK contract.');
+assert(pluginPackages.includes("const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();"),'Plugin package runtime must derive its current Plugin API from sdk/contract.json.');
+assert(!main.includes("PLUGIN_API_VERSION='1.15.0'"),'Stale installer Plugin API 1.15 constant must not return.');
+assert(pkg.build.files.includes('sdk/contract.json'),'Packaged application must include the exact current SDK contract used by the installer.');
+
+let rejectedCompatibility=false;
+try{
+  normalizePluginPackage({schema:1,manifest:{id:'com.dkds.tools.current-only',name:'Current only',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',pluginType:'extension',compatibility:{app:'>=3.61.29 <4.0.0'}},files:{'plugin.js':''}});
+}catch(err){rejectedCompatibility=String(err?.message||err).includes('unsupported current-contract fields');}
+assert.equal(rejectedCompatibility,true,'The current installer must reject compatibility ranges instead of negotiating an older/future contract.');
+const current=normalizePluginPackage({schema:1,manifest:{id:'com.dkds.tools.current-only',name:'Current only',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',pluginType:'extension'},files:{'plugin.js':''}});
+assert.equal(current.manifest.apiVersion,sdk.pluginApiVersion,'A package on the exact current Plugin API must normalize without compatibility metadata.');
+
+for(const token of ["ipcMain.handle('plugins:selectPackage'","ipcMain.handle('plugins:cancelInstall'","ipcMain.handle('plugins:installPackage'"])
+  assert(main.includes(token),`Two-stage plugin install IPC missing ${token}`);
+assert(!main.includes('dialog.showMessageBox('),'Plugin install/update confirmation must not use Electron native message boxes.');
+assert(preload.includes('pluginSelectPackage:')&&preload.includes('pluginCancelInstall:')&&preload.includes("pluginInstallPackage: token"),'Preload must expose the two-stage install transaction.');
+assert(kernel.includes('window.DKDSUI?.dialogs')&&kernel.includes("dialogs.confirm({")&&kernel.includes('pluginInstallRendererError'),'Plugin install must use the Core renderer-owned confirmation dialog and structured errors.');
+assert(manager.includes('showPluginInstallFailure')&&manager.includes('dialogs?.alert'),'Blocking install failures must open a Core modal instead of status-only notification.');
+assert(!manager.includes('window.confirm(')&&!manager.includes('window.prompt('),'Plugin Manager must use DKDS-owned dialogs instead of browser-native confirm/prompt UI.');
+assert(ui.includes('class DialogService')&&ui.includes("dialogs:{show:spec=>dialogService.show(spec)")&&ui.includes('prompt:spec=>dialogService.prompt(spec)'),'Core UI Infrastructure must own reusable alert/confirm/prompt dialogs.');
+for(const cls of ['.dkds-dialog-overlay','.dkds-dialog{','.dkds-dialog-meta'])assert(css.includes(cls),`Core dialog structural contract missing ${cls}`);
+assert(manager.includes('dialogs?.alert'),'Plugin Manager failures must keep using the Core dialog service.');
+const dialogRuntime=read('src/core/ui/modules/dialog/settings.js');
+assert(dialogRuntime.includes("button.dataset.dkdsComponentIdentity='toolbarAction'")&&dialogRuntime.includes("button.dataset.dkdsComponentVariant=variant"),'Core dialog actions must declare canonical ToolbarAction identity/variant synchronously.');
+assert(dialogRuntime.includes("kind==='danger'?'destructive'"),'Dialog danger actions must map to the canonical destructive variant.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]'),'Primary dialog action appearance must come from canonical Component Appearance.');
+assert(!css.includes('.dkds-dialog-action.primary{background:')&&!css.includes('.dkds-dialog-action.primary { background:'),'Dialog Presentation/Structure CSS must not repaint primary actions.');
+assert(coreContract.includes("'ui.dialogs':api=>!!api?.ui?.dialogs")&&kernel.includes('dialogs: window.DKDSUI?.dialogs || null'),'Plugin Context must expose the Core Dialog Runtime as ui.dialogs.');
+assert(manifestSchema.properties.requiresCore.items.enum.includes('ui.dialogs'),'SDK manifest schema must allow declaring ui.dialogs.');
+assert(apiTypes.includes('export interface DKDSDialogRuntime')&&apiTypes.includes('dialogs:DKDSDialogRuntime'),'SDK types must describe the Core Dialog Runtime.');
+assert(sdkTool.includes('native browser dialog (use ctx.ui.dialogs)'),'SDK validator must reject plugin-owned browser-native dialogs.');
+console.log('v3.61.31 current-contract plugin install + Core modal regression passed.');

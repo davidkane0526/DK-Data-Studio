@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const pkg=JSON.parse(read('package.json')),index=read('src/index.html');
+const navigation=read('src/styles/structure/shell-navigation.css');
+const component=read('src/styles/theme/component-appearance.css');
+const current=String(pkg.version||'0.0.0').split('.').map(Number);
+assert(current[0]>3||(current[0]===3&&(current[1]>67||(current[1]===67&&current[2]>=12))),'R7O capability requires application 3.67.12 or newer.');
+assert(index.includes(`<span class="version">v${pkg.version}</span>`),'Visible shell version must match the current package version.');
+assert(navigation.includes('--dkds-command-padding-inline:0px')&&navigation.includes('padding-inline:var(--dkds-command-padding-inline,10px)'),'Compact Presenter commands must center through the canonical command geometry slot rather than a later section-start override.');
+assert(!/\.plugin-context-toolbar \.plugin-toolbar-btn\.plugin-section-start(?:[^{}]*)\{[^}]*(?:padding|height|line-height)\s*:/s.test(navigation),'plugin-section-start must never rewrite the command content box.');
+assert(/data-dkds-presentation-compact="true"\]\{[^}]*width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px;/.test(navigation),'Compact Presenter commands must keep the exact 48px border box while geometry slots own padding and line height.');
+assert(!component.includes('outline:2px solid var(--dkui-focus)'),'ToolbarAction focus must not use a box-shadow token as an invalid outline color.');
+assert(component.includes('.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"]:focus-visible')&&component.includes('outline:none;\n  box-shadow:none;'),'Segmented command children must never render a private persistent focus halo.');
+assert(component.includes('.dkds-segmented-command-group:has(>[data-dkds-component-identity="toolbarAction"]:focus-visible'),'Keyboard focus for segmented commands must be expressed by the single group silhouette instead of the Import child.');
+console.log('v3.67.12 R7O Import focus + compact Presenter centering contract PASS.');

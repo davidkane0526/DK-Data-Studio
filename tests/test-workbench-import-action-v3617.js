@@ -1,0 +1,36 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const assert=(ok,msg)=>{if(!ok){console.error(`V3.61.9 WORKBENCH IMPORT ERROR: ${msg}`);process.exit(2);}};
+const pkg=JSON.parse(read('package.json'));
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const app=read('src/generated/runtime/app.js');
+const index=read('src/index.html');
+const sdk=read('sdk/templates/workspace-plugin/plugin.js');
+const sdkManifest=JSON.parse(read('sdk/templates/workspace-plugin/plugin.json'));
+const contract=JSON.parse(read('sdk/contract.json'));
+const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+const pulsePlugin=read('src/plugins/pulse-analysis/plugin.js');
+const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
+const boundary=read('tests/check-plugin-boundaries.js');
+
+
+assert(contract.pluginApiVersion==='1.19.0'&&contract.minimumAppVersion==='3.68.103','SDK 1.34 / Plugin API 1.19 / Theme 3.10 must require app 3.68.81; project compatibility is separate from old plugin-package API compatibility.');
+assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
+assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
+assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
+assert(kernel.includes("section:'DATA'")&&kernel.includes('embeddedSuper'),'Embedded SUPER workbenches must project the same Core import action into the host contextual toolbar.');
+assert(kernel.includes("pageActivity&&!state.host?.isAuxiliaryWindow"),'Main-shell workbenches without a local slot may fall back to the host contextual action, but dedicated plugin windows must never assume the main analysis toolbar exists.');
+assert(kernel.includes("if(slot){")&&kernel.includes("dkds-core-workbench-import-slot"),'A page-local import slot must remain the cross-window authoritative mount.');
+assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList.toggle('hidden',!!scope)"),'Scoped Import Workbench must hide the global target chooser.');
+assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
+assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
+assert(index.includes('id="importTargetOptions"'),'Global Import Workbench target routing must remain available.');
+assert(sdkManifest.apiVersion==='1.19.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
+assert(sdk.includes('data-dkds-slot="workbench-import"'),'SDK template must mark the Core-owned import-action position.');
+assert(!sdk.includes('ctx.data.importWorkbench.open'),'SDK workbench template must not create or invoke a private import button.');
+assert(!pulseFeature.includes("label:'添加文件'")&&!pulseFeature.includes('P.addFiles()'),'Pulse must use the Core-owned import action instead of a plugin button.');
+assert(!pulsePlugin.includes('ctx.data.importWorkbench')&&!pulseService.includes('openImportWorkbench'),'First-party Pulse workbench must not own Import Workbench invocation.');
+assert(boundary.includes('workbench import UI is Core-owned in Plugin API 1.14'),'Boundary gate must prevent first-party workbenches from reintroducing import UI.');
+console.log('v3.61.12 Core-owned workbench import action passed: fixed slot, scoped target, compatible importer filtering, global multi-target routing preserved.');

@@ -1,0 +1,32 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const pkg=JSON.parse(read('package.json'));
+const mobilePkg=JSON.parse(read('mobile/package.json'));
+const app=JSON.parse(read('mobile/app.json'));
+const version=String(pkg.version||'0.0.0').split('.').map(Number);
+assert(version[0]>3||(version[0]===3&&(version[1]>67||(version[1]===67&&version[2]>=25))),'Mobile semantic surface routing requires application 3.67.25 or newer.');
+assert(mobilePkg.version===pkg.version||/^0\.8\.(?:1[6-9]|[2-9]\d|\d{3,})$/.test(String(mobilePkg.version||'')),'Mobile package must retain the 0.8.16+ baseline or use the synchronized app version.');
+assert(Number(app?.expo?.android?.versionCode)>=27,'Android versionCode must be 27 or newer.');
+
+const host=read('src/core/host/mobile-host-runtime.js');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
+const hostApi=read('src/core/ui/modules/host/api.js');
+const mobileCss=read('src/styles/platform/native-workspace-presentation.css');
+const changelog=read('CHANGELOG.md');
+
+assert(host.includes('currentOrientation')&&host.includes('DKDSPlatform?.profile?.orientation'),'Mobile Host must project the actual WebView orientation.');
+assert(host.includes("addEventListener('dkds:platform-change',publish)"),'Platform/orientation changes must republish Mobile Presenter state.');
+assert(host.includes('workspaces?.activate?.')&&host.includes('openSurfaceState')&&host.includes('currentViewport'),'Mobile surface navigation must use idempotent Core activation plus independent responsive PRIME visibility state.');
+assert(presenters.includes('mobileViewportProfile')&&presenters.includes('openSurfaces')&&presenters.includes("kind==='prime'")&&presenters.includes("kind==='sub'"),'Mobile Presenter must derive responsive geometry and keep PRIME visibility distinct from SUB routes.');
+assert(hostApi.includes('activate(activity,id)')&&hostApi.includes("openPrime?.(surfaceId)")&&hostApi.includes("openSub?.(surfaceId)"),'Core workspace API must provide explicit idempotent activation for Mobile Host.');
+assert(mobileCss.includes('[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"]'),'Data-control surfaces must retain semantic drawer geometry.');
+assert(mobileCss.includes('[data-dkds-mobile-region="companion-right"][data-dkds-mobile-active="true"]')&&mobileCss.includes('[data-dkds-mobile-region="companion-bottom"][data-dkds-mobile-active="true"]'),'Wide mobile scientific companions must have Presenter-owned grid geometry.');
+assert(mobileCss.includes('[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"]'),'Mobile route geometry must be semantic rather than PRIME-specific.');
+assert(mobileCss.includes('.dkds-portable-placement-trigger{display:none}')&&mobileCss.includes('.dkds-plot-view-actions .dkds-portable-placement-trigger{display:inline-flex'),'Surface-level Desktop placement affordance must be suppressed while PlotView action-host context re-exposes chart position controls without changing the frozen shared PortableView runtime.');
+assert(!/#resonance|\.resonance|#reswin/i.test(mobileCss),'Mobile semantic geometry must not contain Resonance-specific screenshot patches.');
+assert(changelog.includes(pkg.version)&&changelog.includes('Desktop Visual Closure'),'Current Mobile patch must retain explicit frozen Desktop Visual Closure history.');
+console.log('v3.67.25 Mobile semantic surface ownership PASS: mobile geometry remains semantic, responsive and independent from Desktop docking state.');

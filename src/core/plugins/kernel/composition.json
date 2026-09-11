@@ -1,0 +1,95 @@
+{
+  "output": "src/generated/runtime/plugin-kernel.js",
+  "moduleRuntimeName": "DKDSPluginKernelModules",
+  "importableModules": [
+    {
+      "id": "contracts/presentation",
+      "path": "src/core/contracts/presentation.js"
+    },
+    {
+      "id": "kernel/context",
+      "path": "src/core/plugins/kernel/modules/context.js"
+    },
+    {
+      "id": "kernel/manifest",
+      "path": "src/core/plugins/kernel/modules/manifest.js"
+    },
+    {
+      "id": "kernel/registry",
+      "path": "src/core/plugins/kernel/modules/registry.js"
+    },
+    {
+      "id": "kernel/bootstrap",
+      "path": "src/core/plugins/kernel/modules/bootstrap.js"
+    },
+    {
+      "id": "kernel/workspace/top",
+      "path": "src/core/plugins/kernel/modules/workspace/top.js"
+    },
+    {
+      "id": "kernel/events/history",
+      "path": "src/core/plugins/kernel/modules/events/history.js"
+    },
+    {
+      "id": "kernel/shell/context-toolbar",
+      "path": "src/core/plugins/kernel/modules/shell/context-toolbar.js"
+    },
+    {
+      "id": "kernel/activity/shell",
+      "path": "src/core/plugins/kernel/modules/activity/shell.js"
+    },
+    {
+      "id": "kernel/contributions/ui",
+      "path": "src/core/plugins/kernel/modules/contributions/ui.js"
+    },
+    {
+      "id": "kernel/shortcuts/menu",
+      "path": "src/core/plugins/kernel/modules/shortcuts/menu.js"
+    },
+    {
+      "id": "kernel/commands/domain",
+      "path": "src/core/plugins/kernel/modules/commands/domain.js"
+    },
+    {
+      "id": "kernel/commands/toolbar",
+      "path": "src/core/plugins/kernel/modules/commands/toolbar.js"
+    },
+    {
+      "id": "kernel/contributions/typed",
+      "path": "src/core/plugins/kernel/modules/contributions/typed.js"
+    },
+    {
+      "id": "kernel/project/status",
+      "path": "src/core/plugins/kernel/modules/project/status.js"
+    },
+    {
+      "id": "kernel/pages/panels",
+      "path": "src/core/plugins/kernel/modules/pages/panels.js"
+    },
+    {
+      "id": "kernel/host-facade",
+      "path": "src/core/plugins/kernel/modules/host-facade.js"
+    },
+    {
+      "id": "kernel/plugin-api",
+      "path": "src/core/plugins/kernel/modules/plugin-api.js"
+    },
+    {
+      "id": "kernel/lifecycle",
+      "path": "src/core/plugins/kernel/modules/lifecycle.js"
+    },
+    {
+      "id": "kernel/package-runtime",
+      "path": "src/core/plugins/kernel/modules/package-runtime.js"
+    },
+    {
+      "id": "kernel/runtime",
+      "path": "src/core/plugins/kernel/modules/runtime.js"
+    }
+  ],
+  "entryModule": "kernel/runtime",
+  "modules": [],
+  "preludeScripts": [
+    "src/core/theme/style-ownership-gate-runtime.js"
+  ]
+}

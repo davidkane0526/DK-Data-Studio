@@ -1,0 +1,30 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const bytes=rel=>fs.statSync(path.join(root,rel)).size;
+const limit=48*1024;
+const index=read('src/index.html');
+const cases=read('src/diagnostics/automation-smoke-cases.js');
+const visual=read('src/diagnostics/automation-visual-cases.js');
+const runtime=read('src/diagnostics/automation-test-runtime.js');
+assert(bytes('src/diagnostics/automation-smoke-cases.js')<=limit,'Automation smoke cases must remain below 48 KiB.');
+assert(bytes('src/diagnostics/automation-visual-cases.js')<=limit,'Automation visual cases must remain below 48 KiB.');
+assert(bytes('src/diagnostics/automation-test-runtime.js')<=limit,'Automation runner/runtime must remain below 48 KiB.');
+const optional=read('src/core/host/optional-runtime-loader.js');
+assert(index.includes('core/host/optional-runtime-loader.js'),'Main shell must install the optional diagnostics loader.');
+assert(optional.indexOf('diagnostics/automation-smoke-cases.js')<optional.indexOf('diagnostics/automation-test-runtime.js'),'Optional diagnostics loader must load smoke cases before the runner runtime.');
+assert(optional.indexOf('diagnostics/automation-visual-cases.js')<optional.indexOf('diagnostics/automation-test-runtime.js'),'Optional diagnostics loader must load visual cases before the runner runtime.');
+assert(visual.includes('window.DKDSAutomationVisualCases=Object.freeze'),'Visual-case module must expose one immutable diagnostics case contract.');
+assert(visual.includes('async function visualGeometryClosureSmoke('),'Visual-case owner missing visualGeometryClosureSmoke.');
+assert(runtime.includes('const visualCases=window.DKDSAutomationVisualCases'),'Runner must consume the visual-case module rather than own visual geometry implementation.');
+assert(!runtime.includes('async function visualGeometryClosureSmoke('),'Runner must not re-own visualGeometryClosureSmoke.');
+assert(cases.includes('window.DKDSAutomationSmokeCases=Object.freeze'),'Smoke-case module must expose one immutable diagnostics case contract.');
+assert(runtime.includes('const smokeCases=window.DKDSAutomationSmokeCases'),'Runner must consume the smoke-case module rather than duplicate its implementations.');
+for(const name of ['rendererPlotSmoke','scientificPlotInteractionSmoke','tableSurfaceSmoke','performanceResourceLifecycleSmoke','scientificAlgorithmPackageCatalogSmoke','scientificReactiveSmoke']){
+  assert(cases.includes(`function ${name}(`),`Smoke-case owner missing ${name}.`);
+  assert(!runtime.includes(`function ${name}(`),`Runner must not re-own ${name}.`);
+}
+console.log(`v3.61.101 automation diagnostics modularization PASS: cases=${bytes('src/diagnostics/automation-smoke-cases.js')} B, visual=${bytes('src/diagnostics/automation-visual-cases.js')} B, runner=${bytes('src/diagnostics/automation-test-runtime.js')} B.`);

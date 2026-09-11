@@ -1,0 +1,110 @@
+{
+  "schema": "dkds.phase-c-artifact-identity/1",
+  "appVersion": "3.68.76",
+  "capturedAt": "2026-09-09T17:05:18.644Z",
+  "profile": "full",
+  "samples": 3,
+  "warmup": 1,
+  "environment": {
+    "platform": "linux",
+    "release": "6.18.35",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "methodology": {
+    "legacy-json": "Previous canonicalize + JSON.stringify + hashString contract, retained locally as the parity baseline.",
+    "canonical-stream": "Current complete canonical fingerprint streamed directly into the same hash.",
+    "artifact-revision": "Current Store-local Artifact change-stamp lookup."
+  },
+  "results": [
+    {
+      "id": "curve-100k",
+      "title": "100k-point curve",
+      "points": 100000,
+      "modes": {
+        "legacy-json": {
+          "samples": 3,
+          "medianMs": 383.929,
+          "p95Ms": 388.885,
+          "maxMs": 389.436,
+          "peakHeapDeltaMiB": 6.806,
+          "peakRssDeltaMiB": 7.125,
+          "digest": "qxc8hj"
+        },
+        "canonical-stream": {
+          "samples": 3,
+          "medianMs": 381.762,
+          "p95Ms": 382.235,
+          "maxMs": 382.288,
+          "peakHeapDeltaMiB": 5.666,
+          "peakRssDeltaMiB": 4.5,
+          "digest": "qxc8hj"
+        },
+        "artifact-revision": {
+          "samples": 3,
+          "medianMs": 0.014,
+          "p95Ms": 0.016,
+          "maxMs": 0.017,
+          "peakHeapDeltaMiB": 0.001,
+          "peakRssDeltaMiB": 0,
+          "digest": "1"
+        }
+      },
+      "correctness": {
+        "canonicalMatchesLegacy": true,
+        "unrelatedArtifactStable": true,
+        "sourceChangeDetected": true,
+        "persistenceFingerprintStable": true,
+        "revisionNotPersisted": true
+      },
+      "speedups": {
+        "canonicalStreamVsLegacyJson": 1.01
+      }
+    },
+    {
+      "id": "curve-1m",
+      "title": "1M-point curve",
+      "points": 1000000,
+      "modes": {
+        "legacy-json": {
+          "samples": 3,
+          "medianMs": 3781.176,
+          "p95Ms": 3862.115,
+          "maxMs": 3871.109,
+          "peakHeapDeltaMiB": 52.424,
+          "peakRssDeltaMiB": 76.34,
+          "digest": "1dqw2hs"
+        },
+        "canonical-stream": {
+          "samples": 3,
+          "medianMs": 3773.405,
+          "p95Ms": 3852.521,
+          "maxMs": 3861.311,
+          "peakHeapDeltaMiB": 12.493,
+          "peakRssDeltaMiB": 8.148,
+          "digest": "1dqw2hs"
+        },
+        "artifact-revision": {
+          "samples": 3,
+          "medianMs": 0.02,
+          "p95Ms": 0.02,
+          "maxMs": 0.021,
+          "peakHeapDeltaMiB": 0.001,
+          "peakRssDeltaMiB": 0,
+          "digest": "1"
+        }
+      },
+      "correctness": {
+        "canonicalMatchesLegacy": true,
+        "unrelatedArtifactStable": true,
+        "sourceChangeDetected": true,
+        "persistenceFingerprintStable": true,
+        "revisionNotPersisted": true
+      },
+      "speedups": {
+        "canonicalStreamVsLegacyJson": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "DK Data Studio",
+    "slug": "dk-data-studio",
+    "version": "3.69.4",
+    "orientation": "default",
+    "android": {
+      "package": "com.dk.datastudio",
+      "versionCode": 130,
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#111827"
+      }
+    },
+    "plugins": [
+      "./plugins/withDkdsWebAssets.js",
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": true,
+          "style": "dark"
+        }
+      ],
+      "./plugins/withDkdsAndroidNativeHost.js",
+      "./plugins/withDkdsReleaseSigning.js"
+    ],
+    "icon": "./assets/icon.png"
+  }
+}

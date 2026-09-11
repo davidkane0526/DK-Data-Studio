@@ -1,0 +1,296 @@
+/* Core Scientific Presentation theme boundary.
+   Engine-specific chrome is not allowed to restyle semantic legend/navigation. */
+
+/* Scientific presentation supplements typography, plot-state and interaction
+   affordances. Card/header Material paint is resolved by the Core semantic
+   registry + Material Renderer; this file must not recreate those surfaces. */
+
+/* GroupPlot legends are semantic labels, never elevated controls. */
+
+/* Measurement width is a Core scientific presentation primitive. */
+
+/* Dark scientific views keep context visible but make focus unmistakable. */
+
+/* Low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
+
+/* Source-aware import/project split commands. */
+
+/* Split-command caret and dark structural-line closure. */
+
+/* ============================================================
+   Semantic Theme Contract surface mapping
+   Structural hierarchy is expressed by surface contrast and spacing. Divider
+   hit-zones remain available for resize, but idle splitters are visually quiet.
+   Controls use a separate border token so theme plugins can style panels and
+   inputs independently without reintroducing bright framework lines.
+   ============================================================ */
+
+/* Shell/workspace separators are not borders in the visual hierarchy. */
+
+/* Core splitter contract: 7 px touch/mouse hit zone, no idle white rule. */
+
+
+body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
+  fill:none;
+  stroke:var(--dkui-marker-selected-halo);
+  stroke-width:4.5px;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+
+/* Parameter sidebars are separated with quiet surfaces, not horizontal rules. */
+/* Core-owned card/header grammar. Surface headers never share their text area
+   with resize separators or floating controls. */
+
+/* Cards get depth from surface contrast. Structural card borders are optional. */
+
+/* LAN Web: only the QR pixels themselves need a white paper. The surrounding
+   service UI remains themeable. */
+
+/* Floating utility windows use elevation instead of a bright perimeter rule. */
+
+/* Scientific navigation dark-surface closure. */
+/* Canonical presentation migrated from the former Foundation baseline. */
+.legend-title {font-weight:650;color:var(--text-secondary)
+}
+.group-panel.docked {border:0;border-radius:0;box-shadow:none
+}
+.group-panel.docked:not(.collapsed) .dock-resizer {background:transparent
+}
+.group-panel.docked:not(.collapsed) .dock-resizer:hover {background:color-mix(in srgb,var(--accent-primary) 16%,transparent)
+}
+.trend-card-header button {font-size:11px
+}
+.trend-card-legend {border-top:1px solid var(--border-subtle);border-color:var(--border-subtle);background:transparent;font-size:11px;color:var(--text-secondary)
+}
+.group-panel-toolbar {border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);background:transparent;border-color:var(--border-subtle)
+}
+.group-panel-hint {color:var(--text-tertiary)
+}
+.trend-layout-controls>span {font-size:11px;color:var(--text-secondary)
+}
+.trend-layout-controls button {font-size:11px
+}
+.trend-layout-controls button.active {font-weight:650;}
+.axis path {stroke:var(--text-tertiary)
+}
+.axis line {stroke:var(--text-tertiary)
+}
+.axis text {fill:var(--text-secondary);font-size:11px
+}
+.curve {fill:none
+}
+.width-band {opacity:.15
+}
+.legend-label {font-size:11px;fill:var(--text-secondary)
+}
+.crosshair {stroke:var(--border-strong)
+}
+.main-plot-tools button {font-size:11px}
+.main-plot-tools button.active {font-weight:650;}
+.trend-legend-line {border-top:3px solid currentColor
+}
+.trend-legend-line.reverse {border-top-style:dashed
+}
+.trend-legend-dot {border-radius:50%
+}
+.brush .selection {fill:#3b82f6;stroke:#2563eb
+}
+.plot-interaction-overlay {fill:transparent
+}
+.curve.dimmed {opacity:.28
+}
+.peak-point.dimmed {opacity:.34
+}
+body.dkds-modern-ui .dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-chart-host:focus-within>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-nav-tools:hover,
+body.dkds-modern-ui .dkds-scientific-nav-tools:focus-within,
+body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging {opacity:.94
+}
+body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band {opacity:.10
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0
+}
+html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
+html[data-dkds-theme="light"] body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis line {stroke:var(--text-tertiary)
+}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis text {fill:var(--text-secondary)
+}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis-title {fill:var(--text-primary)
+}
+.advanced-peak-settings {
+  border:1px solid var(--border-subtle);
+  border-radius:7px;
+  border-color:var(--border-subtle);
+  background:var(--surface-secondary)
+}
+.advanced-peak-settings summary {
+  color:var(--text-secondary)
+}
+.legend-label.dimmed {opacity:.12
+}
+.legend-swatch.dimmed {opacity:.12
+}
+.legend-label.selected {fill:var(--text-primary)
+}
+.legend-swatch.selected {stroke-width:3.3
+}
+.dkds-scientific-plot-bg {fill:var(--plugin-workspace-surface);stroke:var(--plugin-workspace-grid)
+}
+.dkds-scientific-axis path,
+.dkds-scientific-axis line {stroke:var(--text-tertiary)
+}
+.dkds-scientific-axis text {fill:var(--text-secondary)
+}
+.dkds-scientific-axis-title {fill:var(--text-primary)
+}
+.dkds-scientific-curve {fill:none
+}
+.dkds-scientific-curve-hit {fill:none;stroke:transparent;stroke-width:14px
+}
+.dkds-scientific-marker-hit {fill:transparent;stroke:none
+}
+.dkds-scientific-width-line {stroke-width:1.6
+}
+.dkds-scientific-baseline-line {stroke-width:1.15;stroke-dasharray:5 4;opacity:.72
+}
+.dkds-scientific-direct-box {stroke-width:1.4
+}
+.dkds-scientific-direct-box.is-range {fill:rgba(58,96,246,.08);stroke:#3a60f6;stroke-dasharray:5 3
+}
+.dkds-scientific-direct-box.is-zoom {fill:rgba(124,58,237,.07);stroke:#7c3aed;stroke-dasharray:3 3
+}
+.dkds-scientific-persisted-range {fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4
+}
+.dkds-plot-view-file-svg {fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round
+}
+.dkds-scientific-auto-legend {color:var(--text-secondary)
+}
+.main-legend-bar::-webkit-scrollbar-track {background:transparent
+}
+.main-legend-bar::-webkit-scrollbar-thumb {background:var(--border-strong);border-radius:999px
+}
+.plot-wrap {background:transparent
+}
+.dkds-plot-legend-item.is-muted {opacity:.22
+}
+.dkds-plot-legend-swatch {
+  border:0;
+  border-radius:2px;
+  box-shadow:none
+}
+.dkds-scientific-nav-tools {
+  opacity:0
+}
+.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
+.dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools,
+.dkds-scientific-chart-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-scientific-nav-tools:hover,
+.dkds-scientific-nav-tools:focus-within,
+.dkds-scientific-nav-tools.is-dragging {
+  opacity:.94
+}
+@media (hover:none),(pointer:coarse) {
+  .dkds-scientific-nav-tools {opacity:.82
+  }
+}
+.dkds-scientific-curve-surface:focus,
+.dkds-scientific-curve-surface:focus-visible {outline:none
+}
+.dkds-inspector-section {
+  border:0;
+  border-bottom:1px solid var(--border-subtle,var(--dkui-divider));
+  border-radius:0;
+  background:transparent;
+  background-image:none;
+  box-shadow:none;
+  color:var(--text-primary,var(--dkui-text))
+}
+.dkds-inspector-section:last-child {border-bottom:0
+}
+.dkds-inspector-section .dkds-meta {color:var(--text-secondary,var(--dkui-text-soft))
+}
+.main-legend-chip.dimmed {opacity:.16
+}
+.main-legend-line {
+  border-top:3px solid currentColor
+}
+.main-legend-line.reverse {border-top-style:dashed
+}
+.peak-hit-target {
+  fill:transparent;
+  stroke:none
+}
+.dkds-managed-table[data-dkds-table-tone="analysis"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-soft) 82%,transparent)
+}
+.dkds-managed-table[data-dkds-table-tone="success"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--success) 14%,var(--surface-primary))
+}
+.dkds-managed-table[data-dkds-table-tone="warning"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--warning) 14%,var(--surface-primary))
+}
+.dkds-managed-table[data-dkds-table-tone="danger"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--danger) 13%,var(--surface-primary))
+}
+.dkds-managed-table[data-dkds-table-emphasis="quiet"] {--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary) 98%,transparent)
+ }
+body.dkds-modern-ui .group-panel-toolbar {color:var(--text-secondary);box-shadow:none}
+body.dkds-modern-ui .dkds-plot-legend {background:transparent;border-color:var(--border-subtle);color:var(--text-secondary);box-shadow:none}
+
+.dkds-managed-table {
+  --dkds-table-row-even-bg:color-mix(in srgb,var(--surface-secondary) 52%,transparent);
+  --dkds-table-row-hover-bg:color-mix(in srgb,var(--accent-primary) 7%,var(--surface-primary));
+  --dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-primary) 12%,var(--surface-primary))
+;border-collapse:separate;border-spacing:0;
+  background:var(--surface-primary);color:var(--text-primary)
+}
+.dkds-managed-table thead th {border:0;border-bottom:1px solid var(--border-subtle);background:var(--surface-secondary);color:var(--text-secondary)
+}
+.dkds-managed-table thead th.dkds-table-sortable::before {color:var(--text-tertiary);opacity:0
+}
+.dkds-managed-table thead th.dkds-table-sortable:hover::before {opacity:.72
+}
+.dkds-managed-table thead th[data-dkds-sort="asc"]::before {opacity:1;color:var(--accent-primary)
+}
+.dkds-managed-table thead th[data-dkds-sort="desc"]::before {opacity:1;color:var(--accent-primary)
+}
+.dkds-table-column-resizer::after {background:transparent
+}
+.dkds-managed-table thead th:hover>.dkds-table-column-resizer::after,
+.dkds-table-column-resizer:hover::after {background:var(--border-strong)
+}
+.dkds-managed-table tbody td,
+.dkds-managed-table tbody th {border:0;border-bottom:1px solid color-mix(in srgb,var(--border-subtle) 72%,transparent);background:var(--dkds-table-row-odd-bg);color:var(--text-primary)
+}
+.dkds-managed-table[data-dkds-table-stripe="subtle"] tbody tr:nth-child(even)>td,
+.dkds-managed-table[data-dkds-table-stripe="subtle"] tbody tr:nth-child(even)>th {background:var(--dkds-table-row-even-bg)
+}
+.dkds-managed-table tbody tr:hover>td,
+.dkds-managed-table tbody tr:hover>th {background:var(--dkds-table-row-hover-bg)
+}
+.dkds-managed-table tbody tr[aria-selected="true"]>td,
+.dkds-managed-table tbody tr[aria-selected="true"]>th,
+.dkds-managed-table tbody tr.selected>td,
+.dkds-managed-table tbody tr.selected>th {background:var(--dkds-table-row-selected-bg)
+}
+.dkds-managed-table tbody tr:last-child>td,
+.dkds-managed-table tbody tr:last-child>th {border-bottom-color:transparent
+}
+
+body.dkds-modern-ui .dkds-scientific-surface-host:focus,body.dkds-modern-ui .dkds-scientific-surface-host:focus-visible,body.dkds-modern-ui .dkds-scientific-surface-host:focus-within{outline:none}
+
+/* Native Mobile resize affordances remain optically discoverable without
+   enlarging the structural hit target. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-table-column-resizer::after{
+  background:color-mix(in srgb,var(--dkui-divider) 72%,transparent);
+  box-shadow:0 0 3px color-mix(in srgb,var(--dkui-accent) 24%,transparent)
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-table-column-resizer:is(:hover,:active,.is-dragging)::after,
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui.dkds-table-resizing .dkds-table-column-resizer::after{
+  background:var(--dkui-divider-hover,var(--border-strong));
+  box-shadow:0 0 5px color-mix(in srgb,var(--dkui-accent) 40%,transparent)
+}

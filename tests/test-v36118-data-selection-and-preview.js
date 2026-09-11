@@ -1,0 +1,23 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const json=f=>JSON.parse(read(f));
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+
+const dc=read('src/plugins/data-center/feature-runtime.js');
+const dcSelection=read('src/plugins/data-center/artifact-selection.js');
+const views=read('src/plugins/data-center/shared-views.js');
+const app=read('src/generated/runtime/app.js');
+const html=read('src/index.html');
+assert(dc.includes("function clearChartPreview(message='选择 DataTable 后可配置图形。')"),'Data Center must have explicit stale-chart cleanup.');
+assert(dc.includes('ctx.ui.scientificPlot.purge?.(host)'),'Data Center stale-chart cleanup must use the Core chart lifecycle.');
+assert(dc.includes("if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}"),'Data Center render path must clear old chart when the current DataTable disappears.');
+assert(views.includes('dcInvertSelectionBtn')&&views.includes('dcSelectAllBtn')&&views.includes('dcClearSelectionBtn'),'Data Center must expose common selection actions.');
+assert(dcSelection.includes('event.shiftKey')&&dcSelection.includes('event.ctrlKey||event.metaKey'),'Data Center rows must support range/additive selection modifiers through the extracted selection owner.');
+assert(dcSelection.includes("mod&&key==='a'")&&dcSelection.includes("mod&&key==='i'"),'Data Center list must expose select-all and invert keyboard shortcuts through the current pane-scoped shortcut owner.');
+assert(html.includes('id="importInvertBtn"')&&html.includes('Shift 连选'),'Import Workbench must expose invert and range-selection guidance.');
+assert(app.includes('function setImportCheckedRange(')&&app.includes('function invertImportChecked('),'Import Workbench must implement shared range/invert selection operations.');
+assert(app.includes("mod&&key==='a'")&&app.includes("mod&&key==='i'"),'Import Workbench must implement Ctrl/Cmd+A and Ctrl/Cmd+I.');
+console.log('v3.61.18 Data Center stale-preview cleanup + common selection gestures passed.');

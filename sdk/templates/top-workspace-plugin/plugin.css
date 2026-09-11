@@ -1,0 +1,5 @@
+.sdk-top-workbench{width:100%;min-width:0;min-height:0}
+.sdk-top-main{width:100%;min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch;gap:10px;padding:10px;box-sizing:border-box}
+.sdk-top-summary{font-size:11px}
+.sdk-top-plot{width:100%;min-width:0;min-height:220px}
+.sdk-top-subtitle{font-size:10px}

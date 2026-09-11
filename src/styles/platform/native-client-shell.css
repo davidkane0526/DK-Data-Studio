@@ -1,0 +1,302 @@
+/* React Native owns system/application chrome. These rules shape only the
+   shared WebView renderer and generic Core surfaces; workspace geometry is
+   projected separately from MobilePresenter. */
+/* Native touch density is token-driven. The platform changes only generic /
+   semantic density slots; it never writes a raw min-height to every button or
+   field. Command/action chrome is deliberately outside this minimum: each
+   canonical command component keeps its own geometry owner, so coarse-pointer
+   policy cannot silently enlarge scientific or integrated toolbars. */
+html[data-dkds-host="mobile"].react-native-client{
+  --dkds-generic-button-min-height:36px;
+  --dkds-generic-field-min-height:36px;
+}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse{
+  --dkds-generic-button-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
+  --dkds-generic-field-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
+}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .dkds-analysis-workbench{
+  --dkds-workbench-button-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
+  --dkds-workbench-field-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
+}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .toolbar-btn{padding-left:11px;padding-right:11px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .width-handle{stroke-width:12px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .project-tab{min-height:40px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .scan-toggle-row{gap:18px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .plugin-switch-track{width:46px;height:26px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .plugin-switch-thumb{width:22px;height:22px}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(20px)}
+html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse .plugin-card-actions button{min-height:40px}
+
+html[data-dkds-host="mobile"].react-native-client{--dkds-statusbar-height:0px}
+html[data-dkds-host="mobile"].react-native-client,
+html[data-dkds-host="mobile"].react-native-client body,
+html[data-dkds-host="mobile"].react-native-client #app{width:100%;height:100%;min-width:0;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client body{padding:0;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+html[data-dkds-host="mobile"].react-native-client .topbar,
+html[data-dkds-host="mobile"].react-native-client .project-tabs-bar,
+html[data-dkds-host="mobile"].react-native-client #statusBar.statusbar{display:none}
+
+html[data-dkds-host="mobile"].react-native-client .analysis-page{position:fixed;inset:0;width:100%;height:auto;min-width:0;overflow:hidden;background:var(--app-bg)}
+html[data-dkds-host="mobile"].react-native-client .analysis-page>.analysis-page-header{display:none}
+html[data-dkds-host="mobile"].react-native-client .analysis-page>.analysis-page-body{width:100%;height:100%;min-width:0;min-height:0;padding:0;overflow:auto;box-sizing:border-box}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerPage>.analysis-page-header,
+html[data-dkds-host="mobile"].react-native-client #automationTestPage>.analysis-page-header{display:flex;min-height:44px;padding:6px 8px}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerPage>.analysis-page-body,
+html[data-dkds-host="mobile"].react-native-client #automationTestPage>.analysis-page-body{height:calc(100% - 44px);padding:8px}
+
+html[data-dkds-host="mobile"].react-native-client .dkds-unified-workbench-body,
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workbench-root,
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workspace,
+html[data-dkds-host="mobile"].react-native-client .dkds-analysis-workbench{width:100%;height:100%;min-width:0;min-height:0}
+html[data-dkds-host="mobile"].react-native-client .dkds-analysis-header,
+html[data-dkds-host="mobile"].react-native-client .dkds-analysis-nav{display:none}
+
+html[data-dkds-host="mobile"].react-native-client button,
+html[data-dkds-host="mobile"].react-native-client input,
+html[data-dkds-host="mobile"].react-native-client select{touch-action:manipulation}
+/* Mobile component projection keeps Core action groups dense and content-sized.
+   Plugin layouts declare semantic action/form rows; the platform decides when
+   they wrap instead of stretching a small command set across the viewport. */
+/* Mobile UI may request a compact control density semantically without a
+   plugin taking ownership of button/field chrome. This intent is consumed only
+   by the native platform layer; Desktop/Web remain on their own geometry. */
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"]{
+  --dkds-mobile-control-min-height:30px;
+  --dkds-generic-button-min-height:30px;
+  --dkds-generic-field-min-height:30px;
+  --dkds-field-control-min-height:30px;
+  --dkds-workbench-button-min-height:30px;
+  --dkds-workbench-field-height:30px;
+}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"] .dkds-analysis-workbench{
+  --dkds-workbench-button-min-height:30px;
+  --dkds-workbench-field-height:30px;
+}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"] :where(input,select,textarea){font-size:11px;padding-block:4px;padding-inline:7px}
+
+html[data-dkds-host="mobile"].react-native-client .dkds-action-row{align-content:flex-start;justify-content:flex-start}
+html[data-dkds-host="mobile"].react-native-client .dkds-action-row>button,
+html[data-dkds-host="mobile"].react-native-client .dkds-mode-group.dkds-action-row>button{width:auto;min-width:max-content;max-width:100%;flex:0 0 auto}
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workbench-root .dkds-inline-form-row{flex-wrap:wrap;align-items:flex-end;gap:6px 8px}
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workbench-root .dkds-inline-form-row>label:not(.inline-check){flex:1 1 132px;min-width:112px;max-width:230px}
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workbench-root .dkds-inline-form-row>label.inline-check,
+html[data-dkds-host="mobile"].react-native-client .dkds-plugin-workbench-root .dkds-inline-form-row>button{flex:0 0 auto}
+html[data-dkds-host="mobile"].react-native-client .command-menu{position:fixed;z-index:2400;left:6px;right:6px;top:auto;bottom:6px;width:auto;max-height:72vh;overflow:auto;border-radius:16px;padding:8px}
+html[data-dkds-host="mobile"].react-native-client .command-menu button{width:100%;min-height:46px;text-align:left}
+
+html[data-dkds-host="mobile"].react-native-client .scientific-plot,
+html[data-dkds-host="mobile"].react-native-client [data-scientific-plot],
+html[data-dkds-host="mobile"].react-native-client .analysis-chart{width:100%;min-width:0;min-height:280px;height:max(42vh,300px)}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-summary{grid-template-columns:minmax(0,1fr)}
+
+html[data-dkds-host="mobile"].react-native-client .import-panel-overlay{padding:0;bottom:0}
+html[data-dkds-host="mobile"].react-native-client .import-workbench{width:100%;height:100%;max-height:none;border:0;border-radius:0}
+html[data-dkds-host="mobile"].react-native-client .import-workbench-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(120px,28vh) minmax(0,1fr)}
+html[data-dkds-host="mobile"].react-native-client .import-file-pane{border-right:0;border-bottom:1px solid var(--border-subtle)}
+html[data-dkds-host="mobile"].react-native-client .import-workbench button,
+html[data-dkds-host="mobile"].react-native-client .import-bulk-actions button,
+html[data-dkds-host="mobile"].react-native-client .import-workbench-footer button{min-width:108px;padding-left:16px;padding-right:16px;border-radius:10px}
+html[data-dkds-host="mobile"].react-native-client .import-target-bar{display:flex;align-items:center;gap:8px;padding:7px 10px;overflow-x:auto;overflow-y:hidden}
+html[data-dkds-host="mobile"].react-native-client .import-target-heading{flex:0 0 auto;min-width:78px}
+html[data-dkds-host="mobile"].react-native-client .import-target-heading span,
+html[data-dkds-host="mobile"].react-native-client .import-target-hint{display:none}
+html[data-dkds-host="mobile"].react-native-client .import-target-options{display:flex;flex:0 0 auto;flex-wrap:nowrap;gap:7px}
+html[data-dkds-host="mobile"].react-native-client .import-target-chip{display:inline-flex;flex:0 0 150px;width:150px;height:36px;min-height:36px;justify-content:flex-start;padding:0 13px;border-radius:11px;box-sizing:border-box}
+
+html[data-dkds-host="mobile"].react-native-client .dkds-memory-panel,
+html[data-dkds-host="mobile"].react-native-client :is(.lan-web-panel,.dkds-mobile-service){z-index:3200}
+html[data-dkds-host="mobile"].react-native-client .dkds-memory-panel{bottom:var(--dkds-status-popover-gap,8px);max-height:calc(100vh - var(--dkds-statusbar-height,28px) - var(--dkds-status-popover-gap,8px) - 10px)}
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-switch-row,
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-port-row,
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-key-card,
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-address-card,
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-share-section{display:none}
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-grid{grid-template-columns:minmax(0,1fr)}
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel.native-local-only .lan-web-settings-card{padding:8px}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-inline-summary]{display:none}
+
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-body{gap:7px;padding:8px 10px 24px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-summary{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-stat{min-height:48px;padding:6px 9px;border-radius:9px;gap:2px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-stat span{font-size:var(--ui-font-tiny,10px)}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-stat strong{font-size:16px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card{
+  padding:7px 8px;gap:6px 8px;
+  grid-template-columns:minmax(220px,1.6fr) minmax(118px,.72fr) minmax(118px,.72fr) auto auto auto;
+  grid-template-areas:"search status type count refresh install";
+  align-items:center
+}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-search-wrap{grid-area:search;height:32px;padding:0 8px;border-width:1px;min-width:0}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card>label:nth-of-type(1){grid-area:status}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card>label:nth-of-type(2){grid-area:type}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerVisibleCount{grid-area:count;align-self:center}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerInstallBtn{grid-area:install}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerOpenFolderBtn[hidden]{display:none}
+html[data-dkds-host="mobile"].react-native-client #pluginManagerRefreshBtn{grid-area:refresh;width:auto;min-width:58px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card>label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px;align-items:center;min-width:0}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card>label>select{min-width:0;width:100%;height:30px}
+@media (max-width:1120px){
+  html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto auto;
+    grid-template-areas:"search search search search search" "status type count refresh install"
+  }
+}
+@media (max-width:760px){
+  html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+    grid-template-areas:"search search search" "status type count" "install install refresh"
+  }
+  html[data-dkds-host="mobile"].react-native-client #pluginManagerRefreshBtn{justify-self:stretch;width:100%}
+}
+@media (max-width:520px){
+  html[data-dkds-host="mobile"].react-native-client .plugin-manager-toolbar-card{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:"search search" "status type" "count count" "install install" "refresh refresh"
+  }
+}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-grid,
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-section-list{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:7px;width:100%;justify-content:stretch}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-grid.plugin-manager-grid--compact,
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-section-list.plugin-manager-grid--compact{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card{padding:0;border-radius:9px;max-width:100%}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-head{grid-template-columns:34px minmax(0,1fr) auto;gap:7px;padding:8px 9px 6px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-icon{width:32px;height:32px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-description{min-height:0;padding-left:9px;padding-right:9px;margin-bottom:4px;line-height:1.28;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-body{padding:0 9px 6px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-details{padding:6px 9px 7px;line-height:1.42}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-footer{min-height:0;padding:4px 9px 5px;gap:5px;align-items:flex-start}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-meta{min-width:0;flex:1 1 118px;gap:4px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-actions{flex:0 0 auto;min-width:max-content;flex-wrap:nowrap}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-actions button{flex:0 0 auto;white-space:nowrap;word-break:keep-all}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-switches{min-width:max-content;white-space:nowrap}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-title-line{min-width:0;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client .plugin-type-badge,
+html[data-dkds-host="mobile"].react-native-client .plugin-status-badge{flex:0 0 auto;white-space:nowrap}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card h3{font-size:11px;margin:0 0 3px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card p{font-size:var(--ui-font-tiny,10px);line-height:1.35}
+
+@media (orientation:landscape) and (max-height:600px){
+  html[data-dkds-host="mobile"].react-native-client .scientific-plot,
+  html[data-dkds-host="mobile"].react-native-client [data-scientific-plot],
+  html[data-dkds-host="mobile"].react-native-client .analysis-chart{height:max(70vh,260px);min-height:240px}
+}
+
+/* Native scientific chrome remains compact even though ordinary mobile controls
+   keep a larger touch target. This prevents selected fills from touching the
+   integrated container edges and removes the apparent second fill layer. */
+html[data-dkds-host="mobile"].react-native-client .dkds-toolbar.dkds-integrated-action-group,
+html[data-dkds-host="mobile"].react-native-client .dkds-surface-header .dkds-integrated-action-group{--dkds-header-action-height:26px;overflow-y:hidden}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools{--dkds-scientific-nav-item-width:22.5px;--dkds-scientific-nav-item-height:20.4px;--dkds-scientific-nav-group-height:23.4px;--dkds-scientific-nav-padding-block:1.5px;--dkds-scientific-nav-padding-inline:1.5px;box-sizing:border-box;height:var(--dkds-scientific-nav-group-height);min-height:var(--dkds-scientific-nav-group-height);max-height:var(--dkds-scientific-nav-group-height);opacity:0;pointer-events:none}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>button{font-size:12.5px}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>.dkds-scientific-nav-drag{font-size:12.5px}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools:is(.is-touch-visible,.is-dragging,:focus-within){opacity:.94;pointer-events:auto}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-inline-summary-row]{display:none}
+
+/* Native parameter drawers use a denser control scale than full-page touch UI.
+   This is scoped to the Mobile projection frame so Desktop geometry and control
+   metrics remain untouched. */
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{
+  --dkds-generic-button-min-height:28px;
+  --dkds-generic-field-min-height:28px;
+  --dkds-field-control-min-height:28px;
+  --dkds-workbench-button-min-height:28px;
+  --dkds-workbench-field-height:28px;
+}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] .dkds-analysis-workbench{
+  --dkds-workbench-button-min-height:28px;
+  --dkds-workbench-field-height:28px;
+}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] .schema-param-field{--dkds-schema-field-min-height:28px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(input,select,textarea){font-size:11px;padding:5px 8px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button){padding:5px 9px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(.dkds-action-row,.dkds-toolbar){gap:5px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(label){gap:3px}
+
+/* Native region action menus are compact popovers, not full-height sheets. */
+html[data-dkds-host="mobile"].react-native-client .command-menu.range-action-menu{left:50%;right:auto;top:auto;bottom:max(8px,var(--dkds-native-statusbar-height,28px));width:min(340px,calc(100vw - 18px));height:max-content;min-height:0;max-height:min(48vh,360px);padding:6px;transform:translateX(-50%);overflow:auto;border-radius:10px;overscroll-behavior:contain;align-content:start;scrollbar-width:thin}
+html[data-dkds-host="mobile"].react-native-client .command-menu.range-action-menu::-webkit-scrollbar{width:3px;height:3px}
+html[data-dkds-host="mobile"].react-native-client .command-menu.range-action-menu button{width:auto;min-height:28px;height:auto;padding:4px 7px;font-size:10.5px}
+html[data-dkds-host="mobile"].react-native-client .range-action-grid{grid-template-columns:1fr 1fr;gap:4px}
+html[data-dkds-host="mobile"].react-native-client .range-action-identity{margin-top:4px;padding-top:4px;grid-template-columns:74px minmax(0,1fr);gap:4px}
+html[data-dkds-host="mobile"].react-native-client .range-action-identity :where(select,input){min-height:28px;padding:3px 6px;font-size:10.5px}
+html[data-dkds-host="mobile"].react-native-client .range-action-identity button{width:100%}
+html[data-dkds-host="mobile"].react-native-client .range-action-footer{margin-top:4px;padding-top:4px;gap:4px}
+html[data-dkds-host="mobile"].react-native-client .range-action-footer span{font-size:10px;line-height:1.25}
+
+/* Drawer controls stay content-sized and do not recreate Desktop minimums. */
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button,input,select,textarea){max-width:100%;box-sizing:border-box}
+
+/* ParameterSchema may opt into content-sized tracks on native surfaces.  This
+   is intentionally different from the ordinary 1fr form grid: a small set of
+   fields should occupy only the width their controls need instead of stretching
+   across an entire tablet row. */
+html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit{
+  grid-template-columns:var(--dkds-parameter-auto-fit-native-columns,repeat(auto-fit,minmax(150px,220px)));justify-content:start;align-items:start;gap:7px 9px
+}
+html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit>.schema-param-group-title{grid-column:1/-1}
+
+/* Native compact ParameterSchema fields use one exact visible control box.
+   Multi-select proxies are buttons semantically, but their geometry belongs to
+   the field-control contract rather than the generic coarse-pointer button. */
+html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit.compact .schema-param-field :where(select.dkds-field-control,.dkds-multiselect-trigger.dkds-field-control){
+  box-sizing:border-box;
+  height:var(--dkds-field-control-min-height,26px);
+  min-height:var(--dkds-field-control-min-height,26px);
+  max-height:var(--dkds-field-control-min-height,26px);
+  padding-block:var(--dkds-field-control-padding-block,2px);
+  line-height:1.15;
+}
+html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit.compact .dkds-multiselect-trigger.dkds-field-control{display:flex;align-items:center;width:100%;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client .lan-web-panel{
+  top:auto;
+  left:6px;
+  right:6px;
+  bottom:var(--dkds-status-popover-gap,8px);
+  width:auto;
+  min-width:0;
+  height:auto;
+  max-height:calc(100vh - var(--dkds-statusbar-height,28px) - var(--dkds-status-popover-gap,8px) - 10px);
+}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card{align-content:start}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-description{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-footer{align-items:flex-start}
+
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-list,
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-section,
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-section-list{align-content:start;align-items:start;grid-auto-rows:max-content}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card{height:max-content;min-height:0;align-self:start}
+
+/* Generic native toolbar intent: a plugin may declare that a logical toolbar
+   contains multiple command rows, while Core remains the sole geometry owner. */
+html[data-dkds-host="mobile"].react-native-client .dkds-toolbar[data-dkds-toolbar-layout="stack"]{
+  display:grid;grid-template-rows:auto auto;align-items:stretch;overflow:visible;flex-flow:initial
+}
+
+html[data-dkds-host="mobile"].react-native-client .plugin-card-body{padding:0 9px 7px}
+html[data-dkds-host="mobile"].react-native-client .plugin-capability-row{gap:4px}
+html[data-dkds-host="mobile"].react-native-client .plugin-capability-chip{padding:2px 5px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-actions{gap:4px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-actions button{padding-inline:7px}
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card .plugin-card-id{margin-top:2px}
+
+@media (min-width:840px){
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-section-list{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+}
+
+/* Native Plugin Manager cards must be content-height. The <=760px Desktop
+   fallback turns the footer into a column while retaining space-between, which
+   created the large blank vertical band seen in portrait. */
+html[data-dkds-host="mobile"].react-native-client .plugin-manager-card{display:grid;grid-template-rows:max-content max-content max-content max-content;align-content:start;height:auto}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-footer{height:auto;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;align-content:flex-start}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-meta{flex:1 1 210px}
+html[data-dkds-host="mobile"].react-native-client .plugin-card-actions{width:auto;margin-left:auto;justify-content:flex-end}
+@media (max-width:520px){
+  html[data-dkds-host="mobile"].react-native-client .plugin-card-footer{gap:4px;padding-block:4px}
+  html[data-dkds-host="mobile"].react-native-client .plugin-card-meta{flex-basis:100%;font-size:var(--ui-font-tiny,10px)}
+  html[data-dkds-host="mobile"].react-native-client .plugin-card-actions{width:100%;margin-left:0}
+}

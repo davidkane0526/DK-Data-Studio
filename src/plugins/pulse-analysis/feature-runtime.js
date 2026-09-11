@@ -1,0 +1,137 @@
+(() => {
+  async function mount(ctx,controller=null,views=null,adapter={}){
+    const dom=ctx.ui.dom;
+    const P=controller;
+    const sharedViews=views||window.DKDSPluginModules.get('builtin.pulse-analysis','shared-views')?.create?.(controller)||null;
+    let workbench=null;
+    const pageHtml=sharedViews?.pageHtml?.()||'';
+
+    ctx.ui.activities.add({
+      id:'pulse',label:'脉冲分析',contextLabel:'脉冲 / 读取分析',icon:'▥',order:40,primary:true,openMode:'window',
+      description:'多文件脉冲 / 读取瞬态分析',
+      onActivate:()=>{ctx.workspace.openPage('pulseAnalysisPage');P.render();}
+    });
+
+    const page=ctx.ui.pages.add({
+      id:'pulse-analysis',pageId:'pulseAnalysisPage',activity:'pulse',toolbar:false,
+      label:'脉冲分析',buttonClass:'primary',order:60,html:pageHtml,onOpen:()=>P.render()
+    });
+
+    workbench=sharedViews?.attach?.(ctx,page)||null;
+    const pulseHeader=dom.query('.analysis-page-header',page);
+    const pulseHeaderActionsHost=dom.create('div');
+    pulseHeaderActionsHost.className='dkds-plugin-header-actions';
+    dom.query('.analysis-page-close',pulseHeader)?.before(pulseHeaderActionsHost);
+    ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
+      activity:'pulse',
+      actions:[
+        {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
+        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
+      ]
+    });
+
+    ctx.ui.topWorkspace.register({
+      id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
+      layout:{
+        mode:'native',root:{selector:'#pulseAnalysisPage .dkds-plugin-workbench-root'},
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:92,collapsible:true},{id:'raw-diagnostic',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
+      }
+    });
+
+
+    // Every scientific data figure consumes the Core PlotView contract.
+    // Pulse only contributes domain actions/semantics; location, CSV/copy,
+    // SVG/PNG and resize lifecycle belong to the platform.
+    const pulsePlotViews=[];
+    const rawCard=dom.query('#pulseRawPlot',page)?.closest('.pulse-card');
+    if(rawCard&&workbench?.registerPrime){
+      workbench.registerPrime({
+        id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
+        handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
+        placements:['inline','right','bottom','float','global'],stateVersion:'pulse-raw-diagnostic-v2',autoOpen:true,
+        mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(dom.query('#pulseRawPlot',page));}catch{}})
+      });
+    }
+    const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
+      const plot=dom.query('#'+plotId,page);
+      const card=plot?.closest('.pulse-card');
+      if(!plot||!card||!ctx.ui.plotViews?.bind)return null;
+      const view=ctx.ui.plotViews.bind(`pulse:${viewId}`,card,{
+        plot,header:'.pulse-card-heading',actionsHost:'.pulse-plot-actions',portableTitle:title,
+        fileStem:()=>`pulse_${viewId}`,actions,portable:!prime,
+        placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',
+        portableFactory:(id,node,spec)=>workbench?.portable?workbench.portable(id,node,spec):ctx.ui.portable.create(id,node,spec)
+      });
+      pulsePlotViews.push(view);
+      return view;
+    };
+    bindPulsePlot('pulseRawPlot','raw','当前文件 · 原始波形诊断',{prime:true,actions:[{id:'fit',label:'适应全部',onInvoke:()=>P.fitRaw()}]});
+    bindPulsePlot('pulseReadPlot','read','脉冲条件 → 读取电流');
+    bindPulsePlot('pulsePulsePlot','pulse','脉冲条件 → 脉冲电流');
+
+
+    const fileList=dom.query('#pulseFileList',page);
+    dom.on(fileList,'click',event=>{
+      const row=event.target?.closest?.('.pulse-batch-file-item'),fileId=row?.dataset?.fileId;if(!fileId)return;
+      if(event.target?.matches?.('.pulse-file-check')){event.stopPropagation();P.setFileChecked(fileId,event.target.checked);return;}
+      P.setActiveFile(fileId);dom.microtask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});});
+    });
+    dom.on(dom.query('#pulseCheckAllBtn',page),'click',()=>P.setAllChecked(true));
+    dom.on(dom.query('#pulseUncheckAllBtn',page),'click',()=>P.setAllChecked(false));
+    dom.on(dom.query('#pulseRemoveFilesBtn',page),'click',()=>P.removeChecked());
+    dom.on(dom.query('#pulseApplySettingsBtn',page),'click',()=>P.applySettingsToChecked());
+
+    dom.on(dom.query('#pulseSeriesLabel',page),'change',()=>{const item=P.syncEditor();if(item)P.refreshFileAndComparison();});
+    for(const id of [
+      'pulseSegmentationMode','pulseTimeCol','pulseCurrentCol','pulseVoltageCol',
+      'pulseCycleSamples','pulseCycleOffsetSamples','pulseWriteStartSample','pulseWriteEndSample',
+      'pulseReadStartSample','pulseReadEndSample','pulseWriteDuration','pulseReadDuration',
+      'pulseSampleInterval','pulsePhaseOrder','pulseReadVoltageFallback','pulsePulseVoltageFallback',
+      'pulseBlockSamples','pulseWindowStart','pulseWindowEnd','pulseReadPairMode'
+    ])dom.on(dom.query('#'+id,page),'change',()=>P.syncEditor());
+    dom.on(dom.query('#pulseResultScope',page),'change',event=>P.setResultScope(event.target.value));
+    dom.on(dom.query('#pulseCopyCsvBtn',page),'click',()=>P.copyResults());
+    dom.on(dom.query('#pulseExportCsvBtn',page),'click',()=>P.exportResults());
+
+
+    if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const activeResultAvailable=()=>{const state=P.getState?.()||{},active=state.files?.find?.(row=>row.id===state.activeId);return !!active?.result;};
+      const visibleResultsAvailable=()=>{const state=P.getState?.()||{},files=Array.isArray(state.files)?state.files:[];if(state.resultScope==='active'){const active=files.find(row=>row.id===state.activeId);return !!active?.result;}return files.some(row=>row.checked&&row.result);};
+      const menuRows=[
+        ['pulse-export-raw-csv','当前文件 · 原始波形数据 CSV',10,()=>P.exportRawCsv(),activeResultAvailable],
+        ['pulse-export-raw-svg','当前文件 · 原始波形 SVG',20,()=>P.exportRawSvg(),activeResultAvailable],
+        ['pulse-export-raw-png','当前文件 · 原始波形 PNG',30,()=>P.exportRawPng(),activeResultAvailable],
+        ['pulse-export-read-csv','当前可见结果 · 读取电流 CSV',50,()=>P.exportReadCsv(),visibleResultsAvailable],
+        ['pulse-export-read-svg','当前可见结果 · 读取电流图 SVG',60,()=>P.exportReadSvg(),visibleResultsAvailable],
+        ['pulse-export-read-png','当前可见结果 · 读取电流图 PNG',70,()=>P.exportReadPng(),visibleResultsAvailable],
+        ['pulse-export-pulse-csv','当前可见结果 · 脉冲电流 CSV',90,()=>P.exportPulseCsv(),visibleResultsAvailable],
+        ['pulse-export-pulse-svg','当前可见结果 · 脉冲电流图 SVG',100,()=>P.exportPulseSvg(),visibleResultsAvailable],
+        ['pulse-export-pulse-png','当前可见结果 · 脉冲电流图 PNG',110,()=>P.exportPulsePng(),visibleResultsAvailable],
+        ['pulse-export-summary-csv','当前可见结果 · 分析汇总 CSV',130,()=>P.exportResults(),visibleResultsAvailable]
+      ];
+      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'pulse',order,onClick,availability});
+    }
+
+    ctx.events.on('analysis:refresh',({id})=>{if(id==='pulseAnalysisPage')P.render();});
+    ctx.events.on('data:artifacts-changed',()=>P.refreshSources?.());
+    ctx.events.on('layout:resize',()=>{
+      for(const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']){
+        const el=dom.query('#'+id);
+        if(el&&el.offsetParent!==null){try{ctx.ui.scientificPlot.resize(el);}catch{}}
+      }
+    });
+
+    ctx.project.registerSlice('workspace',{
+      serialize:()=>P.serialize(),
+      restore:data=>P.restore(data ?? null),
+      reset:()=>P.reset()
+    });
+
+    ctx.analysis.providers.register('pulse-read',{
+      id:'pulse-read',name:'Pulse / read transient extraction',
+      analyze:(file,options={})=>ctx.tasks.submit('analyze-pulse-read',{file,options,inspection:null},{key:`provider:${String(file?.path||file?.name||'pulse-read')}`,latest:true}).promise
+    });
+    return {deactivate(){pulsePlotViews.splice(0).forEach(view=>view?.dispose?.());}};
+  }
+  window.DKDSPluginModules.define('builtin.pulse-analysis','feature-runtime',Object.freeze({mount}));
+})();

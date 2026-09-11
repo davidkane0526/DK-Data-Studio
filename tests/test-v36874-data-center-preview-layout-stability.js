@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+const root=path.resolve(__dirname,'..');
+const css=fs.readFileSync(path.join(root,'src/plugins/data-center/plugin.css'),'utf8').replace(/\s+/g,' ');
+assert(!css.includes('contain:size layout'),'Data Center preview must not use size containment; it collapses the parent PortableView intrinsic height.');
+assert(css.includes('max-height:var(--dc-chart-height);flex:0 0 var(--dc-chart-height);overflow:hidden;contain:layout paint'),'Home chart must have one bounded height owner without size containment.');
+assert(css.includes('.dc-chart-params.schema-parameter-panel.auto-fit.compact{ grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(72px,.55fr);'),'Data Center chart controls must keep one four-track geometry across Desktop PortableView placements.');
+assert(css.includes('.dc-chart-pane[data-placement="float"]>.dc-chart,.dc-chart-pane[data-placement="global"]>.dc-chart{ height:auto;min-height:0;max-height:none;flex:1 1 0;'),'Floating preview chart must consume remaining panel height instead of retaining the inline fixed-height contract.');
+console.log('v3.68.74 Data Center preview layout stability: PASS');

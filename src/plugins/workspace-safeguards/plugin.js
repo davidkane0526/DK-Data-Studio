@@ -1,0 +1,3 @@
+(() => {
+  DKDSPlugins.define({"id":"builtin.workspace-safeguards","name":"Workspace Safeguards","version":"1.1.0","apiVersion":"1.19.0","requiresCore":["recipes"],"entry":"plugin.js","enabled":true,"order":5,"description":"Adaptive shell layout, incremental-import result preservation, and duplicate-name warnings.","capabilities":["ui.styles","workspace.integrity","data.import"],"pluginType":"foundation","systemCritical":true,"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"shared"}}}, async ctx => ctx.recipes.use('workspace-safeguards'));
+})();

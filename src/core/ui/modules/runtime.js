@@ -1,0 +1,34 @@
+'use strict';
+require('ui/frame-scheduler');
+require('ui/dom-mutation-hub');
+require('ui/style-ownership-gate');
+const PlatformBoundary=require('../../host/platform-boundary');
+if(!window.DKDSUI){
+  require('./foundation/shortcuts');
+  require('./selection/data-interaction');
+  require('./selection/view-binding');
+  require('./series/primitives');
+  require('./series/layout');
+  require('./interaction/context-actions');
+  require('./controls/select-popup');
+  require('./interaction/behavior');
+  require('./layout/docking');
+  require('./layout/portable-view');
+  require('./layout/workspace');
+  require('./plot-view/chart');
+  require('./workbench/view-host');
+  require('./grid/controller');
+  require('./dialog/settings');
+  require('./table/surfaces');
+  require('./tooltip/group-plot');
+  require('./scientific-curve/surface');
+  require('./workbench/analysis');
+  require('./workbench/plugin');
+  require('./scope/plugin-scope');
+  require('./host/api');
+}
+require('./presentation/presenters');
+if(PlatformBoundary.isMobileDocument())require('./presentation/mobile-web-surface');
+else require('./presentation/desktop-shell');
+require('./interaction/adapters');
+module.exports=window.DKDSUI;

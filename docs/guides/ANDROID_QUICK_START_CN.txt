@@ -1,0 +1,33 @@
+﻿DKDS Android 最简步骤
+====================
+
+推荐方式：双击 DKDS_GUI.cmd -> “Android”。
+
+1. 检查环境：
+   DKDS.cmd android-check
+2. 构建 APK（release）：
+   DKDS.cmd android-build
+3. 安装已有 APK：
+   DKDS.cmd android-install
+4. 连接设备直接运行：
+   DKDS.cmd android-run
+
+APK 输出：
+mobile-dist\DK-Data-Studio.apk
+
+
+环境自动识别：
+- SDK：ANDROID_HOME / ANDROID_SDK_ROOT / %LOCALAPPDATA%\Android\Sdk
+- adb：自动从 SDK\platform-tools 查找，不要求提前加入 PATH
+- JDK：优先使用 JAVA_HOME / JDK_HOME / STUDIO_JDK / PATH / Android Studio\jbr / 已安装 JDK
+- 如果系统没有完整 JDK：DKDS 会从 Eclipse Adoptium 官方 API 自动下载并校验 Temurin JDK 21，保存到 %DK_TOOL_ROOT%\Java\temurin-21\current，之后重复使用，不需要手动安装或配置 PATH
+
+首次执行 android-check / android-build 时如果缺少 JDK，会发生一次联网下载。可设置 DKDS_DISABLE_MANAGED_JDK=1 禁用自动 JDK，此时必须自行提供完整 JDK。
+
+release 签名目录（首次构建自动生成，后续复用）：
+%LOCALAPPDATA%\DKDataStudio\android-signing
+建议备份该目录，以便未来 APK 可覆盖安装。
+若手机上仍有旧签名版本，首次切换需先卸载旧版后再安装。
+
+详细说明：
+mobile\README_ANDROID_CN.md

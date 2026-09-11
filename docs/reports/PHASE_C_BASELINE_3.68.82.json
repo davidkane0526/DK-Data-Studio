@@ -1,0 +1,312 @@
+{
+  "schema": "dkds.phase-c-baseline/1",
+  "appVersion": "3.68.82",
+  "capturedAt": "2026-09-10T05:08:58.694Z",
+  "profile": "full",
+  "samples": 5,
+  "warmup": 1,
+  "environment": {
+    "platform": "linux",
+    "release": "6.18.35",
+    "arch": "x64",
+    "node": "v22.16.0",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCores": 5,
+    "totalMemoryMiB": 5948,
+    "exposedGc": true
+  },
+  "methodology": {
+    "isolation": "Each scenario runs in a fresh Node process with explicit GC between samples.",
+    "timing": "Fixture construction is excluded; Core factory, Store and scheduler operations are included.",
+    "memory": "Peak deltas are sampled at Core phase boundaries; processPeakRssMiB is the per-process high-water mark.",
+    "copyPasses": "currentContractCopyPasses is a static trace of full-payload boundary passes, not a profiler counter.",
+    "interpretation": "Results are same-machine trend baselines, not cross-machine release thresholds.",
+    "rendererScope": "The 20-plot case measures Core ScientificPlot cloning, mapping and frame scheduling with a deterministic chart adapter; D3 layout, GPU and paint are excluded."
+  },
+  "results": [
+    {
+      "id": "curve-100k",
+      "title": "100k-point curve",
+      "kind": "curve",
+      "workload": {
+        "points": 100000
+      },
+      "samples": 5,
+      "total": {
+        "medianMs": 345.473,
+        "p95Ms": 367.452,
+        "maxMs": 372.009
+      },
+      "blocking": {
+        "medianMs": 314.673,
+        "p95Ms": 333.28,
+        "maxMs": 337.085
+      },
+      "memory": {
+        "peakHeapDeltaMiB": 21.131,
+        "peakRssDeltaMiB": 24.695,
+        "peakArrayBufferDeltaMiB": 1.526,
+        "processPeakRssMiB": 82.676
+      },
+      "currentContractCopyPasses": 6,
+      "phases": {
+        "factory": {
+          "medianMs": 8.872,
+          "p95Ms": 9.536,
+          "maxMs": 9.597
+        },
+        "store-create": {
+          "medianMs": 0.056,
+          "p95Ms": 0.082,
+          "maxMs": 0.084
+        },
+        "store-write": {
+          "medianMs": 13.272,
+          "p95Ms": 18.813,
+          "maxMs": 20.133
+        },
+        "store-read": {
+          "medianMs": 9.292,
+          "p95Ms": 11.725,
+          "maxMs": 12.319
+        },
+        "fingerprint": {
+          "medianMs": 314.673,
+          "p95Ms": 333.28,
+          "maxMs": 337.085
+        }
+      },
+      "checksum": 100005.220561
+    },
+    {
+      "id": "curve-1m",
+      "title": "1M-point curve",
+      "kind": "curve",
+      "workload": {
+        "points": 1000000
+      },
+      "samples": 5,
+      "total": {
+        "medianMs": 3374.289,
+        "p95Ms": 3490.527,
+        "maxMs": 3495.091
+      },
+      "blocking": {
+        "medianMs": 3063.047,
+        "p95Ms": 3166.136,
+        "maxMs": 3174.113
+      },
+      "memory": {
+        "peakHeapDeltaMiB": 156.089,
+        "peakRssDeltaMiB": 158.328,
+        "peakArrayBufferDeltaMiB": 15.259,
+        "processPeakRssMiB": 243.543
+      },
+      "currentContractCopyPasses": 6,
+      "phases": {
+        "factory": {
+          "medianMs": 91.804,
+          "p95Ms": 95.881,
+          "maxMs": 96.397
+        },
+        "store-create": {
+          "medianMs": 0.059,
+          "p95Ms": 0.063,
+          "maxMs": 0.063
+        },
+        "store-write": {
+          "medianMs": 129.926,
+          "p95Ms": 151.007,
+          "maxMs": 156.002
+        },
+        "store-read": {
+          "medianMs": 96.415,
+          "p95Ms": 100.852,
+          "maxMs": 101.594
+        },
+        "fingerprint": {
+          "medianMs": 3063.047,
+          "p95Ms": 3166.136,
+          "maxMs": 3174.113
+        }
+      },
+      "checksum": 1000006.220561
+    },
+    {
+      "id": "matrix-500",
+      "title": "500×500 matrix",
+      "kind": "matrix",
+      "workload": {
+        "rows": 500,
+        "columns": 500
+      },
+      "samples": 5,
+      "total": {
+        "medianMs": 22.212,
+        "p95Ms": 25.607,
+        "maxMs": 26.335
+      },
+      "blocking": {
+        "medianMs": 8.619,
+        "p95Ms": 10.688,
+        "maxMs": 11.093
+      },
+      "memory": {
+        "peakHeapDeltaMiB": 17.092,
+        "peakRssDeltaMiB": 13.125,
+        "peakArrayBufferDeltaMiB": 1.915,
+        "processPeakRssMiB": 69.746
+      },
+      "currentContractCopyPasses": 4,
+      "phases": {
+        "factory": {
+          "medianMs": 7.352,
+          "p95Ms": 8.162,
+          "maxMs": 8.286
+        },
+        "store-create": {
+          "medianMs": 0.044,
+          "p95Ms": 0.047,
+          "maxMs": 0.047
+        },
+        "store-write": {
+          "medianMs": 8.619,
+          "p95Ms": 10.688,
+          "maxMs": 11.093
+        },
+        "store-read": {
+          "medianMs": 6.101,
+          "p95Ms": 6.628,
+          "maxMs": 6.749
+        }
+      },
+      "checksum": 1999.736434
+    },
+    {
+      "id": "artifacts-1000",
+      "title": "1000 small Artifacts",
+      "kind": "artifacts",
+      "workload": {
+        "artifacts": 1000
+      },
+      "samples": 5,
+      "total": {
+        "medianMs": 47.607,
+        "p95Ms": 52.936,
+        "maxMs": 53.901
+      },
+      "blocking": {
+        "medianMs": 33.201,
+        "p95Ms": 36.419,
+        "maxMs": 36.86
+      },
+      "memory": {
+        "peakHeapDeltaMiB": 14.138,
+        "peakRssDeltaMiB": 7.906,
+        "peakArrayBufferDeltaMiB": 0,
+        "processPeakRssMiB": 64.887
+      },
+      "currentContractCopyPasses": 4,
+      "phases": {
+        "factory": {
+          "medianMs": 8.04,
+          "p95Ms": 9.347,
+          "maxMs": 9.529
+        },
+        "store-create": {
+          "medianMs": 0.056,
+          "p95Ms": 0.098,
+          "maxMs": 0.103
+        },
+        "store-write": {
+          "medianMs": 33.201,
+          "p95Ms": 36.419,
+          "maxMs": 36.86
+        },
+        "store-list": {
+          "medianMs": 7.634,
+          "p95Ms": 8.494,
+          "maxMs": 8.621
+        }
+      },
+      "checksum": 3002
+    },
+    {
+      "id": "plots-20",
+      "title": "20 live plots",
+      "kind": "plots",
+      "workload": {
+        "plots": 20,
+        "pointsPerPlot": 2000
+      },
+      "samples": 5,
+      "total": {
+        "medianMs": 11.231,
+        "p95Ms": 13.374,
+        "maxMs": 13.871
+      },
+      "blocking": {
+        "medianMs": 9.561,
+        "p95Ms": 12.332,
+        "maxMs": 12.998
+      },
+      "memory": {
+        "peakHeapDeltaMiB": 3.943,
+        "peakRssDeltaMiB": 2.234,
+        "peakArrayBufferDeltaMiB": 0,
+        "processPeakRssMiB": 38.918
+      },
+      "currentContractCopyPasses": 1,
+      "phases": {
+        "enqueue": {
+          "medianMs": 9.561,
+          "p95Ms": 12.332,
+          "maxMs": 12.998
+        },
+        "queue-drain": {
+          "medianMs": 0.379,
+          "p95Ms": 1.496,
+          "maxMs": 1.542
+        },
+        "max-frame-callback": {
+          "medianMs": 0.021,
+          "p95Ms": 0.023,
+          "maxMs": 0.023
+        }
+      },
+      "checksum": 40040
+    }
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "id": "curve-1m",
+      "p95Ms": 3490.527,
+      "peakHeapDeltaMiB": 156.089
+    },
+    {
+      "rank": 2,
+      "id": "curve-100k",
+      "p95Ms": 367.452,
+      "peakHeapDeltaMiB": 21.131
+    },
+    {
+      "rank": 3,
+      "id": "artifacts-1000",
+      "p95Ms": 52.936,
+      "peakHeapDeltaMiB": 14.138
+    },
+    {
+      "rank": 4,
+      "id": "matrix-500",
+      "p95Ms": 25.607,
+      "peakHeapDeltaMiB": 17.092
+    },
+    {
+      "rank": 5,
+      "id": "plots-20",
+      "p95Ms": 13.374,
+      "peakHeapDeltaMiB": 3.943
+    }
+  ]
+}

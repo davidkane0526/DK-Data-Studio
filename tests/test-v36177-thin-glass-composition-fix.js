@@ -1,0 +1,28 @@
+ 'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const json=p=>JSON.parse(read(p));
+
+const runtime=read('src/core/theme/runtime.js');
+assert(runtime.includes("const cssTokenValue=(key,value)=>"),'Theme Runtime must serialize ratio material tokens for CSS.');
+assert(runtime.includes("['materialTintOpacity','materialNoiseOpacity']"),'Material ratio serialization coverage missing.');
+assert(runtime.includes("*100}%"),'Material opacity values must be emitted as CSS percentages.');
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+assert(thinTheme.includes("elevated:'thin-glass'"),'Thin Glass elevated windows must remain glass surfaces.');
+assert(/light:\{tokens:\{[^}]*shadowFloat:'0 8px 20px /.test(thinTheme),'Thin Glass light floating shadow must use restrained depth without an extra halo rim.');
+assert(/dark:\{tokens:\{[^}]*shadowFloat:'0 8px 22px /.test(thinTheme),'Thin Glass dark floating shadow must use restrained depth without an extra halo rim.');
+assert(!/shadowFloat:'0 0 0 1px /.test(thinTheme),'Thin Glass must not reintroduce a second centered rim through shadow tokens.');
+const roles=read('src/styles/theme/material-roles.css');
+assert(!roles.includes('.dkds-dialog-shell')&&!roles.includes('.dkds-settings-dialog'),'Material-role CSS stays semantic/runtime-owned; default-theme preservation is handled outside the role-variable layer.');
+const renderer=read('src/styles/theme/material-renderer.css');
+assert(renderer.includes('Integrated actions inside translucent surfaces retain Core component paint')&&!/data-dkds-material-recipe=\"liquid-glass\"[^}]*:where\([^)]*button/s.test(renderer),'Glass Material Renderer must leave semantic action paint to Component Appearance instead of class-based transparency exceptions.');
+const commands=read('src/styles/theme/integrated-command-chrome.css');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+assert(semanticRegistry.includes('INTEGRATED_CONTAINER_SELECTOR')&&semanticRegistry.includes('CHROME_SELECTOR')&&semanticRegistry.includes('chromeOwnedIntegrated(el)')&&semanticRegistry.includes("if(chromeOwnedIntegrated(el))return '';"),'Chrome ownership must be resolved semantically before Material-role assignment.');
+assert(renderer.includes('Header-owned command wrappers are transparent composition only.')&&renderer.includes('background:transparent')&&renderer.includes('box-shadow:none'),'Header action groups must fuse with parent chrome in Material Renderer composition.');
+const status=read('src/styles/presentation/control-status.css');
+assert(status.includes('.statusbar-command-cluster')&&!/\.statusbar-command-cluster\s*\{[^}]*background:/s.test(status),'Presentation may size the status command cluster but must not repaint it.');
+assert(semanticRegistry.includes('.statusbar-command-cluster')&&semanticRegistry.includes('chromeOwnedIntegrated(el)'),'Status command clusters must be flattened into parent chrome by the semantic registry rather than Theme-specific paint.');
+assert(!commands.includes('.statusbar-command-cluster'),'Integrated-command Theme CSS must not re-own status-bar Material paint.');
+console.log('v3.61.77 Thin Glass composition/core renderer corrections passed.');

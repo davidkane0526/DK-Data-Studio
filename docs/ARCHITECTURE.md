@@ -1,0 +1,161 @@
+# DK Data Studio Architecture — v3.69.4 Final Archive
+
+## 1. Runtime layers
+
+```text
+Platform shells
+├─ Electron Desktop
+├─ LAN / Browser
+└─ Mobile
+        ↓
+Host-neutral Core
+├─ data / project lifecycle
+├─ plugin kernel
+├─ scientific runtimes
+├─ semantic UI infrastructure
+├─ Theme + Material renderer
+├─ host/service bridges
+└─ workflow / diagnostics / performance
+        ↓
+Plugin API / SDK
+        ↓
+Domain plugins and Algorithm Providers
+```
+
+Dependency direction is one-way. Core may expose generic contracts to plugins; Core must not import or special-case a domain plugin. A first-party plugin receives no private host privilege merely because it ships with the application.
+
+### Platform Presentation boundary
+
+从 v3.67.0 开始，平台壳不再直接把桌面空间结构当成 Core UI 语义。Core Registry / app state 先形成平台无关的 **Core Presentation Model**，再由 `DesktopPresenter` 与 `MobilePresenter` 映射到各自的呈现方式。PRIMARY / PRIME / SUB 同时被归一化为 `scientific-primary`、`data-control`、`inspector`、`scientific-secondary` 等语义角色，并携带 `priority`、`collapsible` 等呈现提示。
+
+桌面鼠标/键盘与移动触摸/手势通过同一个 **Interaction Intent** 契约进入 Core。Plugin API 保持单一，不提供 `ctx.ui.desktop` / `ctx.ui.mobile` 分叉。Mobile Host 只消费 Presenter/Core Registry 状态，不允许通过桌面 DOM、CSS 可见性或页面 ID 反向推断应用状态。完整 Phase 1 契约见 `docs/PLATFORM_PRESENTATION_ARCHITECTURE_3.67.0.md`。 Phase 2 进一步让 Desktop Activity/Tool 壳直接消费 Desktop Presenter 的 navigation projection，并将 live Workspace 状态与 `topWorkspace` 语义声明按稳定 Surface ID 合并；见 `docs/PLATFORM_PRESENTATION_ARCHITECTURE_3.67.1.md`。
+
+## 2. Authored Core organization
+
+`src/core/` is a responsibility root, not an implementation file dump:
+
+```text
+src/core/
+├─ data/
+├─ project/
+├─ scientific/
+├─ plugins/
+│  └─ kernel/
+├─ ui/
+│  └─ composition/
+├─ theme/
+├─ services/
+├─ host/
+├─ performance/
+├─ workflow/
+├─ diagnostics/
+└─ recipes/
+```
+
+Implementation files are forbidden directly under `src/core/`. Legacy authored/derived files such as `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are forbidden.
+
+Plugin Kernel, UI Infrastructure and the Application shell are authored as independently importable CommonJS module graphs. Their local `composition.json` manifests declare module IDs, source paths and one runtime entry; the build generator packages those graphs into **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. The generated scripts are compatibility artifacts, not source of truth. The generator rejects duplicate/missing modules and any authored runtime module above 48 KiB. Cross-module Application symbol use is additionally checked against explicit CommonJS exports so a resolvable module path cannot silently ship with an incomplete runtime contract.
+
+## 3. Ownership boundaries
+
+### Core owns
+
+Project and data lifecycle, plugin activation/package policy, generic workspaces, PlotView/ScientificPlot, Table/Selection/History primitives, import routing, algorithm registries, Theme role assignment, Material rendering, shell/status chrome and host-neutral service interfaces.
+
+### Plugins own
+
+Domain models, domain-specific panels and geometry, analysis orchestration, domain labels, plugin-specific chart composition, plugin state slices and Algorithm Provider implementations. Static domain layout belongs in `plugin.css` declared through `manifest.styles`.
+
+### SDK owns the public authoring contract
+
+The SDK describes supported capabilities and semantic components. It must not teach plugin authors to reproduce private Core DOM, hard-code host paint or patch backdrop behavior. Built-in and packaged plugins use the same manifest/script/style semantics.
+
+## 4. CSS cascade ownership
+
+The old `base/modern` specificity architecture is removed. Authored renderer CSS uses one explicit cascade order:
+
+```text
+dkds.foundation
+    < dkds.plugin
+    < dkds.structure
+    < dkds.presentation
+    < dkds.theme
+    < dkds.platform
+    < dkds.window
+```
+
+`src/core.css` is the canonical import entry. Core authored CSS, first-party plugin CSS, mobile CSS and dedicated-window CSS may not use `!important`. Overrides are expressed by ownership layer and semantic selector, not by escalating specificity.
+
+The v3.68 **Style Ownership Gate** adds executable ownership accounting on top of cascade layering. Managed authored semantic slots must have exactly one expected owner (`UNOWNED = 0`, `SINGLE_OWNER = 1`, `OWNER_CONFLICT > 1`). Runtime writes are classified separately as `runtime-inline`, `runtime-paint`, and `runtime-presentation`; scientific/data geometry such as SVG `x/y/d/transform` remains renderer/data ownership rather than style ownership. Style Trace must present authored cascade and the three runtime classes separately so a valid scientific paint writer is never confused with a UI appearance override.
+
+Core styles may not contain TER/Pulse/Data Center/Resonance identities. If multiple plugins need one behavior, Core exposes a semantic class/attribute/SDK contract and plugins opt in.
+
+## 5. Theme and Material architecture
+
+```text
+Theme Profile
+  ├─ semantic color / radius / shadow / motion tokens
+  └─ role → recipe policy
+              ↓
+Core Material Role
+chrome | sidebar | surface | elevated | popover | control | floating
+              ↓
+Core Material Renderer
+clear | thin-glass | soft-glass | liquid-glass
+```
+
+Theme identity must never appear in Material composition selectors. A translucent MaterialSurface owns one backdrop layer; nested headers/content/action groups are transparent composition children unless they explicitly request an independent material surface. Integrated actions inside a `chrome` surface are hit regions, not nested cards. Status-bar commands follow the same rule.
+
+## 6. Scientific algorithms
+
+Reusable scientific algorithms are versioned providers. A plugin resolves an algorithm by category/id/version, passes explicit parameters and receives provenance. UI plugins should not silently embed a second implementation of an algorithm already represented by a provider contract.
+
+## 7. Generated artifacts
+
+Generated files are disposable and untracked:
+
+```text
+src/generated/runtime/app.js
+src/generated/runtime/ui-infrastructure.js
+src/generated/runtime/plugin-kernel.js
+src/generated/plugin-index.js
+src/generated/sdk-authoring-reference.js
+assets/dkds-icon.png
+mobile/assets/icon.png
+mobile/assets/adaptive-icon.png
+```
+
+Normal `start/test/check/dist` commands regenerate what they need. `npm run clean:generated` returns the repository to authored-source form.
+
+## 8. Compatibility policy
+
+Compatibility code is permitted only at explicit boundaries: project-format migration, public SDK/API compatibility, external plugin package compatibility and documented runtime capability negotiation. Compatibility selectors or domain-plugin fallbacks do not belong in generic Core layout/Material code.
+
+## 9. Validation
+
+`npm run check` is the release gate for generation, syntax, plugin manifests, source boundaries, CSS structure/cascade contracts and regression suites. It is not a substitute for Windows Electron visual validation, GPU/backdrop-filter behavior or device-specific layout validation.
+
+## 10. Platform presentation boundary (v3.67)
+
+Core workspace state is projected through a platform-neutral Presentation Model. Plugins declare semantic surface roles (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, `scientific-secondary`) once; Desktop and Mobile Presenters map those roles to platform geometry and Interaction Adapters translate platform input into shared intents. Resonance is the v3.67.2 reference migration. v3.67.3 Phase 4 adds downstream Mobile Web surface projection and isolates Desktop-geometry compatibility behind an explicit legacy mode; `mobile.css` no longer owns monolithic page-level layout. Platform-specific Plugin API facades remain forbidden. v3.67.4 adds an executable Presentation Audit, migrates the remaining first-party PRIMARY-left compositions (TER and Vth) into explicit `data-control` surfaces, and makes hidden `leftNode` composition an auditable legacy condition rather than a false-complete semantic contract. v3.67.5 / Plugin API 1.19 completes the cutover: PRIMARY-left composition is removed from the public/runtime contract, every TOP surface requires an explicit presentationRole, and the Mobile legacy workspace stylesheet is deleted. v3.67.6 freezes the boundary: the platform-neutral model no longer carries Desktop placement metadata, Presentation roles come from one Core contract, and TopWorkspace declarations are semantic-only.
+
+## 11. Platform isolation firewall (v3.67.43)
+
+The v3.67.43 platform firewall makes host identity immutable before CSS, instantiates Desktop and Mobile Presentation shells mutually exclusively, and keeps Mobile platform paint behind a host-gated stylesheet plus dual-key selectors. v3.67.54 retires the whole-file SHA-256 visual freeze as an active release gate: it produced false positives for deliberate owner refactors and did not prove computed/runtime geometry. The historical fixture remains for archaeology, while active isolation gates now validate semantic host boundaries and runtime inertness; visual closure requires computed-style/interaction rendering checks in addition to source contracts. Platform UI state remains namespaced while Core state and scientific behavior stay shared. See `docs/PLATFORM_ISOLATION_FIREWALL_3.67.43.md`.
+
+## 12. Final archive boundary (v3.69.4)
+
+The v3.69.4 archive closes the planned **Phase A–E** architecture sequence. Phase E interoperability itself remains frozen at v3.69.0; v3.69.1–v3.69.4 are bounded maintenance repairs and do not add another Interaction channel, broaden Selection payloads, add a compatibility bridge, create a plugin-private Core path, or move heavy scientific computation back to the main thread.
+
+The archive baseline therefore keeps these boundaries explicit:
+
+- canonical Artifact identity, typed physical backing, bounded range reads and the Core Task Runner remain the data/execution foundation;
+- Selection, Viewport and Legend share the existing project-scoped Interaction transport with channel/link-group/transaction isolation and bounded history;
+- sorting, filtering and display sampling preserve stable source identity;
+- plugin warm-hide/unload/cold-release own deterministic transport/resource teardown;
+- linked-view fan-out remains reference-counted and bounded;
+- Android scientific tasks execute through the same Core-owned bounded Task Runner, with built-in canonical science/task source composed into one self-contained Worker blob where required by the native WebView boundary;
+- authored CSS keeps one semantic owner and zero `!important`; historical project compatibility remains isolated to `src/project-importers/compatibility-gateway.js`.
+
+Project-owner Android acceptance on 2026-09-11 confirmed the previously blank Resonance FWHM / peak-height / peak-area GroupArea cards populate on v3.69.4. This acceptance closes the final device gate for the archive. Future capability work should start from v3.70.x (or an explicit reopen decision) rather than silently extending a frozen v3.69.x phase.
+

@@ -1,0 +1,611 @@
+(() => {
+  const state = {
+    host:null,
+    filter:'all',
+    typeFilter:'all',
+    query:'',
+    busy:new Set(),
+    bound:false
+  };
+
+  const $ = selector => document.querySelector(selector);
+
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#39;');
+  }
+
+  function displayMeta(plugin) {
+    return {
+      name:plugin?.name || plugin?.id || '未命名插件',
+      description:plugin?.description || '未提供插件说明。'
+    };
+  }
+
+  function algorithmCatalogText(plugin){
+    const rows=Array.isArray(plugin?.algorithmProvides)?plugin.algorithmProvides:[];
+    return rows.length?rows.map(row=>`${row.id}@${row.version}`).join('、'):'未声明可离线索引的算法版本';
+  }
+
+
+
+  function themeProfilesFor(pluginId){
+    const id=String(pluginId||'');
+    return (window.DKDSTheme?.listProfiles?.()||[]).filter(row=>String(row?.owner||'')===id);
+  }
+
+  function themeProfileControls(plugin){
+    if(pluginTypeMeta(plugin).id!=='theme')return '';
+    if(!plugin.active)return '<div class="plugin-theme-profile-block is-disabled"><strong>主题配置</strong><span>启用插件后可选择主题。</span></div>';
+    const profiles=themeProfilesFor(plugin.id),current=String(window.DKDSTheme?.profile?.()||'builtin.default'),coverage=window.DKDSTheme?.coverage?.()?.summary||null;
+    if(!profiles.length)return '<div class="plugin-theme-profile-block is-empty"><strong>主题配置</strong><span>插件已启用，但尚未注册 Theme Profile。</span></div>';
+    const selected=profiles.some(row=>row.id===current)?current:profiles[0].id;
+    const options=profiles.map(row=>`<option value="${escapeHtml(row.id)}" ${row.id===selected?'selected':''}>${escapeHtml(row.label||row.id)}${row.id===current?' · 当前':''}</option>`).join('');
+    const coverageText=coverage?` · Coverage ${coverage.managed}/${coverage.areas}${coverage.pluginIssues?` · 警告 ${coverage.pluginIssues}`:''}`:'';
+    return `<div class="plugin-theme-profile-block"><div><strong>主题配置</strong><span>${profiles.length} 个 Profile · ${current.startsWith(plugin.id+':')?'当前由此插件提供':'当前未使用'}${coverageText}</span></div><div class="plugin-theme-profile-actions"><select class="plugin-theme-profile-select">${options}</select><button class="plugin-theme-activate-btn" type="button" ${selected===current?'disabled':''}>${selected===current?'当前主题':'应用主题'}</button><button class="plugin-theme-settings-btn" type="button" ${profiles.find(row=>row.id===selected)?.settings?'':'disabled'}>参数</button><button class="plugin-theme-gallery-btn" type="button">主题测试</button></div></div>`;
+  }
+
+  function algorithmVersionControls(plugin){
+    if(plugin?.algorithmProvider!==true||!window.DKDSScientificAlgorithms?.list)return '';
+    const A=window.DKDSScientificAlgorithms,owned=A.list({owner:plugin.id})||[],families=new Map();
+    for(const row of owned){const key=`${row.category}::${row.id}`;if(!families.has(key))families.set(key,{category:row.category,id:row.id,title:row.title});}
+    if(!families.size)return '<div><strong>算法版本：</strong>尚未注册</div>';
+    const rows=[...families.values()].map(family=>{
+      const versions=A.versions?.({category:family.category,id:family.id})||A.list({category:family.category,id:family.id})||[];
+      const preferred=A.preferred?.(family.category,family.id)||'',resolved=A.resolve?.({category:family.category,id:family.id});
+      const options=[`<option value="" ${!preferred?'selected':''}>自动（当前 ${escapeHtml(resolved?.version||'无可用版本')}）</option>`,...versions.map(row=>`<option value="${escapeHtml(row.version)}" ${preferred===row.version?'selected':''}>v${escapeHtml(row.version)} · ${escapeHtml(row.owner)}</option>`)].join('');
+      return `<label class="plugin-algorithm-version-row"><span>${escapeHtml(family.title||family.id)}<small>${escapeHtml(family.id)} · ${escapeHtml(family.category)}</small></span><select class="plugin-algorithm-preference" data-alg-category="${escapeHtml(family.category)}" data-alg-id="${escapeHtml(family.id)}">${options}</select></label>`;
+    }).join('');
+    return `<div class="plugin-algorithm-version-block"><strong>新分析默认算法版本：</strong>${rows}</div>`;
+  }
+
+  const PLUGIN_TYPE_META = {
+    foundation:{label:'基座与系统',description:'Core 基座配套、宿主导航、状态与工作区安全能力。'},
+    data:{label:'数据能力',description:'数据导入、数据模型、格式适配与数据组织能力。'},
+    algorithm:{label:'算法',description:'可版本化科学算法 Provider；可被任意兼容分析插件调用。'},
+    workbench:{label:'分析工作台',description:'面向具体分析任务的 TOP/页面插件，交互由统一 SDK 与基座提供。'},
+    task:{label:'任务与自动化',description:'批处理、后台任务、自动化流程与可复用任务执行器。'},
+    tool:{label:'工具',description:'工具类工作区与 TOP 使用相同窗口/工作区契约；入口统一收纳在顶部“工具”菜单。'},
+    theme:{label:'主题',description:'通过 Theme Contract 配置颜色、表面、圆角、阴影与动效，不接管应用布局。'},
+    extension:{label:'其他扩展',description:'不属于上述类型的通用扩展能力。'},
+    developer:{label:'开发与示例',description:'SDK 示例、开发辅助与验证插件。'}
+  };
+  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','theme','extension','developer'];
+  function pluginTypeMeta(plugin){
+    const id=String(plugin?.pluginType||'extension');
+    return {id,...(PLUGIN_TYPE_META[id]||PLUGIN_TYPE_META.extension)};
+  }
+
+  function statusMeta(plugin) {
+    if (plugin.status === 'error') return {label:'加载错误', className:'error',tone:'danger'};
+    if (plugin.active) return {label:'已启用', className:'active',tone:'success'};
+    if (!plugin.enabled) return {label:'已停用', className:'disabled',tone:''};
+    return {label:'待加载', className:'available',tone:'warning'};
+  }
+
+  function capabilityLabel(capability) {
+    const map={
+      'ui.page':'分析页面',
+      'ui.panel':'功能面板',
+      'ui.styles':'界面样式',
+      'ui.theme':'主题配置',
+      'ui.activity':'顶级工作区',
+      'ui.sidebar':'侧栏界面',
+      'ui.inspector':'检查器',
+      'ui.group-charts':'组图',
+      'ui.shortcuts':'快捷键',
+      'ui.topWorkspaces':'TOP 工作区契约',
+      'ui.main-tools':'主图工具',
+      'ui.status-bar':'底部状态栏',
+      'ui.top-workspace':'TOP 工作区',
+      'data.importer':'数据导入',
+      'data.import':'数据导入',
+      'data.inspector':'数据检查',
+      'data.model':'标准数据模型',
+      'data.formula':'公式派生列',
+      'analysis.peak-detector':'寻峰算法',
+      'chart.trend':'趋势图',
+      'chart.heatmap':'热图',
+      'chart.timeseries':'时序图',
+      'chart.renderer':'图形渲染',
+      'workflow.processor':'数据处理器',
+      'workflow.analyzer':'分析器',
+      'workflow.recipe':'工作流配方',
+      'workspace.integrity':'工作区完整性',
+      'system.runtime-status':'运行状态',
+      'lan.web-status':'网页版状态',
+      'project.slice':'工程状态'
+    };
+    if(map[capability])return map[capability];
+    if(String(capability||'').startsWith('analysis.'))return `分析能力 · ${String(capability).slice('analysis.'.length)}`;
+    return capability;
+  }
+
+  function contributionKindLabel(kind){
+    const map={
+      'ui.activities':'顶级工作区',
+      'ui.pages':'分析页面',
+      'ui.panels':'功能面板',
+      'ui.statusItems':'状态栏项目',
+      'ui.styles':'界面样式',
+      'ui.theme':'主题配置',
+      'ui.sidebar':'侧栏区域',
+      'ui.inspectors':'检查器',
+      'ui.shortcuts':'快捷键',
+      'workflow.processors':'数据处理器',
+      'workflow.analyzers':'分析器',
+      'workflow.recipes':'工作流配方',
+      'charts.renderers':'图表渲染器',
+      'data.importers':'数据导入器',
+      'analysis.providers':'分析提供者',
+      'peak.detectors':'寻峰算法',
+      'commands':'命令'
+    };
+    return map[kind]||kind;
+  }
+
+  function contributionText(counts={}) {
+    const entries=Object.entries(counts).filter(([,count])=>count>0);
+    if(!entries.length)return '当前无已注册贡献';
+    return entries.map(([kind,count])=>`${contributionKindLabel(kind)} × ${count}`).join(' · ');
+  }
+
+  function filteredPlugins() {
+    const plugins=window.DKDSPlugins?.manager?.list?.()||[];
+    const q=state.query.trim().toLowerCase();
+    return plugins.filter(plugin=>{
+      if(state.filter==='active'&&!plugin.active)return false;
+      if(state.filter==='disabled'&&plugin.enabled)return false;
+      if(state.filter==='error'&&plugin.status!=='error')return false;
+      if(state.typeFilter!=='all'&&pluginTypeMeta(plugin).id!==state.typeFilter)return false;
+      if(!q)return true;
+      const display=displayMeta(plugin);
+      const typeMeta=pluginTypeMeta(plugin);
+      const hay=[display.name,display.description,plugin.name,plugin.id,plugin.description,typeMeta.label,typeMeta.description,...(plugin.capabilities||[]),(plugin.capabilities||[]).map(capabilityLabel).join(' ')].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  function scheduleViewportRepair(){
+    requestAnimationFrame(()=>{
+      state.host?.syncAnalysisPageViewport?.();
+      requestAnimationFrame(()=>{state.host?.syncAnalysisPageViewport?.();clampManagerScroll(pluginManagerScroller());});
+    });
+  }
+
+  function pluginManagerScroller(){
+    return $('#pluginManagerPage .analysis-page-body')||$('#pluginManagerList')?.closest?.('.analysis-page-body')||null;
+  }
+
+  function captureManagerScroll(anchorPluginId=''){
+    const scroller=pluginManagerScroller();
+    if(!scroller)return null;
+    const rect=scroller.getBoundingClientRect();
+    let anchor=null;
+    if(anchorPluginId){
+      const safe=window.CSS?.escape?CSS.escape(anchorPluginId):String(anchorPluginId).replace(/["\\]/g,'\\$&');
+      anchor=document.querySelector(`#pluginManagerList .plugin-manager-card[data-plugin-id="${safe}"]`);
+    }
+    if(!anchor){
+      const cards=[...document.querySelectorAll('#pluginManagerList .plugin-manager-card')];
+      anchor=cards.find(card=>card.getBoundingClientRect().bottom>rect.top+4)||cards[0]||null;
+    }
+    return {
+      scroller,
+      top:scroller.scrollTop,
+      left:scroller.scrollLeft,
+      anchorPluginId:anchor?.dataset?.pluginId||anchorPluginId||'',
+      anchorOffset:anchor?anchor.getBoundingClientRect().top-rect.top:null
+    };
+  }
+
+  function clampManagerScroll(scroller){
+    if(!scroller)return;
+    const maxTop=Math.max(0,scroller.scrollHeight-scroller.clientHeight);
+    if(scroller.scrollTop>maxTop)scroller.scrollTop=maxTop;
+    if(scroller.scrollTop<0)scroller.scrollTop=0;
+  }
+
+  // Plugin lifecycle changes can rebuild the complete manager grid and, in
+  // Chromium, a later scroll-anchor/layout pass can restore the old scroll
+  // position *after* our first repair frame.  Hold the manager at the top for
+  // several animation frames after enable/disable/reload so a removed or
+  // resized card can never leave the viewport parked below the real content.
+  function resetManagerScrollChain(){
+    const page=$('#pluginManagerPage');
+    const scroller=pluginManagerScroller();
+    for(const el of [scroller,page,document.scrollingElement,document.documentElement,document.body]){
+      if(!el)continue;
+      try{el.scrollTop=0;el.scrollLeft=0;el.scrollTo?.({top:0,left:0,behavior:'auto'});}catch{}
+    }
+    clampManagerScroll(scroller);
+  }
+
+  function settleManagerAtTop(frames=12){
+    const scroller=pluginManagerScroller();
+    if(!scroller)return;
+    let remaining=Math.max(1,Number(frames)||1);
+    const step=()=>{
+      if(!scroller.isConnected)return;
+      resetManagerScrollChain();
+      state.host?.syncAnalysisPageViewport?.();
+      if(--remaining>0)requestAnimationFrame(step);
+    };
+    step();
+  }
+
+  function restoreManagerScroll(snapshot,{top=false,anchorPluginId=''}={}){
+    if(!snapshot?.scroller)return;
+    const apply=()=>{
+      const scroller=snapshot.scroller;
+      if(top){
+        scroller.scrollTop=0;
+      }else{
+        const wanted=anchorPluginId||snapshot.anchorPluginId;
+        let anchored=false;
+        if(wanted&&Number.isFinite(snapshot.anchorOffset)){
+          const safe=window.CSS?.escape?CSS.escape(wanted):String(wanted).replace(/["\\]/g,'\\$&');
+          const card=document.querySelector(`#pluginManagerList .plugin-manager-card[data-plugin-id="${safe}"]`);
+          if(card){
+            const scrollerRect=scroller.getBoundingClientRect();
+            const delta=card.getBoundingClientRect().top-scrollerRect.top-snapshot.anchorOffset;
+            if(Number.isFinite(delta)){scroller.scrollTop+=delta;anchored=true;}
+          }
+        }
+        if(!anchored)scroller.scrollTop=snapshot.top;
+      }
+      scroller.scrollLeft=snapshot.left;
+      clampManagerScroll(scroller);
+    };
+    apply();
+    requestAnimationFrame(()=>{apply();requestAnimationFrame(apply);});
+  }
+
+
+  function renderSummary(all,visible=all) {
+    const total=all.length;
+    const active=all.filter(p=>p.active).length;
+    const disabled=all.filter(p=>!p.enabled).length;
+    const errors=all.filter(p=>p.status==='error').length;
+    const local=all.filter(p=>p.source==='external'||p.source==='override').length;
+    const overrides=all.filter(p=>p.source==='override').length;
+    const themes=all.filter(p=>pluginTypeMeta(p).id==='theme').length;
+    const rows=[['全部插件',total,'all'],['显示',`${visible.length} / ${total}`,'visible'],['已启用',active],['已停用',disabled],['主题',themes],['本地插件',local],['内置更新',overrides],['错误',errors]];
+    const host=$('#pluginManagerSummary');
+    if(!host)return;
+    host.innerHTML=rows.map(([label,value,kind])=>{const error=label==='错误'&&value;const refresh=kind==='all'?'<button id="pluginManagerSummaryRefreshBtn" class="plugin-manager-summary-refresh" type="button" aria-label="刷新插件目录" data-dkds-tooltip="刷新插件目录">↻</button>':'';return `<div class="plugin-manager-stat ${error?'has-error':''}"${error?' data-dkds-material-state="error"':''}><div class="plugin-manager-stat-head"><span>${escapeHtml(label)}</span>${refresh}</div><strong>${escapeHtml(value)}</strong></div>`;}).join('');
+    const refresh=$('#pluginManagerSummaryRefreshBtn');if(refresh)refresh.onclick=()=>void refreshManager();
+  }
+
+
+  function renderList(options={}) {
+    const list=$('#pluginManagerList');
+    if(!list)return;
+    const anchorPluginId=String(options.anchorPluginId||'');
+    const scrollSnapshot=captureManagerScroll(anchorPluginId);
+    const resetScroll=options.scroll==='top';
+    const all=window.DKDSPlugins?.manager?.list?.()||[];
+    const installSupported=!!window.DKDSPlugins?.external?.available?.();
+    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.dataset.dkdsTooltip=installSupported?'安装 .dkplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
+    const folderSupported=window.DKDSPlugins?.external?.folderAvailable?.()===true;
+    const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn){folderBtn.hidden=!folderSupported;folderBtn.disabled=!folderSupported;folderBtn.dataset.dkdsTooltip=folderSupported?'打开桌面端插件目录':'';}
+    const externalErrors=window.DKDSPlugins?.external?.errors?.()||[];
+    const note=$('#pluginManagerNote');
+    if(note)note.innerHTML=externalErrors.length
+      ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
+      : '发行版内置插件是可回退的基线；安装<strong>同 ID、版本更高</strong>的 <code>.dkplugin</code> 会建立本地更新层，重启后生效，并可随时恢复内置版本。普通外部插件仍可直接安装、更新与卸载。';
+    const plugins=filteredPlugins();
+    renderSummary(all,plugins);
+
+    if(!plugins.length){
+      list.innerHTML='<div class="plugin-manager-empty">没有符合当前筛选条件的插件。</div>';
+      restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
+      if(resetScroll)settleManagerAtTop();
+      scheduleViewportRepair();
+      return;
+    }
+
+    list.innerHTML='';
+    const grouped=PLUGIN_TYPE_ORDER.map(id=>({id,...PLUGIN_TYPE_META[id],rows:plugins.filter(plugin=>pluginTypeMeta(plugin).id===id)}));
+    const groupHosts=new Map();
+    for(const group of grouped){
+      if(!group.rows.length)continue;
+      const section=document.createElement('section');section.className=`plugin-manager-section plugin-manager-section-${group.id}`;section.dataset.pluginGroup=group.id;
+      section.innerHTML=`<div class="plugin-manager-section-head"><div><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(group.description)}</span></div><span class="plugin-manager-section-count" data-dkds-component-identity="chip">${group.rows.length}</span></div><div class="plugin-manager-section-list"></div>`;
+      list.appendChild(section);groupHosts.set(group.id,section.querySelector('.plugin-manager-section-list'));
+    }
+    for(const plugin of plugins){
+      const busy=state.busy.has(plugin.id);
+      const status=statusMeta(plugin);
+      const display=displayMeta(plugin);
+      const card=document.createElement('article');
+      card.className=`plugin-manager-card status-${status.className}`;
+      card.dataset.pluginId=plugin.id;
+      card.dataset.dkdsMaterialState=status.className;
+      const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip" data-dkds-component-identity="chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
+      const source=plugin.source==='builtin'?'内置基线':plugin.source==='override'?'本地更新 · 内置基线':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
+      const typeMeta=pluginTypeMeta(plugin);
+      const actionLabel=plugin.status==='error'?'重试':plugin.active?'重新加载':'加载';
+      const localizedCaps=(plugin.capabilities||[]).map(capabilityLabel).join('、')||'—';
+      card.innerHTML=`
+        <div class="plugin-card-head">
+          ${plugin.workspaceRole==='top'&&!plugin.systemLocked
+            ? `<button class="plugin-card-icon plugin-super-selector ${plugin.isSuper?'selected':''}" type="button" aria-pressed="${plugin.isSuper?'true':'false'}" data-dkds-tooltip="${plugin.isSuper?'当前主界面（SUPER）':'设为主界面（SUPER）'}" ${(!plugin.active||busy||!plugin.topContractReady)?'disabled':''}>${escapeHtml(plugin.workspaceIcon||'⌂')}<span class="plugin-super-home-mark">⌂</span></button>`
+            : `<div class="plugin-card-icon" aria-hidden="true">${escapeHtml(plugin.icon||plugin.workspaceIcon||'⬡')}</div>`}
+          <div class="plugin-card-title-wrap">
+            <div class="plugin-card-title-line">
+              <h3>${escapeHtml(display.name)}</h3>
+              <span class="plugin-type-badge type-${escapeHtml(typeMeta.id)}" data-dkds-component-identity="chip">${escapeHtml(typeMeta.label)}</span>
+              <span class="plugin-status-badge" data-dkds-component-identity="chip"${status.tone?` data-status="${status.tone}"`:``}>${status.label}</span>
+              ${plugin.systemLocked?`<span class="plugin-role-badge system" data-dkds-component-identity="chip">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top" data-dkds-component-identity="chip">TOP</span>`:'')}
+              ${plugin.isSuper?`<span class="plugin-role-badge super" data-dkds-component-identity="chip" data-dkds-component-variant="info">SUPER</span>`:''}
+            </div>
+            <div class="plugin-card-id">${escapeHtml(plugin.id)} · v${escapeHtml(plugin.version||'?')}</div>
+          </div>
+          <div class="plugin-card-switches">
+            <label class="plugin-enable-switch" data-dkds-tooltip="${plugin.systemLocked?'系统功能由基座管理，不能停用':plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
+              <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper||plugin.systemLocked)?'disabled':''}>
+              <span class="plugin-switch-track"><span class="plugin-switch-thumb"></span></span>
+              <span class="plugin-switch-label">${plugin.enabled?'启用':'停用'}</span>
+            </label>
+            ${plugin.hasWindow?`<label class="plugin-prewarm-switch" data-dkds-tooltip="预热会在后台提前创建该插件窗口，打开更快，但会增加内存占用。">
+              <input class="plugin-prewarm-input" type="checkbox" ${plugin.prewarmEnabled?'checked':''} ${busy?'disabled':''}>
+              <span class="plugin-prewarm-box" aria-hidden="true"></span>
+              <span>预热</span>
+            </label>`:''}
+          </div>
+        </div>
+        <div class="plugin-card-body">
+          <p class="plugin-card-description">${escapeHtml(display.description)}</p>
+          <div class="plugin-capability-row">${caps||'<span class="plugin-capability-chip muted" data-dkds-component-identity="chip">未声明能力</span>'}</div>
+          ${themeProfileControls(plugin)}
+          ${plugin.error?`<div class="plugin-error-box"><strong>错误：</strong>${escapeHtml(plugin.error)}</div>`:''}
+        </div>
+        <div class="plugin-card-footer">
+          <div class="plugin-card-meta">
+            <span>${escapeHtml(typeMeta.label)}</span>
+            <span>${source}</span>
+            <span>插件 API ${escapeHtml(plugin.apiVersion||'?')}</span>
+            <span>优先级 ${Number(plugin.order)||100}</span>
+          </div>
+          <div class="plugin-card-actions">
+            <button class="plugin-details-btn" type="button">详情</button>
+            <button class="plugin-export-btn" type="button" data-dkds-native-save="export" ${busy?'disabled':''}>导出</button>
+            <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
+            ${(plugin.source==='external'||plugin.source==='override')?`<button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>${plugin.source==='override'?'恢复内置版本':'卸载'}</button>`:''}
+          </div>
+        </div>
+        <div class="plugin-card-details hidden">
+          <div><strong>插件类别：</strong>${escapeHtml(typeMeta.label)} · ${escapeHtml(typeMeta.description)}</div>
+          <div><strong>注册贡献：</strong>${escapeHtml(contributionText(plugin.contributionCounts))}</div>
+          <div><strong>启用来源：</strong>${plugin.systemLocked?'系统功能 · 强制启用':plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
+          ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
+          <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
+          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
+          ${typeMeta.id==='theme'?`<div><strong>Theme Contract：</strong>v${escapeHtml(window.DKDSTheme?.version||'?')} · 当前 Profile ${escapeHtml(window.DKDSTheme?.profile?.()||'builtin.default')} · 已注册 ${themeProfilesFor(plugin.id).length}</div>`:''}
+          ${plugin.systemLocked&&plugin.workspaceRole==='top'?`<div><strong>系统窗口：</strong>独立系统功能 · 强制启用 · 不参与 SUPER 选择</div>`:(plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'}</div>`:'')}
+        </div>`;
+
+      const superSelector=card.querySelector('.plugin-super-selector');
+      if(superSelector)superSelector.onclick=async()=>{
+        if(plugin.isSuper||!plugin.active||!plugin.topContractReady||state.busy.has(plugin.id))return;
+        state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
+        try{
+          await window.DKDSPlugins.manager.setSuper(plugin.id);
+          state.host?.setStatus?.(`${display.name} 已设为 SUPER 主界面；其他 TOP 保持独立窗口。`);
+        }catch(err){state.host?.setStatus?.(`设置主界面失败：${err.message}`);}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
+      };
+
+      const toggle=card.querySelector('.plugin-enable-input');
+      toggle.onchange=async()=>{
+        state.busy.add(plugin.id);
+        renderList({anchorPluginId:plugin.id});
+        try{
+          await window.DKDSPlugins.manager.setEnabled(plugin.id,toggle.checked);
+        }catch(err){
+          state.host?.setStatus?.(`插件 ${display.name} 状态修改失败：${err.message}`);
+        }finally{
+          state.busy.delete(plugin.id);
+          renderList({scroll:'top'});
+        }
+      };
+
+      const themeSelect=card.querySelector('.plugin-theme-profile-select');
+      const themeActivate=card.querySelector('.plugin-theme-activate-btn');
+      if(themeSelect&&themeActivate){
+        themeSelect.onchange=()=>{themeActivate.disabled=themeSelect.value===String(window.DKDSTheme?.profile?.()||'');themeActivate.textContent=themeActivate.disabled?'当前主题':'应用主题';const row=themeProfilesFor(plugin.id).find(item=>item.id===themeSelect.value);if(themeSettings)themeSettings.disabled=!Number(row?.settings||0);};
+        themeActivate.onclick=()=>{try{const profileId=String(themeSelect.value||'');if(!profileId)return;window.DKDSTheme?.setProfile?.(profileId);state.host?.setStatus?.(`已应用主题：${themeProfilesFor(plugin.id).find(row=>row.id===profileId)?.label||profileId}`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`应用主题失败：${err.message}`);}};
+      }
+      const themeSettings=card.querySelector('.plugin-theme-settings-btn');
+      if(themeSettings)themeSettings.onclick=async()=>{await window.DKDSOptionalRuntime?.ensureThemeTooling?.();window.DKDSThemeSettingsUI?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));};
+      const themeGallery=card.querySelector('.plugin-theme-gallery-btn');
+      if(themeGallery)themeGallery.onclick=async()=>{await window.DKDSOptionalRuntime?.ensureThemeTooling?.();window.DKDSThemeGallery?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));};
+
+      const prewarmToggle=card.querySelector('.plugin-prewarm-input');
+      if(prewarmToggle)prewarmToggle.onchange=()=>{
+        try{
+          window.DKDSPlugins.manager.setPrewarm(plugin.id,prewarmToggle.checked);
+          renderList({anchorPluginId:plugin.id});
+        }catch(err){
+          state.host?.setStatus?.(`插件 ${display.name} 预热设置失败：${err.message}`);
+          renderList({anchorPluginId:plugin.id});
+        }
+      };
+
+      card.querySelector('.plugin-export-btn').onclick=async()=>{
+        if(state.busy.has(plugin.id))return;state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
+        try{const result=await window.DKDSPlugins.external.export(plugin.id);if(result)state.host?.setStatus?.(`插件 ${display.name} v${result.version||plugin.version||'?'} 已导出。`);}
+        catch(err){state.host?.setStatus?.(`导出插件失败：${err.message}`);}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
+      };
+
+      card.querySelector('.plugin-reload-btn').onclick=async()=>{
+        if(!plugin.enabled)return;
+        state.busy.add(plugin.id);
+        renderList({anchorPluginId:plugin.id});
+        try{
+          if(plugin.active)await window.DKDSPlugins.manager.reload(plugin.id);
+          else await window.DKDSPlugins.manager.enable(plugin.id);
+        }catch(err){
+          state.host?.setStatus?.(`插件 ${display.name} 加载失败：${err.message}`);
+        }finally{
+          state.busy.delete(plugin.id);
+          // Plugin lifecycle changes can remove/rebuild cards and alter their
+          // heights. Always return the manager to a valid top-aligned viewport
+          // rather than preserving a now-invalid bottom scroll anchor.
+          renderList({scroll:'top'});
+        }
+      };
+
+      card.querySelectorAll('.plugin-algorithm-preference').forEach(select=>{select.onchange=()=>{try{const category=select.dataset.algCategory||'',id=select.dataset.algId||'',version=select.value||'';if(version)window.DKDSScientificAlgorithms.setPreferred({category,id,version});else window.DKDSScientificAlgorithms.clearPreferred(category,id);state.host?.setStatus?.(`${id} 的新分析默认版本已${version?`设为 v${version}`:'恢复为自动解析'}；已锁定工程不会改变。`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`算法默认版本修改失败：${err.message}`);renderList({anchorPluginId:plugin.id});}};});
+
+      const uninstall=card.querySelector('.plugin-uninstall-btn');
+      if(uninstall)uninstall.onclick=async()=>{
+        const restoring=plugin.source==='override';
+        const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:restoring?'恢复发行版内置版本':'卸载本地插件',message:restoring?`移除 ${display.name} 的本地更新层？当前窗口仍运行 v${plugin.version||'?'}，重启 DK Data Studio 后恢复发行版内置基线。`:`卸载 ${display.name}？工程中已保存的插件数据不会删除，重新安装同 ID 插件后仍可恢复。`,meta:[{label:'插件 ID',value:plugin.id},{label:'当前版本',value:`v${plugin.version||'?'}`}],cancelLabel:'取消',confirmLabel:restoring?'恢复内置版本':'卸载插件',destructive:!restoring});if(!confirmed)return;
+        state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
+        try{await window.DKDSPlugins.external.uninstall(plugin.id);}
+        catch(err){state.host?.setStatus?.(`${restoring?'恢复内置版本':'卸载插件'}失败：${err.message}`);}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
+      };
+
+      card.querySelector('.plugin-details-btn').onclick=()=>{
+        const details=card.querySelector('.plugin-card-details');
+        details.classList.toggle('hidden');
+        card.querySelector('.plugin-details-btn').textContent=details.classList.contains('hidden')?'详情':'收起';
+      };
+      const groupId=pluginTypeMeta(plugin).id;
+      (groupHosts.get(groupId)||list).appendChild(card);
+    }
+    restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
+    if(resetScroll)settleManagerAtTop();
+    scheduleViewportRepair();
+  }
+
+  async function showPluginInstallFailure(err){
+    const spec=err?.dkdsDialog||{
+      tone:'error',title:'插件安装失败',message:String(err?.message||err||'未知错误'),
+      detail:String(err?.stack||''),detailLabel:'技术详情'
+    };
+    const dialogs=window.DKDSUI?.dialogs;
+    if(dialogs?.alert)await dialogs.alert(spec);
+    state.host?.setStatus?.(`安装插件失败：${String(err?.message||err||'未知错误')}`);
+  }
+
+  async function copyDiagnostics(){
+    const text=JSON.stringify(window.DKDSPlugins?.diagnostics?.()||{},null,2);
+    try{
+      if(window.electronAPI?.copyText)await window.electronAPI.copyText(text);
+      else await navigator.clipboard.writeText(text);
+      state.host?.setStatus?.('插件诊断信息已复制到剪贴板。');
+    }catch(err){
+      state.host?.setStatus?.(`复制插件诊断失败：${err.message}`);
+    }
+  }
+
+  async function refreshManager({silent=false}={}){
+    const button=$('#pluginManagerSummaryRefreshBtn');
+    if(button)button.disabled=true;
+    if(!silent)state.host?.setStatus?.('正在完成当前插件目录加载…');
+    try{
+      // “刷新” is a lifecycle operation, not a paint-only action. It forces
+      // the staged first-paint registry to complete and then renders the exact
+      // current-contract definitions that actually exist. No legacy package is
+      // translated or resurrected here.
+      await (window.DKDSPlugins?.manager?.refresh?.()||window.DKDSPlugins?.ensureReady?.({includeExternal:true,reason:'plugin-manager-refresh'}));
+      window.DKDSPlugins?.activities?.refresh?.();
+      renderList({scroll:'top'});
+      settleManagerAtTop();
+      if(!silent){
+        const count=window.DKDSPlugins?.manager?.list?.().length||0;
+        state.host?.setStatus?.(`插件目录已刷新：${count} 个当前合同插件。`);
+      }
+      return true;
+    }catch(err){
+      state.host?.setStatus?.(`插件目录刷新失败：${err?.message||err}`);
+      renderList({scroll:'top'});
+      return false;
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
+  function openManager(){
+    state.host?.openAnalysisPage?.('pluginManagerPage');
+    const scroller=pluginManagerScroller();
+    if(scroller)scroller.scrollTop=0;
+    renderList({scroll:'top'});
+    settleManagerAtTop();
+    // Opening the manager is also an explicit request to inspect the complete
+    // plugin catalog. Finish any background staging without blocking the panel.
+    void refreshManager({silent:true});
+  }
+
+  function bind(){
+    if(state.bound)return;
+    state.bound=true;
+    $('#pluginManagerBtn').onclick=openManager;
+    $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList({scroll:'top'});};
+    $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList({scroll:'top'});};
+    $('#pluginManagerTypeFilter').onchange=e=>{state.typeFilter=e.target.value||'all';renderList({scroll:'top'});};
+    $('#pluginManagerInstallBtn').onclick=async()=>{
+      try{
+        const installed=await window.DKDSPlugins.external.install();
+        if(installed){
+          const type=pluginTypeMeta(installed).id;
+          state.query='';state.filter='all';state.typeFilter=type;
+          const search=$('#pluginManagerSearch');if(search)search.value='';
+          const filter=$('#pluginManagerFilter');if(filter)filter.value='all';
+          const typeFilter=$('#pluginManagerTypeFilter');if(typeFilter)typeFilter.value=type;
+          if(installed.requiresRestart)state.host?.setStatus?.(`插件 ${displayMeta(installed).name} v${installed.pendingVersion||'?'} 更新层已安装；重启后启用。`);
+          else{state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装为“${pluginTypeMeta(installed).label}”并载入。`);window.DKDSPlugins?.activities?.refresh?.();}
+        }
+      }catch(err){await showPluginInstallFailure(err);}
+      renderList();
+    };
+    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{const opened=await window.DKDSPlugins.external.openFolder();if(opened===false)state.host?.setStatus?.('当前平台没有可直接浏览的插件目录；请使用“安装插件”选择 .dkplugin 文件。');}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
+    $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
+    $('#pluginManagerResetBtn').onclick=async()=>{
+      const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'恢复插件默认设置',message:'恢复所有插件的默认启用状态与默认预热设置？插件工程数据不会被删除。',cancelLabel:'取消',confirmLabel:'恢复默认'});if(!confirmed)return;
+      try{
+        await window.DKDSPlugins.manager.resetPreferences();
+        state.host?.setStatus?.('插件启用状态与预热设置已恢复默认。');
+      }catch(err){
+        state.host?.setStatus?.(`恢复插件默认状态失败：${err.message}`);
+      }
+      renderList();
+    };
+
+    // A plugin state transition changes card geometry and may also mutate the
+    // shell.  Always rebuild from a known top-aligned viewport.  This is more
+    // deterministic than preserving a stale card anchor across a lifecycle
+    // transition and fixes the large blank lower viewport seen after disabling
+    // or closing a plugin.
+    const renderAfterLifecycleChange=()=>{
+      const page=$('#pluginManagerPage');
+      if(page&&!page.classList.contains('hidden')){
+        resetManagerScrollChain();
+        state.host?.openAnalysisPage?.('pluginManagerPage');
+      }
+      renderList({scroll:'top'});
+      settleManagerAtTop();
+    };
+    window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderAfterLifecycleChange);
+    window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderAfterLifecycleChange);
+    window.DKDSPlugins?.events?.on?.('plugins:ready',renderAfterLifecycleChange);
+    window.addEventListener?.('dkds:theme-profile-changed',()=>{const page=$('#pluginManagerPage');if(page&&!page.classList.contains('hidden'))renderList();});
+  }
+
+  window.DKDSPluginManagerUI={
+    configure(host){state.host=host||{};bind();renderList();},
+    render:renderList,
+    refresh:refreshManager,
+    open:openManager
+  };
+})();

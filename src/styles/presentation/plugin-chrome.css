@@ -1,0 +1,244 @@
+/* Plugin pages/windows are Core chrome. Keep their header, standard controls and
+   navigation visually consistent even when the plugin itself is external. */
+
+/* Page-header actions are peers, not one segmented capsule. Keeping each
+   command on its own Core control surface prevents adjacent labels/icons from
+   visually collapsing into one another (especially Pulse and TER headers). */
+
+/* Material surfaces are painted only by the Core Material Renderer. */
+
+/* Selection is visual emphasis, not a heavy card treatment. */
+
+/* Stationary menu motion contract.
+   Menus/popovers resolve their anchor geometry before becoming visible and never
+   translate, scale or lift during open/hover/press. Interaction feedback is paint-only. */
+
+/* Explicit page/header chrome so dark mode and plugin-manager cards never inherit a light strip. */
+
+/* Plugin type is a first-class visual tag; tool plugins remain visible after installation. */
+/* Tool menus are content-sized. Generic command menus reserve room for shortcut
+   hints, but a tools list is icon + label only and should not stretch them apart. */
+
+/* Status details float above the app without changing the footer layout. */
+
+/* Explicit dark mode: flat material with restrained depth, no balloon-like highlights. */
+
+/* Disabled plugin/workspace actions stay on the active semantic surface. */
+/* Semantic owner consolidation from earlier presentation modules. */
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group {padding:0}
+body.dkds-modern-ui .plugin-card-footer,
+body.dkds-modern-ui .plugin-card-details {
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+}
+body.dkds-modern-ui .tool-workspace-menu-item .activity-icon {color:var(--dkui-accent)
+}
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item {
+  width:100%;
+  min-width:0;
+  justify-content:flex-start;
+  gap:7px
+}
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item>.activity-icon {
+  flex:0 0 auto;
+  min-width:14px;
+  text-align:center
+}
+body.dkds-modern-ui .dkds-memory-panel-head {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px 8px;border-bottom:1px solid var(--dkui-border)
+}
+body.dkds-modern-ui .dkds-memory-panel-title {display:flex;align-items:baseline;gap:8px;min-width:0
+}
+body.dkds-modern-ui .dkds-memory-panel-head strong {font-size:13px;color:var(--dkui-text)
+}
+body.dkds-modern-ui .dkds-memory-panel-head span {font-size:11px;color:var(--dkui-muted)
+}
+body.dkds-modern-ui .dkds-memory-component-list {min-height:0;overflow:auto;padding:4px 8px 9px
+}
+body.dkds-modern-ui .dkds-memory-component-row {padding:8px 6px;border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr) 148px;column-gap:12px;row-gap:3px
+}
+body.dkds-modern-ui .dkds-memory-component-row:hover {background:var(--dkui-surface-hover)
+}
+body.dkds-modern-ui .dkds-memory-component-main {display:contents;font-size:11px
+}
+body.dkds-modern-ui .dkds-memory-component-name {grid-column:1;grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .dkds-memory-component-value {position:relative;display:flex;align-items:center;justify-content:flex-end;gap:8px;grid-column:2;grid-row:1 / 4;align-self:center;min-width:0;min-height:30px
+}
+body.dkds-modern-ui .dkds-memory-component-bytes {color:var(--dkui-text);font-size:11px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap
+}
+body.dkds-modern-ui .dkds-memory-release {position:static;flex:0 0 auto;min-width:42px;padding-inline:7px;opacity:0;visibility:hidden;pointer-events:none;box-shadow:none
+}
+body.dkds-modern-ui .dkds-memory-component-row.is-releasable:hover .dkds-memory-release,body.dkds-modern-ui .dkds-memory-component-row.is-releasable:focus-within .dkds-memory-release {opacity:1;visibility:visible;pointer-events:auto
+}
+body.dkds-modern-ui .dkds-memory-component-meta {grid-column:1;grid-row:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;color:var(--dkui-muted);font-size:var(--ui-font-tiny,10px)
+}
+body.dkds-modern-ui .dkds-memory-meter {grid-column:1 / -1;grid-row:3;height:3px;margin-top:6px;overflow:hidden;border-radius:99px
+}
+body.dkds-modern-ui .dkds-memory-meter>span {display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-surface-elevated)),var(--dkui-accent))
+}
+body.dkds-modern-ui .dkds-memory-empty {padding:18px 10px;text-align:center;color:var(--dkui-muted);font-size:11px
+}
+body.dkds-modern-ui .appearance-status-item .plugin-status-icon {font-size:12px
+}
+body.dkds-modern-ui .tool-workspace-menu-item {
+  white-space:nowrap
+}
+body.dkds-modern-ui :is(
+  .dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-analysis-bottom-resizer,
+  .dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer
+)::before {background:transparent;box-shadow:none
+}
+body.dkds-modern-ui :is(.dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer):is(:hover,:focus-visible,.is-dragging)::before {
+  background:var(--dkui-divider-hover,var(--divider-active))
+}
+body.dkds-modern-ui :is(.dkds-analysis-bottom-resizer,.dkds-plugin-canvas-bottom-resizer):is(:hover,:focus-visible,.is-dragging)::before {
+  background:var(--dkui-divider-hover,var(--divider-active))
+}
+body.dkds-modern-ui .plugin-manager-page button,
+body.dkds-modern-ui .plugin-manager-toolbar-card button,
+body.dkds-modern-ui .plugin-card-actions button {
+}
+body.dkds-modern-ui .plugin-manager-body {background:transparent
+}
+body.dkds-modern-ui .plugin-manager-stat strong {color:var(--dkui-text)
+}
+body.dkds-modern-ui .plugin-manager-section-count {
+  background:transparent;
+  border-color:transparent;
+  color:inherit
+}
+body.dkds-modern-ui .plugin-card-icon {
+  background:var(--dkui-accent-soft);
+  border:1px solid color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-control-border));
+  box-shadow:var(--dkui-shadow-1)
+}
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer::before {
+  background:transparent
+}
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
+  background:var(--divider-active)
+}
+.dkds-plugin-canvas-left-resizer,
+.dkds-plugin-canvas-right-resizer,
+.dkds-plugin-canvas-bottom-resizer {background:transparent
+}
+.dkds-plugin-canvas-left-resizer::before,
+.dkds-plugin-canvas-right-resizer::before {background:transparent
+}
+.dkds-plugin-canvas-bottom {background:transparent
+}
+.dkds-plugin-canvas-bottom-resizer::before {background:transparent
+}
+.dkds-plugin-canvas-bottom-resizer:is(:hover,:focus-visible,.is-dragging)::before {background:var(--divider-active,var(--dkui-divider-hover))
+}
+.plugin-sidebar-section {border-bottom:1px solid var(--dkui-divider)
+}
+.plugin-manager-stat span {color:var(--dkui-muted)
+}
+.plugin-manager-stat strong {color:var(--dkui-text)
+}
+.plugin-manager-stat.has-error strong {color:var(--danger)
+}
+.plugin-manager-toolbar-card>label {
+}
+.plugin-manager-note {
+  border-left:3px solid var(--dkui-control-border);
+  border-radius:5px;
+}
+.plugin-manager-section-head strong {color:var(--dkui-text)
+}
+.plugin-manager-section-head span {color:var(--dkui-muted)
+}
+.plugin-manager-section-count {border:1px solid transparent;border-radius:999px}
+.plugin-manager-empty {
+  border:1px dashed var(--dkui-control-border);
+  border-radius:10px;
+  background:var(--surface-secondary);
+  color:var(--text-tertiary)
+}
+.plugin-card-icon {
+  border-radius:9px;
+  background:var(--dkui-accent-soft);
+  color:var(--dkui-accent)
+}
+.status-disabled .plugin-card-icon {background:var(--dkui-surface-soft);color:var(--dkui-muted)
+}
+.status-error .plugin-card-icon {background:color-mix(in srgb,var(--danger) 10%,var(--dkui-surface));color:var(--danger)
+}
+.plugin-card-title-line h3 {
+  color:var(--dkui-text)
+}
+.plugin-card-id {
+  color:var(--text-tertiary)
+}
+.plugin-switch-track {
+  border-radius:999px;
+  background:var(--dkui-control-border)
+}
+.plugin-switch-thumb {
+  border-radius:50%;
+  background:var(--dkui-surface-elevated);
+  box-shadow:var(--dkui-shadow-1)
+}
+.plugin-enable-switch input:checked + .plugin-switch-track {background:var(--dkui-accent)
+}
+.plugin-enable-switch input:disabled + .plugin-switch-track {opacity:.45
+}
+.plugin-switch-label {color:var(--text-secondary)
+}
+.plugin-card-description {
+}
+.plugin-capability-chip.muted {opacity:.72}
+.plugin-card-footer {
+  border-top:1px solid var(--dkui-divider);
+  background:var(--dkui-surface-soft)
+}
+.plugin-card-meta {color:var(--text-tertiary)
+}
+.plugin-card-details {
+  border-top:1px solid var(--dkui-divider);
+  background:var(--dkui-surface-soft);
+  color:var(--dkui-text-soft)
+}
+.dkds-portable-resize-handle{outline:none;background:transparent}
+/* The 36×36 rectangle is interaction-only. Theme owns the hue through the
+   canonical floatingChrome component slots; Core only applies restrained alpha
+   so the resize affordance remains visibly translucent without creating a
+   second-depth/folded-page material plane. No backdrop sampling or blur. */
+.dkds-portable-resize-handle::before{background:color-mix(in srgb,var(--dkui-component-floating-chrome-indicator,var(--dkui-accent-alt,var(--dkui-accent))) 58%,transparent)}
+.dkds-portable-resize-handle::after{background:color-mix(in srgb,var(--dkui-component-floating-chrome-border-active,var(--dkui-accent)) 44%,transparent)}
+.dkds-portable-resize-handle:hover::before,.dkds-portable-resize-handle:focus-visible::before,.dkds-portable-resize-handle.is-dragging::before{background:color-mix(in srgb,var(--dkui-component-floating-chrome-border-hover,var(--dkui-component-floating-chrome-indicator,var(--dkui-accent-hover))) 68%,transparent)}
+.plugin-card-icon.plugin-super-selector:disabled {opacity:.62
+}
+.plugin-card-icon.plugin-super-selector.selected:disabled {opacity:1;}
+.dkds-portable-caret {opacity:.62
+}
+body.dkds-modern-ui .dkds-plugin-workspace {
+  --plugin-surface-bg:var(--surface-primary);
+  --plugin-workspace-panel-border:var(--border-subtle);
+  --plugin-workspace-surface:var(--surface-primary);
+  --plugin-workspace-muted-surface:var(--surface-secondary);
+  --plugin-workspace-grid:color-mix(in srgb,var(--text-tertiary) 14%,transparent);
+  --plugin-workspace-shadow:var(--surface-shadow-raised)
+;}
+body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px
+}
+
+/* Native scientific companions use the same split boundary affordance as Desktop.
+   Keep a faint theme-aware seam visible at rest; hover/drag strengthens it. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui [data-dkds-mobile-presentation="semantic"] :is(.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer).active::before{
+  background:color-mix(in srgb,var(--dkui-divider) 72%,transparent);
+  box-shadow:0 0 3px color-mix(in srgb,var(--dkui-accent) 22%,transparent);
+  opacity:.78;
+}
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui [data-dkds-mobile-presentation="semantic"] :is(.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer).active:is(:hover,:focus-visible,.is-dragging)::before{
+  background:var(--dkui-divider-hover,var(--divider-active));
+  box-shadow:0 0 5px color-mix(in srgb,var(--dkui-accent) 30%,transparent);
+  opacity:1;
+}
+
+.plugin-manager-summary-refresh{border-radius:7px}

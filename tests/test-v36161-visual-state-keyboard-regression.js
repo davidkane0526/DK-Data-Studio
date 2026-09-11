@@ -1,0 +1,48 @@
+const fs=require('fs');
+const path=require('path');
+const {readCoreCss}=require('./css-source');
+const vm=require('vm');
+const assert=(v,m)=>{if(!v)throw new Error(m);};
+const root=path.resolve(__dirname,'..');
+const read=r=>fs.readFileSync(path.join(root,r),'utf8');
+const base=readCoreCss(root);
+const modern=readCoreCss(root);
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const resonance=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
+const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const dc=read('src/plugins/data-center/feature-runtime.js');
+const dcViews=read('src/plugins/data-center/shared-views.js');
+
+assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--dkui-selection-surface)'),'Core linked selection must retain the frozen semantic selection surface contract.');
+assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('.dkds-selection-item.dkds-selection-row:is(.dkds-selection-focused,.dkds-selection-selected,[aria-selected="true"])')&&componentAppearance.includes('border-color:transparent')&&componentAppearance.includes('box-shadow:none'),'Row-style selected/focused items must suppress the generic selection perimeter in canonical Component Appearance without modifying the frozen shell geometry/paint owner.');
+assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is('),'Dark mode must cover every canonical active toolbarAction independent of page context.');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+const materialRoles=read('src/styles/theme/material-roles.css');
+assert(semanticRegistry.includes('.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel])')&&materialRoles.includes('--dkds-material-border:var(--dkui-role-floating-border,var(--dkui-divider))'),'Floating utility panels must obtain their perimeter from the semantic floating Material role, not a page-local bright border.');
+assert(semanticRegistry.includes("selector:'button,")&&semanticRegistry.includes("id:'toolbarAction'"),'LAN utility buttons must fall through the canonical ToolbarAction component contract rather than private host paint.');
+assert(dcViews.includes('data-dc-tab="formula" role="tab" class="selected" aria-selected="true"'),'Data Center initial tab state must expose tab semantics and aria-selected.');
+assert(dc.includes("b.setAttribute('aria-selected',selected?'true':'false')"),'Data Center tab changes must synchronize aria-selected.');
+assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&&resonance.includes('claimKeyboardFocus()'),'Resonance main plot must explicitly own keyboard focus after plot/peak selection.');
+assert(resonanceViews.includes("['ArrowLeft','builtin.resonance.peak-left']")&&resonanceViews.includes("['ArrowRight','builtin.resonance.peak-right']"),'Resonance arrow bindings must remain declared.');
+assert(ui.includes('if(existing){existing.spec={...spec};existing.setBindings(spec.bindings||[]);return existing;}'),'Re-created interaction behavior profiles must refresh stale bindings.');
+
+// Execute the actual Core shortcut path: host activity -> ShortcutHub -> behavior -> command.
+const listeners={};
+const fakeWindow={addEventListener(n,fn){(listeners[n]??=[]).push(fn);},removeEventListener(){},innerWidth:1200,innerHeight:800};
+const fakeDocument={querySelector(){return null;},querySelectorAll(){return[];}};
+const sandbox={window:fakeWindow,document:fakeDocument,console,setTimeout,clearTimeout,queueMicrotask,structuredClone,CustomEvent:function(){},localStorage:{getItem(){return null},setItem(){},removeItem(){}}};
+sandbox.globalThis=sandbox;
+vm.createContext(sandbox);vm.runInContext(ui,sandbox,{filename:'ui-infrastructure.js'});
+fakeWindow.DKDSUI.host.configure({activity:()=> 'resonance'});
+const calls=[];
+const scope=fakeWindow.DKDSUI.createScope('resonance-test',{commands:{run:(id,payload)=>{calls.push({id,payload});return true;}},host:{setStatus(){}}});
+scope.interactionBehaviors.create('resonance-keyboard',{activity:'resonance',bindings:[{id:'left',gesture:'key',target:'keyboard',chord:'ArrowLeft',command:'builtin.resonance.peak-left',priority:250}]});
+let prevented=false,stopped=false;
+const event={key:'ArrowLeft',ctrlKey:false,metaKey:false,altKey:false,shiftKey:false,target:{tagName:'DIV',isContentEditable:false},defaultPrevented:false,preventDefault(){prevented=true;},stopImmediatePropagation(){stopped=true;},stopPropagation(){stopped=true;}};
+for(const fn of listeners.keydown||[])fn(event);
+assert(calls.length===1&&calls[0].id==='builtin.resonance.peak-left','ArrowLeft must traverse the real Core shortcut path into the resonance peak-left command.');
+assert(prevented&&stopped,'Handled resonance arrows must be consumed by Core.');
+scope.dispose();
+console.log('v3.61.61 visual-state coverage and resonance keyboard regression checks passed.');

@@ -1,0 +1,158 @@
+{
+  "name": "dk-data-studio",
+  "version": "3.69.4",
+  "description": "Plugin-oriented interactive scientific data analysis studio",
+  "main": "desktop/main.js",
+  "author": {
+    "name": "DK Data Studio"
+  },
+  "license": "MIT",
+  "scripts": {
+    "visual:gate": "node tools/quality/visual-invariants.js",
+    "prestart": "node scripts/prepare-dev-start.js",
+    "pretest": "npm run visual:gate && npm run architecture:hygiene",
+    "precheck": "npm run visual:gate && npm run architecture:hygiene",
+    "predist": "npm run visual:gate",
+    "prestyles:build": "npm run visual:gate",
+    "brand:assets": "node scripts/generate-brand-assets.js",
+    "postinstall": "npm run brand:assets",
+    "plugin:index": "node scripts/generate-plugin-index.js",
+    "plugin:validate": "node scripts/validate-plugins.js",
+    "version:patch": "node scripts/set-version.js",
+    "start": "electron .",
+    "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
+    "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
+    "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js --windows-package && node scripts/verify-dist.js",
+    "update-server": "node services/update-server/server.js",
+    "publish:update": "node services/update-server/publish-release.js dist",
+    "science:parity": "node tests/verify-science-parity.js",
+    "mobile:sync": "cd mobile && npm run sync:web",
+    "mobile:android": "cd mobile && npm run android",
+    "mobile:test": "npm run runtime:build && npm run plugin:index && node tests/run.js mobile",
+    "plugin-manager:test": "node tests/test-plugin-manager.js && node tests/test-plugin-package.js && node tests/test-plugin-override-policy-v36113.js && node tests/test-plugin-version-history-v354.js && node tests/test-algorithm-package-catalog-v355.js",
+    "data-center:test": "node tests/test-data-center-core.js",
+    "plugin:package": "node scripts/package-plugin.js",
+    "plugin-package:test": "node tests/test-plugin-package.js",
+    "workspace-safeguards:test": "node tests/test-workspace-safeguards.js",
+    "analysis-viewport:test": "node tests/test-analysis-page-viewport.js",
+    "windows-network-discovery:test": "node tests/test-windows-network-discovery.js",
+    "windows-tools:test": "node tests/test-windows-tooling.js",
+    "super-workspace:test": "node tests/test-super-workspace.js",
+    "statusbar:test": "node tests/test-statusbar-project-save.js",
+    "project-format:test": "node tests/test-project-format.js",
+    "ter:parity": "node tests/test-ter-python-reference.js",
+    "resonance-architecture:test": "node tests/test-resonance-shared-architecture.js",
+    "top-plugin-architecture:test": "node tests/test-top-plugin-architecture.js",
+    "top-window-lifecycle:test": "node tests/test-top-window-lifecycle.js",
+    "real-project:test": "node tests/test-v342-real-project.js",
+    "data-contract:test": "node tests/test-data-type-selection-v345.js",
+    "automation-center:test": "node tests/test-automation-test-center-v345.js && node tests/test-automation-test-center-v346.js && node tests/test-automation-test-center-v353.js && node tests/test-automation-test-center-v354.js && node tests/test-automation-test-center-v355.js && node tests/test-automation-test-center-v356.js && node tests/test-automation-test-center-v3582.js && node tests/test-automation-test-center-v360.js && node tests/test-automation-test-center-v361.js",
+    "scientific-plot:test": "node tests/test-scientific-plot-runtime-v342.js && node tests/test-scientific-plot-interactions-v346.js && node tests/test-scientific-plot-adoption-v346.js && node tests/test-scientific-scalar-field-v356.js",
+    "pipeline:test": "node tests/test-scientific-pipeline-v350.js && node tests/test-scientific-pipeline-integration-v350.js && node tests/test-scientific-transform-registry-v351.js && node tests/test-scientific-transform-integration-v351.js",
+    "transforms:test": "node tests/test-scientific-transform-registry-v351.js && node tests/test-scientific-transform-integration-v351.js && node tests/test-scientific-transport-algorithm-integration-v353.js && node tests/test-scientific-transport-algorithm-parity-v353.js",
+    "algorithms:test": "node tests/test-scientific-algorithm-registry-v352.js && node tests/test-scientific-algorithm-version-management-v354.js && node tests/test-algorithm-lock-consumers-v354.js && node tests/test-algorithm-package-catalog-v355.js && node tests/test-scientific-algorithm-integration-v352.js && node tests/test-scientific-algorithm-parity-v352.js && node tests/test-scientific-transport-algorithm-integration-v353.js && node tests/test-scientific-transport-algorithm-parity-v353.js",
+    "performance:test": "node tests/test-v36886-selective-theme-revision.js && node tests/test-v36885-canvas-heatmap.js && node tests/test-v36884-stable-svg-display-sampling.js && node tests/test-v36883-scientific-plot-invalidation.js && node tests/test-v36882-physical-artifact-storage.js && node tests/test-performance-cache-v347.js && node tests/test-performance-integration-v347.js && node tests/test-performance-budget-v348.js && node tests/test-performance-integration-v348.js && node tests/test-resource-lifecycle-v349.js && node tests/test-interaction-performance-v361.js && node tests/test-generic-direct-manipulation-v3614.js && node tests/test-d3-single-backend-v36136.js && node --expose-gc tests/test-v36878-column-access-benchmark.js && node --expose-gc tests/test-v36879-buffer-lineage-benchmark.js && node tests/test-v36880-bounded-core-task-runner.js",
+    "benchmark:phase-c": "node --expose-gc tools/benchmark/phase-c-baseline.js --profile full --json docs/reports/PHASE_C_BASELINE_3.68.69.json --markdown docs/reports/PHASE_C_BASELINE_3.68.69.md",
+    "benchmark:phase-c:smoke": "node --expose-gc tools/benchmark/phase-c-baseline.js --profile smoke",
+    "benchmark:fingerprint": "node --expose-gc tools/benchmark/fingerprint-revision-spike.js --profile full --json docs/reports/PHASE_C_FINGERPRINT_3.68.70.json --markdown docs/reports/PHASE_C_FINGERPRINT_3.68.70.md",
+    "benchmark:artifact-identity": "node --expose-gc tools/benchmark/artifact-identity.js --profile full --json docs/reports/PHASE_C_ARTIFACT_IDENTITY_3.68.76.json --markdown docs/reports/PHASE_C_ARTIFACT_IDENTITY_3.68.76.md",
+    "sdk:test": "node tests/test-v368104-phase-e-final-integration.js && node tests/test-v36894-phase-e-legend-linking.js && node tests/test-v36893-phase-e-viewport-linking.js && node tests/test-v36892-phase-e-heatmap-scan-selection.js && node tests/test-v36891-phase-e-table-curve-selection.js && node tests/test-v36890-phase-e-scientific-unit-compatibility.js && node tests/test-v36889-phase-e-interaction-transactions.js && node tests/test-v36888-phase-e-reference-selection.js && node tests/test-v36887-domain-command-path.js && node tests/test-v36880-bounded-core-task-runner.js && node tests/test-v36879-buffer-revision-lineage-batch.js && node tests/test-v36878-column-metadata-range-read.js && node tests/test-v36878-kernel-bounded-artifact-access.js && node tests/test-v36877-column-buffer-transactions.js && node tests/test-plugin-sdk-v357.js && node tests/test-sdk-top-workspace-v36117.js && node tests/test-v36118-dedicated-import-forwarding.js && node tests/test-v36118-tool-sdk-and-vth.js && node tests/test-generic-direct-manipulation-v3614.js && node tests/test-interaction-behavior-v3615.js && node tests/test-sdk-workbench-data-routing-v3616.js && node tests/test-shared-importer-runtime-v3616.js && node tests/test-workbench-import-action-v3617.js && node tests/test-live-artifact-sync-v3618.js && node tests/test-system-tools-display-scale-v3619.js && node tests/test-universal-display-and-legacy-data-v36110.js && node tests/test-log-z-and-legacy-bootstrap-v36111.js && node tests/test-data-center-hydration-v36112.js",
+    "host-neutralization:test": "node tests/test-project-format.js && node tests/test-host-neutralization-v358.js",
+    "import-workbench:test": "node tests/test-import-workbench-v3581.js",
+    "data-source-lifecycle:test": "node tests/test-data-source-lifecycle-v3582.js",
+    "table-surface:test": "node tests/test-table-surface-v359.js",
+    "reactive:test": "node tests/test-scientific-reactive-v360.js && node tests/test-scientific-reactive-integration-v360.js",
+    "deps:trace": "npm ls inflight lodash.isequal rimraf glob boolean --all",
+    "vth-plugin:validate": "node sdk/tools/dkds-plugin.js validate examples/transfer-vth-lab",
+    "vth-plugin:package": "node sdk/tools/dkds-plugin.js package examples/transfer-vth-lab transfer-vth-lab-3.0.1.dkplugin",
+    "sdk:harness": "node tests/test-v36138-external-tool-host-contract.js && node tests/test-v36139-stable-plugin-viewport.js && node tests/test-sdk-host-harness-v36133.js",
+    "renderer:test": "node tests/test-v36136-d3-cutover-readiness.js && node tests/test-d3-single-backend-v36136.js && node tests/test-v36136-scientific-presentation-architecture.js && node tests/test-v36137-d3-heatmap-autorange.js",
+    "sdk:authoring": "node scripts/generate-sdk-authoring-reference.js",
+    "styles:build": "node scripts/validate-styles.js",
+    "clean:generated": "node scripts/clean-generated.js",
+    "runtime:build": "node scripts/generate-runtime-compositions.js",
+    "visual:closure:verify": "node tools/quality/verify-visual-closure-report.js",
+    "previsual:closure:windows": "npm run check",
+    "visual:closure:windows": "electron . --visual-closure",
+    "ui:owners": "node tools/quality/style-ownership.js",
+    "ui:owners:strict": "node tools/quality/style-ownership.js --strict",
+    "architecture:hygiene": "node tools/quality/architecture-hygiene.js && npm run native-analysis:audit:strict",
+    "native-analysis:audit": "node tools/quality/native-analysis-audit.js",
+    "native-analysis:audit:strict": "node tools/quality/native-analysis-audit.js --strict",
+    "reachability:audit": "node tools/quality/reachability-audit.js --strict",
+    "ui:gate": "node tools/quality/style-ownership-gate.js",
+    "ui:gate:strict": "node tools/quality/style-ownership-gate.js --strict",
+    "benchmark:column-access": "node --expose-gc tools/benchmark/column-access.js 1000000 2048 3",
+    "benchmark:buffer-lineage": "node --expose-gc tools/benchmark/buffer-lineage.js 1000 5",
+    "benchmark:physical-storage": "node --expose-gc tools/benchmark/physical-artifact-storage.js 3",
+    "benchmark:display-sampling": "node tools/benchmark/display-sampling.js"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "electron-updater": "^6.8.9",
+    "ws": "^8.18.3",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0"
+  },
+  "build": {
+    "appId": "com.dk.datastudio",
+    "productName": "DK Data Studio",
+    "files": [
+      "desktop/**/*",
+      "services/smb-service.js",
+      "services/mcp-server.js",
+      "src/**/*",
+      "assets/**/*",
+      "sdk/platform-presentation-contract.js",
+      "sdk/theme-contract.js",
+      "sdk/contract.json",
+      "sdk/theme-coverage-contract.js",
+      "sdk/layout-contract.js",
+      "sdk/source-contract.js",
+      "package.json",
+      "build-info.json",
+      "config/update-config.default.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/dkds-icon.ico",
+      "executableName": "DK Data Studio"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://127.0.0.1:45880/releases/bootstrap/"
+      }
+    ],
+    "electronUpdaterCompatibility": ">=2.16"
+  },
+  "copyright": "Copyright © DK Data Studio",
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

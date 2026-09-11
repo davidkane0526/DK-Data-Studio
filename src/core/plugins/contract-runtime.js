@@ -1,0 +1,130 @@
+(() => {
+  if(window.DKDSPluginContract)return;
+  const VERSION='1.0.0';
+  const API_VERSION='1.19.0';
+  const CURRENT_MANIFEST_FIELDS=Object.freeze(new Set([
+    'id','name','version','apiVersion','entry','pluginType','enabled','order','description','systemCritical',
+    'requiresCore','capabilities','workspace','window','data','algorithmProvider','algorithmCategories','algorithmProvides',
+    'pluginDependencies','scripts','styles','platformPresentation','tasks'
+  ]));
+  const REQUIREMENTS=Object.freeze({
+    'runtime':api=>!!api?.runtime,
+    'events':api=>!!api?.events,
+    'status':api=>!!api?.status,
+    'io':api=>!!api?.io,
+    'science':api=>!!api?.science,
+    'performance':api=>!!api?.performance,
+    'execution.tasks':api=>!!api?.tasks,
+    'execution.commands':api=>!!api?.commands?.history&&!!api?.commands?.replay,
+    'services':api=>!!api?.services,
+    'modules':api=>!!api?.modules,
+    'recipes':api=>!!api?.recipes,
+    'capabilities':api=>!!api?.capabilities,
+    'state':api=>!!api?.state,
+    'project':api=>!!api?.project,
+    'history':api=>!!api?.history,
+    'workspace':api=>!!api?.workspace,
+    'parameters':api=>!!api?.parameters,
+    'data.flow':api=>!!api?.data?.flow,
+    'data.reactive':api=>!!api?.data?.reactive,
+    'data.pipeline':api=>!!api?.data?.pipeline,
+    'data.transforms':api=>!!api?.data?.transforms,
+    'data.artifacts':api=>!!api?.data?.artifacts,
+    'data.entities':api=>!!api?.data?.entities,
+    'data.types':api=>!!api?.data?.types,
+    'data.model':api=>!!api?.data?.model,
+    'data.formula':api=>!!api?.data?.formula,
+    'data.sources':api=>!!api?.data?.sources,
+    'data.importers':api=>!!api?.data?.importers,
+    'data.import-workbench':api=>!!api?.data?.importWorkbench,
+    'workflow':api=>!!api?.workflow,
+    'analysis.providers':api=>!!api?.analysis?.providers,
+    'analysis.algorithms':api=>!!api?.analysis?.algorithms,
+    'charts':api=>!!api?.ui?.charts,
+    'charts.providers':api=>!!api?.charts,
+    'ui.dom':api=>!!api?.ui?.dom,
+    'ui.components':api=>!!api?.ui?.components,
+    'ui.workspace':api=>!!api?.ui?.workspaceSurface,
+    'ui.scientific-plot':api=>!!api?.ui?.scientificPlot,
+    'ui.series':api=>!!api?.ui?.series,
+    'ui.legend-groups':api=>!!api?.ui?.legends,
+    'ui.group-plots':api=>!!api?.ui?.groupPlots,
+    'ui.group-area':api=>!!api?.ui?.groupArea,
+    'ui.tooltips':api=>!!api?.ui?.tooltips,
+    'ui.design-system':api=>!!api?.ui?.designSystem,
+    'ui.plot-views':api=>!!api?.ui?.plotViews,
+    'ui.table':api=>!!api?.ui?.tables,
+    'ui.settings':api=>!!api?.ui?.settings,
+    'ui.dialogs':api=>!!api?.ui?.dialogs,
+    'ui.actions':api=>!!api?.ui?.actions,
+    'ui.selection':api=>!!api?.ui?.selection,
+    'ui.interaction':api=>!!api?.ui?.interaction,
+    'ui.interaction-behavior':api=>!!api?.ui?.interactionBehaviors,
+    'ui.menus':api=>!!api?.ui?.menus,
+    'ui.context-menus':api=>!!api?.ui?.contextMenus,
+    'ui.activities':api=>!!api?.ui?.activities,
+    'ui.top-workspace':api=>!!api?.ui?.topWorkspace,
+    'ui.toolbar':api=>!!api?.ui?.toolbar,
+    'ui.status-bar':api=>!!api?.ui?.statusBar,
+    'ui.shortcuts':api=>!!api?.ui?.shortcuts,
+    'ui.pages':api=>!!api?.ui?.pages,
+    'ui.styles':api=>!!api?.ui?.styles,
+    'ui.theme':api=>!!api?.ui?.theme,
+    'ui.portable':api=>!!api?.ui?.portable,
+    'ui.edit':api=>!!api?.ui?.edit
+  });
+  const ids=Object.freeze(Object.keys(REQUIREMENTS));
+  const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(v=>String(v||'').trim()).filter(Boolean))];
+  function validateManifest(manifest={}){
+    const errors=[];
+    const unknownFields=Object.keys(manifest||{}).filter(key=>!CURRENT_MANIFEST_FIELDS.has(key));
+    if(unknownFields.length)errors.push(`Unsupported current-contract manifest fields: ${unknownFields.join(', ')}`);
+    const pluginType=String(manifest.pluginType||'').trim().toLowerCase();
+    const allowedPluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
+    if(!pluginType)errors.push(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`);
+    else if(!allowedPluginTypes.has(pluginType))errors.push(`Plugin ${manifest?.id||'(unknown)'} declares invalid pluginType: ${pluginType}`);
+    const requested=normalize(manifest.requiresCore);
+    for(const id of requested)if(!REQUIREMENTS[id])errors.push(`Unknown Core requirement: ${id}`);
+    const api=String(manifest.apiVersion||'').trim();
+    if(!api)errors.push('Plugin manifest.apiVersion is required.');
+    else if(api!==API_VERSION)errors.push(`Unsupported Plugin API: ${api}; host requires ${API_VERSION}`);
+    if(!String(manifest.entry||'').trim())errors.push('Plugin manifest.entry is required.');
+    const presentationContract=window.DKDSPlatformPresentationContract;
+    if(!presentationContract?.validate)errors.push('DKDSPlatformPresentationContract is unavailable.');
+    else{const platformCheck=presentationContract.validate(manifest);if(!platformCheck.ok)errors.push(...platformCheck.errors);}
+    if(pluginType==='theme'&&manifest.platformPresentation!==undefined)errors.push('Theme plugins must not declare platformPresentation; use Theme Contract tokens.');
+    const categories=normalize(manifest.algorithmCategories);
+    if(manifest.algorithmCategories!==undefined&&!Array.isArray(manifest.algorithmCategories))errors.push('algorithmCategories must be an array.');
+    for(const category of categories)if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category))errors.push(`Invalid algorithm category: ${category}`);
+    if(manifest.algorithmProvider!==undefined&&typeof manifest.algorithmProvider!=='boolean')errors.push('algorithmProvider must be boolean.');
+    if(manifest.algorithmProvider===true&&!categories.length)errors.push('algorithmProvider requires algorithmCategories.');
+    if(categories.length&&!requested.includes('analysis.algorithms'))errors.push('algorithmCategories requires Core requirement analysis.algorithms.');
+    const provides=Array.isArray(manifest.algorithmProvides)?manifest.algorithmProvides:[];
+    if(manifest.algorithmProvides!==undefined&&!Array.isArray(manifest.algorithmProvides))errors.push('algorithmProvides must be an array.');
+    const provideKeys=new Set();
+    for(const row of provides){
+      const category=String(row?.category||'').trim(),id=String(row?.id||row?.algorithmId||'').trim(),version=String(row?.version||row?.algorithmVersion||'').trim();
+      if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category)||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))errors.push(`Invalid algorithmProvides entry: ${category}/${id}@${version}`);
+      if(category&&!categories.includes(category))errors.push(`algorithmProvides category not declared: ${category}`);
+      const key=`${category}::${id}@${version}`;if(provideKeys.has(key))errors.push(`Duplicate algorithmProvides entry: ${key}`);provideKeys.add(key);
+    }
+    if(provides.length&&manifest.algorithmProvider!==true)errors.push('algorithmProvides requires algorithmProvider=true.');
+    const dependencies=Array.isArray(manifest.pluginDependencies)?manifest.pluginDependencies:[];
+    if(manifest.pluginDependencies!==undefined&&!Array.isArray(manifest.pluginDependencies))errors.push('pluginDependencies must be an array.');
+    const dependencyIds=new Set();
+    for(const row of dependencies){
+      const id=String(row?.id||'').trim(),keys=row&&typeof row==='object'&&!Array.isArray(row)?Object.keys(row):[];
+      if(!row||typeof row!=='object'||Array.isArray(row)||keys.some(key=>key!=='id')||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id))errors.push(`Invalid current-contract plugin dependency: ${id||'(missing)'}`);
+      if(dependencyIds.has(id))errors.push(`Duplicate plugin dependency: ${id}`);dependencyIds.add(id);
+    }
+    return Object.freeze({ok:errors.length===0,errors:Object.freeze(errors),requirements:Object.freeze(requested)});
+  }
+  function assertApi(api,manifest={}){
+    const manifestCheck=validateManifest(manifest);
+    if(!manifestCheck.ok)throw new Error(manifestCheck.errors.join(' '));
+    const missing=manifestCheck.requirements.filter(id=>!REQUIREMENTS[id]?.(api));
+    if(missing.length)throw new Error(`Missing Core plugin requirements: ${missing.join(', ')}`);
+    return true;
+  }
+  window.DKDSPluginContract=Object.freeze({VERSION,API_VERSION,requirements:ids,validateManifest,assertApi});
+})();

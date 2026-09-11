@@ -1,0 +1,51 @@
+{
+  "schema": "dkds.resonance-retention-benchmark/1",
+  "appVersion": "3.68.95",
+  "points": 100000,
+  "samples": 5,
+  "old": {
+    "mode": "old",
+    "samples": 5,
+    "n": 100000,
+    "heapUsedMedian": 34738912,
+    "rssMedian": 117915648,
+    "store": {
+      "typedColumns": 2,
+      "arrayColumns": 0,
+      "typedSequences": 2,
+      "arraySequences": 0,
+      "typedBytes": 1600000,
+      "values": 200000
+    },
+    "sweeps": 2,
+    "sweepPoints": 99998,
+    "datasetPoints": 100000
+  },
+  "new": {
+    "mode": "new",
+    "samples": 5,
+    "n": 100000,
+    "heapUsedMedian": 21103136,
+    "rssMedian": 116269056,
+    "store": {
+      "typedColumns": 2,
+      "arrayColumns": 0,
+      "typedSequences": 2,
+      "arraySequences": 0,
+      "typedBytes": 1600000,
+      "values": 200000
+    },
+    "sweeps": 2,
+    "sweepPoints": 99998,
+    "datasetPoints": 0
+  },
+  "delta": {
+    "heapReductionPercent": 39.252,
+    "rssReductionPercent": 1.396,
+    "heapOldMiB": 33.13,
+    "heapNewMiB": 20.126,
+    "rssOldMiB": 112.453,
+    "rssNewMiB": 110.883
+  },
+  "note": "This isolates the duplicate long-lived source dataset point-object layer. It is not a whole-Electron memory benchmark; V8/allocator pages may remain in RSS after objects are released."
+}

@@ -1,0 +1,86 @@
+/* Data Center native composition is expressed through plugin-owned layout
+   tokens. plugin.css remains the one final geometry owner for .dc-main/.dc-chart. */
+.dc-main{
+  --dc-main-columns:minmax(0,1fr);
+  --dc-main-areas:"source" "tool" "chart";
+  --dc-main-gap:8px
+}
+.dc-chart-pane{
+  /* Keep preview-owned geometry on the movable Surface so native floating
+     projection preserves the same inset after DOM reparenting. */
+  --dc-chart-params-padding:6px 8px;
+  --dc-chart-height:clamp(180px,30dvh,280px);
+  --dc-chart-min-height:160px
+}
+@container data-center-workspace (min-width:680px){
+  .dc-main:has(>.dc-chart-pane[data-placement="home"]){
+    --dc-main-columns:minmax(280px,.8fr) minmax(360px,1.2fr);
+    --dc-main-areas:"source source" "tool chart"
+  }
+}
+/* Native Data Management is a first-class dense browser, not a shrunken
+   Desktop sidebar. The projected drawer itself owns the viewport height while
+   this surface keeps commands fixed and gives the remaining space to the
+   artifact list. All paint remains Core Theme-owned. */
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane{
+  container-type:inline-size;container-name:data-center-artifacts-mobile;display:flex;flex-direction:column;height:100%;min-height:0;max-height:none;--dkds-field-control-min-height:34px;--dkds-generic-button-min-height:32px;--dkds-generic-button-padding-block:3px;--dkds-generic-button-padding-inline:7px
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-section-head{
+  flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(118px,150px);align-items:center;gap:6px;padding:5px 8px;min-height:34px
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-section-head .dkds-surface-heading{
+  display:flex;align-items:baseline;gap:5px;min-width:0;white-space:nowrap
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-section-head .dkds-surface-actions{
+  min-width:0;width:100%;justify-self:end
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-assignment-filter{
+  width:100%;max-width:none;min-width:0
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-filter-stack{
+  flex:0 0 auto;display:grid;gap:5px;padding:5px 7px 6px;min-width:0
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-filter-row{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:5px
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-filter-row>select{
+  width:100%;min-width:0
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-selection-tools{
+  grid-template-columns:repeat(4,minmax(0,1fr));gap:4px
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-selection-tools>button{
+  white-space:nowrap
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-artifact-list{
+  flex:1 1 0;min-height:0;padding:4px 6px 6px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:auto
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-artifact-item{
+  min-height:0;margin:0 0 3px;padding:6px 7px
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-artifact-name{
+  line-height:1.25
+}
+[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-artifact-meta{
+  margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25
+}
+@container data-center-artifacts-mobile (max-width:339px){
+  [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-filter-row{grid-template-columns:minmax(0,1fr)}
+}
+
+/* The chart-preview option row is intentionally one line. All four fields
+   divide the actual Surface width instead of imposing Desktop-sized controls. */
+.dc-chart-params{
+  --dkds-parameter-auto-fit-native-columns:repeat(4,minmax(0,1fr));
+}
+.dc-chart-params .schema-param-field{
+  --dkds-schema-field-min-height:28px;--dkds-field-control-min-height:28px;
+  gap:2px;
+}
+.dc-chart-params .schema-param-field[data-param-id="showLegend"]{justify-content:flex-end;align-self:end}
+.dc-chart-params .schema-param-field[data-param-id="ys"] .dkds-field-control,
+.dc-chart-params .schema-param-field[data-param-id="x"] .dkds-field-control,
+.dc-chart-params .schema-param-field[data-param-id="mode"] .dkds-field-control{height:28px;min-height:28px}
+.dc-chart-pane.dkds-portable-view:is(.is-floating,.is-global-floating){
+  display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:240px;overflow:hidden;
+}
