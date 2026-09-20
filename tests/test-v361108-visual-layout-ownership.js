@@ -28,7 +28,7 @@ assert(portable.includes('DKDSThemeMaterialRenderer?.assignSemanticRoles?.(this.
 const group=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 assert(plotView.includes('applyContentGeometry()')&&plotView.includes('contentAspectRatio'),'Core PlotView must own responsive scientific content geometry.');
-assert(group.includes('contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226'),'Resonance group charts must consume the Core landscape geometry contract.');
+assert(group.includes('detailGeometry:{contentAspectRatio:1.65,contentMinHeightPx:160,contentMaxHeightPx:226}'),'Resonance group charts must consume the PlotView Unit detail-geometry landscape contract.');
 assert(!group.includes('--reswin-group-height')&&!groupCss.includes('--reswin-group-height'),'Resonance group layout must not restore a plugin-local height solver.');
 assert(group.includes('focusPolicy:{inactiveOpacity:.28,pointInactiveOpacity:.34,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must keep selection linkage explicit without erasing dark-mode context.');
 

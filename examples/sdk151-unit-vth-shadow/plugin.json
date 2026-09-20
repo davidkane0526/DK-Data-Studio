@@ -1,0 +1,30 @@
+{
+  "id": "com.example.unit-vth-shadow",
+  "name": "Vth Unit Live Shadow Reconstruction",
+  "version": "1.1.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": ["plugin.js"],
+  "enabled": true,
+  "order": 927,
+  "description": "Parallel, non-production Transfer Vth Unit reconstruction bound through the dependency-gated production live-domain owner for side-by-side parity.",
+  "requiresCore": [
+    "status",
+    "services",
+    "workspace",
+    "data.artifacts",
+    "data.sources",
+    "ui.dom",
+    "ui.workspace",
+    "ui.scientific-plot",
+    "ui.table",
+    "ui.pages",
+    "ui.top-workspace",
+    "ui.unit-templates"
+  ],
+  "capabilities": ["ui.page", "ui.plugin-workspace", "ui.scientific-plot", "ui.table"],
+  "pluginDependencies": [{"id": "com.dkds.transfer-vth-lab"}],
+  "pluginType": "workbench",
+  "platformPresentation": {"desktop": {"mode": "shared"}, "mobile": {"mode": "adaptive"}},
+  "data": {"accepts": ["science.transport.iv", "science.transport.transfer"]}
+}

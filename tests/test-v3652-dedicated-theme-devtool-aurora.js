@@ -30,7 +30,7 @@ assert(!integrated.includes('.plugin-status-item'),'Theme-specific integrated-co
 assert(!debug.includes('Ctrl+Alt+T toggle')&&!debug.includes("event.ctrlKey&&event.altKey"),'Theme Inspector must no longer hide behind Ctrl+Alt+T');
 assert(devtools.includes("['theme','Theme']")&&devtools.includes("data-act=\"theme-inspector\"")&&devtools.includes('window.DKDSThemeDebug'),'Plugin DevTools must own the Theme Inspector entry point');
 assert(coverage.includes("const VERSION='4.0.0'")&&coverage.includes('disabledExempt++')&&coverage.includes('minimum=4.5'),'Theme contrast gate must test actionable controls while reporting disabled controls as exempt');
-assert(automation.includes('component?.id||component?.componentIdentity'),'Automation must consume the semantic resolver object contract instead of comparing it to a string');
+assert(automation.includes("window.DKDSTheme?.supports?.('contract.appearance.component-contexts')===true"),'Automation must validate the current semantic component-context capability instead of depending on the retired resolver-shape probe.');
 assert(/^2\.(?:[0-9]|[1-9]\d)\./.test(auroraManifest.version),'Built-in Aurora Pop must remain on the 2.x reference line.');
 assert.equal(auroraManifest.pluginType,'theme');
 assert.deepEqual(auroraManifest.capabilities,['ui.theme']);

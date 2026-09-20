@@ -7,6 +7,8 @@ const plotSource=read('src/core/scientific/plot-runtime.js');
 const curveModel=read('src/core/ui/modules/scientific-curve/model.js');
 const curveRender=read('src/core/ui/modules/scientific-curve/render.js');
 const dataCenter=read('src/plugins/data-center/feature-runtime.js');
+const dataCenterUnits=read('src/plugins/data-center/unit-presentation.js');
+const dataCenterChart=read('src/plugins/data-center/chart-runtime.js');
 const sdk=read('sdk/plugin-api.d.ts');
 const refs=require('../src/core/ui/modules/selection/data-interaction').selectionReferences;
 
@@ -23,7 +25,7 @@ for(const token of ['this.pointReferences=[]','pointReference(trace,traceIndex,p
 assert(curveModel.includes('pointReference(curve,point,index=-1)')&&curveModel.includes('selectPoint(curve,point,index=-1'), 'ScientificCurveSurface must expose generic source-row point selection.');
 assert(curveModel.includes('selectedPointReferenceKeys()')&&curveRender.includes('selectionKeys=this.selectedPointReferenceKeys()'),'ScientificCurveSurface must compile selection references once per render instead of scanning all selection items for every point.');
 assert(curveRender.includes("this.spec.selectionTarget==='point'"),'ScientificCurveSurface point targeting must remain explicit and opt-in.');
-assert(dataCenter.includes('seriesId:D.seriesId(artifact,y.key)')&&dataCenter.includes('data-row-id=')&&dataCenter.includes("source:'data-center-table'"),'Data Center must adopt the Core table↔curve selection contract.');
+assert(dataCenterChart.includes('seriesId:D.seriesId(artifact,y.key)')&&dataCenterChart.includes('ctx.ui.selection.refs.series')&&dataCenterUnits.includes("units.table.bind('data-center-preview'")&&dataCenter.includes("rowId:({rowData})=>String(rowData?.rowId||'')")&&dataCenter.includes("source:'data-center-table'"),'Data Center must adopt the Core Unit table↔curve selection contract across its presentation owner and delegated chart runtime.');
 assert(!dataCenter.includes("window.addEventListener('dkds:selection-changed'")&&!dataCenter.includes('new EventTarget('),'Data Center must not create a plugin-private cross-view event path.');
 assert(interactionSource.includes("const INTERACTION_BRIDGE_EVENT='dkds:selection-changed'")&&!/dkds:(?:viewport|axis|interaction)-changed/.test(interactionSource),'the canonical cross-scope Interaction bridge must remain the single existing event name.');
 assert(sdk.includes('sourceRowKey(ref:DKDSSelectionReference):string')&&sdk.includes('sameSourceRow(a:DKDSSelectionReference,b:DKDSSelectionReference):boolean'),'SDK must publish source-row projection helpers.');

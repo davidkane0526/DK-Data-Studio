@@ -42,8 +42,8 @@
       if(ext(file?.name||file?.path)!=='json')return file;
       let raw;try{raw=JSON.parse(String(file?.text||''));}catch(err){throw new Error(`JSON 解析失败：${err?.message||err}`);}
       if(window.DKDSProjectFormat?.isProjectLike?.(raw))throw new Error('该 JSON 是 DK Data Studio 项目文件，应由项目加载器打开。');
-      const rows=rowsFromJson(raw);
-      return {...file,text:rows.map(row=>row.map(cell).join('\t')).join('\n'),jsonTabular:true};
+      const rows=rowsFromJson(raw),acquisition=D.normalizeAcquisition?.(raw?.metadata?.acquisition||raw?.source?.acquisition||raw?.acquisition||{})||{};
+      return {...file,text:rows.map(row=>row.map(cell).join('\t')).join('\n'),jsonTabular:true,...(Object.keys(acquisition).length?{acquisition}:{})};
     }
     const inspect=(file,options)=>A.inspectDataText(normalizeFile(file),options);
     const parse=(file,options)=>A.parseFlexibleData(normalizeFile(file),options);
@@ -53,7 +53,7 @@
         const vValues=columnar?columnar.v:points.map(p=>p.v),iValues=columnar?columnar.i:points.map(p=>p.i),sourceLines=columnar&&Array.isArray(columnar.sourceLine)?columnar.sourceLine:points.map((p,index)=>Number.isFinite(Number(p.sourceLine))?Number(p.sourceLine):index+1),n=Math.min(vValues.length,iValues.length);
         return D.createTable({
           id:D.stableId('source-table',seriesPath),name:String(ds?.name||file?.name||'I-V data'),semanticType:'science.transport.iv',transient:false,
-          metadata:{importedSource:true,importerId:'flexible-text',seriesPath,vg,importSpec:D.deepClone(ds?.importSpec||options||{}),dataAssignments:[],sourceContainer:normalized.jsonTabular?'json-tabular':'text'},
+          metadata:{importedSource:true,importerId:'flexible-text',seriesPath,vg,importSpec:D.deepClone(ds?.importSpec||options||{}),dataAssignments:[],sourceContainer:normalized.jsonTabular?'json-tabular':'text',...(normalized?.acquisition?{acquisition:D.normalizeAcquisition?.(normalized.acquisition)||normalized.acquisition}:{})},
           source:{path:String(ds?.sourcePath||file?.path||''),name:String(ds?.sourceName||file?.name||''),encoding:String(ds?.encoding||file?.encoding||options?.encoding||'auto')},
           columns:[
             {key:'Vd',name:ds?.importSpec?.xHeader||'Vd',unit:'V',role:'x',values:vValues.slice(0,n),metadata:{sourceColumn:ds?.importSpec?.xCol}},

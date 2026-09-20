@@ -106,9 +106,9 @@ assert(split.includes('if(Number.isFinite(raw))this.previewSize=raw')&&split.inc
 assert(layoutState.includes('if(nativeMobile&&state.mobileOverlay)')&&layoutState.includes('const ratioMax=total*state.mobileMaxRatio'),'The pure resolver must own Native Mobile overlay limits.');
 const workbench=read('src/core/ui/modules/workbench/plugin.js'),workspace=read('src/styles/platform/native-workspace-presentation.css');
 assert(!workbench.includes('enhanceMobileSplitController')&&workbench.includes('this.canvasBottomSplit=new SplitController'),'Plugin canvas splits must consume the canonical controller directly.');
-assert(workbench.includes('mobileMaxRatio:.58,mobileReserve:240'),'Mobile bottom companion must permit the raised 58% range while reserving the primary area.');
-assert(workspace.includes('--dkds-mobile-bottom-track:clamp(180px,var(--dkds-plugin-canvas-bottom-height),min(620px,72vh))'),'Wide/expanded native companions must use a viewport-bounded physical bottom track that preserves the primary work area.');
-assert(workspace.includes('var(--dkds-mobile-user-bottom-track,36%)')&&workspace.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations keep disjoint, bounded companion regions.');
+assert(workbench.includes('mobileMaxRatio:.58,mobileStateScope:true,mobileDefaultRatio:.36,mobileMin:0')&&!workbench.includes('mobileMaxRatio:.58,mobileReserve:240'),'Mobile bottom companion must use a proportional 36% default with a 58% ceiling, without a second fixed-pixel reserve owner.');
+assert(!workspace.includes('--dkds-mobile-unit-bottom-min')&&!workspace.includes('--dkds-mobile-primary-min-track'),'Semantic native companion outer geometry must stay independent from Unit content and Presenter content fitting.');
+assert(workspace.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)')&&workspace.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'User resize remains the Workspace preference inside the shared viewport-bounded companion region.');
 
 // Mobile Presenter must not rewrite projection styles/refit Drawer width on every
 // host publication. First-open fitting occurs paint-hidden to avoid visible jumps.

@@ -79,7 +79,7 @@
     const root=dom.query('.example-workbench-root',page);
     const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'example'});
     wb.mountPrimary({id:'main',label:'主界面',mount:({main})=>ctx.ui.components.mount(main,{type:'stack',children:[{type:'text',text:'PRIMARY · Plugin domain content'}]})});
-    wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>ctx.ui.components.mount(container,{type:'stack',children:[{type:'text',text:'PRIME · Domain details'}]})});
+    wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',presentationRole:'inspector',semanticKind:'inspector',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>ctx.ui.components.mount(container,{type:'stack',children:[{type:'text',text:'PRIME · Domain details'}]})});
     const actions=dom.create('div',{className:'dkds-plugin-header-actions'});
     dom.append(dom.query('.analysis-page-header',page),actions);
     const runCommand=()=>{store.patch({lastRun:Date.now()});ctx.status.set('Example command executed.');return true;};

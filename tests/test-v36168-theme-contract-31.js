@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
@@ -8,7 +9,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.47.0');
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.49.0'));
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');

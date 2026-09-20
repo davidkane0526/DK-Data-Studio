@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
@@ -16,13 +17,15 @@ const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('tests/check-plugin-boundaries.js');
 
 
-assert(contract.pluginApiVersion==='1.19.0'&&contract.minimumAppVersion==='3.68.103','SDK 1.34 / Plugin API 1.19 / Theme 3.10 must require app 3.68.81; project compatibility is separate from old plugin-package API compatibility.');
+assert(contract.pluginApiVersion==='1.19.0'&&sdkAtLeast(contract.minimumAppVersion,'3.70.6'),'SDK 1.34 / Plugin API 1.19 / Theme 3.10 must require app 3.68.81; project compatibility is separate from old plugin-package API compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
-assert(kernel.includes("section:'DATA'")&&kernel.includes('embeddedSuper'),'Embedded SUPER workbenches must project the same Core import action into the host contextual toolbar.');
-assert(kernel.includes("pageActivity&&!state.host?.isAuxiliaryWindow"),'Main-shell workbenches without a local slot may fall back to the host contextual action, but dedicated plugin windows must never assume the main analysis toolbar exists.');
-assert(kernel.includes("if(slot){")&&kernel.includes("dkds-core-workbench-import-slot"),'A page-local import slot must remain the cross-window authoritative mount.');
+assert(kernel.includes('if(isTopDefinition(definitionById(pluginId)))return null;'),'TOP/SUPER workbenches in the main shell must classify the registered plugin definition, not pass a manifest into isTopDefinition(), and must not add duplicate contextual 导入数据 actions.');
+assert(kernel.includes('state.host?.isAuxiliaryWindow')&&kernel.includes('MutationObserver')&&kernel.includes('mountLocal({create:true})'),'Dedicated plugin windows must defer the page-local import action until a Unit-composed canonical header exists.');
+assert(kernel.includes('pluginActions.after(slot)'),'Dedicated page import must follow plugin/domain actions in the accepted titlebar anatomy.');
+assert(kernel.includes("dkds:workspace-presentation-changed"),'Late page-local import mounting must notify dedicated-window chrome synchronization.');
+assert(kernel.includes("dkds-core-workbench-import-slot")&&kernel.includes("const explicit=mountLocal();if(explicit)return explicit;"),'A page-local import slot must remain the cross-window authoritative mount.');
 assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList.toggle('hidden',!!scope)"),'Scoped Import Workbench must hide the global target chooser.');
 assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
 assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');

@@ -5,9 +5,17 @@ function begin(){const controller=new AbortController();activeController=control
 function abort(reason='import-workbench-closed'){if(activeController&&!activeController.signal.aborted)activeController.abort(reason);return !!activeController;}
 function finish(controller){if(activeController===controller)activeController=null;}
 function canStream(item,provider){return !!(item&&!item.residentSource&&typeof provider?.createStreamParser==='function'&&window.DKDSIO?.readDataLines);}
+function acquisitionMetadata(artifact,item,sequenceIndex){
+  const normalize=window.DKDSData?.normalizeAcquisition||((value)=>value&&typeof value==='object'?{...value}:{});
+  const merged={...(item?.acquisition&&typeof item.acquisition==='object'?item.acquisition:{}),...(artifact?.source?.acquisition&&typeof artifact.source.acquisition==='object'?artifact.source.acquisition:{}),...(artifact?.acquisition&&typeof artifact.acquisition==='object'?artifact.acquisition:{}),...(artifact?.metadata?.acquisition&&typeof artifact.metadata.acquisition==='object'?artifact.metadata.acquisition:{})};
+  const explicit=normalize(merged),hasExplicitSequence=Number.isInteger(explicit.sequenceIndex);
+  if(!hasExplicitSequence){explicit.sequenceIndex=Math.max(0,Math.trunc(Number(sequenceIndex)||0));explicit.provenance='import-batch';}
+  else if(!['source','import-batch','unknown'].includes(explicit.provenance))explicit.provenance='source';
+  return explicit;
+}
 async function parseItem({item,provider,signal,render,readFull}){
   const requested=item.settings?.encoding||'auto';
-  const file={name:item.name,path:item.path,text:String(item.text||''),encoding:item.detectedEncoding||requested,size:Number(item.size)||0};
+  const file={name:item.name,path:item.path,text:String(item.text||''),encoding:item.detectedEncoding||requested,size:Number(item.size)||0,...(item.acquisition?{acquisition:item.acquisition}:{})};
   if(canStream(item,provider)){
     const parser=provider.createStreamParser(file,item.settings,item.inspection);
     if(parser&&typeof parser.pushLines==='function'&&typeof parser.finish==='function'){
@@ -24,7 +32,7 @@ async function parseItem({item,provider,signal,render,readFull}){
     }
   }
   await readFull();if(item.error)throw new Error(item.error);
-  const fullFile={name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding,size:Number(item.size)||0};
+  const fullFile={name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding,size:Number(item.size)||0,...(item.acquisition?{acquisition:item.acquisition}:{})};
   return Promise.resolve(provider.parseArtifacts(fullFile,item.settings));
 }
-module.exports=Object.freeze({begin,abort,finish,canStream,parseItem});
+module.exports=Object.freeze({begin,abort,finish,canStream,acquisitionMetadata,parseItem});

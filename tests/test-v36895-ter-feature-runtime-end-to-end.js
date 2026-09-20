@@ -25,10 +25,10 @@ function node(id=''){
     const feature=moduleRuntime.require('builtin.ter-analysis','feature-runtime');
     assert(feature?.mount,'TER feature runtime must expose mount()');
 
-    const page=node('terMaxPage'),heatmap=node('terHeatmapPlot'),resistance=node('terResistancePlot'),card=node('terResistanceCard'),selectionLabel=node('terResistanceSelection'),header=node('terHeader');
+    const page=node('terMaxPage'),heatmap=node('terHeatmapPlot'),transformHeatmap=node('terTransformHeatmapPlot'),resistance=node('terResistancePlot'),card=node('terResistanceCard'),selectionLabel=node('terResistanceSelection'),header=node('terHeader');
     const maxVgPlot=node('terMaxVgPlot'),maxVgArgPlot=node('terMaxVgArgPlot'),maxVdPlot=node('terMaxVdPlot'),maxVdArgPlot=node('terMaxVdArgPlot');
     const selectorMap=new Map([
-      ['#terMaxPage',page],['#terHeatmapPlot',heatmap],['#terResistancePlot',resistance],['#terResistanceCard',card],['#terResistanceSelection',selectionLabel],
+      ['#terMaxPage',page],['#terHeatmapPlot',heatmap],['#terTransformHeatmapPlot',transformHeatmap],['#terResistancePlot',resistance],['#terResistanceCard',card],['#terResistanceSelection',selectionLabel],
       ['#terMaxVgPlot',maxVgPlot],['#terMaxVgArgPlot',maxVgArgPlot],['#terMaxVdPlot',maxVdPlot],['#terMaxVdArgPlot',maxVdArgPlot]
     ]);
     const dom={
@@ -38,13 +38,13 @@ function node(id=''){
     const eventHandlers=new Map();
     const events={on(name,fn){if(!eventHandlers.has(name))eventHandlers.set(name,[]);eventHandlers.get(name).push(fn);return()=>{};}};
     const fire=(name,payload)=>{for(const fn of eventHandlers.get(name)||[])fn(payload);};
-    const restyles=[],relayouts=[],reductionSpecs=new Map();let heatmapSpec=null,resistanceSpec=null,canonicalSubscriber=null,pluginSelectCalls=0;
+    const restyles=[],relayouts=[],reductionSpecs=new Map();let heatmapSpec=null,resistanceSpec=null,canonicalSubscriber=null,pluginSelectCalls=0,resistanceReactCalls=0,resizeCalls=0;
     const scientificPlot={
       scalarField(target,field,options){if(target===heatmap)heatmapSpec={field,options};target.data=[{type:'heatmap'}];return Promise.resolve(target);},
-      react(target,traces,layout,_config,spec){target.data=traces;target.layout=layout;if(target===resistance)resistanceSpec={traces,layout,spec};else if([maxVgPlot,maxVgArgPlot,maxVdPlot,maxVdArgPlot].includes(target))reductionSpecs.set(target.id,{traces,layout,spec});return Promise.resolve(target);},
+      react(target,traces,layout,_config,spec){if(target===resistance){resistanceReactCalls++;resistanceSpec={traces,layout,spec};return Promise.resolve().then(()=>{target.data=traces;target.layout=layout;return target;});}target.data=traces;target.layout=layout;if([maxVgPlot,maxVgArgPlot,maxVdPlot,maxVdArgPlot].includes(target))reductionSpecs.set(target.id,{traces,layout,spec});return Promise.resolve(target);},
       restyle(target,patch,indices){if(target===resistance)restyles.push({patch,indices});return target;},
       relayout(target,patch){if(target===resistance)relayouts.push(patch);Object.assign(target.layout,patch);return target;},
-      resize(){},purge(target){target.data=[];},saveImage(){return Promise.resolve();}
+      resize(){resizeCalls++;},purge(target){target.data=[];},saveImage(){return Promise.resolve();}
     };
     const ref=(vg,source,direction)=>({artifactId:`artifact:${source}`,seriesId:`sweep:${vg}:${direction>0?'up':'down'}`});
     const result={
@@ -66,19 +66,33 @@ function node(id=''){
       ]
     };
     const interaction={subscribe(fn,{immediate}={}){canonicalSubscriber=fn;if(immediate)fn({schema:2,items:[],focus:null,ranges:[],context:{}},{reason:'subscribe'});return()=>{canonicalSubscriber=null;};}};
+    let controllerRenderCalls=0;
     const controller={
       interaction,sourceScanReference:ref,getState:()=>({result,display:{}}),getTransformMatrix:()=>null,getTransformSettings:()=>({type:'didv',direction:1}),
-      render(){},select(){pluginSelectCalls++;},clearSelection(){},serialize:()=>({}),restore(){},reset(){},autoParameters(){},calculate(){},applyDisplay(){},resetDisplay(){},setOnlyFullyVisible(){},
+      render(){controllerRenderCalls++;},select(){pluginSelectCalls++;},clearSelection(){},serialize:()=>({}),restore(){},reset(){},autoParameters(){},calculate(){},applyDisplay(){},resetDisplay(){},setOnlyFullyVisible(){},
       exportLong(){},copyLong(){},exportMatrix(){},copyMatrix(){},exportHeatmapSvg(){},exportHeatmapPng(){},exportMaxVg(){},copyMaxVg(){},exportMaxVgSvg(){},exportMaxVgPng(){},exportMaxVd(){},copyMaxVd(){},exportMaxVdSvg(){},exportMaxVdPng(){}
     };
+    let activitySpec=null,openPageCalls=0,layoutSetColumnsCalls=0;
     const ctx={
-      runtime:{isAuxiliaryWindow:true,isNativeClient:false},ui:{dom,scientificPlot,activities:{add(){}},pages:{add:()=>page},actions:{mount:()=>({render(){}})},topWorkspace:{register(){}},shortcuts:{add(){}}},
-      workspace:{openPage(){}},events,project:{capture(){},registerSlice(){}},status:{set(){}},data:{reactive:null,transforms:{list:()=>[]}},parameters:null,
+      runtime:{isAuxiliaryWindow:true,isNativeClient:false},ui:{dom,scientificPlot,activities:{add(spec){activitySpec=spec;}},pages:{add:()=>page},actions:{mount:()=>({render(){}})},topWorkspace:{register(){}},shortcuts:{add(){}}},
+      workspace:{openPage(){openPageCalls++;}},events,project:{capture(){},registerSlice(){}},status:{set(){}},data:{reactive:null,transforms:{list:()=>[]}},parameters:null,
       analysis:{providers:{register(){}},algorithms:{run(){}}},tasks:{submit(){return {promise:Promise.resolve([]),cancel(){}};}},io:{saveText(){return Promise.resolve();}}
     };
-    const mounted=await feature.mount(ctx,controller,{pageHtml:()=>'',attach:()=>null},{});
+    const unitPresentation={mount:()=>({page,workbench:{portable(){return null;},dispose(){}},plotGroup:{setColumns(){layoutSetColumnsCalls++;},getColumns(){return 3;},dispose(){}},header:{actionGroup:{render(){}}},plotViews:new Map(['heatmap','transform','resistance','maxVg','maxVgArg','maxVd','maxVdArg'].map(key=>[key,{dispose(){}}])),plotEntries:new Map(),transformForm:{destroy(){},dispose(){}},dispose(){}})};
+    const mounted=await feature.mount(ctx,controller,{unitPresentation});
+    assert.strictEqual(layoutSetColumnsCalls,1,'TER mount must apply persisted/default layout exactly once');
+    assert.strictEqual(resizeCalls,7,'TER mount layout application must schedule one resize pass for the seven plots');
+    assert(activitySpec?.onActivate,'TER activity must register an activation callback');
+    activitySpec.onActivate();
+    assert.strictEqual(openPageCalls,1,'TER activation must open its page exactly once');
+    assert.strictEqual(controllerRenderCalls,0,'TER activity callback must not duplicate the page onOpen render owner');
     fire('analysis:refresh',{id:'terMaxPage'});await tick();await tick();
+    assert.strictEqual(controllerRenderCalls,1,'explicit analysis refresh must synchronize TER presentation once');
+    assert.strictEqual(layoutSetColumnsCalls,1,'data refresh must not reapply unchanged PlotGroup geometry');
+    assert.strictEqual(resizeCalls,14,'data refresh must add only one seven-plot resize pass instead of layout+render duplicate passes');
+    assert.strictEqual(resistanceReactCalls,1,'frame-priority R–V base must be scheduled once; selection styling waits for that render promise');
     assert(heatmapSpec&&resistanceSpec,'real TER feature runtime must render both the primary heatmap and R–V view');
+    assert.strictEqual(heatmapSpec.options.renderPriority,'frame','primary TER heatmap must yield first paint before heavy scalar-field drawing');
     assert.strictEqual(heatmapSpec.field.sourceScans.length,3,'primary heatmap must carry one stable source-scan reference per Vg row');
     assert.deepStrictEqual(heatmapSpec.field.sourceScans[1].ref,ref(0,'B',1),'Vg=0 heatmap row must identify source B by canonical sweep reference');
     assert.strictEqual(resistanceSpec.spec.selectionTarget,'series','R–V view must select the stable source scan rather than display-point identity');

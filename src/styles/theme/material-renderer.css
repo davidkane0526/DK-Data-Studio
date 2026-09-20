@@ -153,6 +153,33 @@ body.dkds-modern-ui [data-dkds-material-surface="core"] > [data-dkds-material-co
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
 }
+/* Mobile Drawer projection inserts scroll/content geometry wrappers between the
+   outer Material frame and the live PRIME. The projected PRIME is still content,
+   not a second elevated surface: flatten exactly that root through the wrapper
+   chain so the drawer has one background/shadow owner and no visible inner edge. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-material-surface="core"]
+>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-material-content="true"]{
+  background-color:transparent;
+  background-image:none;
+  border-color:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+/* Mobile auto-flow PRIMARY hosts are geometry/scroll containers, not a
+   second visual Panel. Their child Unit Panels own the visible Material depth.
+   Keeping a Surface shadow on this growing host lets its old viewport edge
+   appear as a horizontal shadow inside long content after orientation/scroll. */
+html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
+.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host[data-primary-scroll="auto"]{
+  background-color:transparent;
+  background-image:none;
+  border-color:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
 /* Nested semantic headers may own a tonal/gradient band but never a second
    backdrop-filter or optical shadow. Keeping the header paint intact is what
    lets Theme effects (Aurora) survive inside a glass/floating Material while
@@ -206,20 +233,11 @@ html:not([data-dkds-host="mobile"]) body.dkds-modern-ui [data-dkds-presentation-
   box-shadow:var(--dkui-shadow-2)
 }
 /* Native parameter projection keeps geometry in the platform layer while
-   Material Renderer exclusively owns elevated paint, scrollbar optics and
-   the fixed resize-grip appearance. */
+   Material Renderer exclusively owns elevated paint and the fixed resize-grip appearance. */
 html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
 .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{
   border-width:1px;border-style:solid;border-radius:10px
 }
-html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
-.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]{
-  scrollbar-color:color-mix(in srgb,var(--dkui-control-border) 60%,transparent) transparent
-}
-html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
-.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-track{background:transparent}
-html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui
-.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]::-webkit-scrollbar-thumb{border-radius:999px;background:color-mix(in srgb,var(--dkui-control-border) 58%,transparent)}
 html[data-dkds-host="mobile"].react-native-client body.dkds-modern-ui .dkds-mobile-drawer-resize-handle{
   background:transparent
 }

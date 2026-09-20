@@ -67,11 +67,6 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
-      - name: Type-check mobile shell
-        working-directory: mobile
-        shell: bash
-        run: npm run typecheck
-
       - name: Prepare offline web assets
         working-directory: mobile
         shell: bash

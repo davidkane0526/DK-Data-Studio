@@ -1,0 +1,23 @@
+{
+  "id": "com.example.unit-pulse-shadow",
+  "name": "Pulse Unit-only Shadow Reconstruction",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": ["plugin.js"],
+  "enabled": true,
+  "order": 923,
+  "description": "Parallel, non-production Pulse Analysis reconstruction built only from public Unit Templates for seven-layer parity auditing.",
+  "requiresCore": [
+    "status", "workspace", "analysis.providers", "ui.dom", "ui.workspace",
+    "ui.plot-views", "ui.actions", "ui.interaction", "ui.pages", "ui.portable",
+    "ui.scientific-plot", "ui.table", "ui.unit-templates"
+  ],
+  "capabilities": ["ui.page", "ui.plugin-workspace", "ui.scientific-plot"],
+  "pluginType": "workbench",
+  "platformPresentation": {
+    "desktop": {"mode": "shared"},
+    "mobile": {"mode": "adaptive"}
+  },
+  "data": {"accepts": ["science.pulse.trace"]}
+}

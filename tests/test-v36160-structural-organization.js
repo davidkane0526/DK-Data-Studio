@@ -25,7 +25,7 @@ assert(scriptFiles.includes('prepare-dev-start.js'),'fast dev-start preparation 
 assert(list('tests','.js').length>=130,'regression tests must live under tests/.');
 assert(pkg.scripts.test.includes('node tests/run.js test'),'npm test must use the centralized test runner.');
 assert(pkg.scripts.check.includes('node tests/run.js check'),'npm check must use the centralized test runner.');
-assert(pkg.scripts['mobile:test']==='npm run runtime:build && npm run plugin:index && node tests/run.js mobile','mobile tests must regenerate ignored Core runtime compositions and the generated built-in plugin index before using the centralized runner.');
+assert(pkg.scripts['mobile:test']==='npm run runtime:build && npm run sdk:authoring && npm run plugin:index && node tests/run.js mobile','mobile tests must regenerate ignored Core runtime compositions, the SDK export bundle and the generated built-in plugin index before using the centralized runner.');
 
 // Authored Core is organized by responsibility. The browser still receives two
 // generated composition artifacts for legacy shared-closure subsystems, but the

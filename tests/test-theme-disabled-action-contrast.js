@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');
+const theme=fs.readFileSync('src/plugins/aurora-pop-theme/plugin.js','utf8');
+assert(theme.includes("disabledSurface:'#EFF1F5'")&&theme.includes("disabledText:'#727C90'"),'Aurora light disabled tokens must remain byte-equivalent in meaning to the accepted 3.70.5 theme');
+assert(theme.includes("disabledSurface:'#202638'")&&theme.includes("disabledText:'#8490A7'"),'Aurora dark disabled tokens must remain unchanged');
+const css=fs.readFileSync('src/styles/theme/component-appearance.css','utf8');const row=css.match(/\[data-dkds-component-identity="toolbarAction"\]:disabled\{([^}]+)\}/)?.[1]||'';
+assert(row.includes('background:var(--dkds-ca-action-surface)'),'disabled action must retain the accepted component surface instead of introducing a new SDK paint');
+assert(row.includes('color:var(--dkui-disabled-text)'));assert(row.includes('border-color:var(--dkds-ca-action-border)'));
+const coverage=fs.readFileSync('src/core/theme/coverage-runtime.js','utf8');assert(coverage.includes("if(el.matches?.(':disabled,[aria-disabled=\"true\"]')){disabledExempt++;continue;}"),'accepted disabled controls remain excluded from the generic text contrast audit');
+console.log('Theme disabled action visual-template PASS');

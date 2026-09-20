@@ -20,7 +20,7 @@
       applyOwnerArtifactDelta(payload);
     });
     electronAPI.onActivityWillHide?.(()=>{
-      pushSnapshot(true);
+      pushSnapshot(false,{includeArtifacts:false,includeProject:false,reason:'hide'});
       void Promise.resolve(window.DKDSUI?.lifecycle?.('hidden',{reason:'top-window-hide',purgeManaged:false})).catch(err=>console.warn('[DKDS TOP suspend]',err)).finally(()=>{
         window.DKDSPerformance?.lifecycle?.('hidden',{retainRatio:0.25,dropWeak:true,reason:'top-window-hide'});
       });

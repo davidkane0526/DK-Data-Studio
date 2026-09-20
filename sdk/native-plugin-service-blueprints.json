@@ -1,0 +1,565 @@
+{
+  "version": "2.5.38",
+  "serviceCatalog": {
+    "activities": {
+      "kind": "host-contribution",
+      "public": true,
+      "purpose": "Register host activities; visual chrome remains Host-owned."
+    },
+    "pages": {
+      "kind": "host-contribution",
+      "public": true,
+      "purpose": "Register page/activity renderers."
+    },
+    "topWorkspace": {
+      "kind": "presentation-contract",
+      "public": true,
+      "purpose": "Publish platform-neutral PRIMARY/PRIME/SUB semantics."
+    },
+    "unitTemplates": {
+      "kind": "composition-service",
+      "public": true,
+      "purpose": "Strict Unit Template composition facade for canonical visual Units."
+    },
+    "workspaceSurface": {
+      "kind": "workspace-runtime",
+      "public": true,
+      "purpose": "Create plugin workspace composition runtime."
+    },
+    "toolbar": {
+      "kind": "host-contribution",
+      "public": true,
+      "purpose": "Register activity/global toolbar commands."
+    },
+    "statusBar": {
+      "kind": "host-contribution",
+      "public": true,
+      "purpose": "Register status-bar contributions and priorities."
+    },
+    "menus": {
+      "kind": "command-service",
+      "public": true,
+      "purpose": "Register/open menus; canonical Menu Unit owns visual menu composition."
+    },
+    "contextMenus": {
+      "kind": "command-service",
+      "public": true,
+      "purpose": "Context-menu command routing."
+    },
+    "actions": {
+      "kind": "command-service",
+      "public": true,
+      "purpose": "Mount canonical action groups."
+    },
+    "components": {
+      "kind": "schema-service",
+      "public": true,
+      "purpose": "Mount schema-driven Core components."
+    },
+    "dom": {
+      "kind": "lifecycle-dom-service",
+      "public": true,
+      "purpose": "Scoped DOM lookup/events/timers; not a visual styling API.",
+      "forbiddenVisualMethods": [
+        "style"
+      ]
+    },
+    "layout": {
+      "kind": "layout-service",
+      "public": true,
+      "purpose": "Low-level Core layout behavior. New visual compositions use Unit Templates.",
+      "migration": {
+        "move": "movableWindow",
+        "split": "splitPane"
+      }
+    },
+    "portable": {
+      "kind": "portable-service",
+      "public": true,
+      "purpose": "Dock/float/global surface behavior; Unit portable wraps this service."
+    },
+    "plotViews": {
+      "kind": "scientific-service",
+      "public": true,
+      "purpose": "PlotView lifecycle/export/portable behavior; Unit plotView is the strict composition facade."
+    },
+    "plotGroups": {
+      "kind": "scientific-service",
+      "public": true,
+      "purpose": "PlotGroup runtime; Unit plotGroup is the strict composition facade."
+    },
+    "scientificPlot": {
+      "kind": "scientific-service",
+      "public": true,
+      "purpose": "Scientific renderer and surface lifecycle."
+    },
+    "tables": {
+      "kind": "data-service",
+      "public": true,
+      "purpose": "Managed table surfaces."
+    },
+    "selection": {
+      "kind": "interaction-service",
+      "public": true,
+      "purpose": "Typed selection channels/models/reference projection."
+    },
+    "series": {
+      "kind": "scientific-service",
+      "public": true,
+      "purpose": "Series registry and metadata."
+    },
+    "interaction": {
+      "kind": "interaction-service",
+      "public": true,
+      "purpose": "Interaction runtime/facade."
+    },
+    "interactionBehaviors": {
+      "kind": "interaction-service",
+      "public": true,
+      "purpose": "Declarative input intent profiles."
+    },
+    "shortcuts": {
+      "kind": "interaction-service",
+      "public": true,
+      "purpose": "Scoped keyboard shortcuts."
+    },
+    "settings": {
+      "kind": "state-service",
+      "public": true,
+      "purpose": "Typed plugin settings/defaults."
+    },
+    "edit": {
+      "kind": "state-service",
+      "public": true,
+      "purpose": "Undo/edit transactions."
+    },
+    "dialogs": {
+      "kind": "overlay-service",
+      "public": true,
+      "purpose": "Dialog lifecycle; Unit dialog owns canonical visual composition."
+    },
+    "theme": {
+      "kind": "theme-service",
+      "public": true,
+      "purpose": "Theme provider/registration APIs; plugins must not own Core paint."
+    },
+    "parameters": {
+      "kind": "schema-service",
+      "public": true,
+      "purpose": "Schema-driven parameter defaults/validation/rendering; visual rendering migrates through Unit parameterForm."
+    }
+  },
+  "formalMethods": {
+    "activities.add": {
+      "kind": "host-contribution",
+      "rule": "Activity identity/navigation contribution remains a Host service."
+    },
+    "pages.add": {
+      "kind": "host-contribution",
+      "rule": "Page lifecycle registration remains a Host service; page contents use Units."
+    },
+    "topWorkspace.register": {
+      "kind": "presentation-contract",
+      "rule": "Platform-neutral surface semantics remain a Core presentation service."
+    },
+    "theme.register": {
+      "kind": "theme-provider",
+      "rule": "Theme providers remain formal Core services."
+    },
+    "selection.model": {
+      "kind": "state-service",
+      "rule": "Selection models are behavior/state, not visual composition."
+    },
+    "selection.refs": {
+      "kind": "state-service",
+      "rule": "Selection references are behavior/state, not visual composition."
+    },
+    "series.register": {
+      "kind": "scientific-service",
+      "rule": "Series registration remains scientific state infrastructure."
+    },
+    "settings.define": {
+      "kind": "state-service",
+      "rule": "Typed settings remain Core state infrastructure."
+    },
+    "shortcuts.add": {
+      "kind": "interaction-service",
+      "rule": "Keyboard command binding remains a Core interaction service."
+    },
+    "interaction.create": {
+      "kind": "interaction-service",
+      "rule": "Interaction routing remains a Core behavior service."
+    },
+    "interactionBehaviors.create": {
+      "kind": "interaction-service",
+      "rule": "Behavior profiles remain Core interaction infrastructure."
+    },
+    "parameters.defaults": {
+      "kind": "schema-service",
+      "rule": "Parameter defaults are schema/state; visual rendering uses parameterForm Unit."
+    },
+    "scientificPlot.get": {
+      "kind": "scientific-runtime",
+      "rule": "Runtime lookup remains Core scientific behavior."
+    },
+    "scientificPlot.react": {
+      "kind": "scientific-runtime",
+      "rule": "Data/render update remains Core scientific behavior after Unit creation."
+    },
+    "scientificPlot.restyle": {
+      "kind": "scientific-runtime",
+      "rule": "Trace update remains Core scientific behavior after Unit creation."
+    },
+    "scientificPlot.relayout": {
+      "kind": "scientific-runtime",
+      "rule": "Viewport/layout update remains Core scientific behavior after Unit creation."
+    },
+    "scientificPlot.resize": {
+      "kind": "scientific-runtime",
+      "rule": "Renderer resize remains Core scientific behavior."
+    },
+    "scientificPlot.saveImage": {
+      "kind": "scientific-runtime",
+      "rule": "Scientific export operation remains Core behavior; PlotView exposes canonical UI."
+    },
+    "scientificPlot.purge": {
+      "kind": "scientific-runtime",
+      "rule": "Renderer lifecycle cleanup remains Core behavior."
+    },
+    "scientificPlot.scalarField": {
+      "kind": "scientific-runtime",
+      "rule": "Scientific data renderer remains Core behavior."
+    },
+    "dom.root": {
+      "kind": "domain-content-helper",
+      "rule": "Scoped root lookup is allowed; it may not become a visual owner."
+    },
+    "dom.query": {
+      "kind": "domain-content-helper",
+      "rule": "Scoped lookup is allowed; canonical units must still be created through Unit Templates."
+    },
+    "dom.all": {
+      "kind": "domain-content-helper",
+      "rule": "Scoped lookup is allowed; canonical units must still be created through Unit Templates."
+    },
+    "dom.create": {
+      "kind": "domain-content-helper",
+      "rule": "May create domain-content nodes only; canonical buttons/fields/headers/surfaces use Unit Templates."
+    },
+    "dom.append": {
+      "kind": "domain-content-helper",
+      "rule": "May attach domain content into Unit slots; not a layout/paint owner."
+    },
+    "dom.html": {
+      "kind": "domain-content-helper",
+      "rule": "May render domain-specific inner content; canonical UI anatomy may not be bypassed."
+    },
+    "dom.on": {
+      "kind": "lifecycle-helper",
+      "rule": "Scoped event cleanup remains Core lifecycle infrastructure."
+    },
+    "dom.frame": {
+      "kind": "lifecycle-helper",
+      "rule": "Frame scheduling is nonvisual lifecycle infrastructure."
+    },
+    "dom.timeout": {
+      "kind": "lifecycle-helper",
+      "rule": "Timer lifecycle is nonvisual infrastructure."
+    },
+    "dom.interval": {
+      "kind": "lifecycle-helper",
+      "rule": "Timer lifecycle is nonvisual infrastructure."
+    }
+  },
+  "blueprints": {
+    "_template": {
+      "services": [
+        "actions",
+        "components",
+        "dom",
+        "interaction",
+        "interactionBehaviors",
+        "pages",
+        "workspaceSurface"
+      ],
+      "migrations": [
+        {
+          "from": "workspaceSurface.create",
+          "to": "workspace",
+          "count": 1
+        },
+        {
+          "from": "actions.mount",
+          "to": "actionRow",
+          "count": 1
+        },
+        {
+          "from": "components.mount",
+          "to": "componentTree",
+          "count": 2
+        }
+      ]
+    },
+    "aurora-pop-theme": {
+      "services": [
+        "theme"
+      ],
+      "migrations": []
+    },
+    "connectivity-center": {
+      "services": [
+        "dom",
+        "layout",
+        "menus",
+        "statusBar"
+      ],
+      "migrations": [
+        {
+          "from": "layout.move",
+          "to": "movableWindow",
+          "count": 2
+        },
+        {
+          "from": "menus.add",
+          "to": "menu",
+          "count": 2
+        },
+        {
+          "from": "statusBar.add",
+          "to": "status",
+          "count": 2
+        }
+      ]
+    },
+    "data-center": {
+      "services": [
+        "activities",
+        "contextMenus",
+        "dialogs",
+        "dom",
+        "interaction",
+        "interactionBehaviors",
+        "menus",
+        "pages",
+        "parameters",
+        "scientificPlot",
+        "selection",
+        "topWorkspace",
+        "unitTemplates"
+      ],
+      "migrations": [
+        {
+          "from": "menus.add",
+          "to": "menu",
+          "count": 1
+        },
+        {
+          "from": "dialogs.confirm",
+          "to": "dialog",
+          "count": 1
+        },
+        {
+          "from": "dialogs.prompt",
+          "to": "dialog",
+          "count": 1
+        },
+        {
+          "from": "parameters.render",
+          "to": "parameterForm",
+          "count": 1
+        }
+      ]
+    },
+    "flexible-import": {
+      "services": [],
+      "migrations": []
+    },
+    "pulse-analysis": {
+      "services": [
+        "activities",
+        "dom",
+        "interaction",
+        "menus",
+        "pages",
+        "portable",
+        "scientificPlot",
+        "selection",
+        "topWorkspace",
+        "unitTemplates"
+      ],
+      "migrations": [
+        {
+          "from": "menus.add",
+          "to": "menu",
+          "count": 1
+        },
+        {
+          "from": "portable.create",
+          "to": "portable",
+          "count": 1
+        }
+      ]
+    },
+    "pulse-import": {
+      "services": [],
+      "migrations": []
+    },
+    "pulse-sampler-tool": {
+      "services": [
+        "activities",
+        "dom",
+        "pages",
+        "topWorkspace",
+        "unitTemplates"
+      ],
+      "migrations": []
+    },
+    "resonance-detector-robust": {
+      "services": [],
+      "migrations": []
+    },
+    "resonance-workbench": {
+      "services": [
+        "actions",
+        "activities",
+        "contextMenus",
+        "dialogs",
+        "dom",
+        "edit",
+        "interaction",
+        "interactionBehaviors",
+        "menus",
+        "pages",
+        "scientificPlot",
+        "selection",
+        "series",
+        "settings",
+        "statusBar",
+        "toolbar",
+        "topWorkspace",
+        "unitTemplates",
+        "parameters"
+      ],
+      "migrations": [
+        {
+          "from": "toolbar.add",
+          "to": "toolbar",
+          "count": 1
+        },
+        {
+          "from": "statusBar.add",
+          "to": "status",
+          "count": 1
+        },
+        {
+          "from": "menus.add",
+          "to": "menu",
+          "count": 1
+        },
+        {
+          "from": "parameters.render",
+          "to": "parameterForm",
+          "count": 1
+        }
+      ]
+    },
+    "scientific-data-contracts": {
+      "services": [],
+      "migrations": []
+    },
+    "shell-navigation": {
+      "services": [],
+      "migrations": []
+    },
+    "standard-transport-algorithms": {
+      "services": [],
+      "migrations": []
+    },
+    "status-monitor": {
+      "services": [
+        "dom",
+        "statusBar"
+      ],
+      "migrations": [
+        {
+          "from": "statusBar.add",
+          "to": "status",
+          "count": 4
+        },
+        {
+          "from": "dom.style",
+          "to": "meter",
+          "count": 1
+        }
+      ]
+    },
+    "ter-analysis": {
+      "services": [
+        "activities",
+        "dom",
+        "interaction",
+        "menus",
+        "pages",
+        "portable",
+        "scientificPlot",
+        "selection",
+        "shortcuts",
+        "topWorkspace",
+        "unitTemplates"
+      ],
+      "migrations": [
+        {
+          "from": "menus.add",
+          "to": "menu",
+          "count": 1
+        },
+        {
+          "from": "portable.create",
+          "to": "portable",
+          "count": 1
+        }
+      ]
+    },
+    "thin-glass-theme": {
+      "services": [
+        "theme"
+      ],
+      "migrations": []
+    },
+    "transfer-vth-lab": {
+      "services": [
+        "activities",
+        "dom",
+        "interactionBehaviors",
+        "pages",
+        "settings",
+        "topWorkspace",
+        "unitTemplates"
+      ],
+      "migrations": []
+    },
+    "workspace-safeguards": {
+      "services": [],
+      "migrations": []
+    }
+  },
+  "visualMigrations": {
+    "ctx.ui.workspaceSurface.create": "workspace",
+    "ctx.ui.toolbar.add": "toolbar",
+    "ctx.ui.statusBar.add": "status",
+    "ctx.ui.menus.add": "menu",
+    "ctx.ui.actions.mount": "actionRow",
+    "ctx.ui.components.mount": "componentTree",
+    "ctx.ui.dialogs.confirm": "dialog",
+    "ctx.ui.dialogs.prompt": "dialog",
+    "ctx.ui.layout.move": "movableWindow",
+    "ctx.ui.layout.split": "splitPane",
+    "ctx.ui.dom.style": "meter",
+    "ctx.ui.portable.create": "portable",
+    "ctx.ui.plotViews.bind": "plotView",
+    "ctx.ui.plotGroups.create": "plotGroup",
+    "ctx.ui.scientificPlot.create": "scientificPlot",
+    "ctx.ui.tables.mount": "table",
+    "ctx.parameters.render": "parameterForm"
+  }
+}

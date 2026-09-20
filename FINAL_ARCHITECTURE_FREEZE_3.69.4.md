@@ -96,4 +96,4 @@ The final archive source passes:
 - Plugin manifests/packages: **17 / 17**;
 - authored CSS: **45 files / 0 `!important`**.
 
-After those gates, generated products are removed again. Final source-archive hygiene is: one current root handoff, zero `.git`, zero dependency directory, zero generated native project, zero `mobile/assets/web`, and zero files under `src/generated/`. See `HANDOFF_3.69.4_FINAL_ARCHIVE.md` for the continuation summary.
+After those gates, generated products were removed again. The archived 3.69.4 baseline remains the historical freeze point. Current post-archive continuation is documented by the single current root handoff for the active 3.70.x line; the historical freeze claims above are intentionally unchanged.

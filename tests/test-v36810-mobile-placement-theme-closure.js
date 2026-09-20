@@ -75,8 +75,8 @@ assert(mobileWorkspace.includes('.dkds-portable-view.dkds-plot-view:is(.is-float
 // tokens: preview follows source data and sits beside tools on tablet widths.
 const dcCss=read('src/plugins/data-center/plugin.css');
 const dcMobile=read('src/plugins/data-center/mobile.css');
-assert(dcCss.includes('grid-template-areas:var(--dc-main-areas)')&&dcCss.includes('.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:start;height:auto;min-height:0;max-height:none;flex:none}'),'Data Center shared layout must own final grid geometry.');
-assert(dcMobile.includes('--dc-main-areas:"source" "tool" "chart"')&&dcMobile.includes('@container data-center-workspace (min-width:680px)')&&dcMobile.includes('--dc-main-areas:"source source" "tool chart"'),'Mobile Data Center must keep formula/tools before chart on narrow views and beside chart on tablet widths using the same layout owner.');
+assert(dcCss.includes('grid-template-areas:var(--dc-main-areas)')&&dcCss.includes('.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:stretch;height:auto;min-height:0;max-height:none;flex:none}'),'Data Center shared layout must own final grid geometry.');
+assert(dcMobile.includes('--dc-main-areas:"source source" "tool chart"')&&dcMobile.includes('@container data-center-workspace (max-width:419px)')&&dcMobile.includes('--dc-main-areas:"source" "tool" "chart"'),'Mobile Data Center must preserve the two-column formula/chart workspace through normal portrait widths and collapse only on genuinely narrow containers.');
 assert(!dcMobile.includes('companion-bottom'),'Data Center Mobile must not reintroduce a plugin-private bottom-companion chart layout.');
 
 console.log('v3.68.10 Mobile theme/material + stable dock/float + Data Center preview closure PASS');

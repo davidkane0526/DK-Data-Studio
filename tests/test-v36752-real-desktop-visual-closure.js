@@ -53,23 +53,20 @@ for(const token of ['--dkds-titlebar-action-surface-hover','--dkds-titlebar-acti
 assert(appearance.includes('[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button:hover:not(:disabled)'));
 assert(appearance.includes('background:var(--dkds-titlebar-action-surface-hover);color:var(--dkui-danger)'));
 
-// Real screenshot regression 5: Data Center Desktop is no longer rebuilt into
-// the Mobile semantic workbench. SDK 1.25 platform assets now own that split:
-// Desktop keeps the established static two-column page; Mobile alone projects
-// data-control into WorkspaceSurface/Drawer.
-const dcViews=read('src/plugins/data-center/shared-views.js');
-const dcMobile=read('src/plugins/data-center/mobile-presentation.js');
+// Data Center production Unit cutover: Desktop and Mobile share one semantic
+// composition while the accepted plugin CSS remains platform-specific detail.
+const dcUnits=read('src/plugins/data-center/unit-presentation.js');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
 const dcManifest=json('src/plugins/data-center/plugin.json');
-assert(!dcViews.includes('ctx.ui.workspaceSurface.create('));
-assert(dcViews.includes("get?.('builtin.data-center','mobile-presentation')"));
-assert(dcMobile.includes("ctx.ui.workspaceSurface.create(host"));
-assert(dcMobile.includes("id:'data-control'"));
+assert(dcUnits.includes('ctx.ui.unitTemplates')&&dcUnits.includes('units.workspace.create')&&dcUnits.includes('workbench.compose'));
+assert(dcUnits.includes("id:'data-control'")&&dcUnits.includes("variant:'fixed-titleless'")&&dcUnits.includes("presentationRole:'data-control'"));
 assert.strictEqual(dcManifest.platformPresentation.desktop.mode,'shared');
 assert.strictEqual(dcManifest.platformPresentation.mobile.mode,'custom');
-assert(dcManifest.platformPresentation.mobile.scripts.includes('mobile-presentation.js'));
+assert.deepStrictEqual(dcManifest.platformPresentation.mobile.scripts||[],[]);
+assert((dcManifest.platformPresentation.mobile.styles||[]).includes('mobile.css'));
+assert(!fs.existsSync(path.join(root,'src/plugins/data-center/mobile-presentation.js')),'obsolete Data Center Mobile presentation runtime must stay removed after Unit cutover.');
 assert(dcRuntime.includes("root:{selector:workbench?'.data-center-body .dkds-plugin-workbench-root':'.data-center-body'}"));
-assert(atLeast(dcManifest.version,'1.15.9'),'Data Center version must retain the v3.67.52 Desktop restoration.');
+assert(atLeast(dcManifest.version,'1.15.23'),'Data Center version must retain the production Unit cutover.');
 
 for(const rel of ['src/styles/presentation/shell.css','src/styles/platform/touch.css','src/styles/platform/native-client-shell.css','src/styles/theme/component-appearance.css','src/styles/structure/plugin-workspace.css','src/plugins/data-center/plugin.css','src/plugins/data-center/mobile.css']){
   assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);

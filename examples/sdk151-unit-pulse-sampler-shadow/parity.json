@@ -1,0 +1,126 @@
+{
+  "schema": "dkds.unit-shadow-parity/1",
+  "sourcePlugin": "com.dkds.tools.pulse-sampler",
+  "shadowPlugin": "com.example.unit-pulse-sampler-shadow",
+  "scope": "Accepted Unit composition promoted to production presentation; production pulse generation, project/domain state, extraction task and result ownership remain unchanged.",
+  "productionReplaced": true,
+  "layers": {
+    "function": {
+      "status": "pass-live",
+      "evidence": [
+        "Unit shadow consumes the dependency-gated com.dkds.tools.pulse-sampler/live snapshot",
+        "all visible Unit actions route back to the same production action owner",
+        "pulse generation, merged-waveform preparation and steady-state extraction are not duplicated in the shadow"
+      ]
+    },
+    "structure": {
+      "status": "pass",
+      "evidence": [
+        "1 page + page header + workspace",
+        "1 titleless data-control PRIME for Vd/Vs/Vg parameters",
+        "1 waveform card with ScientificPlot + Table",
+        "1 sampling card with extraction controls, result controls, ScientificPlot + Table"
+      ]
+    },
+    "geometry": {
+      "status": "pass",
+      "evidence": [
+        "parameter form uses form-grid-2",
+        "four primary actions use action-grid-4",
+        "sampling controls use analysis-control-grid",
+        "result controls use result-control-grid",
+        "result plot/table region uses result-grid-asymmetric"
+      ]
+    },
+    "style": {
+      "status": "pass",
+      "evidence": [
+        "shadow ships no CSS",
+        "surface/header/control/action paint comes from Unit Templates/Core components",
+        "no source-private selector is required by the shadow"
+      ]
+    },
+    "interaction": {
+      "status": "pass-live",
+      "evidence": [
+        "channel/parameter/source/result-control changes round-trip through the production owner",
+        "segment actions mutate the production segment state and flow back into the Unit tables",
+        "direct production notifications refresh Unit fields, tables and ScientificPlots without a shadow state store"
+      ]
+    },
+    "responsive": {
+      "status": "pass",
+      "evidence": [
+        "form/action/analysis/result grids use published responsive Unit recipes",
+        "no plugin media/container query is needed by the shadow",
+        "live binding does not add a second geometry owner"
+      ]
+    },
+    "mobile": {
+      "status": "pass",
+      "evidence": [
+        "no platform branch in shadow source",
+        "data-control remains a semantic PRIME",
+        "mobile projection remains Presenter-owned"
+      ]
+    }
+  },
+  "unitContract": {
+    "unitCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": [],
+    "nonUnitGap": "None. The accepted Unit composition is now the production presentation owner; scientific/domain/task ownership remains production-only."
+  },
+  "functionMap": {
+    "setChannel": "setChannel",
+    "setParameters": "setParameters",
+    "generate": "generate",
+    "addSegment": "addSegment",
+    "clearChannel": "clearChannel",
+    "exportWave": "csvFromMerged",
+    "removeSegment": "removeSegment",
+    "extract": "runExtraction",
+    "copyResult": "copyResult",
+    "exportResult": "csvFromResult",
+    "setAnalysis": "setAnalysis"
+  },
+  "plotTitles": [
+    "三路合并波形",
+    "读写电流映射"
+  ],
+  "liveDomain": {
+    "ref": "com.dkds.tools.pulse-sampler/live",
+    "owner": "com.dkds.tools.pulse-sampler",
+    "stateOwner": "production-only",
+    "algorithmOwner": "production-only",
+    "taskOwner": "production-only",
+    "shadowStateStore": false
+  },
+  "sideBySide": {
+    "status": "accepted-live-presentation",
+    "productionReplaced": false,
+    "evidence": [
+      "active channel and eight pulse parameters mirror live",
+      "segment/waveform/result tables consume production snapshot rows",
+      "waveform and result ScientificPlots consume production snapshot traces",
+      "Unit parameter/tab/segment/result interactions round-trip to production actions",
+      "direct production changes propagate by domain subscription"
+    ]
+  },
+  "cutover": {
+    "status": "production-unit-cutover-complete-visual-pending",
+    "presentationOwner": "src/plugins/pulse-sampler-tool/unit-presentation.js",
+    "domainOwnerPreserved": true,
+    "taskOwnerPreserved": true,
+    "resultOwnerPreserved": true,
+    "legacyDomRemoved": true,
+    "legacyCssDetached": true,
+    "unitCount": 41,
+    "frozen": false,
+    "visualAcceptance": {
+      "windowsElectron": false,
+      "mobileDevice": false,
+      "chromiumResponsive": false
+    }
+  }
+}

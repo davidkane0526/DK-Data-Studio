@@ -261,3 +261,44 @@
    exclusively owned by Material Renderer. Desktop/Web only; Mobile projection
    owns its independent drawer frame. */
 html:not([data-dkds-host="mobile"]) [data-dkds-presentation-purpose="parameters"][data-dkds-workspace-surface-kind="prime"]{position:relative;z-index:24}
+
+/* SDK 1.49 explicit PRIME inset variants. These are opt-in only: omitting
+   contentInset preserves the accepted pre-1.49 panel geometry byte-for-byte
+   at runtime. Values reuse the existing DKDS panel spacing family. */
+[data-dkds-prime-content-inset="none"]{padding:0;}
+[data-dkds-prime-content-inset="compact"]{padding:8px;}
+[data-dkds-prime-content-inset="standard"]{padding:9px;}
+[data-dkds-prime-content-inset="comfortable"]{padding:12px;}
+
+/* SDK 1.49 accepted-scientific-v1 reference profile.
+   This block is isolated to the opt-in SDK profile and mirrors the accepted
+   3.70.5 scientific-workbench geometry without changing existing built-ins. */
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-data-control{min-width:0;overflow:auto;padding:12px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-data-control>section{padding:10px;margin:0 0 8px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-data-control>section h3{margin:0 0 8px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-area{position:relative;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;width:100%;height:100%}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-workspace{position:relative;min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);height:100%}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-wrap{position:relative;min-width:0;min-height:0;overflow:hidden}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header{--dkds-scientific-reference-main-chrome-height:34px;position:absolute;left:82px;right:18px;top:8px;z-index:42;display:flex;align-items:center;gap:8px;min-width:0;pointer-events:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header>*{pointer-events:auto}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-tools{flex:0 0 auto;height:var(--dkds-scientific-reference-main-chrome-height);min-height:var(--dkds-scientific-reference-main-chrome-height)}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-legend{min-width:0;flex:1;height:var(--dkds-scientific-reference-main-chrome-height);box-sizing:border-box;display:flex;align-items:center;gap:8px;overflow-x:auto;white-space:nowrap;padding:3px 7px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:hidden}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;padding:4px 8px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-summary{display:flex;gap:10px;white-space:nowrap;overflow:hidden}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-panel{--dkds-portable-base-min-width:320px;--dkds-portable-base-min-height:220px;--dkds-portable-floating-position:absolute;--dkds-portable-floating-resize:both;z-index:160;display:grid;grid-template-rows:auto minmax(0,1fr)}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-header{display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-header-actions{display:flex;gap:5px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-body{min-height:0;overflow:auto;padding:10px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-meta{margin-left:6px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-plot{width:100%;min-height:0}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-panel.dkds-portable-view.is-docked{--dkds-portable-docked-position:relative;--dkds-portable-docked-inset:auto;--dkds-portable-docked-width:100%;--dkds-portable-docked-min-width:0px;--dkds-portable-docked-min-height:0px;--dkds-portable-docked-max-width:none;--dkds-portable-docked-height:auto;--dkds-portable-docked-max-height:none;--dkds-portable-docked-resize:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-portable-view.is-collapsed .dkds-scientific-reference-body{display:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-panel.dkds-portable-view.is-collapsed{--dkds-portable-floating-resize:none;--dkds-portable-docked-resize:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-card.dkds-portable-view.is-floating{--dkds-portable-floating-min-width:360px;--dkds-portable-floating-min-height:280px;--dkds-portable-floating-resize:none}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-card.dkds-portable-view.is-docked{--dkds-portable-docked-min-height:300px}
+.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-group-card.dkds-portable-view.is-global-floating{--dkds-portable-floating-min-width:380px;--dkds-portable-floating-min-height:300px;--dkds-portable-floating-resize:none}
+@media(max-width:1050px){.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header{left:72px;right:10px}}
+@media(max-width:980px){.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header{left:6px;right:6px;max-width:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header::-webkit-scrollbar{display:none}}

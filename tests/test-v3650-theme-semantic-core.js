@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -24,7 +25,7 @@ const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'Theme semantic-core regression requires app 3.65.0 or newer');
-assert.equal(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
 assert.equal(Theme.version,'3.10.0');

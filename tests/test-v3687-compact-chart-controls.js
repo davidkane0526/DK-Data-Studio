@@ -15,14 +15,17 @@ const parameter=read('src/core/data/parameter-schema.js');
 const components=read('src/core/ui/component-runtime.js');
 const semantics=read('src/core/theme/semantic-registry.js');
 const dc=read('src/plugins/data-center/feature-runtime.js');
+const dcChart=read('src/plugins/data-center/chart-runtime.js');
 
 // A compact auto-fit row is a short option strip, not a general form. Four
 // chart controls must fit comfortably inside a roughly half-width desktop
 // Surface and must not inherit 200+ px field tracks.
-assert(/\.schema-parameter-panel\.auto-fit\.compact\{[\s\S]*?grid-template-columns:var\(--dkds-parameter-auto-fit-compact-columns,repeat\(auto-fit,minmax\(96px,1fr\)\)\);[\s\S]*?gap:4px 6px/.test(schema),'compact+autoFit must retain the dense 96 px minimum while later releases may stretch tracks to consume the available row.');
+assert(/\.schema-parameter-panel\.auto-fit\.compact:not\(\.layout-host-owned\)\{[\s\S]*?grid-template-columns:var\(--dkds-parameter-auto-fit-compact-columns,repeat\(auto-fit,minmax\(96px,1fr\)\)\);[\s\S]*?gap:4px 6px/.test(schema),'Core-owned compact+autoFit must retain the dense 96 px minimum while later releases may stretch tracks to consume the available row.');
 assert(/\.schema-parameter-panel\.auto-fit\.compact \.schema-param-field\{[\s\S]*?--dkds-field-control-min-height:26px;[\s\S]*?--dkds-field-control-padding-block:2px;[\s\S]*?--dkds-field-control-padding-inline:6px/.test(schema),'compact+autoFit must shrink the actual canonical field-control geometry.');
-assert(schema.includes('.dkds-size-compact .schema-parameter-panel:not(.auto-fit),.dkds-size-compact .schema-parameter-panel.compact:not(.auto-fit){grid-template-columns:1fr;}'),'autoFit must respond to its real Surface width instead of being forcibly collapsed by the desktop size bucket.');
-assert(dc.includes('compact:true,autoFit:true'),'Data Center chart preview must continue using the generic dense auto-fit contract.');
+assert(schema.includes('.dkds-size-compact .schema-parameter-panel:not(.auto-fit):not(.layout-host-owned),')&&schema.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'Core-owned compact forms must retain two useful tracks instead of collapsing greedily by desktop size bucket.');
+assert(schema.includes('@media(max-width:310px)')&&schema.includes('grid-template-columns:minmax(0,1fr)'),'Core-owned ordinary parameter forms may collapse to one column only at a genuinely tiny viewport.');
+const dcUnits=read('src/plugins/data-center/unit-presentation.js');
+assert(dc.includes("ctx.modules.require('chart-runtime')")&&dcChart.includes("compact:true,autoFit:true,layoutOwner:'host'")&&dcUnits.includes("className:'dc-chart-params',geometry:{display:'grid'"),'Data Center chart fields keep compact semantics while the enclosing generic Layout Unit is the sole four-track owner.');
 
 // The Y-axis control is a popup proxy button for a multi-select. A button that
 // is explicitly a field control must never be hydrated/inferred as a toolbar

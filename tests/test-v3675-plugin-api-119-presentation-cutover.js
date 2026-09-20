@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -30,9 +31,9 @@ const mobileCss=read('src/mobile.css');
 const sdkTool=read('sdk/tools/dkds-plugin.js');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=5))),'Plugin API 1.19 Presentation Cutover requires v3.67.5+.');}
-assert.strictEqual(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
-assert.strictEqual(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert.strictEqual(sdkSchema.properties.apiVersion.const,'1.19.0');
 assert.strictEqual(docsSchema.properties.apiVersion.const,'1.19.0');
 

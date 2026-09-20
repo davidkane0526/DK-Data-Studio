@@ -562,3 +562,9 @@ workbench.registerPrime({
   sizing: 'fill', chrome: false, defaultPlacement: 'left', placements: ['left']
 });
 ```
+
+## SDK 1.49 Scientific Composition
+
+SDK 1.49 keeps Plugin API 1.19 and tightens composition invariants. `data-control` PRIME surfaces are fixed and use one placement. A movable `existingNode` PRIME must provide explicit `handle + controlsHost` or request `chrome:'auto'`; Core no longer guesses a drag header by scanning arbitrary section headers. PRIME may declare semantic `contentInset`, and Core-created headers may declare title/meta/actions/controls.
+
+For PRIMARY flow, use `ctx.ui.sections.create(...)`; for Core-owned complete scientific cards use `ctx.ui.plotViews.create(...)`; for related plots use `ctx.ui.plotGroups.create(...)`. PlotGroup is the preferred high-level form over raw GroupArea because it guarantees `GroupArea → ScientificCard → PlotView → ScientificPlot host`. Workbench/tool toolbar and menu contributions are activity-scoped by default. See `sdk/SCIENTIFIC_COMPOSITION.md`.

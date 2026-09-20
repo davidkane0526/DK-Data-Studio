@@ -1,0 +1,65 @@
+{
+  "id": "com.dkds.fixture.top-task",
+  "name": "External TOP Task Fixture",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": [
+    "plugin.js"
+  ],
+  "enabled": true,
+  "order": 990,
+  "description": "Regression fixture for packaged TOP workbench task-source parity across owner and dedicated renderers.",
+  "pluginType": "workbench",
+  "requiresCore": [
+    "workspace",
+    "ui.activities",
+    "ui.pages",
+    "ui.top-workspace",
+    "execution.tasks"
+  ],
+  "capabilities": [
+    "ui.page",
+    "ui.top-workspace"
+  ],
+  "workspace": {
+    "role": "top",
+    "activity": "fixture-top-task",
+    "icon": "T",
+    "title": "TOP Task Fixture"
+  },
+  "window": {
+    "activity": "fixture-top-task",
+    "title": "TOP Task Fixture",
+    "width": 960,
+    "height": 640,
+    "minWidth": 720,
+    "minHeight": 480,
+    "dependencies": [],
+    "prewarm": false,
+    "reuse": true,
+    "persistence": "memory"
+  },
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "tasks": [
+    {
+      "id": "fixture-task",
+      "entry": "task-entry.js",
+      "imports": [
+        "task-import.js"
+      ]
+    }
+  ],
+  "data": {
+    "accepts": [
+      "data.table"
+    ]
+  }
+}

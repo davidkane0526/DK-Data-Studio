@@ -27,10 +27,12 @@ assert(!shell.includes('--dkui-portable-corner-'),'Portable handle colors must b
 assert(!nativeCss.includes('>.dkds-portable-resize-handle::before'),'Mobile presentation must not duplicate Core resize-handle paint.');
 
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
 assert(!ter.includes("id:'resistance-inspector'")&&!ter.includes('registerPrime({'),'TER R–V must be an ordinary GroupArea child PlotView, not a dedicated PRIME/inspector surface.');
 assert(!ter.includes("id:'rv-visibility'")&&!ter.includes('toggleResistanceVisibility'),'TER R–V must not retain a plugin-private hide/show linkage; positioning and visibility follow shared PlotView behavior.');
 assert(!ter.includes('layoutSettings.sticky')&&!ter.includes('setSticky('),'TER must not retain R–V-specific sticky/layout configuration; sticky eligibility is owned by the Core group-area grid.');
-assert(ter.includes("stateVersion:'ter-plot-view-v3'"),'TER portable chart views must advance their persisted state version to flush stale cross-panel placement leakage.');
+assert(terUnits.includes("stateVersion:'ter-plot-view-v3'"),'TER Unit PlotViews must preserve the accepted production PlotView state key during source-parity reconstruction.');
+assert(!terUnits.includes("stateVersion:'ter-unit-production-v1'"),'Source-parity reconstruction must not invent a new TER PlotView state namespace before cross-plugin detail classification.');
 
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 assert(portable.includes("reason:`portable-place-${placement}-settled`")&&portable.includes("placement==='sticky'||placement==='left'||placement==='right'||placement==='bottom'||placement==='home'"),'Portable placement must schedule a settled follow-up resize for sticky and docked plot views.');
@@ -48,15 +50,15 @@ const setAll=controls.match(/function setAllVisibility\([\s\S]*?\n    }/g)?.[0]|
 assert(setAll&&!setAll.includes('actions.render();'),'Global visibility changes must not trigger the full Resonance render pipeline.');
 assert(controls.includes("button.classList.remove('active');button.classList.toggle('selected',selected);"),'Resonance mode buttons must use persistent selected state without conflating it with momentary active state.');
 
-const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonancePresentation.includes("const row=units.action.create(host,{id,label,className,variant:variant||undefined,title:title||label,nativeSave:nativeSave||undefined,nativeCopy:nativeCopy||undefined,direct:true})"),'Resonance production presentation must consume canonical selected/pressed toolbar appearance through the Action Unit.');
 for(const id of ['reswinShowAll','reswinShowForward','reswinShowReverse','reswinHideAll']){
-  const idx=resonanceView.indexOf(`id="${id}"`);assert(idx>=0,`Missing ${id}`);
-  assert(resonanceView.slice(idx,idx+420).includes('data-dkds-component-identity="toolbarAction"'),`${id} must consume canonical selected/pressed toolbar appearance.`);
+  assert(resonancePresentation.includes(`directAction(units,scan,{id:'${id}'`),`Missing ${id} in the production Unit presentation`);
 }
 assert(presenters.includes("role===roles.INSPECTOR")&&presenters.includes("region:'companion-right'"),'Mobile Presenter must own portrait inspector geometry instead of plugin-local platform branching.');
-assert(presenter.includes("semanticRole==='inspector'||semanticRole==='scientific-secondary'")&&presenter.includes("placementSource!=='user'"),'Mobile Presenter must override inherited/default/legacy inspector placement while preserving explicit user placements.');
+assert(presenter.includes("const semanticHome=semanticRole==='inspector'?'right':semanticRole==='scientific-secondary'?'bottom':''")&&presenter.includes("placement===semanticHome"),'Mobile Presenter must keep canonical semantic companion lanes stable while preserving explicit user placements only when they actually differ from the semantic home lane.');
 
-assert(!resonanceView.includes('isNativeClient')&&resonanceView.includes("const inspectDefault=allowedPlacements.has(String(pluginDefaults.inspectPlacement||''))?String(pluginDefaults.inspectPlacement):'right'"),'Resonance keeps one platform-neutral semantic inspector default; migration belongs to Core PortableView/Presenter.');
+assert(!resonancePresentation.includes('isNativeClient')&&resonancePresentation.includes("const inspectDefault=allowed.has(String(pluginDefaults.inspectPlacement||''))?String(pluginDefaults.inspectPlacement):'right'"),'Resonance keeps one platform-neutral semantic inspector default in the production Unit presentation; migration belongs to Core PortableView/Presenter.');
 assert(portable.includes("?'mobile.m3':'desktop'"),'Core PortableView must namespace persisted placement by platform.');
 const selection=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
 assert(selection.includes('publishDatasetSelection')&&selection.includes("type:'resonance.dataset'"),'Dataset-row activation must publish dataset semantics, not collapse to one forward sweep.');

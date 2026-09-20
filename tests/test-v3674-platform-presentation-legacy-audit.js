@@ -21,7 +21,7 @@ const firstParty=[
   'src/plugins/pulse-analysis/feature-runtime.js',
   'src/plugins/pulse-sampler-tool/plugin.js',
   'src/plugins/resonance-workbench/view-components.js',
-  'src/plugins/ter-analysis/shared-views.js',
+  'src/plugins/ter-analysis/unit-presentation.js',
   'src/plugins/transfer-vth-lab/plugin.js'
 ];
 for(const rel of firstParty)assert(!/left(?:Node|Html)\s*:/.test(read(rel)),`First-party TOP must not hide a semantic rail in PRIMARY left composition: ${rel}`);

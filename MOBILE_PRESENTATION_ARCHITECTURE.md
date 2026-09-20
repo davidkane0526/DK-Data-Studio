@@ -1,15 +1,14 @@
 # DK Data Studio — Mobile Presentation Architecture
 
-Current implementation baseline: **v3.69.4 Final Archive**  
+Current implementation baseline: **v3.71.99 WIP**  
 Plugin API: **1.19.0**  
-Current SDK: **1.47.0**  
+Current SDK: **1.51.42**  
+Unit Templates: **2.5.37 / 41 Units / 73 Layout recipes**  
 Phase E interoperability contract: **formally frozen at v3.69.0**
 
 ## 1. Principle
 
-Mobile is not a wrapped Desktop webpage and must not be implemented as Desktop DOM/CSS plus a growing override sheet.
-
-The architecture remains:
+Mobile is not a wrapped Desktop webpage and must not be implemented as Desktop DOM/CSS plus a growing override sheet. The same semantic Surface model is projected by a platform Presenter, but **outer geometry has one owner per boundary**.
 
 ```text
 Core data / project / algorithms / state
@@ -22,40 +21,64 @@ Desktop Presenter   Mobile Presenter
 mouse/keyboard      touch/gesture
 ```
 
-Business/runtime APIs stay shared. Platform presentation may differ, but a plugin must not create parallel business APIs such as `ctx.ui.desktop` and `ctx.ui.mobile`.
+Business/runtime APIs stay shared. Plugins must not create parallel platform APIs or plugin-specific Mobile geometry paths.
 
-## 2. Current semantic surface mapping
+## 2. Semantic Surface mapping
 
 | Semantic role | Compact Mobile | Wide / expanded Mobile |
 | --- | --- | --- |
 | `scientific-primary` / `data-primary` / `utility-primary` | main workspace | main workspace |
 | `data-control` / `presentationPurpose=parameters` | left temporary drawer | left temporary drawer |
-| `inspector` | bottom/transient companion | right companion |
-| PRIME `scientific-secondary` | route / companion | bottom companion |
+| `inspector` | semantic companion | right companion |
+| PRIME `scientific-secondary` | semantic companion / route according to Presenter mapping | bottom companion |
 | SUB `scientific-secondary` | route | route |
 
-The host uses actual WebView width rather than orientation alone. The primary scientific surface remains the anchor and must not disappear when a secondary feature is opened.
+The primary scientific Surface remains the workspace anchor. Opening a secondary Surface must not replace or resize it through content feedback.
 
-## 3. Current Mobile shell
+## 3. Universal companion outer-geometry contract
+
+Every semantic `companion-right` and `companion-bottom` uses the **same framework path**. There is no accepted-scientific/Resonance/TER profile allocator.
+
+```text
+Workspace SplitController
+(default + user preference)
+        ↓
+shared Mobile viewport bound
+(right: 46vw, bottom: 58vh, plus common caps/floors)
+        ↓
+CSS grid track
+        ↓
+projected Surface
+        ↓
+Unit adapts / scrolls internally
+```
+
+Rules:
+
+- Workspace SplitController is the sole owner of right/bottom default and user-preference size.
+- Shared Mobile CSS bounds that preference against the current live viewport.
+- Mobile Presenter only projects a semantic Surface into the allocated track; it does **not** read Unit minima, `scrollHeight`, descendant overflow, recipe names, plugin identity or content observers to renegotiate the parent track.
+- Unit `detailGeometry`, responsive density and PlotGroup constraints remain internal to the allocated Surface. If space is less comfortable than a Unit preference, the Unit reflows or its canonical internal body scrolls. It does not enlarge its parent companion track.
+- Parameter Drawer width is a separate overlay contract and never reserves/shrinks scientific tracks.
+- Mobile split persistence uses one Core-owned schema (`workspace-owned-v1`) for all workspaces. Plugins/profiles cannot create private Mobile split generations.
+
+This restores the simple outer ownership that existed before the content-driven companion negotiation series while retaining the current Unit/SDK composition architecture.
+
+## 4. Current Mobile shell
 
 - Top command order is `导入 / 数据 / 工作区 / 分析 / 插件`, followed by plugin-owned commands.
 - Plugin command overflow is solved from measured pixel width. Only plugin commands enter the top overflow menu.
-- Parameter surfaces are generated from semantic Core surfaces. The drawer is content-fit by default, manually resizable from a visually transparent in-edge hit rail, vertically scrollable only, and dismissed by a consumed outside pointer press.
+- Parameter surfaces are generated from semantic Core surfaces. The Drawer has a 25% live-page hard floor, grows only for real Unit intrinsic inline constraints, is manually resizable, remains vertically gesture-scrollable through one hidden-scrollbar viewport, preserves the canonical final clipping-boundary breathing room, and keeps accepted parameter Header anatomy.
 - Bottom status items retain priority `AI > SMB > 网页服务 > 主题 > 内存 > DevTool`; shrinking therefore collects DevTool first and AI last.
 - Theme, status, history, SMB/AI/Web service state stay Core/Shell responsibilities rather than plugin-owned Mobile pages.
 
-## 4. Scientific workspace behavior
+### Historical correction
 
-- Primary plot, inspector and scientific-secondary surfaces can coexist on wide tablets/foldables.
-- Right/bottom companions reuse Core split semantics but persist Mobile-scoped geometry.
-- Bottom companions are bounded so drag cannot consume the primary scientific workspace; the current expanded Mobile ceiling is 58% (compact CSS ceiling about 54vh), with a 240 px primary-area reserve.
-- Plot floating tools use the native touch-drag adapter and keep Desktop pointer/coalesced-event behavior separate.
-- Plugin-specific multi-chart pages and parameter groups must size/reflow from their actual surface or drawer width, not device breakpoints such as `max-width:1050px`.
-- Repeated scientific/result cards use responsive `auto-fit` grids; readable minimum width is a floor, not a fixed card width.
+The 3.71.84–3.71.98 experiments that let Unit content/minima, internal scroll extent, profile allocators, Drawer occupancy, style guards or per-profile split generations influence scientific companion outer tracks are superseded by the universal Workspace-owned contract above. Their changelog records remain history only and are not current architecture.
 
 ## 5. Drawer composition ownership
 
-The Mobile Presenter owns the drawer frame, single vertical scroll axis, width persistence, resize gesture and outside-dismiss behavior. Core Mobile platform CSS owns the edge-to-edge semantic header geometry and scrollbar/resize affordance. Plugins own only domain-local composition inside the drawer and should use container-driven tracks rather than Desktop-width assumptions.
+The Mobile Presenter owns the drawer frame, single vertical scroll axis, width persistence, resize gesture and outside-dismiss behavior. The Drawer clipping boundary materializes the canonical 6 px parameter safe inset: top/inline spacing belongs to the Drawer content wrapper and a real terminal safe extent owns block-end scroll space after descendant overflow. Presenter must not replay the projected PRIME root Unit Layout while fitting width. Core Mobile platform CSS owns the edge-to-edge semantic header geometry and resize affordance; the overall Drawer scrollbar is hidden. Plugins own only domain-local composition inside the drawer and should use container-driven tracks rather than Desktop-width assumptions. Tabs, Header actions and other atomic Unit anatomy publish live intrinsic constraints through the shared Unit registry; plugins do not write Drawer width.
 
 A plugin must not reserve a private scrollbar gutter or paint a resize rail. Horizontal drawer scrolling and browser `resize` UI are prohibited because they create the right-side blank strip and scrollbar-corner artifact seen on the real Android device.
 
@@ -144,3 +167,14 @@ After SDK 1.25 host/package regression validation and real-device acceptance, co
 - Scientific floating controls are a platform-presentation concern. The frozen shared semantic surface keeps its neutral geometry slots; Desktop and native Mobile feed independent host-specific sizes. Desktop uses a compact CSS-viewport-adaptive range rather than physical display resolution, while Mobile may retain a stable touch-oriented compact size without consuming Desktop tuning.
 - A Mobile `data-control` / `parameters` PRIME must not visibly paint inside the main route before Presenter projection. A plugin that owns custom Mobile presentation may suppress its already-registered PRIME while it is outside the Presenter-owned Drawer region; business state and Plugin API remain shared.
 - Native Plugin Manager controls are composed for the actual Mobile workspace: search has a canonical field shell, wide tablets use one ordered command row, and narrower viewports reflow through explicit platform geometry without changing Desktop layout.
+## Native Mobile plugin identity and parameter-drawer width (v3.71.61+)
+
+Native Mobile owns plugin/activity identity in the host top bar. A plugin-local page/activity header such as a Unit `pageHeader` must not consume content height on Mobile, even when composition nests that header inside a Unit page body. The native shell therefore suppresses `.analysis-page-header` at any depth for plugin pages. System-owned pages that explicitly need their own header may opt in through Core-owned exceptions. Plugins must not add private Mobile CSS to hide their own title bars.
+
+The `data-control` / parameters surface remains a left transient Drawer. First-open automatic sizing is **content- and Unit-composition-derived above one product readability floor of 25% of the live viewport**; that fraction is a hard minimum only, never a target/default width or an arbitrary tablet cap. The Presenter searches from narrow to wide for the first usable responsive composition because Unit layouts are non-monotonic: reducing width may legitimately drop a column and become valid again. Ordinary input/select/control geometry is shrinkable and must not own the Drawer width merely because a Desktop rule uses `1fr` or `width:100%`. By contrast, canonical Unit/control spacing and Surface padding are non-compressible, and required labels/structure plus complete primary/fill action text must remain readable. The fitter never rewrites `gap`, `row-gap`, `column-gap` or padding to win a smaller width. User resize remains bounded only by the real available workspace; persistence is versioned so failed historical width generations cannot return.
+
+The Curve Inspector is **not** part of this Drawer sizing contract. `inspector` remains a `companion-right` semantic surface whose geometry belongs to the existing Mobile companion lane, `SplitController`, and explicit user PortableView placement. Parameter-Drawer measurement must never set an Inspector runtime minimum/default or change its placement ownership.
+## v3.71.88 parameter-surface width / legend contract
+
+For `presentationPurpose: parameters`, Mobile Presenter owns the outer Drawer allocation and applies a 25% viewport hard floor. Unit geometry constraints can only raise that minimum. Parameter legends, Desktop rail widths, and persisted widths are not Drawer-width owners. Ordinary Unit content can still raise the minimum through the shared live intrinsic-overflow/constraint path—for example an intentionally unwrapped action row whose real labels no longer fit—without the Presenter knowing those labels or the plugin identity. Composite Header actions publish their real inline start plus full action width, so nested Tabs cannot be clipped merely because the wrapper itself still fits. Parameter legends follow the assigned Drawer width, render horizontally in at most three rows, then use horizontal scrolling without a visible scrollbar. Right/bottom companion lanes are geometrically independent of the parameter Drawer; no Drawer occupancy token is published or consumed.
+

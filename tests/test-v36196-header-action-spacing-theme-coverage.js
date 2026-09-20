@@ -16,8 +16,8 @@ const chrome=read('src/styles/presentation/plugin-chrome.css');
 const material=read('src/core/theme/material-renderer.js');
 const semanticTheme=read('src/core/theme/semantic-registry.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
-const pulse=read('src/plugins/pulse-analysis/feature-runtime.js');
-const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const pulse=read('src/plugins/pulse-analysis/unit-presentation.js');
+const ter=read('src/plugins/ter-analysis/unit-presentation.js');
 
 // Ordinary ActionGroups remain integrated by default, but analysis-page header
 // groups are explicitly converted to separated peer controls. This prevents
@@ -51,10 +51,10 @@ assert(!chrome.includes('.dkds-separated-action-group>.dkds-action-button'),
 
 // Both user-reported TOP headers use the same Core host, so the fix must stay
 // host-generic rather than special-casing TER or Pulse CSS.
-assert(pulse.includes("pulseHeaderActionsHost.className='dkds-plugin-header-actions'"),
-  'Pulse header must continue to consume the generic Core header action contract.');
-assert(ter.includes("terHeaderActionsHost.className='dkds-plugin-header-actions'"),
-  'TER header must continue to consume the generic Core header action contract.');
+assert(pulse.includes('units.pageHeader.create')&&pulse.includes("label:'分析勾选',className:'primary',variant:'primary'"),
+  'Pulse Unit page header must continue to consume the generic Core header/action contract.');
+assert(ter.includes('units.pageHeader.create')&&ter.includes("label:'计算 TER',variant:'primary'"),
+  'TER Unit page header must continue to consume the generic Core header/action contract.');
 
 // Theme Coverage must not count one surface in two incompatible semantic areas.
 assert(semanticTheme.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)')&&/id:'elevated'[^\n]*\.import-workbench/.test(semanticTheme)&&semanticTheme.includes("if(matches(el,'.import-workbench'))return 'workspace-modal'"),

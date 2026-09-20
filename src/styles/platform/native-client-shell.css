@@ -9,7 +9,16 @@
 html[data-dkds-host="mobile"].react-native-client{
   --dkds-generic-button-min-height:36px;
   --dkds-generic-field-min-height:36px;
+  --dkds-mobile-scrollbar-size:3px;
 }
+/* Mobile WebView scrollbar geometry is a platform contract shared by every
+   plugin. Theme/material layers continue to own paint; this block owns only
+   thickness and the thumb's geometry so a theme border cannot visually make
+   the native scrollbar coarse again. */
+html[data-dkds-host="mobile"].react-native-client :where(*){scrollbar-width:thin}
+html[data-dkds-host="mobile"].react-native-client :where(*)::-webkit-scrollbar{width:var(--dkds-mobile-scrollbar-size);height:var(--dkds-mobile-scrollbar-size)}
+html[data-dkds-host="mobile"].react-native-client :where(*)::-webkit-scrollbar-thumb{border-width:0;background-clip:border-box}
+
 html[data-dkds-host="mobile"].react-native-client.dkds-pointer-coarse{
   --dkds-generic-button-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
   --dkds-generic-field-min-height:var(--dkds-mobile-control-min-height,var(--dkds-touch-target,44px));
@@ -37,7 +46,11 @@ html[data-dkds-host="mobile"].react-native-client .project-tabs-bar,
 html[data-dkds-host="mobile"].react-native-client #statusBar.statusbar{display:none}
 
 html[data-dkds-host="mobile"].react-native-client .analysis-page{position:fixed;inset:0;width:100%;height:auto;min-width:0;overflow:hidden;background:var(--app-bg)}
-html[data-dkds-host="mobile"].react-native-client .analysis-page>.analysis-page-header{display:none}
+/* Native Mobile host owns plugin identity. Plugin-local activity/page headers
+   are suppressed regardless of whether Unit composition places them directly
+   under .analysis-page or inside its page body. This is a platform contract,
+   not a plugin-private hide rule. */
+html[data-dkds-host="mobile"].react-native-client .analysis-page .analysis-page-header{display:none}
 html[data-dkds-host="mobile"].react-native-client .analysis-page>.analysis-page-body{width:100%;height:100%;min-width:0;min-height:0;padding:0;overflow:auto;box-sizing:border-box}
 html[data-dkds-host="mobile"].react-native-client #pluginManagerPage>.analysis-page-header,
 html[data-dkds-host="mobile"].react-native-client #automationTestPage>.analysis-page-header{display:flex;min-height:44px;padding:6px 8px}
@@ -72,7 +85,8 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="com
   --dkds-workbench-button-min-height:30px;
   --dkds-workbench-field-height:30px;
 }
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"] :where(input,select,textarea){font-size:11px;padding-block:4px;padding-inline:7px}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"] :where(input,select,textarea):not(.dkds-field-control){font-size:11px;padding-block:4px;padding-inline:7px}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-density="compact"] .dkds-field-control{font-size:11px;padding-block:4px;padding-inline:7px}
 
 html[data-dkds-host="mobile"].react-native-client .dkds-action-row{align-content:flex-start;justify-content:flex-start}
 html[data-dkds-host="mobile"].react-native-client .dkds-action-row>button,
@@ -187,10 +201,18 @@ html[data-dkds-host="mobile"].react-native-client .plugin-manager-card p{font-si
 html[data-dkds-host="mobile"].react-native-client .dkds-toolbar.dkds-integrated-action-group,
 html[data-dkds-host="mobile"].react-native-client .dkds-surface-header .dkds-integrated-action-group{--dkds-header-action-height:26px;overflow-y:hidden}
 html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools{--dkds-scientific-nav-item-width:22.5px;--dkds-scientific-nav-item-height:20.4px;--dkds-scientific-nav-group-height:23.4px;--dkds-scientific-nav-padding-block:1.5px;--dkds-scientific-nav-padding-inline:1.5px;box-sizing:border-box;height:var(--dkds-scientific-nav-group-height);min-height:var(--dkds-scientific-nav-group-height);max-height:var(--dkds-scientific-nav-group-height);opacity:0;pointer-events:none}
-html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>button{font-size:12.5px}
-html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>.dkds-scientific-nav-drag{font-size:12.5px}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>button,
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools>.dkds-scientific-nav-drag{display:grid;place-items:center;align-content:center;justify-content:center;box-sizing:border-box;padding:0;margin:0;text-indent:0;font-size:12.5px;line-height:1}
 html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools:is(.is-touch-visible,.is-dragging,:focus-within){opacity:.94;pointer-events:auto}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-curve-surface[data-dkds-mobile-box-gesture="none"]{touch-action:pan-y}
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-curve-surface[data-dkds-mobile-box-gesture="select-region"],
+html[data-dkds-host="mobile"].react-native-client .dkds-scientific-curve-surface[data-dkds-mobile-box-gesture="zoom-box"]{touch-action:none}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-inline-summary-row]{display:none}
+
+
+/* Mobile data tables keep a real empty-body viewport. A missing/empty dataset may
+   show an empty state, but the table surface must never collapse to only its header. */
+html[data-dkds-host="mobile"].react-native-client :where(.dkds-table-surface-host,.dkds-table-wrap,.analysis-table-wrap){min-block-size:160px}
 
 /* Native parameter drawers use a denser control scale than full-page touch UI.
    This is scoped to the Mobile projection frame so Desktop geometry and control
@@ -208,9 +230,9 @@ html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[dat
 }
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] .schema-param-field{--dkds-schema-field-min-height:28px}
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(input,select,textarea){font-size:11px;padding:5px 8px}
-html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button){padding:5px 9px}
-html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(.dkds-action-row,.dkds-toolbar){gap:5px}
-html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(label){gap:3px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button):not(.dkds-field-control){padding:5px 9px}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(.dkds-field-label,.schema-param-label){white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(label){overflow-wrap:anywhere;word-break:normal}
 
 /* Native region action menus are compact popovers, not full-height sheets. */
 html[data-dkds-host="mobile"].react-native-client .command-menu.range-action-menu{left:50%;right:auto;top:auto;bottom:max(8px,var(--dkds-native-statusbar-height,28px));width:min(340px,calc(100vw - 18px));height:max-content;min-height:0;max-height:min(48vh,360px);padding:6px;transform:translateX(-50%);overflow:auto;border-radius:10px;overscroll-behavior:contain;align-content:start;scrollbar-width:thin}
@@ -223,8 +245,19 @@ html[data-dkds-host="mobile"].react-native-client .range-action-identity button{
 html[data-dkds-host="mobile"].react-native-client .range-action-footer{margin-top:4px;padding-top:4px;gap:4px}
 html[data-dkds-host="mobile"].react-native-client .range-action-footer span{font-size:10px;line-height:1.25}
 
-/* Drawer controls stay content-sized and do not recreate Desktop minimums. */
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button,input,select,textarea){max-width:100%;box-sizing:border-box}
+
+/* Drawer controls may shrink, but Unit/control spacing is never compressed by the
+   Mobile fitter. Plugin-authored desktop widths may describe accepted Desktop
+   geometry, but they must not force the Drawer wider. Primary/fill action labels
+   remain intact and can therefore become a real minimum-width requirement. */
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(.dkds-field,[data-dkds-unit-template="field-v2"],.schema-param-field){min-width:0;max-width:100%}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){min-width:0;max-width:100%;box-sizing:border-box}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button,[data-dkds-unit-template="action-v2"]){max-width:100%;box-sizing:border-box}
+/* Drawer rows may reflow, but visible title/action text itself is never a
+   compression target. Ordinary fields remain shrinkable. */
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button,[data-dkds-unit-template="action-v2"] button){min-inline-size:max-content;white-space:nowrap;text-overflow:clip}
+html[data-dkds-host="mobile"].react-native-client .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(.dkds-surface-title,.dkds-surface-heading,.schema-param-group-title,.analysis-section-title,.dkds-section-title,h1,h2,h3,h4,[data-dkds-unit-template="panel-v2"]>strong:first-child,.analysis-control-card>strong:first-child,.schema-parameter-panel>strong:first-child){white-space:nowrap;overflow:visible;text-overflow:clip}
 
 /* ParameterSchema may opt into content-sized tracks on native surfaces.  This
    is intentionally different from the ordinary 1fr form grid: a small set of
@@ -235,18 +268,6 @@ html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-f
 }
 html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit>.schema-param-group-title{grid-column:1/-1}
 
-/* Native compact ParameterSchema fields use one exact visible control box.
-   Multi-select proxies are buttons semantically, but their geometry belongs to
-   the field-control contract rather than the generic coarse-pointer button. */
-html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit.compact .schema-param-field :where(select.dkds-field-control,.dkds-multiselect-trigger.dkds-field-control){
-  box-sizing:border-box;
-  height:var(--dkds-field-control-min-height,26px);
-  min-height:var(--dkds-field-control-min-height,26px);
-  max-height:var(--dkds-field-control-min-height,26px);
-  padding-block:var(--dkds-field-control-padding-block,2px);
-  line-height:1.15;
-}
-html[data-dkds-host="mobile"].react-native-client .schema-parameter-panel.auto-fit.compact .dkds-multiselect-trigger.dkds-field-control{display:flex;align-items:center;width:100%;overflow:hidden}
 html[data-dkds-host="mobile"].react-native-client .lan-web-panel{
   top:auto;
   left:6px;

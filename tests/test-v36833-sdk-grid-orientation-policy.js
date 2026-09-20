@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -9,7 +10,7 @@ const json=rel=>JSON.parse(read(rel));
 
 const app=json('package.json'),mobile=json('mobile/package.json'),expo=json('mobile/app.json').expo,sdk=json('sdk/contract.json');
 assert.strictEqual(mobile.version,app.version);assert.strictEqual(expo.version,app.version);assert(expo.android.versionCode>=68);
-assert.strictEqual(sdk.sdkVersion,'1.47.0');assert.strictEqual(sdk.pluginApiVersion,'1.19.0');assert.strictEqual(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));assert.strictEqual(sdk.pluginApiVersion,'1.19.0');assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 
 const dts=read('sdk/plugin-api.d.ts');
 for(const token of [
@@ -41,7 +42,7 @@ const source=read('src/core/ui/modules/grid/controller.js');
 assert(!source.includes('orientationAdaptive')&&!source.includes('portraitColumnDelta')&&!source.includes('columnPreference'),'Private WIP orientation option names must be removed from Core.');
 for(const token of ['orientationPolicy()','preferredColumns','getAppliedColumns()','getOrientation()'])assert(source.includes(token),`Core public Grid implementation missing ${token}`);
 const resonance=read('src/plugins/resonance-workbench/feature-group-runtime.js');
-assert(resonance.includes('wb.groupArea(hostEl')&&resonance.includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference"),'First-party Resonance must consume the formal GroupArea API and published orientation policy shape.');
+assert(resonance.includes('factory.create(hostEl')&&resonance.includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference"),'First-party Resonance must consume the formal PlotGroup/GroupArea API and published orientation policy shape.');
 assert(resonance.includes('getAppliedColumns?.()')&&resonance.includes('getOrientation?.()'),'First-party Resonance must use the public GridController read API instead of private fields/methods.');
 assert(!resonance.includes('.appliedColumns')&&!resonance.includes('.orientation?.()'),'First-party plugin must not consume GridController internals.');
 
@@ -52,7 +53,7 @@ const doc={root:null,documentElement:null,createElement(){return new Elem(doc);}
 const gate={set:(n,k,v)=>{n.styles[k]=v;return true;},setToken:(n,k,v)=>{n.styles[k]=v;return true;},remove:(n,k)=>{delete n.styles[k];return true;}};
 class MutationObserver{constructor(){}observe(){}disconnect(){}}
 const moduleBox={exports:{}};
-const context={module:moduleBox,exports:moduleBox.exports,console,window:{MutationObserver},MutationObserver,document:doc,innerWidth:1200,innerHeight:800,getComputedStyle:()=>({columnGap:'10px',gap:'10px'}),globalThis:null,require:id=>{if(id==='../foundation/shortcuts')return {resolveElement:v=>v};if(id==='ui/style-ownership-gate')return gate;throw new Error(id);}};context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'grid/controller.js'});
+const context={module:moduleBox,exports:moduleBox.exports,console,window:{MutationObserver},MutationObserver,document:doc,innerWidth:1200,innerHeight:800,getComputedStyle:()=>({columnGap:'10px',gap:'10px'}),globalThis:null,require:id=>{if(id==='../foundation/shortcuts')return {resolveElement:v=>v};if(id==='ui/style-ownership-gate')return gate;if(id==='../composition/unit-geometry-constraints')return {publishUnitGeometryConstraint(){return ()=>{};},notifyUnitGeometryConstraint(){return false;}};throw new Error(id);}};context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'grid/controller.js'});
 const GridController=moduleBox.exports.GridController,grid=new Elem(doc);doc.root=grid;let portraitPreference=null;
 const controller=new GridController({emitResize(){},requestChartResize(){}},grid,{columns:4,maxColumns:6,minItemWidth:180,responsive:true,orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:({orientation})=>orientation==='landscape'?4:portraitPreference});
 assert.strictEqual(controller.getOrientation(),'landscape');assert.strictEqual(controller.getColumns(),4);assert.strictEqual(controller.getAppliedColumns(),4);

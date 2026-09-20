@@ -15,7 +15,7 @@ const ownershipTest=read('tests/test-v361105-core-plugin-ownership.js');
 const debug=read('src/core/theme/debug-runtime.js');
 const shell=read('src/styles/presentation/shell.css');
 const materialCss=read('src/styles/theme/material-renderer.css');
-const visualGate=read('tools/quality/visual-invariants.js');
+const visualStaticAudit=read('tools/quality/visual-invariants.js');
 const closureVerifier=read('tools/quality/verify-visual-closure-report.js');
 const packageJson=JSON.parse(read('package.json'));
 const versionTuple=String(packageJson.version||'0.0.0').split('.').slice(0,3).map(Number);
@@ -71,8 +71,8 @@ for(const token of ['ui.visual-geometry-closure','ui.theme-coverage','occludedMa
   assert(closureVerifier.includes(token),`Visual Closure report verifier must fail closed on ${token}.`);
 }
 
-assert(automation.includes("ownership?.(header,'chrome')")&&automation.includes("MATERIAL_PARENT_OWNED"),
-  'Automation chart-header acceptance must use parent-owned Material ownership rather than inherited roleOf().');
+assert(automation.includes("supports?.('contract.appearance.component-contexts')===true")&&automation.includes("supports?.('contract.material.contexts')===true"),
+  'Automation must validate the current semantic component/material-context contract instead of the retired chart-header implementation probe.');
 const componentAppearance=read('src/styles/theme/component-appearance.css');
 assert(/id:'floatingChrome'[^\n]*priority:30[^\n]*dkds-scientific-nav-tools/.test(semanticRegistry)&&!/floatingChrome[^\n]+dkds-floating-surface/.test(semanticRegistry),
   'FloatingChrome identity must stay narrow and must not be assigned to an entire floating surface.');
@@ -84,8 +84,8 @@ assert(!automationSmoke.includes('fallbackWarnings')&&!automationSmoke.includes(
   'Automation must treat every invalid external/override package as a blocking current-contract error; bundled fallback compatibility is forbidden.');
 assert(ownershipTest.includes("path.resolve(file)!==path.resolve(root,'src/core/project/format.js')"),
   'Core/plugin ownership gate must compare the Project Format path platform-neutrally on Windows and POSIX.');
-const hardInvariantCount=Number((visualGate.match(/invariants:(\d+)/)||[])[1]||0);
-assert(visualGate.includes('HARD-43')&&visualGate.includes('HARD-44')&&visualGate.includes('HARD-45')&&visualGate.includes('HARD-46')&&visualGate.includes('HARD-47')&&visualGate.includes('HARD-48')&&visualGate.includes('HARD-49')&&visualGate.includes('HARD-50')&&visualGate.includes('HARD-51')&&visualGate.includes('HARD-52')&&visualGate.includes('HARD-53')&&visualGate.includes('HARD-54')&&visualGate.includes('HARD-55')&&visualGate.includes('HARD-56')&&visualGate.includes('HARD-57')&&visualGate.includes('HARD-58')&&visualGate.includes('HARD-59')&&visualGate.includes('HARD-60')&&visualGate.includes('HARD-61')&&visualGate.includes('HARD-62')&&visualGate.includes('HARD-63')&&visualGate.includes('HARD-64')&&visualGate.includes('HARD-65')&&visualGate.includes('HARD-66')&&visualGate.includes('HARD-67')&&visualGate.includes('HARD-68')&&visualGate.includes('HARD-69')&&hardInvariantCount>=69,
-  'Hard visual gate must retain the v3.67.10 closure baseline while allowing later releases to add stronger invariants.');
+const hardInvariantCount=Number((visualStaticAudit.match(/invariants:(\d+)/)||[])[1]||0);
+assert(visualStaticAudit.includes('HARD-43')&&visualStaticAudit.includes('HARD-44')&&visualStaticAudit.includes('HARD-45')&&visualStaticAudit.includes('HARD-46')&&visualStaticAudit.includes('HARD-47')&&visualStaticAudit.includes('HARD-48')&&visualStaticAudit.includes('HARD-49')&&visualStaticAudit.includes('HARD-50')&&visualStaticAudit.includes('HARD-51')&&visualStaticAudit.includes('HARD-52')&&visualStaticAudit.includes('HARD-53')&&visualStaticAudit.includes('HARD-54')&&visualStaticAudit.includes('HARD-55')&&visualStaticAudit.includes('HARD-56')&&visualStaticAudit.includes('HARD-57')&&visualStaticAudit.includes('HARD-58')&&visualStaticAudit.includes('HARD-59')&&visualStaticAudit.includes('HARD-60')&&visualStaticAudit.includes('HARD-61')&&visualStaticAudit.includes('HARD-62')&&visualStaticAudit.includes('HARD-63')&&visualStaticAudit.includes('HARD-64')&&visualStaticAudit.includes('HARD-65')&&visualStaticAudit.includes('HARD-66')&&visualStaticAudit.includes('HARD-67')&&visualStaticAudit.includes('HARD-68')&&visualStaticAudit.includes('HARD-69')&&hardInvariantCount>=69,
+  'Static visual contract audit must retain the v3.67.10 closure baseline while allowing later releases to add stronger invariants.');
 
 console.log('v3.67.10 Visual Closure checks passed: strict Theme coverage, Windows-safe ownership, Theme 3.10 contextual composition, parent-owned nested chrome and fail-closed package diagnostics are guarded.');

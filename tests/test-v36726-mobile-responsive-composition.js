@@ -29,7 +29,7 @@ const split=read('src/core/ui/modules/layout/workspace.js');
 const layoutState=read('src/core/ui/modules/layout/state-resolver.js');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const pluginWorkbench=read('src/core/ui/modules/workbench/plugin.js');
-const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceView=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceInspector=read('src/plugins/resonance-workbench/feature-inspector-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 
@@ -49,18 +49,16 @@ assert(workspaceCss.includes('grid-template-columns:var(--dkds-mobile-left-track
 assert(workspaceCss.includes('[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"]'),'Parameter surface must have a left drawer projection.');
 assert(workspaceCss.includes('[data-dkds-mobile-region="companion-right"][data-dkds-mobile-active="true"]'),'Inspector must have a grid companion-right projection.');
 assert(workspaceCss.includes('[data-dkds-mobile-region="companion-bottom"][data-dkds-mobile-active="true"]'),'Group/scientific PRIME must have a grid companion-bottom projection.');
-assert(workspaceCss.includes('var(--dkds-plugin-canvas-right-width)')&&workspaceCss.includes('var(--dkds-plugin-canvas-bottom-height)'),'Wide Mobile companion geometry must consume the existing Core SplitController size variables instead of hard-coded breakpoint dimensions.');
+assert(workspaceCss.includes('var(--dkds-plugin-canvas-right-width,34%)')&&workspaceCss.includes('var(--dkds-plugin-canvas-bottom-height,36%)'),'Mobile companion CSS must consume the resolved Core SplitController tokens directly; percentage fallbacks are absent-state safety only.');
 assert(workspaceCss.includes('.dkds-plugin-canvas-frame.has-canvas-right>.dkds-plugin-canvas-right-resizer.active')&&workspaceCss.includes('[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-right-resizer.active')&&workspaceCss.includes('.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom-resizer.active')&&workspaceCss.includes('[data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-bottom-resizer.active'),'Touch split handles must follow either a real user dock or an actually open semantic Mobile companion.');
 assert(workspaceCss.includes('dkds-plugin-canvas-right-resizer.active::after')&&workspaceCss.includes('left:-7px')&&workspaceCss.includes('dkds-plugin-canvas-bottom-resizer.active::after')&&workspaceCss.includes('top:-8px'),'Mobile split seams must keep a one-pixel visual footprint while exposing a larger transparent touch target.');
 assert(!/#resonance|\.resonance|#reswin/i.test(workspaceCss+shellCss),'Core Mobile platform CSS must stay domain blind and must not patch Resonance screenshots.');
 
-assert(split.includes('mobileStateScope')&&split.includes("${mobileScoped?'.mobile':''}"),'Split persistence must isolate Mobile scientific geometry from the existing Desktop split state.');
+assert(split.includes("MOBILE_SPLIT_STATE_SCHEMA='workspace-owned-v2'")&&split.includes('mobileStateScope')&&split.includes('`.mobile.${MOBILE_SPLIT_STATE_SCHEMA}`'), 'Split persistence must isolate Mobile geometry from Desktop through one Core-owned schema, never per-profile generations.');
 assert(layoutState.includes('state.mobileReserve')&&layoutState.includes('Math.min(ratioMax,reservedMax)'),'Mobile companion resizing must preserve usable room for the main scientific surface.');
 for(const token of ['beginPreview(','finishPreview({persist=true','this.previewActive','notify:false'])assert(split.includes(token),`Shared SplitController preview path missing ${token}.`);
-assert(portable.includes("region==='companion-right'?'right':region==='companion-bottom'?'bottom':")&&portable.includes("['left','right','sticky'].includes(explicitPlacement)"),'Held-title resize must follow Mobile semantic companion placement while allowing explicit Mobile sticky/side placement ownership.');
-assert(portable.includes('split?.beginPreview?.()')&&portable.includes('split.schedulePreview?.')&&portable.includes("reason:'portable-held-resize'"),'Held-title Mobile resizing must reuse the coalesced SplitController preview/commit path.');
-assert(portable.includes('if(!isMobile){const state=this.readState()'),'Mobile held-resize must not persist PortableView Desktop dock bounds.');
-assert(pluginWorkbench.includes('mobileMaxRatio:.48,mobileReserve:320,mobileStateScope:true')&&pluginWorkbench.includes('mobileMaxRatio:.58,mobileReserve:240,mobileStateScope:true'),'PluginWorkspace must configure bounded, Mobile-scoped right/bottom companion splits.');
+assert(portable.includes("dataset?.dkdsHost==='mobile'")&&portable.includes("classList?.contains('react-native-client'))return;"),'Mobile must not install a second held-title resize affordance; the visible split seam is canonical.');
+assert(pluginWorkbench.includes('mobileMaxRatio:.48,mobileStateScope:true,mobileDefaultRatio:.34,mobileMin:0')&&pluginWorkbench.includes('mobileMaxRatio:.58,mobileStateScope:true,mobileDefaultRatio:.36,mobileMin:0'),'PluginWorkspace must configure proportional, Mobile-scoped right/bottom companion splits without fixed-pixel reserve duplication.');
 
 assert(!header.includes('directLimit'),'Native plugin commands must not be hidden by a fixed button-count heuristic.');
 assert(header.includes('packOrderedControls')&&header.includes('onLayout')&&header.includes('pluginAreaWidth'),'Header must measure the actual remaining plugin slot and pack plugin commands by pixels instead of screen-width button counts.');

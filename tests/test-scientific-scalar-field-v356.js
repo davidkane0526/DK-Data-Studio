@@ -22,7 +22,7 @@ const resonanceSelection=read('src/plugins/resonance-workbench/feature-selection
 const resonanceInspector=read('src/plugins/resonance-workbench/feature-inspector-runtime.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const resonanceControls=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
-const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 
 assert(plot.includes("const VERSION='2.5.0'"),'ScientificPlot 2.3.0 must own the shared scalar-field surface.');
 for(const token of ['function scalarFieldSpec(field={},options={})','async scalarField(target,field={},options={})','scalarFieldSpec'])assert(plot.includes(token),`ScientificPlot scalar-field token missing: ${token}`);
@@ -51,7 +51,7 @@ assert(!terFeature.includes("type:'heatmap',colorscale:signed"),'TER transform h
 assert(resonanceShared.includes("'resonance.feature-field'"),'Resonance must register a typed feature-field contract.');
 assert(resonanceAnalysis.includes("outputTypes:['resonance.gate-analysis','resonance.feature-field']"),'Gate analysis Pipeline must publish the feature field as a second typed output.');
 for(const token of ['gateFeatureField(settings=live.workspace.gateAnalysisSettings||{})','gateFeatureArtifact(field)','cellPeakIds','reswinGateFeatureField','scientificPlot.scalarField(fieldPlot'])assert(resonanceAnalysis.includes(token),`Resonance feature-field implementation missing: ${token}`);
-for(const id of ['reswinGateFeatureMetric','reswinGateFeatureDirection','reswinGateFeatureExport','reswinGateFeatureField'])assert(resonanceViews.includes(id),`Resonance feature-field UI missing #${id}.`);
+for(const id of ['reswinGateFeatureMetric','reswinGateFeatureDirection','reswinGateFeatureExport','reswinGateFeatureField'])assert(resonancePresentation.includes(id),`Resonance production Unit feature-field UI missing #${id}.`);
 
 // Dynamic regression: feature-field computation must not depend on an attached UI controller.
 const modules=new Map();

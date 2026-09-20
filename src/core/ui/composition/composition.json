@@ -58,6 +58,10 @@
       "path": "src/core/host/native-touch-drag.js"
     },
     {
+      "id": "ui/interaction/transient-registry",
+      "path": "src/core/ui/modules/interaction/transient-registry.js"
+    },
+    {
       "id": "ui/interaction/context-actions",
       "path": "src/core/ui/modules/interaction/context-actions.js"
     },
@@ -130,6 +134,62 @@
       "path": "src/core/ui/modules/workbench/plugin.js"
     },
     {
+      "id": "ui/composition/scientific",
+      "path": "src/core/ui/modules/composition/scientific.js"
+    },
+    {
+      "id": "ui/composition/unit-geometry-constraints",
+      "path": "src/core/ui/modules/composition/unit-geometry-constraints.js"
+    },
+    {
+      "id": "ui/composition/unit-template-layout-spec",
+      "path": "src/core/ui/modules/composition/unit-template-layout-spec.js"
+    },
+    {
+      "id": "ui/composition/unit-template-presets",
+      "path": "src/core/ui/modules/composition/unit-template-presets.js"
+    },
+    {
+      "id": "ui/composition/unit-template-geometry-values",
+      "path": "src/core/ui/modules/composition/unit-template-geometry-values.js"
+    },
+    {
+      "id": "ui/composition/unit-template-metric-provenance",
+      "path": "src/core/ui/modules/composition/unit-template-metric-provenance.js"
+    },
+    {
+      "id": "ui/composition/unit-template-spec",
+      "path": "src/core/ui/modules/composition/unit-template-spec.js"
+    },
+    {
+      "id": "ui/composition/unit-template-common",
+      "path": "src/core/ui/modules/composition/unit-template-common.js"
+    },
+    {
+      "id": "ui/composition/unit-template-foundation",
+      "path": "src/core/ui/modules/composition/unit-template-foundation.js"
+    },
+    {
+      "id": "ui/composition/unit-template-layout",
+      "path": "src/core/ui/modules/composition/unit-template-layout.js"
+    },
+    {
+      "id": "ui/composition/unit-template-behavior",
+      "path": "src/core/ui/modules/composition/unit-template-behavior.js"
+    },
+    {
+      "id": "ui/composition/unit-template-services",
+      "path": "src/core/ui/modules/composition/unit-template-services.js"
+    },
+    {
+      "id": "ui/composition/unit-template-scientific",
+      "path": "src/core/ui/modules/composition/unit-template-scientific.js"
+    },
+    {
+      "id": "ui/composition/unit-templates",
+      "path": "src/core/ui/modules/composition/unit-templates.js"
+    },
+    {
       "id": "ui/scope/plugin-scope",
       "path": "src/core/ui/modules/scope/plugin-scope.js"
     },
@@ -144,6 +204,14 @@
     {
       "id": "ui/presentation/desktop-shell",
       "path": "src/core/ui/modules/presentation/desktop-shell.js"
+    },
+    {
+      "id": "ui/presentation/mobile-web-surface-geometry",
+      "path": "src/core/ui/modules/presentation/mobile-web-surface-geometry.js"
+    },
+    {
+      "id": "ui/presentation/mobile-web-projection-contract",
+      "path": "src/core/ui/modules/presentation/mobile-web-projection-contract.js"
     },
     {
       "id": "ui/presentation/mobile-web-surface",
@@ -168,6 +236,18 @@
     {
       "id": "ui/runtime",
       "path": "src/core/ui/modules/runtime.js"
+    },
+    {
+      "id": "ui/composition/unit-template-anatomy",
+      "path": "src/core/ui/modules/composition/unit-template-anatomy.js"
+    },
+    {
+      "id": "ui/composition/unit-template-presentation-blueprints",
+      "path": "src/core/ui/modules/composition/unit-template-presentation-blueprints.js"
+    },
+    {
+      "id": "ui/composition/unit-template-state",
+      "path": "src/core/ui/modules/composition/unit-template-state.js"
     }
   ],
   "entryModule": "ui/runtime",

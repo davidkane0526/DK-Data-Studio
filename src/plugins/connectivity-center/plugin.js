@@ -12,7 +12,7 @@
     const loadPrefs=()=>{try{return {server:'',share:'',domain:'',username:'',guest:false,favorites:[],...JSON.parse(localStorage.getItem(prefsKey)||'{}'),password:''};}catch{return {server:'',share:'',domain:'',username:'',password:'',guest:false,favorites:[]};}};
     const savePrefs=value=>{const current=loadPrefs(),next={...current,...value,password:''};localStorage.setItem(prefsKey,JSON.stringify(next));return next;};
 
-    const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground'},html:`
+    const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground',dkdsOverlayEffect:'dim'},html:`
       <div class="dksvc-window dksmb-window dkds-dialog-shell dkds-material-role-elevated" data-dkds-action-density="regular" role="dialog" aria-modal="true">
         <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button dkds-panel-close-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">

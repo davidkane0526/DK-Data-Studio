@@ -11,8 +11,8 @@ assert(!memory.includes('is-releasable:hover .dkds-memory-component-value'));
 const visible=memory.match(/is-releasable:hover \.dkds-memory-release[^{}]*\{([^}]+)\}/)[1];
 assert(!/position|justify|margin|padding|width|height|transform/.test(visible),'Hover may change visibility only, never geometry.');
 assert(memory.includes('.dkds-memory-release {position:static;flex:0 0 auto'));
-assert(read('src/plugins/pulse-sampler-tool/plugin.js').includes('class="ps-designer-body"'));
-assert(!read('src/plugins/pulse-sampler-tool/plugin.css').includes('--dkds-portable-docked-'),'Plugin must not fight Core dock defaults.');
+assert(read('src/plugins/pulse-sampler-tool/unit-presentation.js').includes("variant:'stack-comfortable'"));
+assert(!read('src/plugins/pulse-sampler-tool/unit-presentation.js').includes('--dkds-portable-docked-'),'Production Unit presentation must not fight Core dock defaults.');
 const contract=JSON.parse(read('sdk/contract.json'));assert.deepEqual(contract.portableSizing.values,['content','fill']);
 // Execute the real PortableView dock-placement method against a small DOM adapter.
 // This validates lifecycle/saved-height policy, not browser layout or visual acceptance.

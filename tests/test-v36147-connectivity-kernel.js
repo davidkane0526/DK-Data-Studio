@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');const path=require('path');const assert=require('assert');const vm=require('vm');
 const {readCoreCss}=require('./css-source');
 const {readMobileShell}=require('./mobile-shell-source');
@@ -25,5 +26,5 @@ assert(css.includes('--dkui-divider:rgba(166,181,202,.024)')&&shell.includes("di
 
 const sdkContext={window:{},structuredClone,console};vm.createContext(sdkContext);vm.runInContext(sdkReference,sdkContext,{filename:'sdk-authoring-reference.js'});vm.runInContext(kernel,sdkContext,{filename:'studio-kernel-runtime.js'});vm.runInContext(mcp,sdkContext,{filename:'mcp-runtime.js'});
 const ref=sdkContext.window.DKDSSdkAuthoringReference,K=sdkContext.window.DKDSKernel,M=sdkContext.window.DKDSMcpRuntime;
-assert(ref&&ref.describe().sdkVersion==='1.47.0'&&ref.describe().pluginApiVersion==='1.19.0'&&ref.describe().fileCount>=30,'Generated SDK authoring corpus must contain current complete SDK reference set.');
-(async()=>{const desc=await K.call('sdk.authoring.describe',{});assert.equal(desc.sdkVersion,'1.47.0');const templates=await M.handle(JSON.stringify({jsonrpc:'2.0',id:1,method:'resources/templates/list'}),'2025-06-18');assert(templates.result.resourceTemplates.some(row=>row.uriTemplate==='dkds://sdk/file/{path}'),'MCP must publish SDK resource template.');console.log('v3.61.54 kernel AI/MCP, SMB file-manager and @-context contracts passed.');})().catch(error=>{console.error(error);process.exitCode=1;});
+assert(ref&&sdkAtLeast(ref.describe().sdkVersion,'1.49.0')&&ref.describe().pluginApiVersion==='1.19.0'&&ref.describe().fileCount>=30,'Generated SDK authoring corpus must contain current complete SDK reference set.');
+(async()=>{const desc=await K.call('sdk.authoring.describe',{});assert(sdkAtLeast(desc.sdkVersion,'1.49.0'));const templates=await M.handle(JSON.stringify({jsonrpc:'2.0',id:1,method:'resources/templates/list'}),'2025-06-18');assert(templates.result.resourceTemplates.some(row=>row.uriTemplate==='dkds://sdk/file/{path}'),'MCP must publish SDK resource template.');console.log('v3.61.54 kernel AI/MCP, SMB file-manager and @-context contracts passed.');})().catch(error=>{console.error(error);process.exitCode=1;});

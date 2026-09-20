@@ -18,6 +18,9 @@ sandbox.window.window=sandbox.window;sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);
 vm.runInContext(read('src/plugins/data-center/artifact-selection.js'),sandbox,{filename:'data-center/artifact-selection.js'});
 vm.runInContext(read('src/plugins/data-center/command-runtime.js'),sandbox,{filename:'data-center/command-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/domain-runtime.js'),sandbox,{filename:'data-center/domain-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/chart-runtime.js'),sandbox,{filename:'data-center/chart-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/live-domain-bridge.js'),sandbox,{filename:'data-center/live-domain-bridge.js'});
 vm.runInContext(read('src/plugins/data-center/feature-runtime.js'),sandbox,{filename:'data-center/feature-runtime.js'});
 const feature=modules.get('builtin.data-center:feature-runtime');
 assert(feature?.mount,'Data Center feature runtime must register a mount function.');
@@ -92,7 +95,14 @@ const ctx={
   runtime:{isAuxiliaryWindow:true},workspace:{openPage:()=>true},status:{set:noop},io:{clipboard:{writeText:noop}},platform:{onChange:()=>noop},
   events:{on:(name,fn)=>{const rows=handlers.get(name)||[];rows.push(fn);handlers.set(name,rows);}}
 };
-const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
+const views={pageHtml:()=>'',attach:()=>({
+  workbench:{},
+  mountParameterForm:(host,schema,options)=>ctx.parameters.render(host,schema,options),
+  showPreviewTable:()=>true,
+  showPreviewEmpty:message=>{const host=page.querySelector('#dcTablePreview');host.innerHTML=String(message||'');return true;},
+  showPreviewJson:value=>{const host=page.querySelector('#dcTablePreview');host.innerHTML=String(value||'');return true;},
+  renderFormulaRefs:()=>true
+})};
 
 (async()=>{
   const mounted=await feature.mount(ctx,controller,views,{});

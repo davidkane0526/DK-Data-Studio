@@ -20,6 +20,7 @@ const {selectionReferences}=require('../selection/data-interaction');
       this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.previousTouchGestureOwner=this.target.getAttribute('data-dkds-touch-gesture-owner');
       this.target.setAttribute('data-dkds-touch-gesture-owner','scientific-plot');
+      this.target.dataset.dkdsMobileBoxGesture=String(spec.mobileBoxGesture||'none');
       this.target.classList.add('dkds-scientific-curve-surface');
       this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');globalThis.DKDSMaterialSurface?.apply?.(this.container,'surface');

@@ -67,7 +67,6 @@ DKDS.cmd android-build
 → 通过 sdkmanager 检查并补齐固定 Android SDK/NDK/CMake 组件
 → 将 mobile 源码暂存到 D:\PyDroidTemp
 → 复用 D:\PyDroidTemp 中的共享 node_modules
-→ 运行移动架构测试和 TypeScript 检查
 → 创建/复用本机独立 release 签名
 → sync:web
 → expo prebuild --platform android（默认保留外部增量构建缓存）
@@ -75,7 +74,10 @@ DKDS.cmd android-build
 → 校验 APK 内置移动运行时并输出大小与 SHA-256
 ```
 
-Gradle 的 `--no-daemon` **并不保证完全不创建子 JVM**。Gradle 只有在当前 Launcher JVM 同时满足 Build JVM 的不可变参数和 instrumentation-agent 状态时，才会真正原进程执行。部分 Windows 安全策略会拒绝 Java→Java 子进程，从而出现 `CreateProcess error=5`。当前构建入口会读取生成的 `android/gradle.properties` 对齐 JVM 内存/编码参数，并在该次 no-daemon 构建中显式设置 `org.gradle.internal.instrumentation.agent=false` 与 `org.gradle.daemon=false`，使未加载 Gradle javaagent 的 wrapper client 与请求上下文保持一致。随后会先执行一次真实的 `gradlew help --no-daemon --info` 预检；只有确认没有出现 single-use Daemon 或 `Starting process 'Gradle build daemon'` 后才进入 `assembleRelease`。代理和共享 Gradle 缓存保持不变，临时 JVM 环境在构建结束后恢复。
+Gradle 的 `--no-daemon` **并不保证完全不创建子 JVM**。当前构建入口仍会读取生成的 `android/gradle.properties`，对齐 JVM 内存/编码参数，并在该次 no-daemon 构建中显式设置 `org.gradle.internal.instrumentation.agent=false` 与 `org.gradle.daemon=false`。但构建流程不再执行单独的 `gradlew help` 预检，而是直接进入 `assembleRelease`。代理和共享 Gradle 缓存保持不变，临时 JVM 环境在构建结束后恢复。
+
+
+从本版开始，`android-build` / `android-run` 的编译关键路径**不再自动运行任何前置测试**：不会执行 `npm run mobile:test`、`npm run typecheck`，也不会执行额外的 Gradle `help` 预检。需要这些验证时仍可手动单独运行，但 APK 编译不会再为它们等待。环境/JDK/SDK 发现仍保留，因为这是启动编译器本身的必要条件；APK 生成后的运行时资产与 SHA-256 校验也继续保留。
 
 输出：
 

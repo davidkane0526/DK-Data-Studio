@@ -1,5 +1,4 @@
 (() => {
-  // Shared feature orchestration; responsibility runtimes own extracted behavior.
   const Shared=window.DKDSPluginModules.require('builtin.resonance-workbench','workbench-shared');
   const FeatureContext=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-context');
   const DataRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-data-runtime');
@@ -19,7 +18,6 @@
   const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
   if(!Shared)throw new Error('Resonance shared workbench layer is unavailable.');
   if(!FeatureContext||!DataRuntime||!GroupRuntime||!TerRuntime||!AnalysisRuntime||!PeakRuntime||!SelectionRuntime||!InspectorRuntime||!MainPlotRuntime||!ControlsRuntime)throw new Error('Resonance feature sub-runtimes are unavailable.');
-  // SUPER/TOP adapters are intentionally limited to container/lifecycle mapping.
   async function mountSuper(ctx,controller,adapter={}){
     const views=window.DKDSPluginModules.get('builtin.resonance-workbench','view-components');
     if(!views?.mountUnified)throw new Error('Resonance unified View runtime is unavailable.');
@@ -62,7 +60,7 @@
       let reactiveRuntime=reactive||null;
       let reactiveViewsInstalled=false;
       let derivedArtifactsSignature='';
-      const resonantTerRuntime=TerRuntime.create({tasks,getWorkspace:()=>workspace,getSweeps:()=>sweeps,peakLabel,onResolved:()=>{groupRuntime?.invalidate?.();if($('#reswinGroupGrid'))renderGroup();}});
+      const resonantTerRuntime=TerRuntime.create({tasks,getWorkspace:()=>workspace,getSweeps:()=>sweeps,peakLabel,onResolved:()=>{groupRuntime?.invalidate?.();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}});
       function resonantTerForLabel(label,visibleIds=[]){return resonantTerRuntime.get(label,visibleIds);}
       const featureContext=FeatureContext.create({
         live:{
@@ -253,9 +251,6 @@
           if(dataset?.excluded===true)continue;
           try{sweeps.push(...(S.buildSweeps?.(dataset)||[]));}catch(err){console.warn('[resonance window buildSweeps]',dataset?.name,err);}
         }
-        // The Artifact Store already owns the full source columns. Keep only the
-        // lightweight dataset catalog after sweep construction so Resonance does
-        // not retain a second long-lived object-per-row copy of every table.
         datasets=DataRuntime.catalog(sourceDatasets);
         const peakIdentity=reconcileSavedPeakSweeps();
         if(peakIdentity.repaired)console.info('[resonance peak identity repair]',peakIdentity);
@@ -425,9 +420,6 @@
 
       function renderSummary(){const parts=[`数据 ${datasets.length}`,`扫描 ${sweeps.length}`,`可见 ${visibleSweeps().length}`,`峰 ${(workspace.peaks||[]).length}`,`手动 ${(workspace.peaks||[]).filter(p=>p.manual).length}`];const el=$('#reswinSummary');if(el)dom.html(el,parts.map(value=>`<span>${value}</span>`).join(''));setPresentationSummary(parts.join(' · '));}
       function visibilityChanged(reason='visibility'){
-        // Visibility is a presentation-only edit. Rebuilding entities, derived
-        // artifacts and the complete control tree made a checkbox press wait on
-        // unrelated analysis work before the main chart could repaint.
         renderSummary();
         if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.(reason);
         if($('#reswinTrendPlot')?.offsetParent!==null)renderTrend();
@@ -536,7 +528,7 @@
         reset(){workspace=defaultWorkspace(project,S);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';workspace.groupColumnsPortrait='auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(analysisRuntime.getGateFeatureField()),gateFeatureFieldCsv,
-        getGroupColumns:()=>String(workspace.groupColumns||'auto'),getCurrentGroupColumnPreference:()=>groupRuntime.orientation?.()==='portrait'?String(workspace.groupColumnsPortrait||'auto'):String(workspace.groupColumns||'auto'),getEffectiveGroupColumns:()=>String(groupRuntime.effectiveColumns?.()||1),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';if(groupRuntime.orientation?.()==='portrait')workspace.groupColumnsPortrait=next;else workspace.groupColumns=next;if($('#resparGroupPanel')?.offsetParent!==null)groupRuntime.applyLayout?.();reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
+        getGroupColumns:()=>String(workspace.groupColumns||'auto'),getGroupContext:()=>String(groupRuntime.contextText?.()||''),getCurrentGroupColumnPreference:()=>groupRuntime.orientation?.()==='portrait'?String(workspace.groupColumnsPortrait||'auto'):String(workspace.groupColumns||'auto'),getEffectiveGroupColumns:()=>String(groupRuntime.effectiveColumns?.()||1),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';if(groupRuntime.orientation?.()==='portrait')workspace.groupColumnsPortrait=next;else workspace.groupColumns=next;groupRuntime.applyLayout?.();reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRuntime.invalidate();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         openInspector(){workspaceNavigator?.('inspect');return true;},

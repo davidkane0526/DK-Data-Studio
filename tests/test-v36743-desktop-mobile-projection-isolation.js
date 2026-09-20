@@ -123,7 +123,7 @@ for(const match of pulseMobileCss.matchAll(/(^|\n)([^\n{]+)\{/g)){
   if(!selector||selector.startsWith('@'))continue;
   assert(selector.includes('[data-dkds-mobile-region="main"]')||selector.includes('[data-dkds-mobile-frame-region="drawer"]')||selector.includes('[data-dkds-mobile-region="companion-bottom"]')||selector.includes('[data-dkds-mobile-region="companion-right"]'),`Pulse native selector escaped Presenter-owned semantic scope: ${selector}`);
 }
-assert(!read('src/plugins/pulse-analysis/shared-views.js').includes('isNativeClient'),'Pulse shared view must not branch on platform identity.');
+assert(!read('src/plugins/pulse-analysis/unit-presentation.js').includes('isNativeClient'),'Pulse shared view must not branch on platform identity.');
 const pulseManifest=JSON.parse(read('src/plugins/pulse-analysis/plugin.json'));
 assert(pulseManifest.styles.includes('plugin.css')&&!pulseManifest.styles.includes('mobile.css')&&pulseManifest.platformPresentation?.mobile?.mode==='custom'&&pulseManifest.platformPresentation.mobile.styles?.includes('mobile.css'),'Pulse native density must live in a Mobile-only platform presentation stylesheet rather than modifying Desktop plugin.css.');
 assert(!read('src/plugins/pulse-analysis/plugin.css').includes('is-native-client'),'Shared Pulse Desktop stylesheet must not contain native-only selectors.');

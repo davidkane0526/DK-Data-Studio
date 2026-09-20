@@ -24,7 +24,7 @@
       if(!actions.isUiBound()||!interactionRuntime?.bindView)return false;
       const list=$('#reswinDatasetList'),legend=$('#resparMainLegend');
       if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');if(path)publishDatasetSelection(path,'resonance-dataset');}});
-      if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=actions.sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
+      if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.entityId||actions.datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');if(path)publishDatasetSelection(path,'resonance-main-legend');}});
       return true;
     }
     function renderLinkedSelection({includeGroup=true,controls=false}={}){

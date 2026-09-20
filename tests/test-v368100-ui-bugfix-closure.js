@@ -45,10 +45,11 @@ assert(status.includes('dkds-memory-component-bytes')&&status.includes('data-rel
 assert(chrome.includes('font-variant-numeric:tabular-nums'),'Memory values must retain aligned tabular numerals independent of release-action presentation');
 
 const pulse=read('src/plugins/pulse-sampler-tool/plugin.js');
-const pulseCss=read('src/plugins/pulse-sampler-tool/plugin.css');
-assert(pulse.includes("designerPanel.classList.add('dkds-prime-hidden')")&&pulse.includes('workbench.park?.(designerPanel)'),'Pulse Designer parameters must be parked by default instead of remaining in PRIMARY');
-assert(pulse.includes("defaultPlacement:'left'")&&pulse.includes("stateVersion:'presentation-v3'"),'Pulse parameter PRIME must still reopen through the left parameter surface');
-assert(pulseCss.includes('grid-template-rows:auto auto auto auto minmax(120px,1fr)')&&pulse.includes("semanticKind:'panel',sizing:'fill'"),'Pulse parameter table must consume available panel height instead of collapsing to a header-only strip');
+const pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+assert(pulseUnit.includes("variant:'fixed-titleless'")&&pulseUnit.includes('autoOpen:false'),'Pulse parameters must remain a titleless parked data-control PRIME instead of remaining in PRIMARY');
+assert(pulseUnit.includes("defaultPlacement:'left'")&&pulseUnit.includes("stateVersion:'presentation-v3'"),'Pulse parameter PRIME must still reopen through the left parameter surface');
+assert(pulseUnit.includes("variant:'stack-comfortable'")&&pulseUnit.includes("variant:'form-grid-2'")&&pulseUnit.includes("variant:'segment-bar'")&&pulseUnit.includes('units.table.mount'),'Pulse parameter composition must preserve full-height Unit content with the segment table instead of collapsing to a header-only strip');
+assert(pulse.includes('actions:liveDomain.actions')&&pulse.includes('snapshot:liveSnapshot'),'Pulse Unit presentation must consume the existing production owner rather than creating a presentation-local owner');
 
 const importCss=read('src/styles/presentation/import-workbench.css');
 assert(importCss.includes('background:rgba(15,23,42,.28)')&&importCss.includes('--dkds-material-fill-floor:94%'),'Import workbench must use a lighter overlay and a more opaque modal material');

@@ -233,7 +233,18 @@ const {addStyle}=require('./pages/panels');
     });
   }
 
-  function applyPackagedManifest(id,manifest={},source='external'){
+  function materializeTaskSources(manifest={},files={}){
+    const out={};
+    for(const task of (Array.isArray(manifest?.tasks)?manifest.tasks:[])){
+      for(const raw of [task?.entry,...(Array.isArray(task?.imports)?task.imports:[])]){
+        const file=String(raw||'').trim();if(!file)continue;
+        const source=files?.[file];if(typeof source==='string')out[file]=source;
+      }
+    }
+    return out;
+  }
+
+  function applyPackage(id,manifest={},source='external',files={},options={}){
     const pluginId=String(id||manifest?.id||'').trim();
     assertId(pluginId);
     if(manifest?.id&&String(manifest.id)!==pluginId)throw new Error(`Plugin package manifest id mismatch: ${manifest.id} != ${pluginId}`);
@@ -241,13 +252,16 @@ const {addStyle}=require('./pages/panels');
     if(!definition)throw new Error(`Plugin package did not register manifest id: ${pluginId}`);
     // plugin.json/.dkplugin manifest is the machine-readable source of truth.
     // Runtime entry files may keep a compact manifest for direct authoring, but
-    // dedicated windows and the owner renderer must resolve the exact same
-    // metadata before contract validation/activation.
+    // every packaged renderer must resolve the same canonical manifest and the
+    // same task entry/import source bytes before Plugin API scope creation.
     const contractManifest={...definition.manifest,...manifest};
     const contractCheck=window.DKDSPluginContract?.validateManifest?.(contractManifest);
     if(contractCheck&&!contractCheck.ok)throw new Error(`Plugin ${pluginId}: ${contractCheck.errors.join(' ')}`);
     definition.manifest={...contractManifest};
     definition.packageSource=String(source||'external');
+    definition.taskSources=materializeTaskSources(definition.manifest,files);
+    const taskCoreSources=options?.taskCoreSources;
+    if(taskCoreSources&&typeof taskCoreSources==='object')definition.taskCoreSources=structuredClone(taskCoreSources);
     pluginTypeForManifest(definition.manifest);
     return definition;
   }
@@ -268,8 +282,7 @@ const {addStyle}=require('./pages/panels');
       const created=definitions.filter(d=>!beforeIds.has(d.manifest.id));
       const unexpected=created.filter(d=>d.manifest.id!==manifest.id);
       if(unexpected.length)throw new Error(`Plugin package ${manifest.id} registered unexpected ids: ${unexpected.map(d=>d.manifest.id).join(', ')}`);
-      const definition=applyPackagedManifest(manifest.id,manifest,source);
-      definition.taskSources=Object.fromEntries((manifest.tasks||[]).flatMap(row=>[row.entry,...(row.imports||[])].map(file=>[String(file||''),pkg?.files?.[file]])).filter(([entry,text])=>entry&&typeof text==='string')); 
+      const definition=applyPackage(manifest.id,manifest,source,pkg?.files||{});
 
       const sharedStyleFiles=Array.isArray(manifest.styles)?manifest.styles:[];
       const platformStyleFiles=Array.isArray(assets.platformStyles)?assets.platformStyles:[];
@@ -487,9 +500,7 @@ const {addStyle}=require('./pages/panels');
       }
     }
     if(id&&!definition)throw new Error(`Built-in plugin did not register current definition after entry load: ${id}`);
-    if(definition&&row?.manifest&&typeof row.manifest==='object'){definition.manifest={...definition.manifest,...row.manifest};definition.packageSource=String(row?.source||'builtin');}
-    if(definition&&row?.taskSources&&typeof row.taskSources==='object')definition.taskSources={...row.taskSources};
-    if(definition&&row?.taskCoreSources&&typeof row.taskCoreSources==='object')definition.taskCoreSources=structuredClone(row.taskCoreSources);
+    if(definition&&row?.manifest&&typeof row.manifest==='object')definition=applyPackage(id,row.manifest,String(row?.source||'builtin'),row?.taskSources||{},{taskCoreSources:row?.taskCoreSources||{}});
     const styleSources=Array.isArray(row?.styleSources)?row.styleSources:[];
     const platformStyleSources=platformRows(row,'platformStyleSources',platform);
     if(definition&&(styleSources.length||platformStyleSources.length)){
@@ -659,7 +670,7 @@ const {addStyle}=require('./pages/panels');
       super:()=>superState()
     },
     packageRuntime:Object.freeze({
-      applyManifest:(id,manifest,source)=>applyPackagedManifest(id,manifest,source)
+      applyPackage:(id,manifest,source,files,options)=>applyPackage(id,manifest,source,files,options)
     }),
     activities: {
       list:()=>activityRows().map(x=>({...x.value,pluginId:x.pluginId,isSuper:x.pluginId===state.superPluginId,pluginType:pluginTypeForManifest(definitionById(x.pluginId)?.manifest||{})})),
@@ -728,4 +739,4 @@ const {addStyle}=require('./pages/panels');
     emit:eventEmit
   });
 
-module.exports=Object.freeze({removeDefinition, loadInlinePluginScript, applyPackagedManifest, loadPackagedPlugin, loadExternalPackage, loadOverridePackage, loadExternalEntries, replaceExternalPluginPackage, pluginInstallRendererError, installExternalPlugin, validateGeneratedPluginPackage, installGeneratedPluginPackage, uninstallExternalPlugin, loadScript, loadBuiltinEntries});
+module.exports=Object.freeze({removeDefinition, loadInlinePluginScript, materializeTaskSources, applyPackage, loadPackagedPlugin, loadExternalPackage, loadOverridePackage, loadExternalEntries, replaceExternalPluginPackage, pluginInstallRendererError, installExternalPlugin, validateGeneratedPluginPackage, installGeneratedPluginPackage, uninstallExternalPlugin, loadScript, loadBuiltinEntries});

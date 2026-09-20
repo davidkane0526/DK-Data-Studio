@@ -19,9 +19,9 @@ const toolbar=read('src/core/plugins/kernel/modules/commands/toolbar.js');
 const actions=read('src/core/ui/modules/interaction/context-actions.js');
 const chrome=read('src/plugin-window/chrome.js');
 const appearance=read('src/styles/theme/component-appearance.css');
-const ter=read('src/plugins/ter-analysis/feature-runtime.js');
-const pulse=read('src/plugins/pulse-analysis/feature-runtime.js');
-const dc=read('src/plugins/data-center/feature-runtime.js');
+const ter=read('src/plugins/ter-analysis/unit-presentation.js');
+const pulse=read('src/plugins/pulse-analysis/unit-presentation.js');
+const dc=read('src/plugins/data-center/unit-presentation.js');
 assert(registry.includes("dkdsComponentVariantOwner==='core-component'"),'Semantic registry must preserve explicit core-component variants.');
 for(const [name,source] of [['plugin toolbar',toolbar],['ActionGroup',actions],['dedicated titlebar',chrome]]){
   assert(source.includes("dkdsComponentVariantOwner='core-component'"),`${name} must author canonical persistent component variants.`);
@@ -29,7 +29,7 @@ for(const [name,source] of [['plugin toolbar',toolbar],['ActionGroup',actions],[
 assert(chrome.includes('variant:row.variant'),'Dedicated titlebar must consume the projected action variant.');
 assert(appearance.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]'),'Canonical primary action appearance must remain Theme-driven.');
 for(const [name,source,needle] of [
-  ['TER',ter,"label:'计算 TER',className:'primary',variant:'primary'"],
+  ['TER',ter,"label:'计算 TER',variant:'primary'"],
   ['Pulse',pulse,"label:'分析勾选',className:'primary',variant:'primary'"],
   ['Data Center',dc,"label:'运行工作流',className:'primary',variant:'primary'"],
 ]) assert(source.includes(needle),`${name} important action must explicitly request primary emphasis.`);

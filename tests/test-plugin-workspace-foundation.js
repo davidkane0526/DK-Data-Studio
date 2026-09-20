@@ -9,7 +9,7 @@ const ui=read('src/generated/runtime/ui-infrastructure.js');
 const css=readCoreCss(root);
 const cssCompact=css.replace(/\s*\{/g,'{');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
-const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 
@@ -29,8 +29,8 @@ assert(ui.includes('wheel.dkdssci')&&ui.includes("routeInteraction('box','backgr
 assert(ui.includes('getColorDomainValues')&&ui.includes('onWheelZoomStart'),'ScientificCurveSurface must preserve stable color domains and expose pre-wheel semantic hooks.');
 assert(ui.includes('setInteraction(interaction)')&&ui.includes('closestInSet')&&ui.includes('this.selectEntity('),'ScientificCurveSurface must consume Core Entity/Interaction state and provide automatic entity selection for declarative curves/markers.');
 
-assert(resonanceViews.includes('const workspaceFactory=ctx.ui.workspaceSurface'),'Resonance must consume the single public workspaceSurface contract rather than a compatibility alias.');
-assert(resonanceViews.includes("hostMode:isTop?'top':'super'"),'SUPER/TOP may only annotate the host mode; they must mount the same internal workspace.');
+assert(resonancePresentation.includes('ctx.ui.unitTemplates')&&resonancePresentation.includes('units.workspace.create'),'Resonance production presentation must consume the Unit workspace facade backed by the single public workspace runtime.');
+assert(resonancePresentation.includes("hostMode:isTop?'top':'super'"),'SUPER/TOP may only annotate the host mode; they must mount the same internal workspace.');
 assert(resonanceFeature.includes('uiRuntime?.scientificPlot'),'Resonance must consume Core ScientificCurveSurface.');
 assert(resonanceMainPlot.includes('interaction:live.interactionRuntime')&&resonanceMainPlot.includes('entityId:String(sw.id)'),'Resonance main D3 surface must declare entity identity to Core through the main-plot adapter rather than privately restyle selection.');
 assert(!resonanceFeature.includes('charts.restyle(')&&!resonanceMainPlot.includes('charts.restyle('),'Resonance must not own Plotly selection restyling; Core ScientificPlot owns focus visuals.');
@@ -39,14 +39,13 @@ assert(resonanceMainPlot.includes('onWheelZoomStart:()=>clearRangeMenu({keepSele
 for(const forbidden of ['d3.drag().clickDistance(7)','wheel.resmain','rangeDrag={pointerId']){
   assert(!resonanceFeature.includes(forbidden)&&!resonanceMainPlot.includes(forbidden),`Resonance retained base interaction plumbing: ${forbidden}`);
 }
-for(const folder of ['ter-analysis','pulse-analysis']){
-  const views=read(`src/plugins/${folder}/shared-views.js`);
-  assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder} must consume the single public workspaceSurface contract.`);
-}
-const dataCenterShared=read('src/plugins/data-center/shared-views.js');
-const dataCenterMobile=read('src/plugins/data-center/mobile-presentation.js');
-assert(!dataCenterShared.includes('ctx.ui.workspaceSurface.create')&&dataCenterMobile.includes('ctx.ui.workspaceSurface.create'),
-  'SDK 1.25 Data Center must keep Desktop shared composition static while Mobile alone consumes workspaceSurface through its platform presentation module.');
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(terUnits.includes('ctx.ui.unitTemplates')&&terUnits.includes('units.workspace.create'),'ter-analysis formal production presentation must consume the public Unit workspace facade.');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
+assert(pulseViews.includes('ctx.ui.unitTemplates')&&pulseViews.includes('units.workspace.create'),'pulse-analysis production presentation must consume the Unit workspace facade backed by the single workspace runtime.');
+const dataCenterUnits=read('src/plugins/data-center/unit-presentation.js');
+assert(dataCenterUnits.includes('ctx.ui.unitTemplates')&&dataCenterUnits.includes('units.workspace.create')&&dataCenterUnits.includes('workbench.compose'),
+  'Data Center production cutover must consume the same public Unit workspace composition on Desktop and Mobile.');
 
 
 // v3.36 canvas-local docking / performance invariants.

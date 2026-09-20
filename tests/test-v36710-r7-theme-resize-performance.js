@@ -15,7 +15,6 @@ assert(!semantic.includes("for(const node of record.addedNodes||[])if(node?.node
 const split=read('src/core/ui/modules/layout/workspace.js');
 const layoutState=read('src/core/ui/modules/layout/state-resolver.js');
 const groupPlot=read('src/core/ui/modules/tooltip/group-plot.js');
-const terManifest=JSON.parse(read('src/plugins/ter-analysis/plugin.json'));
 
 assert(appearance.includes("const setData=(target,key,value)=>")&&appearance.includes("const clearData=(target,key)=>"),
   'R7 Component Appearance must keep dataset writes idempotent so bootstrap/theme composition does not create self-generated mutation churn.');
@@ -56,7 +55,5 @@ assert(!/const move=e=>[^\n]*(?:persist:true|emitResize)/.test(split),
   'R7 split pointermove must never persist state or emit authoritative layout resize work.');
 assert(groupPlot.includes("dkds-split-drag-active")&&groupPlot.includes('if(document.documentElement?.classList?.contains'),
   'R7 GroupPlot ResizeObserver must ignore split-preview geometry so child plots are not resized on every drag frame.');
-assert(terManifest.window?.prewarm===false,
-  'R7I application cold start must not eagerly create the hidden TER renderer; TER stays reusable but opens lazily on demand.');
 
 console.log('v3.67.10 R7 theme bootstrap and split-preview performance contract checks passed.');

@@ -1,5 +1,5 @@
 (() => {
-  const manifest={"id":"com.dkds.tools.pulse-sampler","name":"脉冲与采样处理","version":"1.9.17","apiVersion":"1.19.0","entry":"plugin.js","scripts":["plugin.js"],"styles":["plugin.css"],"enabled":true,"order":360,"description":"三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。","pluginType":"tool","requiresCore":["runtime","events","status","project","io","workspace","data.sources","data.artifacts","data.model","ui.dom","ui.workspace","ui.scientific-plot","ui.series","ui.table","ui.activities","ui.top-workspace","ui.pages","execution.tasks"],"capabilities":["ui.page","ui.top-workspace","ui.plugin-workspace","ui.scientific-plot","ui.table","data.scoped-sources"],"workspace":{"role":"top","activity":"pulse-sampler-tool","icon":"⌁","title":"脉冲与采样处理"},"window":{"activity":"pulse-sampler-tool","title":"脉冲与采样处理","width":1320,"height":860,"minWidth":960,"minHeight":640,"dependencies":["scientific-renderer"],"prewarm":false,"reuse":true,"persistence":"project","artifactHydration":"live"},"data":{"accepts":["data.table","science.transport.iv","science.transport.transfer"]},"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"custom","styles":["mobile.css"]}},"tasks":[{"id":"extract-steady-state","entry":"steady-state-task.js"}]};
+  const manifest={"id":"com.dkds.tools.pulse-sampler","name":"脉冲与采样处理","version":"1.9.31","apiVersion":"1.19.0","entry":"plugin.js","scripts":["live-domain.js","domain-adapter.js","unit-presentation.js","plugin.js"],"styles":[],"enabled":true,"order":360,"description":"三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。","pluginType":"tool","requiresCore":["runtime","events","status","services","modules","project","io","workspace","data.sources","data.artifacts","data.model","ui.dom","ui.workspace","ui.scientific-plot","ui.series","ui.table","ui.activities","ui.top-workspace","ui.pages","execution.tasks","ui.unit-templates"],"capabilities":["ui.page","ui.top-workspace","ui.plugin-workspace","ui.scientific-plot","ui.table","data.scoped-sources","ui.unit-templates"],"workspace":{"role":"top","activity":"pulse-sampler-tool","icon":"⌁","title":"脉冲与采样处理"},"window":{"activity":"pulse-sampler-tool","title":"脉冲与采样处理","width":1320,"height":860,"minWidth":960,"minHeight":640,"dependencies":["scientific-renderer"],"prewarm":false,"reuse":true,"persistence":"project","artifactHydration":"live"},"data":{"accepts":["data.table","science.transport.iv","science.transport.transfer"]},"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"adaptive"}},"tasks":[{"id":"extract-steady-state","entry":"steady-state-task.js"}]};
 
   const EPS=1e-10;
   const CHANNELS=['Vd','Vs','Vg'];
@@ -218,8 +218,10 @@
   }
 
   DKDSPlugins.define(manifest, async ctx => {
+    const LiveDomain=ctx.modules.require('live-domain');
+    let liveDomain=null;
     let model=initialState();
-    let workbench=null,waveSurface=null,resultSurface=null,waveTable=null,resultTable=null,segmentTable=null;
+    let workbench=null,waveSurface=null,resultSurface=null,waveTable=null,resultTable=null,segmentTable=null,presentation=null;
     let mounted=false;
     const el={};
 
@@ -231,12 +233,11 @@
         model.activeChannel=CHANNELS.includes(data.activeChannel)?data.activeChannel:fresh.activeChannel;
         for(const c of CHANNELS){const src=data.channels?.[c];if(src){model.channels[c].segments=Array.isArray(src.segments)?src.segments:[];model.channels[c].preview=src.preview||null;model.channels[c].params={...fresh.channels[c].params,...(src.params||{})};}}
         model.analysis={...fresh.analysis,...(data.analysis||{})};delete model.analysis.logY;model.result=null;
-        if(mounted) renderAll();
+        if(mounted) renderAll();liveDomain?.notify?.('project-restore');
       }},
-      reset:()=>{model=initialState();if(mounted)renderAll();}
+      reset:()=>{model=initialState();if(mounted)renderAll();liveDomain?.notify?.('project-reset');}
     });
 
-    const q=(selector,root)=>ctx.ui.dom.query(selector,root||page);
     const channelFinal=c=>concatSegments(model.channels[c].segments,model.channels[c].preview);
     const allChannelData=()=>({Vd:channelFinal('Vd'),Vs:channelFinal('Vs'),Vg:channelFinal('Vg')});
     const setStatus=text=>ctx.status.set(text);
@@ -251,51 +252,50 @@
       if(!mounted)return;
       for(const k of ['voltageMax','voltageStep','voltageRead','pulseTime','readTime','timeShift','cycle','ratio']) el[k].value=String(p[k]);
     }
-    function syncActiveParams(){model.channels[model.activeChannel].params=readParamsFromUI();}
 
-    function generate(){
+    function setChannel(payload={}){
+      const next=String(payload?.value||payload?.channel||payload||'');
+      if(!CHANNELS.includes(next))return model.activeChannel;
+      if(payload?.currentParameters&&typeof payload.currentParameters==='object'){
+        const current=model.channels[model.activeChannel].params;
+        model.channels[model.activeChannel].params={...current,...payload.currentParameters};
+      }
+      model.activeChannel=next;model.result=null;
+      if(mounted){writeParamsToUI(model.channels[next].params);renderAll();}
+      return next;
+    }
+    function setParameters(payload={}){
+      const channel=CHANNELS.includes(String(payload?.channel||''))?String(payload.channel):model.activeChannel;
+      const patch=payload?.value&&typeof payload.value==='object'?payload.value:(payload?.parameters&&typeof payload.parameters==='object'?payload.parameters:payload);
+      const current=model.channels[channel].params,next={...current};
+      for(const key of Object.keys(DEFAULT_PARAMS))if(patch&&Object.prototype.hasOwnProperty.call(patch,key))next[key]=num(patch[key],current[key]);
+      model.channels[channel].params=next;
+      if(mounted&&channel===model.activeChannel)writeParamsToUI(next);
+      return clone(next);
+    }
+    function generate(payload={}){
+      const channel=CHANNELS.includes(String(payload?.channel||''))?String(payload.channel):model.activeChannel;
       try{
-        const p=readParamsFromUI();const out=pulseGenerator(p);model.channels[model.activeChannel].params=clone(p);model.channels[model.activeChannel].preview=out;
-        model.result=null;renderAll();setStatus(`${model.activeChannel} 已生成 ${out.time.length} 个脉冲边界点。`);
-      }catch(err){setStatus(err.message||String(err));}
+        const current=model.channels[channel].params;
+        const raw=payload?.parameters&&typeof payload.parameters==='object'?{...current,...payload.parameters}:(mounted&&channel===model.activeChannel?readParamsFromUI():current);
+        const out=pulseGenerator(raw);model.channels[channel].params=clone(out.params);model.channels[channel].preview=out;
+        model.result=null;if(mounted)renderAll();setStatus(`${channel} 已生成 ${out.time.length} 个脉冲边界点。`);return clone(out);
+      }catch(err){setStatus(err.message||String(err));throw err;}
     }
-    function addSegment(){
-      const ch=model.channels[model.activeChannel];
-      if(!ch.preview){setStatus('请先生成当前脉冲片段。');return;}
-      ch.segments.push(clone(ch.preview));ch.preview=null;model.result=null;renderAll();setStatus(`${model.activeChannel} 已加入第 ${ch.segments.length} 个片段。`);
+    function addSegment(payload={}){
+      const channel=CHANNELS.includes(String(payload?.channel||''))?String(payload.channel):model.activeChannel;
+      const ch=model.channels[channel];
+      if(!ch.preview){setStatus('请先生成当前脉冲片段。');return false;}
+      ch.segments.push(clone(ch.preview));ch.preview=null;model.result=null;if(mounted)renderAll();setStatus(`${channel} 已加入第 ${ch.segments.length} 个片段。`);return true;
     }
-    function clearChannel(){
-      const ch=model.channels[model.activeChannel];ch.segments=[];ch.preview=null;model.result=null;renderAll();setStatus(`${model.activeChannel} 已清空。`);
+    function clearChannel(payload={}){
+      const channel=CHANNELS.includes(String(payload?.channel||''))?String(payload.channel):model.activeChannel;
+      const ch=model.channels[channel];ch.segments=[];ch.preview=null;model.result=null;if(mounted)renderAll();setStatus(`${channel} 已清空。`);return true;
     }
-    function removeSegment(index){
-      const ch=model.channels[model.activeChannel];if(index<0||index>=ch.segments.length)return;ch.segments.splice(index,1);model.result=null;renderAll();setStatus(`已删除 ${model.activeChannel} 第 ${index+1} 个片段。`);
-    }
-
-    function renderChannelTabs(){
-      for(const c of CHANNELS){const btn=q(`[data-channel="${c}"]`,page);if(btn)btn.classList.toggle('active',c===model.activeChannel);btn.setAttribute('aria-pressed',c===model.activeChannel?'true':'false');}
-      el.channelTitle.textContent=model.activeChannel;
-      const ch=model.channels[model.activeChannel],final=channelFinal(model.activeChannel);
-      el.channelMeta.textContent=`${ch.segments.length} 个已加入片段 · ${ch.preview?'1 个当前预览 · ':''}${final.time.length} 个边界点`;
-    }
-
-
-    function renderWavePlot(){
-      waveSurface?.requestRender?.('waveform');
-      const merged=mergeChannels(allChannelData());
-      const rows=merged.slice(0,5000);
-      const cols=[{key:'time',label:'Time',unit:'s'},{key:'Vd',label:'Vd',unit:'V'},{key:'Vs',label:'Vs',unit:'V'},{key:'Vg',label:'Vg',unit:'V'}];
-      if(!waveTable) waveTable=ctx.ui.tables.mount('pulse-sampler-wave-table',el.waveTableHost,{columns:cols,rows});
-      else waveTable.setData(cols,rows);
-      el.waveCount.textContent=merged.length>5000?`显示前 5000 / ${merged.length} 行`:`${merged.length} 行`;
-    }
-
-    function renderSegments(){
-      const ch=model.channels[model.activeChannel];
-      const rows=ch.segments.map((s,i)=>({index:i+1,voltageMax:s.params?.voltageMax,step:s.params?.voltageStep,read:s.params?.voltageRead,pulseTime:s.params?.pulseTime,readTime:s.params?.readTime,cycle:s.params?.cycle,points:s.time?.length||0}));
-      const cols=[{key:'index',label:'#'},{key:'voltageMax',label:'上限',unit:'V'},{key:'step',label:'步长'},{key:'read',label:'读取',unit:'V'},{key:'pulseTime',label:'脉冲',unit:'s'},{key:'readTime',label:'读取',unit:'s'},{key:'cycle',label:'周期'},{key:'points',label:'点数'}];
-      if(!segmentTable) segmentTable=ctx.ui.tables.mount('pulse-sampler-segment-table',el.segmentTableHost,{columns:cols,rows});
-      else segmentTable.setData(cols,rows);
-      el.segmentRemove.disabled=!rows.length;
+    function removeSegment(payload={}){
+      const channel=CHANNELS.includes(String(payload?.channel||''))?String(payload.channel):model.activeChannel;
+      const index=Number.isFinite(Number(payload?.index))?Number(payload.index):Number(payload);
+      const ch=model.channels[channel];if(index<0||index>=ch.segments.length)return false;ch.segments.splice(index,1);model.result=null;if(mounted)renderAll();setStatus(`已删除 ${channel} 第 ${index+1} 个片段。`);return true;
     }
 
     function sourceRows(){
@@ -313,33 +313,76 @@
     }
 
     function refreshSources(){
-      if(!mounted)return;
       const sources=ctx.data.sources.list();
       const old=model.analysis.sourceId;
-      ctx.ui.dom.html(el.source,'');
-      for(const s of sources){const o=ctx.ui.dom.create('option');o.value=s.artifactId;o.textContent=s.name||s.sourceName||s.path||s.artifactId;ctx.ui.dom.append(el.source,o);}
-      if(sources.length){model.analysis.sourceId=sources.some(s=>s.artifactId===old)?old:sources[0].artifactId;el.source.value=model.analysis.sourceId;refreshColumns();}
-      else{model.analysis.sourceId='';model.analysis.timeKey='';model.analysis.currentKey='';el.sourceMeta.textContent='尚未分配工程数据，可使用窗口顶部的标准导入入口。';ctx.ui.dom.html(el.timeColumn,'');ctx.ui.dom.html(el.currentColumn,'');}
-    }
-
-    function refreshColumns(){
-      const {src,rows}=sourceRows();
-      if(!src||!rows.length){el.sourceMeta.textContent=src?'数据表为空。':'尚未分配工程数据。';return;}
-      const keys=Object.keys(rows[0]||{});
-      const time=model.analysis.timeKey&&keys.includes(model.analysis.timeKey)?model.analysis.timeKey:chooseLikely(keys,['time','时间','t']);
-      const current=model.analysis.currentKey&&keys.includes(model.analysis.currentKey)?model.analysis.currentKey:chooseLikely(keys,['current','电流','id','ids','i'],keys[1]||keys[0]);
-      model.analysis.timeKey=time;model.analysis.currentKey=current;
-      for(const [select,value] of [[el.timeColumn,time],[el.currentColumn,current]]){
-        ctx.ui.dom.html(select,'');for(const k of keys){const o=ctx.ui.dom.create('option');o.value=k;o.textContent=k;ctx.ui.dom.append(select,o);}select.value=value;
+      if(sources.length){
+        model.analysis.sourceId=sources.some(row=>row.artifactId===old)?old:sources[0].artifactId;
+        refreshColumns(false);
+      }else{
+        model.analysis.sourceId='';model.analysis.timeKey='';model.analysis.currentKey='';
       }
-      const dt=inferSampleStep(rows.map(r=>Number(r[time])).filter(Number.isFinite));
-      el.sourceMeta.textContent=`${src.name||src.sourceName||'数据表'} · ${rows.length} 行${Number.isFinite(dt)?` · 采样间隔≈${round(dt,8)} s`:''}`;
+      if(mounted)renderAll();
     }
 
-    async function runExtraction(){
+    function refreshColumns(shouldRender=true){
+      const {src,rows}=sourceRows();
+      if(src&&rows.length){
+        const keys=Object.keys(rows[0]||{});
+        model.analysis.timeKey=model.analysis.timeKey&&keys.includes(model.analysis.timeKey)?model.analysis.timeKey:chooseLikely(keys,['time','时间','t']);
+        model.analysis.currentKey=model.analysis.currentKey&&keys.includes(model.analysis.currentKey)?model.analysis.currentKey:chooseLikely(keys,['current','电流','id','ids','i'],keys[1]||keys[0]);
+      }
+      if(shouldRender&&mounted)renderAll();
+    }
+
+    function setAnalysis(payload={}){
+      const patch=payload?.value&&typeof payload.value==='object'?payload.value:payload;
+      if(!patch||typeof patch!=='object')return clone(model.analysis);
+      const allowed=['sourceId','timeKey','currentKey','trimLeft','trimRight','xMode','yMode'];
+      const previousSource=model.analysis.sourceId;
+      for(const key of allowed)if(Object.prototype.hasOwnProperty.call(patch,key))model.analysis[key]=patch[key]??'';
+      if(Object.prototype.hasOwnProperty.call(patch,'sourceId')&&String(previousSource)!==String(model.analysis.sourceId))model.result=null;
+      if(mounted){
+        if(Object.prototype.hasOwnProperty.call(patch,'sourceId'))refreshSources();
+        else renderAll();
+      }
+      return clone(model.analysis);
+    }
+
+    function sourcePresentation(){
+      const {sources,src,rows}=sourceRows();
+      const keys=rows.length?Object.keys(rows[0]||{}):[];
+      const timeKey=model.analysis.timeKey&&keys.includes(model.analysis.timeKey)?model.analysis.timeKey:chooseLikely(keys,['time','时间','t']);
+      const currentKey=model.analysis.currentKey&&keys.includes(model.analysis.currentKey)?model.analysis.currentKey:chooseLikely(keys,['current','电流','id','ids','i'],keys[1]||keys[0]);
+      const dt=timeKey?inferSampleStep(rows.map(row=>Number(row[timeKey])).filter(Number.isFinite)):NaN;
+      const label=src?(src.name||src.sourceName||src.path||src.artifactId):'';
+      return {
+        options:(sources||[]).map(row=>({id:String(row.artifactId||''),label:String(row.name||row.sourceName||row.path||row.artifactId||'')})),
+        activeId:String(src?.artifactId||''),columns:keys.map(String),timeKey:String(timeKey||''),currentKey:String(currentKey||''),rowCount:rows.length,
+        meta:src?`${label||'数据表'} · ${rows.length} 行${Number.isFinite(dt)?` · 采样间隔≈${round(dt,8)} s`:''}`:'尚未分配工程数据。'
+      };
+    }
+
+    function segmentRowsFor(channel=model.activeChannel){
+      const ch=model.channels[channel]||model.channels[model.activeChannel];
+      return (ch?.segments||[]).map((seg,index)=>({index:index+1,voltageMax:seg.params?.voltageMax,step:seg.params?.voltageStep,read:seg.params?.voltageRead,pulseTime:seg.params?.pulseTime,readTime:seg.params?.readTime,cycle:seg.params?.cycle,points:seg.time?.length||0}));
+    }
+
+    function resultPresentation(){
+      const result=model.result;if(!result)return {available:false,meta:'尚未执行提取。',rows:[],x:[],y:[],xLabel:'X',yLabel:'Current'};
+      const xy=currentXY();
+      return {available:true,channel:String(result.channel||model.activeChannel),sourceId:String(result.sourceId||''),matched:Number(result.matched)||0,totalPulse:Number(result.totalPulse)||0,trimLeft:result.trimLeft,trimRight:result.trimRight,tolerance:result.tolerance,x:xy.x.slice(),y:xy.y.slice(),xLabel:xy.xLabel,yLabel:xy.yLabel,rows:xy.x.map((x,index)=>({index:index+1,x,y:xy.y[index]})),meta:`${result.channel} · 匹配 ${result.matched}/${result.totalPulse} · 自动/实际剔除 ${result.trimLeft}/${result.trimRight} 点 · 容差 ${round(result.tolerance,8)} s`};
+    }
+
+    function liveSnapshot(){
+      const active=model.activeChannel,ch=model.channels[active],final=channelFinal(active),channelData=allChannelData(),merged=mergeChannels(channelData),source=sourcePresentation(),result=resultPresentation();
+      return {schema:1,activeChannel:active,channels:Object.fromEntries(CHANNELS.map(channel=>[channel,{params:clone(model.channels[channel].params),segments:segmentRowsFor(channel),segmentCount:model.channels[channel].segments.length,hasPreview:!!model.channels[channel].preview,boundaryPoints:channelFinal(channel).time.length}])),active:{channel:active,params:clone(ch.params),segments:segmentRowsFor(active),segmentCount:ch.segments.length,hasPreview:!!ch.preview,boundaryPoints:final.time.length},waveform:{totalRows:merged.length,rows:clone(merged.slice(0,5000)),curves:CHANNELS.map(channel=>({id:`pulse-sampler-${channel.toLowerCase()}`,label:channel,points:stepPoints(channelData[channel].time,channelData[channel].voltage)})).filter(row=>row.points.length)},source,analysis:{...clone(model.analysis),sourceId:source.activeId,timeKey:source.timeKey,currentKey:source.currentKey},result};
+    }
+
+    async function runExtraction(payload={}){
       try{
+        if(payload?.analysis&&typeof payload.analysis==='object')model.analysis={...model.analysis,...payload.analysis};
+        else if(mounted)model.analysis={...model.analysis,timeKey:el.timeColumn.value,currentKey:el.currentColumn.value,trimLeft:el.trimLeft.value,trimRight:el.trimRight.value};
         const {src,rows}=sourceRows();if(!src||!rows.length)throw new Error('请先导入并分配一份测量数据。');
-        model.analysis.timeKey=el.timeColumn.value;model.analysis.currentKey=el.currentColumn.value;model.analysis.trimLeft=el.trimLeft.value;model.analysis.trimRight=el.trimRight.value;
         const times=[],curr=[];
         for(const r of rows){const t=Number(r[model.analysis.timeKey]),i=Number(r[model.analysis.currentKey]);if(Number.isFinite(t)&&Number.isFinite(i)){times.push(t);curr.push(i);}}
         const pulse=channelFinal(model.activeChannel);
@@ -347,9 +390,9 @@
         setStatus(`正在后台提取 ${times.length} 个采样点…`);
         const job=ctx.tasks.submit('extract-steady-state',{dataTimes:times,dataCurrent:curr,pulseTime:pulse.time,pulseVoltage:pulse.voltage,trimLeftRaw:model.analysis.trimLeft,trimRightRaw:model.analysis.trimRight},{key:'steady-state-extraction',latest:true});
         const result=await job.promise;
-        model.result={...result,channel:model.activeChannel,sourceId:src.artifactId};renderResult();
+        model.result={...result,channel:model.activeChannel,sourceId:src.artifactId};if(mounted)renderAll();
         setStatus(`提取完成：匹配 ${result.matched}/${result.totalPulse} 个脉冲边界，得到 ${result.readCurrent.length} 个读取点和 ${result.pulseCurrent.length} 个脉冲点。`);
-      }catch(err){if(err?.name==='AbortError')return;model.result=null;renderResult();setStatus(err.message||String(err));}
+      }catch(err){if(err?.name==='AbortError')return;model.result=null;if(mounted)renderAll();setStatus(err.message||String(err));}
     }
 
     function currentXY(){
@@ -364,23 +407,9 @@
       return {x,y,xLabel,yLabel};
     }
 
-    function renderResult(){
-      const r=model.result;
-      if(!r){el.resultMeta.textContent='尚未执行提取。';if(resultTable)resultTable.setData([],[]);resultSurface?.requestRender?.('empty');return;}
-      el.resultMeta.textContent=`${r.channel} · 匹配 ${r.matched}/${r.totalPulse} · 自动/实际剔除 ${r.trimLeft}/${r.trimRight} 点 · 容差 ${round(r.tolerance,8)} s`;
-      const xy=currentXY();
-      const rows=xy.x.map((x,i)=>({index:i+1,x,y:xy.y[i]}));
-      const cols=[{key:'index',label:'#'},{key:'x',label:xy.xLabel},{key:'y',label:xy.yLabel}];
-      if(!resultTable) resultTable=ctx.ui.tables.mount('pulse-sampler-result-table',el.resultTableHost,{columns:cols,rows});
-      else resultTable.setData(cols,rows);
-      resultSurface?.requestRender?.('result');
-    }
-
     function renderAll(){
       if(!mounted)return;
-      renderChannelTabs();writeParamsToUI(model.channels[model.activeChannel].params);
-      el.trimLeft.value=model.analysis.trimLeft??'';el.trimRight.value=model.analysis.trimRight??'';el.xMode.value=model.analysis.xMode;el.yMode.value=model.analysis.yMode;
-      renderSegments();renderWavePlot();renderResult();refreshSources();
+      presentation?.render?.(liveSnapshot());
     }
 
     function csvFromMerged(){
@@ -399,131 +428,39 @@
       const ok=await ctx.io.saveText({defaultName:name,content:text,filters:[{name:'CSV',extensions:['csv']}],source:`plugin:${manifest.id}:csv-export`});
       if(ok)setStatus(`已导出 ${name}。`);return !!ok;
     }
+    async function copyResult(){
+      if(resultTable){const ok=await resultTable.copyVisibleTable({includeHeader:true});setStatus(ok?'结果表已复制。':'复制结果表失败。');return !!ok;}
+      const result=resultPresentation();if(!result.available){setStatus('当前没有结果表。');return false;}
+      const lines=[[ '#',result.xLabel,result.yLabel ].join('\t'),...result.rows.map(row=>[row.index,row.x,row.y].join('\t'))];
+      const ok=await ctx.io.clipboard.writeText(lines.join('\n'));setStatus(ok===false?'复制结果表失败。':'结果表已复制。');return ok!==false;
+    }
+
+    liveDomain=LiveDomain.create({
+      snapshot:liveSnapshot,
+      actions:{
+        setChannel,setParameters,generate,addSegment,clearChannel,removeSegment,setAnalysis,extract:runExtraction,
+        exportWave:()=>downloadText('pulse-waveform.csv',csvFromMerged()),copyResult,exportResult:()=>downloadText('pulse-sampling-result.csv',csvFromResult())
+      }
+    });
+    if(!ctx.runtime.isAuxiliaryWindow)ctx.modules.require('domain-adapter')?.provide?.(ctx,liveDomain);
 
     ctx.ui.activities.add({
       id:'pulse-sampler-tool',label:'脉冲与采样处理',contextLabel:'Pulse & Sampling',icon:'⌁',order:360,primary:true,openMode:'window',artifactHydration:'live',
       description:'生成并组合 Vd/Vs/Vg 脉冲，按时间轴提取稳态读写电流。',onActivate:()=>{ctx.workspace.openPage('pulseSamplerToolPage');refreshSources();}
     });
 
-    const page=ctx.ui.pages.add({
-      id:'pulse-sampler-tool-page',pageId:'pulseSamplerToolPage',activity:'pulse-sampler-tool',label:'脉冲与采样处理',title:'脉冲与采样处理',toolbar:false,
-      html:`
-        <div class="analysis-page-header pulse-sampler-page-header">
-          <div><h2>脉冲与采样处理</h2><div class="pulse-sampler-subtitle">Pulse Generator · Vd / Vs / Vg · Steady-state Sampling</div></div>
-          <div data-dkds-slot="workbench-import"></div>
-        </div>
-        <div class="analysis-page-body"><div class="pulse-sampler-workbench"></div></div>`
-    });
-    const host=q('.pulse-sampler-workbench',page);
-    workbench=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse-sampler-tool',primaryScroll:'safe',leftWidth:540,leftMin:520,leftReserve:520});
-    workbench.mountPrimary({id:'main',label:'工具',scroll:'safe',mount:({main})=>{
-      const domDisposers=[];
-      const on=(target,event,handler,options)=>{const dispose=ctx.ui.dom.on(target,event,handler,options);domDisposers.push(dispose);return dispose;};
-      const shell=ctx.ui.dom.create('div',{className:'pulse-sampler-shell'});
-      ctx.ui.dom.html(shell,`
-        <section class="ps-card ps-designer dkds-surface"><div class="ps-designer-body">
-          <div class="ps-card-head"><div><div class="ps-kicker">PULSE DESIGNER</div><div class="ps-title-row"><h3 data-role="channel-title">Vd</h3><span data-role="channel-meta"></span></div></div><div class="ps-channel-tabs dkds-toolbar"><button data-channel="Vd">Vd</button><button data-channel="Vs">Vs</button><button data-channel="Vg">Vg</button></div></div>
-          <div class="ps-param-grid">
-            <label>脉冲电压上限 <span>V</span><input class="dkds-field-control" data-field="voltageMax" type="number" step="any"></label>
-            <label>电压步长 / 方波数 <input class="dkds-field-control" data-field="voltageStep" type="number" step="any"></label>
-            <label>读取电压 <span>V</span><input class="dkds-field-control" data-field="voltageRead" type="number" step="any"></label>
-            <label>脉冲时间 <span>s</span><input class="dkds-field-control" data-field="pulseTime" type="number" min="0" step="any"></label>
-            <label>读取时间 <span>s</span><input class="dkds-field-control" data-field="readTime" type="number" min="0" step="any"></label>
-            <label>时间偏移 <span>s</span><input class="dkds-field-control" data-field="timeShift" type="number" step="any"></label>
-            <label>周期 <input class="dkds-field-control" data-field="cycle" type="number" step="0.25"></label>
-            <label>拉伸系数 <input class="dkds-field-control" data-field="ratio" type="number" step="any"></label>
-          </div>
-          <div class="ps-actions"><button class="primary" data-action="generate">生成预览</button><button data-action="add-segment">加入序列</button><button data-action="clear-channel">清空通道</button><button data-action="export-wave" data-dkds-native-save="export">导出合并 CSV</button></div>
-          <div class="ps-segment-bar dkds-toolbar"><strong>已加入片段</strong><button data-action="remove-segment">删除最后片段</button></div>
-          <div class="ps-mini-table" data-host="segments"></div></div>
-        </section>
-        <section class="ps-card ps-wave dkds-surface">
-          <div class="ps-card-head"><div><div class="ps-kicker">MERGED WAVEFORM</div><h3>三路合并波形</h3></div><span data-role="wave-count"></span></div>
-          <div class="ps-plot" data-host="wave-plot"></div>
-          <div class="ps-table" data-host="wave-table"></div>
-        </section>
-        <section class="ps-card ps-analysis dkds-surface">
-          <div class="ps-card-head"><div><div class="ps-kicker">SAMPLING</div><h3>测量数据提取</h3></div><span data-role="source-meta"></span></div>
-          <div class="ps-analysis-command-surface dkds-surface" data-dkds-command-surface="sampling">
-            <div class="ps-analysis-controls">
-              <label class="ps-wide">工程数据<select class="dkds-field-control" data-field="source"></select></label>
-              <label>Time 列<select class="dkds-field-control" data-field="timeColumn"></select></label>
-              <label>Current 列<select class="dkds-field-control" data-field="currentColumn"></select></label>
-              <label>前剔除点<input class="dkds-field-control" data-field="trimLeft" type="number" min="0" step="1" placeholder="自动"></label>
-              <label>后剔除点<input class="dkds-field-control" data-field="trimRight" type="number" min="0" step="1" placeholder="自动"></label>
-              <button class="primary" data-action="extract">提取稳态电流</button>
-            </div>
-            <div class="ps-result-controls">
-              <label>X<select class="dkds-field-control" data-field="xMode"><option value="readVoltage">Read Voltage</option><option value="pulseVoltage">Pulse Voltage</option><option value="readIndex">Read Index</option><option value="pulseIndex">Pulse Index</option></select></label>
-              <label>Y<select class="dkds-field-control" data-field="yMode"><option value="readCurrent">Read Current</option><option value="pulseCurrent">Pulse Current</option></select></label>
-              <button data-action="copy-result" data-dkds-native-copy="clipboard">复制结果表</button><button data-action="export-result" data-dkds-native-save="export">导出结果 CSV</button>
-            </div>
-          </div>
-          <div class="ps-card-head ps-result-head"><div><div class="ps-kicker">RESULT</div><h3>读写电流映射</h3></div><span data-role="result-meta"></span></div>
-          <div class="ps-result-grid"><div class="ps-plot" data-host="result-plot"></div><div class="ps-table ps-result-table" data-host="result-table"></div></div>
-        </section>`);
-      ctx.ui.dom.append(main,shell);
+    const page=ctx.ui.pages.add({id:'pulse-sampler-tool-page',pageId:'pulseSamplerToolPage',activity:'pulse-sampler-tool',label:'脉冲与采样处理',title:'脉冲与采样处理',toolbar:false,html:''});
+    const UnitPresentation=ctx.modules.require('unit-presentation');
+    presentation=UnitPresentation.mount(ctx,page,{actions:liveDomain.actions,snapshot:liveSnapshot});
+    workbench=presentation.workbench;waveSurface=presentation.waveSurface;resultSurface=presentation.resultSurface;waveTable=presentation.waveTable;resultTable=presentation.resultTable;segmentTable=presentation.segmentTable;
+    Object.assign(el,presentation.controls||{});
+    mounted=true;
+    // Preserve the production owner behavior that selects the first available scoped source/columns.
+    refreshSources();
+    renderAll();
 
-      const field=name=>q(`[data-field="${name}"]`,shell),action=name=>q(`[data-action="${name}"]`,shell),hostSel=name=>q(`[data-host="${name}"]`,shell);
-      Object.assign(el,{shell,channelTitle:q('[data-role="channel-title"]',shell),channelMeta:q('[data-role="channel-meta"]',shell),waveCount:q('[data-role="wave-count"]',shell),sourceMeta:q('[data-role="source-meta"]',shell),resultMeta:q('[data-role="result-meta"]',shell),
-        voltageMax:field('voltageMax'),voltageStep:field('voltageStep'),voltageRead:field('voltageRead'),pulseTime:field('pulseTime'),readTime:field('readTime'),timeShift:field('timeShift'),cycle:field('cycle'),ratio:field('ratio'),source:field('source'),timeColumn:field('timeColumn'),currentColumn:field('currentColumn'),trimLeft:field('trimLeft'),trimRight:field('trimRight'),xMode:field('xMode'),yMode:field('yMode'),
-        wavePlotHost:hostSel('wave-plot'),waveTableHost:hostSel('wave-table'),segmentTableHost:hostSel('segments'),resultPlotHost:hostSel('result-plot'),resultTableHost:hostSel('result-table'),segmentRemove:action('remove-segment')});
-
-      const waveSeries=Object.fromEntries(CHANNELS.map((channel,index)=>{
-        const id=`pulse-sampler-${channel.toLowerCase()}`;
-        const descriptor=ctx.ui.series.register({id,label:channel,group:'pulse-sampler-wave'},index);
-        return [channel,descriptor];
-      }));
-      waveSurface=ctx.ui.scientificPlot.create(el.wavePlotHost,{
-        minHeight:260,xTitle:'Time (s)',yTitle:'Voltage (V)',
-        legend:{enabled:true,placement:'auto',interaction:'isolate',maxRows:2},
-        getCurves:()=>{
-          const d=allChannelData();
-          return CHANNELS.map(channel=>{
-            const series=waveSeries[channel];
-            return {
-              id:series.id,entityId:series.id,label:series.label,name:series.label,color:series.color,
-              points:stepPoints(d[channel].time,d[channel].voltage),
-              source:{channel,label:series.label,seriesId:series.id}
-            };
-          }).filter(curve=>curve.points.length);
-        },
-        getMarkers:()=>[]
-      });
-      resultSurface=ctx.ui.scientificPlot.create(el.resultPlotHost,{minHeight:260,getCurves:()=>{
-        const xy=currentXY();if(!xy.x.length)return[];const n=Math.min(xy.x.length,xy.y.length);return[{id:'result',points:xy.x.slice(0,n).map((x,i)=>({x,y:xy.y[i]}))}];
-      },getMarkers:()=>[]});
-
-      for(const c of CHANNELS){const btn=q(`[data-channel="${c}"]`,shell);on(btn,'click',()=>{syncActiveParams();model.activeChannel=c;writeParamsToUI(model.channels[c].params);model.result=null;renderAll();});}
-      on(action('generate'),'click',generate);
-      on(action('add-segment'),'click',addSegment);
-      on(action('clear-channel'),'click',clearChannel);
-      on(action('remove-segment'),'click',()=>removeSegment(model.channels[model.activeChannel].segments.length-1));
-      on(action('export-wave'),'click',()=>downloadText('pulse-waveform.csv',csvFromMerged()));
-      on(action('extract'),'click',runExtraction);
-      on(action('copy-result'),'click',async()=>{if(resultTable){const ok=await resultTable.copyVisibleTable({includeHeader:true});setStatus(ok?'结果表已复制。':'复制结果表失败。');}else setStatus('当前没有结果表。');});
-      on(action('export-result'),'click',()=>downloadText('pulse-sampling-result.csv',csvFromResult()));
-      on(el.source,'change',()=>{model.analysis.sourceId=el.source.value;refreshColumns();model.result=null;renderResult();});
-      on(el.timeColumn,'change',()=>{model.analysis.timeKey=el.timeColumn.value;});
-      on(el.currentColumn,'change',()=>{model.analysis.currentKey=el.currentColumn.value;});
-      on(el.xMode,'change',()=>{model.analysis.xMode=el.xMode.value;renderResult();});
-      on(el.yMode,'change',()=>{model.analysis.yMode=el.yMode.value;renderResult();});
-
-      mounted=true;el.trimLeft.value=model.analysis.trimLeft;el.trimRight.value=model.analysis.trimRight;el.xMode.value=model.analysis.xMode;el.yMode.value=model.analysis.yMode;renderAll();
-      return()=>{mounted=false;for(const dispose of domDisposers.splice(0))dispose?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();waveSurface=resultSurface=waveTable=resultTable=segmentTable=null;};
-    }});
-
-    const designerPanel=q('.ps-designer',page);
-    q('.pulse-sampler-shell',page)?.classList.add('ps-parameters-extracted');
-    if(designerPanel){
-      workbench.registerPrime({id:'parameters',label:'参数',title:'脉冲参数',semanticKind:'panel',sizing:'fill',presentationPurpose:'parameters',presentationRole:'data-control',priority:96,collapsible:true,embedded:true,existingNode:designerPanel,autoOpen:false,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v3',chrome:false,mount:({container})=>container.classList.remove('hidden')});
-      designerPanel.classList.add('dkds-prime-hidden');
-      workbench.park?.(designerPanel);
-      workbench.syncRegions?.();
-    }
-
-    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[{id:'parameters',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:96,collapsible:true,embedded:true}],sub:[]}});
-    const off=ctx.events.on('data:artifacts-changed',()=>{refreshSources();});
-    return{deactivate(){off?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();workbench?.dispose?.();}};
+    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[{id:'parameters',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:96,collapsible:true}],sub:[]}});
+    const off=ctx.events.on('data:artifacts-changed',event=>{refreshSources();liveDomain?.notify?.('data:artifacts-changed',event);});
+    return{deactivate(){off?.();mounted=false;presentation?.dispose?.();presentation=null;waveSurface=resultSurface=waveTable=resultTable=segmentTable=workbench=null;}};
   });
 })();

@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -29,7 +30,7 @@ assert.throws(()=>Theme.validateProfile({modes:{light:{appearance:{components:{t
 assert.doesNotThrow(()=>Theme.validateProfile({modes:{light:{appearance:{components:{toolbarAction:{shadow:'0 1px 4px rgba(0,0,0,.1)'}}}},dark:{}}}),'CSS-standard zero length must be accepted in bounded literal shadow slots.');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.equal(sdk.themeContractVersion,'3.10.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 const dts=read('sdk/plugin-api.d.ts');

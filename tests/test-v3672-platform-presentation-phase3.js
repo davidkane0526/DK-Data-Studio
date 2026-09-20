@@ -10,6 +10,7 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const shared=read('src/plugins/resonance-workbench/workbench-shared.js');
 const views=read('src/plugins/resonance-workbench/view-components.js');
+const unitPresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const presentersSource=read('src/core/ui/modules/presentation/presenters.js');
 const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
 const workbench=read('src/core/ui/modules/workbench/plugin.js');
@@ -20,7 +21,7 @@ const sdkTypes=read('sdk/plugin-api.d.ts');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=2))),'Platform Presentation Architecture Phase 3 requires v3.67.2+.');}
 for(const token of ["id:'main',label:'共振分析',presentationRole:'scientific-primary'","id:'data-control',label:'参数'","presentationRole:'data-control'","id:'curve-inspector'","presentationRole:'inspector'","id:'group-analysis'","presentationRole:'scientific-secondary'"])assert(shared.includes(token),`Resonance semantic presentation contract missing ${token}.`);
-assert(views.includes("presentationSurface('prime','data-control')")&&views.includes('existingNode:leftPanel')&&views.includes('autoOpen:true')&&!views.includes('leftNode:leftPanel'),'Resonance data/parameter rail must be a real data-control PRIME, not PRIMARY desktop geometry.');
+assert(unitPresentation.includes("const dataControl=units.prime.build({id:'data-control'")&&unitPresentation.includes('existingNode:dataNode')&&unitPresentation.includes('autoOpen:true')&&!unitPresentation.includes('leftNode:'),'Resonance data/parameter rail must be a real Unit data-control PRIME, not PRIMARY desktop geometry.');
 for(const geometry of ["defaultPlacement:'left'","defaultPlacement:'right'","defaultPlacement:'bottom'",'placements:Object.freeze'])assert(!shared.includes(geometry),`Platform-neutral Resonance Presentation Contract must not contain Desktop geometry: ${geometry}.`);
 assert(views.includes('primary:PRESENTATION_LAYOUT.primary,prime:PRESENTATION_LAYOUT.prime,sub:PRESENTATION_LAYOUT.sub'),'TOP Workspace registration must consume the same canonical Resonance presentation contract.');
 for(const legacy of ['res-inspect','res-group','res-physics','res-spacing','res-gate'])assert(!views.includes(`['${legacy}'`),`Resonance must not duplicate Presenter-owned host surface command ${legacy}.`);

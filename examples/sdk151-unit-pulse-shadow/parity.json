@@ -1,0 +1,38 @@
+{
+  "schema": "dkds.unit-shadow-parity/1",
+  "sourcePlugin": "builtin.pulse-analysis",
+  "shadowPlugin": "com.example.unit-pulse-shadow",
+  "scope": "UI/action-boundary parity; scientific extraction math stays owned by production Pulse Analysis",
+  "productionReplaced": false,
+  "layers": {
+    "function": {"status": "pass-boundary", "evidence": ["file selection/check/remove/analyze/settings/result-scope/export intents map to production method names", "public pulse-read provider is detected without cloning the stateful production service", "scientific extraction math is not duplicated"]},
+    "structure": {"status": "pass", "evidence": ["1 page header", "1 data-control PRIME", "2 complete result PlotViews", "1 complete raw PlotView in PRIMARY flow", "1 managed result table"]},
+    "geometry": {"status": "pass", "evidence": ["1840px analysis width vocabulary remains accepted", "raw plot clamp(360px,42vh,440px)", "result plots 380px -> 440px at narrow width", "174px result-scope control", "540/380/220 split sizing and 980px reflow"]},
+    "style": {"status": "pass", "evidence": ["no shadow CSS", "all chrome/surface/control paint is Unit/Core-owned", "no production Pulse private visual class is copied"]},
+    "interaction": {"status": "pass-after-contract-fill", "evidence": ["raw PlotView delegates position ownership to raw-diagnostic PRIME", "result PlotViews keep complete position/export ownership", "canonical actions/check/list/table/split controller preserve interaction ownership"]},
+    "responsive": {"status": "pass-after-contract-fill", "evidence": ["SplitPane reflows at the native 980px boundary via reflowBelow", "two-card result grid and form grid remain Unit layout recipes", "no plugin media query or container CSS"]},
+    "mobile": {"status": "pass", "evidence": ["no platform branch in shadow source", "data-control and scientific-secondary remain semantic PRIME roles", "split reflow and presenter projection are Core-owned"]}
+  },
+  "unitContract": {
+    "unitCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": ["prime:fixed-titleless-adopt"],
+    "nonUnitGap": "Production Pulse Analysis keeps its complete stateful batch-analysis service private to its activation scope. Full numeric A/B execution needs a future generic domain-adapter/service seam, not another UI Unit."
+  },
+  "functionMap": {
+    "check-one": "setFileChecked",
+    "check-all": "setAllChecked",
+    "remove": "removeChecked",
+    "analyze-current": "analyzeCurrent",
+    "analyze-checked": "analyzeChecked",
+    "apply-settings": "applySettingsToChecked",
+    "result-scope": "setResultScope",
+    "fit-raw": "fitRaw",
+    "copy-results": "copyResults",
+    "export-results": "exportResults",
+    "export-raw-csv": "exportRawCsv",
+    "export-read-csv": "exportReadCsv",
+    "export-pulse-csv": "exportPulseCsv"
+  },
+  "plotTitles": ["当前文件 · 原始波形诊断", "脉冲条件 → 读取电流", "脉冲条件 → 脉冲电流"]
+}

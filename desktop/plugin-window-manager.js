@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { normalizeRelativeFile } = require('./plugin-package');
 const PlatformPresentation=require('../sdk/platform-presentation-contract');
+const {buildBuiltinTaskSourceBundle}=require('./builtin-task-source-bundle');
 
 const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'scientific-renderer',
@@ -134,13 +135,14 @@ function normalizeBuiltinAlgorithmProvider(appPath, pluginFolder, manifest) {
   if(!categories.length)return null;
   const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
   const entry=safeRelativeFile(pluginDir,manifest.entry,'algorithm provider entry');
+  const {taskSources,taskCoreSources}=buildBuiltinTaskSourceBundle(appPath,pluginDir,manifest);
   const scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
     const file=safeRelativeFile(pluginDir,raw,'algorithm provider script');
     if(!scripts.includes(file))scripts.push(file);
   }
   if(!scripts.includes(entry))scripts.push(entry);
-  return Object.freeze({source:'builtin',pluginId:String(manifest.id||''),version:String(manifest.version||''),pluginFolder,entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories});
+  return Object.freeze({source:'builtin',pluginId:String(manifest.id||''),version:String(manifest.version||''),pluginFolder,entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories,packageManifest:Object.freeze({...manifest}),taskSources,taskCoreSources});
 }
 
 function readBuiltinAlgorithmProviders(appPath) {
@@ -160,7 +162,7 @@ function normalizePackagedAlgorithmProvider(pkg,source='external') {
   const categories=normalizeAlgorithmCategories(manifest.algorithmCategories);if(!categories.length)return null;
   const entry=packageFile(pkg,manifest.entry,'packaged algorithm provider entry'),scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){const file=packageFile(pkg,raw,'packaged algorithm provider script');if(!scripts.includes(file))scripts.push(file);}if(!scripts.includes(entry))scripts.push(entry);
-  return Object.freeze({source,pluginId:String(manifest.id||''),version:String(manifest.version||''),entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories,packageFiles:Object.freeze({...pkg.files})});
+  return Object.freeze({source,pluginId:String(manifest.id||''),version:String(manifest.version||''),entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories,packageFiles:Object.freeze({...pkg.files}),packageManifest:Object.freeze({...manifest})});
 }
 
 function resolveAlgorithmProviders(appPath,externalPackages=[],overridePackages=[]) {
@@ -174,6 +176,7 @@ function normalizeBuiltinThemeProvider(appPath, pluginFolder, manifest) {
   if(String(manifest?.pluginType||'').trim().toLowerCase()!=='theme')return null;
   const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
   const entry=safeRelativeFile(pluginDir,manifest.entry,'theme provider entry');
+  const {taskSources,taskCoreSources}=buildBuiltinTaskSourceBundle(appPath,pluginDir,manifest);
   const scripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
     const file=safeRelativeFile(pluginDir,raw,'theme provider script');
@@ -183,7 +186,7 @@ function normalizeBuiltinThemeProvider(appPath, pluginFolder, manifest) {
   return Object.freeze({
     source:'builtin',pluginId:String(manifest.id||''),version:String(manifest.version||''),pluginFolder,entry,
     scripts:Object.freeze(scripts),styles:normalizeBuiltinPluginStyles(pluginDir,manifest.styles),
-    packageManifest:Object.freeze({...manifest})
+    packageManifest:Object.freeze({...manifest}),taskSources,taskCoreSources
   });
 }
 
@@ -282,6 +285,7 @@ function readBuiltinPluginWindows(appPath) {
           ? safeRelativeFile(pluginDir, windowSpec.runtime, 'plugin window runtime')
           : '';
         const presentationAssets=PlatformPresentation.assetsFor(manifest,'desktop');
+        const {taskSources,taskCoreSources}=buildBuiltinTaskSourceBundle(appPath,pluginDir,manifest);
         next.set(activity, Object.freeze({
           source:'builtin',
           mode:'dedicated',
@@ -299,6 +303,9 @@ function readBuiltinPluginWindows(appPath) {
           platformScripts:normalizePluginScripts(pluginDir,presentationAssets.platformScripts),
           platformStyleSources:normalizeBuiltinPluginStyles(pluginDir,presentationAssets.platformStyles),
           platformPresentationMode:presentationAssets.mode,
+          packageManifest:Object.freeze({...manifest}),
+          taskSources,
+          taskCoreSources,
           algorithmProvider:manifest.algorithmProvider===true,
           algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
           title:String(windowSpec.title || manifest.name || activity),

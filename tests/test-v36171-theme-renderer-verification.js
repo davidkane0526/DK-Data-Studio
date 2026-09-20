@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');const fs=require('fs');const path=require('path');const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');const Theme=require('../sdk/theme-contract');
 assert.equal(Theme.version,'3.10.0');assert(Theme.supports('contract.materialBlur'));assert(!Theme.supports('materialBlur'));assert(Theme.supports('contract.material.roles.floating'));
 const runtime=read('src/core/theme/material-renderer.js');for(const x of ['renderer.backdropBlur','BROKEN_MATERIAL_RENDERER','OPAQUE_MATERIAL_OCCLUSION','--dkds-material-renderer-version'])assert(runtime.includes(x));
@@ -10,5 +11,5 @@ const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Th
 for(const html of [read('src/index.html'),read('src/plugin-window/index.html')])assert(html.includes('core/theme/material-renderer.js')&&html.indexOf('core/theme/material-renderer.js')<html.indexOf('core/theme/runtime.js'));
 const aux=read('src/plugin-window/runtime.js');assert(aux.includes('themeRenderer:')&&aux.includes('themeMaterialProbe:'));
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
-const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.47.0');assert.equal(contract.themeContractVersion,'3.10.0');
+const contract=JSON.parse(read('sdk/contract.json'));assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));assert.equal(contract.themeContractVersion,'3.10.0');
 console.log('v3.61.71 Theme Contract 3.8 renderer verification checks passed.');

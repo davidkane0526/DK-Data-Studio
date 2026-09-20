@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');const {inspectCompositionSource}=require('../sdk/composition-contract');
+const runtime=fs.readFileSync('src/core/ui/modules/workbench/analysis.js','utf8');
+assert(runtime.includes('MOVABLE_PRIME_WITHOUT_CANONICAL_CHROME'),'runtime must reject surface-controlled movable existing PRIME without canonical chrome');
+assert(runtime.includes("const inheritedHandle=row.placementControl==='host'?'.dkds-portable-handle,.dkds-surface-header,.analysis-chart-title,.dkds-analysis-prime-head':undefined"),'host-managed data-control must retain the accepted 3.70.5 handle discovery without weakening surface-controlled PRIME');
+let result=inspectCompositionSource("workbench.registerPrime({id:'x',presentationRole:'inspector',existingNode:node,placements:['right','bottom']});");assert(result.issues.some(x=>x.code==='MOVABLE_PRIME_WITHOUT_CANONICAL_CHROME'));
+result=inspectCompositionSource("workbench.registerPrime({id:'x',presentationRole:'inspector',existingNode:node,chrome:'auto',placements:['right','bottom']});");assert(!result.issues.some(x=>x.code==='MOVABLE_PRIME_WITHOUT_CANONICAL_CHROME'));
+result=inspectCompositionSource("workbench.registerPrime({id:'x',presentationRole:'data-control',existingNode:node,chrome:false,placements:['left','global','right','bottom']});");assert(!result.issues.some(x=>x.code==='MOVABLE_PRIME_WITHOUT_CANONICAL_CHROME'),'host-managed data-control is the accepted compatibility-free presentation contract, not a surface-chrome exception');
+result=inspectCompositionSource("workbench.registerPrime({id:'x',presentationRole:'inspector',existingNode:node,handle:'.dkds-surface-header',controlsHost:'.actions',placements:['right','bottom']});");assert(result.issues.some(x=>x.code==='MOVABLE_PRIME_AMBIGUOUS_SECTION_HEADER'));assert(!result.issues.some(x=>x.code==='INSPECTOR_WITHOUT_CANONICAL_HEADER'));
+console.log('Movable PRIME canonical chrome/template PASS');

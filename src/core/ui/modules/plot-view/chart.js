@@ -46,14 +46,24 @@ const plotRemove=(el,property)=>StyleGate.remove(el,property,{owner:PLOT_GEOMETR
     constructor(scope,id,card,spec={}){
       this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;this.contentGeometryOriginal=null;
       if(!this.card)throw new Error(`PlotView card not found: ${this.id}`);
+      this.titleless=this.spec.titleless===true||this.spec.header===false;
       this.card.classList.add('dkds-plot-view');
+      if(this.spec.surface==='scientific-card'){this.card.dataset.dkdsScientificCard='true';}
       this.plot=resolveScopedElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.dkds-scientific-chart-host',this.card)||this.card.querySelector('.analysis-chart')||this.card;
       this.plot?.classList?.add('dkds-plot-view-content');
-      this.header=resolveScopedElement(this.spec.header||'[data-dkds-plot-header],.analysis-chart-title,.dkds-chart-head,.dkds-surface-header',this.card);
-      if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
-      this.header.classList.add('dkds-plot-view-head');
-      this.header.classList.remove('dkds-surface-header');
-      this.ensureTitle();this.installTitleTicker();this.ensureActions();this.bindStandardActions();this.bindPortable();this.applyContentGeometry();
+      if(this.titleless){
+        const placements=Array.isArray(this.spec.placements)?this.spec.placements:['home','global'];
+        const hasActions=this.spec.csv!==false||this.spec.copy!==false||this.spec.images!==false||(Array.isArray(this.spec.actions)&&this.spec.actions.length);
+        if(hasActions)throw new Error(`PLOTVIEW_TITLELESS_WITH_ACTIONS: ${this.id}`);
+        if(this.spec.portable!==false&&new Set(placements).size>1)throw new Error(`PLOTVIEW_TITLELESS_MOVABLE: ${this.id}`);
+        this.header=null;this.title=null;this.actions=null;this.bindPortable();this.applyContentGeometry();
+      }else{
+        this.header=resolveScopedElement(this.spec.header||'[data-dkds-plot-header],.analysis-chart-title,.dkds-chart-head,.dkds-surface-header',this.card);
+        if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
+        this.header.classList.add('dkds-plot-view-head');
+        this.header.classList.remove('dkds-surface-header');
+        this.ensureTitle();this.installTitleTicker();this.ensureActions();this.bindStandardActions();this.bindPortable();this.applyContentGeometry();
+      }
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.resize('observer');});this.ro.observe(this.card);}
     }
     configure(spec={}){
@@ -69,12 +79,13 @@ const plotRemove=(el,property)=>StyleGate.remove(el,property,{owner:PLOT_GEOMETR
     }
     captureContentGeometry(){
       if(this.contentGeometryOriginal||!this.plot?.style)return;
-      this.contentGeometryOriginal={height:this.plot.style.height||'',minHeight:this.plot.style.minHeight||''};
+      this.contentGeometryOriginal={height:this.plot.style.height||'',minHeight:this.plot.style.minHeight||'',maxHeight:this.plot.style.maxHeight||''};
     }
     restoreContentGeometry(){
       if(!this.contentGeometryOriginal||!this.plot?.style)return;
       if(this.contentGeometryOriginal.height)plotSet(this.plot,'height',this.contentGeometryOriginal.height);else plotRemove(this.plot,'height');
       if(this.contentGeometryOriginal.minHeight)plotSet(this.plot,'min-height',this.contentGeometryOriginal.minHeight);else plotRemove(this.plot,'min-height');
+      if(this.contentGeometryOriginal.maxHeight)plotSet(this.plot,'max-height',this.contentGeometryOriginal.maxHeight);else plotRemove(this.plot,'max-height');
     }
     releaseContentGeometry(){
       if(this.contentGeometryOriginal)this.restoreContentGeometry();
@@ -86,29 +97,45 @@ const plotRemove=(el,property)=>StyleGate.remove(el,property,{owner:PLOT_GEOMETR
     }
     applyContentGeometry(){
       const ratio=Number(this.spec.contentAspectRatio);
-      if(!(ratio>0)){
+      const rawMin=Number(this.spec.contentMinHeight),rawMax=Number(this.spec.contentMaxHeight);
+      const hasMin=Number.isFinite(rawMin)&&rawMin>=0,hasMax=Number.isFinite(rawMax)&&rawMax>=0;
+      if(!(ratio>0)&&!hasMin&&!hasMax){
         if(this.contentGeometryOriginal)this.releaseContentGeometry();
         return this;
       }
-      const minHeight=Math.max(80,Number(this.spec.contentMinHeight)||120);
-      const maxHeight=Math.max(minHeight,Number(this.spec.contentMaxHeight)||360);
+      const minHeight=ratio>0?Math.max(80,hasMin?rawMin:120):(hasMin?rawMin:0);
+      const maxHeight=hasMax?Math.max(minHeight,rawMax):(ratio>0?Math.max(minHeight,360):null);
       this.captureContentGeometry();
       this.card.dataset.dkdsPlotGeometryOwner='core';
-      this.card.dataset.dkdsPlotAspectRatio=String(ratio);
-      plotToken(this.card,'--dkds-plot-content-ratio',String(ratio));
-      // Home cards keep the authored aspect ratio. Once a PlotView is moved
-      // into a dock, sticky viewport or floating window, that container owns
-      // the available scientific viewport height. Restoring authored geometry
-      // lets the shared flex contract stretch the plot without fighting it.
+      if(ratio>0){this.card.dataset.dkdsPlotAspectRatio=String(ratio);plotToken(this.card,'--dkds-plot-content-ratio',String(ratio));}
+      else{delete this.card.dataset.dkdsPlotAspectRatio;plotRemove(this.card,'--dkds-plot-content-ratio');}
+      // Home cards keep Unit-authored scientific content geometry. Once a PlotView
+      // is moved into a dock, sticky viewport or floating window, that container
+      // owns the available scientific viewport height, so restore authored values.
       if(this.card.dataset?.dkdsMobileRegion==='companion-right'||this.card.dataset?.dkdsMobileRegion==='companion-bottom'||this.card.classList.contains('is-floating')||this.card.classList.contains('is-global-floating')||this.card.classList.contains('is-docked')||this.card.classList.contains('is-sticky')){
         this.restoreContentGeometry();
         return this;
       }
-      const width=Number(this.plot?.clientWidth)||Number(this.card.clientWidth)||0;
-      if(width>0&&this.plot?.style){
-        const height=Math.max(minHeight,Math.min(maxHeight,Math.round(width/ratio)));
-        if(this.plot.style.height!==`${height}px`)plotSet(this.plot,'height',`${height}px`);
-        plotSet(this.plot,'min-height','0px');
+      if(this.plot?.style){
+        if(ratio>0){
+          // Preserve the established aspect-ratio execution path: the computed
+          // height already honors the Unit min/max detail geometry, while a
+          // zero min-height keeps flex/dock resizing behavior unchanged.
+          const width=Number(this.plot?.clientWidth)||Number(this.card.clientWidth)||0;
+          if(width>0){const height=Math.max(minHeight,Math.min(maxHeight,Math.round(width/ratio)));if(this.plot.style.height!==`${height}px`)plotSet(this.plot,'height',`${height}px`);}
+          plotSet(this.plot,'min-height','0px');
+          if(this.contentGeometryOriginal?.maxHeight)plotSet(this.plot,'max-height',this.contentGeometryOriginal.maxHeight);else plotRemove(this.plot,'max-height');
+        }else{
+          // contentMinHeight/contentMaxHeight are public Unit detail-geometry
+          // fields even when no aspect ratio is supplied. Honor them directly
+          // instead of requiring plugin CSS to recreate the same contract.
+          if(hasMin&&this.plot.style.minHeight!==`${minHeight}px`)plotSet(this.plot,'min-height',`${minHeight}px`);
+          else if(!hasMin&&this.contentGeometryOriginal?.minHeight)plotSet(this.plot,'min-height',this.contentGeometryOriginal.minHeight);
+          else if(!hasMin)plotRemove(this.plot,'min-height');
+          if(hasMax&&this.plot.style.maxHeight!==`${maxHeight}px`)plotSet(this.plot,'max-height',`${maxHeight}px`);
+          else if(!hasMax&&this.contentGeometryOriginal?.maxHeight)plotSet(this.plot,'max-height',this.contentGeometryOriginal.maxHeight);
+          else if(!hasMax)plotRemove(this.plot,'max-height');
+        }
       }
       return this;
     }
@@ -205,16 +232,25 @@ const plotRemove=(el,property)=>StyleGate.remove(el,property,{owner:PLOT_GEOMETR
     bindPortable(){
       if(this.spec.portable===false)return;
       const placements=Array.isArray(this.spec.placements)?this.spec.placements:['home','global'];
-      const portableSpec={title:this.spec.portableTitle||this.title?.textContent||this.id,useTargetAsWrapper:true,handle:this.header,controlsHost:this.actions,controlsPlacement:'start',placements,defaultPlacement:this.spec.defaultPlacement||'home',stateVersion:this.spec.stateVersion||'plot-view-v1',snap:this.spec.snap,...(this.spec.portableSpec||{})};
+      const portableSpec={title:this.spec.portableTitle||this.title?.textContent||this.id,useTargetAsWrapper:true,handle:this.header,controlsHost:this.actions,controlsPlacement:'start',placements,defaultPlacement:this.spec.defaultPlacement||'home',stateVersion:this.spec.stateVersion||'plot-view-v1',snap:this.spec.snap,...(this.titleless?{chrome:false}:{}),...(this.spec.portableSpec||{})};
       const factory=this.spec.portableFactory;
       this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
     }
     resize(reason='resize'){this.applyContentGeometry();this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
-    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.titleTickerCleanup?.();this.titleTickerCleanup=null;this.releaseContentGeometry();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.plot?.classList?.remove('dkds-plot-view-content');this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.titleTickerCleanup?.();this.titleTickerCleanup=null;this.releaseContentGeometry();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.plot?.classList?.remove('dkds-plot-view-content');this.card?.classList?.remove('dkds-plot-view');if(this.card?.dataset)delete this.card.dataset.dkdsScientificCard;this.header?.classList?.remove('dkds-plot-view-head');}
   }
 
   class PlotViewRegistry {
     constructor(scope){this.scope=scope;this.byId=new Map();this.byCard=new WeakMap();this.observers=[];}
+    create(id,host,spec={}){
+      const parent=resolveElement(host);if(!parent)throw new Error(`PlotView host not found: ${id}`);
+      const card=document.createElement('section');card.className='analysis-chart-card dkds-surface';card.dataset.dkdsPlotViewId=String(id||'plot');card.dataset.dkdsScientificCard='true';
+      const titleless=spec.titleless===true||spec.header===false;
+      if(!titleless){const header=document.createElement('header');header.className='analysis-chart-title';header.dataset.dkdsPlotHeader='true';const title=document.createElement('span');title.className='dkds-plot-view-title';title.textContent=String(spec.title||id||'');const actions=document.createElement('span');actions.className='dkds-plot-view-actions dkds-integrated-action-group';actions.dataset.dkdsPlotActions='true';header.append(title,actions);card.appendChild(header);}
+      const plot=document.createElement('div');plot.className='analysis-chart dkds-scientific-chart-host';plot.dataset.dkdsPlot='true';card.appendChild(plot);parent.appendChild(card);
+      const view=this.bind(id,card,{...spec,titleless,plot,header:titleless?false:'[data-dkds-plot-header]',actionsHost:titleless?false:'[data-dkds-plot-actions]',surface:spec.surface||'scientific-card'});view.plotHost=plot;
+      try{spec.render?.(plot,view);}catch(err){view.dispose?.();card.remove?.();throw err;}return view;
+    }
     bind(id,card,spec={}){
       const node=resolveElement(card);if(!node)throw new Error(`PlotView card not found: ${id}`);
       const key=String(id||node.dataset?.plotViewId||'plot');let view=this.byCard.get(node)||this.byId.get(key)||null;

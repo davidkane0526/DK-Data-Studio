@@ -4,41 +4,28 @@ const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root
 process.env.NODE_PATH=[path.join(root,'src/core'),process.env.NODE_PATH||''].filter(Boolean).join(path.delimiter);Module._initPaths();
 const presenterSource=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const css=read('src/styles/platform/native-workspace-presentation.css');
-assert(presenterSource.includes('const max=Math.max(autoMax,Math.min(680,hardMax))'),'Drawer hard ceiling must allow measured width-critical content to use the available phone viewport.');
-assert(presenterSource.includes('scroll>client+2')&&presenterSource.includes('rect.right-boundary.right'),'Drawer fit must combine outer geometry overflow with intrinsic text/content overflow.');
-assert(presenterSource.includes('Math.min(bounds.max,Math.ceil(target+overflow+8))'),'Content-fit may exceed the compact auto target only when measured overflow requires it.');
-assert(css.includes('max-width:min(calc(100vw - 12px),680px)'),'CSS ceiling must match the runtime content-fit ceiling.');
+assert(presenterSource.includes('solveMinimumReasonableWidth(frame,region='),'Drawer automatic width must use the shared measured minimum-reasonable-width solver.');
+assert(presenterSource.includes('surfaceReasonableFloor(frame,region='),'Drawer must start from the Unit semantic floor.');
+assert(presenterSource.includes('measureSurfaceOverflow(frame)'),'Drawer solver must evaluate final rendered overflow after Unit/container reflow.');
+assert(!/viewport\*\.[0-9]+/.test(presenterSource),'Drawer automatic width must not be a viewport percentage.');
+assert(!css.includes('width:min(32vw,420px'),'CSS must not restore the retired one-third/420px automatic width.');
+assert(css.includes('max-width:calc(100vw - 12px)'),'Physical viewport bounds remain the only outer safety ceiling.');
 
-// Screenshot-class viewport regression: at 436 px wide the old 88vw ceiling was
-// ~384 px and could clip the rightmost Vg control. Model a natural three-tab row
-// ending at 396 px. The solver must grow just beyond that measured edge, not to
-// the full available 424 px.
-global.DKDSStyleGate={
-  KINDS:{RUNTIME_INLINE:'runtime-inline',CONFIG_TOKEN:'configuration-token'},
-  set(el,property,value){if(el?.style?.setProperty)el.style.setProperty(property,String(value));else if(el?.style)el.style[property]=String(value);return value;},
-  remove(el,property){if(el?.style?.removeProperty)el.style.removeProperty(property);else if(el?.style)delete el.style[property];return true;}
-};
-const oldWindow=global.window,oldStorage=global.localStorage,oldRaf=global.requestAnimationFrame,oldCancel=global.cancelAnimationFrame;
-global.window={innerWidth:436};global.localStorage={getItem(){return null;},setItem(){}};global.requestAnimationFrame=fn=>{fn();return 1;};global.cancelAnimationFrame=()=>{};
+// A simple shrinkable parameter surface should resolve to the compact semantic
+// probe floor; content that really cannot fit may grow only by its measured deficit.
+global.DKDSStyleGate={KINDS:{RUNTIME_INLINE:'runtime-inline',CONFIG_TOKEN:'configuration-token'},set(el,p,v){el.style?.setProperty?.(p,String(v));return v;},setToken(el,p,v){return this.set(el,p,v);},remove(el,p){el.style?.removeProperty?.(p);return true;}};
+class Style{constructor(){this.m=new Map();}setProperty(k,v){this.m.set(k,String(v));}removeProperty(k){this.m.delete(k);}getPropertyValue(k){return this.m.get(k)||'';}}
+const oldWindow=global.window,oldStorage=global.localStorage,oldMO=global.MutationObserver;
+global.window={innerWidth:744};global.localStorage={getItem(){return null;},setItem(){}};global.MutationObserver=undefined;
 delete require.cache[require.resolve('../src/core/ui/modules/presentation/mobile-web-surface')];
 const {MobileWebSurfacePresenter}=require('../src/core/ui/modules/presentation/mobile-web-surface');
 const runtime=new MobileWebSurfacePresenter();
-let frame;
-const vgRow={hidden:false,classList:{contains:()=>false},matches:()=>false,style:{overflowX:''},clientWidth:42,scrollWidth:42,getBoundingClientRect(){return {left:12,right:396};}};
-const content={classList:{contains:()=>false},getBoundingClientRect(){const width=Number.parseFloat(frame.style.width)||320;return {left:0,right:width};},querySelectorAll:()=>[vgRow]};
-frame={isConnected:true,dataset:{},children:[content],style:{width:''},getBoundingClientRect(){const width=Number.parseFloat(this.style.width)||320;return {left:0,right:width,width};}};
-runtime.fitDrawerToContent(frame,'pulse-parameters');
-const solved=Number.parseFloat(frame.style.width);
-assert.equal(solved,404,'436 px screenshot-class drawer should grow to measured Vg edge + 8 px safety only.');
-assert(solved>436*.88,'Regression must prove the old 88vw cap no longer clips the Vg tab.');
-assert(solved<436-12,'Content fit must not greedily consume the whole phone viewport.');
+const makeFrame=required=>{const style=new Style();let frame;const child={hidden:false,classList:{contains:()=>false},matches:()=>false,style:{overflowX:''},get clientWidth(){return Math.max(1,(parseFloat(style.getPropertyValue('width'))||260)-20);},get scrollWidth(){return Math.max(this.clientWidth,required||0);},getBoundingClientRect(){return {left:10,right:10+this.clientWidth,width:this.clientWidth};}};const content={classList:{contains:()=>false},matches:()=>false,style:{overflowX:''},get clientWidth(){return parseFloat(style.getPropertyValue('width'))||260;},get scrollWidth(){return this.clientWidth;},querySelectorAll(){return [child];},getBoundingClientRect(){return {left:0,right:this.clientWidth,width:this.clientWidth};}};frame={isConnected:true,dataset:{},children:[content],style,parentElement:{clientWidth:744},querySelectorAll:()=>[],closest:()=>null,getBoundingClientRect(){const width=parseFloat(style.getPropertyValue('width'))||260;return {left:0,right:width,width};}};return frame;};
+const semanticFloor=runtime.semanticSearchFloorPx();
+assert(semanticFloor<160,'Semantic Drawer probing must not reuse the ordinary 260px PortableView minimum.');
+assert.strictEqual(runtime.solveCompactDrawerWidth(makeFrame(0)),semanticFloor,'Simple parameter content should stop at the compact semantic probe floor.');
+const fitted=runtime.solveCompactDrawerWidth(makeFrame(316));
+assert(fitted>=335&&fitted<=338,`Real overflow should grow only to its actual requirement, got ${fitted}.`);
 
-// Intrinsic clipping must also count even when the button border box is inside
-// the drawer. This catches long command labels whose text is truncated internally.
-const intrinsic={hidden:false,classList:{contains:()=>false},matches:()=>false,style:{overflowX:''},get clientWidth(){const width=Number.parseFloat(frame.style.width)||320;return Math.max(60,width-300);},scrollWidth:96,getBoundingClientRect(){const width=Number.parseFloat(frame.style.width)||320;return {left:12,right:Math.min(width-12,180)};}};
-content.querySelectorAll=()=>[intrinsic];frame.style.width='';
-const intrinsicSolved=runtime.solveCompactDrawerWidth(frame);
-assert(intrinsicSolved>=404&&intrinsicSolved<=424,'Intrinsic button text overflow must expand the drawer but remain viewport-bounded.');
-
-global.window=oldWindow;global.localStorage=oldStorage;global.requestAnimationFrame=oldRaf;global.cancelAnimationFrame=oldCancel;
-console.log('v3.68.104 parameter drawer content-fit / Vg visibility regression PASS.');
+global.window=oldWindow;global.localStorage=oldStorage;if(oldMO===undefined)delete global.MutationObserver;else global.MutationObserver=oldMO;
+console.log('v3.68.104 parameter drawer measured minimum-width regression PASS.');

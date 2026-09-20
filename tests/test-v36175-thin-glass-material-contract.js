@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
@@ -6,7 +7,7 @@ const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.47.0');
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.49.0'));
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');

@@ -1,5 +1,6 @@
 'use strict';
 const Intent=require('./intent');
+const {contextMenuInteractionWithin}=require('./transient-registry');
 
 const text=value=>String(value??'');
 
@@ -87,7 +88,9 @@ class MobileGestureAdapter {
       const drawerFrameSelector='.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-mobile-active="true"]';
       const activeDrawerFrames=[...document.querySelectorAll?.(drawerFrameSelector)||[]];
       const eventPath=typeof event.composedPath==='function'?event.composedPath():[];
-      const targetDrawerFrame=event.target?.closest?.(drawerFrameSelector)||activeDrawerFrames.find(frame=>eventPath.includes(frame)||frame.contains?.(event.target))||null;
+      const directDrawerFrame=event.target?.closest?.(drawerFrameSelector)||activeDrawerFrames.find(frame=>eventPath.includes(frame)||frame.contains?.(event.target))||null;
+      const logicalDrawerFrame=directDrawerFrame||activeDrawerFrames.find(frame=>contextMenuInteractionWithin(event.target,frame))||null;
+      const targetDrawerFrame=logicalDrawerFrame;
       // Outside-dismiss is frame-owned. The projected plugin node, the resize
       // rail and every descendant control are all equally "inside" the drawer.
       // Looking for one particular direct-child shape made ordinary parameter

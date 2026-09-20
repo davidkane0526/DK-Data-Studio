@@ -1,3 +1,1084 @@
+# 3.71.105 WIP — retained Unit List identity across Presenter reparent
+
+- Added a retained Unit List handle with atomic `setItems()` / `items()` and Core-owned ListItem `leading / title / meta` anatomy. Dynamic collections now update the concrete Unit instance instead of rediscovering DOM after Presenter reparenting.
+- Data Center now retains the Unit List returned by its production Unit presentation. Project-restored metadata is submitted as bounded item descriptors; the runtime no longer queries `#dcArtifactList` from the old page/global tree after the data-control PRIME moves into the Mobile Drawer.
+- Data Center remains metadata-first for catalog rendering; full Artifact payloads are read only for scientific preview/actions.
+- App 3.71.105 / Data Center 1.15.37 / SDK 1.51.43 / Unit Templates 2.5.38 / Android versionCode 245.
+
+# 3.71.104 WIP — Data Center Unit-list materialization + Mobile Drawer popup containment
+
+- Data Center artifact rows now materialize through the canonical Unit ListItem contract in an off-DOM stage and commit atomically. One malformed restored metadata record degrades only that row instead of aborting the full catalog after the already-computed object count has been displayed.
+- Selectable Unit ListItems synchronously publish the Core `menuItem` component identity, so normal/selected text and surface appearance do not depend on a later mutation-hydration pass.
+- Mobile Drawer outside-tap handling now understands logical transient descendants. A ContextMenu/select popup anchored inside the active Drawer remains part of that Drawer even when the popup DOM is portaled under `document.body`; tapping an option no longer toggles the parameter Drawer closed.
+- The interaction fix is domain-blind and uses the transient registry anchor relationship rather than plugin IDs or control-specific exceptions. Data Center keeps bounded metadata for catalog paint and full Artifact loading only for operations that require scientific data.
+- Added executable regression coverage for atomic Unit-list rendering and portaled popup containment while preserving genuine outside-tap dismissal. SDK 1.51.42 / Unit Templates 2.5.37 remain unchanged.
+
+# 3.71.103 WIP — Mobile orientation reflow + Data Center portrait recovery
+
+- Mobile Presenter now re-runs Drawer intrinsic width fitting whenever an existing projected Drawer is reprojected after viewport/orientation changes. Persisted width remains a user preference, but the live minimum-reasonable-width contract is recomputed so a landscape-to-portrait transition cannot leave parameter controls or non-wrapping actions in an unusably narrow Drawer.
+- Unit SplitPane narrow-layout reflow is now axis-aware. Only horizontal (`axis:x`) splits may collapse to a vertical stack at `reflowBelow`; vertical (`axis:y`) scientific/result splits remain a resizable top/bottom grid, preserving the Vth drag seam and allowing the result region to consume the remaining visible block extent in portrait.
+- Data Center Mobile keeps its source preview full-width and formula/derived-column tools beside Generic Chart Preview at ordinary portrait widths. The two-column composition now collapses only below 420 CSS px instead of the former 680 px tablet threshold.
+- Mobile auto-flow PRIMARY hosts are geometry/scroll owners only and no longer paint a second Material background/shadow behind child Unit Panels. This removes the false horizontal shadow edge that could appear midway through long Data Center content while preserving child-panel material ownership.
+- Data Center artifact catalogs are explicitly invalidated on artifact changes and project restore/reset. List rendering consumes bounded metadata snapshots directly rather than projecting them as full Artifacts, so replacing the Artifact Store with the same numeric revision cannot leave a correct object count with an empty sidebar. Full Artifacts remain loaded only for operations that require scientific data.
+- Added executable orientation/restore regression coverage, including same-revision Store replacement, Drawer refit, vertical SplitPane preservation, portrait Data Center two-column composition and current Material ownership. Obsolete whole-file CSS SHA gates were replaced by semantic ownership/runtime checks where they blocked legitimate responsive fixes.
+
+# 3.71.102 WIP — Mobile companion projection-shell ownership
+
+- Fixed the real final-DOM cause of the Resonance Mobile Curve Inspector / GroupArea height regression. Mobile Presenter created a `.dkds-mobile-surface-frame` but, for non-Drawer companions, could leave the live Surface beside that frame in the same flex slot. The empty frame and the real Surface were therefore two `flex:1` siblings and split the available companion block size roughly in half.
+- Non-Drawer projection now enforces one physical hierarchy: `slot -> mobile surface frame -> live Surface`. Stable projection validation additionally requires `frame.contains(surface)`, so an empty frame plus sibling Surface cannot enter the no-mutation fast path.
+- The fix is Core Presenter-only and domain-blind: no Resonance/TER/Pulse/Vth/Data Center branch, plugin CSS override, Unit recipe change, scientific algorithm change, or new height ratio was added.
+- Real Chromium validation uses the actual `PluginWorkspace -> PortableView -> Mobile Presenter` runtime. After 200 ms, the right lane/frame/Inspector are all 133 x 441 px and the bottom lane/frame/Group are all 390 x 252 px, with exactly one frame child per slot and both live Surfaces contained by their frames.
+- Historical Desktop Visual Closure remains unchanged and non-authoritative for Android pixel acceptance; Desktop presentation code is not modified by this patch.
+
+# 3.71.101 WIP — Mobile semantic-home companion ownership
+
+- Fixed a persisted-state split in Mobile scientific presentation: an Inspector explicitly returned to `right`, or a scientific-secondary Group explicitly returned to `bottom`, now resolves to the same Presenter-owned semantic companion lane as a fresh default state. Historical gesture source no longer selects a second geometry contract for the same visible placement.
+- Genuine alternate user placements remain PortableView-owned (`Inspector -> bottom`, `Group -> right`, float/global), preserving placement freedom without allowing canonical home lanes to fork by history.
+- The repair is domain-blind and changes no Resonance plugin source/CSS, Unit recipe, scientific algorithm, Desktop split geometry or Plugin API. Historical Desktop Visual Closure remains history only; Android visual acceptance is still required.
+
+# 3.71.100 WIP — Mobile companion SplitController single-owner geometry
+
+- Fixed the remaining Mobile scientific companion height/width regression without any Resonance-specific branch. PluginWorkspace right/bottom companions now have proportional Mobile defaults resolved against the actual Workspace extent (`34%` Inspector lane, `36%` Group lane) while Desktop keeps its established authored pixel geometry.
+- Removed the second Mobile CSS geometry owner. Native workspace CSS now consumes the final `SplitController` tokens directly instead of applying an additional `vw/vh` clamp over them. User resizing, rotation and reopen therefore resolve through one state path.
+- Mobile companion splits no longer mix their proportional policy with the former fixed `320/240px` reserve caps. Mobile compactability is expressed at the generic Workspace split contract; Unit content remains internal to the allocated shell.
+- Advanced the Core Mobile split persistence schema to `workspace-owned-v2` so stale right/bottom sizes produced by the previous dual-owner model cannot keep contaminating the corrected geometry on real devices. Desktop split state is untouched.
+- Kept Mobile resize interaction single-owned by the visible Workspace seam. Desktop held-title compatibility remains, but touch clients do not install a second resize gesture.
+- Presenter remains content-independent and domain-blind: no Unit descendant measurement, Resonance/TER/Pulse/Vth identity, profile allocator or plugin-local Mobile geometry was added. Historical Desktop Visual Closure remains unchanged.
+
+# 3.71.99 WIP — Universal Mobile companion workspace ownership
+
+- Removed the profile-specific `accepted-scientific` Mobile outer-geometry path. Every semantic `companion-right` / `companion-bottom` now uses one framework contract: Workspace `SplitController` preference -> live viewport bound -> CSS track.
+- Removed companion content-driven geometry negotiation from `MobileWebSurfacePresenter`: Unit minima, `scrollHeight`, descendant overflow, ResizeObserver/MutationObserver content feedback and profile allocators cannot write Mobile right/bottom tracks. Unit detail geometry remains internal to the allocated Surface.
+- Replaced per-profile Mobile split generations with one Core-owned `MOBILE_SPLIT_STATE_SCHEMA=workspace-owned-v1`, isolating Mobile from Desktop without plugin/profile-specific migration keys.
+- Preserved the parameter Drawer as a separate overlay contract; its Unit-intrinsic minimum-width solver does not participate in scientific companion allocation.
+- Removed the obsolete `mobile-scientific-workspace-allocation` composition module. `mobile-web-surface.js` is materially smaller and no longer owns companion content geometry.
+- No plugin identity branch or Resonance/TER-specific geometry rule was introduced. Historical Desktop Visual Closure remains history only; this WIP requires real Android acceptance.
+
+# 3.71.98 WIP — Mobile companion restoration and Drawer-close isolation
+
+- TER parameter Drawer close no longer passes through companion resync. Releasing a non-companion frame cannot schedule scientific Grid/Unit/chart resize, eliminating the close-time heatmap repaint chain.
+- `accepted-scientific-v1` no longer uses the redundant JavaScript shadow track allocator. Workspace split state + Mobile CSS are the single outer-geometry writer.
+- Restored the stable 3.71.60 accepted-scientific viewport bounds (`46vw / 58vh`) and scroll-safe companion projection boundary instead of the later `46% / 58% + overflow:hidden` clipping contract.
+- Added a Mobile-only `accepted-scientific-v2` split-state generation so stale right/bottom sizes written by the broken Mobile geometry series are invalidated once without touching Desktop or parameter Drawer state.
+- No TER/Resonance plugin-ID geometry branches were added.
+
+# 3.71.97 WIP — accepted-scientific workspace-owned Mobile allocation
+
+- Restored the stable outer-geometry ownership model for `accepted-scientific-v1`: right/bottom companion tracks consume only Workspace defaults, user split preference and the live scientific canvas bounds. Unit intrinsic/content geometry remains internal to each Surface.
+- The Resonance-compatible scientific path bypasses companion content ResizeObserver/MutationObserver negotiation entirely. No `scrollHeight`, Unit minimum, Drawer width or projected-root lifecycle can feed back into the outer right/bottom tracks.
+- Removed the 3.71.96 projection-integrity style guard. Projection lifecycle keeps only a detach observer so a parked PRIME can retire its empty Drawer frame immediately; projected-root style is no longer watched or reasserted.
+- The cutover is profile-based (`accepted-scientific-v1`), not plugin-identity based. Other plugin workspaces retain their existing 3.71.96 behavior. Parameter Drawer geometry, single-row parameter Header, final-table fill, safe insets and Material flattening are unchanged.
+
+# 3.71.96 WIP — Mobile projection integrity / immediate Drawer retirement
+
+- Mobile Presenter now treats projected Surface outer geometry as a live invariant instead of a one-time mount normalization. Scientific companion roots are explicit `height:100%` flex children, and a root-style MutationObserver reasserts only Presenter-owned outer geometry if a later Unit/Portable lifecycle rewrites it.
+- A projected PRIME/companion moved out of its Mobile frame is detected in the same DOM microtask and its obsolete frame is retired immediately. This removes the transient blank Drawer shell seen when TER parameters close before the next Presentation snapshot.
+- The projection guard ignores ordinary descendant chart DOM mutations; it reacts only to projected-root style changes or actual root detachment, preserving render performance.
+- No plugin identity branch, Resonance-specific size, TER-specific close path, Drawer occupancy token or Desktop geometry change was introduced. Historical Desktop Visual Closure records remain unchanged; this patch is Mobile-only.
+- Chromium runtime evidence uses the generated `ui-infrastructure.js`: a 260 px Resonance-style companion root remains 260 px after a forced `height:auto` rewrite, and moving a projected PRIME to parking removes its frame before the next Presentation snapshot.
+
+# 3.71.95 WIP — Mobile companion root fill / parameter final-table fill / Material depth
+
+- Fixed the actual projected-root fill chain for Mobile scientific companions. Right/bottom Presenter frames are explicit flex shells and the projected Surface root consumes the complete frame; the existing internal Inspector/Group body remains the only scroll owner. No Resonance card sizing or domain-specific Core branch was added.
+- Restored parameter PRIME fill-height while projected into the Mobile Drawer. The Drawer content host now allocates a `minmax(0,1fr)` content track plus the terminal safe row, allowing existing Unit `fill-rows` layouts such as Pulse Sampler to expand their final data table to the bottom of the current visible Drawer.
+- Restored the Material single-depth contract through the Drawer scroll/content wrappers. Projected parameter PRIME roots are transparent, borderless and shadowless inside the outer Drawer Material, removing the visible inner background edge/layer.
+- Kept the accepted parameter Header unchanged: Vd/Vs/Vg remain in the original single-row structure.
+- Real Chromium layout evidence on final authored CSS: at a 744×420 scientific viewport, Inspector/Group roots exactly consume their Presenter frames and their internal bodies scroll independently; in a 330×808 parameter Drawer fixture, the final fill-row table extends to the PRIME bottom and the projected PRIME computes `box-shadow:none`. Android hardware remains the release acceptance authority.
+
+# 3.71.94 WIP — Mobile final-visible geometry / single-row parameter Header
+
+- 3.71.92 and 3.71.93 are treated as failed Android visual candidates. Final Chromium layout showed that preserving two 220 px companion shell minima plus the 7 px seam required 471 px inside a 420 px scientific canvas, so GroupArea was necessarily pushed below the visible workspace.
+- Mobile scientific companions now fit both outer shells inside the live canvas when the comfortable minima cannot coexist. Curve Inspector and GroupArea keep their frames visible; each Unit's internal scroll body owns content overflow. The scientific canvas itself no longer grows merely to preserve those comfortable shell minima.
+- Parameter Header anatomy is preserved as the accepted single-row UI. The generic narrow-Drawer compact-stack fallback explicitly excludes `presentationPurpose=parameters`; Vd/Vs/Vg remain on the same row and intrinsic constraints raise the Drawer minimum instead of changing Header structure. No Pulse-specific Mobile CSS or fixed device-width threshold was added.
+- Parameter breathing room is enforced at the final Drawer clipping boundary. A shared Drawer content wrapper owns the physical 6 px top/inline safe inset and a real scroll-end node owns the 6 px bottom extent; descendant overflow beyond the projected PRIME is measured so the terminal breathing room remains after the actual content. The overall Drawer scrollbar remains hidden.
+- Active Mobile-projected Surface roots remain Presenter-owned for outer geometry; generic Unit reflow may settle managed descendants but cannot replay a pre-projection root recipe such as `height:100%`.
+- Extracted pure Mobile Presenter geometry helpers into `mobile-web-surface-geometry.js` to keep the Presenter below the repository 48 KiB module limit without weakening the architecture gate.
+
+## 3.71.93 WIP — Mobile effective geometry closure
+
+- Fixed the projected-PRIME double-writer path: Drawer measurement settles descendant Units without replaying root Layout geometry such as `height:100%`.
+- Separated hard block minimum from explicit preferred block size, so accepted Workspace preferences remain effective unless a real descendant Unit publishes a preference.
+- Scientific companion hard minima now create vertical canvas scroll extent on short viewports instead of being silently clipped by `overflow:hidden`.
+- Header Unit publishes live composite heading/actions inline geometry, covering nested Pulse Sampler Vd/Vs/Vg tabs without plugin-specific width constants.
+- Desktop Visual Closure history and desktop presentation ownership remain unchanged.
+
+# v3.71.92 WIP
+
+- Fixed Mobile scientific companion ownership: internal Unit scrollHeight no longer feeds Presenter outer block allocation; right companions consume only published Unit inline/block constraints.
+- Restored parameter PRIME as the sole four-side 6 px content-inset owner; removed Presenter bottom-padding handoff and terminal scroll spacer.
+- Tabs intrinsic containment now targets the real atomic Tabs component; Drawer fitting also enforces ordinary Unit content against the PRIME end inset.
+- Parameter Drawer remains a top-layer overlay, keeps the overall scrollbar hidden, and preserves the RAF-only width drag hot path.
+
+# 3.71.91 WIP — Mobile top-layer parameter overlay / intrinsic + scroll ownership closure
+
+- Parameter Drawer is now a true top-layer Mobile overlay. Opening or resizing parameters no longer publishes Drawer occupancy into the scientific canvas, no longer reduces the right companion track, and no longer shifts/narrows the bottom GroupArea. Inspector/Group keep their Presenter allocations underneath the Drawer; the Drawer overlay/frame renders above scientific panels.
+- Right/bottom companion projection shells are geometry-only (`overflow:hidden`). Resonance Desktop floating/docked width/height rules are explicitly excluded while a surface carries a Mobile presentation region, leaving exactly one internal Inspector/Group scroll owner.
+- Parameter scroll-end spacing is now physical scroll extent rather than an assumed PRIME box padding: the projected parameter PRIME hands off its 6 px block-end inset to a real Presenter-owned terminal spacer after the PRIME. This preserves the same visible 6 px bottom breathing room even when plugin content contains `height:100%` / fill children.
+- Tabs publish a generic hard inline intrinsic constraint through Unit Templates. Drawer fitting also checks published-target containment against the parameter PRIME content edge, so complete Vd/Vs/Vg anatomy can widen the Drawer instead of being clipped by `overflow-x:hidden`. An already-open Drawer refits when Unit inline constraints change.
+- Drawer width persistence advances to generation v19. The 25% live-page floor remains a lower bound only; legends remain width followers and never own parameter width. Width dragging stays RAF-only on the move path and no longer drives companion occupancy/reflow because the Drawer and companions are geometrically independent.
+- Overall Mobile parameter-list scrollbar remains hidden while touch/wheel scrolling remains active. Core still contains no TER/Resonance/Pulse/Vth identity branch. App **3.71.91 WIP**; Android `versionCode` **231**; SDK **1.51.38**; Unit Templates **2.5.34**; Plugin API **1.19.0**; Resonance **3.63.8**.
+
+# 3.71.90 WIP — Mobile companion live-fit / parameter Drawer scroll + drag closure
+
+- Parameter Drawer keeps one Presenter-owned vertical gesture-scroll viewport but removes its overall right scrollbar on Mobile (`scrollbar-width:none` / hidden WebKit scrollbar). The parameter PRIME remains the sole four-side content-inset owner at 6 px; projected parameter content now keeps natural block height so the 6 px bottom inset is visible at the end of the list instead of being swallowed by a forced viewport-height minimum.
+- Drawer resize hot path is animation-frame coalesced. Pointer/touch move now writes only the Drawer width and the Presenter occupancy token; managed Grid / Unit / scientific-chart reflow is deferred until gesture end, avoiding full companion/chart resize work on every move.
+- Companion right/bottom projection shells are no longer outer scroll owners. Their slots keep one 6 px Presenter safe inset and the projected Unit owns internal scrolling. Stale slot/frame scroll offsets are cleared only when entering a companion region, preventing a previous shell scroll position from clipping the newly projected Inspector/Group surface.
+- Generic companion block negotiation now combines published hard Unit minima with live preferred size from canonical internal vertical scroll owners. Presenter observes both DOM mutations and Unit geometry resize, so text wrapping, Grid column changes and scientific-plot resize can renegotiate Inspector/Group height after first open rather than freezing the initial measurement.
+- No Resonance/TER/Pulse/Vth identity was added to Core geometry code. App **3.71.90 WIP**; Android `versionCode` **230**; SDK **1.51.37**; Unit Templates **2.5.33**; Plugin API **1.19.0**.
+
+# 3.71.89 WIP — Mobile companion safe-area / visible parameter trailing inset
+
+- Fixed the remaining real-device parameter trailing-edge failure without adding a second content-inset owner. The Mobile Drawer scroll host now reserves a **3 px Presenter-owned scrollbar chrome lane** on the trailing edge; parameter-purpose PRIME still owns the only content inset (**6 px on all four sides**), so Android/WebView overlay scrollbar chrome can no longer visually consume the right inset.
+- Active right/bottom companion Surfaces now participate in sibling allocation only through generic Unit intrinsic constraints. `MobileWebSurfacePresenter` bounds the Drawer by the largest active companion inline minimum and reconciles an already-open Drawer when a companion becomes visible; no Resonance/plugin identity is interpreted by Core.
+- Resonance Curve Inspector migrates its accepted 320 px inline / 220 px block minimum into `PRIME.detailGeometry`; Resonance Group PRIME publishes a 220 px block minimum, while the generic GroupArea controller publishes its `minItemWidth` as a one-item inline constraint. These are constraints, not Mobile width/height writes.
+- Bottom companions now use a **real uncovered viewport** (`margin-inline-start` from the Presenter-owned Drawer occupancy) instead of full-width layout plus inner padding. Drawer occupancy changes schedule generic managed-Grid/scientific-plot reflow so GroupArea recomputes columns against the actually visible width.
+- The active right companion block minimum feeds the Mobile primary-track reserve, preventing a bottom GroupArea from starving Curve Inspector below its accepted block minimum when the viewport can satisfy both. Added bounded non-parameter `PRIME.detailGeometry.minContentBlockPx` to the Unit/SDK contract; parameter PRIME explicitly rejects it.
+- App **3.71.89 WIP**; Android `versionCode` **229**; SDK **1.51.36**; Unit Templates **2.5.32**; Plugin API **1.19.0**; Resonance **3.63.7**.
+
+# 3.71.88 WIP — Mobile parameter Surface width / legend / companion closure
+
+- Mobile parameter Drawers now have one product-level hard lower bound: **25% of the live page/viewport width**. This is a minimum only; the final first-open width still comes from the live Unit intrinsic-constraint resolver and may grow when real controls require it. Persisted widths remain preferences and move to Drawer generation v18.
+- Resonance no longer declares `minContentInlinePx:361` for its parameter PRIME. Parameter-purpose legends are excluded from inline intrinsic-width ownership and instead follow the assigned Drawer: at most three rows, adapting to two/one rows as space grows, with horizontal overflow and hidden scrollbar when three rows are insufficient. Resonance plugin CSS no longer owns legend flow.
+- Pulse Analysis no longer owns a 310/260 px parameter-width breakpoint. Its narrow form keeps a fluid two-column accepted Unit layout, while the horizontal file toolbar contributes only its real live `scrollWidth` through the shared intrinsic-overflow solver. The Drawer therefore shrinks until actual action content—not a magic plugin threshold—requires more room.
+- Pulse Designer parameter content headers may wrap under width pressure; compact tabs keep their real intrinsic width, the Drawer scroll viewport reserves a stable scrollbar gutter, and the 12 px resize hit target now straddles the outer Drawer edge (`right:-6px`) instead of covering the inner parameter inset. This prevents the trailing `Vg` tab from being clipped even after the user widens the Drawer.
+- Mobile Presenter publishes one `--dkds-mobile-drawer-occupied` token from the final Drawer allocation. Right companion tracks subtract that occupancy, and bottom companions receive matching leading space while the Drawer is open, preventing Resonance Curve Inspector / GroupArea from being hidden underneath the fixed parameter Surface.
+- App **3.71.88 WIP**; Android `versionCode` **228**; SDK **1.51.35**; Unit Templates **2.5.31**; Plugin API **1.19.0**. Pulse Analysis **2.12.12**, Resonance **3.63.6**.
+
+# 3.71.87 WIP — Uniform parameter PRIME inset / TER desktop spacing correction
+
+- Parameter-purpose PRIME outer spacing is now a single Core-owned contract on both Desktop and Mobile: **6 px on all four sides** from `BASE_METRICS.surface.parameterPrimeInsetPx`.
+- TER no longer owns a private 12 px parameter PRIME inset; its outer blank area is reduced by exactly **50%**. Pulse Sampler's former 14 px and Resonance's former 10 px parameter outer inset overrides are also removed so every parameter list follows the same rule.
+- Pulse Analysis and Vth, which previously had no plugin-specific outer inset declaration, now receive the same canonical 6 px spacing automatically. Internal Panel/Section padding remains independent and may still differ when it belongs to the inner Unit anatomy.
+- Parameter plugins may still compose Units freely and may declare accepted `minContentInlinePx`, responsive/layout detail, Panel anatomy and other documented tunables, but `presentationPurpose:'parameters'` now rejects `detailGeometry.contentInsetPx` to prevent a second outer-spacing owner. Non-parameter PRIME surfaces retain bounded `contentInsetPx`.
+- App **3.71.87 WIP**; Android `versionCode` **227**; SDK **1.51.34**; Unit Templates **2.5.30**; Plugin API **1.19.0**. TER **3.14.8**, Pulse Sampler **1.9.31**, Resonance **3.63.5**.
+
+# 3.71.86 WIP — Unit geometry constraint registry / bounded configuration policy
+
+- Added one generic `unit-geometry-constraints` subsystem for both inline and block axes. Layout, PRIME and PlotGroup/GroupArea publish Unit-owned intrinsic constraints; Mobile Presenter consumes generic resolvers only.
+- Mobile Presenter no longer interprets Layout-private recipe markers/reflow hooks or Unit-private constraint properties to allocate a Surface. Generic Unit reflow/constraint interpretation stays behind the composition boundary.
+- Formalized `single-writer-bounded-configuration-v1`: plugins keep composition freedom through explicitly accepted Unit variants/detail/responsive geometry, while Units remain the sole internal geometry writers and Presenter remains the sole final outer-Surface allocator. Persisted user geometry is preference-only.
+- Exposed read-only `units.geometryOwnershipPolicy` through the SDK and generated Unit reference so third-party authors can distinguish immutable ownership from bounded tunables. No plugin-specific Core branch or private Mobile CSS was added.
+- App **3.71.86 WIP**; Android `versionCode` **226**; SDK **1.51.33**; Unit Templates **2.5.29**; Plugin API **1.19.0** unchanged.
+
+# 3.71.85 WIP — Mobile block-axis single owner / PRIMARY scroll ownership
+
+- GroupArea/PlotGroup now publishes live Unit block constraints. One complete row is the minimum; all current rows at accepted PlotView aspect/min/max geometry are the preferred block size.
+- Mobile Presenter consumes only the generic Unit block contract and owns the final `companion-bottom` lane. The historical semantic `58vh / 680px` cap is removed; available viewport space and a real PRIMARY reserve form the final clamp.
+- Mobile bottom drag writes `--dkds-mobile-user-bottom-track` as a preference only. PortableView no longer applies its own `620px / .72` final cap.
+- PlotGroup Unit adoption publishes accepted PlotView detail geometry before re-solving the block contract, so Resonance/TER and future scientific groups share the same path with no plugin identity in Core.
+- Mobile platform CSS no longer makes every `.dkds-plugin-canvas-center` an `overflow:auto` owner. Only Workspace `primaryScroll:'auto'` grants that outer scroll viewport; contained Vth-style workspaces remain internally scroll-owned.
+- App **3.71.85 WIP**; Android `versionCode` **225**; SDK **1.51.32**; Unit Templates **2.5.28**; Plugin API **1.19.0** unchanged.
+
+# 3.71.84 WIP — Mobile geometry single-owner / Unit intrinsic minimum Phase 1
+
+- Replaced the Mobile parameter Drawer's Presenter-owned width heuristics with a Unit-constraint resolver. `MobileWebSurfacePresenter` no longer imports Layout recipes, knows `form-grid-2`, estimates plugin button/title text, or invents a generic two-column pixel target.
+- `LayoutUnitRuntime` now publishes the real local inline constraint implied by its responsive states and always evaluates those states against the **actual allocated width**. Removed the native-Drawer fake-width path that could let Core see ~311 px while plugin `responsiveGeometry` / CSS saw a smaller real width.
+- Added bounded PRIME `detailGeometry.minContentInlinePx`. A plugin may declare an accepted content minimum, but the PRIME Unit owns the inset and publishes one total Surface constraint; the plugin does not write Drawer width. Resonance migrates its accepted parameter composition to this contract.
+- Drawer saved width is now strictly a user preference. On every open the live Unit tree recomputes its minimum, then the saved preference is clamped to that minimum and the current viewport. Drawer persistence advances to `dkds.mobile.drawer-width.v17.*`.
+- Removed the Drawer scroll viewport's extra 6 px content padding. The projected PRIME/Surface is the sole outer content-inset owner; nested Panel padding remains internal Panel geometry. This removes the previous Drawer + PRIME + Panel triple-inset stack.
+- Mobile `.dkds-analysis-main` no longer owns a second scroll container, eliminating one source of right-side scrollbar/gutter geometry competing with the Unit workspace scroll owners. The existing Unit Workspace PRIMARY end-inset contract is intentionally unchanged in this Phase 1 WIP and will be reviewed separately against the Vth real-device screenshot.
+- Context menus/select popups now have one Core registry and a real toggle-close path. Mobile semantic projection dismisses open transient menus before a Surface is hidden/reprojected, preventing a popup layer from surviving after its owning menu/surface has closed.
+- Added executable acceptance for the new ownership model: canonical `form-grid-2` publishes 311 px as its last-resort boundary; a nested 311 px local minimum behind a 12 px PRIME inset resolves to a 335 px Drawer without any Presenter knowledge of the inset/recipe; PRIME content minima are consumed as constraints rather than width writes.
+- This phase deliberately does **not** claim closure of Resonance bottom-companion clipping or the remaining Vth PRIMARY right-side inset. Those are the block-axis / PRIMARY-edge ownership phase, not another inline-width patch.
+- App **3.71.84 WIP**; Android `versionCode` **224**; SDK **1.51.31**; Unit Templates **2.5.27**; Plugin API **1.19.0** unchanged; Resonance Workbench **3.63.4**.
+
+# 3.71.83 WIP — TER live Artifact hydration regression fix
+
+- Fixed the v3.71.82 regression where TER opened with `当前项目没有可用于 TER_max 的数据。` even though the active project contained valid transport data.
+- Root cause: v3.71.82 correctly made the dedicated-window project envelope data-empty for performance, but TER itself did not declare `artifactHydration:'live'`; therefore the real open path sent neither `project.dataModel` rows nor an `artifactSnapshot`.
+- TER now declares live Artifact hydration in the machine manifest, embedded runtime manifest, and runtime Activity contract. The first-open path continues to avoid `captureActiveProjectTab()` / `makeProject()` and keeps `project.dataModel` empty; scientific data arrives only through the live Artifact snapshot/revision channel.
+- Strengthened the existing v3.71.82 hot-path regression test to read the real TER manifest instead of mocking a `live` hydration contract that production did not actually have. No new broad gate was added.
+- TER Analysis **3.14.7**; App **3.71.83**; Android `versionCode` **223**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.82 WIP — TER click-path serialization removal + reusable-hide isolation
+
+- Removed synchronous full-project `captureActiveProjectTab()` and `makeProject()` from the dedicated TER open path. First open now sends a lightweight project envelope containing only the TER plugin slice; scientific data travels through the existing live Artifact snapshot/capability path.
+- Runtime-only dedicated prewarm no longer captures or serializes the active project. It receives an empty project envelope and warms renderer/Core/plugin/chart code only.
+- Advanced the plugin prewarm preference namespace to `dkds.plugin.prewarm.v2` so stale WIP-era TER `prewarm:false` values cannot silently keep the first TER renderer cold.
+- Added an Artifact Store revision token to dedicated-window bootstrap. The Electron main process uses that token instead of JSON-stringifying and SHA1-hashing the complete live Artifact snapshot on every open/promotion.
+- Reusable TOP close/hide now flushes only the target plugin state: no Artifact recovery delta, no full project snapshot and no owner-side `captureActiveProjectTab()`. Real `beforeunload` still retains the full recovery snapshot path.
+- The dedicated activity snapshot merger no longer serializes the whole owner project before/after applying a plugin-window state update. Genuine live Artifact changes still use the normal targeted Artifact event path.
+- Added executable `test-v37182-ter-window-hotpath.js` that fails if TER open/prewarm calls full-project serialization, if hide carries artifacts/full project, or if the owner hide merge wakes global data listeners.
+- TER Analysis **3.14.6**; App **3.71.82**; Android `versionCode` **222**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.80 WIP — TER first-open prewarm + close isolation
+
+- Restored `builtin.ter-analysis` dedicated-window `prewarm:true`. Historical accepted behavior used runtime-only TER prewarm so the hidden renderer warms Core/plugin/chart runtimes without project restore, TER calculation or chart drawing; later stale performance gates had incorrectly frozen `prewarm:false`, reintroducing first-click cold-start latency. Explicit user prewarm opt-out remains supported by the existing Plugin Manager preference layer.
+- Corrected dedicated-window final snapshot merge semantics. Activity windows already push Artifact deltas live, but their final recovery snapshot can contain the same accumulated upserts. The owner previously used unconditional `upsert()`, marked every replay as changed, emitted global `data:artifacts-changed`, and therefore caused Resonance to refresh all data plots when TER was merely closed. Artifact replay is now deduplicated through the canonical store `publish(...,{dedupe:true})` path.
+- Removed unconditional `renderAll()` + `scheduleMainPlotRelayout()` from `payload.final`. Final snapshot delivery is a persistence boundary, not a global visual invalidation. Genuine new Artifact changes still emit the normal data event exactly when data actually changed.
+- Embedded analysis-page close now restores the active SUPER with `{invoke:false,forceEmbedded:true}` instead of invoking its `onActivate`/domain render path again.
+- Cleaned the two stale gates responsible for preserving the TER regression: the unrelated v3.67.10 theme/split gate no longer owns TER prewarm policy, while the interaction-performance gate now verifies the useful contract: TER opts into **runtime-only** prewarm and that prewarm branch remains domain-inert until a real open. Added an executable v3.71.80 close-isolation test using the real Artifact store and real dedicated snapshot merge.
+- TER Analysis **3.14.5**; App **3.71.80**; Android `versionCode` **220**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged. Android compilation still runs no automatic pre-build tests/typecheck/Gradle-help preflight.
+
+# 3.71.79 WIP — Mobile Drawer + Desktop regression rollback
+
+- Mobile parameter Drawer minimum now preserves two actual canonical parameter tracks (128 px × 2 + fixed 9 px Unit gap) while controls remain shrinkable. Native Drawer Unit reflow keeps two-column recipes active without changing Desktop breakpoints.
+- Drawer inner inset is equal on all four sides and reduced from 10 px to 6 px; native scrollbar is back on the physical right edge with no extra outside inset.
+- Core mobile table surfaces (`dkds-table-surface-host` / `dkds-table-wrap` / `analysis-table-wrap`) keep a 160 px empty-body minimum so an empty table cannot collapse to only its header.
+- Restored Desktop `PluginWorkspace` and `SplitController` sources byte-for-byte to the 3.71.69 accepted baseline. Reverted the shared TER parameter layout and shared Unit synchronous reflow changes that were introduced only for Mobile work. The only TER parameter composition change is now guarded by `ctx.runtime.isNativeClient===true`.
+- Resonance committed box selection now explicitly requests main-surface repaint so the selected region/highlight persists after the transient drag overlay disappears.
+- SMB service dialog opts into a generic `dim` overlay effect that keeps the dim layer but disables background optical blur.
+- Android build path still runs no pre-build tests/typecheck/Gradle-help preflight.
+- App **3.71.79**, Android `versionCode` **219**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.78 WIP — Mobile Drawer two-column minimum / equal inset / left-edge scrollbar
+
+- Corrected the v3.71.77 minimum-width rule: the Drawer may no longer shrink into the canonical one-column parameter state. The parent-owned minimum is now derived from the actual Unit recipes. `form-grid` / `form-grid-2` switch to one column at `<=310px`, so the semantic content floor is `311px`; the final frame also reserves the canonical equal content inset, 1px frame borders and the native scrollbar width. On the 744 CSS px acceptance fixture the ordinary result is **336 CSS px**. This is a Unit-derived result, not a `vw`/percentage target.
+- Button sizing now protects a **pair** of visible actions, not only the widest individual button. A normal parameter/action composition can therefore remain at least two-up; ordinary Input/Select values still do not own Drawer width. Title text remains non-compressible.
+- Replaced the old direct-node Drawer scroll ownership with a dedicated `.dkds-mobile-drawer-scroll` viewport. The frame itself has **zero padding**. The scroll viewport owns one identical padding value on **top/right/bottom/left**, so the four outer content insets are the same.
+- The dedicated scroll viewport uses RTL only at the scroll-owner boundary to place the vertical scrollbar on the **physical left edge** of the Drawer. The projected parameter surface immediately restores `direction:ltr`, so parameter content/order stays normal. Because the frame itself has no padding, there is no blank strip between the panel edge and scrollbar.
+- Scrollbar Material paint moved to the real `.dkds-mobile-drawer-scroll` owner. The projected plugin surface no longer creates a second Drawer scrollbar.
+- Drawer persistence advances to `v15.<activityId>:<surfaceId>` so v14 widths that were allowed to resolve to a single-column-capable minimum cannot reopen. Curve Inspector geometry remains untouched.
+- The active Drawer acceptance now verifies the actual two-column Unit transition, usable width after padding/border/scrollbar reserves, complete button/title text, the dedicated scroll-host runtime structure, four-side equal inset ownership and left-edge scrollbar direction. `mobile:layout:acceptance` and `styles:build` pass.
+- App **3.71.78**, Android `versionCode` **218**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.77 WIP — Mobile Drawer readable compact width / symmetric inset
+
+- Corrected the over-correction introduced by 3.71.76: parent-owned Drawer sizing was compact but could collapse ordinary controls too aggressively. The compact semantic track now reuses the established Workspace density and resolves to about 244 CSS px for ordinary parameter content on the 744 CSS px acceptance viewport, without using viewport percentages.
+- All visible Drawer button labels are now non-compressible, not only primary/fill actions. Unit rows may reflow, but the button itself keeps its complete text. Semantic Drawer titles are also non-compressible. Ordinary input/select values remain shrinkable and cannot widen the panel.
+- Removed visible buttons from the generic shrinkable-control normalization pass. Fixed Unit gaps/padding remain untouched.
+- Added real symmetric Drawer frame inline inset using the canonical `--dkds-visual-pad-x` token, so the right breathing room matches the left while the resize handle stays on the outer edge.
+- Drawer persistence advances to `v14.<activityId>:<surfaceId>` so the too-narrow v13 widths cannot reopen. Curve Inspector ownership/width is unchanged in this round.
+- Replaced the active Drawer acceptance with `test-v37177-mobile-drawer-readable-width.js`, which executes the real Presenter and checks readable compact width, long ordinary values, all button labels, titles, fixed spacing, symmetric inset, and v14 persistence. `mobile:layout:acceptance` passes.
+- App **3.71.77**, Android `versionCode` **217**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.75 WIP — Mobile Drawer hard-constraint correction
+
+- Real-device v3.71.74 disproved persistence-scope as the complete root cause: ordinary field/check labels were still hard single-line width owners, so long labels could force every compact candidate to fail and return full available width.
+- Drawer width ownership now excludes ordinary field/check labels and generic role-button wrappers. Labels may wrap; input/select values do not own panel width.
+- Fixed Unit gaps/padding remain untouched. Real structural/control boundary overflow and actual Action button text clipping remain hard constraints.
+- Drawer persistence advances to `v12.<activityId>:<surfaceId>` so v11 full-width results cannot reopen.
+- Curve Inspector remains independent at Mobile 304 px / Desktop 390 px.
+- Replaced the stale gate that required field labels to own width with behavior checks matching the actual user contract.
+- App **3.71.75**, Android `versionCode` **216**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.74 WIP — Mobile compact Drawer state isolation / Curve Inspector width correction
+
+- Fixed the actual cross-plugin cause of the "all parameter panels reopen nearly full-page" regression. Every first-party parameter surface uses the semantic id `data-control`; v3.71.73 persisted Drawer width only by `surfaceId`, so one wide/failed/user-dragged `dkds.mobile.drawer-width.v10.data-control` value was reused by Resonance, TER, Vth and every other plugin. Drawer persistence is now **activity/workspace scoped** (`v11.<activityId>:<surfaceId>`), so one plugin can no longer widen another, and all failed/shared v10 widths are automatically invalidated.
+- Kept the minimum-width definition content-first and non-greedy: shrinkable fields/inputs/selects/wrappers may contract and Unit layouts may drop columns, while canonical Surface padding, Unit/control gaps, required labels/structure and complete primary/fill action text remain non-compressible. The fitter still uses the first valid responsive composition rather than a viewport percentage or binary-search assumption.
+- Expanded Drawer normalization to structural wrappers as well as individual controls. Fixed Desktop-authored intrinsic widths are capped to the assigned Drawer track instead of being allowed to make the parent wider; the fitter still never rewrites `gap`, `row-gap`, `column-gap` or padding.
+- Curve Inspector remains independent from the Drawer fitter. On native Mobile only, the canonical right-track first-open size is now **304 px instead of 390 px** for Resonance's accepted geometry (about **22% narrower**), while Desktop remains 390 px. Mobile right-split persistence moves to `compact-right-v1` so an older 390 px Mobile preference cannot immediately restore the wider Inspector. Seam dragging/persistence remains owned by the existing SplitController.
+- Added `test-v37174-mobile-compact-surface-geometry.js`, which executes workspace-scoped persistence isolation, non-greedy control writes without spacing compression, the non-monotonic first-valid Drawer solver, and the real Mobile right-track resolver. This is a targeted runtime acceptance, not a regex/visual gate and not a claim of Android pixel acceptance.
+- Android build behavior is unchanged from 3.71.71: APK compilation still performs no automatic test/typecheck/Gradle-help preflight.
+- App **3.71.74**, Android `versionCode` **215**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.73 WIP — Mobile Drawer minimum-width correction / Inspector rollback / acceptance cleanup
+
+- Rolled the Resonance Curve Inspector back out of the parameter-Drawer width experiment. The Mobile Presenter no longer calls any content-fit solver for `companion-right`, no longer writes a runtime Inspector minimum/default, and no longer changes the canonical right SplitController from Drawer measurement. The right split and PortableView Mobile state contract are restored to their pre-`content-fit-v2` / `mobile.m4` forms.
+- Replaced the Drawer binary-search fitter with an ascending **first-valid responsive composition** search. Responsive layouts are not monotonic: a narrower width can become valid when a Unit drops a column, so binary search could incorrectly skip the compact valid interval and select a nearly full-page width.
+- Corrected the non-greedy control rule. Input/select/field geometry may shrink with the Drawer and may reflow through Unit recipes, but the fitter no longer assigns `width:100%` to shrinkable controls. Ordinary values/options do not own panel width.
+- Made spacing explicitly non-compressible. The Drawer fitter never writes `gap`, `row-gap` or `column-gap`, and Mobile Drawer CSS no longer replaces canonical Unit/action/label spacing with smaller values. Unit padding/gaps, required labels/structure, and complete primary/fill action text are part of the true minimum-width constraint.
+- Advanced parameter-Drawer persistence to `dkds.mobile.drawer-width.v10.*` so widths learned by the failed greedy/binary-search generations cannot reopen. This affects Drawer state only; Inspector placement/width state is intentionally not versioned by this task.
+- Preserved Pulse Sampler's 3+3 tablet composition and Pulse Analysis's single sequential result flow from 3.71.72. Historical Pulse tests were corrected to the current shared `visual` flow owner instead of reverting production composition to satisfy stale expectations.
+- Removed the legacy regex/static **visual gate** from automatic `test`, `check`, `dist` and runtime automation paths. The source checker remains only as optional `visual:static-audit`; it is no longer accepted as proof that a layout is visually correct. The remaining Mobile layout acceptance executes the real Drawer solver, a deliberately non-monotonic responsive case, Inspector ownership rules and the Pulse flow contracts. Style ownership checks are reported as audits, not visual acceptance.
+- The v3.71.72 browser-style acceptance claim is explicitly **not carried forward as evidence**. Real-device feedback disproved that release, and the current environment cannot provide trustworthy Android/WebView visual acceptance. This WIP reports only executable contract/runtime acceptance plus source rollback parity; final UI acceptance remains the user's Android device.
+- Android build behavior from 3.71.71 is unchanged: APK compilation still has no automatic `mobile:test`, `typecheck` or Gradle `help` preflight.
+- App **3.71.73**, Android `versionCode` **214**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.72 WIP — Mobile semantic width solver / hierarchy root-cause correction
+
+- Reworked the Mobile Drawer/Inspector width solver after real-device feedback showed 3.71.70 had not fixed the visible regressions. The concrete root cause was that candidate widths were measured synchronously while Unit responsive reflow was deferred to `ResizeObserver`, so the probe could measure stale desktop/tablet column geometry and widen the surface even though the Unit would have collapsed at that width.
+- `LayoutUnitRuntime` now exposes an internal synchronous reflow hook for an already-mounted Unit layout. `MobileWebSurfacePresenter` invokes nested Unit reflow twice, parent-first, for every width candidate before checking overflow. `ResizeObserver` remains the ordinary runtime listener; the hook only closes the synchronous measurement race.
+- Made Mobile width probing explicitly non-greedy. Projected text/select/field/action controls are normalized to `min-width:0`, `max-width:100%` and bounded field width while measured. Ordinary field values/options no longer own the panel width. Primary/action text and explicit structural readability groups remain hard width requirements, so a compact surface cannot win by clipping an important filled button.
+- Drawer persistence advanced to `dkds.mobile.drawer-width.v9.*`. The Mobile right split now uses a `content-fit-v2` state generation, and PortableView Mobile placement state advanced to `mobile.m4`. These invalidate the stale Mobile-only widths/placements that could restore the broken geometry after the new solver ran; Desktop persistence is unchanged.
+- Resonance Curve Inspector keeps a single Presenter-owned companion hierarchy for ordinary right/bottom placement. Its canonical key/value metadata group is marked as a structural width-critical group, allowing the compact inspector to grow only as far as that real structure requires rather than using the Desktop split width.
+- Resonance/TER parameter Drawers no longer let Desktop intrinsic input/select widths greedily determine the surface. TER continues to use the existing `form-grid-2` Unit and can collapse to one column before asking for more panel width. No TER/Resonance private Mobile width was added.
+- Pulse Sampler extraction composition is now explicitly three equal tracks at normal tablet/landscape widths, yielding the requested **3 + 3** arrangement. It reflows to two tracks only at `<=620px` local width and one track only at `<=310px`.
+- Pulse Analysis now puts comparison controls, both bounded result PlotViews, result table, and raw diagnostic under the same sequential `visual` flow owner. Combined with the new Mobile PortableView state generation, stale persisted placement can no longer resurrect the overlapping/out-of-order composition.
+- Two independent verification methods were used for the reported regressions: executable source/runtime regression audits, plus a real headless Chromium layout pass using the generated UI runtime and the actual project/plugin CSS at a 744×496 CSS viewport. The Chromium pass resolved a representative TER Drawer to 122 CSS px with no primary-action clipping, a Resonance parameter/data Drawer to 156 CSS px, a Resonance Inspector to 198 CSS px with exactly one portable header, Pulse Sampler to 3 equal tracks at 700 px / 2 tracks at 600 px, and a strictly non-overlapping Pulse result order. These are browser measurements, not a claim of Android-device pixel acceptance.
+- Preserved the 3.71.71 Android build policy: `android-build` / `android-run` still perform no automatic `mobile:test`, TypeScript typecheck, or Gradle `help` preflight before APK compilation.
+- App **3.71.72**, Android `versionCode` **213**, Resonance Workbench **3.63.4**, Pulse Analysis **2.12.11**, Pulse Sampler Tool **1.9.30**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26**, TER Analysis **3.14.4** unchanged.
+
+# 3.71.71 WIP — Android direct compile path without pre-build tests
+
+- Removed the Android source-check phase from both `DKDS.cmd android-build` and `DKDS.cmd android-run`. They no longer invoke `npm run mobile:test` or `npm run typecheck` before APK compilation.
+- Removed the separate Gradle `help --no-daemon --info` no-fork preflight. The shared Gradle owner now configures the existing direct no-daemon JVM/agent settings and proceeds directly to `assembleRelease`.
+- Removed the GitHub Android workflow's pre-build TypeScript type-check step so local and CI Android release builds follow the same direct-build policy.
+- Kept only build prerequisites before compilation: JDK/Android SDK discovery/provisioning, dependency availability, release-signing setup, offline asset generation and Expo native project generation. These are required to invoke the build rather than regression tests.
+- Kept post-build APK verification, required runtime-asset checks and SHA-256 reporting. These run only after `assembleRelease` has produced an APK.
+- Updated Android documentation and stale tooling regression expectations so the old mandatory preflight/tests cannot be reintroduced as part of the build path. Manual `mobile:test` / `typecheck` commands remain available outside the APK build flow.
+- App **3.71.71**, Android `versionCode` **212**. SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26** unchanged.
+
+# 3.71.70 WIP — Mobile non-greedy width + Inspector/Pulse regression correction
+
+- Corrected the previous minimum-width model: the ordinary PortableView **260 px** minimum is no longer reused as the automatic Mobile Drawer/Inspector target. The Presenter now starts from a compact Unit-metric probe floor (three minimum actions + action gaps + Surface inline inset) and grows only when the reflowed DOM reports real overflow. This probe floor is not a visible target or viewport heuristic.
+- Advanced Drawer persistence to `dkds.mobile.drawer-width.v8.*` so widths saved while 260 px was incorrectly treated as the semantic minimum cannot return. No `vw`, `420px`, or tablet-percentage first-open owner was added.
+- Made projected Mobile fields explicitly shrinkable (`min-width:0`, bounded width) while preserving non-wrapping primary/action text for the overflow probe. Desktop plugin widths remain untouched.
+- Fixed semantic Inspector ownership: a user side/bottom dock no longer causes `inspector` / `scientific-secondary` surfaces to escape the Mobile Presenter and re-enter legacy full-width flow. Only explicit `float` / `global` / `sticky` overlay intent suspends semantic projection.
+- TER parameter controls now use the existing Unit `form-grid-2` layout, with long algorithm/check rows spanning the grid. This lets the control composition collapse before requesting a wider Drawer instead of letting TER desktop field widths greedily determine Mobile panel width.
+- Pulse Sampler keeps the shared `analysis-control-grid` Unit but adds plugin-declared responsive detail geometry: compact workspace width uses **three equal tracks per row**, with the existing true-narrow two-column fallback. No Mobile-only CSS special case was added.
+- Pulse Analysis now keeps compare controls, both bounded result PlotViews, and the result table under the same normal-flow Unit owner before the raw diagnostic. This removes the sibling-flow seam that allowed portable plot rendering to overlap the following section on Mobile.
+- Added `test-v37170-mobile-density-regression.js` and corrected historical gates that incorrectly protected the retired 260 px semantic Drawer floor / v7 width generation. The historical **Desktop Visual Closure** remains explicit history; this correction does not claim new Desktop pixel acceptance.
+- No new Unit or public API: SDK **1.51.30**, Plugin API **1.19.0**, Unit Templates **2.5.26 / 41 Units / 73 Layout recipes**. App **3.71.70**, TER **3.14.4**, Pulse Sampler Tool **1.9.29**, Pulse Analysis **2.12.10**, Android `versionCode` **211**.
+- Still **WIP** until the same Android device confirms the reported screenshots. Each reported regression is covered by two independent checks in this round: executable/runtime regression plus a separate ownership/source/manifest gate.
+
+# 3.71.69 WIP — Unit-aware minimum reasonable width + Mobile layout regression closure
+
+- Replaced the interim viewport-percentage Drawer/Inspector sizing experiment with one generic **minimum reasonable width** solver in `MobileWebSurfacePresenter`. First-open width now starts from the shared Unit portable readability/touch floor, lets the projected Unit/container-query layout actually reflow, measures canonical field/action/header overflow, and binary-searches the smallest non-overflowing width up to the real available surface width. No `32vw`, `30vw`, or `420px` first-open rule participates in this path.
+- Unified Mobile right-inspector geometry with the existing Core `SplitController`. The Presenter computes only the content-derived runtime minimum/default, while the canonical `--dkds-plugin-canvas-right-width` split track remains the single final width owner. A saved user seam width is preserved only when it is at least the current content-derived minimum. The projected companion stays hidden during the probe, avoiding a first-frame flash of the Desktop default width.
+- Advanced Drawer persistence to `dkds.mobile.drawer-width.v7.*`, intentionally isolating widths saved by the retired percentage/cap generations. Manual resize remains supported and is clamped by the current content-derived minimum plus the actual available workspace width.
+- Kept Pulse Sampler on the existing `analysis-control-grid` Unit recipe. `工程数据` no longer claims a whole row; the existing 6→4→3→2 responsive stages therefore recompose all six extraction items according to local Unit width instead of leaving `提取稳态电流` alone because one field greedily spans the grid.
+- Rebuilt Pulse Analysis comparison composition with the existing Unit Header/Note contracts: `结果比较` and the file-scope selector/actions share one non-stacked Header row, while explanatory text is a sibling Unit Note.
+- Kept Pulse result flow Unit-owned: both result cards have bounded Layout flow boxes matched to their PlotView detail geometry, and the table body remains a bounded `scroll-pane`. Mobile/plugin CSS do not re-own the result grid/card/table geometry.
+- Updated the Mobile regression gate to execute the width solver and `LayoutUnitRuntime`, including a high-DPI-like 744 CSS px viewport fixture where simple content resolves to the shared 260 px Unit floor and genuinely wider content grows only to its measured requirement instead of an arbitrary tablet cap.
+- Cleaned stale regression expectations that explicitly protected the retired 32vw/420px/30vw behavior. SDK native-state blueprint metadata was also resynchronized with the current Pulse Analysis source census (8 state occurrences) rather than weakening the census gate.
+- No new Unit or public API was introduced: Unit Templates remain **2.5.26 / 41 Units / 73 Layout recipes**, SDK **1.51.30**, Plugin API **1.19.0**. App **3.71.69**, Pulse Analysis **2.12.9**, Pulse Sampler Tool **1.9.28**, Resonance Workbench **3.63.3**, Android `versionCode` **210**.
+- This remains **WIP** pending real Android/Desktop visual acceptance of the reported screenshots; automated layout/runtime gates do not substitute for that acceptance.
+
+# 3.71.68 WIP — Pulse bounded PlotView + visible empty table body
+
+- Fixed the real-device Pulse PRIMARY runaway-height path exposed after the sequential Unit cutover. Home-state result PlotViews were only given a minimum content height; an autosizing scientific renderer could therefore keep increasing rendered content height while the normal-flow parent remained unconstrained. Production and Unit-only shadow now declare both Unit `contentMinHeightPx` and `contentMaxHeightPx` (320 px for result plots, 360 px for raw diagnostic), so the home viewport is bounded while dock/float placements still release that geometry to their container owner.
+- Moved renderer overflow containment into Layout Unit geometry (`overflow:hidden`) for the Pulse plot canvas instead of plugin-private CSS. This prevents oversized renderer descendants from extending document scroll height outside the Unit-owned PlotView viewport.
+- Removed `fill-rows` from the Pulse result-table panel. The table is content-driven again and its scroll body is explicitly bounded through Layout Unit geometry (`min-height:180px`, `max-height:330px`), avoiding both a PRIMARY-filling table and the opposite failure where an empty table collapses to only its header row.
+- Added a semantic Unit empty state below the table header: empty results now show a compact visible body with “暂无可显示的已分析结果”; real rows hide that empty state.
+- Advanced PlotView persistence namespaces to `pulse-result-grid-v5` / `pulse-raw-flow-v4` (shadow v4/v3) so stale geometry from the failed layout line cannot be restored.
+- Added `test-v37168-pulse-bounded-primary-flow.js`, including runtime checks that 32 repeated PlotView resize cycles retain the 320 px min/max home viewport, dock placement releases both constraints, and the 180–330 px table Layout geometry is accepted/executed.
+- No new Unit/API: Unit Templates remain **2.5.26 / 41 Units / 73 Layout recipes**, SDK **1.51.30**, Plugin API **1.19.0**. The historical **Desktop Visual Closure** record remains history only; this WIP still requires the user's real Desktop/Android visual acceptance.
+- App **3.71.68**, Pulse Analysis **2.12.8**, Android `versionCode` **209**.
+
+# 3.71.67 WIP — Pulse sequential PRIMARY Unit composition correction
+
+- Reverted the incorrect Pulse composition model introduced across 3.71.63–3.71.66: result comparison, two result PlotViews, result table, and raw diagnostic now form one content-sized PRIMARY sequence instead of a PRIMARY-filling SplitPane plus a separate raw-diagnostic PRIME.
+- Removed the raw-diagnostic PRIME from the TOP semantic contract. The raw diagnostic remains a complete PlotView in PRIMARY and keeps normal home/left/right/bottom/float/global placement through PlotView itself.
+- Removed Pulse result SplitPane ownership and persistence. The result table now follows the two result plots directly in document flow, eliminating the mechanism that could create large blank Desktop regions or allow raw diagnostic to consume the workspace.
+- Production and SDK Pulse Unit-only shadow now teach the same composition: one data-control PRIME and one sequential scientific PRIMARY flow.
+- Updated native Unit/Presentation/Geometry blueprints and regenerated SDK reference JSON so the formal Unit dossier matches production rather than preserving the regressed PRIME/SplitPane model.
+- Existing Unit catalog remains 41 Units / 73 Layout recipes; SDK remains 1.51.30; Unit Templates remain 2.5.26; Plugin API remains 1.19.0.
+- App 3.71.67, Pulse Analysis 2.12.7, Android versionCode 208.
+
+# 3.71.66 WIP — Pulse Unit responsive table geometry validation fix
+
+- Fixed the startup/runtime failure `UNIT_LAYOUT_GEOMETRY_VALUE_FORBIDDEN: responsive[0]:max-height:360px` introduced by v3.71.65.
+- Root cause: Pulse Unit presentation declared a new `Layout(responsiveGeometry)` value `maxHeight: 360px`, but `360px` is not part of the current property-specific accepted `max-height` Unit vocabulary. The v3.71.65 tests exercised the grid/PlotView/SplitPane path but did not execute this table-wrap Layout declaration.
+- Kept the Unit contract strict instead of weakening validation or adding an unproven value. The responsive table-wrap cap now uses the already accepted `330px` geometry value.
+- No plugin CSS fallback and no Mobile special case were added. Pulse result-flow ownership remains Unit Layout + PlotView + SplitPane.
+- App **3.71.66**, Pulse Analysis **2.12.6**, Android `versionCode` **207**. SDK remains **1.51.30**, Unit Templates remain **2.5.26 / 41 Units / 73 Layout recipes**, Plugin API remains **1.19.0**.
+
+# 3.71.65 WIP — Pulse result flow Unit ownership correction
+
+- Move Pulse result-flow geometry out of plugin/mobile CSS and into the existing Unit composition contracts: Layout `two-card-grid`, PlotView `detailGeometry.contentMinHeightPx`, and Core-owned SplitPane `reflowBelow`.
+- Keep projected PRIMARY width as the responsive target: two result plots stay side-by-side until the PRIMARY itself is `<=520px`; narrow Mobile reflow is owned by the generic SplitPane rather than a viewport media query.
+- Close the generic PlotView execution gap so already-public Unit `contentMinHeightPx` / `contentMaxHeightPx` work without requiring `contentAspectRatio`; moved/docked/floating views still release home-only content geometry to their container owner.
+- Update the Unit-only Pulse shadow to the same contracts and add a runtime regression that executes PlotView detail geometry, Layout responsiveness, and SplitPane reflow instead of checking CSS strings only.
+- No new Unit or public API: SDK remains **1.51.30**, Unit Templates remain **2.5.26 / 41 Units / 73 Layout recipes**, Plugin API remains **1.19.0**. App **3.71.65**, Pulse Analysis **2.12.5**, Android `versionCode` **206**.
+- **Desktop Visual Closure** history remains frozen as historical evidence; this WIP changes Unit-owned result composition and still requires real Desktop/Android visual acceptance.
+
+# 3.71.64 WIP — Pulse Mobile intrinsic result-flow ownership correction
+
+- Fixed the remaining Mobile Pulse result overlap by moving result split/grid/card/plot/table geometry to the Pulse PRIMARY content owner instead of `mobile.css`.
+- The projected `.pulse-primary-surface` is now its own inline-size container, so side-by-side versus single-column layout follows the actual Presenter-provided PRIMARY width after Mobile projection.
+- Pulse result PlotViews now use the public `--dkds-plot-content-*` geometry contract. This survives Core Structure cascade ownership and keeps each card's layout box large enough for its rendered scientific content, preventing table-header/actions from being painted underneath the plots.
+- Mobile platform CSS no longer declares Pulse result split/grid/card/plot/table geometry; Mobile Presenter remains responsible only for semantic region placement and available width.
+- Desktop Visual Closure remains frozen: this Mobile ownership correction does not alter Desktop platform presentation/runtime contracts.
+- Added the v3.71.64 regression gate; App **3.71.64**, Pulse Analysis **2.12.4**, Plugin API **1.19.0**, SDK **1.51.30**, Unit Templates **2.5.26**, Android `versionCode` **205**.
+
+# 3.71.63 WIP — Pulse result-flow and persisted-placement correction
+
+- Corrected Desktop Pulse result flow at the source: removed the obsolete 720 px / viewport-height owner. SplitPane now persists only the compact result-table track through the canonical `--dkds-unit-results-height` token.
+- Corrected Native Mobile persisted result placement with the fresh `pulse-result-grid-v3` PlotView namespace, preventing stale portable/dock state from removing a result card from its home grid. The shared Unit presentation remains platform-neutral.
+- Wide/tablet result lanes explicitly keep two columns and collapse only at `<=520px`; plot/card intrinsic minimums keep empty-state annotations inside their own card.
+- Retired obsolete Pulse viewport-fill values from the accepted Unit geometry vocabulary. SDK is **1.51.30**, Unit Templates **2.5.26**, with the public catalog unchanged at **41 Units / 73 Layout recipes**.
+- Added the v3.71.63 regression gate for intrinsic flow, bounded table ownership, platform-neutral presentation, fresh PlotView persistence, and narrow-lane collapse.
+- App **3.71.63**, Pulse Analysis **2.12.3**, Plugin API **1.19.0**, Android `versionCode` **204**. This remains WIP pending real-device visual acceptance.
+
+# 3.71.62 WIP — superseded Pulse Analysis result-layout attempt
+
+- Fixed the Desktop Pulse Analysis result split so the persisted resize track belongs to the **batch result table** rather than the plot region. The old layout stretched an empty table panel through the remaining fixed workspace height, producing the large blank area before the raw-diagnostic PRIME. The new host-owned SplitPane uses `pulse-results-table-height-v2` with a compact 220 px default table track while the two result plots consume the flexible region.
+- Fixed Native Mobile Pulse result cards on tablet-class widths. The generic `auto-fit` two-card grid is no longer overridden to one column at `max-width:900px`; only truly narrow widths (`<=560px`) collapse to one column, so the two scientific result plots remain side-by-side on the wide Mobile viewport shown in the reported screenshot.
+- Fixed empty-result renderer containment without clipping semantic UI. Mobile result cards now grow with a real 260 px plot floor instead of forcing a too-short fixed renderer box, preventing Plotly empty-state annotations from escaping into the following panel/header.
+- Updated the public Pulse Unit shadow example to teach the same corrected SplitPane ownership (`resizeTarget:'second'`) and new persistence/token namespace. No new Unit type or public Unit API was required; Unit Templates remain **2.5.25 / 41 Units / 73 Layout recipes** and SDK remains **1.51.29**.
+- App **3.71.62**, Pulse Analysis **2.12.2**, Plugin API **1.19.0**, Android `versionCode` **203**. The frozen **Desktop Visual Closure** archive remains historical evidence only; this WIP is a bounded Pulse layout correction.
+
+# 3.71.61 WIP — Native Mobile host-owned page identity + compact parameter drawer
+
+- Native Mobile now suppresses plugin-local `.analysis-page-header` at any depth, not only direct children of `.analysis-page`. This closes the Pulse Sampler nested Unit pageHeader leak and makes the rule platform-wide: plugin identity belongs to the native host/top bar; plugin content begins directly at the workspace. Plugin Manager and Automation Test remain explicit system-page exceptions.
+- Parameter/data-control Drawer auto-fit now separates **automatic fit ceiling** from **manual resize ceiling**. Wide tablets auto-fit at no more than **460 px** (about 32% narrower than the prior ~680 px Resonance case), while users may still drag wider to **680 px** when desired.
+- Narrow phones preserve the earlier anti-clipping guarantee: if a genuinely width-critical control would clip, automatic fit may grow toward the phone viewport. Responsive child Units still reflow locally instead of forcing tablet drawers to full width.
+- Drawer persistence key advances to `dkds.mobile.drawer-width.v3.*`, so obsolete over-wide v2 saved widths cannot resurrect the regression. New manual widths continue to persist.
+- Replaced two obsolete whole-tree CSS SHA release gates with semantic Core invariants; legitimate Core-owned platform fixes are now protected by explicit Mobile title/scroll/ownership checks rather than unrelated byte freezes.
+- App **3.71.61**, SDK **1.51.29**, Unit Templates **2.5.25 / 41 Units / 73 Layout recipes**, Plugin API **1.19.0**, Android `versionCode` **202**.
+
+# 3.71.60 WIP — Resonance Mobile explicit box selection + canonical blank-clear
+
+- Restored Mobile Resonance main-plot box selection by explicitly declaring `mobileBoxGesture:'select-region'` on the production ScientificPlot. This uses the v3.71.57 opt-in contract exactly as intended: plots that do not declare a Mobile box gesture remain scroll-first (`pan-y`), while the Resonance main plot genuinely requires range selection and therefore takes touch drag ownership.
+- Fixed blank-area tap after curve/peak highlighting. The main-plot adapter now delegates `onClearSelection` to the canonical Resonance selection owner instead of partially clearing local ids plus the shared selection model. Canonical clear removes sweep/peak/range selection, updates linked views/controls, and exits highlight mode consistently.
+- Kept the generic ScientificPlot default unchanged. No Core fallback infers box capture from callbacks, and no global touch handler was restored; Mobile gesture ownership remains explicit per plot.
+- Added `test-v37160-resonance-mobile-box-and-clear-selection.js` with integration checks plus behavioral intent resolution for touch box → `select-region` and background tap → `clear-selection`.
+- App **3.71.60**, Resonance Workbench **3.63.3**, SDK **1.51.29**, Unit Templates **2.5.25 / 41 Units / 73 Layout recipes**, Plugin API **1.19.0**, Android `versionCode` **201**.
+
+# 3.71.59 WIP — Unit Workspace PRIMARY right/end-inset ownership
+
+- Promoted the repeatedly accepted plugin right-side breathing room into the public **Unit Workspace** contract instead of leaving it as optional plugin composition detail. Every Unit Workspace PRIMARY now has exactly one inline-end inset owner.
+- New workspaces default to a Unit-owned **12 px** right/inline-end inset. `primaryEndInset:{mode:'content'}` is available only when a source-faithful primary content root already owns the accepted inset, preventing double padding. Unit-owned custom values are intentionally restrained to **8–32 px**.
+- Vth and Resonance consume the Unit default automatically. Data Center, TER, Pulse Sampler and Pulse Analysis explicitly declare content-owned mode because their accepted production content already owns the right inset.
+- Generic Core dock/main slots remain `padding:0`; this does **not** restore the old global page whitespace regression. The responsibility belongs to Unit Workspace composition, not Core docking geometry.
+- Added `test-v37159-unit-workspace-primary-end-inset.js` and extended SDK types/docs/contracts. The Unit catalog remains **41 Units / 73 Layout recipes**.
+- App **3.71.59**, SDK **1.51.29**, Unit Templates **2.5.25**, Plugin API **1.19.0**, Android `versionCode` **200**. The frozen **Desktop Visual Closure** history remains explicit and is not used as evidence for this new Unit contract.
+
+# 3.71.58 WIP — Unit FloatingChrome equal-inset + Vth layout-owner correction
+
+- Fixed the Mobile accepted-main action strip at the **Unit FloatingChrome owner**. The regression was not text alignment: direct `action-v2` children retained the Field/coarse-touch minimum control height inside a fixed-height FloatingChrome, consuming the intended inner inset. FloatingChrome now context-scopes the Unit control height to its own content box, restoring equal top/right/bottom/left spacing between the buttons and the outer outline. The ineffective v3.71.57 mobile-only centering shim is removed.
+- Fixed the missing spacing above the Vth **转移曲线** header. The Vth Unit cutover created `fill-rows` and then rebound the same node through `Layout.apply(... identity ...)`; the second binding cleared the recipe's `display:grid` / row geometry, so `gap:10px` no longer had any effect. Recipe and accepted geometry are now composed in one Unit binding.
+- Removed the same destructive post-creation `identity` rebinding from Vth control/result hosts and from the SplitPane outer node. SplitPane remains the sole owner of its outer geometry; the SDK Vth shadow mirrors production composition.
+- No new public Unit API was added. This is a correction to existing Unit invariants, so SDK remains **1.51.28** and Unit Templates remain **2.5.24 / 41 Units / 73 Layout recipes**.
+- App **3.71.58**, Plugin API **1.19.0**, Transfer Curve Vth Lab **3.3.4**, Android `versionCode` **199**. The frozen **Desktop Visual Closure** history remains unchanged.
+
+## 3.71.57 WIP — Vth settings visibility + Mobile scientific touch arbitration
+
+- Fixed Core SettingsSurface overlay stacking in dedicated plugin windows by explicitly using the foreground overlay stack; Vth “默认设置” is visible again without plugin-private dialog CSS.
+- Fixed Mobile accepted-main Unit floatingChrome action alignment so text actions such as Resonance “锁定所选 / 解锁所选 / 智能峰序 / 物理标记 / 重新居中” are vertically and horizontally centered.
+- Unit Templates 2.5.24 / SDK 1.51.28 add explicit `mobileBoxGesture: none | select-region | zoom-box` for ScientificPlot. Touch/pen defaults to scroll handoff; a plot captures drag-box gestures only when explicitly declared.
+- Desktop `scientific-standard-v1` interaction policy remains unchanged. Vth keeps Desktop Shift range selection but does not opt into Mobile box capture, so Mobile touch drag scrolls naturally.
+- Mobile scrollbar/scroll-relay contracts from 3.71.53 remain unchanged.
+
+# v3.71.56 WIP — Vth default-settings semantics closure
+
+- App **3.71.56**, SDK **1.51.27**, Unit Templates **2.5.23 / 41 Units / 73 Layout recipes**, Plugin API **1.19.0**, Transfer Curve Vth Lab **3.3.3**, Android `versionCode` **197**.
+- Vth `默认设置` now remains a true **new/reset project default** surface. Saving defaults never mutates the active project state, plot viewport, visibility, scale, Unit geometry or theme/material appearance.
+- Removed presentation-only `logY` and `showAllCurves` from the persisted default-settings surface. They remain ordinary project/view state and are no longer able to make “default settings” appear to restyle the workspace.
+- Fixed stale default capture: the Vth project slice now resolves `settings.get()` at each new/reset/restore baseline instead of freezing one startup snapshot for the lifetime of the plugin instance.
+- Restored explicit Core-status feedback after settings save/reset and restored the source-faithful settings description clarifying that the current project is unchanged.
+- Existing legacy stored `logY/showAllCurves` keys are ignored by the new analysis-default resolver, so old preferences cannot leak back into presentation defaults.
+
+# v3.71.55 WIP — Vth Unit source-faithful controls + fill-chain closure
+
+- Fixed the production Vth parameter PRIME without restoring private CSS: **数据** remains a canonical headed Panel, both card bodies consume public Unit `stack` geometry with the accepted **10 px inset / 8 px vertical rhythm**, the explanatory note uses the lightweight meta Unit, and **阈值提取** returns to the accepted content-heading anatomy instead of a second painted title strip.
+- Unit Templates **2.5.23** closes the generic vertical fill chain. Created `SplitPane` first/second regions are canonical single-track fill hosts, while `Panel.sizing:'fill'` now makes the Material shell a column fill-container and its body `flex:1 1 auto; min-height:0`. A Plot Panel therefore fills the entire split track above the results table instead of stopping at intrinsic plot height.
+- Updated the Vth SDK shadow to the same public Unit composition. No Vth private CSS, second layout engine, algorithm/state/task/result owner, or Vth-specific Unit was introduced.
+- App **3.71.55**, SDK **1.51.27**, Unit Templates **2.5.23 / 41 Units / 73 Layout recipes**, Plugin API **1.19.0**, Transfer Curve Vth Lab **3.3.2**, Android `versionCode` **196**.
+
+# v3.71.54 WIP — Vth Unit ScientificPlot interaction-policy hotfix
+
+- Fixed production Transfer Curve Vth Lab activation error `UNIT_SCIENTIFIC_INTERACTION_POLICY_FIXED`.
+- Root cause: the v3.71.53 cutover correctly routed the plot through `units.scientificPlot.create(...)` but still passed the legacy direct-runtime `interactionBehavior` object. Unit ScientificPlot intentionally forbids replacing `scientific-standard-v1`.
+- Vth now uses the public `interactionExtensions` contract only for its non-conflicting Shift+box region selection. Ctrl+box zoom is no longer duplicated because it is already a mandatory Core binding in `scientific-standard-v1`.
+- The Unit fixed-policy guard remains unchanged; the plugin was corrected instead of weakening Unit semantics.
+- Added a regression gate that verifies the production Vth source cannot reintroduce `interactionBehavior` and that Core continues to own mandatory Ctrl+box zoom.
+
+
+# v3.71.53 WIP — Vth production Unit cutover + Mobile scroll/chrome closure
+
+- Cut over **Transfer Curve Vth Lab** production presentation to the validated Unit composition. Production state, `analysis-runtime.js`, `vth-task.js`, numerical-result ownership, live-domain and domain adapter remain the single scientific owners; retired `plugin.css` is no longer loaded by the production manifest.
+- Added the production `unit-presentation.js` built from the existing public Unit catalog: titleless fixed-left data-control PRIME, source/extraction panels, four metrics, ScientificPlot, result Table and the accepted vertical SplitPane geometry. No Vth-specific Unit or private replacement stylesheet was added.
+- Corrected generic Mobile ScientificPlot navigation chrome so the floating `⋮ / + / − / ⌂` controls center their glyphs on both axes through Core geometry rather than plugin-specific offsets.
+- Standardized Mobile WebView scrollbars to a shared **3 px** Core geometry token across plugin scroll regions. Theme/paint ownership remains unchanged.
+- Reinforced Mobile vertical nested-scroll relay for workspace regions, Table surfaces, Unit Lists/ScrollPane and explicit `chain/viewport` policies. Horizontal overscroll stays contained; the active Drawer remains the terminal vertical scroll owner so relay does not leak into the obscured page.
+- Updated SDK native service/state/reconstruction blueprints and historical gates for the sixth production Unit migration. Unit Templates remain **2.5.22 / 41 Units / 73 Layout recipes**.
+- Existing **Desktop Visual Closure** history remains explicit; this WIP adds a Vth presentation cutover and generic Mobile fixes without reopening the frozen desktop architecture.
+- App **3.71.53**, SDK **1.51.26**, Unit Templates **2.5.22**, Plugin API **1.19.0**, Transfer Curve Vth Lab **3.3.0**, Android `versionCode` **194**.
+
+# v3.71.52 WIP — Vth live-domain + side-by-side live presentation parity
+
+- Added the smallest dependency-gated production **Transfer Curve Vth Lab live-domain seam** at `com.dkds.transfer-vth-lab/live`. It projects the existing production state/task/result owner through `ctx.services.domain`; it does not create a second Vth store, algorithm, task runner, controller or numerical-result owner.
+- Upgraded `examples/sdk151-unit-vth-shadow/` to **1.1.0 live shadow**. Its titleless data-control PRIME, fields, checks, four metrics, ScientificPlot and result Table now consume the same production owner and round-trip curve selection, extraction parameters, manual fit window and plot view back into production state.
+- Added real numeric and side-by-side acceptance gates. The side-by-side test activates the actual production Vth plugin and the actual Unit shadow against two assigned curves, then compares production snapshot vs shadow controls/metrics/table/plot and verifies two-way interaction round-trips.
+- Production Vth presentation is **not cut over yet**. `analysis-runtime.js`, `vth-task.js` and `plugin.css` remain byte-frozen; only the thin production entry/manifest plus `live-domain.js` / `domain-adapter.js` were opened for this bounded seam. No Vth-specific Unit or private shadow CSS was added; Unit Templates remain **2.5.22 / 41 Units**.
+- Updated historical migration-freeze and Vth package-order tests so they protect the current boundary instead of incorrectly treating the intentionally opened Vth seam as unrelated mutation. Existing **Desktop Visual Closure** history remains explicit and is not used as evidence for this new Vth live-parity stage.
+- App **3.71.52**, SDK **1.51.26**, Unit Templates **2.5.22 / 41 Units**, Plugin API **1.19.0**, Transfer Curve Vth Lab **3.2.2**, Android `versionCode` **193**.
+
+# v3.71.51 WIP — Pulse acceptance + Vth Unit shadow reconstruction
+
+- Recorded the real Windows Electron acceptance of the Pulse Sampler v3.71.50 production Unit presentation. Pulse Sampler is no longer the active migration target; its production domain/task owners remain byte-frozen and future changes are maintenance-only unless a new defect is demonstrated.
+- Started the next native-plugin migration with a **Transfer Curve Vth Lab Unit-only shadow reconstruction** under `examples/sdk151-unit-vth-shadow/`. Production Vth source, CSS, numerical runtime and task entry remain byte-identical.
+- Reconstructed the Vth titleless data-control PRIME, source/extraction controls, four metrics, curve ScientificPlot, result Table and vertical result SplitPane using the existing **41 Units / Unit Templates 2.5.22**. No Vth-specific Unit or private shadow CSS was added.
+- Preserved accepted Vth geometry through public Unit/detail parameters: 300 px control rail, 10 px primary gap, 180 px result baseline, 140 px minimum, 300 px plot reserve and 920 px responsive split reflow.
+- Corrected stale native Unit authoring blueprints so current titleless Data Center / Pulse / Pulse Sampler / TER / Vth data-control PRIMEs no longer teach a generated `canonical-header`. Runtime Unit behavior is unchanged; this is a source-faithful SDK dossier correction.
+- App **3.71.51**, SDK **1.51.26**, Unit Templates **2.5.22 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **192**.
+
+# v3.71.50 WIP — Unit Panel shell/body containment
+
+- 修复 public **Panel Unit** 的结构缺口：`header:false` 时，Panel 过去把 Material shell 本身直接当作 body，导致插件为了布局把 Grid/Flex/min-height 写到 Material shell；当该 shell 同时处于可收缩父布局中时，外框/阴影可能先收缩而正常流子内容继续向下绘制，形成“Panel 没有裹住内容”的视觉错误。
+- Unit Templates **2.5.22** 新增通用 `Panel.sizing: 'content' | 'fill'`。声明 sizing 的 Panel 始终拥有独立 `data-dkds-unit-panel-body`，Material shell 与内容/几何 body 分离。`content` 使用 `flex:0 0 auto` 保证外框按内容固有高度完整包裹，`fill` 保留可填充/可收缩语义。
+- Pulse Sampler 的 **测量数据提取** 与 **三路合并波形** 均迁移到 `sizing:'content'`，所有 Layout、Header、Plot、Table 都挂载到 `.body`；`RESULT / 读写电流映射 / Plot / Table` 因而是同一 Material Panel body 的真实后代，不再是仅靠视觉顺序拼接的 sibling。
+- 同步修改 SDK 合同、类型、Unit 文档、生成目录与 shadow reconstruction 示例。没有新增 Pulse 私有 CSS、私有 Unit 或 Core 业务选择器；41 Unit catalog 不变。
+- 保持 Pulse `live-domain.js`、`domain-adapter.js`、`steady-state-task.js` 三个 production scientific/domain/task owner 字节不变。
+- 保留既有 **Desktop Visual Closure** 历史；本轮仅推进通用 Unit Panel containment，Windows Electron 像素级结果仍需实机确认后再冻结 Pulse。
+- App **3.71.50**, SDK **1.51.26**, Unit Templates **2.5.22 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.27**, Android `versionCode` **191**。
+
+# v3.71.49 WIP
+
+- 修复 Pulse Sampler “测量数据提取”在受限高度下 RESULT 标题覆盖 X/Y/复制/导出控件。根因是 v3.71.48 把外层与命令区切换到 `stack`/`stack-compact` 后引入 `min-height:0` + flex shrink；子控件仍按固有高度绘制，后续 RESULT sibling 却按被压缩的 flex box 排版。
+- 保持单一 Material Panel，不恢复嵌套 Panel/阴影；仅将 Sampling 外层改回四个 `auto` Grid 行、命令区改为两个 `auto` Grid 行。
+- 恢复公共 Unit geometry vocabulary 中先前已存在的 `grid-template-rows: auto auto auto auto`，Unit Templates 仍为 2.5.21。
+- Pulse Sampler Tool 1.9.26；App 3.71.49；Android versionCode 190。
+
+## v3.71.48 WIP — Surface containment, local responsive ownership and primary inset closure
+
+- Corrected Pulse Sampler **测量数据提取** ownership: Sampling command controls and **读写电流映射** plot/table now live under one Material Panel; the internal command block is a geometry-only Unit Layout, so there is no nested/orphan shadow layer.
+- Corrected Pulse responsive ownership: extraction/result grids now measure their **actual local allocated width** instead of the entire Workspace. This makes the public 6→4→3→2 Unit recipe reflow before actions such as **提取稳态电流** can cross the Panel boundary.
+- Corrected Data Center preview ownership: the bounded preview table now uses `Table.bind()` inside the existing source Panel instead of mounting a second Table Surface, removing the standalone shadow around **预览前 n / total 行**.
+- Restored Data Center source-faithful primary content inset through public Unit geometry and stretched the wide formula/chart grid row so the two Panels share one bottom edge.
+- Restored TER primary right-side breathing room through the plugin's public Unit primary geometry rather than reintroducing Core dock padding. Data Center and TER therefore remain domain-owned compositions while Core stays domain blind.
+- Retired the now-unused accepted geometry value `grid-template-rows:auto auto auto auto` after the Pulse Sampling Panel moved to content-sized Unit Stack composition. No new Unit, compatibility path, private Pulse CSS or Core business selector was added.
+- Rewrote historical tests that had accidentally frozen the broken nested-shadow/workspace-width behavior. New v3.71.48 gates protect **single Material ownership, local responsive measurement, Data Center preview binding, paired-row alignment, and plugin-owned primary insets**.
+- Preserved the frozen **Desktop Visual Closure** history and all Pulse production scientific/domain/task/result owners byte-identically.
+- App **3.71.48**, SDK **1.51.25**, Unit Templates **2.5.21 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.25**, Data Center **1.15.34**, TER **3.14.3**, Android `versionCode` **189**.
+
+## v3.71.47 WIP — Unit minimum-width, containment and TER cold-start closure
+
+- Enforced a content-derived density floor for parameter/data-control drawers so saved or dragged widths cannot cross below the usable multi-column Unit threshold while viewport space remains. This preserves the existing restrained Workspace `leftMin` contract instead of using child wrapping as a substitute for a legal rail width.
+- Kept Desktop split geometry source-faithful: Pulse continues to declare `leftWidth:540 / leftMin:520 / leftReserve:520`, and Core still resolves saved undersized split state to the declared minimum.
+- Repaired Pulse Panel containment: merged waveform Plot+Table and Sampling/Result content now remain inside their owning Unit Panels, with width/max-width/min-width ownership explicit and no orphan shadow surface below the parent panel.
+- Made direct Unit Actions canonical field-height peers so extraction/export buttons align with controls rather than expanding to label+control stack height.
+- Rebuilt TER heatmap-display controls on the public two-column Field Unit anatomy, aligning paired controls without legacy analysis-control geometry.
+- Deferred full Material semantic assignment for detached Unit Panel/Surface composition until connection, removing synchronous semantic work from plot-heavy TER cold startup while retaining Core material ownership.
+- Preserved the frozen **Desktop Visual Closure** history and the 41-Unit `compact-first-single-last-v1` density contract.
+- App **3.71.47**, SDK **1.51.25**, Unit Templates **2.5.21 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.24**, Android `versionCode` **188**.
+
+## v3.71.46 WIP — Pulse source-faithful Workspace, renderer and responsive ownership closure
+
+- Restored the accepted Pulse Sampler Workspace geometry through public Workspace Unit parameters: `leftWidth:540`, `leftMin:520`, `leftReserve:520`. The parameter PRIME can no longer be squeezed to the generic 280 px default and accidentally force tabs, two-column fields and four actions into compact fallbacks.
+- Added a new persisted split-layout namespace for the corrected Pulse Workspace and a runtime clamp regression: an older 360 px saved left rail now resolves to the declared 520 px minimum. Parameter PRIME minimum width is documented as a restrained public Workspace/Unit contract; child responsive fallbacks may not substitute for violating it.
+- Corrected Pulse scientific presentation ownership after the legacy DOM/CSS cutover. Waveform/result ScientificPlot Units now own the single presentation renderer and consume the unchanged production live-domain projection; the invalid lifecycle-only `renderOwner:'runtime'` path was removed because no legacy renderer remains.
+- Restored the accepted responsive owner: Sampling/result control grids and result layout now measure the whole Workspace, matching the former workspace container-query semantics instead of greedily collapsing from a narrower local grid.
+- Fixed the public Tabs Unit wrapper so its direct tablist is explicitly non-wrapping and compact Tabs remain intrinsic-width. This is a generic Unit correction, not Pulse CSS.
+- Restored accepted PRIME semantics (`embedded:true`, `presentation-v3`) while retaining titleless `data-control` ownership and the existing public Unit composition.
+- Added a permanent v3.71.46 source-faithful parity gate covering Workspace rail geometry, real Unit ScientificPlot rendering, Workspace-owned responsive decisions, non-wrapping Tabs and the frozen scientific/domain/task owners.
+- App **3.71.46**, SDK **1.51.24**, Unit Templates **2.5.20 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.23**, Android `versionCode` **187**.
+
+## v3.71.45 WIP — Pulse basic visual parity + deterministic Unit material ownership
+
+- Closed the remaining basic Pulse Sampler presentation regressions against the accepted pre-cutover source: compact Vd/Vs/Vg selectors now reuse the accepted toolbar-action silhouette, ordinary parameter-width action groups remain four columns until genuinely tiny widths, the segment header is again a canonical ordinary Toolbar with centered content, and Pulse panels/sampling command surfaces explicitly acquire the Core surface Material Role and shadow.
+- Corrected the public `action-grid-4` Unit default from an over-eager 380 px collapse to a last-resort 280 px 4→2 transition, consistent with `compact-first-single-last-v1`. This is a generic Unit default, not a Pulse private breakpoint.
+- Added deterministic Material ownership to public Panel/Surface Units so shadow/fill no longer depends on a later semantic scanner. Paint remains wholly Core/Theme-owned.
+- Added a permanent Pulse basic visual-parity regression contract covering compact selector size/radius/active paint, four-action density, segment-bar structure/alignment, semantic surface/shadow ownership, and the prohibition on Pulse private CSS.
+- Kept Pulse `live-domain.js`, `domain-adapter.js`, and `steady-state-task.js` byte-identical. No state, algorithm, Task, result, or plugin-specific geometry owner was added.
+- Preserved the frozen **Desktop Visual Closure** history; current production Unit presentation remains WIP until platform-specific final acceptance, while the basic geometry/material parity above is now machine-gated and is no longer delegated to manual Windows inspection.
+- App **3.71.45**, SDK **1.51.23**, Unit Templates **2.5.19 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.22**, Android `versionCode` **186**.
+
+## v3.71.44 WIP — 41-Unit responsive density audit + Pulse parity closure
+
+- Promoted `compact-first-single-last-v1` to an executable responsive-density contract covering all **41 public Units** and all **73 Layout recipes**. Unknown width preserves base geometry; density-oriented grids keep useful columns until real compact thresholds; progressive recipes reduce columns in stages; ordinary single-column layouts are last-resort only.
+- Added the permanent `unit:density` gate and published the same contract through SDK types/reference so external plugins can distinguish Core-locked behavior from accepted plugin-tunable breakpoints/geometry.
+- Extended the public Header Unit with a non-painted `content` variant plus title-inline/trailing metadata, and Field with Core-owned label/unit anatomy. These are generic Unit capabilities, not Pulse-specific CSS.
+- Repaired Pulse Sampler source parity only through public Unit parameters: two-column parameter fields, four-action row, title/meta/tabs hierarchy, canonical label/unit rows, stretch-to-fill segment table, content-style main section headers, compact Sampling controls, and progressive 6→4→3→2 density behavior.
+- Kept Pulse `live-domain.js`, `domain-adapter.js`, and `steady-state-task.js` byte-identical. No second production state, algorithm, Task, result, or geometry owner was added.
+- Preserved the frozen **Desktop Visual Closure** history while advancing the domain-blind Core style baseline only for public Unit content-header/Field anatomy and compact-first ParameterForm density.
+- App **3.71.44**, SDK **1.51.22**, Unit Templates **2.5.18 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.21**, Android `versionCode` **185**.
+
+## v3.71.43 WIP — Non-greedy Unit composition + Pulse presentation parity repair
+
+- Fixed a generic Unit Layout greediness bug: detached/unmeasured compositions with width `0` now preserve the base recipe instead of immediately selecting every narrow `maxWidth` patch. Responsive collapse begins only after a real container width is known.
+- Tightened the default public Unit form/action recipes so useful two-column and four-column layouts remain compact at normal panel widths and collapse only at genuinely compact widths. This is a Unit default-quality correction, not a Pulse-only exception.
+- Extended the public Header Unit with Core-styled `eyebrow`, `titleEmphasis` and `metaPlacement` parameters. Plugins may declare these accepted details while Core remains the single typography/paint owner.
+- Reconstructed Pulse Sampler production presentation parity using only public Unit parameters: restored title hierarchy, 14 px content inset, two-column pulse fields, four-action row, stretchable segment table, merged-waveform vertical allocation, sampling/result hierarchy and stretch behavior. No Pulse-specific CSS or Pulse-specific Unit was added.
+- Kept Pulse live-domain, domain adapter and steady-state Task byte-identical. Production state, generation/merge algorithms, Task execution and result ownership remain unchanged.
+- Advanced the generic authored-style baseline only for the new public Unit Header hierarchy while preserving the frozen **Desktop Visual Closure** history and domain-blind Core ownership.
+- App **3.71.43**, SDK **1.51.21**, Unit Templates **2.5.17 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.20**, Android `versionCode` **184**.
+
+## v3.71.42 WIP — Pulse Sampler production Unit cutover
+
+- Replaced the built-in Pulse Sampler Tool legacy production DOM/CSS presentation with the previously accepted public-Unit composition. The production presentation now mounts from `src/plugins/pulse-sampler-tool/unit-presentation.js` and consumes the same live-domain snapshot/actions established in v3.71.41.
+- Kept production domain/state/scientific ownership unchanged: `live-domain.js`, `domain-adapter.js`, `steady-state-task.js`, pulse generation/merge logic, project state, extraction Task path and result owner remain the sole production owners.
+- Retired the legacy Pulse Sampler `plugin.css` and `mobile.css` completely. Desktop/Mobile composition is now platform-neutral Unit composition plus the existing Presenter semantics; no Pulse-specific Unit or second geometry owner was added.
+- Preserved the accepted titleless `data-control` parameter PRIME, segment table, three-channel waveform plot/table, extraction controls, result plot/table and responsive Unit layout recipes.
+- Updated native geometry provenance and historical regression gates so they protect the current Unit contracts rather than requiring retired Pulse CSS. The Unit catalog remains **41 types** and Unit Templates remains **2.5.16**.
+- Preserved the frozen **Desktop Visual Closure** history while reopening real Windows Electron/device visual acceptance for this production cutover.
+- App **3.71.42**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Pulse Sampler Tool **1.9.19**, Android `versionCode` **183**.
+
+## v3.71.41 WIP — Pulse Sampler live Unit side-by-side acceptance
+
+- Connected the disabled Pulse Sampler Unit shadow to a single production live domain projection at `com.dkds.tools.pulse-sampler/live`. The production plugin remains the only state, pulse-generation, sampling-task and numerical-result owner; the Unit shadow contains no duplicate pulse generator, merge pipeline, extraction task or project state store.
+- Refactored production Pulse Sampler UI commands to invoke the same model-first live actions used by the side-by-side Unit shell. Channel selection, parameter edits, preview generation, segment mutation, sampling controls, extraction, result projection, copy and export therefore have one execution path rather than UI-only and Unit-only variants.
+- Added production snapshots for channel parameters/segments, merged waveform display projection, scoped source metadata, analysis controls and extracted result presentation. The Unit shell subscribes to that projection and mirrors fields, tables and both scientific plots without owning scientific computation.
+- Guarded extraction-result rendering for an unmounted production page so domain actions remain valid when the live Unit shell is active independently of the legacy production view.
+- Added executable live side-by-side acceptance covering real domain-service dependency checks, production→Unit projection, Unit→production action round trips, direct production notifications and stale-result clearing. Production presentation is **not replaced** in this stage.
+- Preserved the frozen **Desktop Visual Closure** history and the current Unit ownership/cascade contracts; no Pulse-specific Unit, Core selector, shadow CSS, compatibility shim or second geometry owner was introduced.
+- App **3.71.41**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.33**, Pulse Sampler Tool **1.9.18**, Android `versionCode` **182**.
+
+## v3.71.40 WIP — Data Center inset tuning + Pulse Sampler Unit shadow
+
+- Reduced the Data Center bounded-preview row-count right inset from **40 px to 20 px**, exactly halving the accepted Unit-owned spacing while keeping the row aligned and free of plugin CSS overrides.
+- Started the **Pulse Sampler Tool** Unit migration as a disabled, non-production Unit-only shadow under `examples/sdk151-unit-pulse-sampler-shadow/`. Production Pulse Sampler runtime/domain owners remain untouched in this stage.
+- Reconstructed the Pulse Sampler presentation from the existing **41 public Units** and generic accepted recipes only: titleless parameter PRIME, Vd/Vs/Vg tabs, pulse parameter fields/actions, segment table, waveform plot/table, sampling/result controls, result plot/table. No Pulse-specific Unit and no shadow CSS were added.
+- Added seven-layer parity metadata and executable SDK validation/runtime/layout coverage for the Pulse Sampler shadow. The next stage is live side-by-side wiring to the existing production Pulse domain owner before any production presentation cutover.
+- Preserved the **Desktop Visual Closure** history while keeping Unit ownership/cascade gates as the active evidence for current presentation changes.
+- App **3.71.40**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.33**, Android `versionCode` **181**.
+
+## 3.71.39
+
+- Removed Data Center implementation/architecture explanatory tooltips from production UI. End users no longer see internal concepts such as Chart Provider replacement rules, plugin extensibility notes, or Core/Unit behavior explanations.
+- Preserved useful operational labels and accessibility text; only implementation-facing explanatory copy was removed.
+- Updated regression coverage so Data Center production presentation rejects reintroduction of `data-dkds-tooltip` implementation notes.
+
+## v3.71.38 WIP — Unit Semantic Cascade Re-audit
+
+- Re-audited the archived v3.71.28–v3.71.36 Unit sources for the two newly exposed failure classes instead of treating the Data Center screenshot as a one-page bug. The old unsafe CSSOM shorthand loop existed in every directly audited snapshot; Data Center and Pulse had live shorthand-sensitive Layout mounts, while Resonance and TER did not use that exact path.
+- Confirmed Pulse was also exposed to the old shorthand bug through four production mounts (`inline-range`, `file-toolbar`, `active-file-head`, and accepted control-form padding). The generic v3.71.37 runtime repair now restores those values as well; no Pulse-specific patch was added.
+- Re-audited semantic Field proxies across Desktop and Mobile. Data Center is currently the only production Unit plugin with `columns`/popup-multiselect schemas (4 fields), but Mobile also had generic drawer padding and compact-density tag selectors that could diverge a button-backed Field proxy from native selects. Both now consume/exclude canonical `.dkds-field-control` semantics correctly.
+- Added `unit-semantic-cascade-audit` as a permanent Architecture Hygiene gate. It covers all five shorthand families, all **73** Layout recipes (**58 shorthand-sensitive**), all **4** production Unit presentations, generic Field-proxy leakage, and the production exposure census.
+- Corrected the Unit ownership source census from **82** to **81** real Layout mounts: the old parser counted the Resonance local `layout(...)` helper definition as a mount. No runtime layout was removed.
+- Corrected stale SDK prose that advertised unpublished `Unit Templates 2.5.17 / SDK 1.51.21`; the actual public contract remains **Unit Templates 2.5.16 / SDK 1.51.20 / 41 Units**.
+- App **3.71.38**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.31**, Android `versionCode` **179**.
+
+## v3.71.37 WIP — Field Proxy + Unit CSSOM Shorthand Closure
+
+- Fixed canonical Field proxy geometry leaking through the generic AnalysisWorkbench button rule; popup multi-selects now consume only Field geometry.
+- Fixed Unit Layout CSSOM shorthand reconciliation so longhand cleanup can no longer erase declared padding/margin/inset/overflow/gap values.
+- Added regression coverage for the exact preview-count right inset and Field-proxy ownership path.
+- App **3.71.37**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.31**, Android `versionCode` **178**.
+
+## v3.71.36 WIP — Canonical Field Parity + Data Center Preview Spacing Closure
+
+- Attempted to normalize native select and popup-multiselect Field geometry, remove the accidental boolean disclosure caret, restore chart-control spacing, and increase the preview-count right inset through generic Unit geometry.
+- Removed direct Data Center Mobile rendered height ownership for canonical Field controls in favor of the shared Field density token.
+- The subsequent Windows screenshot proved two closures were incomplete: the `Y 列` proxy still consumed AnalysisWorkbench generic button geometry, and Unit Layout CSSOM cleanup erased the declared preview padding after writing it. These are corrected in v3.71.37.
+- App **3.71.36**, SDK **1.51.20**, Unit Templates **2.5.16 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.30**, Android `versionCode` **177**.
+
+## v3.71.35 WIP — Unit Adoptive-Role Composability + Data Center Remount Recovery
+
+- Fixed a generic Unit composability bug: adoptive/decorator Units no longer overwrite an existing structural `data-dkds-unit-template` / variant.
+- `ParameterForm layoutOwner:'host'` now survives repeated destroy/remount cycles on the same Layout Unit; this restores Data Center formula controls that disappeared after the first domain rerender.
+- Extended the same additive-role rule to Workspace, ComponentTree, **Layout.apply**, Portable, Meter, MovableWindow, PlotView, PlotGroup and ScientificPlot adoption paths; SplitPane behavior now preserves the host structural Layout variant. A Unit that decorates/adopts an existing Unit may add a role but may not erase the structural role/variant.
+- Data Center preview row-count note now keeps a clearly visible 28 px right inset through the Unit Layout owner; no plugin CSS override was added.
+- Historical review of 3.71.28–3.71.34 confirmed the same identity-clobber class in ParameterForm, Layout.apply/bind, SplitPane and scientific adoption paths. It was mostly latent before 3.71.33; 3.71.33–3.71.34 made the Formula case user-visible because host-owned ParameterForm validation required the Layout identity on every remount.
+- App **3.71.35**, SDK **1.51.19**, Unit Templates **2.5.15 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.29**, Android `versionCode` **176**.
+
+# DK Data Studio Changelog
+
+## v3.71.34 WIP — Unit Cross-Layer Ownership Audit and Closure
+
+- Re-audited every production Unit presentation from the ownership boundary upward instead of continuing Data Center screenshot-specific patches. The active production set remains exactly **TER / Pulse / Resonance / Data Center**, with **41 public Units** and no `Unit_for_xxx` special cases.
+- Added a permanent runtime-Unit ↔ authored-plugin-CSS geometry gate. It resolves every literal Unit Layout class/recipe, explicit `geometry` / `responsiveGeometry`, SplitPane runtime geometry and PRIME detail inset against the plugin's `plugin.css` / `mobile.css`, then rejects any rendered property that has two geometry owners.
+- Historical re-audit with the new gate proves the problem pre-dated the latest Data Center fixes: v3.71.28–v3.71.31 each contain **130** cross-layer conflicts (**65 Data Center + 65 Pulse**); v3.71.32 contains **127** (**62 Data Center + 65 Pulse**). Those older releases passed the previous style gate because it did not compare Unit runtime geometry writes against authored plugin CSS on the same rendered element.
+- Current production sources are reduced to **0 cross-layer Unit/CSS geometry conflicts** across **82 Unit Layout mounts + 1 SplitPane mount**. Resonance and TER are included in the same audit and remain at zero; Data Center and Pulse were the two affected production migrations.
+- Converted duplicate ownership into explicit mutually-exclusive generic contracts rather than specificity overrides: Layout supports a semantic `responsiveTarget`; ParameterForm supports `layoutOwner:'core'|'host'`; SplitPane supports `layoutOwner:'core'|'host'` with host mode rejecting Core reflow. Host-owned geometry must consume Core state tokens instead of creating a second runtime geometry writer.
+- Restored Data Center source-parity structure by removing Unit wrappers/recipes that changed the accepted `.dc-main` direct Grid-item relationship. Formula / Workflow / Provenance and chart placement therefore consume the accepted plugin-owned workspace geometry without a second Unit grid owner.
+- Moved the bounded-preview right inset into the generic Unit Layout declaration rather than adding another Data Center CSS override. Canonical select/multi-select disclosure remains Core-owned.
+- Pulse was found to have the same class of duplicate ownership from its v3.71.16 production Unit cutover. Its accepted Desktop/Mobile split geometry is now host-owned and consumes the Core persisted split-size token; file toolbar, active-file head and parameter-grid accepted detail are Unit-owned with plugin CSS duplicates removed.
+- Updated historical tests that incorrectly required Pulse spacing to remain in plugin CSS: the same accepted `7px` gap / `9px` top rhythm is now protected at the canonical `file-toolbar` Unit recipe owner.
+- Desktop Visual Closure history remains explicit, but it is not treated as evidence that a later Unit migration has single ownership; the new cross-layer gate is now the active evidence for this specific failure class.
+- App **3.71.34**, SDK **1.51.18**, Unit Templates **2.5.14 / 41 Units**, Plugin API **1.19.0**, Data Center **1.15.28**, Pulse Analysis **2.12.1**, Android `versionCode` **175**.
+
+## v3.71.32 WIP — Data Center chart-row parity and preview inset
+
+- Removed the competing Unit `form-grid-4` runtime owner from the Data Center chart-parameter host. The host is now an identity mount point and the existing ParameterSchema auto-fit contract is again the single responsive grid owner, restoring four chart controls to one row at the same real panel width.
+- Updated the Data Center Unit shadow and SDK native blueprints to describe the preview controls as `parameterForm:auto-fit`, not as a second responsive layout grid.
+- Moved the bounded preview row-count note into a Unit-owned right-aligned row with a 10 px horizontal inset, so `预览前 n / total 行` no longer touches the right edge.
+- Preserved the accepted Data Center `plugin.css` / `mobile.css` byte-for-byte and kept Core/Theme visual behavior unchanged.
+- Advanced stale authored-style freeze hashes to the already-accepted v3.71.31 canonical select/multi-select Field parity baseline; no new style file changed in v3.71.32.
+- Desktop Visual Closure history remains intact; this WIP still requires final Windows Electron visual acceptance.
+
+# v3.71.31 WIP — Canonical Select / Multi-Select Field Parity
+
+- Fixed the recurring Data Center X/Y selector mismatch at the actual Core owner. `X 列` is a native single `<select>` while `Y 列` (`type:'columns'`) is a popup multi-select proxy implemented as a `<button>`. Both already carried canonical Field identity, but the single-select still used the browser-native arrow/line box while the proxy used a text `⌄` caret and button line box. That left two physical appearance paths under one semantic Field contract.
+- Core Component Appearance now gives every canonical Field select and the multi-select proxy one disclosure indicator, one font/line-box recipe and `appearance:none`; the legacy proxy text caret is hidden. The existing `--dkds-field-control-*` geometry slots remain the only density contract. No Data Center-specific CSS patch was added.
+- The accepted native Mobile exact compact-control geometry remains in the platform owner; Desktop no longer depends on browser-native select chrome to happen to match the proxy.
+- Added `test-v37131-parameter-select-proxy-parity.js` and retained the historical **Desktop Visual Closure** record as history only, not as an active whole-file SHA gate.
+- Runtime Chromium computed evidence for the actual X/Y shapes: both are **26 px** high, `2/26/2/6 px` padding, `12 px / 13.8 px` font/line-height, `7 px` radius, identical border, identical canonical disclosure background, and `appearance:none`.
+- App **3.71.31**, Data Center **1.15.25**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **172**.
+
+# v3.71.30 WIP — Data Center Real-Host Parity Closure
+
+- Fixed the production Data Center render-abort chain introduced during the Unit cutover. Formula reference chips now use the public `quiet` Chip variant with independent `interactive:true` semantics instead of the nonexistent `interactive` visual variant, so `renderFormula()` no longer throws before chart-control and chart-preview rendering.
+- Fixed duplicate `通用图形预览` titles by preserving the canonical Unit Plot header title class. PlotView now adopts the existing Unit title instead of inserting a fallback second title.
+- Fixed the Desktop artifact filters remaining vertically stacked after v3.71.29. The detached data-control PRIME no longer makes a pre-mount width decision from `0px`; its accepted two-column geometry is unconditional on Desktop, while the existing mounted Mobile `@container` query retains the genuine ultra-narrow one-column fallback.
+- Preserved the existing chart PRIME inline/dock/float/global placement contract, titleless data-control PRIME, production domain owners, accepted Data Center detail CSS and the frozen **Desktop Visual Closure** architecture baseline. No Core, SDK, Unit catalog or Theme contract capability was added.
+- Added executable regression coverage for the invalid-chip render abort, duplicate PlotView title, detached zero-width filter reflow, chart auto-open/inline placement and mounted Mobile narrow fallback.
+- App **3.71.30**, Data Center **1.15.25**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **171**.
+
+# v3.71.29 WIP — Data Center Production Visual Parity Repair
+
+- Restored the accepted Data Center artifact-rail geometry after the production Unit cutover. The generic `form-grid-2` / `action-grid-4` responsive recipes were correctly reusable but too aggressive for this already-approved narrow rail, so the production Unit declaration now supplies accepted detail geometry: two filter columns and one four-action selection row, with only an explicit ultra-narrow filter fallback.
+- Restored the missing chart preview by making the `scientific-secondary` chart PRIME open on first composition and return to the authored `.dc-main` inline host. This repopulates the existing `"tool chart"` grid instead of leaving its right-hand track empty.
+- Removed the duplicate Desktop workbench navigation chrome (`数据` / `图形预览`) by declaring the Data Center PluginWorkspace navigation hidden. Semantic `data-control` / `scientific-secondary` surfaces remain registered through the existing production contracts for Mobile/Presenter projection.
+- No Core, SDK, Unit catalog, Theme contract, Data Center `plugin.css`, `mobile.css`, controller, selection, command, workflow, provenance or chart-domain owner was changed. This remains downstream of the frozen **Desktop Visual Closure** architecture baseline.
+- Added an executable regression that proves accepted Unit detail geometry overrides generic narrow-width recipes and guards chart auto-open + inline-host + navigation behavior.
+- App **3.71.29**, Data Center **1.15.24**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **170**.
+
+# v3.71.28 WIP — Data Center Production Unit Presentation Cutover
+
+- Data Center production presentation/composition is now owned by `unit-presentation.js`; the existing production Artifact/Selection/Formula/Workflow/Provenance/Chart owners remain unchanged.
+- The production page is reconstructed from the existing 41 Unit Templates: page/header/workspace, titleless data-control PRIME, bounded Unit Table preview, Formula/Workflow/Provenance surfaces, and a PRIME-owned scientific chart PlotView.
+- Removed the obsolete Data Center Mobile-only presentation runtime. Desktop and Mobile now share the same Unit composition, while accepted `mobile.css` remains the plugin-specific responsive detail stylesheet.
+- `shared-views.js` is reduced to a thin adapter into the Unit production presentation; `feature-runtime.js` no longer owns raw preview-table/formula-chip/chart-PRIME composition.
+- App **3.71.28**, Data Center **1.15.23**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **169**.
+- `examples/sdk151-unit-data-center-shadow` remains as historical side-by-side evidence and now records `productionReplaced:true`.
+
+# v3.71.27 WIP — Data Center Side-by-Side Live Presentation Acceptance
+
+- Advanced Data Center from the v3.71.26 live-domain seam into executable side-by-side presentation acceptance without replacing the production Data Center UI. The Unit shadow and accepted production presentation now consume the same Artifact Store, Selection, formula, Workflow/Recipe, provenance and Chart Provider owners.
+- Reworked the SDK Unit shadow from static samples into a live presentation consumer: artifact catalog/selection, 18-row bounded table preview, formula refs/parameters, Workflow steps/status, provenance, chart provider/parameters and empty/running/error states now project from production state. Visible Unit actions round-trip through the dependency-gated `builtin.data-center/live` owner.
+- Unit chart presentation delegates actual drawing to the same registered production Chart Provider and same Artifact object instead of copying chart arrays. Direct production artifact/tab/workflow changes automatically project back into the Unit shadow through the live subscription.
+- Split side-by-side/domain wiring into `live-domain-bridge.js` so Data Center `feature-runtime.js` remains below the 48 KiB repository module ceiling; the ceiling was not relaxed. `domain-runtime.js` stays serializable/bounded and `chart-runtime.js` remains the Chart Provider lifecycle owner.
+- The shadow remains `productionReplaced:false`. Live side-by-side presentation is accepted at the executable owner/state boundary; the next migration step is Data Center production Unit presentation cutover, not another Unit expansion. Accepted Data Center CSS/controller/selection/command/mobile owners remain frozen.
+- App **3.71.27**, Data Center **1.15.22**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **168**.
+
+# v3.71.26 WIP — Data Center Live Domain / Unit Shadow Integration
+
+- Entered Data Center production Unit source-parity reconstruction at the user's explicit direction while leaving the v3.71.25 Resonance source untouched. This phase does **not** replace Data Center production presentation.
+- Connected the existing Unit-only Data Center shadow to the same production Artifact Store, selection, workflow/recipe, provenance and chart state through the generic dependency-gated `ctx.services.domain` seam. The live projection remains bounded to an 18-row table preview and exposes only whitelisted production actions.
+- Split Data Center chart-provider presentation into `chart-runtime.js` and serializable live projection/action bridging into `domain-runtime.js`, keeping the existing `feature-runtime.js` below the 48 KiB module boundary without weakening repository hygiene.
+- Preserved Artifact-local revision identity, lazy source-row identity, linked table/curve selection, linked legend visibility, compact auto-fit chart parameters and stale-chart cleanup under their new formal owners. Historical Phase E gates now verify those owners instead of assuming every chart concern lives in `feature-runtime.js`.
+- The Data Center shadow remains `productionReplaced:false`. Next phase is live side-by-side presentation acceptance before any production Unit cutover. This work remains downstream of the frozen **Desktop Visual Closure** architecture baseline and does not reopen its visual ownership rules.
+- App **3.71.26**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **167**.
+
+# v3.71.25 WIP — Resonance Immediate Group Columns + Range Text + Global History Closure
+
+- Fixed Resonance Group column controls to commit through the live Unit PlotGroup `setColumns(...)` owner, so choosing 每行 1–6/自动 immediately reapplies GroupArea instead of waiting for a later scientific render/update.
+- Published `PlotGroup.getOrientation()` through Core, Unit Templates, TypeScript and GroupArea authoring docs. Orientation-specific Resonance preferences now use the resolved GroupArea orientation instead of an implicit landscape fallback.
+- Fixed the Resonance Unit text helper to use the public DOM factory `text` option. Accepted range-selection heading/footer text and other text-only section headings are restored without changing accepted range-menu CSS.
+- Fixed the global Desktop shortcut router by defining its typing-target guard before the window keydown listener. Ctrl/Cmd+Z and Ctrl/Cmd+Y can now reach unified system history when focus is not inside an editable control.
+- No PlotView/subplot resize-handle styles were changed. The accepted child-plot handle appearance remains byte-stable relative to v3.71.24.
+- App **3.71.25**, SDK **1.51.16**, Unit Templates **2.5.12 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **166**.
+
+# v3.71.24 WIP — Resonance Main/Group Runtime Closure + TER First-Start Dedup
+
+- Resonance production Unit PRIMARY now consumes the accepted scientific layout variants (`accepted-main-area/workspace/plot-wrap/header/plot/summary`) and the accepted-scientific Workspace variant activates the `accepted-scientific-v1` profile on the real workbench shell.
+- Group column menu commits synchronously reflow the existing GroupArea; it no longer waits for a later data refresh/update before the visible column count changes.
+- Hidden/parked Resonance Group panels retain invalidation but no longer repaint from settled peak metrics or async Resonance TER completion while invisible.
+- TER first activation keeps `page.onOpen` as the presentation synchronization owner and coalesces the immediately-following `analysis:refresh`, preventing duplicate control/table synchronization on startup.
+- App **3.71.24**, SDK **1.51.15**, Unit Templates **2.5.11 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **165**.
+
+# v3.71.23 WIP — Resonance Windows Runtime Recovery
+
+- Fixed the real Resonance Group PRIME failure exposed by Windows Electron. The Unit reconstruction incorrectly leaked the content semantic `plot-group` into the outer PortableView PRIME, while PortableView intentionally accepts panel/inspector surface semantics. Group mount therefore rendered scientific child plots and then threw before placement chrome, drag binding, resize ownership and action-group wiring could install. The outer Group PRIME is again the accepted generic `panel`; PlotGroup semantics remain on the group content Unit.
+- Restored the complete accepted Group floating lifecycle without a Resonance-specific Core branch: placement + columns + collapse + close chrome can finish mounting, titlebar pointer drag moves the floating panel, and the Core resize handle owns outer-panel resizing. PortableView explicitly suppresses browser-native `resize` while its Core handle is installed, so Chromium cannot expose the native diagonal grip underneath an incomplete PRIME.
+- The child PlotView resize-handle presentation is deliberately unchanged. `sdk-semantic-surfaces.css` and `plugin-chrome.css` remain byte-identical to v3.71.22, so this patch does not reintroduce or redesign any folded-corner/child-plot handle effect.
+- Tightened Resonance main-plot attachment: the runtime ScientificCurveSurface receives the exact parent of the Unit-created SVG instead of resolving a global selector again. The v3.71.21 false-positive renderer gate was corrected: it no longer uses an empty curve plus an `onEmpty` fake path, and now sends finite Resonance sweep data through the real main-plot adapter while asserting the Unit SVG target and exact container contract.
+- Corrected the production freeze gate to classify `feature-main-plot-runtime.js` as presentation/scientific attachment wiring rather than a frozen domain/numerical owner. The remaining Resonance controller/domain/task baseline is still byte-frozen, including the five files called out by the current handoff.
+- This remains a bounded source-parity recovery after the frozen **Desktop Visual Closure** baseline. Resonance is still **NOT Windows accepted** until the actual Electron host confirms the main scientific curve and complete Group floating chrome/drag/resize behavior. Data Center reconstruction remains blocked.
+- App **3.71.23**, SDK **1.51.15**, Unit Templates **2.5.11 / 41 Units**, Plugin API **1.19.0**, Android `versionCode` **164**.
+
+# v3.71.22 WIP — Windows Developer Toolbox Storage Diagnostic Fix
+
+- Fixed the shared dependency installer preflight on Windows PowerShell 5.1 / StrictMode. PowerShell unwraps a populated `Nullable[Int64]` parameter to `Int64`; `Format-StorageBytes` incorrectly read `$Bytes.Value`, so a low-space preflight crashed with “property Value not found” instead of reporting the actual cache-space problem.
+- Storage formatting now normalizes the non-null input with `[Int64]$Bytes` and never dereferences `.Value`. The existing 512 MiB safety threshold is unchanged. If the shared dependency cache drive is below the threshold, Toolbox now reports the staging path, actual remaining capacity, and the cache-path action to take.
+- Added a Windows tooling regression gate that rejects reintroduction of `.Value` in the storage formatter. No Resonance/Unit/Core presentation behavior changed; SDK remains **1.51.15**, Unit Templates **2.5.11 / 41 Units**, Plugin API **1.19.0**.
+- App **3.71.22**, Android `versionCode` **163**. Resonance remains pending the same Windows Electron source-parity acceptance defined by v3.71.21.
+
+# v3.71.21 WIP — Resonance Runtime Interaction Source-Parity Closure
+
+- Corrected generic portable Header ownership exposed by the Resonance Group PRIME reconstruction. When a Unit-authored portable Header explicitly adopts an accepted action container (`actionsClassName` + `integratedActions:false`), Header no longer pre-creates a `dkds-portable-controls` owner. PortableView is again the single placement-control owner, eliminating the nested two-layer controls structure while preserving the accepted Group action order.
+- Restored the accepted Group PRIME runtime action chain without Resonance-specific Core branches: columns action host, collapse/expand, close callback and PortableView placement control all operate through the existing Workbench/PortableView owners. A new runtime interaction gate mounts the real Header + PortableView path, clicks controls, verifies placement/state transitions, and exercises close/re-place lifecycle.
+- Tightened delegated ScientificPlot ownership. `renderOwner:'runtime'` records Unit lifecycle semantics but no longer mutates the accepted SVG target with a generic chart-host class before the real renderer attaches. A runtime gate creates the real SVG through Layout, attaches the canonical ScientificCurveSurface to that exact node, and verifies a completed visible SVG draw lifecycle.
+- Resonance accepted paint/geometry CSS and numerical/domain owners remain byte-frozen; no plugin-specific Core selector or branch was added. Unit Templates advance to **2.5.11**, SDK to **1.51.15**, catalog remains **41 Units**.
+- App **3.71.21**, Plugin API **1.19.0**, Android `versionCode` **162**. Windows Electron visual acceptance is still required before Resonance can be marked accepted.
+
+# v3.71.20 WIP — Resonance Runtime Source-Parity Closure
+
+- Fixed the blank Resonance main plot exposed by Windows Electron after the v3.71.19 Unit production cutover. Unit Layout now creates non-HTML primitives in an explicitly declared DOM namespace; the accepted `#reswinMainPlot` declares `namespace:'svg'` and therefore becomes a real SVG element rather than an HTML-namespace lookalike.
+- Fixed populated Resonance Group PRIME opening. Dynamic PlotGroup adoption now passes the accepted card title required by the strict Unit PlotView contract instead of throwing `UNIT_PLOTVIEW_TITLE_REQUIRED` during mount.
+- Unit Templates advance to **2.5.10** and SDK to **1.51.14**. The Layout Unit publishes generic namespace selection; the catalog remains **41 Units** and no Resonance identity/special case is added to Core.
+- Added an executable runtime source-parity gate covering real Unit SVG namespace creation and strict Group PlotView title resolution, closing the test gap that allowed v3.71.19 source-level parity to pass while runtime presentation was broken.
+- App **3.71.20**, Plugin API **1.19.0**, Android `versionCode` **161**.
+
+# v3.71.19 WIP — Resonance Production Unit Source-Parity Reconstruction
+
+- Reconstructed the production Resonance Workbench presentation through current Unit Templates while preserving the accepted plugin geometry stylesheet, domain/controller/runtime owners, scientific algorithms, task pipeline and existing state namespaces.
+- `unit-presentation.js` now owns the Resonance data-control PRIME, scientific PRIMARY, curve inspector, group analysis PRIME, physics/spacing/gate SUB views, accepted headers, controls, tables, PlotViews and scientific plot hosts. `view-components.js` remains the behavior/binding owner and delegates composition to the Unit presentation.
+- Resonance parameter/data controls remain a permanently titleless `data-control` PRIME. Inspector/group placement stays platform-neutral (`right` / `bottom` accepted defaults with Presenter-owned Mobile mapping), and group child plots preserve accepted landscape detail geometry through the PlotView Unit contract.
+- Preserved the accepted Resonance `plugin.css` / `mobile.css` presentation baseline and the frozen Desktop Visual Closure ownership boundaries; no Resonance identity or plugin-specific geometry was added to Core.
+- Migrated historical regression gates that still inspected the retired raw presentation owner so they now verify the production Unit owner without weakening the original semantics (mode controls, range menu, PRIME close lifecycle, PlotView/GroupArea composition, header actions, scalar-field controls, data-control rail and platform-neutral placement).
+- App **3.71.19**. Plugin API remains **1.19.0**; SDK remains **1.51.13**; Unit Templates remain **2.5.9 / 41 Units**. Final source validation: test **439/439**, check coverage **446/446**, Mobile **103/103**, Performance **PASS**, SDK suite/Harness **PASS**, Scientific parity **PASS**, Hard Visual Invariants **87/87**, Architecture Hygiene **PASS**, Plugin Boundary **0**, strict style ownership/gate **0 violations**, plugin manifests/packages **17/17**. Clean-source bootstrap/package verification is recorded in the handoff.
+
+# v3.71.18 WIP — Activity-Scoped Toolbar Visibility Closure
+
+- Fixed a generic Core shell regression where activity-scoped toolbar contributions could remain visible after another TOP plugin became SUPER/main. The runtime had already marked the old contribution with `plugin-activity-hidden`, but the more-specific shell layout rule `.plugin-context-toolbar .plugin-toolbar-btn { display:inline-flex; }` overrode the canonical hidden state.
+- The visible shell geometry now explicitly excludes `.plugin-activity-hidden`; the context-overflow/fallback lane follows the same rule so responsive reparenting cannot resurrect an inactive command. This fixes the stale Resonance **设置** button without adding Resonance identity or special-case logic to Core.
+- This is a bounded Core shell bugfix after the frozen Desktop Visual Closure baseline, not a Unit/SDK expansion. TER/Pulse accepted plugin CSS stays byte-frozen; SDK remains **1.51.13**, Unit Templates remain **2.5.9 / 41 Units**, Plugin API remains **1.19.0**, Theme Contract remains **3.10.0**.
+- App **3.71.18**, Android `versionCode` **159**.
+
+# v3.71.17 WIP — Pulse Parameter Source-Parity + Overflow Dismissal Closure
+
+- Fixed the Pulse Analysis parameter PRIME source-parity regression exposed by Windows Electron: the generic Unit `file-toolbar` recipe had inherited a `<=520 px` column collapse that does not belong to the accepted Pulse source, so the three file actions stacked vertically and increased the file card / parameter panel height by roughly two extra button rows.
+- Unit Templates **2.5.9** removes that plugin-derived breakpoint from the generic `file-toolbar` recipe. Pulse now declares its accepted **310 px** collapse explicitly through Unit `responsiveGeometry`; the accepted Pulse `plugin.css` remains unchanged and the 41-Unit catalog is unchanged.
+- Fixed the Desktop `更多功能` dismissal path. Core ContextMenu now treats a declared anchor as part of the interaction boundary, so a second trigger click reaches the real toggle instead of the capture-phase outside handler closing and the click immediately reopening a fresh menu.
+- While the context overflow popup is open, the main topbar temporarily switches from Electron `app-region:drag` to `no-drag`, allowing a click on otherwise draggable blank topbar space to dismiss the menu. Normal window dragging is restored immediately on close.
+- This patch does not reopen Desktop Visual Closure ownership or add plugin identity to Core. It corrects generic Unit responsive-detail ownership and generic shell-menu interaction semantics only.
+- App **3.71.17**, SDK **1.51.13**, Unit Templates **2.5.9**, Plugin API **1.19.0**, Theme Contract **3.10.0**, Android `versionCode` **158**.
+
+# v3.71.16 WIP — Pulse Production Unit Source-Parity + Context Overflow Closure
+
+- Pulse Analysis production presentation is reconstructed through current Unit Templates while preserving the existing analysis service, controller, numerical pipeline, accepted state namespaces and exact accepted `plugin.css` bytes.
+- Unit Templates 2.5.8 adds generic source-parity Header anatomy (`stacked`, optional actions host, `plot-minimal`) and Field `controlOnly` composition required to reproduce accepted Pulse DOM without raw plugin control markup. The catalog remains 41 Units.
+- The Pulse data-control PRIME remains permanently titleless; result/raw PlotViews, result SplitPane and table are now Unit-owned composition while runtime scientific rendering remains the single render owner.
+- Fixed the Desktop `更多功能` double-layer/dismissal regression: `#contextOverflowMenu` is now a hidden membership store only, while the visible dropdown is owned by one transient Core ContextMenu. Closing the popup also collapses the fallback store.
+- App **3.71.16**, SDK **1.51.12**, Unit Templates **2.5.8**, Plugin API **1.19.0**, Android `versionCode` **157**.
+- Pulse accepted interaction ids and private geometry hooks are now executable source-parity invariants, so dropping a control/plot target or a byte-frozen CSS hook fails before manual screenshot review. The Pulse SDK shadow was also corrected to the permanent titleless parameter-PRIME rule.
+- Final production-source validation: test manifest **436/436**, check coverage **443/443**, Mobile **103/103**, Performance **PASS**, SDK Harness **PASS**, Scientific parity **PASS**, Hard Visual Invariants **87/87**, Architecture Hygiene **PASS**, Plugin Boundary **0**, style ownership/gate **0 violations**, plugin manifests/packages **17/17**.
+
+# v3.71.15 WIP — Main Shell Import Projection Closure
+
+- Fixed the duplicate main-shell **导入数据** regression introduced while restoring dedicated TOP-window import actions. `isTopDefinition()` accepts a registered plugin definition, but `pages/panels.js` passed a raw manifest, so every TOP workbench was misclassified as non-TOP and could register a contextual import action in the shared main shell.
+- Main-shell TOP/SUPER workbenches now classify `definitionById(pluginId)` and therefore use only the single global **导入** route. Dedicated plugin windows keep the Core-owned local **导入数据** action and its accepted titlebar order.
+- Strengthened the runtime regression to reject the wrong argument shape and exercised TER, Resonance, Pulse and Vth TOP workbenches together; none may create a main-shell contextual import action. The historical static gate was also corrected so it can no longer protect the broken `isTopDefinition(manifest)` call.
+- No Unit, SDK, Theme, PlotView, Workbench geometry or authored CSS change. SDK remains **1.51.11**, Unit Templates **2.5.7 / 41 Units**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+- App advances to **3.71.15** and Android `versionCode` to **156**.
+
+# v3.71.14 WIP — Unit Detail Geometry Ownership
+
+- Moved TER parameter inset and heatmap content sizing behind explicit Unit Template detail-geometry contracts instead of leaking raw lower-level Workbench/PlotView options through Unit composition.
+- Added `prime.detailGeometry.contentInsetPx`; Unit Templates validate and own the accepted parameter-panel padding write. Unit-authored PRIME now rejects raw `contentInset`.
+- Added `plotView.detailGeometry.contentAspectRatio/contentMinHeightPx/contentMaxHeightPx`; Unit Templates validate these values and translate them into the existing generic PlotView execution service. Unit-authored PlotView rejects raw lower-level content geometry fields.
+- TER production now uses `variant:'fixed-titleless'` + `detailGeometry:{contentInsetPx:12}` for its parameter PRIME and Unit PlotView detail geometry for square heatmaps. Accepted `plugin.css` remains byte-identical.
+- Core `AnalysisWorkbench` and Core `PlotView` receive no plugin accepted-detail object and no TER/SFeRT identity. The Unit facade terminates the plugin detail contract before invoking those generic services.
+- Unit Templates advance to **2.5.7**, SDK to **1.51.11**, Plugin API remains **1.19.0**, Unit catalog remains **41 types**, Android `versionCode` advances to **155**.
+- Added executable release-gate coverage proving PRIME inset lifecycle cleanup, PlotView detail mapping, rejection of raw Core geometry through Unit authoring, and absence of `detailGeometry` leakage into Core execution modules.
+
+# v3.71.13 WIP — TER Source-Parity Runtime Closure
+
+- Closed the four Windows source-parity regressions found after the TER Unit cutover without adding a TER-specific Core path or expanding the public SDK/Unit catalog.
+- Restored the accepted TER parameter-panel outer inset through the existing generic PRIME `contentInset:'comfortable'` contract while continuing to adopt the accepted titleless `ter-workspace-left` node directly. The accepted TER geometry stylesheet remains byte-identical.
+- Restored accepted heatmap/data-plot proportions through PlotView's existing `contentAspectRatio` content-geometry contract, so square TER heatmaps re-acquire their post-layout width before rendering instead of keeping the smaller generic plot height.
+- Corrected Core import projection by host: TOP/SUPER workbenches in the main shell use only the global **导入** route, while a dedicated plugin window receives the Core-owned **导入数据** action locally after its Unit-composed header exists.
+- Extended the existing **更多功能** overflow owner so complete primary plugin activity buttons enter the menu when the primary lane is short. Plugin names are never shrunk or left partially clipped; lower-priority context commands are sacrificed before primary activities and the active activity is retained longest.
+- Kept Desktop Visual Closure/Core style ownership frozen: no authored Core CSS byte change, no new Core service/API, no new Unit, no TER selector in Core, SDK remains **1.51.10**, Unit Templates remain **2.5.6 / 41 Units**, Plugin API remains **1.19.0**.
+- Added executable v3.71.13 regression evidence for the 12 px accepted parameter inset/anatomy, post-layout square plot geometry, host-correct import projection, and whole-button primary overflow.
+- App advances to **3.71.13** and Android `versionCode` to **154**.
+
+# v3.71.12 WIP — Scientific Plot Material / TER Startup Ownership Fix
+
+- Fixed the remaining TER layered/two-shadow appearance at its generic Unit owner. `renderOwner:'runtime'` ScientificPlot targets were incorrectly tagged `dkds-scientific-surface-host`, so Semantic Material treated the inner drawing host as a second `surface` inside the PlotView/card that already owned the Material surface. Delegated Unit plots now use renderer-neutral `dkds-scientific-chart-host` identity and no longer receive a second Material background/shadow/backdrop recipe.
+- Kept the scientific renderer paper/plot background unchanged. The plot paper remains opaque for scientific contrast/source parity, but it is no longer a second Material card and therefore is not a second drop-shadow owner.
+- Reduced TER restored-project startup work without changing scientific results: Activity activation no longer calls `T.render()` in addition to the page `onOpen` owner, linked-data refresh no longer reapplies unchanged PlotGroup geometry, frame-priority R–V selection styling waits for the base render promise, and the primary TER heatmap now uses the existing `frame` render priority so the page can paint before the expensive scalar field.
+- Added runtime regression evidence proving one initial layout application, one seven-plot resize pass per refresh, one R–V base render schedule, and no duplicate activation render; added a Material ownership gate proving runtime-delegated plot content cannot reclaim `dkds-scientific-surface-host`.
+- Performance suite, TER-focused test/check suites, Mobile TER/scientific subsets, Hard Visual Invariants, Architecture Hygiene, strict Native Analysis audit and strict Style Ownership all pass on the final source. Windows Electron pixel acceptance remains WIP until the same client is rechecked.
+- Desktop Visual Closure history remains preserved; this patch changes the owning Unit/TER runtime contracts rather than re-opening the frozen Desktop presentation architecture.
+- App advances to **3.71.12** and Android `versionCode` to **153**. Public SDK remains **1.51.10**, Unit Templates remain **2.5.6 / 41 Units**, Plugin API remains **1.19.0**.
+
+# v3.71.11 WIP — TER R–V Source-Anatomy Fix
+
+- Fixed the real Windows TER regression where the third `R–V 全 Vg · 正扫 / 反扫` card rendered its header/status but no scientific plot.
+- Root cause: the Unit production composition omitted the accepted `id="terResistanceCard"`, while the existing production feature runtime intentionally resolves that card before rendering. The renderer therefore failed closed before drawing R–V or updating the selection status.
+- Restored that stable accepted source id on the Unit-composed resistance card. No TER-specific branch was added to Core and no second runtime/render owner was introduced.
+- Extended the v3.71.10 source-parity contract so future Unit reconstruction cannot silently drop the R–V card owner id again.
+- Kept the accepted TER geometry stylesheet byte-identical, including its 14 px PlotGroup gap and responsive sizing. The apparent first-row overlap is not addressed by arbitrary spacing/paint changes before the restored R–V anatomy is rechecked in Windows Electron.
+- App advances to **3.71.11** and Android `versionCode` to **152**. Public SDK remains **1.51.10**, Unit Templates remain **2.5.6 / 41 Units**, Plugin API remains **1.19.0**.
+
+# v3.71.10 WIP — Native Source-Parity Reconstruction
+
+- Reframed Unit Templates as the shared minimum contract rather than a mandatory final plugin layout. Plugins may retain explicit accepted detail geometry while Core continues to own semantics, lifecycle, accessibility, material/theme paint and single-owner boundaries.
+- TER source parity now follows the accepted pre-cutover source directly: restored its geometry-only manifest stylesheet, accepted control/header/table anatomy, 14 px PlotGroup gap, compact transform form, `presentation-v1` data-control state and `ter-plot-view-v3` PlotView state.
+- Parameter-purpose PRIME surfaces are now a hard titleless/headerless contract. Header/chrome declarations are rejected; TER adopts the source parameter node directly instead of wrapping it in a new Unit titlebar.
+- Unit Templates advance to **2.5.6**, SDK to **1.51.10**, Android `versionCode` remains **151**, and the Unit catalog remains **41 types**.
+
+# v3.71.9 WIP — TER Unit Cutover Layout/Lifecycle Fix
+
+- Treat the real Windows Electron report after v3.71.8 as a release-blocking regression: the TER data-control PRIME rendered only its shell/header, most scientific cards were absent/unstable, and the cutover introduced concrete renderer/observer retention risks.
+- Fixed the generic PRIME contract so `prime.build({content})` mounts that content into the canonical PRIME body. The fix is Core-generic and not keyed to TER.
+- Reuse generated PRIME containers after close/reopen instead of allocating a new parked subtree for each reopen, closing a real DOM-retention lifecycle bug.
+- Added ScientificPlot render-owner arbitration. `renderOwner:'runtime'` lets a Unit-composed plot delegate final drawing/resize observation to the existing `ctx.ui.scientificPlot.react/scalarField` runtime; it does not create a second ScientificCurveSurface/SVG/ResizeObserver and rejects a second interaction owner.
+- Production TER now uses `renderOwner:'runtime'` for its seven Unit scientific plot hosts while the existing feature runtime remains the single scientific renderer/interaction owner.
+- Removed `height:100%` from the generic `plot-card-fill` responsive layout recipe and from TER/TER-shadow non-heatmap plot geometry, preventing cyclic sizing of PlotGroup auto rows.
+- Added a v3.71.9 regression gate covering PRIME content mounting, generated PRIME reuse, single scientific renderer ownership, delegated-interaction rejection, responsive card height ownership, SDK type publication, Unit Templates 2.5.5 and the unchanged 41-Unit catalog.
+- SDK advances to **1.51.9**, Unit Templates to **2.5.5**, Android `versionCode` to **150**; the Unit catalog remains **41 types**.
+
+# v3.71.8 WIP — Empty Unit Page Shell Fix
+
+- Fixed the TER production Unit startup failure `Plugin page not found: terMaxPage` introduced by the formal v3.71.7 cutover.
+- Root cause: Core `ui.pages.add()` tested `spec.html` by truthiness, so the intentional Unit-only request `html:''` was treated as if no page body had been supplied and the page shell was never created.
+- Core page registration now distinguishes an explicitly provided `html` property from an omitted one: `html:''` creates a genuinely empty page shell for Unit composition, while omitting `html` still requires a pre-existing page and preserves the old adoption contract.
+- The fix is domain-blind and propagates through the generated Plugin Kernel to both the main shell and dedicated plugin windows; TER receives no plugin-id exception or fake whitespace placeholder.
+- Added a runtime regression test that executes the real `addPage()` implementation and verifies both sides of the contract.
+- TER production presentation, analysis service, controller, domain adapter, scientific feature runtime, 41-Unit catalog and Unit Templates 2.5.4 remain unchanged.
+- SDK advances to **1.51.8**; Android `versionCode` advances to **149**.
+
+# v3.71.7 WIP — TER Formal Production Unit Cutover
+
+- Formally cut over the production TER presentation to public Unit Templates after the v3.71.6 side-by-side live acceptance.
+- Production TER now builds its page/header, data-control PRIME, parameter/display/transform controls, comfortable PlotGroup, seven PlotViews, scientific surfaces, export surface and two managed result tables through the Unit facade.
+- Deleted the legacy TER `plugin.css` and `shared-views.js`; the production manifest loads no private stylesheet and no compatibility presentation path remains.
+- Kept the production `analysis-service`, controller, domain adapter, task path, selection-link runtime and scientific feature runtime as the single business/numeric/interaction owners; no second TER state store or calculation pipeline was introduced.
+- Preserved linked heatmap↔R–V selection, reduction plots, marker/wheel adjustment, domain focus, PlotView placement/export and responsive GroupArea behavior through the existing production feature runtime.
+- Replaced raw HTML result-table rendering with managed Unit Table projection and made the feature runtime fail closed when the Unit PlotView/ParameterForm owners are absent.
+- Reframed historical TER visual/layout gates around the formal Unit-only production contract instead of restoring deleted private presentation files.
+- Unit Templates remain **2.5.4 / 41 Units**; SDK advances to **1.51.7**; Android `versionCode` advances to **148**.
+
+# v3.71.6 WIP — TER Side-by-Side Live Presentation Acceptance
+
+- Kept Unit Templates at **2.5.4 / 41 Units** and did not cut over the production TER UI.
+- Added a release-gated side-by-side live presentation acceptance that runs the real production TER analysis service/controller/domain adapter and the real Unit TER shadow against the same production state/numeric owner.
+- Unit TER controls now reverse-sync production settings, display, algorithm and transform state; numeric Unit inputs normalize to `number|null` at the presentation boundary so the shared production state cannot be polluted with string-valued scientific parameters.
+- Unit TER now projects the production result into the complete two 8-column result tables and all seven scientific plot payloads instead of validating containers only. No TER calculation is duplicated in the Unit shell.
+- Production controller selection is projected through the domain snapshot into the Unit resistance status, and Unit `clear-highlight` round-trips to the same production controller.
+- The side-by-side fixture verifies 12 visible controls, two complete result tables, seven plot payloads and the same real 1 Vg × 40 Vd TER result used by the production service.
+- Extended the TER live adapter snapshot with controller selection and production-derived transform matrix projection; the adapter remains a capability projection over the existing production owners and creates no second service/controller/algorithm pipeline.
+- SDK advances to **1.51.6**; Android `versionCode` advances to **147**.
+
+# v3.71.5 WIP — Domain Adapter Live Migration Readiness
+
+- Kept Unit Templates at **2.5.4 / 41 Units**; this phase adds no UI Unit type or visual exception.
+- Added dependency-scoped `ctx.services.domain` over the existing Core Service Runtime: detached snapshots, explicit action whitelist, provider state notifications, consumer lifecycle cleanup and provider invalidation.
+- Production TER now publishes one audited additive `builtin.ter-analysis/live` adapter around its existing service; the provider is isolated in `domain-adapter.js`, while `plugin.js` remains a 29-line thin composition entry. No second controller, analysis-service or numerical pipeline is created.
+- TER Unit-only shadow declares an explicit dependency on production TER, connects to the same domain owner, invokes live production actions and mirrors the authoritative TER_Max state/tables through detached snapshots.
+- Added real production numerical parity coverage: the actual TER analysis service + Artifact Store + Scientific Pipeline are driven through the domain consumer seam; adapter result, production result and shadow snapshot must match exactly (fixture: 1 Vg × 40 Vd, 39 finite matrix cells).
+- The legacy production byte-freeze remains active outside the audited TER adapter wiring; removing the marked loader seam and manifest entry must reproduce the exact v3.71.4 TER entry/manifest bytes, while the isolated adapter is separately checked against second-owner creation.
+- SDK advances to **1.51.5**; Android `versionCode` advances to **146**.
+
+# v3.71.4 WIP — Data Center Unit-only Shadow Reconstruction
+
+- Added the fourth parallel Unit-only native-plugin shadow reconstruction for Data Center without replacing or editing the production Data Center plugin.
+- Kept the Unit catalog at 41 types and advanced Unit Templates to 2.5.4.
+- Added generic interactive Chip semantics: a Chip with `onInvoke` is rendered as a native button while retaining canonical Chip geometry/paint; passive Chips remain display spans.
+- Reconstructed the `data-primary` workbench, `data-control` artifact browser PRIME, bounded 18-row table preview, formula/workflow/provenance tools, dialogs/context menu, and `scientific-secondary` chart-preview PRIME through public Units only.
+- Corrected the stale Data Center geometry dossier from `plotView:complete` to `plotView:prime-contained`, matching the production outer PRIME + inner `portable:false` PlotView ownership.
+- The fourth real migration closes without adding any Data Center-specific Unit or Core branch. Production native plugin source and authored styles remain byte-frozen.
+- SDK advances to 1.51.4; Android `versionCode` advances to 145.
+
+# v3.71.3 WIP — Resonance Unit-only Shadow Reconstruction
+
+- Added the third parallel Unit-only native-plugin shadow reconstruction for Resonance Workbench without replacing or editing the production Resonance plugin.
+- Kept the Unit catalog at 41 types and advanced Unit Templates to 2.5.3.
+- Added generic `section:disclosure` semantics using native details/summary accessibility and Core-owned open-state reflection.
+- Extended the existing Popover Unit with Core-owned viewport-clamped anchor/point positioning, `reposition(...)`, and picker dialog semantics; plugins continue to own only domain content and anchor intent.
+- Reconstructed the accepted scientific PRIMARY, data-control PRIME, inspector PRIME, six-plot PlotGroup, Physics/Spacing/Gate SUB surfaces, rich selected-range action popover, and domain interaction extensions from public Unit Templates only.
+- Audited `accepted-scientific-v1` as a data-only composition of the same public Unit facade; no alternate renderer or preset-private runtime path was added.
+- Corrected the Resonance authoring/geometry blueprint for the native advanced-settings disclosure.
+- Production native plugin source and authored styles remain byte-frozen.
+- SDK advances to 1.51.3; Android `versionCode` advances to 144.
+
+# v3.71.2 WIP — Pulse Unit-only Shadow Reconstruction
+
+- Added the second real native-plugin shadow reconstruction under `examples/sdk151-unit-pulse-shadow/`; production Pulse Analysis remains unchanged.
+- Kept the Unit catalog at 41 types and advanced Unit Templates to 2.5.2.
+- Added generic `plotView:prime-contained` for PlotViews whose single position owner is an enclosing movable PRIME.
+- `prime:canonical-header` now adopts an existing complete header when `existingNode + handle + controlsHost` are supplied, preventing duplicate PRIME/PlotView chrome.
+- Added `splitPane.reflowBelow` on accepted breakpoints while preserving the same Core SplitController.
+- Corrected Pulse authoring blueprints for horizontal split orientation and PRIME-owned raw PlotView; Data Center chart preview now uses the same generic nested PlotView contract.
+- Added seven-layer Pulse parity evidence and a release-gated reconstruction test.
+
+# 3.71.1 — WIP / TER Unit-only Shadow Reconstruction
+
+- Add the first real **Unit-only shadow reconstruction** for native `builtin.ter-analysis` under `examples/sdk151-unit-ter-shadow/`. It is parallel authoring/test evidence only and never replaces the production TER plugin.
+- Rebuild the TER page header, semantic `data-control` PRIME, parameter/display/transform controls, summary strip, seven PlotViews in one responsive PlotGroup, square heatmaps, the special R–V card, export actions and two managed result tables through public Unit Templates with **zero shadow CSS**.
+- Compare all seven parity layers: function boundary, structure, geometry, style, interaction, responsive behavior and Mobile presentation. Scientific calculations stay owned by production TER; the shadow maps the same domain intents without duplicating TER math or mutating production state.
+- Real reconstruction finds one reusable contract omission: standalone native `.dkds-meta` hint text could not be expressed without private class usage. Unit Templates **2.5.1** adds the additive `note:meta` variant, delegating to the existing Core `.dkds-meta` owner. The catalog remains **41 Units**; no TER-specific Unit is added.
+- Advance SDK to **1.51.1** and app to **3.71.1 WIP**. Existing native plugin source and authored styles remain protected by the same byte-level freeze baseline.
+- Record the remaining non-Unit migration boundary: ordinary parallel plugins cannot reuse the full stateful native TER service. Full numeric side-by-side shadow execution therefore needs a future generic domain-adapter seam; it is not a reason to add UI Units or copy TER business logic.
+- Android `versionCode` advances to **142**.
+
+# 3.71.0 — WIP / SDK 1.51 Unit Template Reconstruction Contract
+- Native reconstruction blueprints are authoring-only SDK migration evidence and are excluded from runtime Core; Core remains domain-blind while the 18-plugin reconstruction dossiers remain fully generated and release-gated.
+
+- Advance SDK to **1.51.0** while keeping Plugin API **1.19.0** and Theme Contract **3.10.0**. Current native plugins remain byte-frozen reference assets; this phase expands Core/SDK/tests/docs only.
+- Upgrade Unit Templates to **2.5.0** and formalize a **41-unit** catalog. `accepted-scientific-v1` is a pure preset definition composed exclusively through the same public Unit factories available to third-party plugins.
+- Expand reconstruction evidence for all **18 native plugin directories** across Unit regions, geometry, structural primitives, Core services, platform presentation, dynamic state/accessibility and source-provenance censuses.
+- Add Core-owned accepted geometry vocabulary, responsive breakpoints and migration bridges so frozen private plugin geometry can be expressed without copying plugin-private CSS or introducing a second visual owner.
+- Add dynamic behavior Units for Meter, MovableWindow and SplitPane, plus schema-level ComponentTree/ParameterForm Units and detailed metric provenance for the accepted design system.
+- Formalize canonical chrome/anatomy policies for PlotView, PlotGroup and movable PRIME surfaces; mandatory Core actions cannot be replaced by plugin lookalike headers.
+- Add Unit State Controller with 12 semantic channels (`visible/enabled/selected/pressed/checked/expanded/busy/readonly/required/current/invalid/loading`), per-Unit state policies, accessibility/keyboard vocabulary and native state blueprints.
+- Native state census currently records **90 state expressions, 17 role/tabindex semantics, 26 other ARIA semantics and 9 keyboard points**, all mapped to public state/accessibility contracts with **0 unmapped state channels**.
+- Add a unified reconstruction dossier per native plugin combining Unit, Geometry, Structure, Service, Presentation and State evidence.
+- Existing native plugin source and authored CSS remain protected by the 3.70.8 byte-level freeze gate.
+- Android `versionCode` advances to **141**.
+
+# 3.70.9 — WIP / SDK 1.50 Unit Template Composition
+
+- Advance the SDK to **1.50.0** while keeping Plugin API **1.19.0** and Theme Contract **3.10.0**. SDK 1.50 is additive: it introduces unit-level composition without changing or migrating any existing built-in plugin implementation.
+- Add public `ctx.ui.unitTemplates` and Core requirement `ui.unit-templates`. The formal unit catalog covers Panel, Header, Toolbar, PRIME, PlotView, PlotGroup, ScientificPlot and Table so new plugins can freely compose layouts rather than adopting a whole-workbench shape.
+- Keep `accepted-scientific-v1` only as an optional SDK 1.49 example preset. SDK 1.50's canonical design-system layer is unit based; plugins may arrange, omit and combine units independently.
+- Make strict Unit PlotView a complete data-plot unit: a non-empty title/header is mandatory, portable position control is mandatory, at least two placements are required, and canonical export capability cannot be disabled completely. `ScientificPlot` remains the lower-level plot canvas primitive.
+- Make Unit PlotGroup header **complete or absent**. A standard header is Core-generated with title/meta, `每行:N` layout control, placement, collapse and close. A headerless PlotGroup PRIME must be fixed/non-movable. PlotGroup children route through strict PlotView units.
+- Move PlotGroup spacing into semantic Core-owned densities extracted from accepted existing layouts: `compact=10 px`, `regular=12 px`, `comfortable=14 px`. Unit Template consumers cannot supply raw row/column gap values. Existing built-in plugin spacing remains byte-for-byte unchanged.
+- Add fixed base scientific interaction policy `scientific-standard-v1`: standard selection, reset, box selection/zoom and wheel-zoom bindings are mandatory. Plugins may add only non-conflicting domain interaction extensions; they cannot replace the baseline policy through Unit Templates.
+- Add `examples/sdk150-unit-composition/` as a non-Resonance, zero-private-CSS example with a layout intentionally different from Resonance. It demonstrates that identical units retain accepted visual/interaction grammar while the overall workbench composition remains free.
+- Add release gates for SDK 1.50 strict-unit behavior, example runtime/layout execution, and byte-level freezing of all pre-existing built-in plugin files and authored styles. The 3.70.8 baseline remains **110 plugin files / SHA-256 `3a03f8c6846f66f68778c683e2025a6c1c77fb294676798b42c66e7845ef910a`** and **36 style files / SHA-256 `59bb51d38e699772a4c383a0f0456a5b036274f07448c91275d9f4f7071dfcee`**.
+- Require all current SDK 1.50 gates in both `npm test` and `npm run check` so release validation cannot omit the new unit contract.
+- Android `versionCode` advances to **140**.
+
+# 3.70.8 — WIP / SDK 1.49 accepted-visual-template parity
+
+- Correct the SDK 1.49 composition direction: the accepted 3.70.5 built-in presentation is the reference template. A semantic migration that changes existing chrome, spacing, placements, radii or Theme appearance is now treated as an SDK contract regression.
+- Remove SDK 1.49 visual ownership introduced by the 3.70.6/3.70.7 WIP implementation. `scientific-card`, PlotGroup density, ScientificSection and PRIME content-inset markers no longer add a second CSS paint/spacing layer by default.
+- Make `surface:'scientific-card'` semantic-only for adopted views. Newly created scientific cards reuse the established `analysis-chart-card / analysis-chart-title / analysis-chart` DOM/classes instead of a new `.dkds-scientific-card` visual system.
+- Make PlotGroup an ownership/composition layer over the existing GroupArea/PlotView system. `adoptPlot(...)` preserves existing card DOM and plugin-requested managed-grid spacing; Resonance remains 12 px and TER remains 14 px rather than being normalized to 10 px.
+- Restore the accepted Resonance group/inspector header structure and controls (`context`, group-column ActionGroup, collapse, close) and have SDK 1.49 adopt that canonical header instead of regenerating a different select/button header.
+- Correct PRIME semantics: `presentationRole:'data-control'` describes purpose, not Desktop docking. Resonance retains its accepted fixed-left control surface; TER, Pulse and Data Center retain their accepted multi-placement data-control behavior. `fixed:true` is the explicit one-placement contract.
+- Existing-node PRIME headers default to `header.mode:'adopt'`; `contentInset` is opt-in; surface-controlled movable inspector/scientific-secondary PRIME surfaces still require explicit canonical chrome, while host-managed data-control retains the accepted handle/chrome behavior.
+- Restore the exact accepted Aurora disabled-action tokens/appearance and generic disabled-contrast audit behavior instead of changing Theme paint to satisfy a new SDK gate.
+- Add `test-sdk149-visual-template-parity.js` to both `npm test` and `npm run check` so future SDK composition work cannot silently become a visual redesign.
+- Add public `accepted-scientific-v1` to `ctx.ui.scientificWorkbench`: this is the non-domain executable reference profile extracted from the accepted 3.70.5 Resonance composition. It exposes the accepted primary chrome, left data-control, movable inspector, scientific-secondary PlotGroup, panel insets, GroupArea geometry, Portable bounds and responsive offsets through public SDK contracts rather than Resonance-private selectors.
+- Add `examples/sdk149-reference-workbench/` (`Scientific Reference Studio`) as a zero-CSS, non-Resonance SDK example. It contains no `respar-*`, `reswin-*` or Resonance-private DOM/class dependency and uses only public SDK 1.49 APIs, while receiving the accepted `context + 每行:N + placement/collapse/close` group header, PlotView cards, tools/legend slots and workspace geometry.
+- Add `test-sdk149-reference-plugin-parity.js` to both release manifests. The gate validates the non-domain example, rejects private Resonance coupling, and compares the public profile against the accepted 3.70.5 composition geometry/details. `dkds-plugin validate`, `test-runtime` and `test-layout` all execute this reference as an ordinary third-party plugin; layout covers 64 canonical surface/viewport cases.
+- Android `versionCode` advances to **139**. SDK remains **1.49.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.70.7 — WIP / Scientific Composition Validation Closure
+
+Second-pass delivery audit for SDK 1.49.0 / Plugin API 1.19.0. This patch does not add a compatibility layer or change the scientific-domain boundary; it closes validation and built-in migration gaps found while rechecking 3.70.6.
+
+- Require explicit `presentationRole` for direct `registerPrime(...)` composition and migrate the remaining Pulse Analysis, Data Center and SDK template PRIME declarations.
+- Require direct scientific `PlotView.bind(...)` sites to opt into the Core-owned `scientific-card` surface; migrate remaining built-in direct binds.
+- Expand composition lint for fixed/movable PRIME semantics, canonical inspector/header ownership, duplicate scientific-secondary embedding, PlotGroup layout controls, direct PlotView surfaces, canonical paint/radius/seam ownership and ScientificSection negative-flow offsets.
+- Strengthen PlotGroup runtime ownership: reject duplicate group owners and responsive fixed-height children.
+- Expand Desktop/Mobile layout harness to 8 Surface combinations × 4 Desktop sizes plus 8 combinations × 4 Mobile sizes (64 scenarios), with browser measurements for overlap, escape, action clipping, placement controls, group minimum width and vertical whitespace.
+- Require the current Scientific Composition gate set in both `npm test` and `npm run check`, with a manifest-drift regression test.
+- Correct the stale README release banner and synchronize SDK 1.49 documentation/type declarations.
+- Android `versionCode`: **138**.
+
+
+# 3.70.6 — WIP / SDK 1.49 Scientific Composition Contract
+
+- Advance the public SDK to **1.49.0** while keeping Plugin API **1.19.0** and Theme Contract **3.10.0**. This is an additive Scientific Composition contract, not a compatibility layer or Plugin API semantic break.
+- Bring `DKDSPluginWorkspacePrimeSpec` into parity with Runtime, including canonical chrome/header controls, `chrome`, `handle`, `controlsHost`, `controlsPlacement`, `useTargetAsWrapper`, collapse/placement callbacks and semantic `contentInset`.
+- Make movable `existingNode` PRIME surfaces explicit: plugins provide a canonical handle/control host or request Core-generated chrome; Core no longer guesses an arbitrary `.dkds-surface-header` as whole-window chrome. Fixed `data-control` PRIME surfaces use one placement and expose no position chooser.
+- Add Core-owned **ScientificSection**, **ScientificCard/PlotSurface**, **PlotGroup**, and declarative **ScientificWorkbench** composition. PlotGroup creates or adopts canonical PlotViews over GroupArea so header/action/export/placement behavior, spacing and scientific-card paint remain Core-owned.
+- Add canonical PRIME header metadata/actions/controls, including PlotGroup column controls; add semantic content inset/density plus frozen workspace/section/group spacing and surface-radius tokens.
+- Scope ordinary workbench toolbar/menu contributions to the active activity by default so inactive analysis activities cannot leak stale commands into the host toolbar.
+- Add composition lint and Desktop/Mobile layout harness coverage for movable PRIME chrome, fixed data-control behavior, PlotGroup membership/responsive geometry, section overlap, card ownership, theme disabled-action contrast, and external TOP task materialization parity.
+- Migrate built-in **Resonance Workbench**, **TER Analysis**, **Pulse Analysis**, and the relevant Data Center/mobile control surface to the current composition contract. Resonance Group plots now use PlotGroup-created canonical PlotViews and its Group PRIME consumes Core header meta/column/placement/collapse/close controls.
+- Update SDK docs/templates/reference examples and historical regression expectations to the public Core-owned composition contract; keep the authored JS 48 KiB module boundary intact without relaxing hygiene gates.
+- Preserve the frozen **Desktop Visual Closure** history and existing platform-presentation ownership. No plugin-id Core special case, legacy alias, fallback layout shim, old/new dual composition path, or domain scientific model is introduced.
+- Android `versionCode` advances to **137**.
+
+# 3.70.5 — WIP / Resonance dedicated Worker + interaction stability
+
+- Fix Resonance derived group cards (**FWHM / 峰高 A / 峰面积 S**) becoming blank after the workbench moved fully onto the ordinary dedicated plugin-host path. The dedicated plugin-window CSP allowed `blob:` in `default-src` but kept a stricter `script-src`; Chromium Worker policy falls back to `script-src` when `worker-src` is absent, so Core Task Runtime's source-composed Blob Worker was blocked at execution time even though v3.70.4 correctly transported all task bytes. The host now explicitly permits **Blob Workers only** via `worker-src blob:`; no arbitrary file/network Worker URL loading is opened.
+- Break the derived-metric failure storm. A failed peak-metric signature is now latched instead of being resubmitted on every reactive/group render; an explicit provider/data invalidation or `scheduleMetricRefresh()` clears that latch and may retry once. This prevents persistent Worker failure from becoming `task failure → metric settled → reactive render → same task again`.
+- Keep raw GroupArea metrics independent from the derived-metric Worker. Vpk, Ipk and prominence are projected directly from peak data; only FWHM / amplitude / area request the peak-metrics provider.
+- Stabilize the main legend under curve selection. Dataset legend DOM is retained when its semantic rows/colors are unchanged, legend row identity no longer follows the currently selected sweep, and legend activation now publishes the dataset entity it actually represents instead of bouncing through a sweep selection first.
+- Add a v3.70.5 regression gate covering explicit dedicated-window Blob-Worker CSP, failed-metric retry bounding/recovery, raw-vs-derived GroupArea isolation, semantic legend DOM reuse and dataset-level legend selection.
+- Browser proof was additionally run against the actual Core Task Runtime with the dedicated-window CSP: a source-composed Blob Worker executes successfully under the new policy.
+- Preserve the frozen **Desktop Visual Closure** / 3.69.4 archive boundary. This is a dedicated-host/runtime and Resonance interaction correction, not a reopening of Core Presentation ownership.
+- Android `versionCode` advances to **136**. SDK remains **1.48.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.70.4 — WIP / built-in dedicated Task source parity
+
+- Fix first-party analysis plugins failing only in dedicated Electron windows with `Task source bytes are required by the current runtime`. The failure affected built-in task owners/providers because dedicated-window bootstrap carried scripts/styles but not the generated task entry/import bytes used by the owner renderer.
+- Add one shared Node-side `buildBuiltinTaskSourceBundle()` implementation used by both `scripts/generate-plugin-index.js` and `desktop/plugin-window-manager.js`, so owner and dedicated renderers receive byte-identical built-in task entry/import sources and canonical Core task preludes.
+- Extend the canonical Core `applyPackage(...)` operation to accept internal task-Core-source transport metadata. Normal built-in startup now also routes through the same operation instead of assigning `taskSources` / `taskCoreSources` through a separate path.
+- Dedicated plugin windows now call the same package materialization step for **all** target/theme/algorithm providers, including trusted first-party built-ins, before `activateAll()`. External/override packages continue to use packaged file bytes; built-ins use only trusted task bytes prepared by the main process. No arbitrary Worker file URL fallback is introduced.
+- Add a first-party dedicated Task parity gate that scans every current built-in dedicated window and its providers, compares dedicated task bytes/Core preludes against the generated owner catalog, reproduces the exact `builtin.standard-transport-algorithms/transport-compute` path, and executes the transported task/import bytes.
+- Preserve v3.70.3 host-chrome failure containment: plugin activation errors still cannot cover the Core titlebar or window controls.
+- Android `versionCode` advances to **135**. SDK remains **1.48.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.70.3 — WIP / dedicated plugin-window failure chrome survival
+
+- Keep the Core-owned dedicated-window titlebar alive when plugin activation/startup fails. The startup error surface now occupies only the workspace grid tracks instead of a viewport-fixed overlay that covered the title/minimize/maximize/close row.
+- Configure the dedicated window title immediately after bootstrap resolution and before waiting for later runtime/plugin activation, so a plugin failure still leaves the plugin/window identity visible.
+- Keep minimize, maximize/restore, and close IPC binding independent of plugin activation; no plugin error path may replace or hide host chrome.
+- Add a dedicated regression gate that forbids the old full-viewport startup-error overlay, requires the permanent titlebar/window-control DOM, checks title configuration ordering, and protects independent Core window-control binding.
+- Android `versionCode` advances to **134**. SDK remains **1.48.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.70.2 — WIP / packaged TOP Task dedicated-window parity
+
+- Fix external packaged TOP workbenches that declare `execution.tasks`: dedicated plugin windows now materialize task entry/import bytes through the same Core package operation as the owner renderer before `activateAll()`.
+- Replace the drifting manifest-only dedicated path with one internal `applyPackage(id, manifest, source, files)` operation backed by canonical `materializeTaskSources(manifest, files)`.
+- Keep Task Runtime strict: worker source bytes remain mandatory and no arbitrary Worker file-URL loading is introduced. Generated built-in `taskCoreSources` remain preserved and are still composed ahead of task imports/entry by the current Task Runtime.
+- Apply the same packaged-definition operation to external/override Theme and Algorithm Providers loaded inside dedicated windows, so package metadata/source parity cannot drift by renderer role.
+- Add a real external TOP+Task package fixture with one task entry and one import. Regression coverage validates/packages it through the SDK CLI, activates it in owner and dedicated Plugin Kernel contexts, executes the imported task, verifies cancel/latest-wins, and proves reload/uninstall revoke task Blob URLs.
+- Extend the detached SDK Harness with the TOP+Task package smoke. Static package validation is no longer the only gate for this path.
+- Preserve the frozen **Desktop Visual Closure** / Phase A–E archive history from 3.69.4; this is a host-runtime parity fix on the 3.70.x WIP line, not a reopening of Presentation or visual ownership architecture.
+- Android `versionCode` advances to **133**. SDK remains **1.48.0**, Plugin API **1.19.0**, Theme Contract **3.10.0**.
+
+# 3.70.1 — WIP / Task Runner progress + acquisition-order metadata
+
+- Continue the post-archive 3.70.x feature line from the frozen 3.69.4 baseline without reopening the Phase A–E interoperability architecture. **Desktop Visual Closure history remains preserved.**
+- Advance the public SDK to **1.48.0** while keeping Plugin API **1.19.0** and Theme Contract **3.10.0**.
+- Add real bounded Task Runner progress. Worker task code can call `context.reportProgress({fraction,stage,label,completed,total})`; the submitting renderer observes it through `handle.onProgress(...)` and `handle.progress`. Core normalizes payloads, coalesces/throttles delivery to roughly 20 Hz, flushes the last pending update before a successful result, drops stale latest-wins generations, and stops progress delivery immediately on cancellation. Workers still have no UI/DOM access.
+- Add canonical acquisition metadata under `artifact.metadata.acquisition`: `runId`, `sequenceIndex`, `timestamp`, optional `parentSequenceIndex`, and `provenance`. The shared Import Workbench preserves source-provided ordering and assigns deterministic `sequenceIndex` values for missing order within one multi-file import batch, following selected-file order and importer-emitted Artifact order.
+- Extend lightweight metadata/source descriptors with acquisition fields and add synchronous `ctx.data.sources.acquisitionOrder({artifactIds})`. Dedicated plugin windows receive the same synchronized acquisition-order snapshot; history-dependent algorithms therefore do not need to reinterpret UI/source enumeration order.
+- Add `sdk/ACQUISITION_ORDER.md`, update `sdk/TASK_RUNNER.md`, SDK types/contract/authoring export, and regression coverage. The Plugin Manager SDK export now packages the current **SDK 1.48.0** documentation and types.
+- Android `versionCode` advances to **132**.
+
+# 3.70.0 — WIP / Export current SDK from Plugin Manager
+
+- Start the explicit post-archive 3.70.x feature line from the frozen 3.69.4 baseline; the Phase E interoperability contract remains frozen.
+- Add **导出SDK** immediately to the left of **复制诊断** in Plugin Manager. The control uses the existing explicit native export-intent gate.
+- `sdk:authoring` now deterministically builds `src/generated/dkds-sdk-export.zip` from the complete public `sdk/` tree plus the selected public authoring guides. The archive includes `AI_START_HERE.md` and `SDK_MANIFEST.json` with SDK/API versions, file sizes and SHA-256 hashes.
+- Electron owns the native save dialog and copies the generated archive from the packaged application. LAN Web downloads the same ZIP; Android uses the existing native document export path. No second SDK contract or compatibility representation is introduced.
+- The generated SDK ZIP remains untracked/cleanable and is rebuilt by dev start, tests, distribution builds and Mobile web-asset sync.
+
 # 3.69.4 — Final Archive / Android self-contained scientific Worker transport
 
 - Continue the bounded post-Phase-E maintenance line without reopening the formal **Phase E 3.69.0** interoperability contract. No new Interaction channel, public Plugin API/SDK capability, compatibility alias, plugin-private Worker pool, or main-thread scientific fallback is introduced.
@@ -3478,3 +4559,12 @@ Core explicit-save policy and metadata stability; Mobile companion topology and 
 - moved LAN update service under `services/update-server/` and update defaults under `config/`;
 - organized practical guides/releases under `docs/`;
 - added project-structure, development and next-session handoff documentation.
+
+## 3.71.76 WIP
+
+- Replaced Mobile parameter Drawer descendant-overflow sizing with parent-owned compact semantic sizing. The Drawer now chooses a bounded compact track first and Unit/layout/control content adapts inward, matching the accepted Desktop ownership direction.
+- Ordinary input/select values and Desktop preferred widths can no longer widen the Drawer. Most ordinary control labels contribute through a robust 80th-percentile readability target; extreme values/options are treated as outliers.
+- Primary/fill Action text remains a hard non-compressible width requirement. Canonical Surface padding and Unit gaps remain untouched and therefore non-compressible.
+- Drawer persistence advanced to `dkds.mobile.drawer-width.v13.<activity:surface>` so widths produced by the retired DOM-overflow fitter cannot reopen.
+- Removed obsolete parameter-Drawer geometry gates from active test/check/mobile manifests. Added a behavioral parent-owned-width acceptance that fails if long ordinary values drive the Drawer toward viewport width, if spacing is rewritten, if a primary action is clipped, or if whole-descendant overflow probing returns.
+- Curve Inspector remains outside Drawer sizing ownership and retains its independent Mobile SplitController/PortableView path.

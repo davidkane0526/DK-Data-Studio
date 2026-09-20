@@ -10,7 +10,9 @@ const builtin=manager.listBuiltinPluginWindows(root);
 for(const activity of ['pulse','ter','transfer-vth-lab']){
   const spec=builtin.find(row=>row.activity===activity);
   assert(spec,`missing dedicated TOP ${activity}`);
-  assert(spec.styleSources?.some(row=>row.file==='plugin.css'&&typeof row.css==='string'&&row.css.length>20),`${activity} must carry built-in manifest.styles into the dedicated renderer`);
+  if(activity==='transfer-vth-lab'){assert.deepStrictEqual(spec.styleSources,[],'Vth production Unit cutover must not carry retired private plugin.css into the dedicated renderer.');assert(spec.packageScripts?.includes('unit-presentation.js'),'Vth dedicated renderer must load the production Unit presentation module.');}
+  else assert(spec.styleSources?.some(row=>row.file==='plugin.css'&&typeof row.css==='string'&&row.css.length>20),`${activity} must carry built-in manifest.styles into the dedicated renderer`);
+  if(activity==='ter')assert(!/(?:^|[;{}]\s*)(?:background(?:-color)?|color|border(?:-[\w-]+)?|box-shadow|text-shadow|font(?:-family|-size|-weight)?)\s*:/mi.test(spec.styleSources.find(row=>row.file==='plugin.css').css),'TER dedicated-window stylesheet must remain geometry-only.');
   assert(spec.themeProviders?.some(row=>row.pluginId==='com.dkds.theme.liquid-glass'),`${activity} must receive bundled Theme Providers`);
 }
 
@@ -54,6 +56,6 @@ assert(!ps.includes("'assets/dkds/core/mobile-host-runtime.js'")&&!ps.includes("
 const sync=read('mobile/scripts/sync-web-assets.js');
 assert(sync.includes("runtime-assets.json")&&sync.includes('missingRuntimeFiles'),'sync:web must validate the same mobile runtime asset manifest before Expo prebuild');
 
-const vth=read('src/plugins/transfer-vth-lab/plugin.js');
-assert(vth.includes("id:'vth-results-height-v2'")&&vth.includes('dkds-vth-results-splitter')&&vth.includes("cssVar:'--dkds-vth-results-height'"),'Vth plot/results composition must provide the Core persisted results-height splitter so the plot can flex-fill.');
+const vth=read('src/plugins/transfer-vth-lab/unit-presentation.js');
+assert(vth.includes("id:'vth-results-height-v3'")&&vth.includes('units.splitPane.create')&&vth.includes("trackToken:'--dkds-unit-vth-results-height'"),'Vth Unit plot/results composition must provide the Core persisted results-height SplitPane so the plot can flex-fill.');
 console.log('v3.63.1 dedicated Theme/style parity, Core tooltip/move, Android asset manifest and Vth layout contracts passed.');

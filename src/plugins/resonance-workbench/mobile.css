@@ -35,7 +35,7 @@
    squeezed Desktop rail. Reflow its local controls from the drawer's actual
    inline size so labels, checkboxes and fields stay aligned after resizing. */
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel{
-  container-type:inline-size;container-name:resonance-parameters-mobile;padding:10px;overflow:visible
+  container-type:inline-size;container-name:resonance-parameters-mobile;overflow:visible
 }
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel>section{padding:9px;margin:0 0 8px;min-width:0}
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-scan-global{

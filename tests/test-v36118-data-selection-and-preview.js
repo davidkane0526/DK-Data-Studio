@@ -7,13 +7,14 @@ const json=f=>JSON.parse(read(f));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const dc=read('src/plugins/data-center/feature-runtime.js');
+const dcChart=read('src/plugins/data-center/chart-runtime.js');
 const dcSelection=read('src/plugins/data-center/artifact-selection.js');
-const views=read('src/plugins/data-center/shared-views.js');
+const views=read('src/plugins/data-center/unit-presentation.js');
 const app=read('src/generated/runtime/app.js');
 const html=read('src/index.html');
-assert(dc.includes("function clearChartPreview(message='选择 DataTable 后可配置图形。')"),'Data Center must have explicit stale-chart cleanup.');
-assert(dc.includes('ctx.ui.scientificPlot.purge?.(host)'),'Data Center stale-chart cleanup must use the Core chart lifecycle.');
-assert(dc.includes("if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}"),'Data Center render path must clear old chart when the current DataTable disappears.');
+assert(dc.includes("ctx.modules.require('chart-runtime')")&&dcChart.includes("function clearPreview(message='选择 DataTable 后可配置图形。')"),'Data Center must delegate explicit stale-chart cleanup to its chart runtime.');
+assert(dcChart.includes('ctx.ui.scientificPlot.purge?.(host)')&&dcChart.includes('host.replaceChildren()'),'Data Center stale-chart cleanup must use the Core chart lifecycle and clear stale host content.');
+assert(dcChart.includes("if(!a||!provider||a.kind!=='data.table'){clearPreview();return false;}"),'Data Center delegated render path must clear old chart when the current DataTable disappears.');
 assert(views.includes('dcInvertSelectionBtn')&&views.includes('dcSelectAllBtn')&&views.includes('dcClearSelectionBtn'),'Data Center must expose common selection actions.');
 assert(dcSelection.includes('event.shiftKey')&&dcSelection.includes('event.ctrlKey||event.metaKey'),'Data Center rows must support range/additive selection modifiers through the extracted selection owner.');
 assert(dcSelection.includes("mod&&key==='a'")&&dcSelection.includes("mod&&key==='i'"),'Data Center list must expose select-all and invert keyboard shortcuts through the current pane-scoped shortcut owner.');

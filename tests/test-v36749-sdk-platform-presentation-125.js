@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('node:assert');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -14,9 +15,9 @@ const expo=json('mobile/app.json').expo;
 const tuple=v=>String(v).split('.').map(Number);
 const atLeast=(v,min)=>{const a=tuple(v),b=tuple(min);for(let i=0;i<Math.max(a.length,b.length);i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 assert(atLeast(pkg.version,'3.67.49'),'SDK 1.25 platform-presentation capability must remain available after v3.67.49.');
-assert.strictEqual(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0','SDK 1.25 must not fork Plugin API');
-assert.strictEqual(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert(atLeast(mobilePkg.version,'0.8.35'),'Mobile host must remain at or beyond the SDK 1.25 adoption baseline.');
 assert(atLeast(expo.version,'0.8.35'),'Expo host must remain at or beyond the SDK 1.25 adoption baseline.');
 assert(Number(expo.android.versionCode)>=46);
@@ -91,8 +92,13 @@ const rows=JSON.parse(match[1]);
 for(const id of ['builtin.resonance-workbench','builtin.data-center','builtin.pulse-analysis','com.dkds.tools.pulse-sampler']){
   const row=rows.find(item=>item.id===id);assert(row,`Missing generated row ${id}`);
   assert(row.styleSources.every(item=>item.file!=='mobile.css'),`${id} must not load mobile.css as shared CSS.`);
-  assert(row.platformStyleSources.mobile.some(item=>item.file==='mobile.css'),`${id} must carry mobile.css only in Mobile platform assets.`);
-  assert.strictEqual(row.platformStyleSources.desktop.length,0,`${id} must not expose Mobile CSS to Desktop.`);
+  if(id==='com.dkds.tools.pulse-sampler'){
+    assert.strictEqual(row.platformStyleSources.mobile.length,0,'Production Unit Pulse Sampler must not carry plugin-owned Mobile CSS after cutover.');
+    assert.strictEqual(row.platformStyleSources.desktop.length,0,'Production Unit Pulse Sampler must not carry plugin-owned Desktop CSS after cutover.');
+  }else{
+    assert(row.platformStyleSources.mobile.some(item=>item.file==='mobile.css'),`${id} must carry mobile.css only in Mobile platform assets.`);
+    assert.strictEqual(row.platformStyleSources.desktop.length,0,`${id} must not expose Mobile CSS to Desktop.`);
+  }
 }
 
 const pluginDirs=fs.readdirSync(path.join(root,'src','plugins')).filter(name=>!name.startsWith('_'));

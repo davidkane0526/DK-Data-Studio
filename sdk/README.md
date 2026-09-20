@@ -1,4 +1,33 @@
-# DK Data Studio Plugin SDK 1.47.0
+# DK Data Studio Plugin SDK 1.51.43
+
+SDK 1.51.43 / Unit Templates 2.5.38 establishes one Mobile companion outer-geometry contract for every semantic `companion-right` / `companion-bottom`: Workspace `SplitController` state is the only user/default size preference and resolves the bounded final size from the actual Workspace frame; shared Mobile CSS only consumes that resolved track token, and the allocated Surface owns its internal scrolling/reflow. Unit `detailGeometry`, intrinsic constraints, `scrollHeight`, descendant overflow and Unit observers no longer feed back into right/bottom track allocation. Mobile split persistence uses one Core-owned schema rather than per-profile generations. Parameter Drawer intrinsic-width fitting remains a separate overlay contract and continues to consume Unit inline constraints without affecting scientific companions.
+
+SDK 1.51.37 / Unit Templates 2.5.33 historically added live companion block-fit together with Drawer changes. The companion block-fit portion is retired by SDK 1.51.43; the Drawer scrollbar/drag contracts remain.
+
+SDK 1.51.36 / Unit Templates 2.5.32 historically allowed Unit minima to participate in Mobile companion allocation. SDK 1.51.43 retires that outer-allocation effect: those values remain Unit-internal geometry only.
+
+SDK 1.51.35 / Unit Templates 2.5.31 closes Mobile parameter Surface geometry ownership. Parameter Drawers have a 25% live-page hard floor; real Unit intrinsic constraints may raise that floor, parameter legends follow the assigned Drawer width instead of widening it, and Presenter publishes one Drawer-occupancy value for companion lanes. The existing Core-owned 6 px parameter PRIME outer inset remains unchanged.
+
+SDK 1.51.33 / Unit Templates 2.5.29 introduced the shared Unit geometry-constraint registry. Under the current 1.51.43 contract, Presenter consumes that registry for parameter-Drawer intrinsic width only; scientific companion outer tracks are Workspace-owned and do not consume Unit content constraints. `units.geometryOwnershipPolicy` remains the read-only authoring policy surface.
+
+
+SDK 1.51.32 / Unit Templates 2.5.28 historically connected PlotGroup block constraints to Mobile scientific lanes. That outer coupling is retired by 1.51.43; `primaryScroll` and Unit-internal responsive behavior remain unchanged. The public surface remains 41 Units / 73 Layout recipes.
+SDK 1.51.29 / Unit Templates 2.5.25 makes PRIMARY right/inline-end breathing room a Workspace Unit contract: Unit-owned 12 px by default, with explicit content-owned mode for source-faithful presentations that already own the inset. Generic Core dock slots remain edge-to-edge, so the rule cannot reintroduce global page padding.
+SDK 1.51.27 / Unit Templates 2.5.23 keeps the 41-Unit / 73-Layout public surface and closes two generic fill-chain gaps: created SplitPane regions are now canonical min-size-safe fill hosts, and Panel `sizing:'fill'` propagates assigned height from the Material shell into its dedicated body. Vth consumes these contracts without private height CSS; parameter-card source geometry remains explicit public Unit geometry.
+
+SDK 1.51.19 / Unit Templates 2.5.15 makes Unit adoption additive rather than destructive: decorator/adoptive Units preserve the existing structural Unit identity/variant and record their own role separately. Repeated ParameterForm destroy/remount therefore preserves a host Layout identity.
+
+SDK 1.51.18 / Unit Templates 2.5.14 extends the same single-owner model to SplitPane: adopted Layout Units may explicitly select `layoutOwner:'host'` so accepted responsive outer geometry remains host-owned while Core alone owns split gestures, persisted size and the split-size token. Layout `responsiveTarget` and ParameterForm `layoutOwner:'host'` remain available.
+
+SDK 1.51.16 / Unit Templates 2.5.12 exposed PlotGroup orientation through the public runtime/Unit facade and made orientation-specific column commits immediately reflow the existing GroupArea through `setColumns(...)`.
+SDK 1.51.15 / Unit Templates 2.5.11 closes portable Header / PortableView action-host ownership and runtime-delegated ScientificPlot target ownership. Explicit source-parity action hosts are no longer wrapped in a second portable-control identity, and delegated plots keep their authored structural identity until the canonical renderer attaches. The catalog remains 41 Units.
+SDK 1.51.14 / Unit Templates 2.5.10 adds namespace-aware Layout Unit creation (`namespace:'svg'`) so source-parity compositions can create real SVG hosts without plugin-side DOM bypasses. The catalog remains 41 Units.
+SDK 1.51.13 / Unit Templates 2.5.9 moves file-toolbar responsive collapse out of the generic recipe and into explicit Unit `responsiveGeometry` detail. Pulse Analysis declares its accepted 310 px threshold, preventing a Unit default from changing the native parameter-panel height and button anatomy. The catalog remains 41 Units.
+
+## Task progress and acquisition order
+
+SDK 1.48 adds Core-throttled worker progress via `context.reportProgress(...)` / `handle.onProgress(...)` and explicit history-order metadata via `artifact.metadata.acquisition` plus `ctx.data.sources.acquisitionOrder(...)`. See [`TASK_RUNNER.md`](./TASK_RUNNER.md) and [`ACQUISITION_ORDER.md`](./ACQUISITION_ORDER.md).
+
 
 ## Validated domain commands
 Phase E reference-only Selection and stable cross-view identities: [`REFERENCE_SELECTION.md`](REFERENCE_SELECTION.md).
@@ -115,6 +144,38 @@ Every registered workspace region has an explicit scroll policy. `workbench.layo
 SDK 1.29 documents TypedArray input normalization, strict rectangular matrix validation, detached Artifact reads and single-execution performance callbacks. It retains Plugin API 1.19.0; this is an additive SDK authoring contract, not a compatibility path.
 
 
+
+## Unit Templates 2.5 (SDK 1.51)
+
+SDK 1.51 promotes `ctx.ui.unitTemplates` to the single reusable UI composition layer. Unit Templates 2.5 is split into Foundation, Scientific, Behavior, State and Composition/Preset owners and exposes 41 generated catalog units plus per-Unit anatomy/slot/responsive/accessibility/invariant/extension/forbidden contracts from one Core-owned specification. Existing accepted plugin/Core UI is the template source: plugins may freely compose units into different layouts, while the anatomy, canonical classes, geometry tokens, action variants, chrome completeness and base interaction policy of each unit remain Core-owned. `accepted-scientific-v1` is now only a mature preset composed through the same public Unit facade available to third-party plugins; it owns no parallel renderer. Existing built-in plugin source and authored styles remain byte-frozen. See `UNIT_TEMPLATES.md`, generated `UNIT_TEMPLATE_CATALOG.md`, `native-plugin-reconstruction-blueprints.json`, `native-plugin-state-census.json`, `examples/sdk151-unit-resonance-parity/` and `examples/sdk150-unit-composition/`. Native-plugin reconstruction/state/geometry/service/presentation blueprints are SDK-authoring artifacts only; they are deliberately excluded from the runtime UI composition so Core remains domain-blind. Unit Layout additionally exposes a Core-owned accepted geometry vocabulary and accepted responsive breakpoints so frozen native-plugin geometry can be rebuilt exactly without allowing arbitrary plugin CSS writes.
+
+SDK 1.51.3 completes the third real shadow migration, Resonance Workbench, under `examples/sdk151-unit-resonance-shadow/`. TER, Pulse and Resonance all remain parallel evidence only: production native source/styles are unchanged. The catalog remains 41 Units; Resonance required only generic `section:disclosure` and Core-owned viewport-clamped Popover anchor/point positioning with picker dialog semantics. The shadow also verifies that `accepted-scientific-v1` can be reconstructed manually from the same public Units instead of relying on a preset-private renderer.
+
+
+## Domain Adapter live migration seam
+
+SDK 1.51.5 introduced `ctx.services.domain` as a strict facade on the existing owner-scoped Service Runtime. `provide()` publishes detached state snapshots plus an explicit action whitelist; `connect()` requires a declared `pluginDependencies` edge by default and never exposes the raw production service object. Consumer subscriptions are lifecycle-scoped and provider deactivation invalidates connected handles. See `DOMAIN_ADAPTERS.md`.
+
+SDK 1.51.12 makes accepted detail geometry an explicit **Unit-owned authoring contract** instead of allowing Unit compositions to leak raw Workbench/PlotView geometry fields. `prime.detailGeometry.contentInsetPx` owns exact accepted parameter-panel inset; `plotView.detailGeometry` owns accepted scientific content aspect ratio and min/max content height. Unit Templates validate these values and translate them into the existing generic execution services. The Core workbench/PlotView services remain domain-blind and the catalog remains 41 Units. Unit Templates 2.5.8 also adds source-parity Header anatomy (`stacked`, optional actions host and `plot-minimal`) plus Field `controlOnly` composition, allowing Pulse Analysis production presentation to be reconstructed through Units without raw plugin-control markup or a second visual owner. Pulse retains its accepted stylesheet and business/rendering owners.
+
+SDK 1.51.10 changes the reconstruction rule from "Unit defaults define the final plugin appearance" to **source parity first**. A Unit owns only the shared minimum contract—semantics, owner boundaries, lifecycle, accessibility and mandatory structure. A plugin may explicitly retain accepted detail parameters such as widths, gaps, local flow/grid geometry and responsive thresholds when those parameters are required to reproduce the accepted native implementation 1:1. These differences remain explicit plugin parameters until all native plugins have completed reconstruction and the project can classify them as shared defaults, plugin-tunable details or immutable hard contracts. Parameter-purpose PRIME surfaces are an immediate hard exception: they never own a title/header bar.
+
+SDK 1.51.9 closes the real-runtime TER Unit cutover layout/lifecycle regressions exposed after 3.71.8. Generic PRIME `content` is now mounted into the canonical body, generated PRIME containers are reused across close/reopen, responsive plot cards no longer claim external `height:100%`, and `scientificPlot.create(...,{renderOwner:'runtime'})` declares that the existing `ctx.ui.scientificPlot.react/scalarField` path is the single renderer/resize-observer owner. Unit Templates advance to 2.5.5 while the catalog remains fixed at 41 Units.
+
+SDK 1.51.8 retains the first formal TER production Unit cutover and fixes Core empty-page-shell registration for Unit-only pages. Explicit `html:""` now creates the page shell; omitted `html` still requires a pre-existing page. SDK 1.51.7 completed the first formal production Unit cutover. Production TER now builds its page, data-control PRIME, seven PlotViews, PlotGroup, managed result tables, parameter/display/transform controls and export surface through `ctx.ui.unitTemplates`; the legacy `plugin.css` and `shared-views.js` presentation owners are deleted. The existing production analysis service, controller, domain adapter and feature runtime remain the single state/numeric/interaction owners. Unit Templates remain 2.5.4 / 41 Units.
+
+SDK 1.51.6 adds TER side-by-side live presentation acceptance without changing the 41-Unit catalog. The Unit TER shell now reverse-syncs production settings/display/transform state, projects the production result into both complete result tables and all seven plot payloads, and round-trips production controller selection through the same `services.domain` owner. Numeric inputs are normalized at the Unit boundary so live state preserves production numeric types.
+
+The first live migration harness is the TER Unit-only shadow: production TER remains the only state/numerical owner, while the Unit shell reads the same result snapshot and invokes the same production actions through `builtin.ter-analysis/live`.
+
+SDK 1.51.4 completes the fourth real shadow migration, Data Center, under `examples/sdk151-unit-data-center-shadow/`. The same 41 Units now reconstruct a non-scientific-first `data-primary` workbench, artifact browser, bounded table preview, formula/workflow/provenance tools, dialog/menu actions and a PRIME-contained chart preview. The migration adds only generic interactive Chip semantics and corrects a stale Data Center geometry dossier from `plotView:complete` to `plotView:prime-contained`; no Data Center-specific Core path is introduced.
+
+## Scientific Composition Contract (SDK 1.49)
+
+SDK 1.49 adds a verified Scientific Composition layer without changing Plugin API 1.19 **and without defining a new visual language**. `ctx.ui.sections`, `ctx.ui.plotGroups`, `ctx.ui.plotViews.create(...)`, and `ctx.ui.scientificWorkbench` add semantic ownership/validation over the accepted Workspace, PlotView, GroupArea and PortableView presentation. Existing-node PRIME headers/cards/groups are adopted rather than rebuilt; `surface:'scientific-card'` is semantic; `contentInset` is opt-in; and `data-control` describes purpose rather than forcing one Desktop placement. Explicit `fixed:true` is the one-placement contract. Surface-controlled movable PRIME surfaces require `handle + controlsHost` or `chrome:'auto'`, while host-managed data-control surfaces retain their accepted placement/chrome behavior. Toolbar/menu contributions from workbench/tool plugins are activity-scoped by default. The public `accepted-scientific-v1` profile is the executable non-domain template for the accepted complex scientific workbench geometry: a third-party plugin can reproduce the same workspace/PRIME/PlotGroup layout and chrome details without copying built-in private CSS or DOM. See `examples/sdk149-reference-workbench/`; its parity is enforced in both release test manifests.
+
+See [`SCIENTIFIC_COMPOSITION.md`](./SCIENTIFIC_COMPOSITION.md) for the full contract and the `validate`, `test-runtime`, and `test-layout` commands.
+
 ## Managed Grid / GroupArea Layout Contract (SDK 1.28)
 
 SDK 1.28 publishes the Core managed-grid and GroupArea contracts through typed `ctx.ui.grid.create(...)` and `workbench.grid(...)` APIs. Plugins provide column preferences; Core owns final grid geometry, responsive width clamping, and optional Native Mobile orientation adaptation.
@@ -187,7 +248,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.68.103 with SDK 1.47.0 / Plugin API 1.19.0 / Theme Contract 3.10.0. Packages target this exact public contract.
+- DK Data Studio 3.71.25 with SDK 1.51.16 / Plugin API 1.19.0 / Theme Contract 3.10.0. Packages target this exact public contract.
 - `ctx.services.require('runtime').releaseActivityWindow(...)` explicitly cold-closes a hidden reusable Desktop TOP owned by the current main window; ordinary close/hide keeps managed plots warm for fast reopen.
 
 ## Create a plugin
@@ -231,6 +292,8 @@ All Core-owned XY/scatter/curve plots support **double-click the Y axis or left 
 
 ```bash
 node sdk/tools/dkds-plugin.js validate path/to/my-plugin
+node sdk/tools/dkds-plugin.js test-runtime path/to/my-plugin
+node sdk/tools/dkds-plugin.js test-layout path/to/my-plugin
 ```
 
 Validation checks the manifest, referenced files, runtime-manifest parity, declared Core requirements and forbidden infrastructure bypasses. For Plugin API 1.19 workspaces it also lints CSS/layout ownership: Core shell selectors, semantic `overflow:hidden/clip`, and viewport-height ownership are rejected before packaging. Positive-pixel `minmax(...,1fr)` rows are release-blocking in scientific/workspace-critical regions and reported as warnings in ordinary internal grids, so the validator stays strict where blank/clipped scientific UI can occur without over-constraining normal plugin layout.
@@ -251,7 +314,10 @@ If a package uses the same stable ID as a bundled plugin, it is accepted only as
 - `plugin-api.d.ts` — editor/TypeScript declarations for `DKDSPlugins` and `ctx`.
 - `contract.json` — SDK/API/package versions.
 - `GRID_LAYOUT.md` — public managed-grid, responsive columns and Native Mobile orientation-policy contract.
-- `GROUP_AREA.md` — public multi-plot GroupArea contract, child PlotView placement/sticky semantics, and titled/titleless composition.
+- `UNIT_TEMPLATES.md` — SDK 1.51 / Unit Templates 2.5 composition, geometry, state/accessibility, ownership and reconstruction contracts.
+- `UNIT_TEMPLATE_CATALOG.md` — generated exhaustive Unit anatomy/metrics/ownership catalog and native-plugin reconstruction blueprints.
+- `SCIENTIFIC_COMPOSITION.md` — SDK 1.49 lower-level PRIME/ScientificSection/ScientificCard/PlotGroup composition and layout harness.
+- `GROUP_AREA.md` — low-level GroupArea layout contract; scientific groups should normally use PlotGroup.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
@@ -476,7 +542,7 @@ const settings = ctx.ui.settings.define('defaults', {
 settings.open();
 ```
 
-插件设置是**用户默认偏好**；当前工程已经保存的布局/分析状态仍由插件自己的 project slice 决定。
+插件设置是**用户默认偏好**；当前工程已经保存的布局/分析状态仍由插件自己的 project slice 决定。对于会直接改变当前视图呈现的状态（例如坐标轴显示方式、当前曲线可见性、Plot viewport），不要混入“新工程默认分析参数”；此类状态应继续由 project/view state 拥有。若插件在同一激活周期内支持“新建/重置工程”，reset 时应重新读取 `settings.get()`，不要永久缓存激活瞬间的默认快照。
 
 
 ## Core Dialog Runtime

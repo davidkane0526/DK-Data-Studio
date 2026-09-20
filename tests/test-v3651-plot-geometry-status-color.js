@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -15,12 +16,12 @@ const groupRuntime=read('src/plugins/resonance-workbench/feature-group-runtime.j
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.8 status/geometry regression requires app 3.65.8 or newer');
-assert.equal(sdk.sdkVersion,'1.47.0');
-assert.equal(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert.equal(sdk.themeContractVersion,'3.10.0');
 for(const token of ['applyContentGeometry()','contentAspectRatio','contentMinHeight','contentMaxHeight','width/ratio','is-floating'])assert(plotView.includes(token),`PlotView responsive geometry missing ${token}`);
 assert(dts.includes('export interface DKDSPlotViewSpec')&&dts.includes('contentAspectRatio?:number')&&dts.includes('plotViews:DKDSPlotViewRuntime'),'SDK must expose responsive PlotView geometry');
-assert(groupRuntime.includes('contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226'),'Resonance group plots must consume Core PlotView landscape geometry');
+assert(groupRuntime.includes('detailGeometry:{contentAspectRatio:1.65,contentMinHeightPx:160,contentMaxHeightPx:226}'),'Resonance group plots must consume the PlotView Unit landscape detail-geometry contract');
 assert(!groupRuntime.includes('--reswin-group-height')&&!groupCss.includes('--reswin-group-height'),'resonance group layout must not keep a second plugin-local height solver');
 assert(groupCss.includes('.reswin-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}')&&groupCss.includes('.reswin-group-plot{width:100%;min-height:0}'),'group cards must let Core own plot height');
 assert(statusCore.includes("colorPolicy:'theme'")&&statusCore.includes('button.dataset.colorPolicy'),'Core status items must default to Theme color and expose semantic opt-in');

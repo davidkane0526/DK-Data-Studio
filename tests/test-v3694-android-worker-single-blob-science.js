@@ -6,10 +6,17 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+const atLeastVersion=(value,floor)=>{
+  const actual=String(value||'').split('.').slice(0,3).map(part=>Number.parseInt(part,10)||0);
+  for(let i=0;i<3;i++){
+    if(actual[i]!==floor[i]) return actual[i]>floor[i];
+  }
+  return true;
+};
 
 (async()=>{
   const pkg=JSON.parse(read('package.json')),mobile=JSON.parse(read('mobile/app.json'));
-  assert.strictEqual(pkg.version,'3.69.4');
+  assert(atLeastVersion(pkg.version,[3,69,4]),'The 3.69.4 Android Worker fix must remain present in later releases.');
   assert(Number(mobile.expo.android.versionCode)>=130,'Android versionCode must advance for the 3.69.4 device fix.');
 
   const generator=require('../scripts/generate-plugin-index');
@@ -29,7 +36,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   const packageRuntime=read('src/core/plugins/kernel/modules/package-runtime.js');
   const pluginApi=read('src/core/plugins/kernel/modules/plugin-api.js');
   const taskRuntimeSource=read('src/core/execution/task-runtime.js');
-  assert(packageRuntime.includes('definition.taskCoreSources=structuredClone(row.taskCoreSources)'),'Built-in loader must preserve generated Core task preludes.');
+  assert(packageRuntime.includes("definition=applyPackage(id,row.manifest,String(row?.source||'builtin'),row?.taskSources||{},{taskCoreSources:row?.taskCoreSources||{}})"),'Built-in loader must preserve generated Core task preludes through canonical package materialization.');
   assert(pluginApi.includes('preludeSources:definition.taskCoreSources[row.id]'),'Plugin API task scope must hand canonical preludes to Core Task Runtime.');
   assert(!taskRuntimeSource.includes('importScripts('),'Core Task Runtime must not use nested importScripts for current source-backed tasks.');
   assert(!taskRuntimeSource.includes('moduleUrl')&&!taskRuntimeSource.includes('importUrls')&&!taskRuntimeSource.includes('appBaseUrl'),'Worker messages must not carry runtime URL imports on Android.');

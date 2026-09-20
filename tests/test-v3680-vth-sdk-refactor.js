@@ -6,8 +6,12 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const manifest=JSON.parse(read('src/plugins/transfer-vth-lab/plugin.json'));
 const plugin=read('src/plugins/transfer-vth-lab/plugin.js');
-assert.deepEqual(manifest.scripts.slice(0,2),['analysis-runtime.js','plugin.js'],'Vth pure analysis runtime must load before the UI controller.');
+assert.equal(manifest.scripts[0],'analysis-runtime.js','Vth pure analysis runtime must load before all live-domain/presentation wiring.');
+assert.deepEqual(manifest.scripts,['analysis-runtime.js','live-domain.js','domain-adapter.js','unit-presentation.js','plugin.js'],'Vth production Unit presentation and live-domain support modules must load before the UI controller entry.');
 assert(manifest.requiresCore.includes('modules'),'Vth must explicitly declare the Plugin Module Runtime it consumes.');
+assert(manifest.requiresCore.includes('services'),'Vth live-domain projection must explicitly declare Core services.');
+assert(manifest.requiresCore.includes('ui.unit-templates'),'Vth production presentation must explicitly declare Unit Templates.');
+assert.deepEqual(manifest.styles,[],'Vth production Unit presentation must not load the retired private plugin stylesheet.');
 assert(plugin.includes("ctx.modules.require('analysis-runtime')"),'Vth UI must consume its analysis module through ctx.modules.');
 for(const [label,re] of [
   ['raw querySelector',/\.querySelector(?:All)?\s*\(/],['raw addEventListener',/\.addEventListener\s*\(/],['property event handler',/\.(?:onclick|onchange|oninput)\s*=/],['raw innerHTML',/\.innerHTML\s*=/]

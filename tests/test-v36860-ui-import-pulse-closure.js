@@ -60,15 +60,16 @@ Promise.resolve(captured.activate(ctx)).then(()=>{
   assert(parsed.datasets.length===1&&parsed.datasets[0].points.length===3,'Tabular JSON must parse through the same scientific dataset pipeline.');
 
   // 4/5. Pulse: one deterministic Mobile composition; result scope is a right-side titlebar action.
-  const pulseView=read('src/plugins/pulse-analysis/shared-views.js');
+  const pulseView=read('src/plugins/pulse-analysis/unit-presentation.js');
   const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
   const pulseMobile=read('src/plugins/pulse-analysis/mobile.css');
-  assert(pulseView.includes('pulse-compare-actions dkds-surface-actions')&&pulseView.includes('pulse-scope-action'),'Display-scope selector must be in the canonical result-comparison header action cluster.');
-  assert(!pulseView.includes('pulse-compare-toolbar dkds-toolbar'),'Result comparison must no longer be a standalone toolbar/body row.');
+  assert(pulseView.includes("actionsClassName:'pulse-compare-actions'")&&pulseView.includes("className:'pulse-scope-action'"),'Display-scope selector must be in the canonical Unit result-comparison header action cluster.');
+  assert(!pulseView.includes("className:'pulse-compare-toolbar dkds-toolbar'"),'Result comparison must no longer be a standalone toolbar/body row.');
   assert(pulseCss.includes('.pulse-compare-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end'),'Desktop display-scope control must align to the titlebar right side without redefining Core header geometry.');
-  assert(pulseMobile.includes('[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-split{')&&pulseMobile.includes('display:flex;flex-direction:column;gap:8px'),'Mobile Pulse results must use one deterministic vertical composition owner.');
-  assert(pulseMobile.includes('grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))'),'Landscape Mobile Pulse must auto-fit result plots without overlap.');
-  assert(pulseMobile.includes('@media (max-width:900px)')&&pulseMobile.includes('grid-template-columns:minmax(0,1fr)'),'Narrow Mobile Pulse must collapse predictably to one column.');
-  assert((pulseMobile.match(/\.pulse-results-split\{/g)||[]).length===1,'Mobile Pulse must not re-declare contradictory result-split display modes.');
+  assert(pulseView.includes("variant:'two-card-grid'")&&pulseView.includes('responsiveTarget:primaryMain')&&!pulseView.includes('units.splitPane.create(primaryMain'),'Pulse results must use one Unit-owned projected-PRIMARY sequential composition path.');
+  assert(pulseView.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'"),'Wide projected PRIMARY lanes must keep the two scientific result cards side-by-side through Unit Layout geometry.');
+  assert(pulseView.includes("maxWidth:520,geometry:{gridTemplateColumns:'minmax(0,1fr)'}"),'Pulse may collapse to one result column only at the accepted Unit narrow-lane threshold.');
+  assert(!pulseCss.includes('.pulse-results-split{')&&!pulseCss.includes('.pulse-results-grid{'),'Pulse plugin CSS must not remain a result-flow geometry owner after Unit cutover.');
+  assert(!pulseMobile.includes('.pulse-results-split{')&&!pulseMobile.includes('.pulse-results-grid{'),'Mobile Pulse CSS must not re-declare Unit result flow geometry.');
   console.log('handle/theme + AI layout + import classification + Pulse mobile/header closure PASS.');
 }).catch(err=>{console.error(err);process.exit(1);});

@@ -10,6 +10,7 @@ const requireText=(text,token,message)=>{if(!text.includes(token))failures.push(
 const forbidText=(text,token,message)=>{if(text.includes(token))failures.push(message);};
 const requireRegex=(text,re,message)=>{if(!re.test(text))failures.push(message);};
 const forbidRegex=(text,re,message)=>{if(re.test(text))failures.push(message);};
+const versionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const pluginVisualIdentity=/(?:\.pulse-|\.pulse-analysis\b|\.dc-|\.data-center-body\b|\.ter-|\.ter-analysis\b|#terMaxPage\b|\.respar-|\.reswin-|\.resonance-|#resonanceDedicatedPage\b|\.dksvc-|\.dksmb-|\.dkai-|\.dkds-vth-|\.transfer-vth-lab-page\b)/;
 const pluginVisualPaintProp=/^(?:background(?:-[\w-]+)?|color|border(?:-[\w-]+)?|border-radius|box-shadow|text-shadow|font(?:-[\w-]+)?|font|outline(?:-[\w-]+)?|filter|fill|stroke|accent-color)$/i;
 const controlGeometryProp=/^(?:height|min-height|max-height|padding(?:-[\w-]+)?|line-height)$/i;
@@ -90,9 +91,10 @@ function validate(){
   const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
   const statusPlugin=read('src/plugins/status-monitor/plugin.js');
   const statusThemeLayout=read('src/plugins/status-monitor/theme-layout.js');
-  const terSharedViews=read('src/plugins/ter-analysis/shared-views.js');
+  const terUnitPresentation=read('src/plugins/ter-analysis/unit-presentation.js');
   const terAnalysisService=read('src/plugins/ter-analysis/analysis-service.js');
   const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+  const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
   const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
   const scientificChart=read('src/core/scientific/chart-runtime.js');
   const scientificNav=read('src/core/ui/modules/scientific-curve/navigation.js');
@@ -548,12 +550,13 @@ function validate(){
   requireText(automationVisual,".dkds-panel-close-button",'HARD-36: runtime visual closure must validate shared close-button geometry.');
   requireText(automationVisual,".dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right",'HARD-36: runtime visual closure must validate actual desktop workspace grid geometry.');
 
-  // HARD-37: runtime chart-header acceptance must consume the same parent-owned
-  // chrome ownership contract as Theme Coverage. Reading roleOf() directly is
-  // invalid here because CSS custom properties can inherit the parent Surface
-  // role even when the nested header is intentionally not a Material owner.
-  requireText(automationRuntime,"ownership?.(header,'chrome')",'HARD-37: Automation chart-header gate must use Material ownership semantics.');
-  requireText(automationRuntime,"ownership.status==='MATERIAL_PARENT_OWNED'",'HARD-37: Automation chart-header gate must recognize parent-owned chrome.');
+  // HARD-37: parent-owned nested chrome remains a Material Renderer semantic,
+  // while Automation validates the current contextual Material/Component contract.
+  // Do not pin release gates to a retired chart-header probe implementation.
+  requireText(materialRenderer,'nestedParentOwnsChrome','HARD-37: Material Renderer must retain nested parent-owned chrome resolution.');
+  requireText(materialRenderer,"status:'MATERIAL_PARENT_OWNED'",'HARD-37: Material Renderer must expose the parent-owned chrome semantic.');
+  requireText(automationRuntime,"supports?.('contract.appearance.component-contexts')===true",'HARD-37: Automation must validate semantic Component Context capability.');
+  requireText(automationRuntime,"supports?.('contract.material.contexts')===true",'HARD-37: Automation must validate semantic Material Context capability.');
   forbidText(automationRuntime,"Analysis chart title is not Core chrome",'HARD-37: obsolete roleOf-only chart-header assertion must not return.');
 
   // HARD-38: Component Appearance may parameterize a Material-owning toolbar,
@@ -562,7 +565,7 @@ function validate(){
   requireRegex(componentAppearance,/data-dkds-component-identity="toolbarGroup"[^}]*--dkds-material-base:[^}]*--dkds-material-border:/s,'HARD-38: ToolbarGroup must feed semantic tokens into Material rendering.');
   requireRegex(componentAppearance,/data-dkds-component-identity="toolbarGroup"\]:not\(:is\([^}]*dkds-floating-surface[^}]*\)\)\{[^}]*background:/s,'HARD-38: only non-Material ToolbarGroup may paint its own background.');
   requireRegex(materialCss,/data-dkds-component-identity="toolbarGroup"\]:is\(\.dkds-material-role-surface,\.dkds-material-role-floating\)\{[^}]*border-width:1px/s,'HARD-38: Material Renderer must own edge geometry for Material toolbar groups.');
-  requireText(read('src/plugins/resonance-workbench/view-components.js'),'respar-main-tools dkds-toolbar dkds-floating-surface','HARD-38: Main Plot Tools must compose ToolbarGroup semantics with the shared floating Material surface.');
+  requireText(resonancePresentation,'respar-main-tools dkds-toolbar dkds-floating-surface','HARD-38: Main Plot Tools must compose ToolbarGroup semantics with the shared floating Material surface.');
 
 
 
@@ -626,7 +629,8 @@ function validate(){
   const sdkContract=JSON.parse(read('sdk/contract.json'));
   const sdkTypes=read('sdk/plugin-api.d.ts');
   const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
-  requireText(JSON.stringify(sdkContract),'"sdkVersion":"1.47.0"','HARD-44: public SDK must be 1.47.0.');
+  if(!versionAtLeast(sdkContract.sdkVersion,'1.49.0'))failures.push(`HARD-44: public SDK must remain at or beyond the Theme 3.10 authoring baseline (>=1.49.0), got ${sdkContract.sdkVersion}.`);
+  if(sdkContract.pluginApiVersion!=='1.19.0')failures.push(`HARD-44: Plugin API must remain 1.19.0 for the current contract, got ${sdkContract.pluginApiVersion}.`);
   requireText(JSON.stringify(sdkContract),'"themeContractVersion":"3.10.0"','HARD-44: SDK must publish Theme Contract 3.10.0.');
   requireText(sdkTypes,"readonly contractVersion:'3.10.0'",'HARD-44: SDK types must expose Theme Contract 3.10.0.');
   requireText(sdkTypes,'DKDSThemeComponentContext','HARD-44: SDK types must expose Component Context.');
@@ -691,10 +695,10 @@ function validate(){
   requireRegex(componentAppearance,/component-identity="inspectorHeader"[\s\S]*?background-color:var\(--dkui-component-inspector-header-surface/,'HARD-52: InspectorHeader must consume Theme tonal-band appearance without resetting the Material effect layer.');
   requireRegex(materialCss,/component-identity="panelHeader"[\s\S]*?header-gradient-start/,'HARD-52: Material Renderer must project Theme header gradients onto semantic headers.');
   // HARD-53: TER summary metadata must not masquerade as a ToolbarGroup.
-  requireText(terSharedViews,'id=\\"terSummary\\" class=\\"dkds-summary-strip\\"','HARD-53: TER summary must use the metadata strip contract.');
+  requireText(terUnitPresentation,"units.summary.create(main,{variant:'strip'",'HARD-53: TER production Unit summary must use the Core summary strip contract.');
   // HARD-54: Resonance main tools use equal-inset integrated chrome and legend remains content.
-  requireText(resonanceView,'respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group','HARD-54: Resonance main tools must use integrated action composition.');
-  requireText(resonanceView,'respar-main-legend dkds-scroll-x-compact dkds-legend-strip','HARD-54: Resonance legend must be a light content strip, not a ToolbarGroup/Surface.');
+  requireText(resonancePresentation,'respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group','HARD-54: Resonance main tools must use integrated action composition.');
+  requireText(resonancePresentation,'respar-main-legend dkds-scroll-x-compact dkds-legend-strip','HARD-54: Resonance legend must be a light content strip, not a ToolbarGroup/Surface.');
 
   // HARD-55: Semantic assignment must batch child additions. The R5 Windows
   // report proved full-root semantic rescans remained an idle performance cost.
@@ -716,7 +720,7 @@ function validate(){
   // explicit semantics instead of relying on fragile ancestry/class inference.
   requireText(statusThemeLayout,'a.right-box.width:a.left','HARD-57: Theme Picker layout owner must edge-align to its status-bar trigger.');
   requireText(statusPlugin,'ThemeLayout.positionThemePanel','HARD-57: Status Monitor must delegate Theme Picker geometry to its single helper owner.');
-  requireText(resonanceView,'data-dkds-inspector-header','HARD-57: Resonance Curve Inspector must explicitly publish inspector-header semantics.');
+  requireRegex(resonancePresentation,/dataset:\{dkdsInspectorHeader:'true'\}/,'HARD-57: Resonance Curve Inspector must explicitly publish inspector-header semantics through Unit presentation metadata.');
 
   // HARD-58: dense scientific metadata is a quiet semantic Chip variant across
   // all built-in Theme providers, not a row of heavy default pills.
@@ -728,15 +732,15 @@ function validate(){
   // HARD-59: canonical Tabs and primary scientific surfaces cannot regain
   // presentation-owned paint or decorative focus frames.
   forbidRegex(presentationShell,/\.project-tab\s*\{[^}]*?(?:border|background|box-shadow|color)/s,'HARD-59: Presentation must not repaint canonical Project Tabs.');
-  requireText(resonanceView,'data-dkds-surface-edge="none"','HARD-59: Resonance primary scientific plot must explicitly opt out of decorative container edges.');
+  requireRegex(resonancePresentation,/dataset:\{dkdsPlotScope:'true',dkdsSurfaceEdge:'none'\}/,'HARD-59: Resonance primary scientific plot must explicitly opt out of decorative container edges through Unit presentation metadata.');
   requireText(materialCss,'[data-dkds-surface-edge="none"]{border-width:0;outline:none;box-shadow:none}','HARD-59: Core Material Renderer must own the no-edge scientific-surface policy.');
   requireText(automationVisual,'Main scientific plot must not own a decorative','HARD-59: Windows acceptance must measure the primary plot no-edge policy.');
 
   // HARD-60: destructive actions own a restrained semantic danger depth in
   // Core. Domain plugins only compose/size the rich selection popover.
   requireText(componentCss,'--dkds-ca-action-shadow:var(--dkui-component-toolbar-action-variant-destructive-shadow,0 2px 8px color-mix(in srgb,var(--dkui-danger) 14%,transparent))','HARD-60: destructive ToolbarAction must retain a Core-owned danger depth fallback.');
-  requireText(resonanceView,'class="respar-range-menu command-menu hidden range-action-menu"','HARD-60: Resonance range-selection popover must consume the shared Core range-action geometry in SUPER and TOP.');
-  requireText(resonanceView,'data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作"','HARD-60: Resonance range-selection popover must publish rich-dialog semantics.');
+  requireText(resonancePresentation,"className:'respar-range-menu command-menu hidden range-action-menu'",'HARD-60: Resonance range-selection popover must consume the shared Core range-action geometry in SUPER and TOP.');
+  requireRegex(resonancePresentation,/dataset:\{dkdsMenuBehavior:'rich'\}[\s\S]*?setAttribute\('role','dialog'\)[\s\S]*?setAttribute\('aria-label','框选区域操作'\)/,'HARD-60: Resonance range-selection popover must publish rich-dialog semantics through Unit presentation metadata.');
   requireText(read('src/styles/structure/analysis-shell.css'),'.range-action-menu{width:260px;padding:8px;}','HARD-60: shared range-action menu must retain the compact canonical geometry.');
   requireText(componentCss,':where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]','HARD-60: final Component Appearance must neutralize generic MenuItem edge/depth for scientific legends.');
   forbidText(resonanceCss,'.respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}','HARD-60: Resonance range identity must not rely on a broad historical width override.');
@@ -1005,11 +1009,12 @@ function validate(){
   const gridControllerR10=read('src/core/ui/modules/grid/controller.js');
   const groupCssR10=read('src/styles/structure/analysis-workbench.css');
   const terRuntimeR10=read('src/plugins/ter-analysis/feature-runtime.js');
+  const terUnitsR10=read('src/plugins/ter-analysis/unit-presentation.js');
   requireText(gridControllerR10,'class GroupAreaController extends GridController','HARD-85: GroupArea must be a formal Core abstraction, not only a provisional Grid flag.');
   requireText(gridControllerR10,"className='dkds-grid-sticky-rail'",'HARD-85: Sticky GroupArea children must move into an out-of-flow rail.');
   requireText(groupCssR10,'.dkds-managed-grid>.dkds-grid-sticky-rail{position:absolute','HARD-85: Sticky rail must not participate in grid row sizing.');
   requireText(portableViewR9,"home?.closest?.('.dkds-group-area-grid')",'HARD-85: Standalone PlotViews must not inherit current-scroll-region sticky placement.');
-  requireText(terRuntimeR10,'workbench.groupArea(terGrid','HARD-85: TER titleless multi-plot layout must consume the formal shared GroupArea behavior.');
+  requireText(terUnitsR10,'units.plotGroup.create(groupHost','HARD-85: TER production multi-plot layout must consume the formal Unit PlotGroup/GroupArea behavior.');
   forbidText(terRuntimeR10,"id:'resistance-inspector'",'HARD-85: TER R–V must not return to a private inspector/placement owner.');
   forbidText(terRuntimeR10,'layoutSettings.sticky','HARD-85: TER R–V must not return to private sticky state.');
 
@@ -1045,7 +1050,7 @@ function validate(){
 
 
   if(failures.length){
-    const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
+    const error=new Error(`Static visual contract audit failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
@@ -1053,6 +1058,6 @@ function validate(){
 }
 
 if(require.main===module){
-  try{const result=validate();console.log(`Hard visual invariants PASS (${result.invariants})`);}catch(err){console.error(err.message||err);process.exit(1);}
+  try{const result=validate();console.log(`Static visual contract audit PASS (${result.invariants})`);}catch(err){console.error(err.message||err);process.exit(1);}
 }
 module.exports=Object.freeze({validate});

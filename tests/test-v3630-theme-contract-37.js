@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -7,10 +8,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
-assert.equal(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));

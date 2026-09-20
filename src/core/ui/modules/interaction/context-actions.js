@@ -1,10 +1,12 @@
 'use strict';
 const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/shortcuts');
 const StyleGate=require('ui/style-ownership-gate');
+const {registerContextMenu,unregisterContextMenu,dismissAllContextMenus}=require('./transient-registry');
 const CONTEXT_MENU_STYLE_OWNER='core.context-menu';
 const STYLE_SOURCE='src/core/ui/modules/interaction/context-actions.js';
 const menuSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:CONTEXT_MENU_STYLE_OWNER,component:'context-menu',scope:'runtime-context-menu',source:STYLE_SOURCE});
 const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU_STYLE_OWNER,component:'context-menu',scope:'runtime-context-menu',source:STYLE_SOURCE});
+
 
   class ContextMenu {
     constructor(owner,spec={}){
@@ -25,8 +27,12 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
       // capture phase. That removed the menu before a menu item's click event
       // could fire, making all ContextMenu-backed controls look dead (TER
       // layout and every portable-view placement menu). Only outside presses
-      // may close the menu.
-      if(this.element?.contains?.(event?.target))return;
+      // may close the menu. A declared anchor is part of the menu interaction
+      // boundary so its click handler can perform a real toggle instead of the
+      // capture-phase outside handler closing and the subsequent click opening
+      // a fresh menu again.
+      const target=event?.target,anchor=resolveElement(this.spec?.anchor)||this.spec?.anchor||null;
+      if(this.element?.contains?.(target)||anchor?.contains?.(target)||anchor===target)return;
       this.close();
     }
     open({x,y,items=[],context={},minWidth=0,maxHeight=0,role='menu'}={}){
@@ -54,7 +60,7 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
           event.preventDefault();const delta=event.key==='ArrowDown'?1:-1;buttons[(index+delta+buttons.length)%buttons.length].focus({preventScroll:true});
         }
       });
-      document.body.appendChild(el);this.element=el;
+      document.body.appendChild(el);this.element=el;registerContextMenu(this);
       // Menus are connected while paint-hidden, then Material + Component
       // appearance is composed synchronously before the first visible frame.
       // MutationObserver appearance assignment is intentionally asynchronous and
@@ -70,7 +76,7 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
       window.removeEventListener('blur',this.boundBlur);
       document.removeEventListener('scroll',this.boundScroll,true);
       const hadElement=!!this.element;
-      if(this.element){this.element.remove();this.element=null;}
+      if(this.element){this.element.remove();this.element=null;}unregisterContextMenu(this);
       if(hadElement){try{this.spec.onClose?.();}catch{}}
     }
     dispose(){this.close();}
@@ -172,9 +178,11 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
           const invokeContext={event,action,group:this,state:this.state,button};
           const rawItems=typeof action.items==='function'?action.items(invokeContext):action.items;
           if(action.menu&&Array.isArray(rawItems)){
+            if(this.menu?.element&&this.menuActionId===String(action.id||'')){this.menu.dispose();this.menu=null;this.menuActionId='';return;}
             this.menu?.dispose?.();
             const rect=button.getBoundingClientRect();
-            this.menu=new ContextMenu(this.owner);
+            this.menuActionId=String(action.id||'');
+            this.menu=new ContextMenu(this.owner,{anchor:button,onClose:()=>{this.menu=null;this.menuActionId='';}});
             this.menu.open({x:rect.left,y:rect.bottom+4,items:rawItems,context:invokeContext});
             return;
           }
@@ -187,7 +195,7 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
       }
       return this;
     }
-    dispose(){this.menu?.dispose?.();this.menu=null;this.cleanups.splice(0).forEach(cleanupCall);this.container?.replaceChildren();}
+    dispose(){this.menu?.dispose?.();this.menu=null;this.menuActionId='';this.cleanups.splice(0).forEach(cleanupCall);this.container?.replaceChildren();}
   }
 
   class InteractionBinding {
@@ -220,4 +228,4 @@ const menuRemove=(el,property)=>StyleGate.remove(el,property,{owner:CONTEXT_MENU
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
-module.exports=Object.freeze({ContextMenu, ActionGroup, InteractionBinding});
+module.exports=Object.freeze({ContextMenu, ActionGroup, InteractionBinding,dismissAllContextMenus});

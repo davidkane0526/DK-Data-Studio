@@ -196,8 +196,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   assert(source.includes('state.superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
 
   assert(!app.includes('placePrimeContribution')&&!source.includes('primePlacementStorageKey'),'Retired low-level PRIME placement compatibility must stay out of the host/kernel; current placement belongs to PluginWorkspace/PortableView.');
-  const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
-  assert(resonanceViews.includes("placements:['float','global','left','right','bottom']")&&resonanceViews.includes("const groupDefault=")&&resonanceViews.includes(":'bottom'"),'resonance shared View composition must preserve canvas/global float and local docks while allowing a settings-driven default placement.');
+  const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
+  assert(resonancePresentation.includes("placements:['float','global','left','right','bottom']")&&resonancePresentation.includes("const inspectDefault=")&&resonancePresentation.includes("groupDefault=allowed.has")&&resonancePresentation.includes(":'bottom'"),'resonance production Unit composition must preserve canvas/global float and local docks while allowing settings-driven default placement.');
 
   console.log('SUPER/TOP/PRIME/SUB workspace contract checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

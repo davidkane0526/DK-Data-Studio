@@ -16,7 +16,9 @@ assert(Number(expo.android.versionCode)>=39,'Android versionCode must retain the
 const web=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const presentationCss=read('src/styles/platform/native-workspace-presentation.css');
 const shellCss=read('src/styles/platform/native-client-shell.css');
-const pulseCss=read('src/plugins/pulse-analysis/mobile.css');
+const pulseMobile=read('src/plugins/pulse-analysis/mobile.css');
+const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
+const pulseUnit=read('src/plugins/pulse-analysis/unit-presentation.js');
 const nav=read('src/core/ui/modules/scientific-curve/navigation.js');
 const chart=read('src/core/scientific/chart-runtime.js');
 const curveRender=read('src/core/ui/modules/scientific-curve/render.js');
@@ -35,13 +37,15 @@ for(const selector of [
   '.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(button,input,select,textarea)',
   '.plugin-manager-section-list{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))'
 ]) assert(shellCss.includes(selector),`Missing native-only density rule: ${selector}`);
-assert(/\[data-dkds-mobile-region="main"\]\[data-dkds-mobile-active="true"\] \.pulse-results-grid\s*\{[\s\S]*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\)/.test(pulseCss),'Pulse native result cards must auto-fit under Presenter-owned semantic activation.');
-assert(!read('src/plugins/pulse-analysis/shared-views.js').includes('isNativeClient'),'Pulse shared view must remain platform-neutral; Presenter markers activate Mobile layout.');
+assert(pulseUnit.includes("variant:'two-card-grid'")&&pulseUnit.includes('responsiveTarget:primaryMain')&&pulseUnit.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'"),'Pulse result cards must respond to the Presenter-provided PRIMARY width through Unit Layout ownership.');
+assert(!pulseCss.includes('container-name:pulse-primary-results')&&!pulseCss.includes('.pulse-results-grid{'),'Pulse plugin CSS must not retain the retired result-layout/container owner.');
+assert(!pulseMobile.includes('.pulse-results-grid{'),'Mobile platform CSS must not re-own Pulse result columns.');
+assert(!pulseUnit.includes('isNativeClient'),'Pulse shared view must remain platform-neutral; Presenter markers activate Mobile layout.');
 
 for(const token of ['installDrawerHandle(frame,surfaceId','dkds-mobile-drawer-resize-handle','setPointerCapture','drawerStorageKey(surfaceId','clampDrawerWidth'])
   assert(web.includes(token),`Mobile drawer resize ownership missing ${token}.`);
-assert(presentationCss.includes('[data-dkds-mobile-drawer-open="true"] .dkds-plugin-canvas-overlay{pointer-events:auto}'),'Open native drawer must block touch-through to the underlying scientific canvas.');
-assert(presentationCss.includes('>[data-dkds-mobile-region="drawer"]{position:relative;z-index:1;width:100%;max-width:100%;height:100%;min-height:0;overflow-x:hidden;overflow-y:auto'),'Projected parameter content must scroll inside the drawer frame without horizontal drawer overflow.');
+assert(/\[data-dkds-mobile-drawer-open="true"\] \.dkds-plugin-canvas-overlay\{[^}]*pointer-events:auto/.test(presentationCss),'Open native drawer must block touch-through to the underlying scientific canvas while remaining the top Mobile panel layer.');
+assert(presentationCss.includes('>.dkds-mobile-drawer-scroll{position:relative;z-index:1;width:100%;height:100%;min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto')&&presentationCss.includes('scrollbar-width:none')&&presentationCss.includes('>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content{position:relative;z-index:1;width:100%;min-width:0;height:auto;min-height:0')&&presentationCss.includes('>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]{position:relative;z-index:1;width:100%;max-width:100%;height:auto;min-height:0;overflow:visible'),'The Drawer viewport must remain the sole outer gesture-scroll owner, hide its overall scrollbar, and host projected content through the final clipping-boundary wrapper.');
 assert(presentationCss.includes('.dkds-mobile-drawer-resize-handle{position:absolute'),'Drawer handle must stay fixed relative to the frame rather than scrolling with content.');
 assert(presentationCss.includes('touch-action:none'),'Drawer resize handle must own its drag gesture.');
 

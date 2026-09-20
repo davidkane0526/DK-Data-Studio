@@ -11,12 +11,15 @@ const atLeast=(value,floor)=>{const a=String(value).split('.').map(Number),b=Str
 assert(atLeast(pkg.version,'3.68.19'),'v3.68.19+ application version required.');
 
 const dc=read('src/plugins/data-center/plugin.css');
+const dcUnits=read('src/plugins/data-center/unit-presentation.js');
+const unitLayout=read('src/core/ui/modules/composition/unit-template-layout-spec.js');
 const dcMobile=read('src/plugins/data-center/mobile.css');
-const pulse=read('src/plugins/pulse-sampler-tool/plugin.css');
+const pulse=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
 const nativeWorkspace=read('src/styles/platform/native-workspace-presentation.css');
 const nativeShell=read('src/styles/platform/native-client-shell.css');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const semantic=read('src/styles/structure/sdk-semantic-surfaces.css');
+const schemaCss=read('src/styles/structure/schema-and-plugin-ui.css');
 const chrome=read('src/styles/presentation/plugin-chrome.css');
 const shell=read('src/styles/presentation/shell.css');
 const windowCss=read('src/plugin-window/style.css');
@@ -24,13 +27,14 @@ const windowHtml=read('src/plugin-window/index.html');
 const windowRuntime=read('src/plugin-window/runtime.js');
 const dockRuntime=read('src/plugin-window/dock-layout.js');
 
-assert(dc.includes('gap:4px 6px;align-items:start}'),'Data Center derived-form grid must align field tops instead of bottom-aligning fields with different help/textarea heights.');
-assert(dc.includes('.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:start;height:auto;min-height:0;max-height:none;flex:none}'),'Data Center chart home state must restore bounded intrinsic panel geometry.');
+assert(dcUnits.includes("variant:'formula-grid',responsiveTarget:formulaPanel.element")&&unitLayout.includes("'formula-grid':Object.freeze({display:'grid'")&&unitLayout.includes("rowGapPx:4,columnGapPx:6,alignItems:'start'"),'Data Center derived-form grid must retain top alignment through its single Unit geometry owner.');
+assert(!dc.includes('#dcFormulaParams .schema-parameter-panel{display:grid'),'Data Center CSS must not regain a second formula outer-grid owner.');
+assert(dc.includes('.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:stretch;height:auto;min-height:0;max-height:none;flex:none}'),'Data Center chart home state must stretch to the shared tool/chart grid row so paired panel bottoms remain aligned.');
 assert(dc.includes('.dc-chart-pane[data-placement="home"]>.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height);max-height:var(--dc-chart-height);flex:0 0 var(--dc-chart-height);overflow:hidden;contain:layout paint}'),'Data Center home chart must restore one bounded, descendant-independent chart height.');
 
-assert(pulse.includes('.ps-analysis-controls{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(4,minmax(118px,.8fr)) minmax(148px,.72fr);'),'Pulse desktop extraction controls must use an explicit aligned six-cell row.');
-assert(pulse.includes('.ps-wide{min-width:0;grid-column:auto}'),'Desktop source selector must not force a stale two-column span.');
-assert(pulse.includes('.ps-result-controls{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr)) repeat(2,minmax(132px,.62fr));'),'Pulse desktop result controls must keep X/Y/copy/export on one coherent row.');
+assert(pulse.includes("variant:'analysis-control-grid'"),'Pulse desktop extraction controls must use the accepted Unit aligned extraction row.');
+assert(pulse.includes("variant:'result-control-grid'"),'Pulse desktop result controls must keep X/Y/copy/export on one coherent Unit row.');
+assert(pulse.includes("variant:'result-grid-asymmetric'"),'Pulse result content must preserve the accepted Unit plot/table geometry.');
 
 for(const token of ['grid-template-areas:', '"left lsplit main rsplit right"', '"left lsplit bottom bottom right"', ':has(#pluginWindowLeftDock:not(:empty))', ':has(#pluginWindowRightDock:not(:empty))', ':has(#pluginWindowBottomDock:not(:empty))'])
   assert(windowCss.includes(token),`Dedicated plugin window real dock layout missing ${token}`);
@@ -41,12 +45,13 @@ for(const token of ['function install(', '--dkds-plugin-window-left-dock-width',
   assert(dockRuntime.includes(token),`Dedicated plugin dock runtime missing ${token}`);
 assert(!/\.style\.(?:setProperty|removeProperty)|\.style\[[^\]]+\]\s*=/.test(dockRuntime),'Dedicated plugin dock resizing must not bypass Style Gate.');
 
-assert(nativeWorkspace.includes('--dkds-mobile-bottom-track:clamp(160px,var(--dkds-mobile-user-bottom-track,36%),min(680px,58vh))')&&nativeWorkspace.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Mobile group companion must reserve a bounded user-resizable row through the stable Core bottom lane and visible split seam.');
+assert(nativeWorkspace.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)')&&nativeWorkspace.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Mobile group companion must resolve the stable Workspace-owned bottom lane plus the visible split seam.');
 assert(nativeWorkspace.includes('flex:1 1 0;width:100%;height:100%;'),'Projected companion must fill its bounded lane.');
 assert(nativeWorkspace.includes('flex:1 1 0;width:100%;height:100%;'),'Projected companion must fill its bounded lane.');
 
-assert(nativeShell.includes('.schema-parameter-panel.auto-fit.compact .schema-param-field :where(select.dkds-field-control,.dkds-multiselect-trigger.dkds-field-control){'),'Native compact X/Y/mode controls must share one Core-owned exact control box.');
-assert(nativeShell.includes('.schema-parameter-panel.auto-fit.compact .dkds-multiselect-trigger.dkds-field-control{display:flex;align-items:center;width:100%;overflow:hidden}'),'Native multiselect proxy must consume the same aligned field-control box.');
+assert(semantic.includes('.dkds-field-control{')&&semantic.includes('line-height:var(--dkds-field-control-line-height,1.15);'),'Compact X/Y/mode controls must consume the same canonical host-neutral Field density owner.');
+assert(!semantic.includes('.schema-parameter-panel.auto-fit.compact .schema-param-field :where(select.dkds-field-control,.dkds-multiselect-trigger.dkds-field-control){'),'Select/proxy parity must not add a subtype-specific density owner.');
+assert(schemaCss.includes('.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;overflow:hidden}')&&!/\.dkds-multiselect-trigger\{[^}]*?(?:min-height|padding-block|padding-inline)/.test(schemaCss),'Multiselect proxy anatomy must consume canonical Field density without re-owning height/padding.');
 assert(!dcMobile.includes('height:32px;min-height:32px;max-height:32px'),'Data Center Mobile CSS must not own final Core field geometry.');
 
 assert(semantic.includes('right:0;bottom:0;z-index:12;width:36px;height:36px'),'Floating resize hit box must use the current reference HTML 36×36 interaction footprint.');

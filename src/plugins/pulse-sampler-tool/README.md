@@ -1,13 +1,33 @@
-# 脉冲与采样处理 v1.9.2
+# 脉冲与采样处理 v1.9.29
 
-DK Data Studio Plugin API 1.19.0 Tool Workspace。它将旧版 PyQt `Pulse Generator + Data Pick` 的核心能力重新实现为一个不依赖应用私有源码的原生工具插件。
+## v1.9.29 · Mobile Unit extraction density
+
+`analysis-control-grid` remains the shared Unit recipe; the Mobile regression closure removes overlay-width pressure so its existing 6→4→3→2 density stages can compose the six extraction controls without a full-width source field or isolated action row.
+
+## v1.9.27 · Unit Panel shell/body containment fix
+
+- “测量数据提取”与“三路合并波形”改为消费 Unit Templates 2.5.22 的 `Panel sizing:'content'`，Material shell 与内容 Layout body 分离；结果标题、Plot、Table 都挂在同一个 Panel body 内，父级 flex 不再能把 Material shell 压到内容之前结束。
+- 无插件私有 CSS；科学/数值 owner 不变。
+
+## v1.9.26 · Sampling intrinsic-row containment fix
+
+- “测量数据提取”由单一 Panel Material owner 包含 Sampling、Result 标题以及结果 plot/table；命令区改为 geometry-only Layout，避免嵌套阴影。
+- Sampling/Result 的响应式判断改为基于实际局部分配宽度，而不是整个 Workspace 宽度，避免“提取稳态电流”等 action 在窄于 Workspace 的面板中越界。
+- 科学计算、domain/state/task/result owner 均未改变。
+
+## v1.9.24 · source-faithful production Unit parity repair
+
+- Workspace Unit restores accepted `leftWidth:540 / leftMin:520 / leftReserve:520`; `leftMin` is the restrained usable-width floor for the titleless parameter PRIME, while `leftReserve` protects the main workspace. The corrected Unit workspace also uses a new split-layout state namespace so geometry persisted by the broken cutover builds cannot keep the rail below the accepted baseline.
+- Waveform and result ScientificPlot Units now own the real presentation renderer after legacy DOM/CSS removal; live-domain/state/algorithm/Task/result owners remain unchanged.
+- Sampling and result responsive layouts use the whole Workspace as their responsive target, matching the accepted workspace container-query semantics.
+- Compact Tabs use the public non-wrapping Unit contract; no Pulse private CSS or Pulse-specific Unit was added.
 
 ## 作为 DK Data Studio 3.64 内置插件
 
 - 发行版内置基线更新为本插件 **v1.9.2**，不再依赖用户外部安装。
 - 脉冲生成、三通道合并、采样边界匹配、稳态平均、结果与 CSV 语义保持 v1.9.2 原实现。
-- 作为第一方插件，视觉职责重新收敛到 Core：卡片、工具组、按钮、字段分别消费 `dkds-surface`、`dkds-toolbar`、Core button 与 `dkds-field-control`，插件 CSS 仅保留领域布局。
-- 插件 CSS 不含 `!important`，也不再固定亮/暗主题颜色、边框、阴影或控件尺寸。
+- 作为第一方插件，视觉职责已进一步收敛到 Unit Templates/Core；生产插件不再携带私有 presentation CSS。
+- Desktop/Mobile 共享同一公开 Unit composition，平台差异由 Presenter 处理。
 
 ## 功能对应
 
@@ -51,7 +71,7 @@ DK Data Studio Plugin API 1.19.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 - `pluginType: "tool"`
 - `workspace.role: "top"`
 - 独立窗口 Activity：`pulse-sampler-tool`
-- 使用公开 Core：PluginWorkspace、ScientificPlot、TableSurface、Project Slice、Data Sources / Artifacts / Data Model。
+- 使用公开 Core：Unit Templates、ScientificPlot、TableSurface、Project Slice、Data Sources / Artifacts / Data Model。
 - 使用空的 `workbench-import` slot，由 Core 提供统一导入入口。
 
 ## 验证

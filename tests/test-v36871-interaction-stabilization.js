@@ -154,6 +154,7 @@ if(id==='../../../host/native-touch-drag')return {bind:()=>()=>{}};
   const context={module:moduleBox,exports:moduleBox.exports,console,window:{},document:documentStub,require:id=>{
     if(id==='../foundation/shortcuts')return {esc:v=>String(v),resolveElement:v=>v,cleanupCall(){},shortcutHub:{}};
     if(id==='ui/style-ownership-gate')return {KINDS:{},set(){},remove(){}};
+    if(id==='./transient-registry')return {registerContextMenu(){},unregisterContextMenu(){},dismissAllContextMenus(){}};
     throw new Error(id);
   },Object};context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'context-actions.js'});
   const menu=new moduleBox.exports.ContextMenu('test');let closes=0;menu.element={contains:target=>target==='menu-scroll'};menu.close=()=>{closes++;};

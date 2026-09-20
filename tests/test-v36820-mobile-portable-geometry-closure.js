@@ -14,7 +14,7 @@ assert(atLeast(expo.version,'0.8.47'));
 assert(Number(expo.android.versionCode)>=58);
 
 const shell=read('mobile/src/styles/shell-styles.ts');
-const pulse=read('src/plugins/pulse-sampler-tool/mobile.css');
+const pulse=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const nativeWorkspace=read('src/styles/platform/native-workspace-presentation.css');
 const mobileSurface=read('src/core/ui/modules/presentation/mobile-web-surface.js');
@@ -33,9 +33,10 @@ const mobileApp=read('mobile/App.tsx'),foundation=read('src/app/modules/foundati
 assert(!mobileApp.includes('WebServicePopover')&&mobileApp.includes("host.hostRequest('status', { pluginId: 'builtin.status-monitor', id: 'lan-web' })"),'Web Service must no longer use a separate Native popup geometry owner.');
 assert(foundation.includes("window.DKDSMaterialSurface?.apply?.(panel,'popover')")&&foundation.includes("bottom:'var(--dkds-status-popover-gap,8px)'"),'Core LAN popover must consume the shared status popover material and bottom-gap contract.');
 
-assert(pulse.includes('@media (orientation:landscape) and (min-width:700px)'),'Pulse Sampler needs a mobile landscape composition.');
-assert(pulse.includes('grid-template-columns:minmax(300px,.92fr) minmax(0,1.28fr)'),'Landscape Pulse must expose waveform and extraction side-by-side.');
-assert(pulse.includes('.ps-wave{\n    grid-column:1;grid-row:1;min-height:0;height:100%')&&pulse.includes('.ps-analysis{\n    grid-column:2;grid-row:1;min-height:0;height:100%'),'Desktop 560/520px minimums must be neutralized in native landscape.');
+assert(pulse.includes("variant:'stack-comfortable'")&&pulse.includes("variant:'form-grid-2'")&&pulse.includes("variant:'analysis-control-grid'")&&pulse.includes("variant:'result-control-grid'")&&pulse.includes("variant:'result-grid-asymmetric'"),'Pulse Mobile projection must be built from platform-neutral responsive Unit recipes rather than plugin-private Mobile CSS.');
+assert(!pulse.includes("variant:'analysis-control-grid',responsiveTarget:workspaceHost")&&!pulse.includes("wide:true,responsiveTarget:workspaceHost")&&!pulse.includes('orientation:landscape'),'Pulse responsive composition must remain host-neutral and let nested Units measure their actual allocated local width.');
+const unitSpec=read('src/core/ui/modules/composition/unit-template-spec.js');
+assert(unitSpec.includes("scientificPlot:'parent-canvas'")&&unitSpec.includes("scientificPlot:Object.freeze({purpose:'Chrome-free scientific drawing/interaction canvas")&&unitSpec.includes("responsive:'Canvas follows parent PlotView/section geometry"),'ScientificPlot Unit must own parent-canvas responsiveness without requiring a plugin-level responsive:true compatibility flag.');
 
 assert(!portable.includes('is-mobile-bottom-shelf')&&!portable.includes('reserveMobileBottomShelf'),'Mobile PlotView bottom placement must use the real canvas bottom lane with no shelf workaround.');
 assert(portable.includes("if(document.documentElement?.dataset?.dkdsHost==='mobile'||document.documentElement?.classList?.contains('react-native-client'))return;"),'Mobile PortableView must leave resize ownership to the visible canvas split seam.');
@@ -58,6 +59,6 @@ assert(nativeWorkspace.includes('>.dkds-plot-view-content{flex:1 1 0;min-width:0
 assert(nativeShell.includes('Native Plugin Manager cards must be content-height')&&nativeShell.includes('.plugin-card-footer{height:auto;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;align-content:flex-start}'),'Portrait Plugin Manager card footer must not retain the tall column/space-between fallback.');
 
 // Explicit Desktop-isolation checks for this Mobile closure.
-assert(!read('src/plugins/pulse-sampler-tool/plugin.css').includes('orientation:landscape'),'Pulse landscape repair must not leak into Desktop plugin CSS.');
+assert(!read('src/plugins/pulse-sampler-tool/unit-presentation.js').includes('orientation:landscape'),'Pulse responsive composition must remain platform-neutral and not encode a Mobile-only landscape branch.');
 assert(!read('src/styles/structure/sdk-semantic-surfaces.css').includes('dkds-mobile-plot-title-pan'),'Mobile title/handle paint must not leak into shared Desktop structure CSS.');
 console.log('v3.68.20+ mobile portable geometry closure PASS');

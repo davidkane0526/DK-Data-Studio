@@ -233,7 +233,7 @@ function closeAnalysisPage(id){
   window.DKDSPlugins?.events?.emit?.('analysis:closed',{id});
   const superState=window.DKDSPlugins?.workspace?.super?.();
   if(superState?.available){
-    queueMicrotask(()=>window.DKDSPlugins?.activities?.set?.(superState.activityId));
+    queueMicrotask(()=>window.DKDSPlugins?.activities?.set?.(superState.activityId,{invoke:false,forceEmbedded:true}));
   }
   scheduleMainPlotRelayout();
   return true;

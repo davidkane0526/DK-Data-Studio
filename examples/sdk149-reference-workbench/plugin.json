@@ -1,0 +1,39 @@
+{
+  "id": "com.example.scientific-reference",
+  "name": "Scientific Reference Studio",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": [
+    "plugin.js"
+  ],
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "enabled": true,
+  "order": 910,
+  "description": "SDK 1.49 reference workbench proving accepted-scientific-v1 can reproduce the accepted scientific panel composition without domain-private CSS or DOM.",
+  "requiresCore": [
+    "status",
+    "ui.dom",
+    "ui.workspace",
+    "ui.group-area",
+    "ui.pages"
+  ],
+  "capabilities": [
+    "ui.page",
+    "ui.plugin-workspace",
+    "ui.group-area"
+  ],
+  "pluginType": "workbench",
+  "data": {
+    "accepts": [
+      "science.transport.iv"
+    ]
+  }
+}

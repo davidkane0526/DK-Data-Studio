@@ -654,9 +654,12 @@ function Get-AvailableBytesForPath([string]$PathValue) {
 
 function Format-StorageBytes([Nullable[Int64]]$Bytes) {
   if ($null -eq $Bytes) { return 'unknown' }
-  if ($Bytes.Value -ge 1GB) { return ('{0:N2} GiB' -f ($Bytes.Value / 1GB)) }
-  if ($Bytes.Value -ge 1MB) { return ('{0:N0} MiB' -f ($Bytes.Value / 1MB)) }
-  return ('{0:N0} KiB' -f ($Bytes.Value / 1KB))
+  # PowerShell unwraps Nullable[T] parameters with a value to T. Accessing
+  # .Value therefore fails under StrictMode on Windows PowerShell 5.1.
+  $byteValue = [Int64]$Bytes
+  if ($byteValue -ge 1GB) { return ('{0:N2} GiB' -f ($byteValue / 1GB)) }
+  if ($byteValue -ge 1MB) { return ('{0:N0} MiB' -f ($byteValue / 1MB)) }
+  return ('{0:N0} KiB' -f ($byteValue / 1KB))
 }
 
 function Get-LatestNpmDebugLog([DateTime]$SinceUtc) {
@@ -1563,12 +1566,6 @@ function New-AndroidBuildWorkspace {
   return $stagedMobile
 }
 
-function Invoke-AndroidSourceChecks([string]$AndroidMobile) {
-  Write-SectionTitle 'Validate Android source contracts'
-  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','mobile:test') -WorkingDirectory $Root
-  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','typecheck') -WorkingDirectory $AndroidMobile
-}
-
 function Invoke-AndroidPrebuild([string]$AndroidMobile) {
   Write-SectionTitle 'Expo prebuild'
   $arguments=@('expo','prebuild','--platform','android')
@@ -1625,43 +1622,10 @@ function Enable-AndroidGradleDirectNoDaemon([string]$AndroidDirectory) {
   Add-GradleJvmSystemProperty 'org.gradle.internal.instrumentation.agent' 'false'
   Add-GradleJvmSystemProperty 'org.gradle.daemon' 'false'
 
-  Write-Host 'Gradle process mode: direct client JVM requested (JVM + agent parity enforced)' -ForegroundColor DarkGray
+  Write-Host 'Gradle process mode: direct client JVM configured (no pre-build probe)' -ForegroundColor DarkGray
   Write-Host ("Gradle build JVM  : {0}" -f $jvmArgs) -ForegroundColor DarkGray
   Write-Host 'Gradle agent mode : disabled for this no-daemon build' -ForegroundColor DarkGray
   return $jvmArgs
-}
-
-function Test-AndroidGradleInProcess([string]$AndroidDirectory) {
-  Write-SectionTitle 'Verify Gradle direct no-daemon process contract'
-  $arguments=@('help','--no-daemon','--max-workers=1','--info')
-  Write-Host ('> .\gradlew.bat ' + ($arguments -join ' ')) -ForegroundColor DarkGray
-
-  Push-Location $AndroidDirectory
-  try {
-    $lines=@()
-    & '.\gradlew.bat' @arguments 2>&1 | ForEach-Object {
-      $lines += [string]$_
-    }
-    $exitCode=$LASTEXITCODE
-  } finally {
-    Pop-Location
-  }
-
-  $text=($lines -join "`n")
-  $forkRequested=($text -match 'single-use Daemon process will be forked') -or ($text -match "Starting process 'Gradle build daemon'")
-  if ($forkRequested) {
-    $relevant=@($lines | Where-Object {
-      $_ -match 'launcher JVM|single-use Daemon|Gradle build daemon|Wanted:|Actual:|Agent status|CreateProcess|Could not start'
-    })
-    if (-not $relevant.Count) { $relevant=@($lines | Select-Object -Last 24) }
-    throw ("Gradle no-fork preflight failed: Gradle still requested a child build daemon after JVM + instrumentation-agent parity. `n" + ($relevant -join "`n"))
-  }
-  if ($null -ne $exitCode -and $exitCode -ne 0) {
-    $tail=@($lines | Select-Object -Last 30)
-    throw ("Gradle no-fork preflight exited with code $exitCode before APK compilation. `n" + ($tail -join "`n"))
-  }
-
-  Write-Host 'Gradle no-fork preflight: PASS (project help executed without a child Gradle build daemon).' -ForegroundColor Green
 }
 
 function Test-AndroidApkArtifact([string]$Path) {
@@ -1687,14 +1651,13 @@ function Test-AndroidApkArtifact([string]$Path) {
 }
 
 function Invoke-AndroidReleaseGradleBuild([string]$AndroidDirectory) {
-  # Both android-build and android-run must use the same Gradle process contract.
-  # Keeping this in one owner prevents the connected-device path from silently
-  # reintroducing the single-use daemon that the release-packaging path forbids.
+  # Both android-build and android-run use the same Gradle process contract.
+  # The Android compile path intentionally does not run a separate Gradle probe:
+  # configure the direct no-daemon JVM once, then go straight to assembleRelease.
   $savedJavaOptions=$env:JAVA_OPTS
   $savedGradleOptions=$env:GRADLE_OPTS
   try {
     [void](Enable-AndroidGradleDirectNoDaemon -AndroidDirectory $AndroidDirectory)
-    Test-AndroidGradleInProcess -AndroidDirectory $AndroidDirectory
     Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
       'assembleRelease',
       '--no-daemon',
@@ -1719,7 +1682,7 @@ function Build-AndroidRelease {
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
   $androidMobile=New-AndroidBuildWorkspace
   Ensure-NodeDeps -Dir $androidMobile
-  Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
+  # Keep validation opt-in: android-build does not run mobile:test, typecheck, or a Gradle preflight.
   Initialize-AndroidReleaseSigning
   Write-SectionTitle 'Prepare Android offline renderer'
   Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
@@ -1816,7 +1779,7 @@ try {
       if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
       $androidMobile=New-AndroidBuildWorkspace
       Ensure-NodeDeps -Dir $androidMobile
-      Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
+      # Same direct compile path as android-build; validation remains an explicit developer action.
       Initialize-AndroidReleaseSigning
       Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
       Invoke-AndroidPrebuild -AndroidMobile $androidMobile

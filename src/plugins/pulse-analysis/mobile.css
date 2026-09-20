@@ -1,34 +1,8 @@
 /* Pulse Analysis mobile presentation. Mobile Presenter owns the region; this
    stylesheet only reflows Pulse-owned descendants inside active semantic lanes. */
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-primary-surface{
-  width:100%;min-width:0;height:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:7px;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-primary-surface>*{min-width:0;max-width:100%}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-card{
-  position:relative;inset:auto;width:100%;min-width:0;max-width:100%;height:auto;margin:0;box-sizing:border-box;overflow:visible;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-split{
-  --pulse-results-visual-height:auto;display:flex;flex-direction:column;gap:8px;width:100%;height:auto;min-height:0;overflow:visible;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-splitter{display:none}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-visual-pane{
-  display:flex;flex-direction:column;gap:8px;width:100%;height:auto;min-width:0;min-height:0;overflow:visible;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-grid{
-  width:100%;height:auto;min-width:0;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px;align-items:stretch;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-result-card{
-  min-width:0;min-height:310px;height:310px;display:flex;flex-direction:column;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-result-plot{
-  flex:1 1 auto;width:100%;height:auto;min-height:250px;margin:0;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-table-card{
-  width:100%;height:auto;min-height:250px;display:flex;flex-direction:column;
-}
-[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-table-wrap{
-  width:100%;max-width:100%;min-height:0;max-height:min(38vh,360px);overflow:auto;flex:1 1 auto;
-}
+/* PRIMARY/result geometry is Unit-owned. Mobile Presenter contributes only the
+   semantic region and its available width; no Pulse result card/split/grid sizing
+   is restated here. */
 [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-compare-toolbar-card{overflow:visible}
 [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-compare-actions{
   margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;flex-wrap:nowrap;
@@ -46,11 +20,6 @@
 }
 [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-file-actions,
 [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-table-actions{position:static;inset:auto;overflow:visible}
-@media (max-width:900px){
-  [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-results-grid{grid-template-columns:minmax(0,1fr)}
-  [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-result-card{height:auto;min-height:300px}
-  [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-compare-actions{width:100%;margin-left:0;justify-content:flex-start;flex-wrap:wrap}
-}
 @media (max-width:560px){
   [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-scope-action{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr)}
   [data-dkds-mobile-region="main"][data-dkds-mobile-active="true"] .pulse-scope-action select{width:100%}

@@ -19,9 +19,10 @@ assert(grid.includes('"cleft clsplit center crsplit cright"'),'desktop rails mus
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const analysis=read('src/core/ui/modules/workbench/analysis.js');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const shared=read('src/plugins/resonance-workbench/workbench-shared.js');
 assert(portable.includes("chrome=this.spec.chrome!==false")&&analysis.includes('chrome:row.chrome!==false'),'fixed desktop rails must be able to suppress generic PortableView chrome without forking the workspace runtime.');
-assert(/dataControlPresentation[^\n]+placements:\['left'\][^\n]+chrome:false/.test(resonance),'Resonance data control must be a fixed left rail without injected placement arrows.');
+assert(resonancePresentation.includes("const dataControl=units.prime.build({id:'data-control',label:'参数',variant:'fixed-titleless',presentationRole:'data-control',presentationPurpose:'parameters'")&&resonancePresentation.includes("defaultPlacement:'left',placements:['left']"),'Resonance data control must be a fixed titleless left Unit rail without injected placement arrows.');
 assert(shared.includes("id:'data-control',label:'参数'"),'Resonance host label must use the requested concise 参数 label.');
 assert(resonance.includes("id:'res-settings',label:'设置',activity:'resonance',section:'UTILITY',order:980"),'Resonance settings must be a trailing utility command.');
 

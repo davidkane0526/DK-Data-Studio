@@ -6,7 +6,8 @@ const root=path.resolve(__dirname,'..');
 const pkg=require(path.join(root,'package.json'));
 const mobilePkg=require(path.join(root,'mobile','package.json'));
 const mobileApp=require(path.join(root,'mobile','app.json'));
-const pulseMobile=fs.readFileSync(path.join(root,'src','plugins','pulse-sampler-tool','mobile.css'),'utf8');
+const pulseUnit=fs.readFileSync(path.join(root,'src','plugins','pulse-sampler-tool','unit-presentation.js'),'utf8');
+const pulseManifest=require(path.join(root,'src','plugins','pulse-sampler-tool','plugin.json'));
 const portable=fs.readFileSync(path.join(root,'src','core','ui','modules','layout','portable-view.js'),'utf8');
 const nativeWorkspace=fs.readFileSync(path.join(root,'src','styles','platform','native-workspace-presentation.css'),'utf8');
 const nativeShell=fs.readFileSync(path.join(root,'src','styles','platform','native-client-shell.css'),'utf8');
@@ -30,12 +31,14 @@ assert(atLeast(mobilePkg.version,'0.8.48'),'Mobile touch-panel closure requires 
 assert(atLeast(mobileApp.expo?.version,'0.8.48') && Number(mobileApp.expo?.android?.versionCode)>=59,
   'Mobile touch-panel closure requires Expo metadata >= 0.8.48 / versionCode 59.');
 
-assert(pulseMobile.includes('[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"] .pulse-sampler-shell'),
-  'Pulse mobile main-surface rules must target the Mobile route surface.');
-assert(!pulseMobile.includes('[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"]'),
-  'Pulse mobile CSS must not target the removed non-semantic main region.');
-assert(pulseMobile.includes('grid-template-columns:minmax(300px,.92fr) minmax(0,1.28fr);') && pulseMobile.includes('.ps-analysis{\n    grid-column:2;grid-row:1;min-height:0;height:100%;padding:10px;gap:7px;overflow:auto;overscroll-behavior:contain'),
-  'Pulse landscape layout must keep the measurement-extraction card inside the first viewport.');
+assert(pulseManifest.platformPresentation?.mobile?.mode==='adaptive'&&Array.isArray(pulseManifest.styles)&&pulseManifest.styles.length===0,
+  'Pulse mobile composition must be Presenter-adaptive and must not retain plugin-owned Mobile CSS after production Unit cutover.');
+assert(pulseUnit.includes("presentationRole:'data-control'")&&pulseUnit.includes("variant:'fixed-titleless'"),
+  'Pulse parameters must remain a platform-neutral titleless data-control PRIME for Mobile drawer projection.');
+assert(pulseUnit.includes("variant:'analysis-control-grid'")&&pulseUnit.includes("variant:'result-control-grid'")&&pulseUnit.includes("variant:'result-grid-asymmetric'"),
+  'Pulse measurement extraction and result regions must use the accepted responsive Unit recipes instead of a Mobile-only landscape patch.');
+assert(!pulseUnit.includes('orientation:landscape')&&!pulseUnit.includes('isNativeClient'),
+  'Pulse production Unit composition must remain platform-neutral; Mobile layout belongs to the Presenter/Unit responsive layer.');
 
 assert(portable.includes("if(document.documentElement?.dataset?.dkdsHost==='mobile'||document.documentElement?.classList?.contains('react-native-client'))return;"),
   'Mobile companion resize must be owned only by the explicit split seam, not a title long-press gesture.');

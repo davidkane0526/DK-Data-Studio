@@ -26,7 +26,7 @@ for(const token of ['inspectorPanelMode','inspectorDockWidth','inspectorFloatRec
 const persistence=read('src/app/modules/project-persistence.js');
 assert(!persistence.includes('panelLayout')&&!persistence.includes('trendColumns'),'Current project host serialization must not own retired inspector/group presentation state.');
 
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonance.includes("presentationSurface('prime','curve-inspector')")&&resonance.includes("presentationSurface('prime','group-analysis')"),'Resonance inspector/group must remain PluginWorkspace PRIME surfaces after removing the duplicate app-owned layer.');
+const resonance=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonance.includes("id:'curve-inspector'")&&resonance.includes("id:'group-analysis'")&&resonance.includes('units.prime.build'),'Resonance inspector/group must remain Unit-backed PluginWorkspace PRIME surfaces after removing the duplicate app-owned layer.');
 
 console.log('v3.68.45 retired legacy root inspector/group/zoom panel stack PASS.');

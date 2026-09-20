@@ -402,6 +402,8 @@
           : '没有可显示的已分析结果。';
         const table = $('#pulseResultTable');
         if (!table) return;
+        const empty = $('#pulseResultEmpty');
+        if (empty) empty.classList.toggle('hidden', rows.length > 0);
         dom.html(table,`
           <thead><tr><th>标签</th><th>源文件</th><th>#</th><th>分段</th><th>Vpulse (V)</th><th>Ipulse (A)</th><th>Vread (V)</th><th>Iread (A)</th><th>Pulse time</th><th>Read time</th><th>Pulse block</th><th>Read block</th></tr></thead>
           <tbody>${rows.map(({item,d})=>`<tr>

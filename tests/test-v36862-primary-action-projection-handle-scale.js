@@ -15,12 +15,12 @@ assert(json('mobile/app.json').expo.android.versionCode>=89);
 const actions=read('src/core/ui/modules/interaction/context-actions.js');
 const model=read('src/core/ui/modules/presentation/model.js');
 const chrome=read('src/plugin-window/chrome.js');
-const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const ter=read('src/plugins/ter-analysis/unit-presentation.js');
 assert(actions.includes("const ACTION_VARIANTS=new Set(['primary','secondary','selected','active','quiet','destructive'])"),'ActionGroup must normalize the canonical variant vocabulary once.');
 assert(actions.includes('variant:actionVariant(action)'),'Action registry projection must retain the authored semantic variant.');
 assert(model.includes('variant:text(row.variant)'),'Presentation model must not drop action variant metadata.');
 assert(chrome.includes("variant:row.variant")&&chrome.includes("const semanticVariant=String(variant||'').trim()||(active?'active':'quiet')"),'Dedicated plugin titlebar must preserve primary/secondary variants instead of forcing quiet.');
-assert(ter.includes("label:'计算 TER',className:'primary',variant:'primary'"),'TER calculate action must remain explicitly primary.');
+assert(ter.includes("label:'计算 TER',variant:'primary'"),'TER calculate action must remain explicitly primary in its current Unit presentation owner.');
 
 // Native presenter must also retain the same emphasis rather than flattening
 // the important action while moving it between direct and overflow slots.

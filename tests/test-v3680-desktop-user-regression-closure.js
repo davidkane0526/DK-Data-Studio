@@ -24,35 +24,37 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
   assert.ok(portable.includes('--dkds-header-action-height:22px'),'Portable header must feed the same canonical action-height slot.');
   assert.ok(schema.includes('--dkds-header-action-height:22px'),'Trend header must feed the same canonical action-height slot.');
 
+  const terViews=read('src/plugins/ter-analysis/unit-presentation.js');
   const terCss=read('src/plugins/ter-analysis/plugin.css');
-  const terViews=read('src/plugins/ter-analysis/shared-views.js');
-  assert.ok(terViews.includes('R–V 全 Vg · 正扫 / 反扫'),'TER resistance card must use a compact single-line visible title.');
-  assert.ok(terViews.includes('title=\\"全部 Vg 的电阻–电压（R–V）正扫 / 反扫\\"'),'TER must preserve the full scientific title as accessible hover text.');
-  assert.ok(terCss.includes('flex-wrap:nowrap'),'TER resistance title and actions must stay on one header row.');
-  assert.ok(terCss.includes('grid-template-rows:auto auto auto minmax(320px,1fr)'),'TER resistance chart must consume remaining card height instead of using a fixed visual island.');
-  assert.ok(terCss.includes('--dkds-plot-content-height:auto')&&terCss.includes('--dkds-plot-content-min-height:320px'),'TER resistance plot must configure the Core PlotView height slot instead of re-authoring chart height.');
-  assert.ok(!/\.ter-resistance-card \.analysis-chart\{[^}]*(?:height|min-height)\s*:/s.test(terCss),'TER plugin must not re-own final PlotView height/min-height properties.');
+  assert.ok(terViews.includes('R–V 全 Vg · 正扫 / 反扫'),'TER resistance card must retain the accepted compact visible title.');
+  assert.ok(terViews.includes("accessibleTitle:'全部 Vg 的电阻–电压（R–V）正扫 / 反扫'"),'TER must preserve the full scientific accessible label.');
+  assert.ok(terViews.includes("actionsTagName:'div'")&&terViews.includes("className:'ter-resistance-card-header'"),'TER R–V header must preserve accepted source anatomy through parameterized Unit Header.');
+  assert.ok(terCss.includes('grid-template-rows:auto auto auto minmax(320px,1fr)'),'TER R–V home card must preserve the accepted 320 px source-detail plot floor.');
+  assert.ok(terCss.includes('ter-resistance-card.dkds-portable-view:is(.is-docked,.is-floating,.is-global-floating)')&&terCss.includes('minmax(0,1fr)'),'Moved TER R–V card must preserve accepted portable flex geometry.');
+  assert.ok(terViews.includes("stateVersion:'ter-plot-view-v3'"),'TER PlotViews must preserve accepted persisted placement state.');
+  assert.ok(fs.existsSync(path.join(root,'src/plugins/ter-analysis/plugin.css')),'TER source-parity reconstruction must retain accepted geometry-only plugin.css.');
 
-  const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+  const pulsePresentation=read('src/plugins/pulse-analysis/unit-presentation.js');
   const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
-  assert.ok(pulseFeature.includes("stateVersion:'pulse-raw-diagnostic-v2'"),'Pulse raw diagnostic must invalidate stale persisted PRIME geometry.');
-  assert.ok(pulseCss.includes('--pulse-raw-plot-height:clamp(360px,42vh,440px)'),'Pulse raw plot must have a bounded plugin-owned height contract.');
-  assert.ok(pulseCss.includes('max-height:var(--pulse-raw-plot-height)'),'Pulse raw plot must not grow through resize feedback.');
+  assert.ok(pulsePresentation.includes("stateVersion=raw?'pulse-raw-flow-v5':'pulse-result-grid-v6'"),'Pulse raw diagnostic must use a fresh home-flow PlotView state namespace.');
+  assert.ok(!pulseCss.includes('--pulse-raw-plot-height'),'Pulse raw plot height must no longer be privately owned by plugin CSS.');
+  assert.ok(pulsePresentation.includes("detailGeometry:{contentMinHeightPx:raw?360:320,contentMaxHeightPx:raw?360:320}"),'Pulse raw/result PlotViews must own intrinsic scientific height through Unit detailGeometry.');
 
-  const samplerCss=read('src/plugins/pulse-sampler-tool/plugin.css');
-  assert.ok(samplerCss.includes('grid-template-columns:minmax(220px,1.45fr) repeat(4,minmax(118px,.8fr)) minmax(148px,.72fr)'),'Pulse Sampler Desktop extraction row must reserve deterministic aligned slots for source, Time, Current, trims and extraction.');
-  assert.ok(samplerCss.includes('grid-template-rows:auto auto'),'Pulse Sampler command surface must reserve independent rows for extraction and result controls.');
-  assert.ok(samplerCss.includes('grid-template-columns:repeat(2,minmax(180px,1fr)) repeat(2,minmax(132px,.62fr))'),'Pulse Sampler result row must align X/Y plus copy/export without leaking into extraction controls.');
+  const samplerUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+  assert.ok(samplerUnit.includes("variant:'analysis-control-grid'"),'Pulse Sampler Desktop extraction row must preserve the accepted Unit extraction-control geometry.');
+  assert.ok(samplerUnit.includes("variant:'result-control-grid'"),'Pulse Sampler result row must preserve the accepted Unit X/Y/copy/export control geometry.');
+  assert.ok(samplerUnit.includes("variant:'result-grid-asymmetric'"),'Pulse Sampler plot/table result region must remain the accepted asymmetric Unit composition.');
 
   const dcFeature=read('src/plugins/data-center/feature-runtime.js');
+  const dcPresentation=read('src/plugins/data-center/unit-presentation.js');
   const dcCommands=read('src/plugins/data-center/command-runtime.js');
   const dcCss=read('src/plugins/data-center/plugin.css');
-  assert.ok(dcFeature.includes("stateVersion:'data-center-chart-inline-v2'"),'Data Center chart preview must reset stale right-dock geometry to the current inline layout.');
+  assert.ok(dcPresentation.includes("stateVersion:'data-center-chart-inline-v2'"),'Data Center chart preview must reset stale right-dock geometry to the current inline layout through its Unit presentation owner.');
   assert.ok(dcCommands.includes("rows:2"),'Formula editor must use a compact two-row authoring field in its current formula owner.');
   assert.ok(/\.dc-source-preview\{[^}]*grid-column:1 \/ -1/.test(dcCss),'Data Center source table must span the full primary grid.');
   assert.ok(dcCss.includes('@container data-center-workspace (min-width:1180px)'),'Data Center two-column primary layout must query an ancestor container; a container cannot query its own size.');
   assert.ok(dcCss.includes('#dcFormulaParams{--dkds-field-control-min-height:28px'),'Formula controls must configure a compact Core field-density slot.');
-  assert.ok(dcCss.includes('#dcFormulaParams .schema-parameter-panel{display:grid;grid-template-columns:'),'Formula controls must use a compact wide-screen grid.');
+  assert.ok(dcPresentation.includes("variant:'formula-grid',responsiveTarget:formulaPanel.element"),'Formula controls must use the shared Unit formula-grid as their single compact wide-screen outer-grid owner.');
   assert.ok(dcCss.includes('--dc-main-areas:"source source" "tool chart"'),'Inline chart preview must begin beside the formula section through the shared Data Center grid-area contract.');
 
   const vthWindow=read('desktop/plugin-window-manager.js');

@@ -47,6 +47,7 @@ doc.documentElement={dataset:{dkdsHost:'desktop'},classList:new ClassList()};
 const context={module:moduleBox,exports:moduleBox.exports,console,window:{MutationObserver},MutationObserver,document:doc,innerWidth:1200,innerHeight:800,globalThis:null,require:id=>{
   if(id==='../foundation/shortcuts')return {resolveElement:value=>value};
   if(id==='ui/style-ownership-gate')return gate;
+  if(id==='../composition/unit-geometry-constraints')return {publishUnitGeometryConstraint(){return ()=>{};},notifyUnitGeometryConstraint(){return false;}};
   throw new Error(id);
 }};
 context.globalThis=context;vm.createContext(context);vm.runInContext(gridSource,context,{filename:'grid/controller.js'});
@@ -82,11 +83,12 @@ doc.documentElement.dataset.dkdsHost='desktop';doc.documentElement.classList.rem
 
 const resonance=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
-assert(resonance.includes("wb.groupArea(hostEl,{columns:6")&&resonance.includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference"), 'Resonance must consume the formal Core GroupArea API and delegate orientation-aware effective columns to Core.');
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(resonance.includes('unitTemplates?.plotGroup')&&resonance.includes("factory.create(hostEl,{variant:'regular',columns:6")&&resonance.includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference"), 'Resonance must consume the formal GroupArea behavior through the Unit PlotGroup facade and delegate orientation-aware effective columns to Core.');
 assert(resonance.includes("placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'"),'Resonance GroupArea children must expose the same ordinary dock/float placement contract as TER plots; sticky is injected only by GroupArea membership.');
-assert(ter.includes('workbench.groupArea(terGrid,{columns:layoutSettings.cols'),'Titleless TER multi-plot layout must consume the same formal GroupArea behavior.');
+assert(terUnits.includes("const plotGroup=units.plotGroup.create(groupHost,{columns:3")&&terUnits.includes('gapPx:14'),'TER production multi-plot layout must consume formal Unit PlotGroup behavior while retaining its accepted source-detail 14 px gap.');
 assert(!ter.includes("id:'resistance-inspector'")&&!ter.includes('setSticky(')&&!ter.includes('layoutSettings.sticky'),'TER R–V must not have a private inspector/sticky positioning model.');
-assert(ter.includes("placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'"),'TER R–V and sibling charts must share one ordinary PlotView placement contract.');
+assert(terUnits.includes("placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'"),'TER R–V and sibling charts must share one ordinary Unit PlotView placement contract.');
 assert(!ter.includes("id:'rv-visibility'")&&!ter.includes('toggleResistanceVisibility'),'Retired R–V visibility linkage must stay removed; ordinary PlotView placement is the only Core surface control.');
 const terManifest=json('src/plugins/ter-analysis/plugin.json');
 assert(!(terManifest.capabilities||[]).includes('ui.sticky-inspector'),'TER manifest must not advertise the retired R–V-specific sticky inspector capability.');
@@ -112,9 +114,9 @@ const materialCss=read('src/styles/theme/material-renderer.css');
 assert(nativeCss.includes('.lan-web-panel.dkds-mobile-service')&&nativeCss.includes('.dkds-mobile-service-header')&&nativeCss.includes('.dkds-mobile-service-body')&&materialCss.includes('.floating-panel.dkds-material-role-popover{border-radius:var(--ui-panel-radius)}'),'Mobile Web Service organization must stay inside the canonical rounded/header/body panel shell, with radius owned by Core Material rather than platform CSS.');
 
 
-const resonanceCss=read('src/plugins/resonance-workbench/plugin.css'),terCss=read('src/plugins/ter-analysis/plugin.css'),terViews=read('src/plugins/ter-analysis/shared-views.js'),resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonanceViews.includes('reswin-group-grid dkds-managed-grid')&&terViews.includes('ter-chart-grid dkds-managed-grid'),'Managed group grids must carry the Core class in authored markup so Core owns geometry from first paint.');
-assert(!/#resonanceDedicatedPage \.reswin-group-grid\{[^}]*grid-template-columns/s.test(resonanceCss)&&!/#terMaxPage \.ter-chart-grid\{[^}]*grid-template-columns/s.test(terCss),'Resonance and TER plugins must not own final grid-template-columns on Core-managed grids.');
+const resonanceCss=read('src/plugins/resonance-workbench/plugin.css'),resonanceUnits=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonanceUnits.includes('reswin-group-grid dkds-managed-grid')&&terUnits.includes('units.plotGroup.create'),'Both Unit-cutover Resonance and TER must delegate managed group geometry to Core.');
+assert(!/#resonanceDedicatedPage \.reswin-group-grid\{[^}]*grid-template-columns/s.test(resonanceCss)&&!terUnits.includes('gridTemplateColumns'),'Resonance and TER plugins must not own final managed-grid columns.');
 const semanticAudit=read('tools/quality/semantic-style-ownership.js');
 assert(semanticAudit.includes('core-managed-grid-final-geometry')&&semanticAudit.includes('dkds-managed-grid'),'Authored-style Gate must reject alias selectors that try to retake final geometry from a Core-managed grid.');
 const d3Renderer=read('src/core/scientific/d3-chart-renderer.js');

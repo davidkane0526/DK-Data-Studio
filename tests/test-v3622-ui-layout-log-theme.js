@@ -68,18 +68,17 @@ assert(ratio>=4.5,`Thin Glass dark primary contrast must be >=4.5:1, got ${ratio
 // PluginWorkspace publishes semantic secondary surfaces instead of baking a
 // Desktop-shaped left rail into PRIMARY. Presenter geometry is therefore shared
 // by every TOP/SUPER rather than copied from Resonance.
-const pulse=read('src/plugins/pulse-analysis/shared-views.js');
-const dc=read('src/plugins/data-center/shared-views.js');
-const dcMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
-assert(pulse.includes("wb.compose({")&&pulse.includes("id:'data-control'")&&pulse.includes("presentationRole:'data-control'")&&!pulse.includes('leftNode:'),'Pulse file/settings controls must be a semantic data-control PRIME beside a main-only PRIMARY.');
-assert(pulse.includes("id:'pulse-results-height'")&&pulse.includes("axis:'y'")&&pulse.includes('pulse-results-splitter'),'Pulse result plots/table must use the persisted Core height splitter.');
-assert(!dc.includes('ctx.ui.workspaceSurface.create(')&&dcMobilePresentation.includes("wb.compose({")&&dcMobilePresentation.includes("id:'data-control'")&&dcMobilePresentation.includes("presentationRole:'data-control'")&&!dcMobilePresentation.includes('leftNode:'),'Data Center Desktop keeps its accepted native page while the SDK 1.25 Mobile presentation projects data objects as a semantic data-control PRIME.');
+const pulse=read('src/plugins/pulse-analysis/unit-presentation.js');
+const dc=read('src/plugins/data-center/unit-presentation.js');
+assert(pulse.includes("workbench.compose({")&&pulse.includes("id:'data-control'")&&pulse.includes("presentationRole:'data-control'")&&!pulse.includes('leftNode:'),'Pulse file/settings controls must be a semantic data-control PRIME beside a main-only PRIMARY.');
+assert(!pulse.includes("id:'pulse-results-table-height-v3'")&&pulse.includes("const tablePanel=units.panel.create(visual"),'Pulse result plots/table must remain a sequential Unit PRIMARY flow without a viewport-filling splitter.');
+assert(dc.includes('workbench.compose({')&&dc.includes("id:'data-control'")&&dc.includes("presentationRole:'data-control'")&&!dc.includes('leftNode:'),'Data Center production Unit presentation must publish data objects as a semantic titleless data-control PRIME on every platform.');
 assert(!dc.includes("id:'data-center-data-width'")&&!dc.includes("layout.className='dc-workspace-layout'"),'Data Center must no longer own a desktop-specific data-rail splitter inside PRIMARY.');
 
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 assert(!resonanceCss.includes('.reswin-group-head{')&&!resonanceCss.includes('.reswin-group-card-actions{')&&!resonanceCss.includes('.reswin-group-title{'),'Resonance must not re-own Core PlotView header geometry.');
-assert(resonanceGroup.includes('reswin-group-head dkds-plot-view-head')&&!resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title'),'Resonance GroupPlot must consume the canonical Core PlotView header DOM contract without generic SurfaceHeader geometry.');
+assert(resonanceGroup.includes('reswin-group-head dkds-plot-view-head')&&!resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title')&&resonanceGroup.includes('groupGridController?.adoptPlot?.(`resonance-group:${key}`'),'Resonance GroupPlot must preserve the accepted canonical PlotView header DOM while Core PlotGroup adopts its semantics.');
 
 const infra=read('docs/PLUGIN_UI_INFRASTRUCTURE.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');

@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const {readCoreCss}=require('./css-source');
@@ -9,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.47.0','SDK 1.20.0+ cutover is required');
+assert(sdkAtLeast(contract.sdkVersion,'1.49.0'),'SDK 1.20.0+ cutover is required');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.68.103','SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
+assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'),'SDK minimum host must include the Theme 3.10 contextual-composition baseline.');
 
 const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');

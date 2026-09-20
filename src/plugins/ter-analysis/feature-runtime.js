@@ -1,5 +1,5 @@
 (() => {
-  async function mount(ctx,controller=null,views=null,adapter={}){
+  async function mount(ctx,controller=null,adapter={}){
     const featureUtils=window.DKDSPluginModules.require('builtin.ter-analysis','feature-utils');
     const SelectionLink=window.DKDSPluginModules.require('builtin.ter-analysis','selection-link-runtime');
     const {finiteNumber,nearlyEqual,formatNumber,csvCell,sanitizeLayout,heatmapCsv,resistanceCsv,maxVgCsv,maxVgArgCsv,maxVdCsv,maxVdArgCsv}=featureUtils;
@@ -7,7 +7,6 @@
     const T=controller;
     if(!SelectionLink?.create)throw new Error('TER selection-link runtime is unavailable.');
     const selectionLink=SelectionLink.create({sourceScanReference:(vg,source,direction)=>T?.sourceScanReference?.(vg,source,direction)||null,nearlyEqual,selectionReferences:ctx.ui.selection?.refs||null});
-    const sharedViews=views||window.DKDSPluginModules.get('builtin.ter-analysis','shared-views')?.create?.(controller)||null;
     const CHART_COUNT=7;
     const GRID_COLUMNS=[1,2,3,4,7];
     const DOMAIN_FOCUS={focus:{enabled:false}};
@@ -28,6 +27,7 @@
     let layoutSettings={version:3,rows:3,cols:3};
     let terHeaderActions=null;
     let transformPanel=null;
+    let presentation=null;
     let canonicalSelectionOff=null;
 
     function syncLayoutControls(){
@@ -83,29 +83,9 @@
       const rows=ctx.data.transforms?.list?.({supportsScalarField:true})||T.listTransforms?.()||[];
       return rows.filter(row=>row?.id&&row?.public!==false&&(!row.tags?.length||row.tags.includes('transport'))).map(row=>({value:String(row.id),label:String(row.title||row.label||row.id)}));
     }
-    function transformSchema(){
-      const options=transformOptions();
-      return {fields:[
-        {id:'type',type:'select',label:'处理量',required:true,default:'didv',options:options.length?options:[{value:'didv',label:'dI/dV（微分电导）'}]},
-        {id:'direction',type:'select',label:'扫描方向',required:true,default:'1',options:[
-          {value:'1',label:'正扫（Vds 递增）'},{value:'-1',label:'反扫（Vds 递减）'}]}
-      ]};
-    }
-
     function ensureTransformControls(){
-      const host=dom.query('#terTransformSettings');if(!host||!ctx.parameters?.render)return null;
-      if(transformPanel)return transformPanel;
-      const current=T.getTransformSettings?.()||T.getState?.()?.transform||{type:'didv',direction:1};
-      transformPanel=ctx.parameters.render(host,transformSchema(),{
-        value:{type:String(current.type||'didv'),direction:String(Number(current.direction)<0?-1:1)},
-        compact:true,
-        onChange:(next,result)=>{
-          if(result&&!result.ok)return;
-          T.setTransformSettings?.({type:next.type,direction:Number(next.direction)<0?-1:1});
-          renderTransformHeatmap();
-          ctx.project.capture?.();
-        }
-      });
+      if(!presentation?.transformForm)throw new Error('TER Unit presentation did not provide the transform ParameterForm.');
+      transformPanel=presentation.transformForm;
       return transformPanel;
     }
 
@@ -149,38 +129,9 @@
       return matrix;
     }
 
-    function chartSpecs(){
-      return [
-        {key:'heatmap',plotId:'terHeatmapPlot',fileBase:'TER_heatmap'},
-        {key:'transform',plotId:'terTransformHeatmapPlot',fileBase:'TER_transformed_heatmap'},
-        {key:'maxVg',plotId:'terMaxVgPlot',fileBase:'TER_Max-Vg'},
-        {key:'maxVgArg',plotId:'terMaxVgArgPlot',fileBase:'Vd_at_TER_Max-Vg'},
-        {key:'maxVd',plotId:'terMaxVdPlot',fileBase:'TER_Max-Vd'},
-        {key:'maxVdArg',plotId:'terMaxVdArgPlot',fileBase:'Vg_at_TER_Max-Vd'}
-      ];
-    }
-
     function ensurePlotViews(){
-      if(!ctx.ui.plotViews?.bind)return;
-      const specs=[...chartSpecs(),{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',resistance:true}];
-      for(const spec of specs){
-        if(terPlotViews.has(spec.key))continue;
-        const plot=dom.query(`#${spec.plotId}`);
-        const card=plot?.closest('.analysis-chart-card');
-        if(!plot||!card)continue;
-        const header=dom.query(spec.resistance?'.ter-resistance-card-header':'.analysis-chart-title',card);
-        const title=(dom.query('.ter-card-title-text',header)?.textContent||header?.textContent||spec.fileBase).trim();
-        try{
-          const view=ctx.ui.plotViews.bind(`ter:${spec.key}`,card,{
-            plot,header,actionsHost:spec.resistance?'.ter-chart-actions':null,portableTitle:title,
-            fileStem:()=>spec.fileBase,
-            csv:()=>exportSpec(spec.key)?.csv||'',
-            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'ter-plot-view-v3',
-            portableFactory:(id,node,pSpec)=>workbench?.portable?workbench.portable(id,node,pSpec):ctx.ui.portable.create(id,node,pSpec)
-          });
-          terPlotViews.set(spec.key,view);
-        }catch(err){console.warn('[TER PlotView]',spec.key,err);}
-      }
+      if(!presentation?.plotViews?.size)throw new Error('TER Unit presentation did not provide PlotViews.');
+      for(const [key,view] of presentation.plotViews)if(!terPlotViews.has(key))terPlotViews.set(key,view);
     }
 
     function exportSpec(key){
@@ -463,7 +414,7 @@
         xaxis:{title:'Vds (V)',tickmode:display.xDtick?'linear':'auto',dtick:display.xDtick||undefined,automargin:true,constrain:'domain',showgrid:false},
         yaxis:{title:'Vg (V)',tickmode:display.yDtick?'linear':'auto',dtick:display.yDtick||undefined,automargin:true,constrain:'domain',showgrid:false},
         config:{responsive:true,scrollZoom:true,displaylogo:false,toImageButtonOptions:{format:'png',filename:'TER_heatmap',width:1400,height:900,scale:2}},
-        layout:{uirevision:`ter-heatmap-${resultRevision}`},interaction:T.interaction,controllers:DOMAIN_FOCUS,source:'ter-heatmap',renderKey:`ter-heatmap:${resultRevision}`,
+        layout:{uirevision:`ter-heatmap-${resultRevision}`},interaction:T.interaction,controllers:DOMAIN_FOCUS,source:'ter-heatmap',renderKey:`ter-heatmap:${resultRevision}`,renderPriority:'frame',
         onClick:event=>{const point=event?.points?.[0],vg=finiteNumber(point?.y),vds=finiteNumber(point?.x);if(vg===null||vds===null)return;const row=(result.records||[]).find(item=>nearlyEqual(item.vg,vg)&&nearlyEqual(item.vds,vds));selectTerPoint({vg,vds,rUp:row?.rUp,rDown:row?.rDown,ter:row?.ter,sourceFile:String(row?.sourceFile||''),id:`ter:${vg}:${vds}`,selectionType:'ter.matrix-point'},'ter-heatmap',{publish:false});}
       });
       rendered?.catch?.(err=>console.warn('[TER heatmap]',err));return rendered;
@@ -509,14 +460,11 @@
         margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)'},yaxis:{title:'Vg @ TER_Max–Vd (V)'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-arg-manual'
       },clickRow(maxVd,selectionFromMaxVd,'terMaxVdArgPlot'),pointEntity(maxVd,selectionFromMaxVd));
 
-      const vgTable=dom.query('#terMaxVgTable');
-      if(vgTable)dom.html(vgTable,`
-        <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
-        <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`);
-      const vdTable=dom.query('#terMaxVdTable');
-      if(vdTable)dom.html(vdTable,`
-        <thead><tr><th>Vd (V)</th><th>TER_Max–Vd (%)</th><th>Vg@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
-        <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`);
+      const fmtExp=value=>Number.isFinite(Number(value))?Number(value).toExponential(6):'';
+      const vgRows=maxVg.map(d=>({vg:d.vg,terMax:Number(d.terMax).toPrecision(7),vdsAtMax:d.vdsAtMax,iUp:fmtExp(d.iUp),iDown:fmtExp(d.iDown),rUp:fmtExp(d.rUp),rDown:fmtExp(d.rDown),mode:d.manual?'手动':'自动'}));
+      const vdRows=maxVd.map(d=>({vds:d.vds,terMax:Number(d.terMax).toPrecision(7),vgAtMax:d.vgAtMax,iUp:fmtExp(d.iUp),iDown:fmtExp(d.iDown),rUp:fmtExp(d.rUp),rDown:fmtExp(d.rDown),mode:d.manual?'手动':'自动'}));
+      presentation?.tableVg?.setData?.(presentation.vgColumns||[],vgRows);
+      presentation?.tableVd?.setData?.(presentation.vdColumns||[],vdRows);
     }
 
     function moveSelectedTerPoint(step){
@@ -674,9 +622,9 @@
     }
 
     function renderLinkedUi(){
-      const result=syncResultRevision();ensureLayoutControls();ensureTransformControls();ensureResistanceCard();ensurePlotViews();applyLayoutSettings();
+      const result=syncResultRevision();ensureLayoutControls();ensureTransformControls();ensureResistanceCard();ensurePlotViews();
       if(result){renderTerHeatmap(result);renderReductionPlots(result);}else{for(const id of ['terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){const el=dom.query('#'+id);if(el)try{ctx.ui.scientificPlot.purge(el);}catch{}}}
-      renderTransformHeatmap();renderResistanceBase();applyResistanceSelection();
+      renderTransformHeatmap();renderResistanceBase();
     }
 
     function installReactiveBindings(){
@@ -693,50 +641,25 @@
     }
 
 
-    const pageHtml=sharedViews?.pageHtml?.()||'';
-
     ctx.ui.activities.add({
-      id:'ter',label:'TER分析',contextLabel:'TER 分析',icon:'▧',order:30,openMode:'window',
+      id:'ter',label:'TER分析',contextLabel:'TER 分析',icon:'▧',order:30,openMode:'window',artifactHydration:'live',
       description:'同 Vd TER 矩阵与极值分析',
-      onActivate:()=>{ctx.workspace.openPage('terMaxPage');T.render();}
+      // Page onOpen owns presentation synchronization.  Calling T.render()
+      // again here duplicated all control/table synchronization on every
+      // activation and made restored TER projects visibly settle twice.
+      onActivate:()=>ctx.workspace.openPage('terMaxPage')
     });
 
-    const page=ctx.ui.pages.add({
-      id:'ter-max',
-      pageId:'terMaxPage',
-      activity:'ter',
-      toolbar:false,
-      label:'TER_max',
-      order:50,
-      html:pageHtml,
-      onOpen:()=>T.render()
-    });
-
-    workbench=sharedViews?.attach?.(ctx,page)||null;
-    const terGrid=dom.query('.ter-chart-grid',page);
-    // The user's layout choice is the preferred maximum column count. The Core
-    // grid controller clamps it to the actual Surface width so scientific cards
-    // never overlap or become unusably narrow; widening the Surface restores the
-    // requested count automatically without changing the saved preference.
-    if(workbench?.groupArea&&terGrid)gridController=workbench.groupArea(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:7,responsive:true});
-    const terHeader=dom.query('.analysis-page-header',page);
-    const terHeaderActionsHost=dom.create('div');
-    terHeaderActionsHost.className='dkds-plugin-header-actions';
-    dom.query('.analysis-page-close',terHeader)?.before(terHeaderActionsHost);
-    terHeaderActions=ctx.ui.actions?.mount?.(terHeaderActionsHost,{
-      activity:'ter',
-      actions:[
-        {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
-        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
-        {id:'layout',icon:'▦',label:'布局',menu:true,order:30,items:()=>[
-          {id:'3x3',icon:'▦',label:'3 列 × 3 行（默认）',onInvoke:()=>setCols(3)},
-          {id:'4x2',icon:'▦',label:'4 列 × 2 行',onInvoke:()=>setCols(4)},
-          {id:'2x4',icon:'▦',label:'2 列 × 4 行',onInvoke:()=>setCols(2)},
-          {id:'1x7',icon:'▤',label:'1 列 × 7 行',onInvoke:()=>setCols(1)},
-          {id:'7x1',icon:'▥',label:'7 列 × 1 行',onInvoke:()=>setCols(7)}
-        ]}
-      ]
-    });
+    const unitPresentation=adapter?.unitPresentation;
+    if(!unitPresentation?.mount)throw new Error('TER Unit presentation runtime unavailable.');
+    let pageOpenRenderPendingRefresh=false;
+    const syncPageOpen=()=>{T.render();pageOpenRenderPendingRefresh=true;return true;};
+    presentation=unitPresentation.mount(ctx,T,{setCols,exportSpec,transformOptions,onPageOpen:syncPageOpen,onTransformChange:()=>{renderTransformHeatmap();ctx.project.capture?.();},clearSelection:()=>{selectedTerPoint=null;controller?.clearSelection?.({source:'ter-resistance-clear'});renderResistancePlot();}});
+    const page=presentation.page;
+    workbench=presentation.workbench;
+    gridController=presentation.plotGroup;
+    terHeaderActions=presentation.header?.actionGroup||null;
+    ensurePlotViews();
 
     ctx.ui.topWorkspace.register({
       id:'ter',activity:'ter',label:'TER 分析',icon:'▧',
@@ -754,22 +677,11 @@
     dom.on(dom.query('#terCopyLongBtn',page),'click',()=>T.copyLong());
     dom.on(dom.query('#terExportMatrixBtn',page),'click',()=>T.exportMatrix());
     dom.on(dom.query('#terCopyMatrixBtn',page),'click',()=>T.copyMatrix());
-    dom.on(dom.query('#terExportHeatmapSvgBtn',page),'click',()=>T.exportHeatmapSvg());
-    dom.on(dom.query('#terExportHeatmapPngBtn',page),'click',()=>T.exportHeatmapPng());
-
-    dom.on(dom.query('#terExportMaxVgBtn',page),'click',()=>T.exportMaxVg());
-    dom.on(dom.query('#terCopyMaxVgBtn',page),'click',()=>T.copyMaxVg());
-    dom.on(dom.query('#terExportMaxVgSvgBtn',page),'click',()=>T.exportMaxVgSvg());
-    dom.on(dom.query('#terExportMaxVgPngBtn',page),'click',()=>T.exportMaxVgPng());
-
-    dom.on(dom.query('#terExportMaxVdBtn',page),'click',()=>T.exportMaxVd());
-    dom.on(dom.query('#terCopyMaxVdBtn',page),'click',()=>T.copyMaxVd());
-    dom.on(dom.query('#terExportMaxVdSvgBtn',page),'click',()=>T.exportMaxVdSvg());
-    dom.on(dom.query('#terExportMaxVdPngBtn',page),'click',()=>T.exportMaxVdPng());
-    dom.on(dom.query('#terResistanceClearBtn',page),'click',()=>{selectedTerPoint=null;controller?.clearSelection?.({source:'ter-resistance-clear'});renderResistancePlot();});
 
 
-    ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();terHeaderActions?.render?.();queueLinkedRender();}});
+
+
+    ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){if(pageOpenRenderPendingRefresh)pageOpenRenderPendingRefresh=false;else T.render();terHeaderActions?.render?.();queueLinkedRender();}});
 
     // TER persistence is namespaced by plugin; project-format owns historical
     // project migration before runtime restoration.
@@ -814,13 +726,13 @@
     bindKeyboardAdjuster();
 
     return {deactivate(){
-      transformPanel?.destroy?.();transformPanel?.dispose?.();transformPanel=null;
+      transformPanel=null;
       canonicalSelectionOff?.();canonicalSelectionOff=null;
       unbindKeyboardAdjuster();
       const plot=dom.query('#terResistancePlot');
       if(plot&&ctx.ui.scientificPlot){try{ctx.ui.scientificPlot.purge(plot);}catch{}}
-      for(const view of terPlotViews.values())view?.dispose?.();
       terPlotViews.clear();
+      try{presentation?.dispose?.();}catch{}presentation=null;
     }};
   }
   window.DKDSPluginModules.define('builtin.ter-analysis','feature-runtime',Object.freeze({mount}));

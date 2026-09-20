@@ -7,6 +7,7 @@ const splitSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core
 const splitToken=(el,property,value)=>StyleGate.setToken(el,property,value,{owner:'core.split-controller',scope:'runtime-layout-token',source:STYLE_SOURCE});
 const movableSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.movable-surface',scope:'runtime-layout',source:STYLE_SOURCE});
 const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.movable-surface',scope:'runtime-layout',source:STYLE_SOURCE});
+const MOBILE_SPLIT_STATE_SCHEMA='workspace-owned-v2';
 
 
   class SplitController {
@@ -15,8 +16,11 @@ const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.mov
       if(!this.container||!this.handle||!this.target)throw new Error('SplitController container/handle/target not found.');
       this.handle.dataset.dkdsTouchGestureOwner='split-resize';
       const mobileScoped=!!this.spec.mobileStateScope&&document.documentElement?.classList?.contains('react-native-client');
-      this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}${mobileScoped?'.mobile':''}`;
-      this.state=createLayoutState(this.spec,readJson(this.key,{}));this.size=0;this.applyPreferred({persist:false,emit:false});this.bind();
+      this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}${mobileScoped?`.mobile.${MOBILE_SPLIT_STATE_SCHEMA}`:''}`;
+      const restored=readJson(this.key,{});
+      this.persistedPreference=(Number(restored?.size)>0)||(Number(restored?.ratio)>0);
+      this.runtimeMinimum=null;this.runtimeDefault=null;
+      this.state=createLayoutState(this.spec,restored);this.size=0;this.applyPreferred({persist:false,emit:false});this.bind();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{
         if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;
         if(!this.container?.isConnected||this.container.hidden||this.container.closest?.('.hidden,[hidden]'))return;
@@ -27,16 +31,29 @@ const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.mov
     }
     platformProfile(){const root=document.documentElement;return {nativeMobile:root?.dataset?.dkdsHost==='mobile'&&root?.classList?.contains?.('react-native-client')};}
     viewport(rect=null){const row=rect||this.container.getBoundingClientRect?.()||{};return {width:Number(row.width)||0,height:Number(row.height)||0};}
+    runtimeState(state=this.state){
+      const profile=this.platformProfile();
+      if(!profile.nativeMobile||!Number.isFinite(this.runtimeMinimum))return state;
+      return Object.freeze({...state,min:Math.max(0,Number(this.runtimeMinimum)||0)});
+    }
     resolve(value=this.state.preferredSize,viewport=this.previewViewport||this.viewport()){
-      const candidate=withLayoutPreference(this.state,value,viewport);return resolveLayout(candidate,viewport,this.platformProfile());
+      const state=this.runtimeState(this.state),candidate=withLayoutPreference(state,value,viewport);return resolveLayout(candidate,viewport,this.platformProfile());
     }
     limits(){const row=this.resolve();return {min:row.min,max:row.max};}
+    hasPersistedPreference(){return this.persistedPreference===true;}
+    setRuntimeMinimum(value,{apply=false}={}){const number=Number(value);this.runtimeMinimum=Number.isFinite(number)?Math.max(0,number):null;if(apply)this.applyPreferred({persist:false,emit:false});return this.runtimeMinimum;}
+    setRuntimeDefault(value){const number=Number(value);this.runtimeDefault=Number.isFinite(number)&&number>0?number:null;return this.runtimeDefault;}
     clampSize(value){return this.resolve(value).effectiveSize;}
     paintResolved(row){const next=row.effectiveSize,changed=next!==this.size;this.resolved=row;this.size=next;if(this.spec.cssVar)splitToken(this.container,this.spec.cssVar,row.track);else if(this.axis==='x')splitSet(this.target,'width',row.track);else splitSet(this.target,'height',row.track);return changed;}
     apply(value,{persist=true,emit=true,notify=true,intent=true,viewport=null}={}){
-      const measured=viewport||this.viewport();if(intent)this.state=withLayoutPreference(this.state,value,measured);const row=resolveLayout(intent?this.state:withLayoutPreference(this.state,value,measured),measured,this.platformProfile());const changed=this.paintResolved(row);if(persist)writeJson(this.key,serializeLayoutState(this.state));if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:this.size});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:this.size});}return this.size;
+      const measured=viewport||this.viewport();
+      const nextState=intent?withLayoutPreference(this.state,value,measured):withLayoutPreference(this.state,value,measured);
+      if(intent)this.state=nextState;
+      const row=resolveLayout(this.runtimeState(nextState),measured,this.platformProfile());const changed=this.paintResolved(row);
+      if(persist){writeJson(this.key,serializeLayoutState(this.state));this.persistedPreference=true;}
+      if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:this.size});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:this.size});}return this.size;
     }
-    applyPreferred(options={}){const measured=options.viewport||this.viewport();const row=resolveLayout(this.state,measured,this.platformProfile());const changed=this.paintResolved(row);if(options.persist)writeJson(this.key,serializeLayoutState(this.state));if(options.notify!==false){if(options.emit!==false&&changed)this.scope.emitResize?.({reason:options.reason||'split-layout',id:this.spec.id,size:this.size});else this.scope.requestChartResize?.({reason:options.reason||'split-observer',id:this.spec.id,size:this.size});}return this.size;}
+    applyPreferred(options={}){const measured=options.viewport||this.viewport();const row=resolveLayout(this.runtimeState(this.state),measured,this.platformProfile());const changed=this.paintResolved(row);if(options.persist){writeJson(this.key,serializeLayoutState(this.state));this.persistedPreference=true;}if(options.notify!==false){if(options.emit!==false&&changed)this.scope.emitResize?.({reason:options.reason||'split-layout',id:this.spec.id,size:this.size});else this.scope.requestChartResize?.({reason:options.reason||'split-observer',id:this.spec.id,size:this.size});}return this.size;}
     setCollapsed(collapsed,{persist=false,notify=true}={}){const next=collapsed===true;if(next===this.state.collapsed)return this.size;this.state=withLayoutIntent(this.state,{collapsed:next});return this.applyPreferred({persist,notify,reason:next?'split-collapse':'split-restore'});}
     setPlacement(placement,{persist=true}={}){this.state=withLayoutIntent(this.state,{placement});if(persist)writeJson(this.key,serializeLayoutState(this.state));return this.state.placement;}
     stateSnapshot(){return Object.freeze({...this.state,effectiveSize:this.size,resolved:this.resolved});}
@@ -68,7 +85,7 @@ const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.mov
       const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};this.beginPreview();this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{if(!this.drag||e.pointerId!==this.drag.pointerId)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.schedulePreview(this.drag.size+(point-this.drag.start)*sign);e.preventDefault();};
       const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.drag=null;this.finishPreview({persist:true,reason:'split-end'});};
-      const reset=e=>{e.preventDefault();this.clearPreview();this.previewSize=null;this.previewViewport=null;this.apply(this.state.defaultSize);};
+      const reset=e=>{e.preventDefault();this.clearPreview();this.previewSize=null;this.previewViewport=null;this.apply(this.runtimeDefault||this.state.defaultSize);};
       this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);
       this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>window.removeEventListener('pointercancel',up),()=>this.handle.removeEventListener('dblclick',reset));
     }
@@ -126,4 +143,4 @@ const movableRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.mov
     dispose(){for(const el of this.created)el.remove();this.root?.classList.remove('dkds-ui-workspace');this.regions.clear();}
   }
 
-module.exports=Object.freeze({SplitController, MovableSurface, WorkspaceLayout});
+module.exports=Object.freeze({MOBILE_SPLIT_STATE_SCHEMA,SplitController, MovableSurface, WorkspaceLayout});

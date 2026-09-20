@@ -26,7 +26,8 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
       this.original={parent:homeParent,next:this.node.nextSibling||null,anchor:homeAnchor,page:homePage,header:homeHeader};this.wrapper=null;this.dragCleanup=null;this.stickyViewportCleanup=null;this.resizeObserver=null;this.resizeFrame=0;this.chromeCleanups=[];this.contextMenu=null;this.floatingPositionMode='';
       this.ensureWrapper();
       const initialRect=this.wrapper.getBoundingClientRect?.()||{width:0,height:0};
-      this.initialBounds={width:Math.round(initialRect.width)||0,height:Math.round(initialRect.height)||0};
+      const requestedInitial=spec.initialBounds&&typeof spec.initialBounds==='object'?spec.initialBounds:{};
+      this.initialBounds={width:Math.round(Number(requestedInitial.width)||initialRect.width)||0,height:Math.round(Number(requestedInitial.height)||initialRect.height)||0};
       const saved=this.readState();
       const savedUserPlacement=saved.placementSource==='user'?saved.placement:'';
       const requested=this.portableDisabled?'home':savedUserPlacement||spec.defaultPlacement||'home';
@@ -79,7 +80,7 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
       if(!useTarget){if(header)wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
       this.wrapper=wrapper;this.injectedHeader=chrome&&useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
       if(chrome){
-        const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');resizeHandle.setAttribute('aria-orientation','horizontal');resizeHandle.tabIndex=0;wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;this.bindFloatResize(resizeHandle);
+        const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');resizeHandle.setAttribute('aria-orientation','horizontal');resizeHandle.tabIndex=0;wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;portableSet(wrapper,'resize','none');this.bindFloatResize(resizeHandle);
         const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
         const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
         if(closeButton){closeButton.classList.add('dkds-panel-close-button','dkds-portable-icon-action','dkds-portable-close-action');closeButton.dataset.dkdsComponentIdentity='toolbarAction';closeButton.dataset.dkdsComponentIdentityOwner='core-portable-view';closeButton.dataset.dkdsComponentVariant='quiet';closeButton.dataset.dkdsComponentVariantOwner='core-portable-view';closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
@@ -214,8 +215,11 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
         const saved=bounds||this.readState().bounds||{};
         const zoneRect=this.floatingZoneMetrics(placement).rect;
         const rect=this.wrapper.getBoundingClientRect();
-        const defaultLeft=Math.max(8,Math.min(Math.max(8,(zoneRect.width||window.innerWidth)-420),(rect.left||zoneRect.left+80)-zoneRect.left));
-        const defaultTop=Math.max(8,Math.min(Math.max(8,(zoneRect.height||window.innerHeight)-180),(rect.top||zoneRect.top+60)-zoneRect.top));
+        const profileDefault=typeof this.spec.defaultFloatingBounds==='function'?(this.spec.defaultFloatingBounds({placement,zoneRect,rect,portable:this})||{}):(this.spec.defaultFloatingBounds||{});
+        const fallbackLeft=Math.max(8,Math.min(Math.max(8,(zoneRect.width||window.innerWidth)-420),(rect.left||zoneRect.left+80)-zoneRect.left));
+        const fallbackTop=Math.max(8,Math.min(Math.max(8,(zoneRect.height||window.innerHeight)-180),(rect.top||zoneRect.top+60)-zoneRect.top));
+        const defaultLeft=Number.isFinite(Number(profileDefault.left))?Number(profileDefault.left):fallbackLeft;
+        const defaultTop=Number.isFinite(Number(profileDefault.top))?Number(profileDefault.top):fallbackTop;
         const mobileHost=document.documentElement?.dataset?.dkdsHost==='mobile';
         const zoneWidth=Math.max(0,Number(zoneRect.width)||Number(window.innerWidth)||0),zoneHeight=Math.max(0,Number(zoneRect.height)||Number(window.innerHeight)||0);
         const initialWidth=Number(this.initialBounds?.width)||Number(rect.width)||520;
@@ -303,9 +307,9 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
     setCollapsed(value,{persist=true}={}){const collapsed=!!value;this.wrapper?.classList?.toggle('is-collapsed',collapsed);this.wrapper?.classList?.toggle('collapsed',collapsed);const button=resolveScopedElement(this.spec.collapseSelector,this.wrapper);if(button){button.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');button.textContent=collapsed?String(this.spec.expandIcon||'+'):String(this.spec.collapseIcon||'−');button.removeAttribute('title');button.setAttribute('aria-label',collapsed?String(this.spec.expandTitle||'展开'):String(this.spec.collapseTitle||'缩小'));}if(persist)this.writeState({collapsed});try{this.spec.onCollapse?.({id:this.id,collapsed,portable:this,wrapper:this.wrapper});}catch{}this.scope.emitResize?.({id:this.id,reason:'portable-collapse',collapsed});return collapsed;}
     toggleCollapsed(){return this.setCollapsed(!this.wrapper?.classList?.contains('is-collapsed'));}
     bindHeldTitleResize(header){
-      // Mobile companion/dock resizing is owned by the visible canvas seam. A
-      // long-press title gesture made the same panel resize through two unrelated
-      // affordances and regressed the desktop-style boundary interaction.
+      // Mobile companion resizing is owned by the visible Workspace split seam.
+      // Do not install a second title-hold gesture on touch clients: one physical
+      // affordance and one SplitController own the same companion geometry.
       if(document.documentElement?.dataset?.dkdsHost==='mobile'||document.documentElement?.classList?.contains('react-native-client'))return;
       let gesture=null,timer=null;const cancelTimer=()=>{if(timer){clearTimeout(timer);timer=null;}};
       const inScrollbarGutter=e=>{
@@ -318,32 +322,23 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
       const previousTouchAction=header.style.touchAction;portableSet(header,'touch-action','none');
       const down=e=>{
         if(e.isPrimary===false||e.target.closest('button,input,select,textarea,a,[role=scrollbar],.dkds-portable-resize-handle,.dkds-table-column-resizer')||inScrollbarGutter(e))return;
-        const mobile=document.documentElement?.classList?.contains('react-native-client');
-        const region=mobile?String(this.wrapper?.dataset?.dkdsMobileRegion||'').toLowerCase():'';
         const explicitPlacement=normalizePlacement(this.wrapper?.dataset?.placement);
-        const semanticPlacement=region==='companion-right'?'right':region==='companion-bottom'?'bottom':(['left','right','sticky'].includes(explicitPlacement)||this.wrapper.classList.contains('is-sticky')||(this.wrapper.classList.contains('is-docked')&&(this.wrapper.classList.contains('dock-left')||this.wrapper.classList.contains('dock-right')))?'right':(explicitPlacement==='bottom'||(this.wrapper.classList.contains('is-docked')&&this.wrapper.classList.contains('dock-bottom'))?'bottom':''));
-        const placement=semanticPlacement||explicitPlacement;if(!['left','right','bottom','main','sticky'].includes(placement))return;
-        const frame=this.wrapper.closest('.dkds-plugin-canvas-frame');const splits=frame?.__dkdsCanvasSplits||{},frameRect=frame?.getBoundingClientRect?.()||{width:window.innerWidth,height:window.innerHeight};
-        const semanticMobile=mobile&&!!semanticPlacement&&!!frame;
-        gesture={id:e.pointerId,x:e.clientX,y:e.clientY,placement,armed:false,semanticMobile,frame,frameWidth:frameRect.width,frameHeight:frameRect.height,wrapperWidth:this.wrapper.getBoundingClientRect().width,wrapperHeight:this.wrapper.getBoundingClientRect().height,splitSize:splits[placement]?.size||0,splits};
+        const placement=['left','right','sticky'].includes(explicitPlacement)||this.wrapper.classList.contains('is-sticky')||(this.wrapper.classList.contains('is-docked')&&(this.wrapper.classList.contains('dock-left')||this.wrapper.classList.contains('dock-right')))?'right':(explicitPlacement==='bottom'||(this.wrapper.classList.contains('is-docked')&&this.wrapper.classList.contains('dock-bottom'))?'bottom':explicitPlacement);
+        if(!['left','right','bottom','main','sticky'].includes(placement))return;
+        const frame=this.wrapper.closest('.dkds-plugin-canvas-frame'),splits=frame?.__dkdsCanvasSplits||{};
+        const rect=this.wrapper.getBoundingClientRect();
+        gesture={id:e.pointerId,x:e.clientX,y:e.clientY,placement,armed:false,wrapperWidth:rect.width,wrapperHeight:rect.height,splitSize:splits[placement]?.size||0,splits};
         timer=setTimeout(()=>{if(gesture&&gesture.id===e.pointerId){gesture.armed=true;const split=gesture.splits?.[gesture.placement];split?.beginPreview?.();this.wrapper.classList.add('is-held-resizing');header.setPointerCapture?.(e.pointerId);}},320);
       };
       const move=e=>{if(!gesture||gesture.id!==e.pointerId)return;const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;if(!gesture.armed){if(Math.hypot(dx,dy)>9){cancelTimer();gesture=null;}return;}
         const p=gesture.placement,split=gesture.splits?.[p];
-        if(gesture.semanticMobile&&(p==='left'||p==='right')&&Math.abs(dx)>=Math.abs(dy)){const sign=p==='right'?-1:1,min=190,max=Math.max(min,Math.min(680,gesture.frameWidth*.72)),next=Math.max(min,Math.min(max,gesture.wrapperWidth+dx*sign));portableToken(gesture.frame,'--dkds-mobile-user-right-track',`${Math.round(next)}px`);this.scope.requestChartResize?.({id:this.id,reason:'portable-mobile-side-held-resize'});}
-        else if(gesture.semanticMobile&&p==='bottom'&&Math.abs(dy)>Math.abs(dx)){const min=180,max=Math.max(min,Math.min(620,gesture.frameHeight*.72)),next=Math.max(min,Math.min(max,gesture.wrapperHeight-dy));portableToken(gesture.frame,'--dkds-mobile-user-bottom-track',`${Math.round(next)}px`);this.scope.requestChartResize?.({id:this.id,reason:'portable-mobile-bottom-held-resize'});}
-        else if((p==='left'||p==='right')&&Math.abs(dx)>=Math.abs(dy)&&split){const sign=p==='right'?-1:1;split.schedulePreview?.(gesture.splitSize+dx*sign);}
+        if((p==='left'||p==='right')&&Math.abs(dx)>=Math.abs(dy)&&split){const sign=p==='right'?-1:1;split.schedulePreview?.(gesture.splitSize+dx*sign);}
         else if(p==='bottom'&&Math.abs(dy)>Math.abs(dx)&&split)split.schedulePreview?.(gesture.splitSize-dy);
-        else if(p==='left'||p==='right'){
-          if(mobile){const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{width:window.innerWidth};const sign=p==='right'?-1:1;const next=Math.max(190,Math.min(Math.max(220,zr.width),gesture.wrapperWidth+dx*sign));portableSet(this.wrapper,'width',`${Math.round(next)}px`);}
-          else{const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{height:window.innerHeight};const next=Math.max(140,Math.min(Math.max(160,zr.height),gesture.wrapperHeight+dy));portableSet(this.wrapper,'height',`${Math.round(next)}px`);}
-        }else{
-          if(mobile){const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{height:window.innerHeight};const next=Math.max(180,Math.min(Math.max(220,zr.height),gesture.wrapperHeight-dy));portableSet(this.wrapper,'height',`${Math.round(next)}px`);}
-          else{const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{width:window.innerWidth};const next=Math.max(260,Math.min(Math.max(280,zr.width),gesture.wrapperWidth+dx));portableSet(this.wrapper,'width',`${Math.round(next)}px`);}
-        }
+        else if(p==='left'||p==='right'){const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{height:window.innerHeight};const next=Math.max(140,Math.min(Math.max(160,zr.height),gesture.wrapperHeight+dy));portableSet(this.wrapper,'height',`${Math.round(next)}px`);}
+        else{const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{width:window.innerWidth};const next=Math.max(260,Math.min(Math.max(280,zr.width),gesture.wrapperWidth+dx));portableSet(this.wrapper,'width',`${Math.round(next)}px`);}
         if(e.cancelable)e.preventDefault();
       };
-      const up=e=>{if(!gesture||gesture.id!==e.pointerId)return;cancelTimer();if(gesture.armed){const split=gesture.splits?.[gesture.placement];split?.finishPreview?.({persist:true,reason:'portable-held-resize'});const p=gesture.placement,isMobile=document.documentElement?.classList?.contains('react-native-client');if(!isMobile){const state=this.readState(),dockedBounds={...(state.dockedBounds||{})};const r=this.wrapper.getBoundingClientRect();dockedBounds[p]={width:(p==='left'||p==='right')?0:Math.round(r.width),height:p==='bottom'?0:Math.round(r.height)};this.writeState({dockedBounds});}if(!gesture.semanticMobile&&(p==='left'||p==='right'))portableSet(this.wrapper,'width','100%');if(gesture.semanticMobile){const r=this.wrapper.getBoundingClientRect();const state=this.readState(),mobileSemanticBounds={...(state.mobileSemanticBounds||{})};if(p==='left'||p==='right')mobileSemanticBounds.rightWidth=Math.round(r.width);if(p==='bottom')mobileSemanticBounds.bottomHeight=Math.round(r.height);this.writeState({mobileSemanticBounds});}window.dispatchEvent(new Event('resize'));}this.wrapper.classList.remove('is-held-resizing');gesture=null;};
+      const up=e=>{if(!gesture||gesture.id!==e.pointerId)return;cancelTimer();if(gesture.armed){const split=gesture.splits?.[gesture.placement];split?.finishPreview?.({persist:true,reason:'portable-held-resize'});const p=gesture.placement,state=this.readState(),dockedBounds={...(state.dockedBounds||{})},r=this.wrapper.getBoundingClientRect();dockedBounds[p]={width:(p==='left'||p==='right')?0:Math.round(r.width),height:p==='bottom'?0:Math.round(r.height)};this.writeState({dockedBounds});if(p==='left'||p==='right')portableSet(this.wrapper,'width','100%');window.dispatchEvent(new Event('resize'));}this.wrapper.classList.remove('is-held-resizing');gesture=null;};
       header.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
       this.chromeCleanups.push(()=>{cancelTimer();previousTouchAction?portableSet(header,'touch-action',previousTouchAction):portableRemove(header,'touch-action');header.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);});
     }
@@ -393,7 +388,7 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
       }):()=>{};
       return ()=>{if(nativeFrame)cancelAnimationFrame(nativeFrame);nativeFrame=0;nativePoint=null;portableRemove(this.wrapper,'transform');touchCleanup?.();if(nativeClient){if(previousTouchAction)portableSet(head,'touch-action',previousTouchAction);else portableRemove(head,'touch-action');}head.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);};
     }
-    dispose(){cleanupCall(this.dragCleanup);cleanupCall(this.stickyViewportCleanup);this.stickyViewportCleanup=null;this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=0;this.restoreHome();this.controls?.remove?.();this.resizeHandle?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main','is-collapsed','collapsed');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.dkdsPortableSizing;delete this.wrapper?.dataset?.placement;if(this.wrapper?.dataset?.dkdsSurfaceKindOwner==='portable-view'){delete this.wrapper.dataset.dkdsSurfaceKind;delete this.wrapper.dataset.dkdsSurfaceKindOwner;}}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}this.original?.anchor?.remove?.();if(this.scope?.portables?.get?.(this.id)===this)this.scope.portables.delete(this.id);refreshDockZoneState();}
+    dispose(){cleanupCall(this.dragCleanup);cleanupCall(this.stickyViewportCleanup);this.stickyViewportCleanup=null;this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=0;this.restoreHome();this.controls?.remove?.();this.resizeHandle?.remove?.();portableRemove(this.wrapper,'resize');if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main','is-collapsed','collapsed');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.dkdsPortableSizing;delete this.wrapper?.dataset?.placement;if(this.wrapper?.dataset?.dkdsSurfaceKindOwner==='portable-view'){delete this.wrapper.dataset.dkdsSurfaceKind;delete this.wrapper.dataset.dkdsSurfaceKindOwner;}}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}this.original?.anchor?.remove?.();if(this.scope?.portables?.get?.(this.id)===this)this.scope.portables.delete(this.id);refreshDockZoneState();}
   }
 
 module.exports=Object.freeze({PortableView});

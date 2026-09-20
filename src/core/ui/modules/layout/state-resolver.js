@@ -28,7 +28,10 @@ function createLayoutState(spec={},saved={}){
     reserve:Math.max(0,finite(spec.reserve,220)),
     mobileOverlay:spec.mobileOverlay===true,
     mobileMaxRatio:clamp(positive(spec.mobileMaxRatio,axis==='x'?.92:.68),.35,.96),
-    mobileReserve:Math.max(0,finite(spec.mobileReserve,0))
+    mobileReserve:Math.max(0,finite(spec.mobileReserve,0)),
+    mobileDefaultRatio:Number.isFinite(Number(spec.mobileDefaultRatio))&&Number(spec.mobileDefaultRatio)>0?clamp(Number(spec.mobileDefaultRatio),.1,.9):null,
+    mobileMin:spec.mobileMin===undefined?null:Math.max(0,finite(spec.mobileMin,0)),
+    explicitPreference:(positive(saved.size,0)>0)||(finite(saved.ratio,0)>0&&finite(saved.ratio,0)<1)||(spec.preferredSize!==undefined)||(spec.preferredRatio!==undefined)
   });
 }
 
@@ -41,7 +44,7 @@ function axisExtent(viewport={},axis='x'){
 function withLayoutPreference(state,value,viewport={}){
   const preferredSize=positive(value,state.defaultSize);
   const total=axisExtent(viewport,state.axis);
-  return Object.freeze({...state,preferredSize,preferredRatio:total>2?clamp(preferredSize/total,.01,.99):state.preferredRatio});
+  return Object.freeze({...state,preferredSize,preferredRatio:total>2?clamp(preferredSize/total,.01,.99):state.preferredRatio,explicitPreference:true});
 }
 
 function withLayoutIntent(state,intent={}){
@@ -55,16 +58,18 @@ function resolveLayout(state,viewport={},platformProfile={}){
   const total=axisExtent(viewport,state.axis);
   const nativeMobile=platformProfile.nativeMobile===true;
   const visible=!state.collapsed&&total>2;
-  const min=Math.max(0,state.min);
-  let max;
+  const authoredMin=Math.max(0,state.min);
+  let min=authoredMin,max;
   if(nativeMobile&&state.mobileOverlay){
     const ratioMax=total*state.mobileMaxRatio;
-    const reservedMax=state.mobileReserve>0?Math.max(min,total-state.mobileReserve):ratioMax;
-    max=Math.max(min,Math.min(ratioMax,reservedMax));
+    const reservedMax=state.mobileReserve>0?Math.max(0,total-state.mobileReserve):ratioMax;
+    max=Math.max(0,Math.min(ratioMax,reservedMax));
+    min=Math.min(max,state.mobileMin===null?authoredMin:state.mobileMin);
   }else{
     max=state.max||Math.max(min,total-Math.max(120,state.reserve));
   }
-  const requested=positive(state.preferredSize,state.preferredRatio?state.preferredRatio*total:state.defaultSize);
+  const mobileDefault=nativeMobile&&state.mobileOverlay&&state.mobileDefaultRatio&&!state.explicitPreference?total*state.mobileDefaultRatio:0;
+  const requested=mobileDefault||positive(state.preferredSize,state.preferredRatio?state.preferredRatio*total:state.defaultSize);
   const effectiveSize=visible?Math.round(clamp(requested,min,Math.max(min,max))):0;
   return Object.freeze({
     id:state.id,axis:state.axis,placement:state.placement,collapsed:state.collapsed,

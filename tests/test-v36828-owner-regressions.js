@@ -9,7 +9,7 @@ const node=(...cls)=>({nodeType:1,classList:classes(...cls),dataset:{},styles:{}
 const gate={set:(n,k,v)=>n.styles[k]=v,setToken:(n,k,v)=>n.styles[k]=v,remove:(n,k)=>delete n.styles[k]};
 let membershipCallback,disconnected=false;
 class Observer{constructor(cb){membershipCallback=cb;}observe(){}disconnect(){disconnected=true;}}
-const {GridController}=load('src/core/ui/modules/grid/controller.js',{'../foundation/shortcuts':{resolveElement:x=>x},'ui/style-ownership-gate':gate},{window:{MutationObserver:Observer},MutationObserver:Observer});
+const {GridController}=load('src/core/ui/modules/grid/controller.js',{'../foundation/shortcuts':{resolveElement:x=>x},'ui/style-ownership-gate':gate,'../composition/unit-geometry-constraints':{publishUnitGeometryConstraint(){return ()=>{};},notifyUnitGeometryConstraint(){return false;}}},{window:{MutationObserver:Observer},MutationObserver:Observer});
 const a=node(),b=node(),pinned=node('is-sticky'),grid=node();grid.children=[pinned,a,b];grid.clientWidth=900;
 const ctrl=new GridController({requestChartResize(){},emitResize(){}},grid,{columns:3,minItemWidth:200});
 assert.equal(pinned.styles['grid-column'],'3','Sticky lane must be rightmost even after reopen appends/reorders nodes');

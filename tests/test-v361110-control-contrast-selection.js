@@ -11,7 +11,7 @@ const shell=read('src/styles/presentation/shell.css');
 const chrome=read('src/styles/presentation/plugin-chrome.css');
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const controls=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
-const view=read('src/plugins/resonance-workbench/view-components.js');
+const view=read('src/plugins/resonance-workbench/unit-presentation.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
 const automation=read('src/diagnostics/automation-test-runtime.js');
 assert(contract.includes('--dkui-selected-fg')&&contract.includes('--dkui-selected-shadow:0 0 4px'),'selected state must use one centered semantic halo without an extra hard rim');

@@ -60,7 +60,7 @@ assert(index.includes('plugin-manager-search-wrap dkds-material-role-control" da
 
 // Pulse parameters are a semantic PRIME: Mobile must suppress their main-route
 // first paint before Presenter projection and leave real breathing room in Drawer.
-const pulseMobile=read('src/plugins/pulse-sampler-tool/mobile.css');
+const pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
 const pulseManifest=json('src/plugins/pulse-sampler-tool/plugin.json');
 const pulseRuntime=read('src/plugins/pulse-sampler-tool/plugin.js');
 assert(/^1\.9\.(?:9|\d{2,})$/.test(pulseManifest.version));
@@ -75,12 +75,11 @@ assert(/^1\.9\.(?:9|\d{2,})$/.test(pulseManifest.version));
 const workspaceMobile=read('src/styles/platform/native-workspace-presentation.css');
 const workbench=read('src/core/ui/modules/workbench/analysis.js');
 assert(workspaceMobile.includes('[data-dkds-prime-owned="1"][data-dkds-presentation-role="data-control"]:not([data-dkds-mobile-region="drawer"]){display:none}'));
-assert(workbench.includes("owned.dataset.dkdsPrimeOwned='1';this.markSurfaceNode(owned,row,'prime')"));
-assert(!pulseMobile.includes('.ps-designer[data-dkds-prime-owned="1"]:not([data-dkds-mobile-region="drawer"]){display:none}'));
-assert(pulseMobile.includes('padding:10px 13px 12px 10px'));
-assert(pulseMobile.includes('max-width:calc(100% - 2px)'));
+assert(workbench.includes("owned.dataset.dkdsPrimeOwned='1'")&&workbench.includes("owned.dataset.dkdsPrimeContentInset=contentInset")&&workbench.includes("this.markSurfaceNode(owned,row,'prime')"));
+assert(pulseUnit.includes("variant:'fixed-titleless'")&&pulseUnit.includes("presentationRole:'data-control'"),'Pulse parameter first paint must be controlled by the semantic data-control PRIME rather than plugin Mobile CSS.');
+assert(pulseUnit.includes("variant:'stack-comfortable'")&&pulseUnit.includes("variant:'form-grid-2'"),'Pulse parameter breathing room and responsive field geometry must come from Unit layout recipes.');
 
-for(const rel of ['src/styles/platform/touch.css','src/styles/platform/native-client-shell.css','src/styles/theme/component-appearance.css','src/plugins/pulse-sampler-tool/mobile.css']){
+for(const rel of ['src/styles/platform/touch.css','src/styles/platform/native-client-shell.css','src/styles/theme/component-appearance.css']){
   assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);
 }
 console.log('v3.67.51 Desktop/Mobile presentation polish PASS: compact separated plot chrome, canonical field/selection/titlebar appearance, anchored theme panel, dense Plugin Manager, and no Pulse parameter first-paint transfer.');

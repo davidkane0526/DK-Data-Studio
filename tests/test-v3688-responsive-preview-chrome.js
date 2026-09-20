@@ -13,16 +13,18 @@ assert(major>3||(major===3&&(minor>68||(minor===68&&patch>=8))),'Responsive prev
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const dcCss=read('src/plugins/data-center/plugin.css');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
+const dcChartRuntime=read('src/plugins/data-center/chart-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
-const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 const appearance=read('src/styles/theme/component-appearance.css');
 
 // Dense auto-fit controls must keep the user's compact minimum but use spare
 // horizontal space instead of freezing at a narrow 116 px max track.
-assert(/\.schema-parameter-panel\.auto-fit\.compact\{[\s\S]*?grid-template-columns:var\(--dkds-parameter-auto-fit-compact-columns,repeat\(auto-fit,minmax\(96px,1fr\)\)\);[\s\S]*?justify-content:stretch;[\s\S]*?gap:4px 6px/.test(schema),'compact+autoFit must stretch 96 px minimum tracks to consume the available row.');
+assert(/\.schema-parameter-panel\.auto-fit\.compact:not\(\.layout-host-owned\)\{[\s\S]*?grid-template-columns:var\(--dkds-parameter-auto-fit-compact-columns,repeat\(auto-fit,minmax\(96px,1fr\)\)\);[\s\S]*?justify-content:stretch;[\s\S]*?gap:4px 6px/.test(schema),'Core-owned compact+autoFit must stretch 96 px minimum tracks to consume the available row.');
 assert(!schema.includes('repeat(auto-fit,minmax(96px,116px))'),'compact+autoFit must not reintroduce the fixed 116 px ceiling that left unused row space.');
-assert(dcRuntime.includes('compact:true,autoFit:true'),'Data Center chart preview must keep using the generic compact auto-fit contract.');
+const dcUnits=read('src/plugins/data-center/unit-presentation.js');
+assert(dcRuntime.includes("ctx.modules.require('chart-runtime')")&&dcChartRuntime.includes("compact:true,autoFit:true,layoutOwner:'host'")&&dcUnits.includes("className:'dc-chart-params',geometry:{display:'grid'"),'Data Center delegated chart preview must retain compact field semantics while one enclosing Unit exclusively owns its accepted four-track outer grid.');
 
 // The inline Data Center preview is a bounded preview, not an unbounded page
 // height consumer. Docked/floating PlotViews still switch to the Core viewport
@@ -36,7 +38,7 @@ assert(!/>\.dc-chart-pane \.dc-chart\{height:340px;min-height:280px\}/.test(dcCs
 // symmetric inset; plugin code may align the shared outer height but must not
 // independently re-declare padding. This prevents the inner action contour from
 // drifting closer to one outer edge than another.
-assert(resonanceView.includes('respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group" data-dkds-floating-chrome'),'Resonance main tools must declare the canonical FloatingChrome identity hook.');
+assert(resonancePresentation.includes("units.floatingChrome.create(head,{variant:'accepted-main',className:'respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group'})"),'Resonance main tools must be created by the canonical FloatingChrome Unit so the identity hook is runtime-owned.');
 assert(/\[data-dkds-floating-chrome\]\.dkds-integrated-action-group\{[\s\S]*?--dkds-floating-chrome-inset:3px;[\s\S]*?box-sizing:border-box;[\s\S]*?padding:var\(--dkds-floating-chrome-inset\)/.test(desktopChrome),'FloatingChrome must derive symmetric outer spacing from one Core inset token.');
 const mainToolsBlock=(resonanceCss.match(/#resonanceDedicatedPage \.respar-main-tools\{([^}]*)\}/)||[])[1]||'';
 assert(mainToolsBlock.includes('height:var(--respar-main-chrome-height)')&&!/padding\s*:/.test(mainToolsBlock),'Resonance may align the shared chrome height but must not own FloatingChrome padding.');

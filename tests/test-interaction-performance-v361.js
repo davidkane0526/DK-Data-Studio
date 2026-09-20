@@ -10,6 +10,7 @@ const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const resonancePeak=read('src/plugins/resonance-workbench/feature-peak-runtime.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const terPresentation=read('src/plugins/ter-analysis/unit-presentation.js');
 const terService=read('src/plugins/ter-analysis/analysis-service.js');
 const scientificPlot=read('src/core/scientific/plot-runtime.js');
 const topRuntime=read('src/plugin-window/runtime.js');
@@ -38,8 +39,8 @@ assert(resonanceMainPlot.includes("action:'analysis-window'")&&resonanceMainPlot
 assert(resonanceMainPlot.includes("commitPeakMetricEdit(p,{reason:'analysis-window-edit'})"),'Analysis-window manipulation end must synchronously commit the current window when the provider supports sync metrics.');
 assert(resonanceMainPlot.includes('rawWindowLeft=Number(p.analysisLeft)')&&resonanceMainPlot.includes('rawWindowRight=Number(p.analysisRight)'),'Manual FWHM handles must remain authoritative while an asynchronous metric provider is pending.');
 assert(resonanceView.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]")&&resonanceView.includes("['builtin.resonance.redo',()=>R.redoLastAction?.()]")&&!resonanceView.includes("['Ctrl+Z','builtin.resonance.undo']")&&resonance.includes("commandRuntime.run('builtin.resonance.undo')"),'Resonance must expose local undo/redo commands while system Ctrl+Z remains owned by the chronological History Coordinator.');
-assert(terManifest.window?.prewarm===false,'TER must stay lazy at application boot so a hidden renderer cannot compete with the main shell cold-start path. Generic prewarm remains available to plugins that explicitly opt in.');
-assert((ter.match(/T\.calculate\(\)/g)||[]).length===1&&ter.includes("label:'计算 TER'")&&ter.includes('onInvoke:()=>T.calculate()'),'TER calculation must have exactly one feature-runtime trigger: the explicit Calculate TER action/shortcut.');
+assert(terManifest.window?.prewarm===true,'TER must opt into runtime-only dedicated-window prewarm so the first click does not pay renderer/chart-runtime cold start; the prewarm branch must remain domain-inert until real open.');
+assert((terPresentation.match(/T\.calculate\(\)/g)||[]).length===1&&terPresentation.includes("label:'计算 TER'")&&terPresentation.includes('onInvoke:()=>T.calculate()'),'TER calculation must have exactly one production presentation trigger: the explicit Calculate TER action/shortcut.');
 assert(!/calculate\s*\(\s*\)\s*;/.test(terService.replace(/function calculate\(\)[\s\S]*?\n      }/,'CULLED')),'TER analysis service must not invoke calculate() as a restore/render side effect.');
 const prewarmStart=topRuntime.indexOf('if(bootstrap.prewarm===true)');
 const prewarmEnd=topRuntime.indexOf('}else{',prewarmStart);

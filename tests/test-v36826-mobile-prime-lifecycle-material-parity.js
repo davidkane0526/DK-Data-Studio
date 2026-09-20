@@ -23,12 +23,12 @@ for(const token of [
 ]) assert(host.includes(token),`Mobile PRIME lifecycle reconciliation missing: ${token}`);
 assert(host.includes("window.DKDSUI?.workspaces?.deactivate?.(activityId,openId)"),'Conflicting PRIME cleanup must close the real workspace surface, not only native tracking state.');
 
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonance.includes("const inspectDefault=allowedPlacements.has(String(pluginDefaults.inspectPlacement||''))?String(pluginDefaults.inspectPlacement):'right'"),'Inspector semantic default must remain right; orientation mapping belongs to the Presenter.');
-assert(!resonance.includes('isNativeClient')&&resonance.includes("stateVersion:'workspace-v5'"),'Resonance plugin must remain platform-neutral and keep its Desktop-compatible semantic state version.');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonancePresentation.includes("const inspectDefault=allowed.has(String(pluginDefaults.inspectPlacement||''))?String(pluginDefaults.inspectPlacement):'right'"),'Inspector semantic default must remain right in the production Unit presentation; orientation mapping belongs to the Presenter.');
+assert(!resonancePresentation.includes('isNativeClient')&&resonancePresentation.includes("stateVersion:'workspace-v5'"),'Resonance production Unit presentation must remain platform-neutral and keep its Desktop-compatible semantic state version.');
 const portable=read('src/core/ui/modules/layout/portable-view.js'),mobileSurface=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 assert(portable.includes("const savedUserPlacement=saved.placementSource==='user'?saved.placement:''")&&portable.includes("placementSource:source==='user'?'user':(source||undefined)"),'PortableView must restore only explicit current-contract user placement; untagged historical placement must not be interpreted through a legacy branch.');
-assert(mobileSurface.includes("semanticRole==='inspector'||semanticRole==='scientific-secondary'")&&mobileSurface.includes("placementSource!=='user'"),'Mobile Presenter must own non-user inspector and scientific-secondary geometry while preserving explicit user placement.');
+assert(mobileSurface.includes("const semanticHome=semanticRole==='inspector'?'right':semanticRole==='scientific-secondary'?'bottom':''")&&mobileSurface.includes("placement===semanticHome"),'Mobile Presenter must own non-user inspector and scientific-secondary geometry while preserving explicit user placement.');
 
 const presenters=read('src/core/ui/modules/presentation/presenters.js');
 assert(presenters.includes("role===roles.INSPECTOR")&&presenters.includes("region:'companion-right'"),'Mobile Presenter must map the same inspector to bottom in portrait and right in landscape.');

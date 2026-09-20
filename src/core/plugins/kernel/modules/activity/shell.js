@@ -76,7 +76,7 @@ const {pluginHostView}=require('../host-facade');
     const id=state.activeActivityId;
     document.querySelectorAll('[data-plugin-activity]').forEach(el=>{
       const own=el.dataset.pluginActivity||'';
-      el.classList.toggle('plugin-activity-hidden',!!own&&!!id&&own!==id);
+      el.classList.toggle('plugin-activity-hidden',!!own&&own!==String(id||''));
     });
     const title=document.querySelector('#activityContextTitle');
     const active=activeActivity();

@@ -24,7 +24,7 @@ assert(style.includes('.plugin-window-actions{min-width:0;max-width:100%;display
 assert(style.includes('body.plugin-window-host .dkds-analysis-nav{display:none}'),'Body-level PluginWorkspace navigation must not remain as a second toolbar in dedicated windows.');
 assert(style.includes('.plugin-window-titlebar .toolbar-btn{height:34px;min-height:34px'),'Dedicated titlebar actions must consume main-shell toolbar geometry.');
 
-const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const ter=read('src/plugins/ter-analysis/unit-presentation.js');
 for(const label of ["label:'自动参数'","label:'计算 TER'","label:'布局'"])assert(ter.includes(label),`TER must still register ${label} as current SDK actions.`);
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 assert(!resonance.includes('localSurfaceActions'),'Resonance must not duplicate Core workspace surfaces inside plugin-owned titlebar actions.');

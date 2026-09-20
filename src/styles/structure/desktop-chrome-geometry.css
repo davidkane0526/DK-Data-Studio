@@ -11,6 +11,10 @@
    breathing room even when action density changes. */
 [data-dkds-floating-chrome].dkds-integrated-action-group{
   --dkds-floating-chrome-inset:3px;
+  /* Floating chrome owns the available action hit-box. Both ordinary header
+     actions and direct Action Units inherit a 100% content-box height here,
+     so coarse-touch / Field minimums cannot consume the symmetric inset. */
+  --dkds-field-control-min-height:100%;
   box-sizing:border-box;
   padding:var(--dkds-floating-chrome-inset);
 }

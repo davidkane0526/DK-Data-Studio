@@ -54,7 +54,7 @@
 .dkds-plugin-workbench-root .dc-artifact-list{flex:1 1 auto;min-height:220px}
 .dc-source-preview{grid-area:source;grid-column:1 / -1}
 @container data-center-workspace (min-width:1180px){
-  .dc-main:has(>.dc-chart-pane[data-placement="home"]){--dc-main-columns:minmax(360px,520px) minmax(520px,1fr);--dc-main-areas:"source source" "tool chart";align-items:start}
+  .dc-main:has(>.dc-chart-pane[data-placement="home"]){--dc-main-columns:minmax(360px,520px) minmax(520px,1fr);--dc-main-areas:"source source" "tool chart";align-items:stretch}
 }
 .dc-table-preview{max-height:250px;overflow:auto}
 .dc-json-preview{margin:0;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
@@ -69,7 +69,7 @@
   --dc-chart-min-height:180px;
 }
 .dc-tool-pane>.schema-parameter-panel{padding:6px 9px}
-.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:start;height:auto;min-height:0;max-height:none;flex:none}
+.dc-chart-pane[data-placement="home"]{grid-area:chart;align-self:stretch;height:auto;min-height:0;max-height:none;flex:none}
 /* Inline Data Center preview has one bounded block-size owner.  Do not use
    size containment here: a size-contained child is removed from its parent's
    intrinsic block-size calculation, which can collapse the PortableView and
@@ -79,14 +79,8 @@
 .dc-chart-pane[data-placement="home"]>.dc-chart{height:var(--dc-chart-height);min-height:var(--dc-chart-min-height);max-height:var(--dc-chart-height);flex:0 0 var(--dc-chart-height);overflow:hidden;contain:layout paint}
 .dc-chart-pane>.schema-parameter-panel{padding:var(--dc-chart-params-padding,6px 9px)}
 
-/* The preview controls are one semantic four-field row. Their geometry must not
-   be recomputed merely because the same panel changes PortableView placement.
-   All Desktop placements therefore use the same four tracks; the controls may
-   shrink with the panel, but they do not reorder when going home <-> floating. */
-.dc-chart-params.schema-parameter-panel.auto-fit.compact{
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(72px,.55fr);
-  justify-content:stretch;align-items:end;gap:4px 6px;
-}
+/* ParameterSchema owns field anatomy; the enclosing Unit Layout owns the
+   accepted four-track outer grid across inline/docked/floating placements. */
 .dc-chart-params .schema-param-field{min-width:0}
 .dc-chart-params .schema-param-field .dkds-field-control{min-width:0;width:100%;max-width:100%}
 
@@ -96,14 +90,14 @@
   height:auto;min-height:0;max-height:none;flex:1 1 0;overflow:hidden;contain:layout paint;
 }
 #dcFormulaParams{--dkds-field-control-min-height:28px;--dkds-field-control-padding-block:3px;--dkds-field-control-padding-inline:7px}
-#dcFormulaParams .schema-parameter-panel{display:grid;grid-template-columns:minmax(112px,.72fr) minmax(210px,1.3fr) minmax(90px,.5fr) minmax(118px,.64fr);gap:4px 6px;align-items:start}
 #dcFormulaParams .schema-param-field{min-width:0;margin:0}
 #dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:2 / span 2}
 #dcFormulaParams .schema-param-field[data-param-id="replace"]{align-self:end}
 #dcFormulaParams .schema-param-help{margin-top:2px;line-height:1.25}
-@container data-center-tool (max-width:620px){#dcFormulaParams .schema-parameter-panel{grid-template-columns:repeat(2,minmax(0,1fr))}#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:1 / -1}}
-/* Chart preview opts into Core ParameterSchema autoFit geometry. The actual
-   one-row/wrap decision is owned by the generic Surface-aware form contract. */
+@container data-center-tool (max-width:620px){#dcFormulaParams .schema-param-field[data-param-id="formula"]{grid-column:1 / -1}}
+/* ParameterSchema still owns field anatomy/control geometry. The accepted
+   Data Center outer form grids opt into host-owned detail layout, so Core does
+   not write a second grid on the same host. */
 .dc-inline-actions{display:flex;gap:5px;align-items:center}
 .dc-formula-refs{padding:0 12px;display:flex;gap:5px;flex-wrap:wrap}
 .dc-ref-chip{padding:3px 6px;cursor:pointer}

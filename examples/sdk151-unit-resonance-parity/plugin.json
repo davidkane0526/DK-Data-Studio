@@ -1,0 +1,16 @@
+{
+  "id":"com.example.unit-resonance-parity",
+  "name":"Unit Resonance Layout Parity Lab",
+  "version":"1.0.0",
+  "apiVersion":"1.19.0",
+  "entry":"plugin.js",
+  "scripts":["plugin.js"],
+  "enabled":true,
+  "order":921,
+  "description":"SDK 1.51 manual Unit Template composition that reproduces the accepted scientific workbench without using the whole-workbench preset.",
+  "requiresCore":["status","ui.dom","ui.workspace","ui.group-area","ui.unit-templates","ui.pages"],
+  "capabilities":["ui.page","ui.plugin-workspace","ui.group-area"],
+  "pluginType":"workbench",
+  "platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"adaptive"}},
+  "data":{"accepts":["science.transport.iv"]}
+}

@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');const vm=require('vm');
+const source=fs.readFileSync('src/core/services/service-runtime.js','utf8');
+const context={window:{},structuredClone,console};context.window.window=context.window;vm.createContext(context.window);vm.runInContext(source,context.window,{filename:'service-runtime.js'});
+const S=context.window.DKDSServices;assert(S?.createScope,'service runtime must expose scoped registry');
+let state={count:1,result:{terMaxByVg:[{vg:0,terMax:12.5,vdsAtMax:.2}]}};let providerNotify=null;
+const owner=S.createScope('builtin.ter-analysis');
+owner.domain.provide('live',{version:'1.0.0',snapshot:()=>state,subscribe:fn=>{providerNotify=fn;return()=>{providerNotify=null;}},actions:{increment:payload=>{state={...state,count:state.count+Number(payload?.by||1)};return state.count;}}});
+assert.strictEqual(S.get('@domain:builtin.ter-analysis/live'),null,'raw service lookup must not expose domain adapter internals');
+const denied=S.createScope('com.example.denied');assert.throws(()=>denied.domain.connect('builtin.ter-analysis/live'),/dependency not declared/i,'cross-plugin domain access requires an explicit dependency');
+const shadow=S.createScope('com.example.unit-ter-shadow',{dependencies:['builtin.ter-analysis']});const live=shadow.domain.connect('builtin.ter-analysis/live');
+const first=live.snapshot();assert.strictEqual(first.state.count,1);first.state.count=999;assert.strictEqual(live.snapshot().state.count,1,'domain snapshots must be detached from the production owner');
+let events=0;const off=live.subscribe(()=>events++);(async()=>{const result=await live.invoke('increment',{by:2});assert.strictEqual(result,3);assert.strictEqual(state.count,3,'shadow action must execute against the single production owner');assert(events>=1,'domain invoke must notify connected shells');providerNotify?.({type:'state',reason:'external'});assert(events>=2,'production-owner state notifications must cross the seam');off();shadow.dispose();assert.strictEqual(owner.domain.list().length,1,'consumer disposal must not remove provider ownership');owner.dispose();assert.strictEqual(live.available(),false,'provider deactivation must invalidate existing consumer handles');console.log('SDK 1.51 domain adapter live parity PASS');})().catch(error=>{console.error(error);process.exit(1);});

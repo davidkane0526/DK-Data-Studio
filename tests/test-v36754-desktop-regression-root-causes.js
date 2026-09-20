@@ -22,7 +22,7 @@ assert(touch.includes('--dkds-scientific-nav-item-width:28px;'),'Desktop scienti
 assert(touch.includes('--dkds-scientific-nav-item-height:28px;'),'Desktop scientific action height must retain the restored readable contract.');
 assert(touch.includes('--dkds-scientific-nav-padding-inline:2px;'),'Desktop floating navigation must keep bounded inner padding with the restored target size.');
 {const native=read('src/styles/platform/native-client-shell.css');assert(native.includes('html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools')&&native.includes('--dkds-scientific-nav-item-width:')&&native.includes('--dkds-scientific-nav-item-height:'),'Mobile must retain its independently owned scientific-control geometry.');}
-for(const rel of ['src/plugins/resonance-workbench/plugin.css','src/plugins/ter-analysis/plugin.css','src/plugins/transfer-vth-lab/plugin.css']){
+for(const rel of ['src/plugins/resonance-workbench/plugin.css','src/plugins/transfer-vth-lab/plugin.css']){
   const text=read(rel);assert(!text.includes('--dkds-scientific-nav-item-width')&&!text.includes('--dkds-scientific-nav-item-height'),`${rel} must not specialize shared scientific floating-tool geometry.`);
 }
 
@@ -30,13 +30,13 @@ for(const rel of ['src/plugins/resonance-workbench/plugin.css','src/plugins/ter-
 // hard-coding first-party plugin class names. Plugins may declare generic width/
 // scroll intent on their own DOM, but Core must remain domain blind.
 const mobilePresenter=read('src/core/ui/modules/presentation/mobile-web-surface.js');
+const unitGeometry=read('src/core/ui/modules/composition/unit-geometry-constraints.js');
 for(const token of ['respar-','dc-','pulse-table-scroll'])assert(!mobilePresenter.includes(token),`Core Mobile presenter still contains plugin-specific patch selector: ${token}`);
-assert(mobilePresenter.includes('[data-dkds-mobile-width-critical]')&&mobilePresenter.includes('[data-dkds-horizontal-scroll]'));
-assert(read('src/plugins/resonance-workbench/view-components.js').includes('respar-scan-global dkds-mode-group" data-dkds-mobile-width-critical'));
-assert(read('src/plugins/resonance-workbench/feature-controls-runtime.js').includes('data-dkds-mobile-width-critical><input class="reswin-master"'));
-const dataCenterViews=read('src/plugins/data-center/shared-views.js');
-assert(dataCenterViews.includes('dc-filter-row" data-dkds-mobile-width-critical')&&dataCenterViews.includes('dc-selection-tools" data-dkds-mobile-width-critical'));
-assert(dataCenterViews.includes('dc-table-preview" data-dkds-horizontal-scroll'));
+assert(!mobilePresenter.includes('[data-dkds-mobile-width-critical]'),'Mobile Presenter must not infer Drawer width from retired plugin width-critical annotations.');
+assert(mobilePresenter.includes('resolveInlineConstraintDeficit')&&mobilePresenter.includes('reflowUnitGeometry'),'Mobile Presenter must consume the shared Unit-tree intrinsic inline constraint resolver without inspecting Unit-private markers.');
+assert(unitGeometry.includes('[data-dkds-horizontal-scroll]'),'Intentional horizontal-scroll semantics may remain in the generic Unit constraint resolver as an overflow-measurement exclusion without becoming a geometry owner.');
+const dataCenterViews=read('src/plugins/data-center/unit-presentation.js');
+assert(dataCenterViews.includes("className:'dc-table-preview'")&&dataCenterViews.includes("previewHost.dataset.dkdsHorizontalScroll='true'"));
 
 const appearance=read('src/styles/theme/component-appearance.css');
 assert(appearance.includes('[data-dkds-component-identity="panelHeader"]')&&appearance.includes('[data-dkds-component-identity="inspectorHeader"]'),'Titlebar hover must be keyed by semantic header identity.');
@@ -62,7 +62,7 @@ try{
   assert(!Object.prototype.hasOwnProperty.call(scan,'quarantined'),'Current-only override scanning must not expose a compatibility quarantine lane.');
   assert(!fs.existsSync(file),'A non-current override must be removed instead of shadowing the current bundled package.');
   assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.apiVersion,'1.19.0','After obsolete installation state is removed, the canonical bundled current package must be the only package for that ID.');
-  const invalid=JSON.parse(JSON.stringify(bundled));invalid.manifest.version='99.0.1';invalid.files['plugin.js']=invalid.files['plugin.js'].replace('ctx.ui.workspaceSurface.create','ctx.ui.pluginWorkspace.create');
+  const invalid=JSON.parse(JSON.stringify(bundled));invalid.manifest.version='99.0.1';invalid.files['plugin.js']+='\nctx.ui.pluginWorkspace.create(document.body,{});\n';
   fs.writeFileSync(file,JSON.stringify(invalid,null,2));
   const invalidScan=runtime.readInstalledPluginOverrides();
   assert.strictEqual(invalidScan.errors.length,1,'A genuinely invalid current-API override must remain actionable.');
@@ -79,15 +79,15 @@ const components=read('src/styles/structure/workbench-components.css');
 assert(components.includes('[data-dkds-scroll-policy="chain"],[data-dkds-scroll-policy="viewport"]'),'Horizontal containment and vertical chaining must come from the declared policy.');
 assert(!components.includes('.dkds-layout-overflow-fallback')&&!touch.includes('.dkds-layout-overflow-fallback'),'Desktop behavior must not depend on a recovery selector or inline rewrite.');
 
-// 4: Pulse Sampling controls are one semantic multi-row command surface. The
-// plugin owns grouping/layout, while Core Surface paint remains separate from
-// Toolbar row geometry. A multi-row form must not impersonate dkds-toolbar.
-const pulse=read('src/plugins/pulse-sampler-tool/plugin.js'),pulseCss=read('src/plugins/pulse-sampler-tool/plugin.css');
-assert(pulse.includes('ps-analysis-command-surface dkds-surface')&&pulse.includes('data-dkds-command-surface="sampling"'),'Pulse extraction must use a neutral Core Surface identity so Desktop toolbar flex/nowrap cannot collapse the multi-row form.');
-assert(!pulse.includes('ps-analysis-command-surface dkds-toolbar'),'Pulse extraction outer command surface must not consume Toolbar row geometry.');
-assert(pulse.includes('<div class="ps-analysis-controls">')&&pulse.includes('<div class="ps-result-controls">'));
-assert(!pulse.includes('ps-analysis-controls dkds-toolbar')&&!pulse.includes('ps-result-controls dkds-toolbar'),'Pulse extraction rows must not paint two independent nested toolbar surfaces.');
-assert(/\.ps-analysis-command-surface\{[^}]*display:grid;[^}]*gap:8px;[^}]*padding:10px;[^}]*\}/.test(pulseCss),'One outer inset keeps X/Y and fields away from the surface edge without prescribing clipping behavior.');
+// 4: Pulse Sampling controls are now the accepted production Unit composition.
+// The plugin owns only production domain/action wiring; Unit recipes own the
+// multi-row geometry without introducing plugin CSS or Toolbar impersonation.
+const pulse=read('src/plugins/pulse-sampler-tool/plugin.js'),pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js'),pulseManifest=json('src/plugins/pulse-sampler-tool/plugin.json');
+assert(pulseUnit.includes("variant:'analysis-control-grid'")&&pulseUnit.includes("variant:'result-control-grid'"),'Pulse extraction must use the accepted Unit multi-row command recipes.');
+assert(pulseUnit.includes("variant:'result-grid-asymmetric'"),'Pulse extraction result plot/table geometry must remain Unit-owned.');
+assert(!pulse.includes('ps-analysis-command-surface')&&!pulseUnit.includes('dkds-toolbar'),'Legacy Pulse sampling Surface/Toolbar DOM must remain retired.');
+assert(Array.isArray(pulseManifest.styles)&&pulseManifest.styles.length===0,'Pulse production Unit presentation must load no legacy plugin CSS.');
+assert(pulse.includes('actions:liveDomain.actions')&&pulse.includes('snapshot:liveSnapshot'),'Pulse Unit presentation must remain projected from the existing production live-domain owner.');
 
 // 5: Vth plot owns no scrollbar around a responsive ResizeObserver surface. The
 // result table is the scroll owner, preventing scrollbar appearance/disappearance
@@ -103,9 +103,10 @@ assert(vthCss.includes('.dkds-vth-results-host{min-width:0;min-height:140px;over
 const plotView=read('src/core/ui/modules/plot-view/chart.js');
 assert(plotView.includes('.dkds-chart-head,.dkds-surface-header'));
 assert(plotView.includes('.dkds-chart-actions,.dkds-surface-actions'));
-const terViews=read('src/plugins/ter-analysis/shared-views.js');
-assert(terViews.includes('ter-chart-actions dkds-surface-actions dkds-integrated-action-group'));
-assert(!terViews.includes('ter-chart-actions dkds-toolbar'),'TER header actions must not create a nested toolbar material surface.');
+const terViews=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(terViews.includes('units.header.create')&&terViews.includes('units.action.create'),'TER Unit cutover must obtain chart-header actions from Core Units.');
+assert(!terViews.includes('dkds-toolbar'),'TER Unit source-parity presentation must not recreate a nested/private toolbar material surface.');
+assert(terViews.includes('ter-chart-actions'),'TER source parity may retain the accepted chart-action geometry hook while Unit action/header remain the semantic/material owners.');
 const portableCss=read('src/styles/structure/super-top-contract.css');
 assert(portableCss.includes('.dkds-plot-view.dkds-portable-view.is-floating'));
 assert(portableCss.includes('--dkds-plot-content-flex:1 1 0;')&&portableCss.includes('--dkds-plot-content-min-height:0;')&&portableCss.includes('--dkds-plot-content-height:auto;'));
@@ -141,5 +142,5 @@ assert(visual.includes('last action no longer fills the right interior edge'));
 const isolationGate=read('tests/test-v36743-desktop-mobile-projection-isolation.js');
 assert(!isolationGate.includes('Desktop Visual Closure owner changed during Mobile work'),'Brittle global SHA visual freeze must not be restored as an active gate.');
 
-for(const rel of ['src/styles/platform/touch.css','src/styles/theme/component-appearance.css','src/styles/structure/super-top-contract.css','src/styles/structure/analysis-workbench.css','src/styles/structure/analysis-shell.css','src/plugins/pulse-sampler-tool/plugin.css','src/plugins/transfer-vth-lab/plugin.css'])assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);
+for(const rel of ['src/styles/platform/touch.css','src/styles/theme/component-appearance.css','src/styles/structure/super-top-contract.css','src/styles/structure/analysis-workbench.css','src/styles/structure/analysis-shell.css','src/plugins/transfer-vth-lab/plugin.css'])assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);
 console.log('v3.67.54 Desktop regression root-cause contracts PASS.');

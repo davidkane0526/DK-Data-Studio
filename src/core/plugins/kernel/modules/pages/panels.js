@@ -36,28 +36,54 @@ const {pluginHostView}=require('../host-facade');
     const meta=workbenchImportMeta(manifest);if(!meta||!page)return null;
     const commandId=`${pluginId}.${String(spec.id||'workbench')}.core-import-data`;
     registerCommand(pluginId,commandId,()=>state.host?.openImportWorkbench?.({mode:'scoped',consumerId:pluginId,consumerLabel:meta.label,consumerIcon:meta.icon,accepts:meta.accepts,source:'workbench-action'}));
-    const embeddedSuper=isTopDefinition(manifest)&&state.superPluginId===pluginId;
-    if(embeddedSuper&&pageActivity){
-      return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
-    }
-    // A page-local standard slot is authoritative and works in both the main
-    // shell and dedicated activity windows. Dedicated windows intentionally do
-    // not own the main shell's `analysis` toolbar, so Core must never assume
-    // that mount exists merely because the page has an activity id.
-    let slot=page.querySelector('[data-dkds-slot="workbench-import"]');
-    const header=page.querySelector('.analysis-page-header');
-    if(!slot&&header){
-      slot=document.createElement('div');slot.dataset.dkdsSlot='workbench-import';
-      const pluginActions=header.querySelector('.dkds-plugin-header-actions');
-      const close=header.querySelector('.analysis-page-close');
-      if(pluginActions)header.insertBefore(slot,pluginActions);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
-    }
-    if(slot){
+
+    const mountLocal=({create=false}={})=>{
+      let slot=page.querySelector('[data-dkds-slot="workbench-import"]');
+      const header=page.querySelector('.analysis-page-header');
+      if(!slot&&create&&header){
+        slot=document.createElement('div');slot.dataset.dkdsSlot='workbench-import';
+        const pluginActions=header.querySelector('.dkds-plugin-header-actions');
+        const close=header.querySelector('.analysis-page-close');
+        // The accepted page anatomy is domain actions -> Core import -> host
+        // workspace/window controls. Keep the Core action out of the plugin's
+        // own ActionGroup while preserving that ordering in every host.
+        if(pluginActions)pluginActions.after(slot);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
+      }
+      if(!slot)return null;
       slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
       const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-workbench-import';button.dataset.dkdsActionLayout='standalone';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
+      try{window.dispatchEvent(new CustomEvent('dkds:workspace-presentation-changed'));}catch{}
       return button;
+    };
+
+    // An explicit page-local slot is always authoritative. SDK-authored
+    // standalone workbenches can opt into this without creating a shell action.
+    const explicit=mountLocal();if(explicit)return explicit;
+
+    if(state.host?.isAuxiliaryWindow){
+      // Unit-only pages intentionally register the page shell before composing
+      // their canonical header. Dedicated windows still require the Core import
+      // action, so finalize it when that header appears instead of assuming the
+      // main-shell contextual toolbar exists. The observer disconnects as soon
+      // as the one canonical slot is mounted.
+      const immediate=mountLocal({create:true});if(immediate)return immediate;
+      if(globalThis.MutationObserver){
+        const observer=new MutationObserver(()=>{if(mountLocal({create:true}))observer.disconnect();});
+        observer.observe(page,{childList:true,subtree:true});
+        addCleanup(pluginId,()=>observer.disconnect());
+      }else queueMicrotask(()=>mountLocal({create:true}));
+      return null;
     }
-    if(pageActivity&&!state.host?.isAuxiliaryWindow){
+
+    // TOP/SUPER workbenches in the main application intentionally use the
+    // single global `导入` command. A workbench-scoped `导入数据` button here
+    // duplicates that route and steals the shared plugin/navigation lane.
+    if(isTopDefinition(definitionById(pluginId)))return null;
+
+    // Legacy-free current-contract standalone workbenches that have no local
+    // slot may still use the generic contextual action. This path is not used
+    // by TOP/SUPER plugins.
+    if(pageActivity){
       return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
     }
     return null;
@@ -66,7 +92,8 @@ const {pluginHostView}=require('../host-facade');
   function addPage(pluginId, spec) {
     const definition=definitionById(pluginId),manifest=definition?.manifest||{};
     let page = spec.pageId ? document.getElementById(spec.pageId) : null;
-    if (!page && spec.html) {
+    const ownsHtml=Object.prototype.hasOwnProperty.call(spec,'html');
+    if (!page && ownsHtml) {
       page = document.createElement('section');
       page.id = spec.pageId || `${pluginId.replace(/[.]/g,'-')}-${spec.id}-page`;
       page.className = `analysis-page hidden plugin-analysis-page ${spec.className || ''}`.trim();

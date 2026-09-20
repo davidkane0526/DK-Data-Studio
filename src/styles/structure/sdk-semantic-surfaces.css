@@ -243,6 +243,23 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
   box-sizing:border-box;
   min-width:0;
 }
+[data-dkds-unit-template="panel-v2"]>[data-dkds-unit-panel-body="true"]{
+  box-sizing:border-box;
+  min-width:0;
+}
+[data-dkds-unit-template="panel-v2"][data-dkds-unit-panel-sizing="content"]{
+  flex:0 0 auto;
+}
+[data-dkds-unit-template="panel-v2"][data-dkds-unit-panel-sizing="fill"]{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+[data-dkds-unit-template="panel-v2"][data-dkds-unit-panel-sizing="fill"]>[data-dkds-unit-panel-body="true"]{
+  flex:1 1 auto;
+  min-height:0;
+}
 .dkds-surface-elevated,.dkds-floating-surface{box-sizing:border-box;min-width:0}
 .dkds-surface-header{
   box-sizing:border-box;
@@ -252,24 +269,58 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
   gap:var(--dkds-visual-gap);
   padding:7px var(--dkds-visual-pad-x);
 }
+/* Embedded/content headers preserve the same Unit typography and action contract
+   without becoming a painted panel-title strip. They are intended for headings
+   that live inside a plugin-owned content surface. */
+.dkds-content-header{
+  box-sizing:border-box;
+  min-width:0;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:var(--dkds-visual-gap);
+  padding:0;
+}
 .dkds-surface-title{font-size:var(--plugin-font-title,13.5px);font-weight:700}
+.dkds-surface-eyebrow{font-size:var(--plugin-font-meta,11px);font-weight:500;line-height:1.25;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:is(.dkds-surface-header,.dkds-content-header)[data-dkds-unit-title-emphasis=prominent] .dkds-surface-title{font-size:var(--plugin-font-title-prominent,15px);line-height:1.3}
+:is(.dkds-surface-header,.dkds-content-header)[data-dkds-unit-title-emphasis=compact] .dkds-surface-title{font-size:var(--plugin-font-label,12px);line-height:1.25}
 .dkds-meta{font-size:var(--plugin-font-meta,11px);line-height:1.45}
+:is(.dkds-surface-header,.dkds-content-header)>[data-dkds-unit-header-meta-placement=trailing]{margin-left:auto;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
 .dkds-note{box-sizing:border-box;padding:7px 9px;font-size:var(--plugin-font-meta,11px);line-height:1.5}
 .dkds-toolbar,.dkds-action-row{display:flex;align-items:center;gap:var(--plugin-action-gap,6px);min-width:0}
 .dkds-toolbar{flex-flow:row nowrap}
 .dkds-action-row{flex-wrap:wrap}
 .dkds-field{display:grid;gap:4px;min-width:0;font-size:var(--plugin-font-label,12px)}
+.dkds-field-label-row{display:flex;align-items:baseline;justify-content:space-between;gap:6px;min-width:0}
 .dkds-field>label,.dkds-field-label{font-size:var(--plugin-font-label,12px)}
+.dkds-field-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dkds-field-unit{flex:0 0 auto;font-size:var(--plugin-font-label,12px);line-height:1.2}
 .dkds-field-control{
   box-sizing:border-box;width:100%;min-width:0;
   min-height:var(--dkds-field-control-min-height,var(--plugin-control-height,32px));
   padding-block:var(--dkds-field-control-padding-block,5px);
   padding-inline:var(--dkds-field-control-padding-inline,8px);
+  line-height:var(--dkds-field-control-line-height,1.15);
+}
+[data-dkds-unit-template="action-v2"][data-dkds-unit-control-height="field"]{
+  box-sizing:border-box;
+  height:var(--dkds-field-control-min-height,var(--plugin-control-height,32px));
+  min-height:var(--dkds-field-control-min-height,var(--plugin-control-height,32px));
+  align-self:end;
 }
 .dkds-check{display:flex;align-items:center;gap:7px;font-size:var(--plugin-font-label,12px)}
 .dkds-check>input[type="checkbox"],.dkds-check>input[type="radio"]{width:auto;height:auto;margin:0}
 .dkds-chip{display:inline-flex;align-items:center;gap:5px;min-height:22px;padding:2px 7px;font-size:var(--plugin-font-meta,11px);line-height:1.2}
 .dkds-choice-button{display:inline-flex;align-items:center;gap:7px;justify-content:flex-start;min-width:0}
+
+/* Unit Tabs compact geometry is the accepted scientific-tool selector density.
+   The Unit owns these values; plugins may select the compact variant but may
+   not rewrite button size/radius privately. */
+[data-dkds-unit-template="tabs-v2"]>.dkds-surface-tabs{display:flex;align-items:center;flex-wrap:nowrap;min-width:0}
+[data-dkds-unit-template="tabs-v2"][data-dkds-unit-variant="compact"]{display:inline-flex;gap:3px;padding:3px;box-sizing:border-box}
+[data-dkds-unit-template="tabs-v2"][data-dkds-unit-variant="compact"]>.dkds-surface-tabs{gap:3px}
+[data-dkds-unit-template="tabs-v2"][data-dkds-unit-variant="compact"] [role="tab"]{min-width:42px;min-height:30px;height:30px;padding:0 10px}
 .dkds-series-swatch-line{display:inline-block;width:18px;height:0;flex:0 0 auto}
 .dkds-series-swatch-pair{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}
 .dkds-series-swatch-pair>i{display:block;width:14px;height:18px}
@@ -355,7 +406,7 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 }
 .dkds-surface-heading>:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dkds-surface-heading>.dkds-meta{flex:0 0 auto}
-.dkds-surface-header>.dkds-surface-actions{margin-left:auto}
+:is(.dkds-surface-header,.dkds-content-header)>.dkds-surface-actions{margin-left:auto}
 .dkds-surface-actions{display:flex;align-items:center;gap:3px;min-width:0;flex:0 1 auto;flex-wrap:nowrap}
 .dkds-surface-actions>.dkds-surface-tabs{display:flex;align-items:center;gap:3px;min-width:0;flex-wrap:nowrap}
 .dkds-surface-actions :where(button,select,.dkds-select-proxy){min-height:var(--dkds-header-action-height,30px);height:var(--dkds-header-action-height,30px);white-space:nowrap}

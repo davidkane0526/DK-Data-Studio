@@ -67,10 +67,11 @@ assert(restored.artifactRevision(source.id)>0,'Restored Artifacts receive a fres
 const modelSource=fs.readFileSync(path.join(root,'src/core/data/model.js'),'utf8');
 const facadeSource=fs.readFileSync(path.join(root,'src/core/plugins/kernel/modules/plugin-api.js'),'utf8');
 const dataCenterSource=fs.readFileSync(path.join(root,'src/plugins/data-center/feature-runtime.js'),'utf8');
+const dataCenterChartSource=fs.readFileSync(path.join(root,'src/plugins/data-center/chart-runtime.js'),'utf8');
 const types=fs.readFileSync(path.join(root,'sdk/plugin-api.d.ts'),'utf8');
 assert(modelSource.includes('artifactRevision:id=>artifactRevisions.get'));
 assert(facadeSource.includes('artifactRevision: id => state.host?.artifacts?.artifactRevision?.(id)||0'));
-assert(dataCenterSource.includes('ctx.data.artifacts.artifactRevision(artifact.id)')&&!dataCenterSource.includes('artifacts.revision?.(artifact.kind)'),'Data Center render identity must be Artifact-local.');
+assert(dataCenterSource.includes("ctx.modules.require('chart-runtime')")&&dataCenterChartSource.includes('ctx.data.artifacts.artifactRevision(artifact.id)')&&!dataCenterChartSource.includes('artifacts.revision?.(artifact.kind)'),'Data Center delegated chart render identity must remain Artifact-local.');
 assert(types.includes('artifactRevision(id:string):number'),'The public SDK type must declare the additive method.');
 
 console.log('v3.68.76 canonical streaming fingerprint and Artifact-local revision contract PASS.');

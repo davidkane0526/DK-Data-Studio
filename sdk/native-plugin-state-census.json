@@ -1,0 +1,2077 @@
+{
+  "version": "2.5.38",
+  "stateSpecVersion": "1.0.0",
+  "stateChannels": {
+    "visible": {
+      "type": "boolean",
+      "reflect": [
+        "hidden",
+        "aria-hidden"
+      ],
+      "rule": "visible=false sets hidden and aria-hidden=true; visible=true removes aria-hidden and hidden."
+    },
+    "enabled": {
+      "type": "boolean",
+      "reflect": [
+        "disabled",
+        "aria-disabled"
+      ],
+      "rule": "enabled=false disables native controls and exposes aria-disabled=true."
+    },
+    "selected": {
+      "type": "boolean",
+      "reflect": [
+        "aria-selected",
+        "class:selected"
+      ],
+      "rule": "Selection state uses aria-selected and canonical selected class."
+    },
+    "pressed": {
+      "type": "boolean",
+      "reflect": [
+        "aria-pressed",
+        "class:active"
+      ],
+      "rule": "Toggle-action state uses aria-pressed and the accepted active class."
+    },
+    "checked": {
+      "type": "boolean",
+      "reflect": [
+        "checked",
+        "aria-checked"
+      ],
+      "rule": "Checkable controls synchronize native checked and aria-checked when role requires it."
+    },
+    "expanded": {
+      "type": "boolean",
+      "reflect": [
+        "aria-expanded"
+      ],
+      "rule": "Disclosure/menu state uses aria-expanded."
+    },
+    "busy": {
+      "type": "boolean",
+      "reflect": [
+        "aria-busy",
+        "data-busy"
+      ],
+      "rule": "Busy state uses aria-busy and data-busy; it does not invent paint."
+    },
+    "readonly": {
+      "type": "boolean",
+      "reflect": [
+        "readOnly",
+        "aria-readonly"
+      ],
+      "rule": "Readonly state synchronizes native property and aria-readonly."
+    },
+    "required": {
+      "type": "boolean",
+      "reflect": [
+        "required",
+        "aria-required"
+      ],
+      "rule": "Required state synchronizes native property and aria-required."
+    },
+    "current": {
+      "type": "boolean|string",
+      "reflect": [
+        "aria-current"
+      ],
+      "rule": "Current/focused navigation state uses aria-current; false removes it."
+    },
+    "invalid": {
+      "type": "boolean|string",
+      "reflect": [
+        "aria-invalid"
+      ],
+      "rule": "Validation state uses aria-invalid; false removes it."
+    },
+    "loading": {
+      "type": "boolean",
+      "reflect": [
+        "data-loading",
+        "aria-busy"
+      ],
+      "rule": "Loading is a semantic alias for busy plus data-loading."
+    }
+  },
+  "statePolicies": {
+    "action": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "selected",
+        "pressed",
+        "busy"
+      ],
+      "requiredA11y": [
+        "aria-label"
+      ],
+      "keyboard": "native-button"
+    },
+    "tabs": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "selected"
+      ],
+      "requiredA11y": [
+        "role=tablist/tab",
+        "aria-selected"
+      ],
+      "keyboard": "native-button-current"
+    },
+    "field": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "readonly",
+        "required",
+        "invalid",
+        "busy"
+      ],
+      "requiredA11y": [
+        "associated label or aria-label"
+      ],
+      "keyboard": "native-field"
+    },
+    "check": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "checked",
+        "required",
+        "invalid"
+      ],
+      "requiredA11y": [
+        "native checkbox/radio or aria-checked"
+      ],
+      "keyboard": "native-check"
+    },
+    "menu": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "selected",
+        "expanded"
+      ],
+      "requiredA11y": [
+        "role=menu/menuitem or listbox/option"
+      ],
+      "keyboard": "menu-roving"
+    },
+    "dialog": {
+      "allowed": [
+        "visible",
+        "busy"
+      ],
+      "requiredA11y": [
+        "dialog semantics",
+        "named title",
+        "focus lifecycle"
+      ],
+      "keyboard": "escape-dismiss"
+    },
+    "popover": {
+      "allowed": [
+        "visible",
+        "expanded",
+        "busy"
+      ],
+      "requiredA11y": [
+        "named trigger/control when interactive"
+      ],
+      "keyboard": "outside-dismiss-current"
+    },
+    "portable": {
+      "allowed": [
+        "visible",
+        "expanded",
+        "busy"
+      ],
+      "requiredA11y": [
+        "named placement/close controls"
+      ],
+      "keyboard": "core-portable"
+    },
+    "prime": {
+      "allowed": [
+        "visible",
+        "expanded",
+        "busy"
+      ],
+      "requiredA11y": [
+        "canonical header controls when movable"
+      ],
+      "keyboard": "core-portable"
+    },
+    "plotView": {
+      "allowed": [
+        "visible",
+        "busy",
+        "selected",
+        "current"
+      ],
+      "requiredA11y": [
+        "named title",
+        "named position/export actions"
+      ],
+      "keyboard": "core-plot-view"
+    },
+    "plotGroup": {
+      "allowed": [
+        "visible",
+        "busy",
+        "expanded"
+      ],
+      "requiredA11y": [
+        "complete canonical group chrome when headed"
+      ],
+      "keyboard": "core-plot-group"
+    },
+    "list": {
+      "allowed": [
+        "visible",
+        "selected",
+        "current",
+        "busy"
+      ],
+      "requiredA11y": [
+        "selection semantics when selectable"
+      ],
+      "keyboard": "selection-model"
+    },
+    "table": {
+      "allowed": [
+        "visible",
+        "selected",
+        "current",
+        "busy"
+      ],
+      "requiredA11y": [
+        "table semantics"
+      ],
+      "keyboard": "core-table"
+    },
+    "status": {
+      "allowed": [
+        "visible",
+        "busy",
+        "current"
+      ],
+      "requiredA11y": [
+        "textual state equivalent"
+      ],
+      "keyboard": "none"
+    },
+    "meter": {
+      "allowed": [
+        "visible",
+        "busy"
+      ],
+      "requiredA11y": [
+        "role=progressbar",
+        "aria-valuemin",
+        "aria-valuemax",
+        "aria-valuenow"
+      ],
+      "keyboard": "none"
+    },
+    "componentTree": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "selected",
+        "expanded",
+        "busy",
+        "readonly",
+        "required",
+        "invalid"
+      ],
+      "requiredA11y": [
+        "component-defined canonical semantics"
+      ],
+      "keyboard": "component-runtime"
+    },
+    "parameterForm": {
+      "allowed": [
+        "visible",
+        "enabled",
+        "busy",
+        "readonly",
+        "required",
+        "invalid"
+      ],
+      "requiredA11y": [
+        "field labels/validation semantics"
+      ],
+      "keyboard": "native-field"
+    }
+  },
+  "accessibilityPolicies": {
+    "action": {
+      "roles": [
+        "button"
+      ],
+      "requirements": [
+        "Every icon-only action has aria-label.",
+        "Toggle actions reflect aria-pressed.",
+        "Disabled uses native disabled and aria-disabled where needed."
+      ]
+    },
+    "tabs": {
+      "roles": [
+        "tablist",
+        "tab"
+      ],
+      "requirements": [
+        "Selected tab reflects aria-selected.",
+        "Keyboard navigation remains Core-owned."
+      ]
+    },
+    "menu": {
+      "roles": [
+        "menu",
+        "menuitem",
+        "listbox",
+        "option"
+      ],
+      "requirements": [
+        "Trigger exposes aria-haspopup and aria-expanded.",
+        "Escape/outside dismissal is Core-owned.",
+        "Listbox options expose aria-selected."
+      ]
+    },
+    "dialog": {
+      "roles": [
+        "dialog",
+        "alertdialog"
+      ],
+      "requirements": [
+        "Dialog is named.",
+        "Focus lifecycle and Escape dismissal are Core-owned."
+      ]
+    },
+    "meter": {
+      "roles": [
+        "progressbar"
+      ],
+      "requirements": [
+        "Current/min/max values are exposed."
+      ]
+    },
+    "splitPane": {
+      "roles": [
+        "separator"
+      ],
+      "requirements": [
+        "Separator exposes orientation and remains the sole resize gesture owner."
+      ]
+    },
+    "status": {
+      "roles": [],
+      "requirements": [
+        "Visual state has textual equivalent; no live-region role is implied unless the owning runtime already provides one."
+      ]
+    },
+    "selection": {
+      "roles": [
+        "option",
+        "row",
+        "tab",
+        "application-owned selectable"
+      ],
+      "requirements": [
+        "Selected/current state is exposed with aria-selected/aria-current where applicable."
+      ]
+    }
+  },
+  "accessibilityAttributes": {
+    "aria-label": "Accessible name for icon-only or otherwise ambiguous interactive controls.",
+    "aria-modal": "Modal dialog semantics owned by the Core dialog runtime.",
+    "aria-orientation": "Orientation for canonical split/separator controls.",
+    "aria-haspopup": "Popup relationship for menu/listbox triggers.",
+    "aria-multiselectable": "Multiple-selection semantics for listbox/selection surfaces."
+  },
+  "accessibilityRoles": [
+    "button",
+    "dialog",
+    "alertdialog",
+    "tablist",
+    "tab",
+    "separator",
+    "group",
+    "menu",
+    "menuitem",
+    "listbox",
+    "option",
+    "row",
+    "progressbar",
+    "status"
+  ],
+  "accessibilityTabIndex": [
+    -1,
+    0
+  ],
+  "keyboardKeys": [
+    "Enter",
+    "Escape",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "Tab",
+    "Home",
+    "End",
+    " "
+  ],
+  "blueprints": {
+    "_template": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "aurora-pop-theme": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "connectivity-center": {
+      "channels": [
+        "busy",
+        "checked",
+        "enabled",
+        "visible"
+      ],
+      "roles": [
+        "dialog"
+      ],
+      "tabIndex": [],
+      "aria": [
+        "aria-label",
+        "aria-modal"
+      ],
+      "keys": [
+        "Enter"
+      ],
+      "counts": {
+        "states": 11,
+        "roles": 2,
+        "a11y": 8,
+        "keyboard": 2,
+        "unmapped": 0
+      }
+    },
+    "data-center": {
+      "channels": [
+        "checked",
+        "enabled",
+        "pressed",
+        "selected",
+        "visible"
+      ],
+      "roles": [],
+      "tabIndex": [
+        -1
+      ],
+      "aria": [
+        "aria-label"
+      ],
+      "keys": [
+        "Escape"
+      ],
+      "counts": {
+        "states": 20,
+        "roles": 2,
+        "a11y": 1,
+        "keyboard": 1,
+        "unmapped": 0
+      }
+    },
+    "flexible-import": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-analysis": {
+      "channels": [
+        "checked",
+        "enabled",
+        "visible"
+      ],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 8,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-import": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-sampler-tool": {
+      "channels": [
+        "enabled"
+      ],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 1,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "resonance-detector-robust": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "resonance-workbench": {
+      "channels": [
+        "checked",
+        "current",
+        "enabled",
+        "pressed",
+        "selected",
+        "visible"
+      ],
+      "roles": [
+        "dialog",
+        "group"
+      ],
+      "tabIndex": [
+        -1
+      ],
+      "aria": [
+        "aria-label"
+      ],
+      "keys": [
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "Escape"
+      ],
+      "counts": {
+        "states": 36,
+        "roles": 3,
+        "a11y": 6,
+        "keyboard": 5,
+        "unmapped": 0
+      }
+    },
+    "scientific-data-contracts": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "shell-navigation": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "standard-transport-algorithms": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "status-monitor": {
+      "channels": [
+        "enabled",
+        "pressed",
+        "selected",
+        "visible"
+      ],
+      "roles": [
+        "group",
+        "listbox",
+        "option"
+      ],
+      "tabIndex": [
+        0
+      ],
+      "aria": [
+        "aria-label"
+      ],
+      "keys": [
+        "Escape"
+      ],
+      "counts": {
+        "states": 10,
+        "roles": 4,
+        "a11y": 5,
+        "keyboard": 1,
+        "unmapped": 0
+      }
+    },
+    "ter-analysis": {
+      "channels": [
+        "checked",
+        "enabled",
+        "visible"
+      ],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 5,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "thin-glass-theme": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "transfer-vth-lab": {
+      "channels": [
+        "checked"
+      ],
+      "roles": [
+        "separator"
+      ],
+      "tabIndex": [],
+      "aria": [
+        "aria-orientation"
+      ],
+      "keys": [],
+      "counts": {
+        "states": 1,
+        "roles": 1,
+        "a11y": 1,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "workspace-safeguards": {
+      "channels": [],
+      "roles": [],
+      "tabIndex": [],
+      "aria": [],
+      "keys": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    }
+  },
+  "plugins": {
+    "_template": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "aurora-pop-theme": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "connectivity-center": {
+      "states": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 58,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 58,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 63,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 80,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 164,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 167,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 58,
+          "kind": "dataset",
+          "raw": "busy",
+          "state": "busy",
+          "dataset": "busy"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 58,
+          "kind": "dataset",
+          "raw": "busy",
+          "state": "busy",
+          "dataset": "busy"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 56,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 57,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 169,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 16,
+          "name": "role",
+          "value": "dialog",
+          "kind": "static-attribute"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 31,
+          "name": "role",
+          "value": "dialog",
+          "kind": "static-attribute"
+        }
+      ],
+      "a11y": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 16,
+          "name": "aria-modal",
+          "value": "true",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 17,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 31,
+          "name": "aria-modal",
+          "value": "true",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 32,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 46,
+          "name": "aria-label",
+          "value": "AI / MCP 设置",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 46,
+          "name": "aria-label",
+          "value": "收起",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 49,
+          "name": "aria-label",
+          "value": "发送",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 156,
+          "name": "aria-label",
+          "value": "移除引用 ${esc(row.label)}",
+          "kind": "static-aria"
+        }
+      ],
+      "keyboard": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 171,
+          "key": "Enter"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 171,
+          "key": "Enter"
+        }
+      ],
+      "counts": {
+        "states": 11,
+        "roles": 2,
+        "a11y": 8,
+        "keyboard": 2,
+        "unmapped": 0
+      }
+    },
+    "data-center": {
+      "states": [
+        {
+          "file": "src/plugins/data-center/chart-runtime.js",
+          "line": 23,
+          "kind": "property",
+          "raw": "hidden",
+          "state": "visible",
+          "property": "hidden"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 224,
+          "kind": "aria",
+          "raw": "aria-pressed",
+          "state": "pressed",
+          "attribute": "aria-pressed"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 278,
+          "kind": "aria",
+          "raw": "aria-selected",
+          "state": "selected",
+          "attribute": "aria-selected"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 164,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 222,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 224,
+          "kind": "class",
+          "raw": "selected",
+          "state": "selected",
+          "className": "selected",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 278,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 278,
+          "kind": "class",
+          "raw": "selected",
+          "state": "selected",
+          "className": "selected",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 31,
+          "kind": "aria",
+          "raw": "aria-pressed",
+          "state": "pressed",
+          "attribute": "aria-pressed",
+          "value": "false"
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 48,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 94,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 94,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 94,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 95,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 95,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 95,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 96,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 97,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 97,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 97,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 229,
+          "name": "tabindex",
+          "value": "-1",
+          "kind": "dynamic-attribute"
+        },
+        {
+          "file": "src/plugins/data-center/unit-presentation.js",
+          "line": 3,
+          "name": "role",
+          "kind": "dynamic-attribute"
+        }
+      ],
+      "a11y": [
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 229,
+          "name": "aria-label",
+          "kind": "dynamic-aria"
+        }
+      ],
+      "keyboard": [
+        {
+          "file": "src/plugins/data-center/artifact-selection.js",
+          "line": 20,
+          "key": "Escape"
+        }
+      ],
+      "counts": {
+        "states": 20,
+        "roles": 2,
+        "a11y": 1,
+        "keyboard": 1,
+        "unmapped": 0
+      }
+    },
+    "flexible-import": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-analysis": {
+      "states": [
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 260,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 261,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 297,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 600,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 601,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 289,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 290,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 406,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 8,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-import": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "pulse-sampler-tool": {
+      "states": [
+        {
+          "file": "src/plugins/pulse-sampler-tool/unit-presentation.js",
+          "line": 108,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        }
+      ],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 1,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "resonance-detector-robust": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "resonance-workbench": {
+      "states": [
+        {
+          "file": "src/plugins/resonance-workbench/feature-analysis-runtime.js",
+          "line": 116,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 77,
+          "kind": "aria",
+          "raw": "aria-pressed",
+          "state": "pressed",
+          "attribute": "aria-pressed"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 77,
+          "kind": "aria",
+          "raw": "aria-current",
+          "state": "current",
+          "attribute": "aria-current"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 169,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 170,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 170,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 187,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 188,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 189,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 190,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 76,
+          "kind": "class",
+          "raw": "active",
+          "state": "pressed",
+          "className": "active",
+          "legacy": true
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 76,
+          "kind": "class",
+          "raw": "selected",
+          "state": "selected",
+          "className": "selected",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+          "line": 112,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+          "line": 124,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+          "line": 131,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+          "line": 137,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+          "line": 22,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+          "line": 33,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+          "line": 89,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+          "line": 117,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+          "line": 117,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-runtime.js",
+          "line": 442,
+          "kind": "class",
+          "raw": "active",
+          "state": "pressed",
+          "className": "active",
+          "legacy": true
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-runtime.js",
+          "line": 443,
+          "kind": "class",
+          "raw": "active",
+          "state": "pressed",
+          "className": "active",
+          "legacy": true
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 37,
+          "kind": "aria",
+          "raw": "aria-hidden",
+          "state": "visible",
+          "attribute": "aria-hidden",
+          "value": "true"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 165,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 166,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 167,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 169,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 170,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 171,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 21,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 21,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 23,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 27,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 102,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 104,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 32,
+          "name": "role",
+          "value": "group",
+          "kind": "dynamic-attribute"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 37,
+          "name": "tabindex",
+          "value": "-1",
+          "kind": "dynamic-attribute"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 82,
+          "name": "role",
+          "value": "dialog",
+          "kind": "dynamic-attribute"
+        }
+      ],
+      "a11y": [
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 32,
+          "name": "aria-label",
+          "value": "扫描可见性模式",
+          "kind": "dynamic-aria"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 82,
+          "name": "aria-label",
+          "value": "框选区域操作",
+          "kind": "dynamic-aria"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 102,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "dynamic-aria"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 113,
+          "name": "aria-label",
+          "value": "缩小",
+          "kind": "dynamic-aria"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 114,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "dynamic-aria"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/unit-presentation.js",
+          "line": 158,
+          "name": "aria-label",
+          "value": "共振分析命令",
+          "kind": "dynamic-aria"
+        }
+      ],
+      "keyboard": [
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 47,
+          "key": "ArrowUp"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 47,
+          "key": "ArrowDown"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 48,
+          "key": "ArrowLeft"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 48,
+          "key": "ArrowRight"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/view-components.js",
+          "line": 49,
+          "key": "Escape"
+        }
+      ],
+      "counts": {
+        "states": 36,
+        "roles": 3,
+        "a11y": 6,
+        "keyboard": 5,
+        "unmapped": 0
+      }
+    },
+    "scientific-data-contracts": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "shell-navigation": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "standard-transport-algorithms": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "status-monitor": {
+      "states": [
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 67,
+          "kind": "aria",
+          "raw": "aria-pressed",
+          "state": "pressed",
+          "attribute": "aria-pressed"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 62,
+          "kind": "aria-static",
+          "raw": "aria-selected=${active?",
+          "state": "selected",
+          "attribute": "aria-selected",
+          "value": "${active?"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 185,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 185,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 64,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 67,
+          "kind": "class",
+          "raw": "active",
+          "state": "pressed",
+          "className": "active",
+          "legacy": true
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 71,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 75,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 101,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 132,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 43,
+          "name": "role",
+          "value": "listbox",
+          "kind": "static-attribute"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 46,
+          "name": "role",
+          "value": "group",
+          "kind": "static-attribute"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 62,
+          "name": "role",
+          "value": "option",
+          "kind": "static-attribute"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 124,
+          "name": "tabindex",
+          "value": "0",
+          "kind": "static-attribute"
+        }
+      ],
+      "a11y": [
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 38,
+          "name": "aria-label",
+          "value": "主题参数",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 39,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 43,
+          "name": "aria-label",
+          "value": "主题配置",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 46,
+          "name": "aria-label",
+          "value": "亮暗模式",
+          "kind": "static-aria"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 93,
+          "name": "aria-label",
+          "value": "关闭",
+          "kind": "static-aria"
+        }
+      ],
+      "keyboard": [
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 194,
+          "key": "Escape"
+        }
+      ],
+      "counts": {
+        "states": 10,
+        "roles": 4,
+        "a11y": 5,
+        "keyboard": 1,
+        "unmapped": 0
+      }
+    },
+    "ter-analysis": {
+      "states": [
+        {
+          "file": "src/plugins/ter-analysis/analysis-service.js",
+          "line": 138,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/ter-analysis/analysis-service.js",
+          "line": 138,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/ter-analysis/analysis-service.js",
+          "line": 138,
+          "kind": "property",
+          "raw": "disabled",
+          "state": "enabled",
+          "property": "disabled"
+        },
+        {
+          "file": "src/plugins/ter-analysis/analysis-service.js",
+          "line": 145,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        },
+        {
+          "file": "src/plugins/ter-analysis/analysis-service.js",
+          "line": 138,
+          "kind": "class",
+          "raw": "hidden",
+          "state": "visible",
+          "className": "hidden",
+          "legacy": false
+        }
+      ],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 5,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "thin-glass-theme": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "transfer-vth-lab": {
+      "states": [
+        {
+          "file": "src/plugins/transfer-vth-lab/plugin.js",
+          "line": 42,
+          "kind": "property",
+          "raw": "checked",
+          "state": "checked",
+          "property": "checked"
+        }
+      ],
+      "roles": [
+        {
+          "file": "unit:splitPane",
+          "line": 0,
+          "name": "role",
+          "value": "separator",
+          "kind": "unit-inherited"
+        }
+      ],
+      "a11y": [
+        {
+          "file": "unit:splitPane",
+          "line": 0,
+          "name": "aria-orientation",
+          "kind": "unit-inherited"
+        }
+      ],
+      "keyboard": [],
+      "counts": {
+        "states": 1,
+        "roles": 1,
+        "a11y": 1,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    },
+    "workspace-safeguards": {
+      "states": [],
+      "roles": [],
+      "a11y": [],
+      "keyboard": [],
+      "counts": {
+        "states": 0,
+        "roles": 0,
+        "a11y": 0,
+        "keyboard": 0,
+        "unmapped": 0
+      }
+    }
+  }
+}

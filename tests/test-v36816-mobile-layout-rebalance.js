@@ -13,23 +13,25 @@ assert.strictEqual(expo.version,mobilePkg.version,'Expo/mobile version identity 
 assert(Number(expo.android.versionCode)>=54,'v3.68.16 Android versionCode must be >= 54.');
 const shellCss=read('src/styles/platform/native-client-shell.css');
 const workspaceCss=read('src/styles/platform/native-workspace-presentation.css');
-const pulseCss=read('src/plugins/pulse-sampler-tool/mobile.css');
+const pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
 const smbCss=read('src/plugins/connectivity-center/plugin.css');
 const schemaCss=read('src/styles/structure/schema-and-plugin-ui.css');
+const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
 const plotView=read('src/core/ui/modules/plot-view/chart.js');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const workbenchCss=read('src/styles/structure/plugin-workspace.css');
 
 assert(shellCss.includes('@media (min-width:840px){'),'Plugin Manager must keep a roomy-width override hook for denser mobile cards.');
 assert(shellCss.includes('.plugin-manager-section-list{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}'),'Plugin Manager dense mobile grid override missing.');
-assert(pulseCss.includes('.ps-result-controls{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}'),'Pulse sampler result controls must merge into a single four-cell row on roomy mobile layouts.');
-assert(pulseCss.includes('.ps-analysis-controls{grid-template-columns:minmax(0,1.45fr) repeat(4,minmax(92px,1fr)) minmax(128px,.95fr);gap:7px}'),'Pulse sampler extraction row must use a denser multi-column contract.');
+assert(pulseUnit.includes("variant:'result-control-grid'"),'Pulse sampler result controls must use the accepted responsive Unit result-control row.');
+assert(pulseUnit.includes("variant:'analysis-control-grid'"),'Pulse sampler extraction row must use the accepted responsive Unit analysis-control row.');
 assert(!smbCss.includes('--dkds-generic-button-min-height:32px'),'Dead v3.68.16 SMB generic-button token workaround must stay removed after the v3.68.17 Core density correction.');
-assert(schemaCss.includes('.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;box-sizing:border-box;min-height:var(--dkds-schema-field-min-height);'),'Multi-select triggers must consume the same field geometry contract as other controls.');
-assert(workspaceCss.includes('[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame')&&workspaceCss.includes('var(--dkds-mobile-user-right-track,34%)')&&workspaceCss.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Landscape workspaces must keep a bounded, user-resizable right companion lane independent of width profile.');
+assert(schemaCss.includes('.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;overflow:hidden}')&&!/\.dkds-multiselect-trigger\{[^}]*?(?:min-height|padding-block|padding-inline)/.test(schemaCss),'Multi-select proxy anatomy must not re-own canonical Field density.');
+assert(semanticCss.includes('.dkds-field-control{')&&semanticCss.includes('min-height:var(--dkds-field-control-min-height'),'Multi-select triggers must consume the same canonical Field geometry contract as other controls.');
+assert(workspaceCss.includes('[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame')&&workspaceCss.includes('--dkds-mobile-right-track:var(--dkds-plugin-canvas-right-width,34%)')&&!workspaceCss.includes('--dkds-mobile-unit-right-min')&&!workspaceCss.includes('--dkds-mobile-drawer-occupied')&&workspaceCss.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Right companions must retain the canonical requested SplitController width inside one shared viewport bound, independently from Drawer and Unit content.');
 assert(workspaceCss.includes('[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame')&&workspaceCss.includes('grid-template-columns:var(--dkds-mobile-left-track) var(--dkds-mobile-left-seam) minmax(0,1fr) var(--dkds-mobile-right-seam) var(--dkds-mobile-right-track)'),'Portrait/tablet workspaces must stack semantic right companions in document flow instead of squeezing the primary canvas into a desktop-like side lane.');
 assert(workspaceCss.includes('.dkds-portable-view.dkds-plot-view:not(.is-floating):not(.is-global-floating)>.dkds-portable-resize-handle{display:none}'),'Only floating/global PlotViews may expose the corner resize handle on Mobile.');
-assert(workspaceCss.includes('grid-template-rows:minmax(320px,58vh) minmax(180px,var(--dkds-plugin-canvas-bottom-height))'),'Compact user bottom placement must consume a real, resizable bottom lane instead of a floating shelf.');
+assert(workspaceCss.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)'),'Compact user bottom placement must consume the canonical Workspace-owned resizable bottom lane instead of a floating shelf.');
 assert(plotView.includes("contains('is-docked')")&&plotView.includes("contains('is-sticky')"),'Plot content geometry must release authored aspect-ratio sizing when a plot is docked or sticky.');
 for(const token of ['syncCanvasRegions?.();','presentationChanged?.(\'portable-place\'','requestChartResize?.({id:this.id,reason:`portable-place-${placement}`})']){
   assert(portable.includes(token),`Portable placement reflow missing ${token}`);

@@ -1,0 +1,56 @@
+{
+  "id": "com.example.unit-ter-shadow",
+  "name": "TER Unit-only Shadow Reconstruction",
+  "version": "1.0.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": [
+    "plugin.js"
+  ],
+  "enabled": true,
+  "order": 922,
+  "description": "Parallel, non-production TER reconstruction built from public Unit Templates for seven-layer parity auditing.",
+  "requiresCore": [
+    "status",
+    "services",
+    "workspace",
+    "parameters",
+    "analysis.providers",
+    "ui.dom",
+    "ui.workspace",
+    "ui.group-area",
+    "ui.plot-views",
+    "ui.actions",
+    "ui.interaction",
+    "ui.pages",
+    "ui.portable",
+    "ui.scientific-plot",
+    "ui.table",
+    "ui.unit-templates"
+  ],
+  "capabilities": [
+    "ui.page",
+    "ui.plugin-workspace",
+    "ui.group-area",
+    "ui.scientific-plot"
+  ],
+  "pluginType": "workbench",
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "data": {
+    "accepts": [
+      "science.transport.iv"
+    ]
+  },
+  "pluginDependencies": [
+    {
+      "id": "builtin.ter-analysis"
+    }
+  ]
+}

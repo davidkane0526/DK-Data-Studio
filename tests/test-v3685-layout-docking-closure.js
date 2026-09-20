@@ -23,13 +23,13 @@ assert.strictEqual(windowManager.readBuiltinPluginWindows(root).has('spatial-cur
 const shell=read('src/styles/structure/shell-navigation.css');
 assert(/\.primary-activity-bar\{[\s\S]*?flex:0 1 auto;[\s\S]*?max-width:100%/.test(shell),'Primary activity buttons must remain content-sized and shrinkable after an activity closes.');
 
-// 3) Data Center requests the generic compact auto-fit ParameterSchema layout.
-// Core owns the actual responsive grid so the later structure layer cannot
-// accidentally override a plugin-layer grid declaration.
-const dc=read('src/plugins/data-center/plugin.css'),dcRuntime=read('src/plugins/data-center/feature-runtime.js'),schemaCss=read('src/styles/structure/schema-and-plugin-ui.css');
-assert(dcRuntime.includes('compact:true,autoFit:true'),'Data Center chart parameters must keep opting into compact auto-fit geometry.');
-assert(schemaCss.includes('grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax('),'Core ParameterSchema must provide the actual auto-fit grid geometry through a Core-owned configurable fallback.');
-assert(!/#dcChartParams\.schema-parameter-panel\.auto-fit\{[\s\S]*?grid-template-columns/.test(dc),'Data Center must not attempt to override Core ParameterSchema grid geometry from the earlier plugin cascade layer.');
+// 3) ParameterSchema has exactly one outer-grid owner. Core remains the default;
+// an accepted source-parity form may explicitly delegate only that outer grid
+// to its enclosing Layout Unit/detail host while canonical field geometry stays Core-owned.
+const dc=read('src/plugins/data-center/plugin.css'),dcRuntime=read('src/plugins/data-center/feature-runtime.js'),dcChartRuntime=read('src/plugins/data-center/chart-runtime.js'),dcPresentation=read('src/plugins/data-center/unit-presentation.js'),schemaCss=read('src/styles/structure/schema-and-plugin-ui.css');
+assert(dcRuntime.includes("ctx.modules.require('chart-runtime')")&&dcChartRuntime.includes("compact:true,autoFit:true,layoutOwner:'host'"),'Data Center delegated chart parameters must declare the generic host-owned accepted-detail grid.');
+assert(schemaCss.includes('.schema-parameter-panel.auto-fit:not(.layout-host-owned)')&&schemaCss.includes('grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax('),'Core ParameterSchema must keep its default auto-fit grid while excluding explicit host-owned forms.');
+assert(dcPresentation.includes("className:'dc-chart-params',geometry:{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(72px,.55fr)'")&&!dc.includes('.dc-chart-params.schema-parameter-panel.auto-fit.compact{'),'Accepted Data Center chart detail grid must remain the sole Unit-owned four-track layout.');
 
 // 4) Docked/sticky PlotViews consume the dock/visible viewport rather than
 // keeping their home-card aspect-ratio height. Arbitrary plugin plot class names
@@ -48,8 +48,9 @@ assert(/const scientificPlot=this\.wrapper\.classList\.contains\('dkds-plot-view
 assert(/nearestVerticalScrollport\(\)/.test(portable)&&/bindStickyViewport\(\)/.test(portable),'PortableView must resolve and bind the current vertical scrollport.');
 assert(portable.includes("--dkds-portable-sticky-max-height")&&portable.includes("--dkds-portable-sticky-height"),'PortableView must publish bounded sticky viewport geometry through owned config tokens.');
 assert(/placement==='sticky'\)\{this\.restoreHome\(\);this\.wrapper\.classList\.add\('is-sticky'\);this\.bindStickyViewport\(\);\}/.test(portable),'Sticky placement must bind its visible viewport immediately.');
-const terCss=read('src/plugins/ter-analysis/plugin.css'),terRuntime=read('src/plugins/ter-analysis/feature-runtime.js');
-assert(!terCss.includes('ter-sticky-enabled')&&!terRuntime.includes('ter-sticky-enabled'),'TER must consume Core sticky placement instead of owning a second sticky CSS path.');
+const terRuntime=read('src/plugins/ter-analysis/feature-runtime.js'),terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+const terCss=read('src/plugins/ter-analysis/plugin.css');
+assert(fs.existsSync(path.join(root,'src/plugins/ter-analysis/plugin.css'))&&!terRuntime.includes('ter-sticky-enabled')&&!terUnits.includes('ter-sticky-enabled')&&!terCss.includes('ter-sticky-enabled'),'TER may retain accepted detail geometry but must still consume Core placement/sticky behavior without a second sticky runtime.');
 
 // 6) Explicitly docked scientific plots are placed before fixed control panels
 // and flex into the visible dock. This also keeps Resonance group plots visible

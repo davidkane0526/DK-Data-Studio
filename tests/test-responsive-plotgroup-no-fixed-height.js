@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');const {inspectCompositionCss}=require('../sdk/composition-contract');
+const core=fs.readFileSync('src/styles/structure/analysis-workbench.css','utf8'),sdkStyle=fs.readFileSync('src/styles/structure/plugin-workspace.css','utf8');
+assert(core.includes('gap:var(--dkds-grid-gap,10px)'),'GroupArea must retain the pre-SDK managed-grid geometry contract');
+const resonance=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),terUnits=fs.readFileSync('src/plugins/ter-analysis/unit-presentation.js','utf8'),unitSpec=fs.readFileSync('src/core/ui/modules/composition/unit-template-spec.js','utf8');
+assert(/reswin-group-grid\{[^}]*--dkds-grid-gap:12px/.test(resonance),'Resonance accepted group gap must remain 12 px');
+assert(terUnits.includes('gapPx:14')&&unitSpec.includes('explicit source-parity gapPx detail'),'TER accepted 14 px group gap must be an explicit plugin source-detail parameter while Core owns responsive grid behavior.');
+assert(!/\.dkds-(?:plot-group|group-area-grid)[^{]*\{[^}]*(?:gap|row-gap|column-gap)\s*:/.test(sdkStyle),'SDK 1.49 must not overwrite accepted GroupArea spacing with a new visual default');
+assert(!inspectCompositionCss(resonance,{path:'resonance/plugin.css'}).issues.some(x=>x.code==='PLOT_GROUP_NONCANONICAL_GAP'));
+assert(!terUnits.includes('gap:14')&&!terUnits.includes('rowGap:')&&!terUnits.includes('columnGap:')&&terUnits.includes('gapPx:14'),'TER must use the explicit source-parity gapPx channel, never legacy raw gap fields.');
+const fixed=inspectCompositionCss('.dkds-plot-group .x{height:220px}',{path:'plugin.css'});assert(fixed.issues.some(x=>x.code==='FIXED_HEIGHT_INSIDE_RESPONSIVE_PLOTGROUP'));
+console.log('Responsive PlotGroup visual-template geometry PASS');

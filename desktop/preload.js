@@ -152,6 +152,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginAlgorithmCatalog: ref => ipcRenderer.invoke('plugins:algorithmCatalog', ref),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
   pluginExportPackage: id => { const payload=withSaveIntent('export',{id,source:'core.plugin-manager.export-package'}); return payload?ipcRenderer.invoke('plugins:exportPackage',payload):Promise.resolve(null); },
+  exportSdkBundle: () => { const payload=withSaveIntent('export',{source:'core.plugin-manager.export-sdk'}); return payload?ipcRenderer.invoke('sdk:exportBundle',payload):Promise.resolve(null); },
   pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),
   pluginReadBuiltinScript: src => ipcRenderer.invoke('plugins:readBuiltinScript', String(src || '')),
   updateGetStatus: () => ipcRenderer.invoke('update:getStatus'),

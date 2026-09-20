@@ -184,7 +184,6 @@ It performs:
 ```text
 stage mobile source under D:\PyDroidTemp
 reuse external shared node_modules
-run mobile architecture tests and React Native TypeScript checking
 create/reuse the persistent local release signing identity
 npm run sync:web
 expo prebuild --platform android (incremental external native workspace by default)
@@ -192,7 +191,10 @@ gradlew assembleRelease --no-daemon --max-workers=4 -PreactNativeArchitectures=a
 verify required offline runtime assets and print APK size/SHA-256
 ```
 
-On Windows, `--no-daemon` alone is not sufficient to prevent a disposable Gradle JVM. If the client JVM does not match `org.gradle.jvmargs`, Gradle creates a single-use daemon. The DKDS toolbox therefore reads the generated `android/gradle.properties`, aligns the client `JAVA_OPTS` with the requested build JVM (including immutable wrapper settings), and sets `org.gradle.daemon=false`. This avoids the nested Java launch that can be blocked by Windows security policy with `CreateProcess error=5`, while preserving the configured proxy and shared `GRADLE_USER_HOME`.
+On Windows, `--no-daemon` alone is not sufficient to prevent a disposable Gradle JVM. If the client JVM does not match `org.gradle.jvmargs`, Gradle may create a single-use daemon. The DKDS toolbox therefore reads the generated `android/gradle.properties`, aligns the client `JAVA_OPTS` with the requested build JVM (including immutable wrapper settings), disables the Gradle instrumentation agent for this direct build, and sets `org.gradle.daemon=false`. The build now proceeds directly to `assembleRelease`; it no longer runs a separate `gradlew help` probe before compilation.
+
+
+`android-build` and `android-run` deliberately do **not** run `npm run mobile:test`, `npm run typecheck`, or any Gradle preflight test before compilation. Validation remains available as explicit developer commands when wanted, but it is no longer on the APK build critical path. Environment/toolchain discovery is still retained because it is required to invoke the compiler at all, and APK asset/signature verification remains post-build.
 
 Local signing is stored outside the repository at `%LOCALAPPDATA%\DKDataStudio\android-signing`. Back up that directory if future local APKs must update the same installed app. Migrating from an older differently signed build requires one uninstall/reinstall (`adb uninstall com.dk.datastudio`), which removes the old app data.
 

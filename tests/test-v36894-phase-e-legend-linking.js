@@ -10,7 +10,8 @@ const scopeSource=read('src/core/ui/modules/scope/plugin-scope.js');
 const legendSource=read('src/core/scientific/legend-link-runtime.js');
 const plotSource=read('src/core/scientific/plot-runtime.js');
 const chartSource=read('src/core/scientific/chart-runtime.js');
-const dataCenterSource=read('src/plugins/data-center/feature-runtime.js');
+const dataCenterFeatureSource=read('src/plugins/data-center/feature-runtime.js');
+const dataCenterChartSource=read('src/plugins/data-center/chart-runtime.js');
 const indexSource=read('src/index.html');
 const dedicatedSource=read('src/plugin-window/runtime.js');
 
@@ -24,7 +25,8 @@ assert(plotSource.includes("link:false,linkGroup:'',maxLinkedTargets:24")&&plotS
 assert(chartSource.includes('function setLegendVisibility(target,indices=[]')&&chartSource.includes("state.legendSoloKey=entry?.key||''"),'Chart Runtime must expose one renderer-neutral remote legend visibility apply primitive');
 assert(legendSource.includes("SCHEMA='dkds.legend-visibility-state.v1'")&&legendSource.includes("CHANNEL='legend'")&&legendSource.includes('MAX_TARGETS=24'),'legend linked-state must be separately typed and bounded');
 assert(legendSource.includes('ref?.artifactId||!ref?.seriesId')&&legendSource.includes('refs()?.identity?.(ref)'),'legend targets must use stable artifactId / seriesId identities rather than display labels');
-assert(dataCenterSource.includes('legendPolicy:{link:true,linkGroup:`data-center:${artifact.id}:legend`}'),'Data Center multi-series charts must provide a first-party stable legend-link adoption');
+assert(dataCenterFeatureSource.includes("ctx.modules.require('chart-runtime')"),'Data Center feature must delegate multi-series Chart Provider rendering to its chart runtime.');
+assert(dataCenterChartSource.includes('legendPolicy:{link:true,linkGroup:`data-center:${artifact.id}:legend`}'),'Data Center multi-series chart runtime must preserve first-party stable legend-link adoption');
 
 function runtimeContext(){
   const events=new Map(),dispatches=[];

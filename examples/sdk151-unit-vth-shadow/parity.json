@@ -1,0 +1,83 @@
+{
+  "plugin": "com.dkds.transfer-vth-lab",
+  "shadow": "com.example.unit-vth-shadow",
+  "productionReplaced": true,
+  "unitContract": {
+    "unitTypeCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": [],
+    "correctedEvidence": [
+      "Vth data-control PRIME remains fixed-titleless, matching production chrome:false and the titleless parameter/data-control contract"
+    ]
+  },
+  "layers": {
+    "function": {
+      "status": "pass-live-domain",
+      "note": "Refresh, demo, curve selection, parameter edits, fit-window edits, view state and analysis requests execute through com.dkds.transfer-vth-lab/live against the existing production state/Task/result owner."
+    },
+    "structure": {
+      "status": "pass",
+      "note": "One scientific-primary PRIMARY plus one titleless data-control PRIME, four metrics, one curve ScientificPlot and one result Table are composed only from public Units."
+    },
+    "geometry": {
+      "status": "pass",
+      "note": "The existing stack-comfortable, fill-rows, metric-grid, plot-card-fill, scroll-pane and SplitPane contracts preserve the accepted 10 px main gap and 180/140/300 result split geometry."
+    },
+    "style": {
+      "status": "pass",
+      "note": "Shadow ships no CSS, copies no dkds-vth-* visual selector and performs no plugin-owned paint writes."
+    },
+    "interaction": {
+      "status": "pass-live-domain",
+      "note": "Unit fields/checks, curve selection, plot fit-window/target-current manipulation and view changes round-trip through the single production owner."
+    },
+    "responsive": {
+      "status": "pass",
+      "note": "metric-grid owns 4->2->1 reflow and SplitPane owns the accepted 920 px stacked reflow without shadow media CSS."
+    },
+    "mobile": {
+      "status": "pass",
+      "note": "The same data-control/scientific-primary semantics are Presenter-projected; the shadow contains no executable Desktop/Mobile branch."
+    }
+  },
+  "functionMap": {
+    "refresh": "refresh",
+    "demo": "demo",
+    "fitView": "fitView",
+    "curve": "setSelectedCurve",
+    "method": "setParameter",
+    "branch": "setParameter",
+    "targetCurrent": "setParameter",
+    "lowCurrent": "setParameter",
+    "highCurrent": "setParameter",
+    "absoluteCurrent": "setParameter",
+    "logY": "setParameter",
+    "showAllCurves": "setParameter",
+    "manualWindow": "setManualWindow",
+    "resetWindow": "resetManualWindow",
+    "view": "setView",
+    "analyzeAll": "analyzeAll"
+  },
+  "liveDomain": {
+    "ref": "com.dkds.transfer-vth-lab/live",
+    "version": "1.0.0",
+    "dependencyGated": true,
+    "singleOwner": [
+      "ctx.state.create production workspace state",
+      "production analyze-vth Task",
+      "production resultCache/resultPending",
+      "production curve/source projection"
+    ],
+    "shadowCopies": []
+  },
+  "acceptedGeometry": {
+    "controlWidth": 300,
+    "mainGap": 10,
+    "resultsHeight": 180,
+    "resultsMin": 140,
+    "plotReserve": 300,
+    "responsiveReflowBelow": 920
+  },
+  "remainingNonUnitGap": "None. Production presentation is cut over to the validated Unit composition while state, Task, algorithm and numerical-result ownership remain unchanged.",
+  "productionCutoverVersion": "3.71.53"
+}

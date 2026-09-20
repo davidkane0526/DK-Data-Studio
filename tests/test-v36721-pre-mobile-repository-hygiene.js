@@ -28,7 +28,7 @@ assert(sync.includes('generate-runtime-compositions.js')&&sync.indexOf('generate
 
 if(fs.existsSync(path.join(root,'.git'))){
   const tracked=cp.execFileSync('git',['ls-files'],{cwd:root,encoding:'utf8'}).split(/\r?\n/).filter(Boolean);
-  for(const rel of ['src/generated/runtime/app.js','src/generated/runtime/ui-infrastructure.js','src/generated/runtime/plugin-kernel.js','src/generated/plugin-index.js','src/generated/sdk-authoring-reference.js','assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png']){
+  for(const rel of ['src/generated/runtime/app.js','src/generated/runtime/ui-infrastructure.js','src/generated/runtime/plugin-kernel.js','src/generated/plugin-index.js','src/generated/sdk-authoring-reference.js','src/generated/dkds-sdk-export.zip','assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png']){
     assert(!tracked.includes(rel),`${rel} is reproducible and must not enter Git history.`);
   }
 }

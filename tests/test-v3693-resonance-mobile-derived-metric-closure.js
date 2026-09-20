@@ -64,7 +64,7 @@ function loadPeakRuntime(){
   assert(resonance?.taskSources&&typeof resonance.taskSources['resonance-task.js']==='string','Built-in index must embed resonance task source.');
   assert(typeof resonance.taskSources['task-core.js']==='string'&&typeof resonance.taskSources['algorithm.js']==='string','Built-in index must embed every declared task import.');
   const packageRuntime=read('src/core/plugins/kernel/modules/package-runtime.js');
-  assert(packageRuntime.includes("definition.taskSources={...row.taskSources}"),'Built-in loader must attach generated taskSources before Plugin API scope creation.');
+  assert(packageRuntime.includes("definition=applyPackage(id,row.manifest,String(row?.source||'builtin'),row?.taskSources||{},{taskCoreSources:row?.taskCoreSources||{}})"),'Built-in loader must attach generated task sources through the canonical package operation before Plugin API scope creation.');
 
   // Core task runner must itself use a blob worker and must cleanly reject a
   // synchronous postMessage/DataClone failure instead of leaving a permanent

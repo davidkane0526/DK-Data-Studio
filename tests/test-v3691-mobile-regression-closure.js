@@ -20,10 +20,11 @@ function loadPluginModule(relative,moduleId){
   assert(Number(json('mobile/app.json').expo.android.versionCode)>=127,'Android versionCode must advance for the post-freeze Mobile regression build.');
 
   // 1) Resonance group metrics: metric completion must invalidate the data
-  // projection even while Mobile has temporarily hidden/reparented the panel.
+  // projection immediately, but must render only while the panel is actually visible.
+  // Hidden/parked panels retain the invalidation and repaint on reopen instead of doing background work.
   const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
   const group=read('src/plugins/resonance-workbench/feature-group-runtime.js');
-  const settledRender=group.indexOf('function metricWaveSettled()'),settledInvalidate=group.indexOf('invalidate();',settledRender),settledVisibility=group.indexOf("if(!panel?.isConnected||metricRenderRaf)return false;",settledRender);
+  const settledRender=group.indexOf('function metricWaveSettled()'),settledInvalidate=group.indexOf('invalidate();',settledRender),settledVisibility=group.indexOf("if(!panel||panel.offsetParent===null||metricRenderRaf)return false;",settledRender);
   assert(settledRender>=0&&settledInvalidate>settledRender&&settledVisibility>settledInvalidate,'Resonance metric completion must invalidate the GroupArea projection before any mounted/visibility render gate.');
   assert(feature.includes("effect:()=>{groupRuntime.metricWaveSettled?.();}"),'Reactive group invalidation must share the GroupRuntime coalesced settled-metric render owner.');
   assert(group.includes('live.peakMetricSettledRevision'),'Group render identity must carry the settled metric-wave revision so reopen/reprojection cannot reuse a pre-metric blank render.');

@@ -2,18 +2,24 @@
 const StyleGate=require('ui/style-ownership-gate');
 const STYLE_SOURCE='src/core/ui/modules/presentation/mobile-web-surface.js';
 const mobileSurfaceSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:'core.mobile-web-surface',scope:'runtime-mobile-presentation',source:STYLE_SOURCE});
+const mobileSurfaceToken=(el,property,value)=>StyleGate.setToken(el,property,value,{owner:'core.mobile-web-surface',scope:'runtime-mobile-presentation-token',source:STYLE_SOURCE});
+const mobileSurfaceRemove=(el,property)=>StyleGate.remove(el,property,{owner:'core.mobile-web-surface',scope:property.startsWith('--')?'runtime-mobile-presentation-token':'runtime-mobile-presentation',source:STYLE_SOURCE});
 
 const PlatformBoundary=require('../../../host/platform-boundary');
 const NativeTouchDrag=require('../../../host/native-touch-drag');
+const {BASE_METRICS}=require('../composition/unit-template-spec');
+const {resolveInlineConstraintDeficit,reflowUnitGeometry,GEOMETRY_CONSTRAINT_EVENTS}=require('../composition/unit-geometry-constraints');
+const {dismissAllContextMenus}=require('../interaction/transient-registry');
+const {drawerOverflowCompensation}=require('./mobile-web-surface-geometry');
+const ProjectionContract=require('./mobile-web-projection-contract');
 const text=value=>String(value??'');
 const esc=value=>{
   const raw=text(value);
   if(globalThis.CSS?.escape)return globalThis.CSS.escape(raw);
   return raw.replace(/[^a-zA-Z0-9_-]/g,ch=>`\\${ch.codePointAt(0).toString(16)} `);
 };
-const PROJECTION_STYLE=Object.freeze([
-  'display','flex-direction','position','left','right','top','bottom','inset','width','height','min-width','min-height','max-width','max-height','transform','box-sizing','overflow','overflow-x','overflow-y','resize'
-]);
+const PROJECTION_STYLE=ProjectionContract.PROJECTION_STYLE;
+
 
 class MobileWebSurfacePresenter {
   constructor(){this.activeActivity='';this.projectedNodes=new Map();this.decoratedNodes=new Set();this.activeRoot=null;this.drawerFitFrames=new WeakMap();this.lastApplySignature='';}
@@ -28,8 +34,17 @@ class MobileWebSurfacePresenter {
     const purpose=text(node.dataset?.dkdsPresentationPurpose).toLowerCase();
     if(semanticRole==='data-control'||purpose==='parameters')return false;
     const placementSource=text(node.dataset?.dkdsPortablePlacementSource).toLowerCase();
-    if((semanticRole==='inspector'||semanticRole==='scientific-secondary')&&placementSource!=='user')return false;
     const placement=text(node.dataset?.placement||'home').toLowerCase();
+    // Semantic companion *home lanes* stay Presenter-owned even when an older
+    // PortableView state remembers that the user once moved the surface and later
+    // returned it to the canonical dock. Ownership follows the effective placement,
+    // not the historical gesture source. Otherwise a persisted `user:right` Inspector
+    // or `user:bottom` scientific-secondary bypasses the companion track entirely and
+    // re-enters the compact legacy dock/overlay geometry, producing a different height
+    // contract for the same visible layout. Only a genuine non-home placement remains
+    // PortableView-owned on Mobile.
+    const semanticHome=semanticRole==='inspector'?'right':semanticRole==='scientific-secondary'?'bottom':'';
+    if(semanticHome&&(placementSource!=='user'||placement==='home'||placement===semanticHome))return false;
     return placement!=='home'||node.classList.contains('is-floating')||node.classList.contains('is-global-floating')||node.classList.contains('is-sticky')||node.classList.contains('is-docked');
   }
   surfaceNode(activityId,surface){
@@ -45,8 +60,12 @@ class MobileWebSurfacePresenter {
   setStyle(node,property,value){
     const style=node?.style;if(!style)return false;const next=text(value);
     const current=style.getPropertyValue?style.getPropertyValue(property):'';if(current===next)return false;
-    if(next)mobileSurfaceSet(node,property,next);else StyleGate.remove(node,property,{owner:'core.mobile-web-surface',scope:'runtime-mobile-presentation',source:STYLE_SOURCE});
+    if(next)mobileSurfaceSet(node,property,next);else mobileSurfaceRemove(node,property);
     return true;
+  }
+  setToken(node,property,value){
+    if(!node?.style)return false;const next=text(value),current=node.style.getPropertyValue?.(property)||'';if(current===next)return false;
+    if(next)mobileSurfaceToken(node,property,next);else mobileSurfaceRemove(node,property);return true;
   }
   clearNodeData(node){
     if(!node?.dataset)return;
@@ -65,115 +84,190 @@ class MobileWebSurfacePresenter {
     if(!node?.style||!rows)return;
     for(const [prop,row] of Object.entries(rows)){
       if(row?.priority)throw new Error(`Mobile presentation refuses prioritized inline style: ${prop}`);
-      if(row?.value)mobileSurfaceSet(node,prop,row.value);else StyleGate.remove(node,prop,{owner:'core.mobile-web-surface',scope:'runtime-mobile-presentation',source:STYLE_SOURCE});
+      if(row?.value)mobileSurfaceSet(node,prop,row.value);else mobileSurfaceRemove(node,prop);
     }
   }
-  normalizeProjectedNode(node,region){
+  normalizeProjectedNode(node,region,purpose=''){
     const style=node?.style;if(!style?.setProperty)return;
-    const drawer=region==='drawer',overlay=drawer||region==='sheet';
-    const plot=node.classList?.contains('dkds-plot-view');
-    const values={
-      ...(plot?{display:'flex','flex-direction':'column'}:{}),
-      position:'relative',left:'auto',right:'auto',top:'auto',bottom:'auto',inset:'auto',width:'100%',
-      height:'100%','min-width':'0','min-height':'0','max-width':'none','max-height':'none',transform:'none','box-sizing':'border-box',
-      overflow:drawer?'hidden auto':overlay?'auto':'visible','overflow-x':drawer?'hidden':overlay?'auto':'visible','overflow-y':overlay?'auto':'visible',resize:overlay?'none':''
-    };
-    for(const [prop,value] of Object.entries(values))this.setStyle(node,prop,value);
+    const projection=ProjectionContract.styleValues(node,region,purpose);
+    if(projection.parameterDrawer){if(node.dataset)node.dataset.dkdsMobileParameterInsetHandoff='true';}
+    else if(node.dataset)delete node.dataset.dkdsMobileParameterInsetHandoff;
+    for(const [prop,value] of Object.entries(projection.values))this.setStyle(node,prop,value);
   }
-  drawerStorageKey(surfaceId=''){return `dkds.mobile.drawer-width.v2.${text(surfaceId)||'parameters'}`;}
-  drawerBounds(){
-    const viewport=Math.max(0,Number(globalThis.window?.innerWidth)||Number(globalThis.innerWidth)||320),hardMax=Math.max(280,viewport-12);
-    const min=Math.min(320,Math.max(280,viewport-20));
-    const autoMax=Math.max(min,Math.min(480,hardMax,viewport*.78));
-    // Content-fit normally stays compact, but a genuinely width-critical control
-    // may use the remaining viewport instead of being clipped by the old 88vw cap.
-    // The solver still grows only by measured overflow, so this is a ceiling rather
-    // than a greedy target width.
-    const max=Math.max(autoMax,Math.min(680,hardMax));
-    return {min,autoMax,max};
+  releaseProjectionDetachObserver(frame){ProjectionContract.releaseDetachObserver(frame);}
+  installProjectionDetachObserver(frame,node){
+    ProjectionContract.installDetachObserver(frame,node,{
+      isCurrent:()=>this.projectedNodes.get(node)?.frame===frame,
+      onDetached:()=>this.restoreNode(node)
+    });
   }
-  drawerContentMin(frame){const raw=Number(frame?.dataset?.dkdsMobileContentMinWidth);return Number.isFinite(raw)&&raw>0?raw:this.drawerBounds().min;}
-  savedDrawerWidth(surfaceId=''){try{const raw=localStorage.getItem(this.drawerStorageKey(surfaceId));if(raw===null||String(raw).trim()==='')return NaN;const value=Number(raw);return Number.isFinite(value)?value:NaN;}catch{return NaN;}}
-  clampDrawerWidth(value){const bounds=this.drawerBounds(),n=Number(value);return Math.max(bounds.min,Math.min(bounds.max,Number.isFinite(n)?n:bounds.min));}
-  intentionalHorizontalScroll(node){
-    if(!node||node===node?.ownerDocument?.documentElement)return false;
-    if(node.matches?.('[data-dkds-horizontal-scroll],.table-wrap,.table-scroll,.data-table-scroll,.dkds-table-wrap'))return true;
-    const overflow=text(node.style?.overflowX).trim().toLowerCase();return overflow==='auto'||overflow==='scroll';
+  drawerStorageKey(surfaceId='',storageScope=''){
+    const scope=text(storageScope||surfaceId||'parameters').trim().replace(/[^a-zA-Z0-9_.:-]+/g,'-')||'parameters';
+    return `dkds.mobile.drawer-width.v20.${scope}`;
   }
-  drawerContentNode(frame){return [...frame?.children||[]].find(node=>!node?.classList?.contains('dkds-mobile-drawer-resize-handle'))||null;}
-  measureDrawerOverflow(frame){
+  viewportInlineSize(){return Math.max(0,Number(globalThis.window?.innerWidth)||Number(globalThis.innerWidth)||320);}
+  surfaceInlineReservePx(){return Math.max(0,Number(BASE_METRICS?.portable?.floatingViewportInlineReservePx)||12);}
+  semanticSearchFloorPx(){
+    // Probe from the smallest canonical single-control footprint. This is not a
+    // target width. Unit gaps/padding remain untouched and therefore consume real
+    // space during every probe; only shrinkable controls are allowed to contract.
+    const action=Math.max(1,Number(BASE_METRICS?.action?.minWidthPx)||30);
+    const inset=Math.max(0,Number(BASE_METRICS?.surface?.padInlinePx)||10);
+    return action+inset*2;
+  }
+  surfaceAvailableWidth(frame,region='drawer'){
+    const viewport=this.viewportInlineSize(),reserve=this.surfaceInlineReservePx();
+    let available=Math.max(1,viewport-reserve);
+    if(region==='drawer'){
+      // The parameter Drawer is a true overlay Surface. Scientific companions keep
+      // their own full Presenter allocation underneath it; opening/resizing the
+      // Drawer must never shrink Inspector/Group lanes. Only the viewport/overlay
+      // host bounds the Drawer itself.
+      const parentWidth=Math.max(0,Number(frame?.parentElement?.clientWidth)||Number(frame?.parentElement?.getBoundingClientRect?.().width)||0);
+      if(parentWidth>0)available=Math.min(available,Math.max(1,parentWidth-reserve));
+    }
+    return Math.max(1,available);
+  }
+  parameterSurfaceFloorPx(){return Math.max(1,Math.ceil(this.viewportInlineSize()*0.25));}
+  surfaceReasonableFloor(frame,region='drawer'){
+    const available=this.surfaceAvailableWidth(frame,region);
+    // Parameter Drawers have one product-level hard floor: 25% of the live page.
+    // This is a lower bound only. The Unit tree may raise it through published
+    // constraints/live intrinsic overflow, and Presenter remains the sole writer
+    // of the final Surface allocation.
+    const productFloor=region==='drawer'?this.parameterSurfaceFloorPx():this.semanticSearchFloorPx();
+    return Math.max(1,Math.min(available,Math.max(this.semanticSearchFloorPx(),productFloor)));
+  }
+  drawerBounds(frame=null){const max=this.surfaceAvailableWidth(frame,'drawer'),base=this.surfaceReasonableFloor(frame,'drawer');return {base,max};}
+  storedReasonableMin(frame){const raw=Number(frame?.dataset?.dkdsMobileReasonableMinWidth);return Number.isFinite(raw)&&raw>0?raw:0;}
+  drawerContentMin(frame){return Math.max(this.surfaceReasonableFloor(frame,'drawer'),this.storedReasonableMin(frame));}
+  savedDrawerWidth(surfaceId='',storageScope=''){try{const raw=localStorage.getItem(this.drawerStorageKey(surfaceId,storageScope));if(raw===null||String(raw).trim()==='')return NaN;const value=Number(raw);return Number.isFinite(value)?value:NaN;}catch{return NaN;}}
+  clampDrawerWidth(value,minOverride=0,frame=null){const bounds=this.drawerBounds(frame),min=Math.max(bounds.base,Math.min(bounds.max,Number(minOverride)||0)),n=Number(value);return Math.max(min,Math.min(bounds.max,Number.isFinite(n)?n:min));}
+  drawerScrollHost(frame){return frame?.querySelector?.(':scope > .dkds-mobile-drawer-scroll')||[...frame?.children||[]].find(node=>node?.classList?.contains?.('dkds-mobile-drawer-scroll')||String(node?.className||'').split(/\s+/).includes('dkds-mobile-drawer-scroll'))||null;}
+  ensureDrawerScrollHost(frame){
+    if(!frame||typeof document?.createElement!=='function')return null;
+    let host=this.drawerScrollHost(frame);
+    if(!host){
+      host=document.createElement('div');host.className='dkds-mobile-drawer-scroll';host.dataset.dkdsMobileDrawerScroll='true';
+      const handle=frame.querySelector?.(':scope > .dkds-mobile-drawer-resize-handle')||null;
+      try{frame.insertBefore?.(host,handle||null);}catch{try{frame.append?.(host);}catch{}}
+    }
+    return host;
+  }
+  drawerContentHost(frame){
+    const host=this.drawerScrollHost(frame);if(!host)return null;
+    return host.querySelector?.(':scope > .dkds-mobile-drawer-content')||[...host.children||[]].find(node=>node?.classList?.contains?.('dkds-mobile-drawer-content')||String(node?.className||'').split(/\s+/).includes('dkds-mobile-drawer-content'))||null;
+  }
+  ensureDrawerContentHost(frame){
+    const scroll=this.ensureDrawerScrollHost(frame);if(!scroll||typeof document?.createElement!=='function')return null;
+    let content=this.drawerContentHost(frame);
+    if(!content){content=document.createElement('div');content.className='dkds-mobile-drawer-content';content.dataset.dkdsMobileDrawerContent='true';try{scroll.append(content);}catch{}}
+    let safeEnd=content.querySelector?.(':scope > .dkds-mobile-drawer-safe-end')||null;
+    if(!safeEnd){safeEnd=document.createElement('div');safeEnd.className='dkds-mobile-drawer-safe-end';safeEnd.dataset.dkdsMobileDrawerSafeEnd='true';safeEnd.setAttribute?.('aria-hidden','true');try{content.append(safeEnd);}catch{}}
+    return content;
+  }
+  drawerSafeEnd(frame){const content=this.drawerContentHost(frame);return content?.querySelector?.(':scope > .dkds-mobile-drawer-safe-end')||[...(content?.children||[])].find(node=>node?.classList?.contains?.('dkds-mobile-drawer-safe-end')||String(node?.className||'').split(/\s+/).includes('dkds-mobile-drawer-safe-end'))||null;}
+  syncDrawerSafeExtent(frame){
+    const node=this.drawerContentNode(frame),safeEnd=this.drawerSafeEnd(frame);if(!node||!safeEnd)return 0;
+    if(text(frame?.dataset?.dkdsPresentationPurpose)!=='parameters'){this.setStyle(safeEnd,'margin-top','0px');return 0;}
+    const overflow=drawerOverflowCompensation(node);
+    this.setStyle(safeEnd,'margin-top',overflow>0?`${overflow}px`:'0px');
+    this.setData(safeEnd,'dkdsMobileOverflowCompensation',String(overflow));
+    return overflow;
+  }
+  drawerContentNode(frame){
+    const content=this.drawerContentHost(frame);if(content)return [...content.children||[]][0]||null;
+    const host=this.drawerScrollHost(frame);if(host)return [...host.children||[]].find(node=>!node?.classList?.contains?.('dkds-mobile-drawer-content'))||null;
+    return [...frame?.children||[]].find(node=>!node?.classList?.contains('dkds-mobile-drawer-resize-handle'))||null;
+  }
+  syncFrameContentHost(frame,node,region=''){
+    if(!frame||!node)return frame;
+    if(region==='drawer'){
+      const content=this.ensureDrawerContentHost(frame),safeEnd=this.drawerSafeEnd(frame);if(content&&node.parentNode!==content){try{content.insertBefore(node,safeEnd||null);}catch{try{content.append(node);}catch{}}}
+      return content||this.drawerScrollHost(frame)||frame;
+    }
+    const host=this.drawerScrollHost(frame);
+    // Companion/sheet frames are the physical projection boundary. The projected
+    // Surface must be a child of that frame, never its flex sibling. Otherwise the
+    // empty frame and the real Surface both participate in the slot flex layout and
+    // split the available block size between them. This is deliberately domain-blind:
+    // Presenter owns the projection shell; Unit/Portable own only content inside it.
+    if(node.parentNode!==frame){
+      try{frame.insertBefore(node,host||null);}catch{try{frame.append(node);}catch{}}
+    }
+    try{host?.remove?.();}catch{}
+    return frame;
+  }
+  reflowMeasuredUnits(frame){
+    const content=this.drawerContentNode(frame);if(!content)return;
+    // Presenter asks the generic Unit geometry subsystem to settle accepted
+    // responsive layouts. It does not inspect Layout-private markers or hooks.
+    reflowUnitGeometry(content,{passes:2,includeRoot:false});
+    this.syncDrawerSafeExtent(frame);
+  }
+  constraintDeficit(frame){
     const content=this.drawerContentNode(frame);if(!content)return 0;
-    const critical='input,select,textarea,button,.schema-parameter-panel,.dkds-action-row,.dkds-toolbar,[data-dkds-mobile-width-critical]';
-    let overflow=0;
-    const frameRect=frame?.getBoundingClientRect?.(),contentRect=content.getBoundingClientRect?.();
-    const boundary=frameRect&&Number.isFinite(frameRect.left)&&Number.isFinite(frameRect.right)?frameRect:contentRect;
-    const nodes=content.querySelectorAll?.(critical)||[];
-    for(const node of nodes){
-      if(this.intentionalHorizontalScroll(node)||node?.classList?.contains('hidden')||node?.hidden)continue;
-      const rect=node.getBoundingClientRect?.();
-      if(boundary&&rect&&Number.isFinite(rect.left)&&Number.isFinite(rect.right)&&Number.isFinite(boundary.left)&&Number.isFinite(boundary.right)){
-        overflow=Math.max(overflow,rect.right-boundary.right,boundary.left-rect.left);
-      }
-      // Geometry alone cannot detect text/content clipped inside a button or
-      // field. Measure intrinsic overflow as well, otherwise Vg / long actions
-      // can be visually truncated while their border box still fits the drawer.
-      const client=Number(node.clientWidth)||0,scroll=Number(node.scrollWidth)||0;
-      if(client>0&&scroll>client+2)overflow=Math.max(overflow,scroll-client);
-    }
-    return Math.max(0,overflow);
+    return resolveInlineConstraintDeficit(content).deficitPx;
   }
-  solveCompactDrawerWidth(frame){
-    const bounds=this.drawerBounds();let target=bounds.min;
+  solveMinimumReasonableWidth(frame,region='drawer'){
+    if(region!=='drawer')return this.surfaceAvailableWidth(frame,region);
+    const available=Math.ceil(this.surfaceAvailableWidth(frame,'drawer'));
+    let width=Math.ceil(this.surfaceReasonableFloor(frame,'drawer'));
+    // Surface frame owns allocation; Unit/PRIME own intrinsic constraints. Start
+    // small, let the real Unit tree reflow, then grow only by the measured local
+    // deficit. Insets, panel padding and nested composition therefore participate
+    // naturally without the Presenter knowing form-grid/TER/Pulse identities.
     for(let pass=0;pass<8;pass+=1){
-      mobileSurfaceSet(frame,'width',`${Math.round(target)}px`);
-      const overflow=this.measureDrawerOverflow(frame);
-      if(!(overflow>2))break;
-      const next=Math.min(bounds.max,Math.ceil(target+overflow+8));
-      if(next<=target+1)break;target=next;
+      width=Math.max(1,Math.min(available,Math.ceil(width)));
+      this.setStyle(frame,'width',`${width}px`);
+      this.reflowMeasuredUnits(frame);
+      frame?.getBoundingClientRect?.();
+      const deficit=this.constraintDeficit(frame);
+      if(deficit<=0||width>=available)return width;
+      const next=Math.min(available,width+Math.max(1,deficit));
+      if(next<=width)return width;width=next;
     }
-    return Math.max(bounds.min,Math.min(bounds.max,Math.ceil(target)));
+    return width;
   }
-  fitDrawerToContent(frame,surfaceId=''){
+  solveCompactDrawerWidth(frame){return this.solveMinimumReasonableWidth(frame,'drawer');}
+  fitDrawerToContent(frame,surfaceId='',storageScope=''){
     if(!frame?.isConnected)return;
-    const saved=this.savedDrawerWidth(surfaceId);
-    if(Number.isFinite(saved)){
-      this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(saved))}px`);
-      this.setData(frame,'dkdsMobileDrawerFitted','true');this.setStyle(frame,'visibility','');return;
-    }
-    const contentMin=this.solveCompactDrawerWidth(frame);
-    this.setData(frame,'dkdsMobileContentMinWidth',String(contentMin));
-    this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(contentMin))}px`);
+    const reasonableMin=this.solveMinimumReasonableWidth(frame,'drawer'),saved=this.savedDrawerWidth(surfaceId,storageScope);
+    frame.dataset.dkdsMobileReasonableMinWidth=String(Math.round(reasonableMin));
+    const width=Number.isFinite(saved)?this.clampDrawerWidth(saved,reasonableMin,frame):reasonableMin;
+    this.setData(frame,'dkdsMobileContentMinWidth',String(Math.round(reasonableMin)));
+    this.setStyle(frame,'width',`${Math.round(width)}px`);
+    this.syncDrawerSafeExtent(frame);
     this.setData(frame,'dkdsMobileDrawerFitted','true');this.setStyle(frame,'visibility','');
   }
-  scheduleDrawerFit(frame,surfaceId=''){
+  scheduleDrawerFit(frame,surfaceId='',storageScope=''){
     if(!frame)return;const prior=this.drawerFitFrames.get(frame);if(prior)try{(globalThis.cancelAnimationFrame||clearTimeout)(prior);}catch{}
-    const raf=(globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16)))(()=>{this.drawerFitFrames.delete(frame);this.fitDrawerToContent(frame,surfaceId);});this.drawerFitFrames.set(frame,raf);
+    const raf=(globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16)))(()=>{this.drawerFitFrames.delete(frame);this.fitDrawerToContent(frame,surfaceId,storageScope);});this.drawerFitFrames.set(frame,raf);
   }
-  restoreDrawerWidth(frame,surfaceId=''){
-    if(!frame)return;const saved=this.savedDrawerWidth(surfaceId);
-    if(Number.isFinite(saved)){
-      this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(saved))}px`);this.setData(frame,'dkdsMobileDrawerFitted','true');this.setStyle(frame,'visibility','');
-      return;
-    }
-    // First-open content-fit runs while the frame is paint-hidden. That removes
-    // the visible narrow->wide resize jump that previously looked like a drawer
-    // repaint/re-layout flash on native Mobile.
-    this.setStyle(frame,'width',`${Math.round(this.drawerBounds().min)}px`);this.setStyle(frame,'visibility','hidden');this.setData(frame,'dkdsMobileDrawerFitted','false');
-    this.scheduleDrawerFit(frame,surfaceId);
+  restoreDrawerWidth(frame,surfaceId='',storageScope=''){
+    if(!frame)return;const saved=this.savedDrawerWidth(surfaceId,storageScope),bounds=this.drawerBounds(frame);
+    // v20 invalidates widths saved before the physical safe-area wrapper and corrected single-row parameter-header geometry contract.
+    // Saved width is only a user preference: the current Unit tree recomputes its
+    // live minimum before the preference is clamped.
+    // First paint remains hidden until the resolved width has been committed.
+    this.setStyle(frame,'width',`${Math.round(Number.isFinite(saved)?this.clampDrawerWidth(saved,bounds.base,frame):bounds.base)}px`);
+    this.setStyle(frame,'visibility','hidden');this.setData(frame,'dkdsMobileDrawerFitted','false');this.scheduleDrawerFit(frame,surfaceId,storageScope);
   }
-  persistDrawerWidth(frame,surfaceId=''){
-    const width=Math.round(frame?.getBoundingClientRect?.().width||0);if(width>0)try{localStorage.setItem(this.drawerStorageKey(surfaceId),String(this.clampDrawerWidth(width)));}catch{}
+  persistDrawerWidth(frame,surfaceId='',storageScope=''){
+    const width=Math.round(frame?.getBoundingClientRect?.().width||0),min=this.drawerContentMin(frame);if(width>0)try{localStorage.setItem(this.drawerStorageKey(surfaceId,storageScope),String(this.clampDrawerWidth(width,min,frame)));}catch{}
   }
-  installDrawerHandle(frame,surfaceId=''){
+  installDrawerHandle(frame,surfaceId='',storageScope=''){
     if(!frame)return;const existing=frame.querySelector?.(':scope > .dkds-mobile-drawer-resize-handle');if(existing)return;
     const handle=document.createElement('div');handle.className='dkds-mobile-drawer-resize-handle';handle.dataset.dkdsMobileDrawerResize='true';handle.dataset.dkdsTouchGestureOwner='drawer-resize';handle.setAttribute?.('role','separator');handle.setAttribute?.('aria-orientation','vertical');handle.setAttribute?.('aria-label','拖动调整参数面板宽度');handle.tabIndex=0;
     const grip=document.createElement('span');grip.className='dkds-mobile-drawer-resize-grip';grip.setAttribute?.('aria-hidden','true');handle.append?.(grip);frame.append?.(handle);
-    if(typeof handle.addEventListener!=='function'){if(frame.style)this.restoreDrawerWidth(frame,surfaceId);return;}
+    if(typeof handle.addEventListener!=='function'){if(frame.style)this.restoreDrawerWidth(frame,surfaceId,storageScope);return;}
     let pointerDrag=null;
     const point=event=>{const x=Number(event?.clientX);return Number.isFinite(x)?x:null;};
-    const begin=(x,id=null)=>{if(x===null||pointerDrag)return false;pointerDrag={id,startX:x,startWidth:frame.getBoundingClientRect().width};handle.classList.add('is-dragging');return true;};
-    const move=x=>{if(!pointerDrag||x===null)return;this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(pointerDrag.startWidth+(x-pointerDrag.startX)))}px`);};
-    const end=()=>{if(!pointerDrag)return;pointerDrag=null;handle.classList.remove('is-dragging');this.persistDrawerWidth(frame,surfaceId);};
+    const rafRequest=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16)),rafCancel=globalThis.cancelAnimationFrame||clearTimeout;
+    const applyPending=()=>{const drag=pointerDrag;if(!drag)return;drag.raf=0;const width=Math.max(drag.min,Math.min(drag.max,Number(drag.pendingWidth)||drag.min));drag.appliedWidth=width;this.setStyle(frame,'width',`${Math.round(width)}px`);};
+    const begin=(x,id=null)=>{if(x===null||pointerDrag)return false;const bounds=this.drawerBounds(frame),min=Math.max(bounds.base,Math.min(bounds.max,this.drawerContentMin(frame))),startWidth=Math.max(min,Math.min(bounds.max,Number(frame.getBoundingClientRect().width)||min));pointerDrag={id,startX:x,startWidth,min,max:bounds.max,pendingWidth:startWidth,appliedWidth:startWidth,raf:0};handle.classList.add('is-dragging');return true;};
+    const move=x=>{if(!pointerDrag||x===null)return;pointerDrag.pendingWidth=Math.max(pointerDrag.min,Math.min(pointerDrag.max,pointerDrag.startWidth+(x-pointerDrag.startX)));if(!pointerDrag.raf)pointerDrag.raf=rafRequest(applyPending);};
+    const end=()=>{const drag=pointerDrag;if(!drag)return;if(drag.raf){try{rafCancel(drag.raf);}catch{}drag.raf=0;}applyPending();pointerDrag=null;handle.classList.remove('is-dragging');this.reflowMeasuredUnits(frame);this.persistDrawerWidth(frame,surfaceId,storageScope);};
     const pointerDown=event=>{if(event.button!==undefined&&event.button!==0)return;const x=point(event);if(!begin(x,event.pointerId))return;event.preventDefault?.();event.stopPropagation?.();try{handle.setPointerCapture?.(event.pointerId);}catch{}};
     const pointerMove=event=>{if(!pointerDrag||pointerDrag.id!==event.pointerId)return;event.preventDefault?.();event.stopPropagation?.();move(point(event));};
     const pointerFinish=event=>{if(!pointerDrag||(event?.pointerId!==undefined&&pointerDrag.id!==event.pointerId))return;const id=pointerDrag.id;end();try{handle.releasePointerCapture?.(id);}catch{}};
@@ -184,9 +278,28 @@ class MobileWebSurfacePresenter {
       onEnd(){if(pointerDrag?.id==='touch')end();},onCancel(){if(pointerDrag?.id==='touch')end();}
     });
     handle.__dkdsTouchResizeCleanup=()=>{touchCleanup?.();handle.removeEventListener('pointerdown',pointerDown);win?.removeEventListener?.('pointermove',pointerMove);win?.removeEventListener?.('pointerup',pointerFinish);win?.removeEventListener?.('pointercancel',pointerFinish);};
-    handle.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home'].includes(event.key))return;event.preventDefault();const current=frame.getBoundingClientRect().width,next=event.key==='Home'?this.drawerContentMin(frame):current+(event.key==='ArrowRight'?18:-18);this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(next))}px`);this.persistDrawerWidth(frame,surfaceId);});
-    this.restoreDrawerWidth(frame,surfaceId);
+    handle.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home'].includes(event.key))return;event.preventDefault();const current=frame.getBoundingClientRect().width,next=event.key==='Home'?this.drawerContentMin(frame):current+(event.key==='ArrowRight'?18:-18);this.setStyle(frame,'width',`${Math.round(this.clampDrawerWidth(next,this.drawerContentMin(frame),frame))}px`);this.reflowMeasuredUnits(frame);this.persistDrawerWidth(frame,surfaceId,storageScope);});
+    this.restoreDrawerWidth(frame,surfaceId,storageScope);
   }
+
+
+  installDrawerConstraintListener(frame,surfaceId='',storageScope=''){
+    if(!frame||frame.__dkdsMobileDrawerConstraintCleanup)return;
+    const onConstraint=()=>this.scheduleDrawerFit(frame,surfaceId,storageScope);
+    frame.addEventListener?.(GEOMETRY_CONSTRAINT_EVENTS.inline,onConstraint);frame.addEventListener?.(GEOMETRY_CONSTRAINT_EVENTS.block,onConstraint);
+    let resize=null,mutation=null;const observed=new Set();
+    const observe=()=>{if(!resize)return;const content=this.drawerContentNode(frame),rows=[content,...(content?.querySelectorAll?.('[data-dkds-unit-template]')||[])];let count=0;for(const node of rows){if(!node||observed.has(node)||count>=256)continue;try{resize.observe(node);observed.add(node);count+=1;}catch{}}};
+    if(globalThis.ResizeObserver){try{resize=new ResizeObserver(onConstraint);observe();}catch{resize=null;}}
+    if(globalThis.MutationObserver){try{mutation=new MutationObserver(()=>{observe();onConstraint();});mutation.observe(this.drawerContentHost(frame)||frame,{childList:true,subtree:true,characterData:true});}catch{mutation=null;}}
+    frame.__dkdsMobileDrawerConstraintCleanup=()=>{frame.removeEventListener?.(GEOMETRY_CONSTRAINT_EVENTS.inline,onConstraint);frame.removeEventListener?.(GEOMETRY_CONSTRAINT_EVENTS.block,onConstraint);try{mutation?.disconnect?.();}catch{}try{resize?.disconnect?.();}catch{}observed.clear();};
+  }
+  releaseDrawerConstraintListener(frame){try{frame?.__dkdsMobileDrawerConstraintCleanup?.();}catch{}if(frame)delete frame.__dkdsMobileDrawerConstraintCleanup;}
+
+  /* Companion outer geometry is intentionally absent from Presenter runtime.
+     SplitController owns the workspace/user preference, native workspace CSS
+     bounds that preference against the live viewport, and Unit content adapts
+     inside the allocated lane. No child measurement or observer is allowed to
+     feed back into right/bottom track allocation. */
   materialRoleForRegion(region='',purpose=''){
     if(region==='drawer'&&text(purpose)==='parameters')return 'popover';
     if(region==='drawer'||region==='companion-right')return 'sidebar';
@@ -211,17 +324,18 @@ class MobileWebSurfacePresenter {
     // instead of waiting for a later mutation/observer pass.
     try{window.DKDSThemeMaterialRenderer?.assignSemanticRoles?.(frame);}catch{}
   }
-  createFrame(region,surfaceId='',purpose='',presentationRole=''){
+  createFrame(region,surfaceId='',purpose='',presentationRole='',storageScope=''){
     if(typeof document?.createElement!=='function')return null;
     const frame=document.createElement('div');frame.className='dkds-mobile-surface-frame';
     frame.dataset.dkdsMobileFrame='true';frame.dataset.dkdsMobileFrameRegion=region;frame.dataset.dkdsMobileActive='true';frame.dataset.dkdsMobileSurfaceId=text(surfaceId);if(text(purpose))frame.dataset.dkdsPresentationPurpose=text(purpose);if(text(presentationRole))frame.dataset.dkdsPresentationRole=text(presentationRole);
     this.applyFrameMaterial(frame,region,purpose);
-    if(region==='drawer')this.installDrawerHandle(frame,surfaceId);
+    if(region==='drawer'){this.ensureDrawerContentHost(frame);this.setToken(frame,'--dkds-mobile-parameter-safe-inset',`${Math.max(0,Number(BASE_METRICS?.surface?.parameterPrimeInsetPx)||6)}px`);this.installDrawerHandle(frame,surfaceId,storageScope);this.installDrawerConstraintListener(frame,surfaceId,storageScope);}
     return frame;
   }
   restoreNode(node){
     const saved=this.projectedNodes.get(node);if(!saved)return;
     const parent=saved.parent,frame=saved.frame;
+    this.releaseProjectionDetachObserver(frame);
     const detachedFromProjection=!!(frame&&node&&!frame.contains?.(node));
     const parked=detachedFromProjection&&!!(node.classList?.contains?.('dkds-prime-hidden')||node.parentElement?.closest?.('.dkds-analysis-parking'));
     const externallyPlaced=detachedFromProjection&&this.portableOwnsPlacement(node);
@@ -242,30 +356,42 @@ class MobileWebSurfacePresenter {
       }
     }
     try{frame?.querySelector?.(':scope > .dkds-mobile-drawer-resize-handle')?.__dkdsTouchResizeCleanup?.();}catch{}
-    const fitFrame=this.drawerFitFrames.get(frame);if(fitFrame)try{(globalThis.cancelAnimationFrame||clearTimeout)(fitFrame);}catch{}this.drawerFitFrames.delete(frame);
+    const fitFrame=this.drawerFitFrames.get(frame);if(fitFrame)try{(globalThis.cancelAnimationFrame||clearTimeout)(fitFrame);}catch{}this.drawerFitFrames.delete(frame);if(frame?.dataset)frame.dataset.dkdsMobileActive='false';this.releaseDrawerConstraintListener(frame);
     if(node?.dataset?.dkdsMaterialContentOwner==='mobile-presentation'){delete node.dataset.dkdsMaterialContent;delete node.dataset.dkdsMaterialContentOwner;}
+    if(node?.dataset)delete node.dataset.dkdsMobileParameterInsetHandoff;
     try{window.DKDSThemeMaterialRenderer?.assignSemanticRoles?.(node);}catch{}
     try{frame?.remove?.();}catch{try{frame?.parentNode?.removeChild?.(frame);}catch{}}
     this.projectedNodes.delete(node);
     parent?.closest?.('.dkds-managed-grid')?.__dkdsGridController?.apply?.();
   }
   restoreAll(){for(const node of [...this.projectedNodes.keys()])this.restoreNode(node);}
-  projectNode(node,target,region,surfaceId='',purpose='',presentationRole=''){
+  projectNode(node,target,region,surfaceId='',purpose='',presentationRole='',storageScope=''){
     if(!node||!target)return;
     let saved=this.projectedNodes.get(node);
     if(!saved){
-      saved={parent:node.parentNode,next:node.nextSibling,inline:this.captureInline(node),frame:null,target:null,region:''};
-      const frame=this.createFrame(region,surfaceId,purpose,presentationRole);
+      saved={parent:node.parentNode,next:node.nextSibling,inline:this.captureInline(node),frame:null,target:null,region:'',purpose:'',presentationRole:'',surfaceId:''};
+      const frame=this.createFrame(region,surfaceId,purpose,presentationRole,storageScope);
       saved.frame=frame;this.projectedNodes.set(node,saved);
       if(frame){
-        try{target.append(frame);frame.append(node);saved.parent?.closest?.('.dkds-managed-grid')?.__dkdsGridController?.apply?.();}catch{}
+        try{target.append(frame);this.syncFrameContentHost(frame,node,region);saved.parent?.closest?.('.dkds-managed-grid')?.__dkdsGridController?.apply?.();}catch{}
       }else if(node.parentNode!==target){try{target.append(node);}catch{}}
     }else if(saved.frame&&saved.frame.parentNode!==target){try{target.append(saved.frame);}catch{}}
     else if(!saved.frame&&node.parentNode!==target){try{target.append(node);}catch{}}
-    const regionChanged=saved.region!==region||saved.normalized!==true;saved.target=target;saved.region=region;
+    const regionChanged=saved.region!==region||saved.normalized!==true;saved.target=target;saved.region=region;saved.purpose=text(purpose);saved.presentationRole=text(presentationRole);saved.surfaceId=text(surfaceId);
+    if(regionChanged&&(region==='companion-right'||region==='companion-bottom')){
+      // Companion slots/frames are geometry shells, never scroll owners. Clear any
+      // stale offsets left by an older projection contract without touching the
+      // Unit's own internal scroll body (Inspector/Group content keeps its state).
+      try{target.scrollLeft=0;target.scrollTop=0;}catch{}try{saved.frame.scrollLeft=0;saved.frame.scrollTop=0;}catch{}
+    }
     if(node?.dataset){node.dataset.dkdsMaterialContent='true';node.dataset.dkdsMaterialContentOwner='mobile-presentation';}
-    if(saved.frame){this.setData(saved.frame,'dkdsMobileFrameRegion',region);this.setData(saved.frame,'dkdsMobileActive','true');this.setData(saved.frame,'dkdsMobileSurfaceId',surfaceId);if(text(purpose))this.setData(saved.frame,'dkdsPresentationPurpose',purpose);if(text(presentationRole))this.setData(saved.frame,'dkdsPresentationRole',presentationRole);this.applyFrameMaterial(saved.frame,region,purpose);this.refreshProjectedMaterial(saved.frame);if(region==='drawer')this.installDrawerHandle(saved.frame,surfaceId);}
-    if(regionChanged){this.normalizeProjectedNode(node,region);saved.normalized=true;}
+    if(saved.frame){this.setData(saved.frame,'dkdsMobileFrameRegion',region);this.setData(saved.frame,'dkdsMobileActive','true');this.setData(saved.frame,'dkdsMobileSurfaceId',surfaceId);if(text(purpose))this.setData(saved.frame,'dkdsPresentationPurpose',purpose);if(text(presentationRole))this.setData(saved.frame,'dkdsPresentationRole',presentationRole);this.syncFrameContentHost(saved.frame,node,region);this.applyFrameMaterial(saved.frame,region,purpose);this.refreshProjectedMaterial(saved.frame);if(region==='drawer'){this.installDrawerHandle(saved.frame,surfaceId,storageScope);this.installDrawerConstraintListener(saved.frame,surfaceId,storageScope);this.scheduleDrawerFit(saved.frame,surfaceId,storageScope);}}
+    // Projection outer geometry is a live Presenter invariant, not a one-time
+    // mount normalization. Idempotent StyleGate writes are cheap and prevent a
+    // later Unit/Portable lifecycle from restoring Desktop/intrinsic root size.
+    this.normalizeProjectedNode(node,region,purpose);saved.normalized=true;
+    if(saved.frame)this.installProjectionDetachObserver(saved.frame,node);
+    if(region==='drawer')this.syncDrawerSafeExtent(saved.frame);
   }
   applySignature(snapshot,workspace,activityId){
     const viewport=snapshot?.viewport||{},layout=snapshot?.layout||{};
@@ -285,13 +411,14 @@ class MobileWebSurfacePresenter {
       if(this.portableOwnsPlacement(node)){if(this.projectedNodes.has(node))return false;continue;}
       if(surface.active&&['companion-right','companion-bottom','drawer','sheet'].includes(region)){
         const target=region==='companion-right'?slots.right:region==='companion-bottom'?slots.bottom:slots.overlay,saved=this.projectedNodes.get(node);
-        if(!target||!saved?.frame?.isConnected||saved.frame.parentNode!==target||saved.region!==region)return false;
+        if(!target||!saved?.frame?.isConnected||saved.frame.parentNode!==target||saved.region!==region||!saved.frame.contains?.(node))return false;
       }
     }
     return true;
   }
   clear(){
     if(typeof document==='undefined')return;
+    dismissAllContextMenus();
     this.restoreAll();
     for(const node of this.decoratedNodes)this.clearNodeData(node);
     this.decoratedNodes.clear();
@@ -314,6 +441,7 @@ class MobileWebSurfacePresenter {
     const root=activityId?document.querySelector(`[data-dkds-workspace-activity="${esc(activityId)}"]`):null;
     const semantic=!!root&&workspace?.presentationComplete===true,mode=semantic?'semantic':'invalid',signature=this.applySignature(snapshot,workspace,activityId);
     if(semantic&&signature===this.lastApplySignature&&this.projectionStillValid(workspace,activityId,root))return {mode:'stable',activityId,projected:this.projectedNodes.size};
+    if(signature!==this.lastApplySignature)dismissAllContextMenus();
     if(this.activeRoot&&this.activeRoot!==root)this.clearRootData(this.activeRoot);
     this.activeRoot=root||null;
     const canvasSlots=root?{
@@ -343,7 +471,7 @@ class MobileWebSurfacePresenter {
         // owner and the Presenter must leave that live node alone.
         if(!portableOwned&&surface.active&&['companion-right','companion-bottom','drawer','sheet'].includes(region)){
           const target=region==='companion-right'?canvasSlots.right:region==='companion-bottom'?canvasSlots.bottom:(region==='drawer'||region==='sheet')?canvasSlots.overlay:null;
-          if(target){desiredProjected.add(node);this.projectNode(node,target,region,surfaceId,surface.presentationPurpose||surface.presentation?.purpose||'',surface.role||surface.presentationRole||'');}
+          if(target){desiredProjected.add(node);this.projectNode(node,target,region,surfaceId,surface.presentationPurpose||surface.presentation?.purpose||'',surface.role||surface.presentationRole||'',`${activityId}:${surfaceId}`);}
         }
         projected++;
       }

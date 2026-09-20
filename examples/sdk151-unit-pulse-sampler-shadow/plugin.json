@@ -1,0 +1,60 @@
+{
+  "id": "com.example.unit-pulse-sampler-shadow",
+  "name": "Pulse Sampler Tool Unit Shadow",
+  "version": "1.1.2",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "scripts": [
+    "plugin.js"
+  ],
+  "enabled": false,
+  "order": 926,
+  "description": "Non-production Unit-only reconstruction of the built-in Pulse Sampler Tool for source-parity auditing.",
+  "requiresCore": [
+    "runtime",
+    "services",
+    "status",
+    "project",
+    "workspace",
+    "data.sources",
+    "data.artifacts",
+    "data.model",
+    "ui.dom",
+    "ui.workspace",
+    "ui.scientific-plot",
+    "ui.series",
+    "ui.table",
+    "ui.pages",
+    "ui.unit-templates",
+    "ui.activities",
+    "ui.top-workspace"
+  ],
+  "capabilities": [
+    "ui.page",
+    "ui.plugin-workspace",
+    "ui.scientific-plot",
+    "ui.table",
+    "ui.top-workspace"
+  ],
+  "pluginType": "workbench",
+  "platformPresentation": {
+    "desktop": {
+      "mode": "shared"
+    },
+    "mobile": {
+      "mode": "adaptive"
+    }
+  },
+  "data": {
+    "accepts": [
+      "data.table",
+      "science.transport.iv",
+      "science.transport.transfer"
+    ]
+  },
+  "pluginDependencies": [
+    {
+      "id": "com.dkds.tools.pulse-sampler"
+    }
+  ]
+}

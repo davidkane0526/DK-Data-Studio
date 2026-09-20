@@ -41,9 +41,11 @@ const systemUndo=(...args)=>deps.docks.systemUndo(...args);
 function capabilitySnapshotForWindows(){
   const snapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
   if(!snapshot||!Array.isArray(snapshot.providers))return snapshot;
+  const sourceApi=dataSourceHostApi();
   const sourceSnapshot={
-    schema:1,
-    sources:dataSourceHostApi().list(),
+    schema:2,
+    sources:sourceApi.list(),
+    acquisitionOrder:typeof sourceApi.acquisitionOrder==='function'?sourceApi.acquisitionOrder():[],
     targets:dataConsumerTargets()
   };
   const baseRevision=Number(snapshot.revision)||0;
@@ -65,10 +67,29 @@ async function publishCapabilitySnapshot(){
   catch(err){console.warn('[DKDS capabilities:publish]',err);return null;}
 }
 
+function lightweightActivityProject(tab,pluginId='',options={}){
+  const empty=options?.empty===true;
+  const id=String(pluginId||'').trim();
+  const source=tab?.pluginState&&typeof tab.pluginState==='object'?tab.pluginState:{};
+  const plugins=!empty&&id&&Object.prototype.hasOwnProperty.call(source,id)
+    ? {[id]:cloneAuxSnapshot(source[id])}
+    : {};
+  return {
+    format:'dk-data-studio-project',
+    schemaVersion:3,
+    version:'3.71.105',
+    // Live dedicated windows hydrate scientific data from artifactSnapshot / owner
+    // capability. Duplicating the entire Artifact Store into project.dataModel on
+    // every open is unnecessary synchronous work on the user's click path.
+    dataModel:{schema:2,artifacts:[]},
+    plugins,
+    host:{}
+  };
+}
+
 async function openPluginActivityWindow(activityId){
   const tab=activeProjectTab();
   if(!tab)return false;
-  captureActiveProjectTab();
   if(!window.electronAPI?.openActivityWindow){
     return window.DKDSPlugins?.activities?.set?.(activityId);
   }
@@ -92,13 +113,15 @@ async function openPluginActivityWindow(activityId){
   const pluginWindowSpec=(window.DKDSPlugins?.manager?.list?.()||[]).find(row=>String(row?.window?.activity||'')===String(activityId||''))?.window||null;
   const artifactHydration=String(activitySpec?.artifactHydration||pluginWindowSpec?.artifactHydration||contract?.artifactHydration||'');
   const artifactSnapshot=artifactHydration==='live'?snapshotArtifactRows():null;
+  const artifactRevision=artifactHydration==='live'?Number(state.artifactStore?.revision?.()||0):0;
   return window.electronAPI.openActivityWindow({
     activityId,
     projectTabId:tab.id,
     title:tab.title,
     projectPath:state.projectPath,
-    project:makeProject(),
+    project:lightweightActivityProject(tab,String(contract?.pluginId||activitySpec?.pluginId||pluginWindowSpec?.pluginId||'')),
     artifactSnapshot,
+    artifactRevision,
     capabilitySnapshot,
     capabilityRevision:Number(capabilitySnapshot?.revision)||0
   });
@@ -117,14 +140,35 @@ async function prewarmDedicatedPluginWindows(){
   // Only prewarm activities that are both enabled in the renderer plugin
   // registry and declared as dedicated windows by their manifest. No core
   // activity-name whitelist is allowed here.
-  const enabledActivities=new Set((window.DKDSPlugins?.activities?.list?.()||[])
+  const activityRows=window.DKDSPlugins?.activities?.list?.()||[];
+  const enabledActivities=new Set(activityRows
     .filter(activity=>activity?.openMode==='window'&&activity?.isSuper!==true)
     .map(activity=>String(activity.id||''))
     .filter(Boolean));
   const pluginRows=window.DKDSPlugins?.manager?.list?.()||[];
-  const prewarmByPlugin=new Map(pluginRows.map(row=>[String(row.id||''),row.prewarmEnabled===true]));
+  const pluginRowById=new Map(pluginRows.map(row=>[String(row.id||''),row]));
+
+  // Built-in dedicated windows are discoverable from the machine manifest before
+  // deferred renderer plugins have finished registering their Activity rows. A
+  // manifest that explicitly opts into prewarm must therefore be allowed to warm
+  // during that early window; otherwise a prewarm-enabled renderer cannot start
+  // warming until after the post-first-paint deferred-plugin pass, which is too late for the first click.
+  // Once the renderer definition exists, its canonical enabled/prewarm preferences
+  // take over and a later sync closes any early window the user disabled.
+  for(const spec of specs){
+    const pluginId=String(spec?.pluginId||'');
+    const activity=String(spec?.activity||'');
+    const row=pluginRowById.get(pluginId);
+    if(!activity||row)continue;
+    if(spec?.prewarm===true)enabledActivities.add(activity);
+  }
   const prewarmActivities=new Set(specs
-    .filter(spec=>enabledActivities.has(String(spec?.activity||''))&&prewarmByPlugin.get(String(spec?.pluginId||''))===true)
+    .filter(spec=>{
+      const pluginId=String(spec?.pluginId||''),activity=String(spec?.activity||'');
+      if(!activity||!enabledActivities.has(activity))return false;
+      const row=pluginRowById.get(pluginId);
+      return row?row.prewarmEnabled===true:spec?.prewarm===true;
+    })
     .map(spec=>String(spec.activity||''))
     .filter(Boolean));
   if(window.electronAPI?.syncPluginActivityWindows){
@@ -139,15 +183,18 @@ async function prewarmDedicatedPluginWindows(){
     if(token!==dedicatedPrewarmToken||index>=activities.length)return;
     const tab=activeProjectTab();
     if(!tab)return;
-    captureActiveProjectTab();
     const activityId=activities[index];
+    const spec=specs.find(row=>String(row?.activity||'')===activityId)||null;
     const capabilitySnapshot=capabilitySnapshotForWindows();
     const payload={
       activityId,
       projectTabId:tab.id,
       title:tab.title,
       projectPath:state.projectPath,
-      project:makeProject(),
+      // Runtime-only prewarm must never serialize the active scientific project.
+      // The hidden renderer only needs a valid empty project envelope until promotion.
+      project:lightweightActivityProject(tab,String(spec?.pluginId||''),{empty:true}),
+      artifactRevision:0,
       capabilitySnapshot,
       capabilityRevision:Number(capabilitySnapshot?.revision)||0
     };
@@ -157,9 +204,12 @@ async function prewarmDedicatedPluginWindows(){
       if(token===dedicatedPrewarmToken&&index+1<activities.length)setTimeout(()=>run(index+1),120);
     });
   };
-  const kick=()=>setTimeout(()=>run(0),60);
-  if(typeof requestIdleCallback==='function')requestIdleCallback(kick,{timeout:450});
-  else setTimeout(kick,220);
+  // Prewarm-enabled dedicated windows are a startup latency feature, so do not
+  // wait for requestIdleCallback. On busy scientific projects that callback can be
+  // delayed until after the user has already opened the activity, defeating prewarm entirely.
+  // Window creation remains asynchronous and hidden; only the first eligible runtime
+  // is kicked immediately, with later runtimes still staggered by run().
+  queueMicrotask(()=>run(0));
 }
 
 function cloneAuxSnapshot(value){
@@ -173,7 +223,21 @@ function applyArtifactDeltaToTab(tab,delta){
   let changed=false;
   for(const artifact of (Array.isArray(delta.upserts)?delta.upserts:[])){
     if(!artifact?.id)continue;
-    try{tab.artifactStore.upsert(artifact);changed=true;}catch(err){console.warn('[DKDS artifact merge:upsert]',err);}
+    try{
+      // Dedicated windows push live artifact deltas immediately and also carry a
+      // recovery delta in their final project snapshot.  Finalization must be
+      // idempotent: replaying an identical artifact is not a project change and
+      // must not wake unrelated scientific views.
+      if(typeof tab.artifactStore.publish==='function'){
+        const result=tab.artifactStore.publish(artifact,{dedupe:true});
+        changed=!!result?.changed||changed;
+      }else{
+        const prior=tab.artifactStore.get?.(artifact.id)||null;
+        const fingerprint=window.DKDSData?.fingerprintArtifact;
+        if(prior&&typeof fingerprint==='function'&&fingerprint(prior)===fingerprint(artifact))continue;
+        tab.artifactStore.upsert(artifact);changed=true;
+      }
+    }catch(err){console.warn('[DKDS artifact merge:upsert]',err);}
   }
   for(const id of (Array.isArray(delta.removedIds)?delta.removedIds:[])){
     try{changed=tab.artifactStore.remove(id)||changed;}catch(err){console.warn('[DKDS artifact merge:remove]',err);}
@@ -181,12 +245,10 @@ function applyArtifactDeltaToTab(tab,delta){
   return changed;
 }
 
-function applyDedicatedActivitySnapshot(payload,tab){
+function applyDedicatedActivitySnapshot(payload,tab,{restoreRuntime=false}={}){
   const pluginId=String(payload?.pluginId||'').trim();
   if(!pluginId||payload?.persistence==='none'||payload?.persistence==='memory')return false;
   const active=tab.id===state.activeProjectTabId;
-  if(active)captureActiveProjectTab();
-
   tab.pluginState=tab.pluginState&&typeof tab.pluginState==='object'?tab.pluginState:{};
   if(payload.pluginState!==undefined&&payload.pluginState!==null){
     tab.pluginState[pluginId]=cloneAuxSnapshot(payload.pluginState);
@@ -195,17 +257,22 @@ function applyDedicatedActivitySnapshot(payload,tab){
 
   if(active){
     state.artifactStore=tab.artifactStore;
-    window.DKDSPlugins?.project?.restorePlugin?.(pluginId,tab.pluginState);
+    // Dedicated TOP/Tool windows own their live plugin runtime. A normal hidden/close
+    // snapshot only persists that plugin's project slice; replaying it into the owner
+    // renderer can wake hidden copies and unrelated reactive scientific views. Runtime
+    // restoration is reserved for explicit host-role promotion (TOP -> SUPER).
+    if(restoreRuntime)window.DKDSPlugins?.project?.restorePlugin?.(pluginId,tab.pluginState);
     if(artifactsChanged){
       window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
         type:'merge',pluginId,activityId:payload.activityId||'',artifactDelta:payload.artifactDelta||null,artifacts:state.artifactStore.list()
       });
       pushArtifactDeltaToActivityWindows(payload.artifactDelta||{},'activity-merge',{excludeActivityId:String(payload.activityId||'')});
     }
-    captureActiveProjectTab();
     if(payload.final){
-      renderAll();
-      scheduleMainPlotRelayout();
+      // A final dedicated-window snapshot is a persistence boundary, not a
+      // global visual invalidation. Material artifact changes already emitted
+      // their targeted data event above; an unchanged close must do zero
+      // unrelated scientific-view work.
       setStatus(`已同步 ${payload.activityId||pluginId} 的插件状态与结果缓存。`);
     }
   }
@@ -225,7 +292,11 @@ async function preparePluginSuperTransition(change={}){
   const activityId=String(change?.activityId||'').trim();
   if(!activityId)return {snapshots:[],closed:0};
   const result=await window.electronAPI.prepareSuperTransition({activityId,pluginId:String(change?.pluginId||'')});
-  for(const snapshot of (result?.snapshots||[]))applyActivityProjectSnapshot(snapshot);
+  for(const snapshot of (result?.snapshots||[])){
+    const projectTabId=String(snapshot?.projectTabId||'');
+    const tab=state.projectTabs.find(t=>t.id===projectTabId);
+    if(tab&&snapshot?.pluginId)applyDedicatedActivitySnapshot(snapshot,tab,{restoreRuntime:true});
+  }
   return result||{snapshots:[],closed:0};
 }
 
@@ -247,7 +318,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.69.4',
+    appVersion:'3.71.105',
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
     renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false}),
@@ -281,7 +352,7 @@ async function initializePluginArchitecture(){
   // Platform presentation state is owned by Core registries and app state, not by
   // the desktop DOM. Desktop and mobile presenters consume this same model.
   window.DKDSPresentation?.configure?.({
-    appVersion:'3.69.4',
+    appVersion:'3.71.105',
     projectSnapshot:()=>{
       const active=activeProjectTab();
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty}));

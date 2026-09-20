@@ -84,12 +84,12 @@
         const artifactId=String(dataset?.artifactId||'').trim();if(!artifactId)return null;
         return {artifactId,seriesId:String(sweep.id)};
       }
-      function transformMatrix(){
+      function transformMatrix({publish=false}={}){
         if(!result||typeof A?.computeSweepScalarField!=='function')return null;
         const parameters={type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,targets:result.targets||[],vgs:result.vgs||[],sourceFileByVg:sourceFileByVg()};
         if(pipeline?.runSync&&transforms?.fieldStageId){
           const stageId=transforms.fieldStageId(transform.type);
-          const executed=pipeline.runSync(stageId,sourceArtifacts(),{parameters,publish:true,revision:inputCacheKey()});
+          const executed=pipeline.runSync(stageId,sourceArtifacts(),{parameters,publish:!!publish,revision:inputCacheKey()});
           return executed?.value||null;
         }
         const parameterKey=[transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
@@ -112,7 +112,7 @@
             const matrix=D.createMatrix({id:'ter.matrix:main',name:'TER(Vd,Vg)',x:result.targets,y:result.vgs,z:result.matrix,xName:'Vd',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',parameters:{...(result.used||{})},lineage:{parents,role:'analysis',producer:'builtin.ter-analysis',operation:'computeTerMatrix',parameters:{...(result.used||{})}}});
             (api.publish?.(matrix)||api.upsert?.(matrix));
           }
-          const tm=transformMatrix();if(tm&&!pipeline?.runSync){const transformed=D.createMatrix({id:`ter.transform:${tm.type}:${tm.direction}`,name:`${tm.label||tm.type} · ${Number(tm.direction)<0?'反扫':'正扫'}`,x:tm.targets,y:tm.vgs,z:tm.matrix,xName:'Vd',yName:'Vg',valueName:tm.label||tm.type,xUnit:'V',yUnit:'V',valueUnit:tm.unit||'',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance},lineage:{parents,role:'transform',producer:'builtin.ter-analysis',operation:'computeSweepScalarField',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance}}});(api.publish?.(transformed)||api.upsert?.(transformed));}
+          const tm=transformMatrix({publish:true});if(tm&&!pipeline?.runSync){const transformed=D.createMatrix({id:`ter.transform:${tm.type}:${tm.direction}`,name:`${tm.label||tm.type} · ${Number(tm.direction)<0?'反扫':'正扫'}`,x:tm.targets,y:tm.vgs,z:tm.matrix,xName:'Vd',yName:'Vg',valueName:tm.label||tm.type,xUnit:'V',yUnit:'V',valueUnit:tm.unit||'',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance},lineage:{parents,role:'transform',producer:'builtin.ter-analysis',operation:'computeSweepScalarField',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance}}});(api.publish?.(transformed)||api.upsert?.(transformed));}
           const maxima=D.createAnalysisResult({id:'ter.analysis:maxima',name:'TER Maxima',summary:{vgCount:result.vgs?.length||0,vdCount:result.targets?.length||0,missing:result.missing||0},payload:{terMaxByVg:result.terMaxByVg||[],terMaxByVd:result.terMaxByVd||[]},lineage:{parents:['ter.matrix:main'],role:'analysis',producer:'builtin.ter-analysis',operation:'reduceTerMax',parameters:{axes:['Vg','Vd']}}});(api.publish?.(maxima)||api.upsert?.(maxima));
         };
         if(artifacts.batch)artifacts.batch(publish);else publish(artifacts);return true;

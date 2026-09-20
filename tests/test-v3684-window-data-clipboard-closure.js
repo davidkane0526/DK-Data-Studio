@@ -72,10 +72,11 @@ assert(/async copyText\(text\)[\s\S]{0,260}?window\.electronAPI\?\.copyText[\s\S
 for(const id of ['copy-table','copy-cell','copy-row'])assert(new RegExp(`id:'${id}'[^\\n]{0,180}nativeCopy:'clipboard'`).test(tableSurface),`Table ${id} must declare explicit clipboard ownership.`);
 for(const [rel,needle] of [
   ['src/index.html','id="pluginManagerDiagnosticsBtn" data-dkds-native-copy="clipboard"'],
-  ['src/plugins/ter-analysis/shared-views.js','terCopyLongBtn\\" class=\\"copy-btn\\" data-dkds-native-copy=\\"clipboard'],
-  ['src/plugins/pulse-analysis/shared-views.js','id="pulseCopyCsvBtn" class="copy-btn" data-dkds-native-copy="clipboard"'],
-  ['src/plugins/data-center/shared-views.js','id="dcCopyProvenance" data-dkds-native-copy="clipboard"'],
+  ['src/plugins/ter-analysis/unit-presentation.js',"id:'terCopyLongBtn',label:'复制 long',nativeCopy:'clipboard'"],
+  ['src/plugins/pulse-analysis/unit-presentation.js',"id:'pulseCopyCsvBtn',label:'复制可见结果',className:'copy-btn',nativeCopy:'clipboard'"],
+  ['src/plugins/data-center/unit-presentation.js',"id:'dcCopyProvenance',label:'复制 JSON'"],
   ['src/plugins/connectivity-center/plugin.js','id="dkaiMcpCopy" data-dkds-native-copy="clipboard"']
 ])assert(read(rel).includes(needle),`${rel} explicit copy control must be marked.`);
+const dcUnitPresentation=read('src/plugins/data-center/unit-presentation.js');assert(dcUnitPresentation.includes("copyProv.dataset.dkdsNativeCopy='clipboard'"),'Data Center Unit copy action must explicitly mark native clipboard ownership.');
 
 console.log('v3.68.4 dedicated-window + data.artifacts dependency + clipboard intent closure PASS');

@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');
+const src=fs.readFileSync('src/core/ui/modules/composition/scientific.js','utf8');
+assert(src.includes('class PlotGroup'));assert(src.includes('this.scope.plotViewRegistry.bind'));
+assert(src.includes('GROUP_CHILD_MISSING_PLOTVIEW'));assert(src.includes('PLOTVIEW_DUPLICATE_GROUP_OWNER'));assert(src.includes('RESPONSIVE_GROUP_FIXED_CONTENT_HEIGHT'));
+assert(src.includes("card.className='analysis-chart-card dkds-surface'"),'generated PlotGroup cards must use the accepted visual template');
+assert(!src.includes("card.classList.add('dkds-scientific-card'"),'adoptPlot must not restyle accepted plugin cards');
+const resonance=fs.readFileSync('src/plugins/resonance-workbench/feature-group-runtime.js','utf8');const ter=fs.readFileSync('src/plugins/ter-analysis/unit-presentation.js','utf8');
+assert(resonance.includes('uiRuntime?.unitTemplates?.plotGroup')&&resonance.includes('factory.create')&&resonance.includes('adoptPlot'),'Resonance production cutover must semantically adopt its accepted group cards through the Unit PlotGroup facade.');
+assert(ter.includes('units.plotGroup.create')&&ter.includes('plotGroup.adoptPlot'),'TER production Unit presentation must semantically adopt all accepted group cards');
+console.log('PlotGroup PlotView membership/template PASS');

@@ -7,14 +7,14 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"].dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
   display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"main";gap:0;padding:0;overflow:hidden
 }
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-main{grid-area:main;width:100%;height:100%;min-width:0;min-height:0;overflow:auto;padding:0}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-main{grid-area:main;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;padding:0}
 
 /* Native vertical scroll chaining: nested workspace scrollers consume a swipe
    only while they still have room in that direction. At a top/bottom boundary
    the same continuing gesture is allowed to propagate to the next scrollable
    workspace ancestor. Dialog/drawer/menu overlays keep their own containment
    contracts and are intentionally excluded from this list. */
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] :where(.dkds-analysis-main,.dkds-plugin-canvas-center,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom,.dkds-table-surface-host,.analysis-table-wrap,.table-wrap,.table-scroll,.data-table-scroll,.dkds-table-wrap){overscroll-behavior-y:auto;}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] :where(.dkds-analysis-main,.dkds-plugin-canvas-center,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom,.dkds-table-surface-host,.analysis-table-wrap,.table-wrap,.table-scroll,.data-table-scroll,.dkds-table-wrap,.dkds-list,[data-dkds-unit-template="list-v2"],[data-dkds-unit-layout-recipe="scroll-pane"],[data-dkds-scroll-policy="chain"],[data-dkds-scroll-policy="viewport"]){overscroll-behavior-x:contain;overscroll-behavior-y:auto;}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-left,
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-right,
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-bottom{display:contents}
@@ -42,7 +42,8 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation
     "cleft clsplit cbottom cbottom cbottom";
   gap:0;overflow:hidden;min-width:0;min-height:0
 }
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-center{grid-area:center;width:100%;height:100%;min-width:0;min-height:0;overflow:auto}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-center{grid-area:center;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-left{grid-area:cleft;display:none;min-width:0;min-height:0;overflow:auto;padding:0}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-right{grid-area:cright;display:none;min-width:0;min-height:0;overflow:auto;padding:0}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-bottom{grid-area:cbottom;display:none;min-width:0;min-height:0;overflow:auto;padding:0}
@@ -51,24 +52,16 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom,
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-right,
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-bottom{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-right,
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame>.dkds-plugin-canvas-bottom{padding:0;box-sizing:border-box;overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] :where(.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom)>.dkds-mobile-surface-frame{display:flex;flex:1 1 0;flex-direction:column;align-items:stretch;min-width:0;min-height:0;max-width:100%;max-height:100%;box-sizing:border-box;overflow:hidden}
+
 
 /* Wide and expanded tablets preserve requested left/right/bottom placement as
    bounded lanes. Track width is derived from the real viewport instead of the
    Desktop default, so a dock can never consume the scientific center. */
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"]:is([data-dkds-mobile-layout="wide"],[data-dkds-mobile-layout="expanded"]) .dkds-plugin-canvas-frame.has-canvas-left{
   --dkds-mobile-left-track:clamp(190px,26vw,var(--dkds-plugin-canvas-left-width));--dkds-mobile-left-seam:var(--dkds-canvas-resizer-track-size,7px)
-}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"]:is([data-dkds-mobile-layout="wide"],[data-dkds-mobile-layout="expanded"]) .dkds-plugin-canvas-frame.has-canvas-right{
-  --dkds-mobile-right-track:clamp(210px,var(--dkds-plugin-canvas-right-width),min(680px,72vw));--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)
-}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"]:is([data-dkds-mobile-layout="wide"],[data-dkds-mobile-layout="expanded"])[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame:not(.has-canvas-right){
-  --dkds-mobile-right-track:clamp(210px,var(--dkds-mobile-user-right-track,28vw),min(680px,72vw));--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)
-}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"]:is([data-dkds-mobile-layout="wide"],[data-dkds-mobile-layout="expanded"]) .dkds-plugin-canvas-frame.has-canvas-bottom{
-  --dkds-mobile-bottom-track:clamp(180px,var(--dkds-plugin-canvas-bottom-height),min(620px,72vh));--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)
-}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"]:is([data-dkds-mobile-layout="wide"],[data-dkds-mobile-layout="expanded"])[data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame:not(.has-canvas-bottom){
-  --dkds-mobile-bottom-track:clamp(180px,var(--dkds-mobile-user-bottom-track,42vh),min(620px,72vh));--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)
 }
 
 /* Compact Mobile keeps semantic companions in document flow. User-requested
@@ -81,7 +74,8 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation
 }
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-layout="compact"] .dkds-plugin-canvas-frame.has-canvas-left>.dkds-plugin-canvas-left{left:4px;right:auto}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-layout="compact"]:not([data-dkds-mobile-companion-right="true"]) .dkds-plugin-canvas-frame.has-canvas-right>.dkds-plugin-canvas-right{right:4px;left:auto}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-layout="compact"] .dkds-plugin-canvas-center{height:auto;min-height:0;overflow:auto}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-layout="compact"] .dkds-plugin-canvas-center{height:auto;min-height:0}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-layout="compact"] .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto}
 
 /* Compact user docks and semantic companions consume real, releasable tracks.
    No floating shelf reservation is used, so moving a TER/PlotView away cannot
@@ -119,27 +113,63 @@ html[data-dkds-host="mobile"].react-native-client .dkds-plot-view-head{overflow:
    back into a viewport-sized page. The Presenter restores the original inline
    geometry when the surface leaves Mobile projection. */
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame{
-  min-width:0;min-height:0;box-sizing:border-box;overflow:auto;pointer-events:auto
+  min-width:0;min-height:0;box-sizing:border-box;overflow:hidden;pointer-events:auto
 }
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"],
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"]{
-  position:fixed;z-index:6800;left:6px;top:6px;bottom:6px;right:auto;width:min(320px,calc(100vw - 20px));height:auto;min-width:min(280px,calc(100vw - 20px));min-height:0;max-width:min(calc(100vw - 12px),680px);max-height:none;border-radius:10px;touch-action:pan-y;isolation:isolate;resize:none
+  position:fixed;z-index:6800;left:6px;top:6px;bottom:6px;right:auto;width:auto;height:auto;min-width:0;min-height:0;max-width:calc(100vw - 12px);max-height:none;border-radius:10px;touch-action:pan-y;isolation:isolate;resize:none
 }
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{overflow:visible}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-drawer-open="true"] .dkds-plugin-canvas-overlay{pointer-events:auto}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]{position:relative;z-index:1;width:100%;max-width:100%;height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;box-sizing:border-box;border-radius:10px;scrollbar-width:thin;scrollbar-gutter:auto;container-type:inline-size;container-name:dkds-mobile-drawer}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]{
+  box-sizing:border-box;padding:0;overflow:visible
+}
+/* Parameter Drawer is a true top-layer overlay. It never consumes scientific
+   canvas tracks, so opening/resizing it cannot shrink Inspector or GroupArea. */
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-drawer-open="true"] .dkds-plugin-canvas-overlay{z-index:6700;pointer-events:auto}
+/* Drawer frame/scroll host own projection and scrolling. For parameter surfaces
+   the physical content wrapper materializes the canonical safe inset while the
+   projected PRIME keeps fill-height semantics, so an accepted fill-row Unit can
+   extend its final table to the current visible Drawer. The outer scrollbar is
+   visually suppressed; touch/wheel scrolling remains active. */
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll{position:relative;z-index:1;width:100%;height:100%;min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;box-sizing:border-box;padding:0;margin:0;border-radius:10px;scrollbar-width:none;scrollbar-gutter:auto;container-type:inline-size;container-name:dkds-mobile-drawer;direction:ltr}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content{position:relative;z-index:1;width:100%;min-width:0;height:auto;min-height:0;box-sizing:border-box;padding:0;direction:ltr}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]{position:relative;z-index:1;width:100%;max-width:100%;height:auto;min-height:0;overflow:visible;box-sizing:border-box;border-radius:10px;direction:ltr}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content{display:grid;grid-template-rows:minmax(0,1fr) auto;height:100%;min-height:100%;padding:var(--dkds-mobile-parameter-safe-inset,6px) var(--dkds-mobile-parameter-safe-inset,6px) 0 var(--dkds-mobile-parameter-safe-inset,6px)}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]{height:100%;min-height:0}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>.dkds-mobile-drawer-safe-end{display:block;width:1px;height:var(--dkds-mobile-parameter-safe-inset,6px);min-height:var(--dkds-mobile-parameter-safe-inset,6px);margin:0;padding:0;pointer-events:none}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll::-webkit-scrollbar{display:none;width:0;height:0}
 /* A projected drawer header is native chrome. It spans the complete content
    width and reflows its action group when the drawer itself becomes narrow;
    plugin headers do not need platform-specific paint or width hacks. */
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]>.dkds-surface-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;width:100%;max-width:100%;box-sizing:border-box}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]>.dkds-surface-header>.dkds-surface-actions{min-width:0;max-width:100%;margin-left:0}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]>.dkds-surface-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;width:100%;max-width:100%;box-sizing:border-box}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]>.dkds-surface-header>.dkds-surface-actions{min-width:0;max-width:100%;margin-left:0}
 @container dkds-mobile-drawer (max-width:360px){
-  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]>.dkds-surface-header:not([data-dkds-mobile-header-layout="row"]){grid-template-columns:1fr;align-items:start}
-  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]>.dkds-surface-header:not([data-dkds-mobile-header-layout="row"])>.dkds-surface-actions{width:100%}
+  /* Non-parameter drawers may still stack generic chrome when they explicitly
+     use the adaptive Drawer shell. Parameter PRIME headers are excluded: their
+     accepted single-row composition is preserved and Drawer width negotiation
+     must make the row fit instead of silently changing the UI hierarchy. */
+  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]:not([data-dkds-presentation-purpose="parameters"])>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]>.dkds-surface-header:not([data-dkds-mobile-header-layout="row"]){grid-template-columns:1fr;align-items:start}
+  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]:not([data-dkds-presentation-purpose="parameters"])>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content>[data-dkds-mobile-region="drawer"]>.dkds-surface-header:not([data-dkds-mobile-header-layout="row"])>.dkds-surface-actions{width:100%}
+}
+/* Parameter-surface content follows the allocated Drawer; it never owns that
+   allocation. The accepted Header/action anatomy stays on one row. Width
+   pressure is resolved by the Unit inline constraints + Drawer fit, never by
+   moving Vd/Vs/Vg (or any other parameter actions) onto a second row. Legend
+   Unit flow remains independently capped at three horizontal rows. */
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] :where(.dkds-content-header,.dkds-surface-header){flex-wrap:nowrap}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] :where(.dkds-surface-actions,.dkds-surface-tabs,.dkds-integrated-action-group){max-width:100%}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] :where(.dkds-content-header,.dkds-surface-header)>.dkds-surface-actions{flex:0 0 auto;min-width:max-content;width:auto}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] [data-dkds-unit-template="tabs-v2"]>.dkds-surface-tabs{min-width:max-content}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] [data-dkds-unit-template="legend-v2"]{display:grid;grid-auto-flow:column;grid-template-rows:max-content;grid-auto-columns:max-content;align-items:center;justify-content:start;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] [data-dkds-unit-template="legend-v2"]::-webkit-scrollbar{display:none;width:0;height:0}
+@container dkds-mobile-drawer (max-width:520px){
+  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] [data-dkds-unit-template="legend-v2"]{grid-template-rows:repeat(2,max-content)}
+}
+@container dkds-mobile-drawer (max-width:360px){
+  html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"][data-dkds-presentation-purpose="parameters"] [data-dkds-unit-template="legend-v2"]{grid-template-rows:repeat(3,max-content)}
 }
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(*){scrollbar-width:thin}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(*)::-webkit-scrollbar{width:3px;height:3px}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-drawer-resize-handle{position:absolute;z-index:30;right:0;top:50%;width:12px;height:72px;transform:translateY(-50%);display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box;cursor:col-resize;touch-action:none;pointer-events:auto;background:transparent}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(*)::-webkit-scrollbar{width:var(--dkds-mobile-scrollbar-size,3px);height:var(--dkds-mobile-scrollbar-size,3px)}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-drawer-resize-handle{position:absolute;z-index:30;right:-6px;top:50%;width:12px;height:72px;transform:translateY(-50%);display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box;cursor:col-resize;touch-action:none;pointer-events:auto;background:transparent}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-drawer-resize-grip{display:block;width:2px;height:46px;border-radius:999px}
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(*)::-webkit-scrollbar-corner,
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"] :where(*)::-webkit-resizer{background:transparent}
@@ -151,11 +181,15 @@ html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation
 
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="companion-right"],
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="companion-right"][data-dkds-mobile-active="true"]{
-  position:relative;inset:auto;grid-area:right;flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;overflow:auto;border-radius:10px;resize:none
+  position:relative;inset:auto;grid-area:right;flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;overflow:hidden;border-radius:10px;resize:none
 }
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="companion-bottom"],
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="companion-bottom"][data-dkds-mobile-active="true"]{
-  position:relative;inset:auto;grid-area:bottom;flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;overflow:auto;border-radius:10px;resize:none
+  position:relative;inset:auto;grid-area:bottom;flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;overflow:hidden;border-radius:10px;resize:none
+}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="companion-right"]>[data-dkds-mobile-region="companion-right"][data-dkds-mobile-active="true"],
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-mobile-surface-frame[data-dkds-mobile-frame-region="companion-bottom"]>[data-dkds-mobile-region="companion-bottom"][data-dkds-mobile-active="true"]{
+  flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;max-width:100%;max-height:100%
 }
 
 /* SUB pages are already hosted by PluginWorkspace's route host, which hides the
@@ -228,10 +262,17 @@ html[data-dkds-host="mobile"].react-native-client [data-plugin-canvas-slot="bott
 /* Both orientations retain PRIMARY + companion lanes through the same physical
    split tracks as Desktop. The 1px painted seam sits inside a 7px hit track, so
    Mobile resizing is boundary-led rather than title-long-press-led. */
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame:not(.has-canvas-right){--dkds-mobile-right-track:clamp(160px,var(--dkds-mobile-user-right-track,34%),min(680px,46vw));--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px);overflow:hidden}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame.has-canvas-right{--dkds-mobile-right-track:clamp(160px,var(--dkds-plugin-canvas-right-width),min(680px,46vw));--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px);overflow:hidden}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame:not(.has-canvas-bottom){--dkds-mobile-bottom-track:clamp(160px,var(--dkds-mobile-user-bottom-track,36%),min(680px,58vh));--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px);overflow:hidden}
-html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame.has-canvas-bottom{--dkds-mobile-bottom-track:clamp(160px,var(--dkds-plugin-canvas-bottom-height),min(680px,58vh));--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px);overflow:hidden}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame{
+  --dkds-mobile-right-track:var(--dkds-plugin-canvas-right-width,34%);
+  --dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px);
+  overflow:hidden
+}
+html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-presentation="semantic"][data-dkds-mobile-companion-bottom="true"] .dkds-plugin-canvas-frame{
+  --dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%);
+  --dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px);
+  grid-template-rows:minmax(0,1fr) var(--dkds-mobile-bottom-seam) var(--dkds-mobile-bottom-track);
+  overflow:hidden
+}
 
 html[data-dkds-host="mobile"].react-native-client [data-dkds-mobile-region="companion-right"].dkds-plot-view{--dkds-plot-content-flex:1 1 0;--dkds-plot-content-min-height:0;--dkds-plot-content-height:auto}
 
@@ -257,3 +298,4 @@ html[data-dkds-host="mobile"].react-native-client .dkds-mobile-service-port inpu
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-service-port .dkds-mobile-key-refresh{width:26px;min-width:26px;max-width:26px;height:26px;min-height:26px;max-height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-service-urls{min-height:0}
 html[data-dkds-host="mobile"].react-native-client .dkds-mobile-service-apply>button{width:100%}
+

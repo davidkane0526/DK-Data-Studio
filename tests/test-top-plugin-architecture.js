@@ -54,27 +54,33 @@ assert(analysisWorkbench.includes('portableSlot(name,row=null)')&&analysisWorkbe
 for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   const entry=read(`src/plugins/${folder}/plugin.js`);
   const controller=read(`src/plugins/${folder}/controller.js`);
-  const views=read(`src/plugins/${folder}/shared-views.js`);
+  const unitProduction=true;
+  const views=read(`src/plugins/${folder}/${unitProduction?'unit-presentation.js':'shared-views.js'}`);
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const superAdapter=read(`src/plugins/${folder}/super-layout.js`);
   assert(entry.split(/\r?\n/).length<40,`${folder}: plugin.js must be a thin composition entry.`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${folder}: controller must own typed shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
-  const presentationViews=folder==='data-center'?read('src/plugins/data-center/mobile-presentation.js'):views;
-  assert(presentationViews.includes('ctx.ui.workspaceSurface.create'),`${folder}: its semantic platform presentation must mount through the canonical workspaceSurface.`);
-  assert(presentationViews.includes('wb.compose')||presentationViews.includes('wb.mountPrimary'),`${folder}: its semantic platform presentation must compose a PRIMARY surface.`);
+  const presentationViews=views;
+  if(unitProduction){
+    assert(presentationViews.includes('ctx.ui.unitTemplates')&&presentationViews.includes('units.workspace.create'),`${folder}: production presentation must mount through the public Unit Templates workspace contract.`);
+    assert(presentationViews.includes('workbench.compose'),`${folder}: Unit production presentation must compose a PRIMARY surface.`);
+  }else{
+    assert(presentationViews.includes('ctx.ui.workspaceSurface.create'),`${folder}: its semantic platform presentation must mount through the canonical workspaceSurface.`);
+    assert(presentationViews.includes('wb.compose')||presentationViews.includes('wb.mountPrimary'),`${folder}: its semantic platform presentation must compose a PRIMARY surface.`);
+  }
   if(folder==='data-center'){
     const manifest=JSON.parse(read('src/plugins/data-center/plugin.json'));
-    assert(!views.includes('ctx.ui.workspaceSurface.create')&&manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.scripts?.includes('mobile-presentation.js'),
-      'data-center: Desktop shared composition must stay static while Mobile remapping lives in SDK 1.25 platformPresentation.');
+    assert(manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.mode==='custom'&&!(manifest.platformPresentation?.mobile?.scripts||[]).length,
+      'data-center: Desktop/Mobile must share the production Unit composition; Mobile may add accepted CSS only.');
   }
-  assert(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume Core PlotView/Chart Surface.`);
-  assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
+  assert(folder==='ter-analysis'?views.includes('plotGroup.adoptPlot'):views.includes('units.plotView.adopt'),`${folder}: scientific presentation must consume Core Unit PlotView ownership.`);
+  assert(unitProduction?views.includes('units.action.create')&&views.includes('units.pageHeader.create'):feature.includes('ctx.ui.actions'),`${folder}: production presentation must consume Core action ownership.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);
   for(const token of ['Plotly.','calculate','analyze','renderChart','innerHTML=`'])assert(!superAdapter.includes(token),`${folder}: SUPER adapter leaked feature logic (${token}).`);
 }
-const terViews=read('src/plugins/ter-analysis/shared-views.js');
-const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
+const terViews=read('src/plugins/ter-analysis/unit-presentation.js');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
 const dcViews=read('src/plugins/data-center/shared-views.js');
 assert(!terViews.includes("right:{target:'.ter-workspace-main'}")&&!terViews.includes("bottom:{target:'.ter-workspace-main'}"),'TER must not map portable docks back into its semantic main region.');
 assert(!pulseViews.includes("right:{target:'.pulse-config-card'}")&&!pulseViews.includes("bottom:{target:'.pulse-config-card'}"),'Pulse must not map portable docks back into its configuration region.');

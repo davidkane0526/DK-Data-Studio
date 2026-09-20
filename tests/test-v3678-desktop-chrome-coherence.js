@@ -26,9 +26,9 @@ assert(desktopChrome.includes('height:var(--dkds-header-action-height,26px)')&&d
 assert(appearance.includes('background:color-mix(in srgb,var(--dkui-danger) 8%,transparent)')&&appearance.includes('color:var(--dkui-danger)'),'all shared close buttons must use one restrained canonical close hover treatment.');
 assert(!integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'Integrated command Theme CSS must not own generic header geometry.');
 
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
+const resonance=read('src/plugins/resonance-workbench/unit-presentation.js');
 assert(portable.includes("closeButton.classList.add('dkds-panel-close-button'"),'Portable PRIME close actions must consume the shared close-button contract.');
-assert(resonance.includes('closeSelector:\'[data-respar-close="inspect"]\'')&&resonance.includes('closeSelector:\'[data-respar-close="group"]\''),'Resonance inspector/group close controls must remain PortableView-owned actions.');
+assert(resonance.includes('closeSelector:\'[data-respar-close="inspect"]\'')&&resonance.includes('closeSelector:\'[data-respar-close="group"]\''),'Resonance inspector/group close controls must preserve the accepted PortableView-owned action template while Core adopts its canonical chrome.');
 
 const index=read('src/index.html');
 const connectivity=read('src/plugins/connectivity-center/plugin.js');

@@ -28,8 +28,8 @@ assert(/const detailed=options\?\.detailed!==false/.test(material),'Material ins
 // The retired app-owned group/inspector dock stack must not participate in current rendering.
 const docks=read('src/app/modules/floating-docks.js');
 for(const token of ['groupPanel','inspectorPanel','dockedGroupSlot','inspectorDockSlot','setupDockResizer','setupInspectorDockResizer'])assert(!docks.includes(token),`Retired root-panel runtime token ${token} must not return.`);
-const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonanceViews.includes("presentationSurface('prime','curve-inspector')")&&resonanceViews.includes("presentationSurface('prime','group-analysis')"),'Inspector/group surfaces must be PluginWorkspace PRIME surfaces.');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonancePresentation.includes("const inspector=units.prime.build({id:'curve-inspector'")&&resonancePresentation.includes("const group=units.prime.build({id:'group-analysis'")&&resonancePresentation.includes('primes:[dataControl,inspector,group]'),'Inspector/group surfaces must be production Unit PRIME surfaces composed by PluginWorkspace.');
 
 // Data Center formula tools use a bounded left pane rather than wasting half the viewport.
 const dc=read('src/plugins/data-center/plugin.css');

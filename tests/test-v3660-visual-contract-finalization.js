@@ -12,8 +12,9 @@ const facade=read('src/core/plugins/kernel/modules/plugin-api.js');
 const dts=read('sdk/plugin-api.d.ts');
 const styleValidator=read('scripts/validate-styles.js');
 const sdkValidator=read('sdk/tools/dkds-plugin.js');
-const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
+const unitFoundation=read('src/core/ui/modules/composition/unit-template-foundation.js');
 
 const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
@@ -55,7 +56,7 @@ assert(aliasProbeAudit.issues.some(row=>row.code==='PLUGIN_ALIASES_CORE_HEADER_G
 assert(aliasProbeAudit.issues.some(row=>row.code==='PLUGIN_ALIASES_CORE_ACTION_GEOMETRY'),'Source-aware audit must reject custom aliases that re-own Core action geometry.');
 
 assert(pulseViews.includes('dkds-surface-heading-stack'),'Pulse Analysis must express multi-line header content through the shared Core heading stack.');
-assert(pulseViews.includes('pulse-current-file-actions dkds-surface-actions')&&pulseViews.includes('pulse-table-actions dkds-surface-actions'),'Pulse Analysis header actions must use Core SurfaceActions instead of a plugin-local toolbar geometry path.');
+assert(pulseViews.includes("actionsClassName:'pulse-current-file-actions'")&&pulseViews.includes("actionsClassName:'pulse-table-actions'")&&unitFoundation.includes("`dkds-surface-actions${integrated}`"),'Pulse Analysis header actions must be composed by the Unit Header owner onto Core SurfaceActions instead of a plugin-local toolbar geometry path.');
 assert(!/\.pulse-card-heading:not\(\.dkds-plot-view-head\)\{[^}]*padding/s.test(pulseCss),'Pulse Analysis must not redefine standard SurfaceHeader padding.');
 
 console.log('v3.66.1 Visual Contract Finalization 2: canonical Core components + plugin visual ownership gates passed.');

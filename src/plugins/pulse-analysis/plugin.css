@@ -27,12 +27,6 @@
   container-type:inline-size;
   container-name:pulse-analysis-controls;
 }
-.pulse-control-grid{
-  padding:10px 11px 11px;
-  display:grid;
-  grid-template-columns:repeat(2,minmax(128px,1fr));
-  gap:8px 9px;
-}
 .pulse-control-grid label{
   display:flex;
   flex-direction:column;
@@ -45,7 +39,6 @@
   width:100%;
   box-sizing:border-box;
 }
-.pulse-inline-range{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:5px;align-items:center}
 .pulse-inline-range>span{text-align:center}
 .pulse-inline-range input{min-width:0}
 .pulse-analyze-cell{display:flex;align-items:flex-end}
@@ -74,35 +67,8 @@
   padding:7px 9px;
 }
 .pulse-plot-heading{min-width:0}
-.pulse-plot-surface{
-  width:100%;
-  min-width:0;
-}
-.pulse-raw-card{--pulse-raw-plot-height:clamp(360px,42vh,440px);min-height:0;max-height:calc(var(--pulse-raw-plot-height) + 60px);overflow:auto}
-.pulse-raw-plot{
-  height:var(--pulse-raw-plot-height);
-  min-height:0;
-  max-height:var(--pulse-raw-plot-height);
-  margin:0;
-  padding:0 4px 6px;
-  overflow:hidden;
-}
-.pulse-results-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px;
-}
-.pulse-result-card{
-  min-height:440px;
-  display:flex;
-  flex-direction:column;
-}
-.pulse-result-plot{
-  flex:1 1 auto;
-  height:380px;
-  min-height:350px;
-}
-.pulse-results-table-card{}
+.pulse-raw-card{min-width:0}
+.pulse-raw-plot{margin:0;padding:0 4px 6px}
 .pulse-table-heading{align-items:center}
 .pulse-table-heading p{max-width:950px}
 .pulse-table-actions{
@@ -113,35 +79,12 @@
   gap:6px;
   margin:0;
 }
-.pulse-table-wrap{
-  max-height:520px;
-  overflow:auto;
-}
 .pulse-result-table{
   width:100%;
 }
-@container pulse-analysis-controls (min-width:680px){
-  .pulse-control-grid{grid-template-columns:repeat(3,minmax(128px,1fr))}
-}
-@container pulse-analysis-controls (min-width:920px){
-  .pulse-control-grid{grid-template-columns:repeat(4,minmax(128px,1fr))}
-}
 @container pulse-analysis-controls (max-width:520px){
-  .pulse-active-file-head{grid-template-columns:1fr}
   .pulse-file-manager-card{min-height:0}
   .pulse-file-list{max-height:250px}
-}
-@container pulse-analysis-controls (max-width:310px){
-  .pulse-control-grid{grid-template-columns:minmax(0,1fr)}
-  .pulse-file-toolbar{flex-direction:column;align-items:stretch}
-}
-@container pulse-analysis-primary (max-width:980px){
-  .pulse-results-grid{grid-template-columns:1fr}
-  .pulse-result-card{min-height:500px}
-  .pulse-result-plot{height:440px}
-  .pulse-results-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
-  .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
-  .pulse-results-splitter{display:none}
 }
 @media(max-height:780px){
 }
@@ -160,12 +103,6 @@
 }
 .pulse-file-manager-heading button{
   flex:0 0 auto;
-}
-.pulse-file-toolbar{
-  display:flex;
-  gap:7px;
-  margin-top:9px;
-  padding:8px 10px;
 }
 .pulse-file-toolbar button{
   flex:1 1 0;
@@ -236,13 +173,6 @@
   gap:6px;
   flex:0 0 auto;
 }
-.pulse-active-file-head{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(220px,330px);
-  align-items:end;
-  gap:14px;
-  padding:11px 14px 2px;
-}
 .pulse-active-path{
   min-width:0;
   overflow:hidden;
@@ -277,46 +207,6 @@
   text-overflow:ellipsis;
   text-align:left;
 }
-@container pulse-analysis-primary (max-width:1180px){
-  .pulse-compare-actions{flex-wrap:wrap}
-}
-
-
-
-
-/* Pulse publishes file/settings as a semantic data-control Surface and keeps
-   scientific/result content in PRIMARY. Presenter geometry is host-owned; the
-   domain UI only responds to the width of the Surface it actually receives. */
-.pulse-primary-surface{
-  width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:0 14px 14px;
-}
-.pulse-results-split{
-  --pulse-results-visual-height:540px;
-  height:min(940px,calc(100vh - 110px));
-  min-height:720px;
-  display:grid;
-  grid-template-rows:var(--pulse-results-visual-height) 8px minmax(0,1fr);
-  min-width:0;
-}
-.pulse-results-visual-pane{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:14px}
-.pulse-results-split .pulse-results-grid{min-width:0;min-height:0;height:100%}
-.pulse-results-split .pulse-result-card{min-height:0;height:100%}
-.pulse-results-split .pulse-result-plot{height:100%;min-height:260px}
-.pulse-results-split .pulse-results-table-card{min-height:210px;display:flex;flex-direction:column}
-.pulse-results-split .pulse-table-wrap{min-height:0;max-height:none;flex:1 1 auto;overflow:auto}
-.pulse-results-splitter{align-self:stretch}
-
-/* Narrow viewport domain geometry. Core platform CSS remains plugin-neutral. */
-@container pulse-analysis-primary (max-width:980px){
-  .pulse-primary-surface{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0;height:auto;padding:0 8px 8px;box-sizing:border-box}
-  .pulse-results-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
-  .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
-  .pulse-results-splitter{display:none}
-  .pulse-card{position:relative;inset:auto;display:block;width:100%;min-width:0;max-width:none;height:auto;min-height:0;margin:0;box-sizing:border-box}
-  .pulse-file-actions,.pulse-table-actions{position:static;inset:auto;overflow:visible}
-  .pulse-results-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
-  .pulse-inline-range{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
-  .pulse-table-wrap{width:100%;max-width:100%;overflow:auto}
-  .pulse-raw-card{--pulse-raw-plot-height:clamp(290px,44vh,360px)}
-  .pulse-raw-plot,.pulse-result-plot{margin:0;min-height:290px}
+@container pulse-analysis-primary (max-width:520px){
+  .pulse-compare-actions{width:100%;margin-left:0;justify-content:flex-start;flex-wrap:wrap}
 }

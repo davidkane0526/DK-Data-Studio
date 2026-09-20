@@ -1,0 +1,298 @@
+{
+  "version": "2.5.38",
+  "rolePolicies": {
+    "scientific-primary": {
+      "kind": "primary",
+      "mobileRegion": "main",
+      "navigation": "primary"
+    },
+    "data-primary": {
+      "kind": "primary",
+      "mobileRegion": "main",
+      "navigation": "primary"
+    },
+    "utility-primary": {
+      "kind": "primary",
+      "mobileRegion": "main",
+      "navigation": "primary"
+    },
+    "data-control": {
+      "kind": "prime",
+      "mobileRegion": "drawer",
+      "navigation": "context"
+    },
+    "inspector": {
+      "kind": "prime",
+      "mobileRegion": "companion-right",
+      "navigation": "context"
+    },
+    "scientific-secondary": {
+      "kind": "prime-or-sub",
+      "mobileRegion": "companion-bottom",
+      "dataPrimaryMobileRegion": "workspace-inline",
+      "navigation": "context-or-secondary"
+    }
+  },
+  "blueprints": {
+    "_template": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "aurora-pop-theme": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "connectivity-center": {
+      "surfaces": [],
+      "contributions": [
+        {
+          "kind": "status",
+          "id": "smb-browser",
+          "side": "right",
+          "order": 31
+        },
+        {
+          "kind": "status",
+          "id": "ai-agent",
+          "side": "right",
+          "order": 32
+        }
+      ]
+    },
+    "data-center": {
+      "surfaces": [
+        {
+          "id": "main",
+          "kind": "primary",
+          "role": "data-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "data-control",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 94,
+          "collapsible": true
+        },
+        {
+          "id": "chart-preview",
+          "kind": "prime",
+          "role": "scientific-secondary",
+          "priority": 60,
+          "collapsible": true
+        }
+      ],
+      "contributions": []
+    },
+    "flexible-import": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "pulse-analysis": {
+      "surfaces": [
+        {
+          "id": "main",
+          "kind": "primary",
+          "role": "scientific-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "data-control",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 92,
+          "collapsible": true
+        }
+      ],
+      "contributions": []
+    },
+    "pulse-import": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "pulse-sampler-tool": {
+      "surfaces": [
+        {
+          "id": "main",
+          "kind": "primary",
+          "role": "utility-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "parameters",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 96,
+          "collapsible": true,
+          "embedded": true
+        }
+      ],
+      "contributions": []
+    },
+    "resonance-detector-robust": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "resonance-workbench": {
+      "surfaces": [
+        {
+          "id": "main",
+          "kind": "primary",
+          "role": "scientific-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "data-control",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 95,
+          "collapsible": true
+        },
+        {
+          "id": "curve-inspector",
+          "kind": "prime",
+          "role": "inspector",
+          "priority": 90,
+          "collapsible": true
+        },
+        {
+          "id": "group-analysis",
+          "kind": "prime",
+          "role": "scientific-secondary",
+          "priority": 70,
+          "collapsible": true
+        },
+        {
+          "id": "physics",
+          "kind": "sub",
+          "role": "scientific-secondary",
+          "priority": 60,
+          "collapsible": true
+        },
+        {
+          "id": "spacing",
+          "kind": "sub",
+          "role": "scientific-secondary",
+          "priority": 50,
+          "collapsible": true
+        },
+        {
+          "id": "gate-analysis",
+          "kind": "sub",
+          "role": "scientific-secondary",
+          "priority": 40,
+          "collapsible": true
+        }
+      ],
+      "contributions": [
+        {
+          "kind": "status",
+          "id": "main-summary",
+          "side": "left",
+          "order": 1,
+          "activity": "resonance",
+          "presentationOnly": true
+        },
+        {
+          "kind": "toolbar",
+          "id": "res-settings",
+          "side": "UTILITY",
+          "order": 980,
+          "activity": "resonance",
+          "priority": 10
+        }
+      ]
+    },
+    "scientific-data-contracts": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "shell-navigation": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "standard-transport-algorithms": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "status-monitor": {
+      "surfaces": [],
+      "contributions": [
+        {
+          "kind": "status",
+          "id": "theme",
+          "side": "right",
+          "order": 10
+        },
+        {
+          "kind": "status",
+          "id": "memory",
+          "side": "right",
+          "order": 20
+        },
+        {
+          "kind": "status",
+          "id": "devtools",
+          "side": "right",
+          "order": 25
+        },
+        {
+          "kind": "status",
+          "id": "lan-web",
+          "side": "right",
+          "order": 30
+        }
+      ]
+    },
+    "ter-analysis": {
+      "surfaces": [
+        {
+          "id": "main",
+          "kind": "primary",
+          "role": "scientific-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "data-control",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 90,
+          "collapsible": true
+        }
+      ],
+      "contributions": []
+    },
+    "thin-glass-theme": {
+      "surfaces": [],
+      "contributions": []
+    },
+    "transfer-vth-lab": {
+      "surfaces": [
+        {
+          "id": "vth-main",
+          "kind": "primary",
+          "role": "scientific-primary",
+          "priority": 100,
+          "collapsible": false
+        },
+        {
+          "id": "data-control",
+          "kind": "prime",
+          "role": "data-control",
+          "priority": 90,
+          "collapsible": true
+        }
+      ],
+      "contributions": []
+    },
+    "workspace-safeguards": {
+      "surfaces": [],
+      "contributions": []
+    }
+  }
+}

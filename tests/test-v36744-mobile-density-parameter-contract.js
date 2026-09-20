@@ -17,26 +17,30 @@ assert(analysis.includes('node.dataset.dkdsPresentationPurpose=purpose'),'Live P
 assert(analysis.includes('node.dataset.dkdsPresentationRole=presentationRole'),'Live PRIME DOM must preserve presentationRole metadata.');
 
 const nativePresentation=read('src/styles/platform/native-workspace-presentation.css');
-for(const token of ['z-index:6800','dkds-mobile-drawer-resize-handle','right:0','dkds-mobile-drawer-resize-grip','scrollbar-width:thin','::-webkit-scrollbar{width:3px;height:3px}']){
+for(const token of ['z-index:6800','dkds-mobile-drawer-resize-handle','right:0','dkds-mobile-drawer-resize-grip','scrollbar-width:thin','::-webkit-scrollbar{width:var(--dkds-mobile-scrollbar-size,3px);height:var(--dkds-mobile-scrollbar-size,3px)}']){
   assert(nativePresentation.includes(token),`Native parameter drawer missing ${token}.`);
 }
 const nativeShell=read('src/styles/platform/native-client-shell.css');
+assert(nativeShell.includes('--dkds-mobile-scrollbar-size:3px')&&nativeShell.includes(':where(*)::-webkit-scrollbar{width:var(--dkds-mobile-scrollbar-size);height:var(--dkds-mobile-scrollbar-size)}'),'All Mobile plugin scroll regions must consume the shared 3px Core scrollbar geometry token.');
 assert(nativeShell.includes('.plugin-manager-section-list{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))'),'Plugin Manager sections must use flexible available-width tracks instead of fixed-width rows.');
 assert(nativeShell.includes('.command-menu.range-action-menu')&&nativeShell.includes('max-height:min(48vh,360px)'),'Range action UI must be a compact native popover.');
 assert(nativeShell.includes('.range-action-menu button{width:auto;min-height:28px'),'Range action buttons must not inherit full-sheet 46px sizing.');
 
 const pulseMobile=read('src/plugins/pulse-analysis/mobile.css');
-assert(/\.pulse-results-split\s*\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*height:auto;[^}]*min-height:0/.test(pulseMobile),'Pulse native result layout must not use the Desktop fixed split height.');
-assert(pulseMobile.includes('grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))'),'Pulse result charts must pack responsively.');
-assert(pulseMobile.includes('.pulse-results-grid')&&pulseMobile.includes('height:auto'),'Pulse native result grid must not overrun its toolbar row.');
+const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
+const pulseUnit=read('src/plugins/pulse-analysis/unit-presentation.js');
+assert(pulseUnit.includes("variant:'two-card-grid'")&&pulseUnit.includes('responsiveTarget:primaryMain')&&!pulseUnit.includes('units.splitPane.create(primaryMain'),'Pulse native result layout must reflow from projected PRIMARY width through generic Unit Layout while remaining a sequential PRIMARY flow.');
+assert(pulseUnit.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'"),'Pulse projected PRIMARY must preserve its two-card wide layout through Unit geometry.');
+assert(pulseUnit.includes("maxWidth:520,geometry:{gridTemplateColumns:'minmax(0,1fr)'}"),'Pulse projected PRIMARY may collapse only below the accepted 520 px Unit lane width.');
+assert(!pulseCss.includes('.pulse-results-grid{')&&!pulseCss.includes('.pulse-results-split{')&&!pulseMobile.includes('.pulse-results-grid{')&&!pulseMobile.includes('.pulse-result-card{'),'Pulse authored CSS must not become a second result-geometry owner.');
 
 const samplerManifest=JSON.parse(read('src/plugins/pulse-sampler-tool/plugin.json'));
-assert(!samplerManifest.styles.includes('mobile.css')&&samplerManifest.platformPresentation?.mobile?.mode==='custom'&&samplerManifest.platformPresentation.mobile.styles?.includes('mobile.css'),'Pulse Sampler must keep native parameter density in Mobile-only platform presentation assets.');
-const samplerMobile=read('src/plugins/pulse-sampler-tool/mobile.css');
-assert(samplerMobile.includes('.ps-designer[data-dkds-mobile-region=\"drawer\"]'),'Pulse Sampler native CSS must be scoped to a Presenter-owned mobile region marker.');
-assert(!read('src/plugins/pulse-sampler-tool/plugin.js').includes('isNativeClient'),'Pulse Sampler parameter registration must remain platform-neutral; Mobile activation comes from the Presenter region.');
-assert(samplerMobile.includes('.ps-actions{display:flex;flex-wrap:wrap'),'Pulse Sampler parameter actions must wrap within drawer width.');
-assert(samplerMobile.includes('.ps-mini-table')&&samplerMobile.includes('overflow:auto'),'Pulse Sampler table overflow must stay inside the drawer.');
+const samplerUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+assert(samplerManifest.styles.length===0&&samplerManifest.platformPresentation?.mobile?.mode==='adaptive','Pulse Sampler native parameter density must now be owned by the accepted Unit composition and Mobile Presenter, with no plugin Mobile CSS.');
+assert(!read('src/plugins/pulse-sampler-tool/plugin.js').includes('isNativeClient')&&!samplerUnit.includes('isNativeClient'),'Pulse Sampler parameter registration must remain platform-neutral; Mobile activation comes from Presenter semantics.');
+assert(samplerUnit.includes("presentationRole:'data-control'")&&samplerUnit.includes("variant:'fixed-titleless'"),'Pulse Sampler parameters must remain a titleless data-control PRIME for Presenter-owned drawer projection.');
+assert(samplerUnit.includes("variant:'action-grid-4'")&&samplerUnit.includes("variant:'form-grid-2'"),'Pulse Sampler parameter actions and fields must use responsive Unit layout recipes.');
+assert(samplerUnit.includes("variant:'segment-bar'")&&samplerUnit.includes('units.table.mount'),'Pulse Sampler segment table must remain a managed Unit table inside the parameter composition.');
 
 const sciNav=read('src/core/ui/modules/scientific-curve/navigation.js');
 const chartRuntime=read('src/core/scientific/chart-runtime.js');

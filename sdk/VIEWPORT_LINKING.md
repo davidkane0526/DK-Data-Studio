@@ -1,4 +1,4 @@
-# Scientific Viewport Linking — SDK 1.47.0
+# Scientific Viewport Linking — SDK 1.48.0
 
 SDK 1.43.0 introduced opt-in scientific viewport linking on the existing `InteractionRuntime` transaction/link path. It does **not** add a viewport store, viewport-specific global event, or Selection payload. Selection and viewport state remain separate.
 

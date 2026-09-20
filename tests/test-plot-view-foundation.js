@@ -7,13 +7,15 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
+const terViews=read('src/plugins/ter-analysis/unit-presentation.js');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
-const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
 const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
-const dataCenterViews=read('src/plugins/data-center/shared-views.js');
+const dataCenterViews=read('src/plugins/data-center/unit-presentation.js');
 const css=readCoreCss(root);
 const app=read('src/generated/runtime/app.js');
 
@@ -28,14 +30,14 @@ assert(!ui.includes("this.button('CSV'")&&!ui.includes("this.button('复制'")&&
 assert(ui.includes("className='dkds-plot-view-action dkds-plot-view-menu-trigger'")&&!ui.includes('dkds-plot-view-menu-trigger dkds-portable-placement-trigger')&&ui.includes('dkds-plot-view-file-svg')&&css.includes('.dkds-plot-view-file-svg'),'Core export breadcrumb must remain a quiet PlotView titlebar action and must not masquerade as the wider portable-placement trigger.');
 assert(kernel.includes('openContextOverflowPopup')&&kernel.includes("new Menu('core.shell'")&&!kernel.includes('toggle(overflowBtn,overflowMenu)'),'Responsive More actions must use the Core viewport-level ContextMenu instead of a menu clipped by the commandbar.');
 assert(!resonanceViews.includes("page.querySelectorAll('.respar-derived .analysis-chart-card')")&&ui.includes('queueMicrotask(()=>this.scope.plotViews?.hydrate?.(container'),'Resonance SUB charts must be hydrated by the PluginWorkspace lifecycle rather than a plugin-side one-shot DOM scan.');
-assert(resonanceGroupFeature.includes('live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&!resonanceGroupFeature.includes('<button type="button" data-csv>CSV</button>'),'Resonance group child plots must consume Core PlotView rather than duplicate CSV/copy chrome.');
-assert(resonanceViews.includes("actionHost:'[data-respar-group-cols-menu-host]'")&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("每行 ${value} 个子图"),'Group layout must be a PRIME action supplied through the Core ActionGroup lifecycle.');
+assert(resonanceGroupFeature.includes('groupGridController?.adoptPlot?.(`resonance-group:${key}`')&&!resonanceGroupFeature.includes('<button type="button" data-csv>CSV</button>'),'Resonance group child plots must be adopted by Core PlotGroup → PlotView without rebuilding the accepted card/header DOM.');
+assert(resonancePresentation.includes("actionHost:'[data-respar-group-cols-menu-host]'")&&resonancePresentation.includes("id:'group-columns',menu:true")&&resonancePresentation.includes("每行 ${value} 个子图"),'Group layout must remain the accepted PRIME ActionGroup menu in the production Unit presentation.');
 assert(app.includes('function ensurePluginWorkspaceVisible(activityId)')&&kernel.includes('host?.ensurePluginWorkspaceVisible?.(spec.activity)'),'System plugin-toolbar commands must restore the active SUPER workspace before opening PRIME/SUB content.');
 assert(app.includes("contract?.layout?.root?.selector")&&app.includes("closest?.('.analysis-page')"),'SUPER root resolution must consume the canonical native PluginWorkspace root.selector contract.');
-assert(resonanceViews.includes('reswin-gate-controls dkds-inline-form-row')&&css.includes('.dkds-inline-form-row>label:not(.inline-check)')&&css.includes('display:block'),'Wide scientific forms must use the Core inline-form contract so labels containing sub/sup stay on one text line.');
-assert(terFeature.includes("ctx.ui.plotViews.bind(`ter:${spec.key}`")&&!terFeature.includes('decoratePlotCard(spec)'),'TER data figures must consume Core PlotView instead of hand-built per-chart export chrome.');
-assert(pulseFeature.includes("ctx.ui.plotViews.bind(`pulse:${viewId}`")&&!pulseViews.includes('pulseRawExportBtn'),'Pulse data figures must consume Core PlotView instead of hand-built CSV/SVG/PNG buttons.');
-assert(dataCenterFeature.includes("ctx.ui.plotViews.bind('data-center:preview'")&&!dataCenterViews.includes('dcExportChart'),'Data Center chart preview must consume Core PlotView instead of a plugin-specific PNG button.');
+assert(resonancePresentation.includes('reswin-gate-controls dkds-inline-form-row')&&css.includes('.dkds-inline-form-row>label:not(.inline-check)')&&css.includes('display:block'),'Wide scientific forms must use the Core inline-form contract so labels containing sub/sup stay on one text line.');
+assert(terViews.includes("plotGroup.adoptPlot(`ter:${key}`")&&terViews.includes("const plotGroup=units.plotGroup.create")&&!terFeature.includes('ctx.ui.plotViews.bind'),'TER production data figures must be created by Unit PlotGroup → PlotView composition instead of legacy feature-owned chart binding.');
+assert(pulseViews.includes("units.plotView.adopt(`pulse:${viewId}`")&&!pulseFeature.includes('ctx.ui.plotViews.bind')&&!pulseViews.includes('pulseRawExportBtn'),'Pulse production data figures must be created by Unit PlotView composition instead of feature-owned or hand-built export controls.');
+assert(dataCenterViews.includes("units.plotView.adopt('data-center:preview'")&&!dataCenterViews.includes('dcExportChart'),'Data Center chart preview must consume Unit/Core PlotView instead of a plugin-specific PNG button.');
 
 assert(ui.includes('resolveScopedElement')&&ui.includes("this.actions=resolveScopedElement"),'PlotView controls must resolve strictly inside their own chart card and never fall back to another chart.');
 assert(ui.includes("this.plotViewObserverCleanup=this.scope.plotViews?.observe?.(this.shell"),'PluginWorkspace must automatically hydrate PlotViews as PRIMARY/PRIME/SUB DOM becomes connected.');
@@ -43,8 +45,7 @@ assert(ui.includes("card.dataset.dkdsPrimeOwned==='1'")&&ui.includes("portable:a
 assert(css.includes('--dkds-layer-global-float:2400')&&css.includes('--dkds-layer-canvas-float:1400'),'Core must define separate global/canvas floating layers.');
 assert(css.includes('.canvas-bottom-collapsed-only')&&ui.includes('bottomCollapsedOnly'),'Collapsed bottom docks must return unused height to the scientific canvas.');
 
-assert(!resonanceViews.includes('spacingExportSvgBtn')&&!resonanceViews.includes('spacingExportPngBtn'),'Resonance spacing views must not retain private SVG/PNG chart buttons after automatic PlotView hydration.');
-const terViews=read('src/plugins/ter-analysis/shared-views.js');
+assert(!resonancePresentation.includes('spacingExportSvgBtn')&&!resonancePresentation.includes('spacingExportPngBtn'),'Resonance production Unit spacing views must not retain private SVG/PNG chart buttons after automatic PlotView hydration.');
 for(const legacyId of ['terExportHeatmapSvgBtn','terExportHeatmapPngBtn','terExportMaxVgSvgBtn','terExportMaxVgPngBtn','terExportMaxVdSvgBtn','terExportMaxVdPngBtn'])assert(!terViews.includes(legacyId),`TER must not retain private generic chart control ${legacyId}.`);
 assert(ui.includes("globalBase: 2400")&&ui.includes("canvasBase: 1400")&&ui.includes("raiseLayer()"),'PortableView layer ordering must be owned by Core with global free-float above canvas float/dock content.');
 console.log('Core PlotView / menu / SUPER navigation foundation checks passed.');

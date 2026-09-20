@@ -7,10 +7,11 @@ const assert=(ok,msg)=>{if(!ok){console.error(`FAIL: ${msg}`);process.exitCode=1
 const style=readCoreCss(root);
 const modern=readCoreCss(root);
 const dataCenter=read('src/plugins/data-center/feature-runtime.js');
-const dataCenterViews=read('src/plugins/data-center/shared-views.js');
+const dataCenterViews=read('src/plugins/data-center/unit-presentation.js');
 const pluginWindow=read('src/plugin-window/style.css');
 const pulseStyle=read('src/plugins/pulse-analysis/plugin.css');
-const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
+const unitFoundation=read('src/core/ui/modules/composition/unit-template-foundation.js');
 
 assert(modern.includes('.left-panel section')&&modern.includes('.dkds-analysis-nav-btn'),'semantic first-party surface closure is missing.');
 assert(modern.includes('[data-dkds-component-identity="toolbarAction"]')&&modern.includes('--dkds-ca-action-surface:'),'Canonical Component Appearance must own first-party toolbar action surfaces instead of a broad button normalization selector.');
@@ -24,9 +25,9 @@ const materialCss=read('src/styles/theme/material-renderer.css');
 assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);')&&materialCss.includes('.dkds-plugin-canvas-frame')&&materialCss.includes('.dkds-plugin-canvas-left')&&materialCss.includes('background-color:transparent'),'PluginWorkspace geometry must remain separate while layout-only canvas hosts stay transparent under MaterialSurface ownership.');
 assert(style.includes('.dkds-plugin-canvas-center{')&&modern.includes('.dkds-plugin-canvas-center')&&modern.includes('background-color:transparent'),'PluginWorkspace material-bearing canvas must be Core-role managed without an opaque wrapper blocking backdrop sampling.');
 assert(/\.pulse-card\{/.test(pulseStyle)&&!/\.pulse-card\{[^}]*border\s*:/.test(pulseStyle),'Pulse plugin must own its card geometry without private structural border paint.');
-assert(pulseViews.includes('pulse-card-heading dkds-surface-header')&&pulseViews.includes('dkds-surface-heading-stack')&&!/\.pulse-card-heading[^{}]*\{[^}]*(?:padding|height|min-height|border-bottom)\s*:/.test(pulseStyle),'Pulse plugin heading must rely entirely on the Core SurfaceHeader geometry/paint contract.');
-assert(dataCenterViews.includes('dc-card dc-artifact-pane dkds-surface')&&dataCenterViews.includes('dc-card dc-source-preview dkds-surface'),'Data Center cards must consume the Core surface primitive instead of owning outlined box paint.');
-assert(dataCenterViews.includes('dc-section-head dkds-surface-header')&&dataCenterViews.includes('dc-tool-title dkds-surface-header'),'Data Center headings must consume the Core surface-header primitive instead of private divider/background paint.');
+assert(pulseViews.includes("className:'pulse-card-heading")&&pulseViews.includes('dkds-surface-heading-stack')&&unitFoundation.includes("panel:'dkds-surface-header'")&&!/\.pulse-card-heading[^{}]*\{[^}]*(?:padding|height|min-height|border-bottom)\s*:/.test(pulseStyle),'Pulse plugin heading must be composed by the Unit Header owner onto the Core SurfaceHeader geometry/paint contract.');
+assert(dataCenterViews.includes("units.panel.detached({variant:'plain',header:false,className:'dc-card dc-artifact-pane'")&&dataCenterViews.includes("units.panel.create(main,{variant:'plain',header:false,className:'dc-card dc-source-preview'")&&unitFoundation.includes("plain:'dkds-surface'"),'Data Center cards must consume the Unit Panel/Core surface primitive instead of owning outlined box paint.');
+assert(dataCenterViews.includes("variant:'panel',className:'dc-section-head'")&&dataCenterViews.includes("variant:'panel',className:'dc-tool-title'")&&unitFoundation.includes("panel:'dkds-surface-header'"),'Data Center headings must consume the Unit Header/Core surface-header primitive instead of private divider/background paint.');
 assert(!pluginWindow.includes('border-left:1px solid var(--line,#e3e7ee)'),'Dedicated window right dock must not restore legacy divider line.');
 assert(!pluginWindow.includes('border-top:1px solid var(--line,#e3e7ee)'),'Dedicated window bottom dock must not restore legacy divider line.');
 

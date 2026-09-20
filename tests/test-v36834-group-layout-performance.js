@@ -52,6 +52,7 @@ const moduleBox={exports:{}};
 const context={module:moduleBox,exports:moduleBox.exports,console,window:{MutationObserver,ResizeObserver},MutationObserver,ResizeObserver,document:doc,innerWidth:1400,innerHeight:900,globalThis:null,require:id=>{
   if(id==='../foundation/shortcuts')return {resolveElement:value=>value};
   if(id==='ui/style-ownership-gate')return gate;
+  if(id==='../composition/unit-geometry-constraints')return {publishUnitGeometryConstraint(){return ()=>{};},notifyUnitGeometryConstraint(){return false;}};
   throw new Error(id);
 }};
 context.globalThis=context;vm.createContext(context);vm.runInContext(gridSource,context,{filename:'grid/controller.js'});

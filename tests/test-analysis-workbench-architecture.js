@@ -38,47 +38,47 @@ assert(winRuntime.includes('invokeOwnerCapability'),'Dedicated TOP runtime must 
 
 const migrated={
   'ter-analysis':{prime:null},
-  'pulse-analysis':{prime:'raw-diagnostic'},
+  'pulse-analysis':{prime:null},
   'data-center':{prime:'chart-preview'},
 };
 for(const [folder,{prime}] of Object.entries(migrated)){
-  const views=read(`src/plugins/${folder}/shared-views.js`);
+  const views=read(`src/plugins/${folder}/unit-presentation.js`);
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
+  assert(views.includes('ctx.ui.unitTemplates')&&views.includes('units.workspace.create'),`${folder}: production presentation must mount through the public Unit workspace factory.`);
+  assert(views.includes('workbench.compose'),`${folder}: Unit production presentation must compose a semantic PRIMARY surface.`);
+  assert(!views.includes('ctx.ui.workspaceSurface.create'),`${folder}: Unit production presentation must not retain a parallel raw workspaceSurface composition path.`);
   if(folder==='data-center'){
-    const mobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
-    assert(!views.includes('ctx.ui.workspaceSurface.create'),'data-center: Desktop shared views must preserve the established static two-column composition and must not be remapped through the Mobile WorkspaceSurface.');
-    assert(mobilePresentation.includes('ctx.ui.workspaceSurface.create'),'data-center: Mobile platform presentation must mount through the canonical Core workspaceSurface.');
-    assert(mobilePresentation.includes('wb.compose')||mobilePresentation.includes('wb.mountPrimary'),'data-center: Mobile platform presentation must compose a semantic PRIMARY surface.');
-    assert.equal(manifest.platformPresentation?.desktop?.mode,'shared','data-center: Desktop must explicitly retain the shared/static presentation.');
-    assert.equal(manifest.platformPresentation?.mobile?.mode,'custom','data-center: Mobile must explicitly own a custom platform presentation.');
-    assert((manifest.platformPresentation?.mobile?.scripts||[]).includes('mobile-presentation.js'),'data-center: Mobile platform presentation script must be declared in the SDK 1.25 contract.');
-  }else{
-    assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical Core workspaceSurface without compatibility fallbacks.`);
-    assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
+    assert.equal(manifest.platformPresentation?.desktop?.mode,'shared','data-center: Desktop must use the shared production Unit presentation.');
+    assert.equal(manifest.platformPresentation?.mobile?.mode,'custom','data-center: Mobile may retain only accepted plugin-specific responsive CSS.');
+    assert.deepStrictEqual(manifest.platformPresentation?.mobile?.scripts||[],[],'data-center: obsolete Mobile presentation runtime must be removed after production Unit cutover.');
+    assert((manifest.platformPresentation?.mobile?.styles||[]).includes('mobile.css'),'data-center: accepted Mobile detail stylesheet must remain declared.');
   }
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
-  if(prime)assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
-  else assert(!feature.includes("id:'resistance-inspector'")&&!feature.includes('registerPrime({'),`${folder}: titleless multi-plot workspace must keep R–V as an ordinary Core PlotView rather than a dedicated PRIME.`);
+  if(prime){
+    assert(views.includes(`id:'${prime}'`)&&views.includes('units.prime.build'),`${folder}: expected Unit-owned PRIME view ${prime}.`);
+  }else assert(!feature.includes("id:'resistance-inspector'")&&!feature.includes('registerPrime({'),`${folder}: titleless multi-plot workspace must keep R–V as an ordinary Core PlotView rather than a dedicated PRIME.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
   assert.equal(manifest.apiVersion,'1.19.0',`${folder}: manifest must target current Plugin API 1.19.`);
   assert((manifest.capabilities||[]).includes('ui.plugin-workspace'),`${folder}: manifest must declare the canonical PluginWorkspace capability.`);
 }
 
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
-assert(ter.includes('workbench.groupArea('),'TER related multi-plot arrangement must use the formal Core GroupArea controller.');
-assert(ter.includes('responsive:true'),'TER grid presets are preferred maxima and must clamp to the actual Surface width so cards never overlap or become unusably narrow.');
-assert(ter.includes("items:()=>[")&&ter.includes("id:'layout'"),'TER Layout must use the core declarative ActionGroup menu path.');
-assert(ter.includes("minItemWidth:260"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(terUnits.includes('units.plotGroup.create')&&terUnits.includes('plotGroup.adoptPlot'),'TER related multi-plot arrangement must use the formal Unit PlotGroup and canonical PlotViews.');
+assert(terUnits.includes('responsive:true'),'TER grid presets are preferred maxima and must clamp to the actual Surface width so cards never overlap or become unusably narrow.');
+assert(terUnits.includes("items:()=>[")&&terUnits.includes("id:'layout'"),'TER Layout must use the Core declarative page-header action menu path.');
+assert(terUnits.includes("minItemWidth:260"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
 assert(ui.includes("classList.add('is-sticky')")&&ui.includes("case 'sticky'")===false,'Portable placement grammar must support sticky as a home-layout state rather than a dock region.');
-assert(ter.includes("{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',resistance:true}")&&ter.includes("placements:['home','left','right','bottom','float','global']"),'TER R–V must use the same ordinary PlotView placement contract as sibling plots; Core injects group-only sticky availability.');
+assert(terUnits.includes("makePlot({key:'resistance'")&&terUnits.includes("placements:['home','left','right','bottom','float','global']"),'TER R–V must use the same ordinary Unit PlotView placement contract as sibling plots; Core injects group-only sticky availability.');
 assert(!ter.includes("id:'rv-visibility'")&&!ter.includes('toggleResistanceVisibility'),'TER R–V must not retain a plugin-private visibility linkage; it is an ordinary shared PlotView.');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceUnitPresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonancePresentation=read('src/plugins/resonance-workbench/workbench-shared.js');
 for(const token of ["id:'data-control'","id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonancePresentation.includes(token),`Resonance shared Presentation Contract missing semantic view ${token}.`);
 }
-assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes('wb.compose')&&resonanceViews.includes("hostMode:isTop?'top':'super'"),'Resonance SUPER/TOP must use one host-invariant PluginWorkspace composition.');
+assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes("ctx.modules.require('unit-presentation')")&&resonanceUnitPresentation.includes('wb.compose')&&resonanceUnitPresentation.includes("hostMode:isTop?'top':'super'"),'Resonance SUPER/TOP must delegate to one host-invariant production Unit/PluginWorkspace composition.');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 assert(resonanceViews.includes("ctx.analysis.algorithms?.list?.({category:'peak-detector'})"),'Resonance dedicated TOP must consume versioned Algorithm Providers rather than a private detector list.');
 

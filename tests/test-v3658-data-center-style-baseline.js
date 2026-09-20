@@ -18,9 +18,9 @@ const semantic=read('src/core/theme/semantic-registry.js');
 const semanticStructure=read('src/styles/structure/sdk-semantic-surfaces.css');
 const schemaStructure=read('src/styles/structure/schema-and-plugin-ui.css');
 const designSystem=read('src/core/plugins/kernel/modules/plugin-api.js');
-const dcViews=read('src/plugins/data-center/shared-views.js');
+const dcViews=read('src/plugins/data-center/unit-presentation.js');
 const dcFeature=read('src/plugins/data-center/feature-runtime.js');
-const dcMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
+const dcChart=read('src/plugins/data-center/chart-runtime.js');
 const dcCss=read('src/plugins/data-center/plugin.css');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
@@ -46,19 +46,19 @@ assert(parameterSchema.includes('dkds-multiselect-trigger')&&selectPopup.include
 assert(schemaStructure.includes('.dkds-multiselect-trigger'),'Core Structure must own multiselect trigger geometry.');
 
 // Data Center consumes generic Core contracts; its stylesheet owns domain layout only.
-assert(dcViews.includes('dkds-surface-actions')&&dcViews.includes('dkds-surface-heading')&&dcViews.includes('dkds-surface-tabs'),'Data Center headers must consume the generic Core surface-header composition.');
+assert(dcViews.includes("titleWrapperClassName:'dkds-surface-heading'")&&dcViews.includes("className:'dc-tabs'"),'Data Center Unit headers/tabs must consume the generic Core composition identities.');
 assert(!dcViews.includes('dkds-header-hit-action')&&!dcViews.includes('dkds-header-action-row'),'Data Center must not depend on a private header-action geometry layer.');
-assert(dcViews.includes('data-dkds-tooltip="图形由可替换的 Chart Provider 提供；只有存在多个兼容 Provider 时才显示图形类型选择。"'),'Chart explanatory copy must remain in the Core tooltip contract.');
-assert(dcViews.includes('id="dcChartProvider"')&&!dcViews.includes('id="dcRenderChart"'),'Chart Provider choice may exist, but redundant manual draw must stay removed.');
-assert(dcFeature.includes('select.hidden=providers.length<=1'),'Provider selection must disappear when there is no real choice.');
+assert(!dcViews.includes('dataset.dkdsTooltip'),'Data Center production presentation must not expose implementation/architecture explanatory tooltips to end users.');
+assert(dcViews.includes("id:'dcChartProvider'")&&!dcViews.includes('dcRenderChart'),'Chart Provider choice may exist, but redundant manual draw must stay removed.');
+assert(dcFeature.includes("ctx.modules.require('chart-runtime')")&&dcChart.includes('select.hidden=rows.length<=1'),'Provider selection must disappear when there is no real choice.');
 assert(!dcFeature.includes('multiSelectPresentation'),'Data Center must not request a special ParameterSchema presentation.');
 assert(dcFeature.includes("b.classList.toggle('selected',selected)")&&dcFeature.includes("aria-selected',selected?'true':'false'"),'Data Center internal modes must use standard tab selected semantics.');
 assert(!/(^|\n)\.schema-parameter-panel\s*\{/.test(dcCss)&&!/(^|\n)\.schema-param-field\b/.test(dcCss),'Data Center must not duplicate Core ParameterSchema geometry.');
 assert(!dcCss.includes('dkds-multiselect-trigger')&&!dcCss.includes('dc-header-action'),'Data Center must not privately style Core multiselect/header controls.');
-assert(!dcCss.includes('--dc-artifact-width:336px')&&dcCss.includes('.dc-selection-tools{display:grid')&&!dcViews.includes('ctx.ui.workspaceSurface.create(')&&dcMobilePresentation.includes("id:'data-control'")&&dcMobilePresentation.includes("presentationRole:'data-control'"),'Data Center keeps domain filters; Desktop retains its accepted static composition while the Mobile platform presentation publishes the semantic data-control Surface.');
+assert(!dcCss.includes('--dc-artifact-width:336px')&&dcCss.includes('.dc-selection-tools{display:grid')&&dcViews.includes("id:'data-control'")&&dcViews.includes("presentationRole:'data-control'"),'Data Center keeps domain filters while the production Unit presentation publishes the semantic data-control Surface.');
 
 // Explicit user exception: filled page actions use the existing Core primary style (white label) without changing global geometry.
-assert(dcFeature.includes("buttonClass:'primary'"),'Data Center page action must use the Core primary white-label style.');
+assert(dcViews.includes("id:'workflow'")&&dcViews.includes("variant:'primary'"),'Data Center page action must use the Core primary white-label style through the Unit header action contract.');
 assert(pulseFeature.includes("buttonClass:'primary'"),'Pulse Analysis page action must use the same Core primary white-label style.');
 
 console.log('v3.65.8 v3.65.3 global visual baseline + generic Core Data Center contracts passed.');

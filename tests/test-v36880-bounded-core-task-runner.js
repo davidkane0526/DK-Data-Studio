@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert'),fs=require('fs'),path=require('path'),vm=require('vm');
 const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
 class FakeWorker{
@@ -32,7 +33,7 @@ function runtime(host='desktop',hardwareConcurrency=8,deviceMemory=8){
 
   const manifest=JSON.parse(read('src/plugins/pulse-sampler-tool/plugin.json'));assert(manifest.requiresCore.includes('execution.tasks'));assert.deepStrictEqual(manifest.tasks,[{id:'extract-steady-state',entry:'steady-state-task.js'}]);
   const pluginSource=read('src/plugins/pulse-sampler-tool/plugin.js');assert(pluginSource.includes("ctx.tasks.submit('extract-steady-state'"));assert(!pluginSource.includes('function extractSteadyState('),'main-thread extraction fallback must be removed');
-  const contract=JSON.parse(read('sdk/contract.json'));assert.strictEqual(contract.sdkVersion,'1.47.0');assert.strictEqual(contract.minimumAppVersion,'3.68.103');
+  const contract=JSON.parse(read('sdk/contract.json'));assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'));
   const types=read('sdk/plugin-api.d.ts');assert(types.includes('readonly tasks:DKDSTaskRuntime|null'));assert(types.includes('tasks?:DKDSManifestTask[]'));
   const coreContract=read('src/core/plugins/contract-runtime.js');assert(coreContract.includes("'execution.tasks':api=>!!api?.tasks"));
   console.log('v3.68.81 bounded Core task runner + Pulse Worker consumer PASS');

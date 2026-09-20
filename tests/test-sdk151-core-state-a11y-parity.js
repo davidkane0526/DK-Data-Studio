@@ -1,0 +1,25 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');
+const read=file=>fs.readFileSync(file,'utf8');
+const component=read('src/core/ui/component-runtime.js');
+const actions=read('src/core/ui/modules/interaction/context-actions.js');
+const plotView=read('src/core/ui/modules/plot-view/chart.js');
+const dialog=read('src/core/ui/modules/dialog/settings.js');
+const selection=read('src/core/ui/modules/selection/view-binding.js');
+const behavior=read('src/core/ui/modules/composition/unit-template-behavior.js');
+const foundation=read('src/core/ui/modules/composition/unit-template-foundation.js');
+const state=read('src/core/ui/modules/composition/unit-template-state.js');
+
+assert(component.includes("classList.toggle('selected',!!spec.selected)")&&component.includes("setAttribute('aria-selected',String(!!spec.selected))"),'canonical Action selected reflection must remain selected + aria-selected');
+assert(component.includes("classList.toggle('active',!!spec.active)")&&component.includes("setAttribute('aria-pressed',String(!!spec.active))"),'canonical Action active reflection must remain active + aria-pressed');
+assert(component.includes("root.setAttribute('role','tablist')")&&component.includes("button.setAttribute('role','tab')")&&component.includes("button.setAttribute('aria-selected',String(selected))"),'Tabs role/selection semantics must remain canonical');
+assert(actions.includes("event.key==='Escape'")&&actions.includes("event.key==='ArrowDown'||event.key==='ArrowUp'"),'ContextMenu must retain accepted Escape and vertical arrow keyboard behavior');
+assert(actions.includes("b.setAttribute('role','option')")&&actions.includes("b.setAttribute('role','menuitem')"),'ContextMenu must retain menu/listbox roles');
+assert(plotView.includes("setAttribute('aria-haspopup','menu')")&&plotView.includes("setAttribute('aria-expanded','false')")&&plotView.includes("setAttribute('aria-expanded','true')"),'PlotView export menu must retain popup expanded semantics');
+assert(dialog.includes("setAttribute('role',options.tone==='error'?'alertdialog':'dialog')")&&dialog.includes("setAttribute('aria-modal','true')"),'Dialog must retain dialog/aria-modal semantics');
+assert(dialog.includes("event.key==='Escape'")&&dialog.includes("previous.focus"),'Dialog must retain Escape dismissal and focus restore');
+assert(selection.includes("setAttribute('aria-current','true')")&&selection.includes("setAttribute('aria-selected',isSelected?'true':'false')"),'Selection view must retain current/selected ARIA semantics');
+assert(behavior.includes("setAttribute?.('role','progressbar')")&&behavior.includes("setAttribute?.('aria-valuenow'")&&behavior.includes("setAttribute?.('role','separator')")&&behavior.includes("setAttribute?.('aria-orientation'"),'Meter/SplitPane must retain Core-owned accessibility semantics');
+assert(foundation.includes('label.htmlFor=controlId'),'Unit Field must associate generated labels with controls without requiring plugin DOM code');
+assert(state.includes("keyboard:'native-button-current'")&&state.includes("keyboard:'outside-dismiss-current'"),'State contract must describe current keyboard behavior instead of overclaiming future behavior');
+console.log('SDK 1.51 Core state/accessibility parity PASS');

@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const {readCoreCss}=require('./css-source');
@@ -10,9 +11,9 @@ const json=rel=>JSON.parse(read(rel));
 const release=json('package.json').version;
 {const [major,minor]=release.split('.').map(Number);assert(major===3&&minor>=64,'visual contract closure must remain on or beyond the 3.64 release baseline');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.47.0');
+assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'));
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');

@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
@@ -6,8 +7,8 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json'),sdk=json('sdk/contract.json');
 const appVersion=pkg.version.split('.').map(Number);
 assert(appVersion[0]>3||(appVersion[0]===3&&(appVersion[1]>66||(appVersion[1]===66&&appVersion[2]>=1))),'context-aware export contract requires app 3.66.1+');
-assert.strictEqual(sdk.sdkVersion,'1.47.0');
-assert.strictEqual(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
 assert.strictEqual(sdk.themeContractVersion,'3.10.0');
 

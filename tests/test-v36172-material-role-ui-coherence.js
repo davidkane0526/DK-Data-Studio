@@ -1,7 +1,8 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.47.0');
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.49.0'));
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 const renderer=read('src/core/theme/material-renderer.js');const semanticRuntime=read('src/core/theme/semantic-registry.js');const index=read('src/index.html');
 for(const token of ['.analysis-page','dkds-settings-dialog','dkds-portable-view.is-floating'])assert(semanticRuntime.includes(token),`missing canonical material role selector: ${token}`);for(const token of ['.dkds-plugin-canvas-left','.dkds-plugin-canvas-right','.dkds-plugin-canvas-center','.dkds-plugin-canvas-bottom'])assert(!semanticRuntime.includes(token),`dock slot must not own a Material role: ${token}`);

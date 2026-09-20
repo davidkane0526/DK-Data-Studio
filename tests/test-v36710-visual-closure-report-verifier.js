@@ -6,7 +6,6 @@ const base=()=>({
   environment:{runtime:'desktop',platform:'win32'},desktopEnvironment:{runtime:'desktop',platform:'win32'},
   counts:{total:4,pass:3,fail:0,skip:1},
   results:[
-    {id:'ui.hard-visual-invariants',status:'pass',data:{}},
     {id:'ui.theme-runtime-performance',status:'pass',data:{delta:{materialFlushes:0,materialAssignCalls:0,appearanceFlushes:0,appearanceAssignCalls:0,semanticFlushes:0,semanticAssignCalls:0}}},
     {id:'ui.visual-geometry-closure',status:'pass',data:{dockTransparent:true,topbarActions:6,shellGroups:3,presentationCommands:6,groupedContextChecked:4,standaloneContextChecked:2,materialRoleCompositionChecked:6,workspaceModalChecked:true,workspaceGridChecked:true,scientificNavigation:{curve:true,chart:true,parityChecked:true}}},
     {id:'ui.theme-coverage',status:'pass',data:{summary:{partial:0,unmanaged:0,brokenMaterial:0,occludedMaterial:0,authoredUnused:0,rendererOk:true,appearanceOk:true},contrastModes:[{mode:'light',ok:true,issues:[]},{mode:'dark',ok:true,issues:[]}]}},

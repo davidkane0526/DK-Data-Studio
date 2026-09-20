@@ -5,7 +5,7 @@ const feature=read('src/plugins/data-center/feature-runtime.js');
 const selection=read('src/plugins/data-center/artifact-selection.js');
 const manifest=JSON.parse(read('src/plugins/data-center/plugin.json'));
 
-assert.strictEqual(manifest.version,'1.15.20');
+assert(manifest.version.localeCompare('1.15.20',undefined,{numeric:true,sensitivity:'base'})>=0,'Data Center version must remain at 1.15.20 or newer.');
 assert(feature.includes("ctx.data.artifacts.listMetadata({includeTransient:true})"),'Data Center catalog must enumerate Artifact metadata instead of full payloads.');
 assert(feature.includes('catalogCache={revision:-1,rows:[]}'),'Data Center must reuse one metadata catalog per Store revision during repeated UI renders.');
 assert(selection.includes('ctx.data.artifacts.listMetadata({includeTransient:true})'),'Multi-selection must resolve selected rows from lightweight Artifact metadata.');

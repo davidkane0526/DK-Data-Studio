@@ -48,25 +48,34 @@ const migrated={
 for(const [name,folder] of Object.entries(migrated)){
   const entry=read(`src/plugins/${folder}/plugin.js`);
   const controller=read(`src/plugins/${folder}/controller.js`);
-  const views=read(`src/plugins/${folder}/shared-views.js`);
+  const views=read(`src/plugins/${folder}/unit-presentation.js`);
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const adapter=read(`src/plugins/${folder}/super-layout.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${name} controller must use the typed core Selection/Interaction Runtime`);
-  const presentationViews=name==='Data Center'?read('src/plugins/data-center/mobile-presentation.js'):views;
-  assert(presentationViews.includes('ctx.ui.workspaceSurface.create'),`${name} platform presentation must use the canonical workspaceSurface where semantic remapping is required`);
-  assert(presentationViews.includes('wb.compose')||presentationViews.includes('wb.mountPrimary'),`${name} platform presentation must compose its semantic PRIMARY through the Analysis Workbench`);
+  const presentationViews=views;
+  assert(presentationViews.includes('ctx.ui.unitTemplates')&&presentationViews.includes('units.workspace.create'),`${name} production presentation must use the public Unit workspace facade.`);
+  assert(presentationViews.includes('workbench.compose'),`${name} Unit production presentation must compose its semantic PRIMARY through the Unit workspace.`);
   if(name==='Data Center'){
-    assert(!views.includes('ctx.ui.workspaceSurface.create')&&manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.scripts?.includes('mobile-presentation.js'),
-      'Data Center must keep the established Desktop shared page and isolate Mobile workspace remapping in SDK 1.25 platformPresentation.');
+    assert(manifest.platformPresentation?.desktop?.mode==='shared'&&manifest.platformPresentation?.mobile?.mode==='custom'&&!(manifest.platformPresentation?.mobile?.scripts||[]).length,
+      'Data Center production Unit composition must be shared across platforms; Mobile may add accepted CSS only.');
   }
-  assert(feature.includes('ctx.ui.actions')&&(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts')),`${name} feature runtime must use dynamic actions and Core PlotView/Chart infrastructure`);
-  assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
+  if(name==='TER'){
+    assert(feature.includes('presentation?.plotViews?.size')&&feature.includes('presentation.workbench'),'TER feature runtime must consume Unit-owned PlotViews/Workbench instead of constructing a second presentation path.');
+  }else if(name==='Pulse'){
+    assert(feature.includes('presentation?.workbench')||feature.includes('presentation?.dispose?.()'),'Pulse feature runtime must consume/dispose the Unit presentation instead of reconstructing PlotViews/PRIMEs itself.');
+    assert(!feature.includes('ctx.ui.plotViews.bind')&&!feature.includes('workbench.registerPrime'),'Pulse feature runtime must not remain a second visual composition owner after Unit cutover.');
+  }else{
+    assert(feature.includes('presentation.workbench')&&feature.includes('presentation?.dispose?.()'),`${name} feature runtime must consume/dispose the Unit-owned production presentation.`);
+    assert(!feature.includes('ctx.ui.plotViews.bind')&&!feature.includes('workbench.registerPrime'),`${name} feature runtime must not retain a second chart/PRIME composition owner after Unit cutover.`);
+  }
   assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);
   for(const forbidden of ['Plotly.','renderChart','calculate','analyze','innerHTML=`'])assert(!adapter.includes(forbidden),`${name} SUPER adapter contains feature logic: ${forbidden}`);
   const scripts=manifest.scripts||[];
-  for(const required of ['controller.js','shared-views.js','feature-runtime.js','super-layout.js','plugin.js'])assert(scripts.includes(required),`${name} manifest must load ${required}`);
+  const requiredScripts=name==='TER'?['controller.js','unit-presentation.js','feature-runtime.js','super-layout.js','plugin.js']:['controller.js','unit-presentation.js','shared-views.js','feature-runtime.js','super-layout.js','plugin.js'];
+  for(const required of requiredScripts)assert(scripts.includes(required),`${name} manifest must load ${required}`);
+  if(name==='TER')assert(!scripts.includes('shared-views.js'),'TER formal Unit cutover must not retain shared-views.js in the production manifest.');
 }
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');

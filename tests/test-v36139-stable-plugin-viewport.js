@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const {readCoreCss}=require('./css-source');
@@ -18,9 +19,9 @@ const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
 
 
-assert.equal(contract.sdkVersion,'1.47.0');
+assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'));
 
 const safeHost='[data-primary-scroll="safe"] .dkds-analysis-primary-host';
 assert(/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow\s*:\s*hidden[^}]*min-height\s*:\s*0[^}]*align-items\s*:\s*stretch/i.test(css),'safe mode must keep the outer canvas geometry bounded instead of making it the scroll owner.');

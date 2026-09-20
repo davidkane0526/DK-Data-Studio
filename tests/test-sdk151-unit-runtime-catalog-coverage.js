@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const {spawnSync}=require('child_process');
+const {UNIT_CATALOG}=require('../src/core/ui/modules/composition/unit-template-spec');
+const {NATIVE_PLUGIN_BLUEPRINTS}=require('../tools/sdk/native-blueprints');
+const facade=fs.readFileSync('src/core/ui/modules/composition/unit-templates.js','utf8');
+for(const id of Object.keys(UNIT_CATALOG))assert(new RegExp(`this\\.${id}=Object\\.freeze`).test(facade),`Catalog unit ${id} has no public ctx.ui.unitTemplates runtime entry.`);
+for(const [plugin,row] of Object.entries(NATIVE_PLUGIN_BLUEPRINTS))for(const id of row.units)assert(new RegExp(`this\\.${id}=Object\\.freeze`).test(facade),`${plugin} blueprint requires non-runtime unit ${id}`);
+for(const token of ["this.toolbar=Object.freeze({create:","contribute:(spec={})=>this.contribute('toolbar',spec)","this.status=Object.freeze({create:","contribute:(spec={})=>this.contribute('statusBar',spec)","this.menu=Object.freeze({create:","contribute:(spec={})=>this.contribute('menu',spec)","this.workspace=Object.freeze({create:","this.pageHeader=Object.freeze({create:","this.popover=Object.freeze({create:","this.portable=Object.freeze({create:","this.action=Object.freeze({create:"])assert(facade.includes(token),`Unit runtime facade missing ${token}`);
+
+assert(facade.includes('this.layoutGeometryValues=ACCEPTED_LAYOUT_GEOMETRY_VALUES'),'Unit runtime must expose accepted geometry values.');
+assert(facade.includes('this.layoutBreakpoints=ACCEPTED_LAYOUT_BREAKPOINTS'),'Unit runtime must expose accepted geometry breakpoints.');
+for(const token of ['apply:(target,spec={})=>','geometryValues:ACCEPTED_LAYOUT_GEOMETRY_VALUES','breakpoints:ACCEPTED_LAYOUT_BREAKPOINTS'])assert(facade.includes(token),`Unit layout facade missing ${token}`);
+const composition=JSON.parse(fs.readFileSync('src/core/ui/composition/composition.json','utf8'));
+for(const id of ['ui/composition/unit-template-geometry-values','ui/composition/unit-template-metric-provenance','ui/composition/unit-template-common','ui/composition/unit-template-layout-spec','ui/composition/unit-template-spec','ui/composition/unit-template-foundation','ui/composition/unit-template-layout','ui/composition/unit-template-scientific','ui/composition/unit-template-anatomy','ui/composition/unit-template-presentation-blueprints','ui/composition/unit-template-state','ui/composition/unit-templates'])assert(composition.importableModules.some(row=>row.id===id),`UI composition missing ${id}`);
+for(const id of ['ui/composition/unit-template-blueprints','ui/composition/unit-template-geometry-blueprints','ui/composition/unit-template-state-blueprints'])assert(!composition.importableModules.some(row=>row.id===id),`Native migration blueprint leaked into runtime composition: ${id}`);
+for(const file of ['src/core/ui/modules/composition/unit-template-geometry-values.js','src/core/ui/modules/composition/unit-template-metric-provenance.js','src/core/ui/modules/composition/unit-template-common.js','src/core/ui/modules/composition/unit-template-layout-spec.js','src/core/ui/modules/composition/unit-template-spec.js','src/core/ui/modules/composition/unit-template-foundation.js','src/core/ui/modules/composition/unit-template-layout.js','src/core/ui/modules/composition/unit-template-scientific.js','src/core/ui/modules/composition/unit-template-anatomy.js','src/core/ui/modules/composition/unit-template-presentation-blueprints.js','src/core/ui/modules/composition/unit-template-state.js','src/core/ui/modules/composition/unit-templates.js'])assert(fs.statSync(file).size<48*1024,`${file} exceeds 48 KiB responsibility gate`);
+for(const token of ['blueprints=NATIVE_PLUGIN','geometryBlueprints=NATIVE_PLUGIN','serviceBlueprints=NATIVE_PLUGIN','presentationBlueprints=NATIVE_PLUGIN','stateBlueprints=NATIVE_PLUGIN'])assert(!facade.includes(token),`Native authoring blueprint leaked into Unit runtime: ${token}`);
+const api=fs.readFileSync('src/core/plugins/kernel/modules/plugin-api.js','utf8');
+for(const token of ['contributions:{ toolbar:{add:','statusBar:{add:','menu:{add:'])assert(api.includes(token),`Plugin API does not bridge Unit Template host contribution: ${token}`);
+const docs=spawnSync(process.execPath,['tools/sdk/generate-unit-template-reference.js','--check'],{encoding:'utf8'});assert.strictEqual(docs.status,0,`${docs.stdout}\n${docs.stderr}`);
+console.log(`SDK 1.51 Unit runtime/catalog coverage PASS (${Object.keys(UNIT_CATALOG).length} units / ${Object.keys(NATIVE_PLUGIN_BLUEPRINTS).length} native blueprints)`);

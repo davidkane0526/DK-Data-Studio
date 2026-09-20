@@ -16,9 +16,9 @@ assert(!portable.includes("'parameters'"),'PortableView must not treat parameter
 
 const firstPartyFiles=[
   'src/plugins/resonance-workbench/workbench-shared.js',
-  'src/plugins/ter-analysis/shared-views.js',
+  'src/plugins/ter-analysis/unit-presentation.js',
   'src/plugins/ter-analysis/feature-runtime.js',
-  'src/plugins/pulse-analysis/shared-views.js',
+  'src/plugins/pulse-analysis/unit-presentation.js',
   'src/plugins/pulse-analysis/feature-runtime.js',
   'src/plugins/pulse-sampler-tool/plugin.js',
   'src/plugins/transfer-vth-lab/plugin.js'

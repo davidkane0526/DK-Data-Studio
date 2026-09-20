@@ -50,6 +50,7 @@
     'ui.legend-groups':api=>!!api?.ui?.legends,
     'ui.group-plots':api=>!!api?.ui?.groupPlots,
     'ui.group-area':api=>!!api?.ui?.groupArea,
+    'ui.unit-templates':api=>!!api?.ui?.unitTemplates,
     'ui.tooltips':api=>!!api?.ui?.tooltips,
     'ui.design-system':api=>!!api?.ui?.designSystem,
     'ui.plot-views':api=>!!api?.ui?.plotViews,

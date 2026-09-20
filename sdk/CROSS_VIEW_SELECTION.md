@@ -1,4 +1,4 @@
-# Cross-view Selection adapters — SDK 1.47.0
+# Cross-view Selection adapters — SDK 1.48.0
 
 SDK 1.41.0 added table↔curve Selection. SDK 1.42.0 adds heatmap-cell↔source-scan Selection. Both use the existing `InteractionRuntime` and reference-only Selection schema 2; neither adds another Selection store or event bus.
 

@@ -19,7 +19,7 @@ for(const file of coreCssFiles){
   assert(!domainSelector.test(text),`${path.relative(root,file)} owns a domain-plugin selector; move domain geometry into manifest-owned plugin.css.`);
 }
 
-const ownedPlugins=['connectivity-center','data-center','pulse-analysis','resonance-workbench','ter-analysis'];
+const ownedPlugins=['connectivity-center','data-center','pulse-analysis','resonance-workbench'];
 for(const id of ownedPlugins){
   const manifest=json(`src/plugins/${id}/plugin.json`);
   assert(Array.isArray(manifest.styles)&&manifest.styles.includes('plugin.css'),`${id} must declare static domain CSS through manifest.styles.`);
@@ -27,6 +27,18 @@ for(const id of ownedPlugins){
   for(const js of walk(path.join(root,'src','plugins',id)).filter(file=>file.endsWith('.js'))){
     assert(!fs.readFileSync(js,'utf8').includes('ctx.ui.styles.add('),`${path.relative(root,js)} injects static CSS at runtime; use manifest.styles.`);
   }
+}
+
+
+// TER is the first source-parity production reconstruction. Core/Units own
+// semantics/material/lifecycle; the plugin retains its accepted geometry-only
+// stylesheet until all plugins have completed 1:1 reconstruction.
+const terManifest=json('src/plugins/ter-analysis/plugin.json');
+assert.deepStrictEqual(terManifest.styles,['plugin.css'],'TER source parity must declare its accepted geometry-only plugin.css.');
+const terCss=read('src/plugins/ter-analysis/plugin.css');
+assert(!/(?:^|[;{}]\s*)(?:background(?:-color)?|color|border(?:-[\w-]+)?|box-shadow|text-shadow|font(?:-family|-size|-weight)?|filter|backdrop-filter)\s*:/mi.test(terCss),'TER source-parity plugin.css may own geometry only, never paint/theme.');
+for(const js of walk(path.join(root,'src','plugins','ter-analysis')).filter(file=>file.endsWith('.js'))){
+  assert(!fs.readFileSync(js,'utf8').includes('ctx.ui.styles.add('),`${path.relative(root,js)} must not inject a second TER style owner at runtime.`);
 }
 
 // Shared and host-selected plugin styles have two explicit, ordered cascade owners.

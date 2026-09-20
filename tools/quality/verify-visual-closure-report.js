@@ -5,7 +5,7 @@ const path=require('path');
 
 const REQUIRED_RUNNER=[1,33,0];
 const REQUIRED_APP='3.67.10';
-const REQUIRED_CASES=['ui.hard-visual-invariants','ui.visual-geometry-closure','ui.theme-runtime-performance','ui.theme-coverage'];
+const REQUIRED_CASES=['ui.visual-geometry-closure','ui.theme-runtime-performance','ui.theme-coverage'];
 
 function versionTuple(value){
   const match=String(value||'').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);

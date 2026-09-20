@@ -63,7 +63,8 @@ for(const [pluginDir,jsFile] of [
 ]){
   const manifest=JSON.parse(read(`src/plugins/${pluginDir}/plugin.json`));
   const source=read(`src/plugins/${pluginDir}/${jsFile}`);
-  assert(Array.isArray(manifest.styles)&&manifest.styles.length>0,`${pluginDir} static domain CSS must be manifest-owned.`);
+  if(pluginDir==='ter-analysis')assert(Array.isArray(manifest.styles)&&manifest.styles.length===1&&manifest.styles[0]==='plugin.css','TER source-parity production must retain exactly its accepted geometry-only stylesheet.');
+  else assert(Array.isArray(manifest.styles)&&manifest.styles.length>0,`${pluginDir} static domain CSS must be manifest-owned.`);
   assert(!source.includes('ctx.ui.styles.add('),`${pluginDir} must not inject static CSS at runtime.`);
 }
 
@@ -86,15 +87,27 @@ assert(resonanceInspector.includes('dkds-series-swatch-pair'),'Resonance categor
 assert(!/\.category-pair-swatch i\{[^}]*?(?:border|box-shadow|background|color)\s*:/i.test(coreCss),'Legacy resonance category swatch chrome must not remain in Core CSS.');
 
 for(const [file,required] of [
-  ['src/plugins/pulse-analysis/shared-views.js',['dkds-surface','dkds-toolbar','dkds-table']],
-  ['src/plugins/data-center/shared-views.js',['dkds-surface','dkds-surface-header','dkds-surface-heading','dkds-surface-actions','dkds-status']],
-  ['src/plugins/ter-analysis/shared-views.js',['dkds-surface','dkds-surface-actions','dkds-integrated-action-group','dkds-table']],
-  ['src/plugins/transfer-vth-lab/plugin.js',['dkds-surface','dkds-field','dkds-metric']],
+  ['src/plugins/pulse-analysis/unit-presentation.js',['dkds-surface','dkds-toolbar','dkds-table']],
+  ['src/plugins/transfer-vth-lab/unit-presentation.js',['units.panel.create','units.field.create','units.metric.create']],
   ['src/plugins/connectivity-center/plugin.js',['dkds-dialog-shell','dkds-toolbar','dkds-message']],
-  ['src/plugins/resonance-workbench/view-components.js',['dkds-surface','dkds-toolbar','dkds-floating-surface']]
 ]){
   const source=read(file);
   for(const cls of required)assert(source.includes(cls),`${file} must consume Core semantic role ${cls}.`);
 }
+
+
+
+const dataCenterUnits=read('src/plugins/data-center/unit-presentation.js');
+const unitFoundation=read('src/core/ui/modules/composition/unit-template-foundation.js');
+for(const token of ['units.panel.create','units.panel.detached','units.header.create','units.status.create','units.tabs.create','units.field.create'])assert(dataCenterUnits.includes(token),`Data Center Unit presentation must consume ${token}.`);
+for(const token of ["plain:'dkds-surface'","panel:'dkds-surface-header'","control.className='dkds-field-control'"])assert(unitFoundation.includes(token),`Unit foundation must project Data Center semantic role ${token}.`);
+assert(dataCenterUnits.includes('dkds-surface-heading'),'Data Center accepted heading wrapper must remain source-faithful while header paint comes from Unit Header.');
+
+const resonanceUnits=read('src/plugins/resonance-workbench/unit-presentation.js');
+for(const token of ['units.panel.create','units.header.create','units.floatingChrome.create','units.legend.create','dkds-toolbar','dkds-floating-surface'])assert(resonanceUnits.includes(token),`Resonance production Unit presentation must consume Core semantic visual owner ${token}.`);
+
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+for(const token of ['ctx.ui.unitTemplates','units.panel.create','units.header.create','units.action.create','units.table.bind','units.plotGroup.create'])assert(terUnits.includes(token),`TER Unit production presentation must consume ${token}.`);
+assert(!terUnits.includes('ctx.ui.styles.add(')&&!terUnits.includes('plugin.css'),'TER Unit production presentation must not recreate private visual ownership.');
 
 console.log('v3.61.59 Visual Contract Finalization passed: first-party plugins keep domain layout only; Core owns visual chrome and scientific presentation.');

@@ -18,7 +18,7 @@ assert(sdk.includes('const rows = ctx.data.sources.list();'),'SDK must keep ctx.
 const app=read('src/generated/runtime/app.js');
 assert(app.includes('function capabilitySnapshotForWindows()'),'Main renderer must build a dedicated-window capability snapshot.');
 assert(app.includes('syncSnapshot:sourceSnapshot'),'core.data-sources capability metadata must carry the synchronous source snapshot.');
-assert(app.includes('sources:dataSourceHostApi().list()')&&app.includes('targets:dataConsumerTargets()'),'Source snapshot must include both project sources and assignment targets.');
+assert((app.includes('sources:dataSourceHostApi().list()')||app.includes('sources:sourceApi.list()'))&&app.includes('targets:dataConsumerTargets()'),'Source snapshot must include both project sources and assignment targets.');
 assert(app.includes("hashString?.(JSON.stringify(sourceSnapshot))")&&app.includes('revision:baseRevision*4294967296+sourceRevision'),'Window capability revision must be content-sensitive so different projects with the same Artifact revision still propagate.');
 assert(app.includes('void publishCapabilitySnapshot();'),'Source mutations/imports must republish the synchronized read snapshot to open TOP windows.');
 

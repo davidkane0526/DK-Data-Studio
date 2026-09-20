@@ -11,7 +11,7 @@
     })();
   </script>
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:;">
+        content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; worker-src blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DK Data Studio</title>
 <link rel="stylesheet" href="../core.css">
@@ -34,7 +34,7 @@
 </head>
 <body class="auxiliary-window plugin-window-host dkds-modern-ui">
   <header id="pluginWindowTitlebar" class="plugin-window-titlebar dkds-material-role-chrome">
-    <div class="plugin-window-heading"><strong id="pluginWindowTitle">DK Data Studio</strong><span id="pluginWindowVersion" class="plugin-window-version"></span></div>
+    <div class="plugin-window-heading"><strong id="pluginWindowTitle">DK Data Studio · 插件窗口</strong><span id="pluginWindowVersion" class="plugin-window-version"></span></div>
     <span id="pluginWindowHeadingDivider" class="plugin-window-heading-divider hidden" aria-hidden="true">|</span>
     <div id="pluginWindowDragSpacer" class="plugin-window-drag-spacer" aria-hidden="true"></div>
     <div id="pluginWindowActions" class="plugin-window-actions">

@@ -19,10 +19,11 @@ const statusStructure=read('src/styles/structure/super-top-contract.css');
 const shellCss=read('src/styles/presentation/shell.css');
 const statusPlugin=read('src/plugins/status-monitor/plugin.js');
 const pluginWindowHtml=read('src/plugin-window/index.html');
-const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceView=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
+const scientificComposition=read('src/core/ui/modules/composition/scientific.js');
 const automationRuntime=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 const index=read('src/index.html');
 
@@ -75,12 +76,12 @@ assert(resonanceView.includes('respar-detect-actions')&&!resonanceView.includes(
   'Resonance detector buttons use the ordinary-button ToolbarAction fallback while Desktop geometry stays plugin-owned.');
 assert(/#resonanceDedicatedPage \.respar-(?:scan-global|detect-actions)\{[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
   'Resonance Desktop scan/detector command geometry must remain the established two-column plugin layout.');
-assert(resonanceView.includes('data-dkds-menu-behavior="rich"'),
-  'Range-selection panel must identify itself as a rich popover so its buttons retain normal control chrome.');
+assert(resonanceView.includes("dataset:{dkdsMenuBehavior:'rich'}"),
+  'Range-selection Unit panel must identify itself as a rich popover so its buttons retain normal control chrome.');
 assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
   'Resonance must not duplicate global visibility ownership.');
-assert(resonanceGroupFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
-  'Group-plot card actions must be integrated into the subplot title bar from first paint.');
+assert(resonanceGroupFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group')&&resonanceGroupFeature.includes('groupGridController?.adoptPlot?.(`resonance-group:${key}`'),
+  'Group-plot card actions must keep the accepted subplot title bar from first paint while Core PlotGroup adopts its semantics.');
 
 assert(statusCss.includes('--dkds-statusbar-zone-height:18px;')&&statusCss.includes('--dkds-statusbar-zone-gap:8px;')&&statusStructure.includes('height:var(--dkds-statusbar-zone-height);')&&statusStructure.includes('gap:var(--dkds-statusbar-zone-gap);'),
   'Status-bar contribution spacing must be configured by Presentation tokens and uniquely applied by Structure.');

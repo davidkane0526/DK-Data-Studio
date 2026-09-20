@@ -1,0 +1,62 @@
+{
+  "plugin": "builtin.resonance-workbench",
+  "shadow": "com.example.unit-resonance-shadow",
+  "productionReplaced": false,
+  "unitContract": {
+    "unitTypeCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": [
+      "section:disclosure",
+      "popover:anchored-positioning",
+      "popover:picker-dialog-semantics"
+    ]
+  },
+  "acceptedScientificPreset": {
+    "status": "pass",
+    "rule": "accepted-scientific-v1 remains data-only composition of the same public Unit facade used manually by the shadow"
+  },
+  "layers": {
+    "function": {"status": "pass-at-ui-domain-boundary", "note": "UI intents map to production Resonance action/service boundaries without duplicating the private stateful runtime."},
+    "structure": {"status": "pass", "note": "PRIMARY + data-control PRIME + inspector PRIME + PlotGroup PRIME + physics/spacing/gate SUB surfaces are all reconstructed from Unit Templates."},
+    "geometry": {"status": "pass", "note": "Accepted scientific workspace, main chrome, inspector and group geometry are inherited from Core metrics and accepted layout recipes."},
+    "style": {"status": "pass", "note": "Shadow ships no CSS, copies no respar/reswin visual selectors and performs no direct style ownership writes."},
+    "interaction": {"status": "pass-after-generic-contract-fill", "note": "ScientificPlot keeps mandatory interaction policy; Resonance adds non-conflicting domain key/marker bindings and uses Core anchored popover for range actions."},
+    "responsive": {"status": "pass", "note": "Accepted main layout, PlotGroup responsive columns and result grids remain Core-owned; no plugin media query is added."},
+    "mobile": {"status": "pass", "note": "data-control, inspector, scientific-secondary PRIME and SUB roles are Presenter-projected with no executable platform branch in the shadow."}
+  },
+  "groupPlotTitles": ["峰位 Vpk","峰电流 Ipk","FWHM","峰高 A","峰面积 S","峰突出度"],
+  "derivedTitles": ["稳定 ridge：V0 与有效分裂 δ","峰间距随 Vg 变化","共振 ridge","共振中心 V0","有效分裂 δ","峰宽与 |δ|/w","TERmax","最佳读出偏压 Vd*","正反扫回滞","峰高与有效权重","TERmax vs |δ|/w","Vd* vs V0","局域背景与峰/背景比","载流子浓度依赖（可选）","跨曲线特征场"],
+  "functionMap": {
+    "scanVisibility": "setAllVisibility",
+    "selectSweep": "selectSweep",
+    "setDetector": "setActiveDetector",
+    "setMetricAlgorithm": "setActiveMetricAlgorithm",
+    "setDetectorSettings": "setDetectorSettings",
+    "runDetection": "runDetection",
+    "sortPeakOrder": "sortPeakOrderByVd",
+    "togglePhysicsLabels": "togglePhysicsLabels",
+    "lockPeaks": "lockSelectedPeaks",
+    "resetView": "resetMainView",
+    "rangeDetect": "detectSelectedRange",
+    "rangeDelete": "deleteSelectedRangePeaks",
+    "rangeLock": "setSelectedRangeLocked",
+    "rangeIdentity": "applySelectedRangeIdentity",
+    "rangeClear": "clearSelectedRange",
+    "manualPeak": "addManualPeak",
+    "deletePeak": "deleteSelectedPeaks",
+    "movePeak": "moveSelectedPeakBy",
+    "switchSweep": "switchSelectedSweep",
+    "clearSelection": "clearSelection",
+    "selectPeak": "selectPeak",
+    "renderInspection": "renderInspection",
+    "renderGroup": "renderGroup",
+    "renderPhysics": "renderPhysics",
+    "renderSpacing": "renderSpacing",
+    "renderGate": "renderGate",
+    "exportMainSvg": "exportMainSvg",
+    "exportMainPng": "exportMainPng",
+    "exportMainCsv": "exportMainCsv",
+    "exportPeaks": "exportPeaks"
+  },
+  "remainingNonUnitGap": "The full production Resonance controller/stateful analysis pipeline is activation-private. Live numeric A/B requires a generic domain-adapter/service seam, not another UI Unit."
+}

@@ -43,8 +43,8 @@ assert(auxiliary.includes('forcedAuxiliaryClose.has(win)'),'Intentional role-tra
 assert(runtime.includes('roleTransitionSnapshotTaken')&&runtime.includes('roleTransitionSnapshotTaken || !window.electronAPI?.pushActivityProjectSnapshot'),'A completed dedicated-renderer role snapshot must suppress duplicate unload snapshots without owner-renderer legacy flags.');
 assert(auxiliary.includes('再次打开时将自动重建'),'Renderer crash handling must explicitly make the cached TOP reconstructable.');
 assert(preload.includes('prepareSuperTransition')&&preload.includes('onActivityRoleSnapshotRequest')&&preload.includes('respondActivityRoleSnapshot'),'Preload must bridge the host-transition snapshot handshake.');
-assert(runtime.includes('function buildSnapshotPayload(final=false)')&&lifecycle.includes('onActivityRoleSnapshotRequest?.(request=>')&&runtime.includes('buildSnapshotPayload,'),'Dedicated TOP runtime must provide the snapshot builder and delegate the synchronous role-transition handshake to the lifecycle owner.');
-assert(app.includes('function preparePluginSuperTransition(change={})')&&app.includes('applyActivityProjectSnapshot(snapshot)'),'The owner renderer must merge returned dedicated TOP plugin slices before embedding the promoted plugin.');
+assert(runtime.includes('function buildSnapshotPayload(final=false,options={})')&&lifecycle.includes('onActivityRoleSnapshotRequest?.(request=>')&&runtime.includes('buildSnapshotPayload,'),'Dedicated TOP runtime must provide the snapshot builder and delegate the synchronous role-transition handshake to the lifecycle owner.');
+assert(app.includes('function preparePluginSuperTransition(change={})')&&app.includes('applyDedicatedActivitySnapshot(snapshot,tab,{restoreRuntime:true})'),'The owner renderer must merge the returned dedicated TOP plugin slice directly before embedding the promoted plugin, without full-project recapture.');
 assert(!app.includes('auxiliaryRoleTransitionSnapshotTaken'),'The main host must not retain compatibility-window role-transition bookkeeping.');
 
 console.log('TOP host-transition / dedicated-window lifecycle regression checks passed.');

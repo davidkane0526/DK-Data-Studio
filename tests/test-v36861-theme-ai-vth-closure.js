@@ -16,10 +16,13 @@ assert(ai.includes('id="dkaiAgentState" class="dkai-statusline dkds-chip quiet"'
 assert(ai.includes('id="dkaiMcpState" class="dkai-mcp-state dkai-statusline dkds-chip quiet"'),'MCP state must use the same semantic chip contract.');
 assert(aiCss.includes('margin-right:2px')&&aiCss.includes('padding:3px 8px')&&aiCss.includes('max-width:min(46%,260px)'),'AI state chip must keep breathing room and bounded text.');
 
-// Important plugin commands explicitly request the primary theme variant.
-for(const file of ['src/plugins/ter-analysis/feature-runtime.js','src/plugins/pulse-analysis/feature-runtime.js','src/plugins/data-center/feature-runtime.js']){
-  const src=read(file);assert(src.includes("className:'primary',variant:'primary'"),`${file} must declare an explicit theme-owned primary command variant.`);
-}
+// Important plugin commands explicitly request the primary theme variant from their current presentation owner.
+const terPresentation=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(terPresentation.includes("label:'计算 TER',variant:'primary'"),'TER Unit presentation must declare the calculate command as primary.');
+const pulsePresentation=read('src/plugins/pulse-analysis/unit-presentation.js');
+assert(pulsePresentation.includes("className:'primary',variant:'primary'"),'Pulse Unit presentation must declare the checked-analysis command as the explicit theme-owned primary variant.');
+const dcPrimary=read('src/plugins/data-center/unit-presentation.js');
+assert(dcPrimary.includes("className:'primary',variant:'primary'"),'Data Center current presentation owner must declare an explicit theme-owned primary command variant.');
 const coreTheme=read('src/core/theme/runtime.js');
 const thin=read('src/plugins/thin-glass-theme/plugin.js');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');

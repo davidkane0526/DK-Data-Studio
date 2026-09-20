@@ -10,6 +10,7 @@ const css=readCoreCss(root);
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const app=read('src/generated/runtime/app.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonancePresentation=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceSelectionFeature=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
@@ -21,13 +22,13 @@ assert(ui.includes("['contained','auto','safe'].includes(String(spec.primaryScro
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto'),'Auto PRIMARY workspaces must own a real scroll viewport.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center')&&/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow:hidden[^}]*min-height:0[^}]*align-items:stretch/.test(css),'Contained and safe scientific canvases must remain bounded interaction surfaces.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host'),'Safe PRIMARY must expose a Host-owned fallback scroll viewport for third-party content.');
-for(const folder of ['ter-analysis','pulse-analysis']){
-  const views=read(`src/plugins/${folder}/shared-views.js`);
-  assert(views.includes("primaryScroll:'auto'"),`${folder} must use the scrollable PRIMARY contract.`);
-}
-const dataCenterMobilePresentation=read('src/plugins/data-center/mobile-presentation.js');
-assert(dataCenterMobilePresentation.includes("primaryScroll:'auto'"),'Data Center Mobile platform presentation must use the scrollable PRIMARY contract while Desktop keeps its established static page.');
-assert(resonanceViews.includes("primaryScroll:'contained'"),'Resonance main plot must explicitly use the contained scientific canvas contract.');
+const terUnits=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(terUnits.includes("primaryScroll:'auto'"),'ter-analysis Unit production presentation must use the scrollable PRIMARY contract.');
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
+assert(pulseViews.includes("primaryScroll:'auto'"),'pulse-analysis must use the scrollable PRIMARY contract.');
+const dataCenterUnits=read('src/plugins/data-center/unit-presentation.js');
+assert(dataCenterUnits.includes("primaryScroll:'auto'"),'Data Center production Unit presentation must use the scrollable PRIMARY contract on every platform.');
+assert(resonancePresentation.includes("primaryScroll:'contained'"),'Resonance production Unit workspace must explicitly use the contained scientific canvas contract.');
 
 // SUB is a full workspace page, not another scientific-canvas dock target.
 assert(ui.includes('main.replaceChildren(frame,sub)')&&ui.includes("sub.classList.add('dkds-plugin-sub-page-host')"),'SUB host must live outside the scientific-canvas frame.');
@@ -39,9 +40,10 @@ assert(ui.includes("['home','sticky','left','right','bottom','main','float','glo
 assert(ui.includes("placement==='global'?(this.zone('global')"),'Global float must use the outer workspace overlay.');
 assert(ui.includes("if(mode==='float'&&this.spec.snap!==false)"),'Only canvas-managed float may edge-snap into scientific docks.');
 assert(css.includes('.dkds-analysis-overlay>.dkds-portable-view.is-global-floating'),'Whole-workspace float must have a dedicated overlay visual contract.');
-for(const folder of ['ter-analysis','pulse-analysis','data-center']){
-  const feature=read(`src/plugins/${folder}/feature-runtime.js`);
-  assert(feature.includes("'global'"),`${folder} portable plots must offer whole-workspace free float.`);
+assert(terUnits.includes("'global'"),'ter-analysis Unit PlotViews must offer whole-workspace free float.');
+for(const folder of ['pulse-analysis','data-center']){
+  const source=read(`src/plugins/${folder}/unit-presentation.js`);
+  assert(source.includes("'global'"),`${folder} portable plots must offer whole-workspace free float.`);
 }
 assert(resonanceGroupFeature.includes("placements:['home','left','right','bottom','float','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
 
@@ -53,7 +55,7 @@ assert(ui.includes('syncCanvasRegions()'),'Dock geometry must be recomputed from
 // PRIME close/minimize is a generic Core lifecycle.
 assert(ui.includes('bindChromeAction(this.spec.closeSelector')&&ui.includes('bindChromeAction(this.spec.collapseSelector'),'PortableView must own generic close/collapse chrome events.');
 assert(ui.includes('setCollapsed(value')&&ui.includes("savedState.collapsed===true"),'PortableView collapse state must be functional and persistent.');
-assert(resonanceViews.includes("closeSelector:'[data-respar-close=\"inspect\"]'")&&resonanceViews.includes("closeSelector:'[data-respar-close=\"group\"]'"),'Resonance inspector/group must consume Core close lifecycle.');
+assert(resonancePresentation.includes("closeSelector:'[data-respar-close=\"inspect\"]'")&&resonancePresentation.includes("closeSelector:'[data-respar-close=\"group\"]'"),'Resonance inspector/group Unit PRIME surfaces must consume Core close lifecycle while preserving the accepted header DOM.');
 
 // Undo/cancel is a true system edit contract routed to the active plugin.
 assert(kernel.includes("registerTypedContribution(pluginId,'ui.editActions'")&&kernel.includes('invokeEditAction(action,payload={})'),'Plugin kernel must own active-plugin edit contributions.');
@@ -88,7 +90,7 @@ assert(topRuntime.includes('runWindowHistory') && topRuntime.includes("edit?.sup
 assert(ui.includes('document.createComment(`dkds-portable-home:')&&ui.includes('anchor.parentNode.insertBefore(this.wrapper,anchor.nextSibling)'),'PortableView home placement must use a stable anchor so group subplots return to their original slot.');
 
 // Resonance group layout selector is a real Core ContextMenu action, not dead chrome.
-assert(resonanceViews.includes('data-respar-group-cols-menu-host')&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`"),'Resonance group column control must use the Core ActionGroup menu and expose auto/1-6 columns.');
+assert(resonancePresentation.includes('data-respar-group-cols-menu-host')&&resonancePresentation.includes("id:'group-columns',menu:true")&&resonancePresentation.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`"),'Resonance group column control must use the Unit/Core ActionGroup menu and expose auto/1-6 columns.');
 
 // Export remains contextual after moving into the unified file-command group: each
 // TOP-capable plugin contributes semantic export targets and the shell keeps one trigger.

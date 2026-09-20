@@ -1,0 +1,102 @@
+{
+  "schema": "dkds.unit-shadow-parity/1",
+  "sourcePlugin": "builtin.ter-analysis",
+  "shadowPlugin": "com.example.unit-ter-shadow",
+  "scope": "UI/action-boundary parity; scientific math stays owned by production TER",
+  "productionReplaced": false,
+  "layers": {
+    "function": {
+      "status": "pass-boundary",
+      "evidence": [
+        "page actions map to native service method names",
+        "display/transform/export intents preserve native action semantics",
+        "scientific computation is not duplicated by shadow"
+      ]
+    },
+    "structure": {
+      "status": "pass",
+      "evidence": [
+        "1 page header",
+        "1 data-control PRIME",
+        "1 summary strip",
+        "7 PlotViews in 1 PlotGroup",
+        "1 export surface",
+        "2 managed result tables"
+      ]
+    },
+    "geometry": {
+      "status": "pass",
+      "evidence": [
+        "regular PlotGroup density = native 14px gap",
+        "heatmap width min(860px,100%) -> min(760px,100%) at 950",
+        "TER controls 118/135px",
+        "display controls 105/112px",
+        "R-V resistance-card and 38px card-title-row recipes"
+      ]
+    },
+    "style": {
+      "status": "pass-after-contract-fill",
+      "evidence": [
+        "no shadow CSS",
+        "all chrome/surface/control paint owned by Units",
+        "standalone native dkds-meta text requires Note Unit meta variant"
+      ]
+    },
+    "interaction": {
+      "status": "pass",
+      "evidence": [
+        "canonical Action/Menu",
+        "complete PlotView position/export contract",
+        "ScientificPlot scientific-standard-v1 base gestures",
+        "R-V clear-selection intent preserved"
+      ]
+    },
+    "responsive": {
+      "status": "pass",
+      "evidence": [
+        "PlotGroup responsive columns",
+        "950px heatmap width transition through accepted responsive geometry",
+        "data-control remains semantic PRIME"
+      ]
+    },
+    "mobile": {
+      "status": "pass",
+      "evidence": [
+        "no platform branch in shadow source",
+        "mobile presentation is adaptive",
+        "data-control projection remains Presenter-owned"
+      ]
+    }
+  },
+  "unitContract": {
+    "unitCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": [
+      "note:meta"
+    ],
+    "nonUnitGap": "Production TER does not expose its complete stateful domain service to an ordinary parallel plugin; full numeric side-by-side execution therefore belongs to a later domain-adapter seam, not the Unit visual contract."
+  },
+  "functionMap": {
+    "auto": "autoParameters",
+    "calculate": "calculate",
+    "clear-highlight": "controller.clearSelection",
+    "apply-display": "applyDisplay",
+    "reset-display": "resetDisplay",
+    "only-fully-visible": "setOnlyFullyVisible",
+    "export-long": "exportLong",
+    "copy-long": "copyLong",
+    "export-matrix": "exportMatrix",
+    "copy-matrix": "copyMatrix",
+    "transform": "setTransformSettings",
+    "layout": "setCols"
+  },
+  "plotTitles": [
+    "TER(Vd, Vg) 全组合热图",
+    "dI/dV · 正扫",
+    "R–V 全 Vg · 正扫 / 反扫",
+    "TER_Max–Vg：max over Vd",
+    "Vd@TER_Max–Vg",
+    "TER_Max–Vd：max over Vg",
+    "Vg@TER_Max–Vd"
+  ]
+}

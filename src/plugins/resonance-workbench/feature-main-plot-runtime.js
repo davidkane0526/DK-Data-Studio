@@ -7,7 +7,7 @@
     const {live,services,actions,utils}=context;
     const {$,dom,setStatus}=services;
     const {esc,fmt,finite,directionName}=utils;
-    let mainSurface=null,nativeTooltipDismissDispose=null;
+    let mainSurface=null,nativeTooltipDismissDispose=null,legendRenderKey='';
     const sweepVoltageBoundsCache=new WeakMap();
     const selectionPaint=(selection,attribute,value)=>{selection?.each?.(function(d,i,nodes){const next=typeof value==='function'?value.call(this,d,i,nodes):value;dom.attr(this,attribute,next===undefined||next===null||next===''?null:next);});return selection;};
 
@@ -23,7 +23,7 @@
       if(!keepSelection)actions.clearRangeState();
     }
     function showRangeMenu(range,event){
-      const selectedRange=actions.setRangeState({...range,target:'markers',targetType:'resonance.peak'});actions.publishRangeSelection(selectedRange,'resonance-main-range');
+      const selectedRange=actions.setRangeState({...range,target:'markers',targetType:'resonance.peak'});actions.publishRangeSelection(selectedRange,'resonance-main-range');actions.ensureMainSurface()?.requestRender?.('resonance-range-selection');
       const menu=$('#resparRangeMenu'),wrap=$('#resparMainPlotWrap');if(!menu||!wrap)return;
       const count=actions.peaksInRange(selectedRange).length,targets=range.sweepId?1:actions.visibleSweeps().length;
       const summary=$('#resparRangeSummary');if(summary)summary.textContent=`Vd ${fmt(range.vMin,4)} ~ ${fmt(range.vMax,4)} V · 框内 ${count} 个峰 · 局部寻峰作用于${range.sweepId?'当前曲线':`${targets} 条可见曲线`}`;
@@ -37,14 +37,21 @@
       const n=Number(value);if(!Number.isFinite(n))return '?';const normalized=Object.is(n,-0)?0:n;
       return new Intl.NumberFormat('zh-CN',{useGrouping:false,maximumSignificantDigits:Math.max(1,Math.min(12,Number(maxDigits)||6))}).format(normalized);
     }
-    function renderLegend(curveColor){
-      const host=$('#resparMainLegend');if(!host)return;dom.html(host,'');const current=actions.selectedSweep();
+    function renderLegend(curveColor,{force=false}={}){
+      const host=$('#resparMainLegend');if(!host)return;
+      const rows=[];
       for(const ds of live.datasets){
         const visible=actions.visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
-        const candidates=live.sweeps.filter(sw=>sw.datasetPath===ds.path&&actions.isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
-        const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip dkds-legend-item';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=actions.datasetEntityId(ds.path);chip.dataset.selectionKey=actions.datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
-        const c=typeof curveColor==='function'?curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0):actions.colorForSeries(`resonance.dataset.${ds.path}`,ds.name||ds.path,'resonance.dataset'),dash=preferred?.direction<0?' reverse':'';
-        dom.html(chip,`<i class="respar-legend-line dkds-series-swatch-line${dash}"></i><span>${compactLegendNumber(ds.vg)} V</span>`);dom.token(dom.query('.respar-legend-line',chip),{'--dkds-series-color':c});chip.dataset.dkdsTooltip=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;dom.append(host,chip);
+        const candidates=live.sweeps.filter(sw=>sw.datasetPath===ds.path&&actions.isVisible(sw)),preferred=candidates.find(sw=>sw.direction>0)||candidates[0]||null;
+        const color=typeof curveColor==='function'?curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0):actions.colorForSeries(`resonance.dataset.${ds.path}`,ds.name||ds.path,'resonance.dataset');
+        rows.push({ds,preferred,color:String(color||''),reverse:preferred?.direction<0});
+      }
+      const nextKey=rows.map(({ds,preferred,color,reverse})=>[String(ds.path||''),compactLegendNumber(ds.vg),String(preferred?.id||''),reverse?1:0,color].join('::')).join('|');
+      if(!force&&nextKey===legendRenderKey&&host.childElementCount===rows.length)return;
+      legendRenderKey=nextKey;dom.html(host,'');
+      for(const {ds,preferred,color,reverse} of rows){
+        const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip dkds-legend-item';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=actions.datasetEntityId(ds.path);chip.dataset.selectionKey=actions.datasetEntityId(ds.path);
+        dom.html(chip,`<i class="respar-legend-line dkds-series-swatch-line${reverse?' reverse':''}"></i><span>${compactLegendNumber(ds.vg)} V</span>`);dom.token(dom.query('.respar-legend-line',chip),{'--dkds-series-color':color});chip.dataset.dkdsTooltip=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;dom.append(host,chip);
       }
     }
     function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
@@ -83,9 +90,9 @@
         },true);
       }
       mainSurface=factory.create(node,{
-        container:'#resparMainPlotWrap',minWidth:260,minHeight:180,legend:false,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
+        container:node.parentElement||'#resparMainPlotWrap',minWidth:260,minHeight:180,legend:false,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
         yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
-        interaction:live.interactionRuntime||null,source:'resonance-main',rangeSelectionTarget:'markers',rangeSelectionType:'resonance.peak',
+        interaction:live.interactionRuntime||null,source:'resonance-main',rangeSelectionTarget:'markers',rangeSelectionType:'resonance.peak',mobileBoxGesture:'select-region',
         interactionBehavior:{bindings:[
           {id:'resonance-add-point',gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point',priority:120},
           {id:'resonance-delete-point-fast',gesture:'context',target:'marker',button:'secondary',modifiers:['shift'],command:'builtin.resonance.delete-target-peak',priority:140},
@@ -112,7 +119,7 @@
         onManipulationReset:({manipulator})=>{if(manipulator?.source?.action!=='analysis-window')return;const p=manipulator?.source?.peak;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;actions.commitPeakMetricEdit(p,{reason:'analysis-window-reset'});actions.scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
         onRangeStart:()=>clearRangeMenu(),onWheelZoomStart:()=>clearRangeMenu({keepSelection:true}),
         onRangeSelect:({xMin,xMax,yMin,yMax,event,markers:rows,markerIds,target,targetType})=>showRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:rows||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),
-        onClearSelection:()=>{actions.clearSelectionIds({keepRange:true});live.interactionSelection?.clear?.({source:'resonance-main'});render();},
+        onClearSelection:()=>live.sharedController?.service?.clearSelection?.(),
         onReset:()=>{live.workspace.mainView={xDomain:null,yDomain:null};clearRangeMenu();actions.scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
         onEmpty:({svg,width,height})=>{dom.html($('#resparMainLegend'),'');svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('class','dkds-svg-empty-text').text('请勾选要显示的正扫/反扫数据');},
         afterRender:({dataLayer,x,y,markers:rows})=>{if(live.workspace.physicsShowLabels===false||live.workspace.peakDisplay?.showPoints===false)return;try{const ph=actions.physicalAnalysis(),focus=live.interactionSelection?.get?.()?.focus||null,datasetPath=focus?.type==='resonance.dataset'?String(focus.ref?.datasetPath||''):'',hasSelection=!!live.selectedSweepId||!!datasetPath;dataLayer.append('g').selectAll('text.respar-physics-label').data(rows.filter(m=>m.accepted!==false),m=>m.id).join('text').attr('class','respar-physics-label').attr('x',m=>x(Number(m.x))+8).attr('y',m=>y(Number(m.y))-8).call(selectionPaint,'opacity',m=>{if(!hasSelection)return .92;if(datasetPath){const sw=actions.sweepById(m.curveId);return String(sw?.datasetPath||'')===datasetPath?1:.28;}return String(m.curveId)===String(live.selectedSweepId||'')?1:.28;}).call(selectionPaint,'fill',m=>actions.colorForPhysicsCode(ph?.peakMap?.get?.(m.id)?.code||'Q')).text(m=>{const code=ph?.peakMap?.get?.(m.id)?.code||'Q';return code==='Q'?'?':code;});}catch{}}
@@ -121,7 +128,7 @@
     }
     function render(){const surface=ensure();if(surface){surface.render('resonance');const legendScale=surface.colorScaleState?.scale;if(typeof legendScale==='function')renderLegend(legendScale);else renderLegend(null);return;}const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap');if(!node||!wrap)return;const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);dom.replace(node);node.setAttribute('width',String(Math.max(0,width)));node.setAttribute('height',String(Math.max(0,height)));const text=dom.createNS('http://www.w3.org/2000/svg','text');text.setAttribute('x',String(Math.max(0,width)/2));text.setAttribute('y',String(Math.max(0,height)/2));text.setAttribute('text-anchor','middle');text.setAttribute('class','dkds-svg-error-text');text.textContent='ScientificCurveSurface 基座未就绪';dom.append(node,text);}
     function reset(){live.workspace.mainView={xDomain:null,yDomain:null};clearRangeMenu();const surface=ensure();if(surface)surface.resetView();else{render();actions.scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');}return true;}
-    function dispose(){mainSurface?.dispose?.();mainSurface=null;nativeTooltipDismissDispose?.();nativeTooltipDismissDispose=null;}
+    function dispose(){mainSurface?.dispose?.();mainSurface=null;nativeTooltipDismissDispose?.();nativeTooltipDismissDispose=null;legendRenderKey='';}
     return Object.freeze({ensure,render,reset,dispose,peakColor,clearRangeMenu,state:()=>({mounted:!!mainSurface})});
   }
   window.DKDSPluginModules.define('builtin.resonance-workbench','feature-main-plot-runtime',Object.freeze({create}));

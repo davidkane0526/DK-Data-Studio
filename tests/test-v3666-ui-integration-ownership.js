@@ -16,11 +16,12 @@ const componentRuntime=read('src/core/theme/component-appearance.js');
 const pluginChrome=read('src/styles/presentation/plugin-chrome.css');
 const shellCss=read('src/styles/presentation/shell.css');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
+const unitLayoutSpec=read('src/core/ui/modules/composition/unit-template-layout-spec.js');
+const resonance=read('src/plugins/resonance-workbench/unit-presentation.js');
 const docks=read('src/app/modules/floating-docks.js');
 const importWorkbench=read('src/app/modules/import-workbench.js');
 const activityShell=read('src/core/plugins/kernel/modules/activity/shell.js');
-const visualGate=read('tools/quality/visual-invariants.js');
+const visualStaticAudit=read('tools/quality/visual-invariants.js');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
 
 assert(atLeast(tuple(pkg.version),[3,66,6]),'UI integration ownership closure requires DK Data Studio 3.66.6+.');
@@ -31,7 +32,7 @@ assert(atLeast(tuple(pkg.version),[3,66,6]),'UI integration ownership closure re
 assert(connectivity.includes('dksmb-window dkds-dialog-shell'),'SMB must keep one Core-owned outer dialog surface.');
 for(const forbidden of ['dksmb-browser dkds-surface','dksmb-toolbar dkds-toolbar','dksmb-connection dkds-action-row','dksmb-foot dkds-toolbar'])assert(!connectivity.includes(forbidden),`SMB internal card shell must stay removed: ${forbidden}`);
 assert(connectivity.includes('dksmb-nav dkds-material-role-sidebar')&&connectivity.includes('dksmb-browser dkds-material-role-surface')&&connectivity.includes('dksmb-toolbar dkds-material-role-chrome')&&connectivity.includes('dksmb-connection dkds-material-role-sidebar')&&connectivity.includes('dksmb-foot dkds-material-role-chrome'),'SMB functional regions should declare generic Core material roles rather than domain-specific paint or nested cards.');
-assert(visualGate.includes('SMB browser must not create a rounded nested Core surface')&&visualGate.includes('SMB path strip must declare the shared Core chrome role'),'Hard visual gate must protect flat SMB composition and semantic Core material-role consumption.');
+assert(visualStaticAudit.includes('SMB browser must not create a rounded nested Core surface')&&visualStaticAudit.includes('SMB path strip must declare the shared Core chrome role'),'Static visual contract audit must protect flat SMB composition and semantic Core material-role consumption.');
 
 // Header actions are canonical ToolbarActions. Separated actions explicitly own
 // a standalone neutral control surface; Presentation no longer paints them by
@@ -47,7 +48,7 @@ assert(!shellCss.includes(':where(button,input,select,textarea):disabled{backgro
 // into a differently filled capsule. Pulse supplies spacing only; no private
 // visual state is introduced for Remove.
 assert(componentCss.includes('[data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface)'),'Disabled ToolbarAction must retain its canonical surface.');
-assert(pulseCss.includes('gap:7px;')&&pulseCss.includes('margin-top:9px;'),'Pulse file action row must have clear breathing room from the heading block.');
+assert(unitLayoutSpec.includes("'file-toolbar':Object.freeze({display:'flex',gapPx:7,marginTopPx:9")&&!pulseCss.includes('margin-top:9px;'),'Pulse file action row spacing must be preserved by the canonical file-toolbar Unit recipe, not duplicated by plugin CSS.');
 
 // Resonance PRIME panels are already PortableView surfaces; the plugin must not
 // pre-paint a second floating-surface owner underneath them.

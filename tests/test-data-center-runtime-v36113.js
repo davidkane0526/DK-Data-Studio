@@ -25,6 +25,9 @@ sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);
 vm.runInContext(read('src/plugins/data-center/artifact-selection.js'),sandbox,{filename:'data-center/artifact-selection.js'});
 vm.runInContext(read('src/plugins/data-center/command-runtime.js'),sandbox,{filename:'data-center/command-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/domain-runtime.js'),sandbox,{filename:'data-center/domain-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/chart-runtime.js'),sandbox,{filename:'data-center/chart-runtime.js'});
+vm.runInContext(read('src/plugins/data-center/live-domain-bridge.js'),sandbox,{filename:'data-center/live-domain-bridge.js'});
 vm.runInContext(read('src/plugins/data-center/feature-runtime.js'),sandbox,{filename:'data-center/feature-runtime.js'});
 const feature=modules.get('builtin.data-center:feature-runtime');
 assert(feature?.mount,'Data Center feature runtime must register a mount function.');
@@ -74,13 +77,15 @@ const D={
   isArtifact:value=>!!value?.kind,
   hashString:value=>String(value)
 };
+let catalogRows=[artifact];
+const metadataSnapshot=a=>({...a,artifactRevision:1,provenanceCount:a.provenance?.length||0,provenanceTypes:(a.provenance||[]).map(step=>step.type),columns:(a.columns||[]).map(c=>({id:c.key,key:c.key,name:c.name,unit:c.unit,role:c.role,dtype:'number',length:c.values.length,metadata:{}})),provenance:undefined});
 const ctx={
-  manifest:{id:'builtin.data-center',version:'1.15.20'},
+  manifest:{id:'builtin.data-center',version:'1.15.37'},
   modules:{require:name=>modules.get(`builtin.data-center:${name}`)},
   commands:{register:()=>noop,run:()=>Promise.resolve(true)},
   data:{
     model:D,formula:{},sources:{targets:()=>[]},
-    artifacts:{listMetadata:()=>[{...artifact,artifactRevision:1,provenanceCount:artifact.provenance.length,provenanceTypes:['import'],columns:artifact.columns.map(c=>({id:c.key,key:c.key,name:c.name,unit:c.unit,role:c.role,dtype:'number',length:c.values.length,metadata:{}})),provenance:undefined}],columnMetadata:()=>artifact.columns.map(c=>({id:c.key,key:c.key,name:c.name,unit:c.unit,role:c.role,dtype:'number',length:c.values.length,metadata:{}})),readColumnRange:(_id,ref,{start=0,limit})=>{const c=artifact.columns.find(row=>row.key===ref)||artifact.columns[0];return {values:c.values.slice(start,start+limit),start,end:Math.min(c.values.length,start+limit),length:Math.min(limit,c.values.length-start),totalLength:c.values.length,artifactRevision:1};},get:id=>id===artifact.id?artifact:null,revision:()=>1,artifactRevision:()=>1,lineage:()=>({descendants:[]}),syncLegacy:()=>null}
+    artifacts:{listMetadata:()=>catalogRows.map(metadataSnapshot),columnMetadata:()=>artifact.columns.map(c=>({id:c.key,key:c.key,name:c.name,unit:c.unit,role:c.role,dtype:'number',length:c.values.length,metadata:{}})),readColumnRange:(_id,ref,{start=0,limit})=>{const c=artifact.columns.find(row=>row.key===ref)||artifact.columns[0];return {values:c.values.slice(start,start+limit),start,end:Math.min(c.values.length,start+limit),length:Math.min(limit,c.values.length-start),totalLength:c.values.length,artifactRevision:1};},get:id=>catalogRows.find(row=>row.id===id)||null,revision:()=>1,artifactRevision:()=>1,lineage:()=>({descendants:[]}),syncLegacy:()=>null}
   },
   ui:{
     activities:{add:noop},pages:{add:()=>page},
@@ -105,7 +110,10 @@ const ctx={
   io:{clipboard:{writeText:noop}},platform:{onChange:()=>noop},
   events:{on:(name,fn)=>{const rows=handlers.get(name)||[];rows.push(fn);handlers.set(name,rows);}}
 };
-const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
+const artifactListNode=page.querySelector('#dcArtifactList');
+const artifactListUnit={element:artifactListNode,setItems(specs=[]){artifactListNode.replaceChildren();for(const spec of specs){const row=new FakeNode('row');Object.assign(row.dataset,spec.dataset||{});row.setAttribute('role',String(spec.role||'option'));row.setAttribute('aria-label',String(spec.ariaLabel||spec.title||''));const body=new FakeNode('body'),title=new FakeNode('title'),meta=new FakeNode('meta');title.textContent=String(spec.title||'');meta.textContent=String(spec.meta||'');body.appendChild(title);body.appendChild(meta);if(spec.leading)row.appendChild(spec.leading);row.appendChild(body);artifactListNode.appendChild(row);}return artifactListNode.children.slice();},items(){return artifactListNode.children.slice();}};
+const presentationStub={workbench:{},artifactList:artifactListNode,artifactListUnit,objectHeader:{meta:page.querySelector('#dcArtifactCount')},objects:{element:page.querySelector('.dc-artifact-pane')},showPreviewTable:(_columns,rows)=>{const host=page.querySelector('#dcTablePreview');host.replaceChildren();for(const row of rows||[]){const tr=new FakeNode('tr');tr.textContent=JSON.stringify(row);host.appendChild(tr);}return true;},showPreviewEmpty:message=>{page.querySelector('#dcTablePreview').textContent=String(message||'');return true;},showPreviewJson:value=>{page.querySelector('#dcTablePreview').textContent=String(value||'');return true;},renderFormulaRefs:noop,mountParameterForm:(_host,_schema,{value}={})=>({getValue:()=>value||{},validate:()=>({ok:true}),destroy:noop}),dispose:noop};
+const views={pageHtml:()=>'',attach:()=>presentationStub};
 
 (async()=>{
   const mounted=await feature.mount(ctx,controller,views,{});
@@ -124,8 +132,24 @@ const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
   const count=page.querySelector('#dcArtifactCount');
   assert(count.textContent==='1 个',`Data Center must render the live Artifact count, got ${JSON.stringify(count.textContent)}.`);
   assert(list.children.length===1,'Data Center must render one Artifact row after a Core data refresh.');
-  assert(list.children[0].innerHTML.includes('VG=0'),'Rendered Artifact row must expose the source table name.');
+  assert(list.children[0].getAttribute('aria-label')==='VG=0','Rendered Artifact row must expose the source table name through its canonical selectable-row label.');
   assert(page.querySelector('#dcActiveName').textContent==='VG=0','Data Center preview must activate the first DataTable.');
+  // Store replacement may restart its local revision counter at the same numeric
+  // value. The artifacts-changed event must invalidate the catalog by lifecycle,
+  // not by revision equality alone, and metadata-only rows must still paint.
+  const restored2={...artifact,id:'legacy-table:test-2',name:'VG=5',metadata:{...artifact.metadata,legacyDatasetPath:'legacy://VG=5'},source:{path:'legacy://VG=5'}};
+  catalogRows=[artifact,restored2];
+  changed({type:'owner-live-replace'});
+  assert(count.textContent==='2 个',`Same-revision store replacement must rebuild the catalog, got ${JSON.stringify(count.textContent)}.`);
+  assert(list.children.length===2,'Same-revision project/store replacement must repaint all metadata rows.');
+  assert(list.children[1].getAttribute('aria-label')==='VG=5','Metadata-only restored row must paint without projectArtifact() side effects.');
+  assert(mounted.domain?.snapshot&&mounted.domain?.actions,'Data Center production runtime must expose the live-domain projection/action seam for Unit shadow reconstruction.');
+  const liveState=mounted.domain.snapshot();
+  assert(Array.isArray(liveState.artifacts)&&liveState.artifacts.length===2,'Data Center live-domain snapshot must project the production Artifact catalog.');
+  assert(liveState.active?.id===artifact.id,'Data Center live-domain snapshot must expose the same active production Artifact.');
+  assert(liveState.active?.preview?.kind==='table','Data Center live-domain snapshot must expose a bounded table projection for the active DataTable.');
+  assert(liveState.active.preview.rows.length===2&&liveState.active.preview.rows.length<=18,'Data Center live-domain preview must use the same bounded <=18 row window as production presentation.');
+  assert(liveState.active.preview.columns.length===artifact.columns.length,'Data Center live-domain preview must expose real production column metadata.');
 
   mounted.deactivate();
   console.log('v3.61.14 Data Center executable mount + Artifact render smoke passed.');

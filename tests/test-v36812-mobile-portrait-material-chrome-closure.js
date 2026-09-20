@@ -28,7 +28,7 @@ assert(projection.includes('this.applyFrameMaterial(saved.frame,region,purpose)'
 // merely a CSS comment or unreachable selector.
 {
   const src=projection.replace(/const instance=new MobileWebSurfacePresenter\(\);[\s\S]*$/,'globalThis.__Presenter=MobileWebSurfacePresenter;');
-  const context={globalThis:{},window:{},document:{documentElement:{dataset:{dkdsHost:'mobile'},classList:{contains:()=>true}}},require:id=>id==='ui/style-ownership-gate'?{set(){},remove(){}}:id.includes('platform-boundary')?{isMobileDocument:()=>true}:id.includes('native-touch-drag')?{bind:()=>()=>{}}:{} };context.globalThis=context;vm.createContext(context);vm.runInContext(src,context);
+  const context={globalThis:{},window:{},document:{documentElement:{dataset:{dkdsHost:'mobile'},classList:{contains:()=>true}}},require:id=>id==='ui/style-ownership-gate'?{set(){},remove(){}}:id.includes('platform-boundary')?{isMobileDocument:()=>true}:id.includes('native-touch-drag')?{bind:()=>()=>{}}:id.includes('mobile-web-projection-contract')?{PROJECTION_STYLE:[],styleValues:()=>({values:{},parameterDrawer:false}),releaseDetachObserver(){},installDetachObserver(){}}:id.includes('mobile-scientific-workspace-allocation')?{usesWorkspaceScientificAllocation:()=>false,syncWorkspaceScientificAllocation:()=>null}:id.includes('mobile-scientific-track-allocator')?{allocateScientificTracks:()=>({rightPx:0,bottomPx:0,primaryBlockPx:0,centerInlinePx:0})}:{} };context.globalThis=context;vm.createContext(context);vm.runInContext(src,context);
   const presenter=new context.__Presenter();
   assert.strictEqual(presenter.materialRoleForRegion('drawer','parameters'),'popover');
   assert.strictEqual(presenter.materialRoleForRegion('drawer','data'),'sidebar');

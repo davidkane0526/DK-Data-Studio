@@ -60,7 +60,8 @@ assert(header.includes('pluginAreaWidth')&&header.includes('packOrderedControls'
 assert(!/pluginDirectLimit|directLimit|width\s*[<>]=?\s*\d+\s*\?\s*\d+/.test(header),'Top plugin overflow must not regress to fixed count breakpoints.');
 
 const pulse=read('src/plugins/pulse-sampler-tool/plugin.js');
-assert(!pulse.includes('isNativeClient')&&pulse.includes("presentationRole:'data-control'")&&pulse.includes('embedded:true'),'Pulse must publish one platform-neutral embedded data-control Surface instead of branching for Mobile.');
+const pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+assert(!pulse.includes('isNativeClient')&&!pulseUnit.includes('isNativeClient')&&pulseUnit.includes("presentationRole:'data-control'")&&pulseUnit.includes("variant:'fixed-titleless'"),'Pulse must publish one platform-neutral titleless data-control PRIME instead of branching for Mobile.');
 const presenters=read('src/core/ui/modules/presentation/presenters.js');
 assert(presenters.includes("surface?.embedded!==true")&&presenters.includes("role===roles.DATA_CONTROL")&&presenters.includes("region:'drawer'"),'Desktop and Mobile presenters must project the same embedded parameter Surface differently without plugin platform knowledge.');
 

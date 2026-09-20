@@ -26,16 +26,26 @@ assert(!/context-commandbar\{[\s\S]{0,220}(?:360px|38vw|300px|34vw)/.test(shell)
 // visibly has room and avoids the old magic +3 px accounting.
 const toolbar=read('src/core/plugins/kernel/modules/shell/context-toolbar.js');
 for(const token of ['row.clientWidth','getComputedStyle(row)','getComputedStyle(toolbar)','style.marginLeft','style.marginRight','toolbarStyle.columnGap','rowStyle.paddingLeft','rowStyle.paddingRight'])assert(toolbar.includes(token),`Context overflow measurement must include ${token}.`);
-assert(toolbar.includes('sort(toolbar);markToolbarSections(toolbar);'),'Toolbar sections must be normalized before measuring real button geometry.');
+assert(toolbar.includes('sort(toolbar);')&&toolbar.indexOf('sort(toolbar);')<toolbar.indexOf('const visible='),'Toolbar command order must be normalized before measuring real button geometry.');
+assert(toolbar.includes('markToolbarSections(toolbar);')&&toolbar.indexOf('markToolbarSections(toolbar);')<toolbar.indexOf('const visible='),'Toolbar section markers must be normalized before measuring real button geometry.');
 assert(!toolbar.includes('getBoundingClientRect().width)+3'),'Magic +3 button width accounting must not return.');
 
-// ParameterSchema autoFit is a Core structure contract because dkds.structure
-// intentionally cascades after dkds.plugin. Data Center only opts into it.
+// Preserve the accepted shell overflow paint/structure; clipping prevention is
+// behavioral. Reflow must move complete activity buttons into 更多功能 before a
+// plugin name can remain partially visible.
+assert(/\.primary-activity-bar\{[\s\S]*?overflow-x:auto/.test(shell),'Accepted primary activity lane overflow structure must remain source-frozen; runtime reflow owns clipping prevention.');
+assert(toolbar.includes('data-dkds-context-overflow-activity')&&toolbar.includes('primary.scrollWidth>primary.clientWidth+1'),'Primary activity overflow must be measured from real lane geometry and move whole buttons into 更多功能.');
+assert(toolbar.includes('overflow.appendChild(button)'),'Overflow must reparent complete primary activity buttons rather than truncate their labels.');
+
+
+// ParameterSchema autoFit is the Core default outer-grid contract. Source-parity
+// Unit compositions may explicitly select layoutOwner=host, which disables only
+// the default outer grid and prevents a specificity/inline-style ownership race.
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
-assert(schema.includes('grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax(140px,205px)))')&&/\.schema-parameter-panel\.auto-fit\{[\s\S]*?justify-content:start;[\s\S]*?align-items:end/.test(schema),'Desktop auto-fit forms must retain the compact fallback while Core exposes a configuration token.');
-assert(/\.schema-parameter-panel\.auto-fit\.compact \.schema-param-field\{[\s\S]*?--dkds-field-control-min-height:[^;]+;[\s\S]*?--dkds-field-control-padding-block:[^;]+;[\s\S]*?--dkds-field-control-padding-inline:[^;]+/.test(schema),'Compact auto-fit controls must size the canonical dkds-field-control geometry, not only the legacy schema fallback variables.');
-const dcRuntime=read('src/plugins/data-center/feature-runtime.js'),dcCss=read('src/plugins/data-center/plugin.css');
-assert(dcRuntime.includes('compact:true,autoFit:true'),'Data Center chart preview must request Core compact auto-fit layout.');
-assert(!/#dcChartParams[^\n{]*\{[^}]*grid-template-columns/s.test(dcCss),'Data Center must not fight the later Core structure layer with a private chart grid override.');
+assert(schema.includes('.schema-parameter-panel.auto-fit:not(.layout-host-owned)')&&schema.includes('grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax(140px,205px)))'),'Desktop auto-fit forms must retain the Core fallback outside explicit host ownership.');
+assert(/\.schema-parameter-panel\.auto-fit\.compact \.schema-param-field\{[\s\S]*?--dkds-field-control-min-height:[^;]+;[\s\S]*?--dkds-field-control-padding-block:[^;]+;[\s\S]*?--dkds-field-control-padding-inline:[^;]+/.test(schema),'Compact auto-fit controls must keep canonical Core field geometry even when the outer grid is host-owned.');
+const dcRuntime=read('src/plugins/data-center/feature-runtime.js'),dcChartRuntime=read('src/plugins/data-center/chart-runtime.js'),dcCss=read('src/plugins/data-center/plugin.css'),dcPresentation=read('src/plugins/data-center/unit-presentation.js');
+assert(dcRuntime.includes("ctx.modules.require('chart-runtime')")&&dcChartRuntime.includes("compact:true,autoFit:true,layoutOwner:'host'"),'Data Center chart preview must explicitly declare single host ownership for its accepted outer grid.');
+assert(dcPresentation.includes("className:'dc-chart-params',geometry:{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(72px,.55fr)'")&&!dcCss.includes('.dc-chart-params.schema-parameter-panel.auto-fit.compact{'),'Accepted Data Center detail grid must have exactly one enclosing Unit Layout owner.');
 
 console.log('v3.68.6 measured shell allocation + Core ParameterSchema auto-fit closure PASS');

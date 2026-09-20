@@ -230,7 +230,7 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
       const path=String(seed?.path||`remote://${name}`);
       if(state.importDraft.files.some(row=>row.path===path))continue;
       const decoded=decodeImportSeed(seed);
-      const meta={name,path,size:Number(seed?.size)||base64ImportBytes(seed?.base64||'').length};
+      const meta={name,path,size:Number(seed?.size)||base64ImportBytes(seed?.base64||'').length,...(seed?.acquisition&&typeof seed.acquisition==='object'?{acquisition:seed.acquisition}:{})};
       const provider=chooseImportProvider(meta,ensureImportTargets());
       const item={...meta,checked:true,text:decoded.text,detectedEncoding:decoded.encoding,loadedEncodingRequest:'auto',importerId:provider?.id||'',settings:provider?.defaultOptions?.()||{},inspection:null,mappingTouched:false,importerTouched:false,loading:false,error:'',residentSource:true};
       state.importDraft.files.push(item);
@@ -820,15 +820,16 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
       const assignmentUnion=(previous=[])=>{const prior=(Array.isArray(previous)?previous:[]).map(String).filter(Boolean);return prior.includes('*')?['*']:[...new Set([...prior,...requestedAssignments])];};
       const priorArtifacts=state.artifactStore?.list?.({includeTransient:true})||[];
       const priorArtifactAssignments=(sourcePath,importerId,seriesPath='')=>{const rows=priorArtifacts.filter(a=>a?.metadata?.importedSource===true&&String(a?.source?.path||'')===String(sourcePath)&&String(a?.metadata?.importerId||'')===String(importerId)&&(seriesPath?String(a?.metadata?.seriesPath||a.id)===String(seriesPath):true));const out=new Set();for(const a of rows)for(const id of (Array.isArray(a?.metadata?.dataAssignments)?a.metadata.dataAssignments:[]))out.add(String(id));return [...out];};
+      let batchSequenceIndex=0;
       for(const item of selected){
         if(controller.signal.aborted)throw new DOMException('Import aborted.','AbortError');
         const provider=providerForImportItem(item);if(!provider)continue;
         if(typeof provider.parseArtifacts!=='function'&&typeof provider.createStreamParser!=='function')throw new Error(`导入器 ${provider.name||provider.id} 未实现 canonical parseArtifacts/createStreamParser 契约。`);
         const result=await importStream.parseItem({item,provider,signal:controller.signal,render:renderImportFileList,readFull:()=>readImportItemText(item,false,{full:true})}),rows=Array.isArray(result?.artifacts)?result.artifacts:[];
         for(const raw of rows){
-          if(!window.DKDSData?.isArtifact?.(raw))continue;const artifact=window.DKDSData.deepClone(raw),seriesPath=String(artifact?.metadata?.seriesPath||artifact.id),specific=priorArtifactAssignments(item.path,provider.id,seriesPath),previous=specific.length?specific:priorArtifactAssignments(item.path,provider.id);
-          artifact.transient=false;artifact.metadata={...(artifact.metadata||{}),importedSource:true,importerId:provider.id,dataAssignments:assignmentUnion(previous)};
-          artifact.source={...(artifact.source||{}),path:String(artifact?.source?.path||item.path),name:String(artifact?.source?.name||item.name),encoding:String(artifact?.source?.encoding||item.detectedEncoding||'auto')};artifactRows.push({artifact,sourcePath:item.path,providerId:provider.id});
+          if(!window.DKDSData?.isArtifact?.(raw))continue;const artifact=window.DKDSData.deepClone(raw),seriesPath=String(artifact?.metadata?.seriesPath||artifact.id),specific=priorArtifactAssignments(item.path,provider.id,seriesPath),previous=specific.length?specific:priorArtifactAssignments(item.path,provider.id),acquisition=importStream.acquisitionMetadata(artifact,item,batchSequenceIndex);
+          artifact.transient=false;artifact.metadata={...(artifact.metadata||{}),importedSource:true,importerId:provider.id,dataAssignments:assignmentUnion(previous),acquisition};
+          artifact.source={...(artifact.source||{}),path:String(artifact?.source?.path||item.path),name:String(artifact?.source?.name||item.name),encoding:String(artifact?.source?.encoding||item.detectedEncoding||'auto')};artifactRows.push({artifact,sourcePath:item.path,providerId:provider.id});batchSequenceIndex++;
         }
         if(rows.length)reports.push(`${item.name}: ${rows.length} 个 ${provider.name||provider.id} 数据对象`);
       }

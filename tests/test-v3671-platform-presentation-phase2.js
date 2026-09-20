@@ -39,7 +39,7 @@ const explicit=[
   // contract still exposes the shared parameter/data-control surface, while all
   // scientific charts participate in the titleless GroupArea.
   ['src/plugins/ter-analysis/feature-runtime.js','data-control'],
-  ['src/plugins/pulse-analysis/feature-runtime.js','scientific-secondary'],
+  ['src/plugins/pulse-analysis/feature-runtime.js','data-control'],
   ['src/plugins/pulse-sampler-tool/plugin.js','utility-primary'],
   ['src/plugins/transfer-vth-lab/plugin.js','scientific-primary']
 ];

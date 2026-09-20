@@ -10,12 +10,13 @@ const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
 assert(feature.includes('setSelectedSweepId:value=>selectionRuntime?.setSelectedSweepId(value)'),
   'Resonance FeatureContext must expose SelectionRuntime.setSelectedSweepId to controls; otherwise hide-all aborts before UI/chart sync.');
 
-const views=read('src/plugins/resonance-workbench/view-components.js');
+const presentation=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(presentation.includes("const row=units.action.create(host,{id,label,className,variant:variant||undefined,title:title||label,nativeSave:nativeSave||undefined,nativeCopy:nativeCopy||undefined,direct:true})"),
+  'Resonance production presentation must create direct canonical actions through the Action Unit.');
 for(const id of ['reswinShowAll','reswinShowForward','reswinShowReverse','reswinHideAll']){
-  const start=views.indexOf(`id="${id}"`);assert(start>=0,`missing ${id}`);
-  const end=views.indexOf('>',start);const tag=views.slice(start,end);
-  assert(tag.includes('data-dkds-component-identity="toolbarAction"'),`${id} must use canonical toolbarAction`);
-  assert(!tag.includes('data-dkds-component-variant="quiet"'),`${id} must not use quiet variant because quiet selected surface is transparent`);
+  assert(presentation.includes(`directAction(units,scan,{id:'${id}'`),`missing ${id} in the production Unit presentation`);
+  const line=presentation.split('\n').find(row=>row.includes(`id:'${id}'`))||'';
+  assert(!line.includes("variant:'quiet'"),`${id} must not use quiet variant because quiet selected surface is transparent`);
 }
 
 const controlsSource=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
@@ -68,7 +69,7 @@ assert(plotView.includes("explicit=!key.startsWith('auto:')")&&plotView.includes
   'Explicit PlotView binding must replace an earlier auto-hydrated view on the same card, preventing TER placement-state aliasing.');
 
 const portable=read('src/core/ui/modules/layout/portable-view.js');
-assert(portable.includes("const platform=document.documentElement?.dataset?.dkdsHost==='mobile'?'mobile.m3':'desktop'")&&portable.includes('`${hostState.storagePrefix}.${platform}.${this.owner}.${this.id}'), 'PortableView persistence must keep Desktop state isolated while Mobile advances its namespace to flush stale geometry.');
+assert(portable.includes("const platform=document.documentElement?.dataset?.dkdsHost==='mobile'?'mobile.m3':'desktop'")&&portable.includes('`${hostState.storagePrefix}.${platform}.${this.owner}.${this.id}'), 'PortableView persistence must keep Desktop state isolated while Mobile uses the restored pre-content-fit namespace.');
 assert(portable.includes('const activeScrollport=bindScrollport()')&&portable.includes('bindScrollport();update();settle();'),
   'Sticky plots must re-resolve their scrollport after final layout instead of freezing the pre-layout scroll container.');
 

@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const os=require('os');
 const path=require('path');
@@ -9,14 +10,14 @@ const {normalizeExternalPluginWindow}=require('../desktop/plugin-window-manager'
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const contract=JSON.parse(read('sdk/contract.json'));
-assert.equal(contract.sdkVersion,'1.47.0');
+assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));
 assert.equal(contract.pluginApiVersion,'1.19.0');
 
 const kernel=read('src/generated/runtime/plugin-kernel.js'),infra=read('src/generated/runtime/ui-infrastructure.js'),chart=read('src/core/scientific/chart-runtime.js');
 const requiredHostTokens=[
   [kernel,'history: Object.freeze'],[kernel,'series: infrastructureScope?.series'],[kernel,'legends: infrastructureScope?.legends'],[kernel,'groupPlots: infrastructureScope?.groupPlots'],[kernel,'tooltips: infrastructureScope?.tooltips'],
   [infra,'class SeriesRegistry'],[infra,'class LegendGroup'],[infra,'class ActiveLayoutSolver'],[infra,'class GroupPlot'],[chart,'smartLegendLayout'],
-  [kernel,'function applyPackagedManifest('],[kernel,'packageRuntime:Object.freeze({']
+  [kernel,'function materializeTaskSources('],[kernel,'function applyPackage('],[kernel,'packageRuntime:Object.freeze({']
 ];
 for(const [source,token] of requiredHostTokens)assert(source.includes(token),`SDK Host missing ${token}`);
 
@@ -39,6 +40,19 @@ try{
       assert(windowSpec?.dependencies?.includes('scientific-renderer'),'Detached SDK Tool package must resolve the D3-only scientific-renderer contract.');
     }
   }
+  // Runtime smoke fixture: the detached SDK must validate/package a TOP workbench
+  // that owns a Worker task with one declared import. This is intentionally not
+  // only a static manifest check; the paired v3.70.2 runtime regression executes
+  // the resulting package in owner and dedicated Plugin Kernel contexts.
+  const topTaskDir=path.join(root,'tests','fixtures','external-top-task-plugin'),topTaskOut=path.join(temp,'external-top-task.dkplugin');
+  cp.execFileSync(process.execPath,[cli,'validate',topTaskDir],{stdio:'pipe'});
+  cp.execFileSync(process.execPath,[cli,'package',topTaskDir,topTaskOut],{stdio:'pipe'});
+  const topTaskPkg=normalizePluginPackage(JSON.parse(fs.readFileSync(topTaskOut,'utf8')),{allowBuiltinId:false});
+  const topTaskWindow=normalizeExternalPluginWindow(topTaskPkg);
+  assert.equal(topTaskPkg.manifest.workspace?.role,'top','SDK TOP+Task smoke package must preserve TOP role.');
+  assert.deepStrictEqual(topTaskPkg.manifest.tasks,[{id:'fixture-task',entry:'task-entry.js',imports:['task-import.js']}],'SDK TOP+Task smoke package must preserve task entry/import declarations.');
+  assert.equal(typeof topTaskWindow?.packageFiles?.['task-entry.js'],'string','Dedicated SDK TOP+Task spec must carry worker entry bytes.');
+  assert.equal(typeof topTaskWindow?.packageFiles?.['task-import.js'],'string','Dedicated SDK TOP+Task spec must carry worker import bytes.');
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
 
 // First-party equality gate: no special host legend/layout service is introduced for Resonance.

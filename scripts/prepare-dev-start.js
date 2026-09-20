@@ -31,7 +31,7 @@ const pluginIndex=buildPluginIndexSource();
 if(!fileMatches('src/generated/plugin-index.js',pluginIndex.source)){run('generate-plugin-index.js');built++;}
 
 const missingGroups=[
-  {files:['src/generated/sdk-authoring-reference.js'],script:'generate-sdk-authoring-reference.js'},
+  {files:['src/generated/sdk-authoring-reference.js','src/generated/dkds-sdk-export.zip'],script:'generate-sdk-authoring-reference.js'},
   {files:['assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png'],script:'generate-brand-assets.js'}
 ];
 for(const group of missingGroups){

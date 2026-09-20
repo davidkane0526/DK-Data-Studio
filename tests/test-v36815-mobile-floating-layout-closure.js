@@ -22,13 +22,15 @@ const mobileWorkspace=read('src/styles/platform/native-workspace-presentation.cs
 const presenterSource=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const portableSource=read('src/core/ui/modules/layout/portable-view.js');
 const dcMobile=read('src/plugins/data-center/mobile.css');
-const dcViews=read('src/plugins/data-center/shared-views.js');
+const dcViews=read('src/plugins/data-center/unit-presentation.js');
 const pluginManager=read('src/styles/platform/native-client-shell.css');
 const pulseSampler=read('src/plugins/pulse-sampler-tool/plugin.js');
-const pulseSamplerMobile=read('src/plugins/pulse-sampler-tool/mobile.css');
+const pulseSamplerUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+const pulseSamplerManifest=JSON.parse(read('src/plugins/pulse-sampler-tool/plugin.json'));
 const themeLayout=read('src/plugins/status-monitor/theme-layout.js');
 const appFoundation=read('src/app/modules/foundation.js');
-const terCss=read('src/plugins/ter-analysis/plugin.css');
+const terViews=read('src/plugins/ter-analysis/unit-presentation.js');
+const unitLayout=read('src/core/ui/modules/composition/unit-template-layout-spec.js');
 
 // 1/2) One status-popover gap contract for Theme/Memory/LAN/AI.
 assert(metrics.includes('--dkds-status-popover-gap:8px'),'Core metrics must publish one status-popover gap token.');
@@ -51,10 +53,11 @@ assert(mobileWorkspace.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resi
 assert(mobileWorkspace.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resizer-track-size,7px)')&&mobileWorkspace.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Companions must occupy disjoint right and bottom grid regions in both orientations.');
 
 // 4/6) Data Center chart controls are one adaptive row; X/Y consume equal visible field height.
-assert(dcViews.includes('id="dcChartParams" class="dc-chart-params"'),'Data Center chart options need a plugin-owned layout scope.');
+assert(dcViews.includes("className:'dc-chart-params'")&&dcViews.includes("setId(chartParams,'dcChartParams')"),'Data Center Unit presentation must retain the accepted chart-options layout scope.');
 assert(nativeShell.includes('var(--dkds-parameter-auto-fit-native-columns,repeat(auto-fit,minmax(150px,220px)))'),'Core native ParameterSchema must expose a configurable auto-fit column token while retaining rendered-property ownership.');
 assert(dcMobile.includes('--dkds-parameter-auto-fit-native-columns:repeat(4,minmax(0,1fr))'),'X/Y/mode/legend controls must request four equal tracks through the Core configuration token.');
-assert(dcMobile.includes('--dkds-field-control-min-height:28px')&&dcMobile.includes('height:28px;min-height:28px'),'X/Y/mode visible controls must share one exact compact height.');
+assert(dcMobile.includes('--dkds-field-control-min-height:28px'),'Mobile chart fields must request compact density through the canonical Field token.');
+assert(!/\.dc-chart-params[^}]*?\.dkds-field-control[^}]*?(?:height|min-height)\s*:/.test(dcMobile),'Mobile Data Center must not re-own canonical Field rendered height.');
 assert(dcMobile.includes('--dc-main-areas:"source" "tool" "chart"'),'Narrow Data Center must keep formula/derived tools before Generic Chart.');
 assert(dcMobile.includes('.dc-chart-pane.dkds-portable-view:is(.is-floating,.is-global-floating)')&&dcMobile.includes('grid-template-rows:auto auto minmax(0,1fr)'),'Moved Generic Chart must reserve a flexing plot row instead of letting controls displace the graph.');
 
@@ -73,7 +76,7 @@ assert(mobileWorkspace.includes('--dkds-portable-floating-min-height:clamp(240px
 assert(presenterSource.includes('releasePortable:node=>'),'Mobile Presenter must export immediate portable-frame release.');
 {
   const source=presenterSource.replace(/const instance=new MobileWebSurfacePresenter\(\);[\s\S]*$/,'globalThis.__Presenter=MobileWebSurfacePresenter;');
-  const context={globalThis:{},window:{},document:{documentElement:{dataset:{dkdsHost:'mobile'},classList:{contains:()=>true}}},require:id=>id==='ui/style-ownership-gate'?{set(){},remove(){}}:id.includes('platform-boundary')?{isMobileDocument:()=>true}:id.includes('native-touch-drag')?{bind:()=>()=>{}}:{}};context.globalThis=context;vm.createContext(context);vm.runInContext(source,context);
+  const context={globalThis:{},window:{},document:{documentElement:{dataset:{dkdsHost:'mobile'},classList:{contains:()=>true}}},require:id=>id==='ui/style-ownership-gate'?{set(){},remove(){}}:id.includes('platform-boundary')?{isMobileDocument:()=>true}:id.includes('native-touch-drag')?{bind:()=>()=>{}}:id.includes('mobile-web-projection-contract')?{PROJECTION_STYLE:[],styleValues:()=>({values:{},parameterDrawer:false}),releaseDetachObserver(){},installDetachObserver(){}}:id.includes('mobile-scientific-workspace-allocation')?{usesWorkspaceScientificAllocation:()=>false,syncWorkspaceScientificAllocation:()=>null}:id.includes('mobile-scientific-track-allocator')?{allocateScientificTracks:()=>({rightPx:0,bottomPx:0,primaryBlockPx:0,centerInlinePx:0})}:{}};context.globalThis=context;vm.createContext(context);vm.runInContext(source,context);
   const presenter=new context.__Presenter();
   let reparented=0,removed=0;
   const node={dataset:{dkdsMaterialContentOwner:'mobile-presentation'},classList:{contains:key=>['dkds-portable-view','is-floating'].includes(key)},style:{getPropertyValue:()=>'',getPropertyPriority:()=>''}};
@@ -85,14 +88,16 @@ assert(presenterSource.includes('releasePortable:node=>'),'Mobile Presenter must
   assert.strictEqual(removed,1,'Obsolete companion frame must be removed immediately.');
 }
 
-// 8) Pulse sampling multi-row controls are a Surface, not a nowrap Toolbar.
-assert(pulseSampler.includes('class="ps-analysis-command-surface dkds-surface" data-dkds-command-surface="sampling"'),'Pulse sampling multi-row controls must use a neutral Surface identity rather than Core Toolbar row geometry.');
-assert(!pulseSampler.includes('ps-analysis-command-surface dkds-toolbar'),'Pulse sampling command surface must never impersonate a Toolbar.');
-assert(pulseSamplerMobile.includes('[data-dkds-mobile-region="route"][data-dkds-mobile-active="true"] .ps-analysis-controls'),'Mobile sampling density must stay in the plugin Mobile presentation stylesheet.');
+// 8) Pulse sampling multi-row controls are Unit layout recipes, not a nowrap Toolbar.
+assert(pulseSamplerUnit.includes("variant:'analysis-control-grid'")&&pulseSamplerUnit.includes("variant:'result-control-grid'"),'Pulse sampling controls must use the accepted Unit multi-row layout recipes rather than Core Toolbar row geometry.');
+assert(!pulseSampler.includes('ps-analysis-command-surface')&&!pulseSamplerUnit.includes('dkds-toolbar'),'Legacy Pulse sampling Toolbar/Surface DOM must remain retired after production Unit cutover.');
+assert(pulseSamplerManifest.styles.length===0&&pulseSamplerManifest.platformPresentation?.mobile?.mode==='adaptive','Mobile sampling density must be owned by the platform-neutral Unit composition and Mobile Presenter rather than plugin Mobile CSS.');
 assert(nativeShell.includes('.dkds-toolbar[data-dkds-toolbar-layout="stack"]')&&nativeShell.includes('display:grid;grid-template-rows:auto auto')&&nativeShell.includes('overflow:visible'),'Native platform still retains the generic stacked-toolbar fallback for genuine Mobile toolbars.');
 
-// 7 additional TER default-position safeguard: home R-V no longer forces a full-height grid row.
-assert(/#terMaxPage \.ter-resistance-card\{[\s\S]*?height:auto;/s.test(terCss),'TER R-V home card must use content/grid height rather than height:100%.');
-assert(/ter-resistance-card\.dkds-portable-view:is\(\.is-docked,\.is-floating,\.is-global-floating\)\{[\s\S]*?grid-template-rows:auto auto auto minmax\(0,1fr\)/s.test(terCss),'Moved TER R-V card must give all remaining height to the plot instead of retaining the 320px home-row floor.');
+// TER source-parity safeguard: accepted R-V geometry remains plugin detail while PortableView remains the only placement owner.
+const terCss=read('src/plugins/ter-analysis/plugin.css');
+assert(terCss.includes('grid-template-rows:auto auto auto minmax(320px,1fr)'),'TER R-V home card must preserve accepted source geometry.');
+assert(terCss.includes('ter-resistance-card.dkds-portable-view:is(.is-docked,.is-floating,.is-global-floating)')&&terCss.includes('minmax(0,1fr)'),'Moved TER R-V card must preserve accepted portable fill geometry.');
+assert(terViews.includes("stateVersion:'ter-plot-view-v3'"),'TER R-V placement must keep the accepted PlotView persistence contract.');
 
 console.log('v3.68.15+ Mobile portable geometry / portrait workspace / status popover closure PASS');

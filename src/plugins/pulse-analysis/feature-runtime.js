@@ -17,57 +17,17 @@
       label:'脉冲分析',buttonClass:'primary',order:60,html:pageHtml,onOpen:()=>P.render()
     });
 
-    workbench=sharedViews?.attach?.(ctx,page)||null;
-    const pulseHeader=dom.query('.analysis-page-header',page);
-    const pulseHeaderActionsHost=dom.create('div');
-    pulseHeaderActionsHost.className='dkds-plugin-header-actions';
-    dom.query('.analysis-page-close',pulseHeader)?.before(pulseHeaderActionsHost);
-    ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
-      activity:'pulse',
-      actions:[
-        {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
-        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
-      ]
-    });
+    const presentation=sharedViews?.attach?.(ctx,page)||null;
+    workbench=presentation?.workbench||null;
 
     ctx.ui.topWorkspace.register({
       id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
       layout:{
         mode:'native',root:{selector:'#pulseAnalysisPage .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:92,collapsible:true},{id:'raw-diagnostic',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'data-control',label:'参数',semanticKind:'panel',presentationPurpose:'parameters',presentationRole:'data-control',priority:92,collapsible:true}],sub:[]
       }
     });
 
-
-    // Every scientific data figure consumes the Core PlotView contract.
-    // Pulse only contributes domain actions/semantics; location, CSV/copy,
-    // SVG/PNG and resize lifecycle belong to the platform.
-    const pulsePlotViews=[];
-    const rawCard=dom.query('#pulseRawPlot',page)?.closest('.pulse-card');
-    if(rawCard&&workbench?.registerPrime){
-      workbench.registerPrime({
-        id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
-        handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
-        placements:['inline','right','bottom','float','global'],stateVersion:'pulse-raw-diagnostic-v2',autoOpen:true,
-        mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(dom.query('#pulseRawPlot',page));}catch{}})
-      });
-    }
-    const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
-      const plot=dom.query('#'+plotId,page);
-      const card=plot?.closest('.pulse-card');
-      if(!plot||!card||!ctx.ui.plotViews?.bind)return null;
-      const view=ctx.ui.plotViews.bind(`pulse:${viewId}`,card,{
-        plot,header:'.pulse-card-heading',actionsHost:'.pulse-plot-actions',portableTitle:title,
-        fileStem:()=>`pulse_${viewId}`,actions,portable:!prime,
-        placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',
-        portableFactory:(id,node,spec)=>workbench?.portable?workbench.portable(id,node,spec):ctx.ui.portable.create(id,node,spec)
-      });
-      pulsePlotViews.push(view);
-      return view;
-    };
-    bindPulsePlot('pulseRawPlot','raw','当前文件 · 原始波形诊断',{prime:true,actions:[{id:'fit',label:'适应全部',onInvoke:()=>P.fitRaw()}]});
-    bindPulsePlot('pulseReadPlot','read','脉冲条件 → 读取电流');
-    bindPulsePlot('pulsePulsePlot','pulse','脉冲条件 → 脉冲电流');
 
 
     const fileList=dom.query('#pulseFileList',page);
@@ -131,7 +91,7 @@
       id:'pulse-read',name:'Pulse / read transient extraction',
       analyze:(file,options={})=>ctx.tasks.submit('analyze-pulse-read',{file,options,inspection:null},{key:`provider:${String(file?.path||file?.name||'pulse-read')}`,latest:true}).promise
     });
-    return {deactivate(){pulsePlotViews.splice(0).forEach(view=>view?.dispose?.());}};
+    return {deactivate(){presentation?.dispose?.();}};
   }
   window.DKDSPluginModules.define('builtin.pulse-analysis','feature-runtime',Object.freeze({mount}));
 })();

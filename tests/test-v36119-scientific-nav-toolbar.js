@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const path=require('path');
 const {readCoreCss}=require('./css-source');
@@ -31,5 +32,5 @@ const components=read('src/styles/theme/component-appearance.css');
 assert(material.includes('.dkds-scientific-nav-tools.dkds-material-role-floating'),'Core Material Renderer must be the sole floating-surface owner for scientific navigation.');
 assert(components.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'Scientific navigation hit regions must consume the canonical Theme-resolved ToolbarAction radius instead of a location-specific radius.');
 
-assert(sdk.pluginApiVersion==='1.19.0'&&sdk.minimumAppVersion==='3.68.103','Historical D3 navigation behavior must remain valid under the current SDK 1.34 / Plugin API 1.19 host minimum.');
+assert(sdk.pluginApiVersion==='1.19.0'&&sdkAtLeast(sdk.minimumAppVersion,'3.70.6'),'Historical D3 navigation behavior must remain valid under the current SDK 1.34 / Plugin API 1.19 host minimum.');
 console.log('v3.61.20 Core draggable D3 navigation toolbar checks passed.');

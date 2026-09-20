@@ -90,7 +90,7 @@ const beforeHiddenListeners=events.get('dkds:selection-changed')?.size||0;
   const order=Array.from({length:1200},(_,i)=>1199-i),trace={artifactId:'artifact-sampled',x:order.map((_v,i)=>i),y:order.map(v=>Math.sin(v/17)),rowIdAt:i=>`row-stable-${order[i]}`};
   const sampled=displayContext.window.DKDSScientificDisplay.sampleTrace(trace,{pixelWidth:160});assert(sampled.displayCount<1200,'test must exercise actual display sampling.');
   for(const point of sampled.points.filter(row=>row.valid))assert.equal(point.rowId,`row-stable-${order[point.i]}`,'sampled points must retain the stable source-row identity after reordering.');
-  const dcSource=read('src/plugins/data-center/feature-runtime.js');assert(dcSource.includes('rowIdAt:index=>D.rowId(artifact,index)'),'Data Center must expose lazy stable row identity to the display sampler without a large duplicate rowIds allocation.');
+  const dcFeatureSource=read('src/plugins/data-center/feature-runtime.js'),dcChartSource=read('src/plugins/data-center/chart-runtime.js');assert(dcFeatureSource.includes("ctx.modules.require('chart-runtime')"),'Data Center feature must delegate Chart Provider rendering to its bounded chart runtime.');assert(dcChartSource.includes('rowIdAt:index=>D.rowId(artifact,index)'),'Data Center chart runtime must expose lazy stable row identity to the display sampler without a large duplicate rowIds allocation.');
 
   A.dispose();
   console.log('v3.68.104 Phase E final-integration isolation / lifecycle / identity / bounded linked-view audit PASS.');

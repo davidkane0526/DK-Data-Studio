@@ -14,6 +14,8 @@ const {globalTableSurfaceRegistry}=require('../table/surfaces');
 const {TooltipService, GroupPlot}=require('../tooltip/group-plot');
 const {ScientificCurveSurface}=require('../scientific-curve/surface');
 const {PluginWorkspace}=require('../workbench/plugin');
+const {createScientificCompositionRuntime}=require('../composition/scientific');
+const {createUnitTemplateRuntime}=require('../composition/unit-templates');
 
   class PluginScope {
     constructor(owner,options={}){
@@ -53,7 +55,8 @@ const {PluginWorkspace}=require('../workbench/plugin');
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
       this.plotViewRegistry=new PlotViewRegistry(this);this.cleanups.push(()=>this.plotViewRegistry.dispose());
-      this.plotViews={bind:(id,card,spec={})=>this.plotViewRegistry.bind(id,card,spec),hydrate:(root,spec={})=>this.plotViewRegistry.hydrate(root,spec),observe:(root,spec={})=>this.plotViewRegistry.observe(root,spec),get:id=>this.plotViewRegistry.get(id)};
+      this.plotViews={bind:(id,card,spec={})=>this.plotViewRegistry.bind(id,card,spec),create:(id,host,spec={})=>this.plotViewRegistry.create(id,host,spec),hydrate:(root,spec={})=>this.plotViewRegistry.hydrate(root,spec),observe:(root,spec={})=>this.plotViewRegistry.observe(root,spec),get:id=>this.plotViewRegistry.get(id)};
+      const scientificComposition=createScientificCompositionRuntime(this);this.sections=scientificComposition.sections;this.plotGroups=scientificComposition.plotGroups;this.scientificWorkbench=scientificComposition.scientificWorkbench;this.unitTemplates=createUnitTemplateRuntime(this,scientificComposition);
       this.tables={
         mount:(id,container,spec={})=>globalTableSurfaceRegistry.mount(id,container,{...spec,owner:this.owner}),
         bind:(id,table,spec={})=>globalTableSurfaceRegistry.bind(id,table,{...spec,owner:this.owner}),

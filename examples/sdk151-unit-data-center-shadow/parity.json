@@ -1,0 +1,104 @@
+{
+  "plugin": "builtin.data-center",
+  "shadow": "com.example.unit-data-center-shadow",
+  "productionReplaced": true,
+  "unitContract": {
+    "unitTypeCount": 41,
+    "missingUnitTypes": [],
+    "filledVariants": [
+      "chip:interactive"
+    ],
+    "correctedEvidence": [
+      "data-center chart geometry: plotView complete -> prime-contained",
+      "formula reference: display-only chip -> interactive chip"
+    ]
+  },
+  "layers": {
+    "function": {
+      "status": "pass-at-ui-domain-boundary",
+      "note": "Data-object, workflow, preview, export and chart intents map to production Data Center boundaries without copying its private controller/store."
+    },
+    "structure": {
+      "status": "pass",
+      "note": "data-control PRIME + data-primary browser/tool flow + scientific-secondary chart PRIME are reconstructed only from public Units."
+    },
+    "geometry": {
+      "status": "pass-after-blueprint-correction",
+      "note": "Existing sidebar/list/form/workflow/provenance recipes express the accepted Data Center geometry; the stale chart geometry dossier is corrected to prime-contained."
+    },
+    "style": {
+      "status": "pass",
+      "note": "Shadow ships no CSS, copies no dc-* visual selector and performs no direct style ownership write."
+    },
+    "interaction": {
+      "status": "pass",
+      "note": "Selection actions, tabs, context menu, dialog intents, recipe controls and PlotView exports use Core Unit/interaction surfaces."
+    },
+    "responsive": {
+      "status": "pass",
+      "note": "sidebar-main-wide, primary-flow, formula-grid and auto-fit parameter forms own responsive reflow without shadow media CSS."
+    },
+    "mobile": {
+      "status": "pass",
+      "note": "data-control and scientific-secondary PRIME roles are Presenter-projected; shadow contains no executable platform branch."
+    }
+  },
+  "boundedPreview": {
+    "rows": 18,
+    "rule": "metadata + bounded row window only"
+  },
+  "functionMap": {
+    "refresh": "renderAllUi",
+    "assignment": "setArtifactAssignments",
+    "toggleAssignment": "toggleAssignmentForArtifacts",
+    "rename": "renameArtifact",
+    "exclude": "setArtifactsExcluded",
+    "delete": "deleteArtifacts",
+    "exportTable": "exportActiveTableCsv",
+    "formula": "renderFormula",
+    "addStep": "addStep",
+    "runWorkflow": "runWorkflow",
+    "saveRecipe": "saveRecipe",
+    "loadRecipe": "loadRecipe",
+    "provenance": "renderProvenance",
+    "chartControls": "renderChartControls",
+    "chartParameters": "renderChartParams",
+    "chartRender": "renderChart",
+    "switchTab": "switchTab",
+    "selectAll": "selectAllVisibleArtifacts",
+    "invertSelection": "invertVisibleArtifactSelection",
+    "clearSelection": "clearVisibleArtifactSelection"
+  },
+  "remainingNonUnitGap": "None. Production Data Center presentation/composition is now Unit-owned; the shadow remains historical side-by-side evidence.",
+  "liveDomain": {
+    "status": "connected",
+    "owner": "builtin.data-center/live",
+    "note": "Shadow may consume the production Data Center Artifact/selection/workflow/chart state through the dependency-gated domain adapter without copying the private controller/store."
+  },
+  "sideBySide": {
+    "status": "accepted-live-presentation",
+    "sameOwner": true,
+    "coverage": [
+      "artifact-catalog",
+      "active-artifact",
+      "bounded-preview",
+      "selection",
+      "formula",
+      "workflow",
+      "provenance",
+      "chart-provider",
+      "chart-parameters",
+      "empty-state",
+      "workflow-running",
+      "workflow-error"
+    ],
+    "note": "Production Data Center and the Unit shadow consume the same live domain owner; visible Unit actions round-trip into production state and direct production changes project back into the Unit presentation."
+  },
+  "cutover": {
+    "status": "accepted-production-unit-candidate",
+    "presentationOwner": "src/plugins/data-center/unit-presentation.js",
+    "domainOwnerPreserved": true,
+    "unitTypeCount": 41,
+    "note": "Production presentation now consumes the same accepted Unit composition proven by the live side-by-side stage; no new Unit type was introduced."
+  }
+}

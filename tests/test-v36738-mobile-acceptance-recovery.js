@@ -35,12 +35,13 @@ for(const token of ["{ id: 'import-sheet', label: '导入' }","{ id: 'data', lab
 assert(presenters.includes("if(role===roles.SCIENTIFIC_SECONDARY&&kind==='prime')return Object.freeze({region:'companion-bottom'"),'Scientific PRIME must remain companion-bottom in compact/portrait layouts.');
 assert(!presenters.includes("profile==='compact'?'route':'companion-bottom'"),'Compact scientific PRIME must not regress to route replacement.');
 assert(presenters.includes("if(role===roles.INSPECTOR)return Object.freeze({region:'companion-right'"),'Curve inspector must remain a companion: portrait uses the bottom lane instead of an overlaid right-side surface.');
-assert(workspaceCss.includes('var(--dkds-mobile-user-bottom-track,36%)')&&workspaceCss.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations keep disjoint, bounded companion regions.');
+assert(workspaceCss.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)')&&workspaceCss.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations keep one Workspace-owned companion region from the canonical split preference bounded by the live viewport.');
 
-// 5. Parameter drawer remains bounded but may expand to the minimum width required by its parameter content.
-assert(workspaceCss.includes('width:min(320px,calc(100vw - 20px))'),'Parameter drawer must keep a conservative phone fallback before content-fit measurement.');
-assert(workspaceCss.includes('max-width:min(calc(100vw - 12px),680px)'),'Content-fit drawer must remain bounded below the full viewport.');
-assert(mobileWeb.includes('fitDrawerToContent(frame,surfaceId'),'Presenter must solve parameter width from live content instead of a fixed one-third viewport rule.');
+// 5. Parameter drawer width is solved from Unit semantics and real rendered overflow.
+// CSS supplies only physical viewport containment; it does not invent a percentage default.
+assert(!workspaceCss.includes('width:min(32vw,420px'),'Parameter drawer must not restore the retired one-third/420px automatic width.');
+assert(workspaceCss.includes('max-width:calc(100vw - 12px)'),'Drawer must remain physically contained by the actual viewport.');
+assert(mobileWeb.includes('fitDrawerToContent(frame,surfaceId')&&mobileWeb.includes('solveMinimumReasonableWidth(frame,region='),'Presenter must compute the smallest fitting width from live Unit content.');
 
 // 6. Repeated host state publications must not restore/reparent every PRIME on each frame.
 const applyStart=mobileWeb.indexOf('  apply(snapshot={}){');

@@ -53,6 +53,28 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover:not(:disabled){ba
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-tab-surface-active);color:var(--dkds-ca-tab-text-active);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-active)}
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-tab-surface-selected);color:var(--dkds-ca-tab-text-selected);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-selected)}
 
+/* Compact Unit tabs retain the accepted toolbar-action silhouette while keeping
+   tab semantics/state ownership in Core. */
+body.dkds-modern-ui [data-dkds-unit-template="tabs-v2"][data-dkds-unit-variant="compact"] [data-dkds-component-identity="tab"]{
+  /* Compact Tabs keep tab semantics, but deliberately consume the accepted
+     toolbar-action visual recipe used by compact scientific channel selectors. */
+  --dkds-ca-tab-surface:var(--dkui-component-toolbar-action-surface,transparent);
+  --dkds-ca-tab-surface-hover:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));
+  --dkds-ca-tab-surface-active:var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface));
+  --dkds-ca-tab-surface-selected:var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface));
+  --dkds-ca-tab-text:var(--dkui-component-toolbar-action-text,var(--dkui-text));
+  --dkds-ca-tab-text-active:var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text));
+  --dkds-ca-tab-text-selected:var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text));
+  --dkds-ca-tab-border:var(--dkui-component-toolbar-action-border,transparent);
+  --dkds-ca-tab-border-hover:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
+  --dkds-ca-tab-border-active:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
+  --dkds-ca-tab-shadow:var(--dkui-component-toolbar-action-shadow,none);
+  --dkds-ca-tab-shadow-hover:var(--dkui-component-toolbar-action-shadow-hover,var(--dkds-ca-tab-shadow));
+  --dkds-ca-tab-shadow-active:var(--dkui-component-toolbar-action-shadow-active,var(--dkds-ca-tab-shadow));
+  --dkds-ca-tab-shadow-selected:var(--dkui-component-toolbar-action-shadow-active,var(--dkds-ca-tab-shadow));
+  border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px));
+}
+
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]{
   --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));--dkds-material-shadow:var(--dkui-component-toolbar-group-shadow,var(--dkui-shadow-1));color:var(--dkui-component-toolbar-group-text,var(--dkui-text))
 }
@@ -330,6 +352,20 @@ body.dkds-modern-ui [data-dkds-component-identity="field"]:hover:not(:disabled){
 body.dkds-modern-ui [data-dkds-component-identity="field"]:focus-visible{background:var(--dkui-component-field-surface-active,var(--dkui-control-bg));color:var(--dkui-component-field-text-active,var(--dkui-text));border-color:var(--dkui-component-field-border-active,var(--dkui-accent));outline:none;box-shadow:var(--dkui-component-field-indicator,var(--dkui-focus))}
 body.dkds-modern-ui :where([data-dkds-material-recipe="thin-glass"],[data-dkds-material-recipe="soft-glass"],[data-dkds-material-recipe="liquid-glass"]) [data-dkds-component-identity="field"]{background-color:color-mix(in srgb,var(--dkui-role-control-surface,var(--dkui-surface)) 30%,transparent);border-color:color-mix(in srgb,var(--dkui-role-control-border,var(--dkui-divider)) 48%,transparent)}
 body.dkds-modern-ui :where([data-dkds-material-recipe="thin-glass"],[data-dkds-material-recipe="soft-glass"],[data-dkds-material-recipe="liquid-glass"]) [data-dkds-component-identity="field"]:hover:not(:disabled){border-color:color-mix(in srgb,var(--dkui-divider-hover) 82%,transparent)}
+/* ParameterSchema owns one canonical disclosure shell for both native select
+   and multi-select proxy controls.  Raw Unit selects retain the platform-native
+   disclosure; only the schema shell suppresses native chrome and draws this
+   single thin chevron. */
+body.dkds-modern-ui .dkds-select-control-shell>[data-dkds-component-identity="field"]{
+  background-image:none;
+}
+body.dkds-modern-ui .dkds-select-control-shell>select[data-dkds-component-identity="field"]{
+  -webkit-appearance:none;appearance:none;
+}
+body.dkds-modern-ui .dkds-select-caret{
+  color:var(--dkui-component-field-text,var(--dkui-text-soft));
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+}
 
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);border-color:var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow);opacity:1}

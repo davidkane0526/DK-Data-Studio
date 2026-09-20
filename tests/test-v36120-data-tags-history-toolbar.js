@@ -31,7 +31,7 @@ function assert(value,message){if(!value)throw new Error(message);}
   await history.undo();assert(value===1&&history.canRedo(),'Project history undo must execute the inverse and expose redo.');
   await history.redo();assert(value===2&&history.canUndo(),'Project history redo must replay the edit.');
 
-  const app=read('src/generated/runtime/app.js'),windowRuntime=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcView=read('src/plugins/data-center/shared-views.js'),ui=read('src/generated/runtime/ui-infrastructure.js'),index=read('src/index.html'),automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
+  const app=read('src/generated/runtime/app.js'),windowRuntime=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcView=read('src/plugins/data-center/unit-presentation.js'),ui=read('src/generated/runtime/ui-infrastructure.js'),index=read('src/index.html'),automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
   assert(index.includes('core/project/history.js'),'Main shell must load the Core project-history runtime.');
   assert(app.includes("'core.project-history'")&&app.includes('recordProjectHistory({label:`数据用途')&&app.includes('history-source-remove-undo'),'Data-source management must record reversible edits in Core history.');
   assert(app.includes("e.key.toLowerCase()==='y'")&&app.includes('e.shiftKey)void systemRedo()'),'Main shell must support Ctrl/Cmd+Y and Ctrl/Cmd+Shift+Z redo.');

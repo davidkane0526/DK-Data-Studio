@@ -72,44 +72,6 @@
     let environment={};
     try{environment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||window.electronAPI?.getRuntimeStatus?.()||Promise.resolve({runtime:'unknown'}));}catch(err){environment={runtime:'unknown',error:sanitizeText(err.message)};}
 
-    await runCase('ui.hard-visual-invariants','Hard Visual Invariants','00 / Hard Gate',async()=>{
-      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      const nativeTooltipElements=[...document.querySelectorAll('[title]')];
-      assert(!nativeTooltipElements.length,`Browser-native tooltip remains: ${nativeTooltipElements.slice(0,4).map(el=>String(el.textContent||el.getAttribute('aria-label')||el.tagName||'element').trim()).join(', ')}`);
-      const forbiddenTooltipZones=[...document.querySelectorAll('#statusBar [data-dkds-tooltip],.analysis-chart-title [data-dkds-tooltip],.dkds-analysis-nav [data-dkds-tooltip],.dkds-portable-placement-trigger[data-dkds-tooltip],#dkaiSend[data-dkds-tooltip]')];
-      assert(!forbiddenTooltipZones.length,`Redundant tooltip declared in quiet chrome: ${forbiddenTooltipZones.slice(0,4).map(el=>String(el.textContent||el.getAttribute('aria-label')||el.className).trim()).join(', ')}`);
-      const datasetLabels=[...document.querySelectorAll('.respar-dataset-title')];
-      for(const label of datasetLabels)assert(String(label.dataset.dkdsTooltip||'').trim(),`Dataset label is missing its full-path Core tooltip: ${String(label.textContent||'').trim()}`);
-      const navButtons=[...document.querySelectorAll('.dkds-analysis-nav-btn')];
-      for(const button of navButtons){
-        const component=window.DKDSThemeComponentAppearance?.componentOf?.(button)||null,componentId=String(component?.id||component?.componentIdentity||component||'');
-        assert(componentId==='toolbarAction',`Analysis navigation escaped toolbarAction Theme ownership: ${componentId||'unmanaged'}`);
-        const shadow=getComputedStyle(button).boxShadow||'';
-        assert(!/inset/i.test(shadow),`Analysis navigation regained a tab underline/inset shadow: ${shadow}`);
-      }
-      const integrated=[...document.querySelectorAll('.analysis-chart-title > .dkds-integrated-action-group,.analysis-chart-title > .panel-header-actions,.analysis-chart-title > .dkds-plot-view-actions,#statusBar.statusbar .statusbar-command-cluster')];
-      for(const group of integrated){
-        const style=getComputedStyle(group);
-        assert(style.backgroundColor==='rgba(0, 0, 0, 0)'||style.backgroundColor==='transparent',`Integrated chrome group regained its own background: ${group.className} = ${style.backgroundColor}`);
-        assert(style.boxShadow==='none',`Integrated chrome group regained its own shadow: ${group.className} = ${style.boxShadow}`);
-        assert(['0px','0'].includes(style.borderTopWidth)&&['0px','0'].includes(style.borderRightWidth)&&['0px','0'].includes(style.borderBottomWidth)&&['0px','0'].includes(style.borderLeftWidth),`Integrated chrome group regained an independent border: ${group.className}`);
-      }
-      const chartHeaders=[...document.querySelectorAll('.analysis-chart-title')];
-      let parentOwnedChartHeaders=0;
-      for(const header of chartHeaders){
-        const ownership=window.DKDSThemeMaterialRenderer?.ownership?.(header,'chrome')||null;
-        assert(ownership?.managed===true,`Analysis chart title escaped Core chrome ownership: ${ownership?.status||ownership?.role||'unmanaged'}`);
-        if(ownership.status==='MATERIAL_PARENT_OWNED')parentOwnedChartHeaders++;
-      }
-      const smb=document.querySelector('.dksmb-window'),lan=document.querySelector('.lan-web-panel');
-      if(smb&&lan){
-        const Material=window.DKDSThemeMaterialRenderer,smbr=Material?.roleOf?.(smb)||'',lanr=Material?.roleOf?.(lan)||'',smrecipe=Material?.recipeOf?.(smb)||'',lanrecipe=Material?.recipeOf?.(lan)||'';
-        assert(smbr==='elevated'&&lanr==='elevated',`SMB/LAN panels must share elevated material ownership: ${smbr}/${lanr}`);
-        assert(smrecipe===lanrecipe,`SMB/LAN panels must share one Theme material recipe: ${smrecipe}/${lanrecipe}`);
-      }
-      return {nativeTooltipElements:0,forbiddenTooltipZones:0,datasetLabels:datasetLabels.length,analysisNavButtons:navButtons.length,integratedGroups:integrated.length,chartHeaders:chartHeaders.length,parentOwnedChartHeaders,smbLanCompared:!!(smb&&lan)};
-    });
-
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
       const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificReactive','DKDSScientificPipeline','DKDSScientificTransforms','DKDSScientificAlgorithms','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];

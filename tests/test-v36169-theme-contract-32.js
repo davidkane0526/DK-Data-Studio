@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const os=require('os');
 const path=require('path');
@@ -11,7 +12,7 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.47.0');
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.49.0'));
 assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('contract.material.roles.chrome')&&Theme.supports('contract.platform.logical-units'));assert(!Theme.supports('materialBlur')&&!Theme.supports('material.roles.chrome')&&!Theme.supports('platform.logical-units'));
 assert.equal(Theme.supports('contract:3.8.0'),false,'Theme Contract must not negotiate historical contract versions; only current feature capabilities are queryable.');

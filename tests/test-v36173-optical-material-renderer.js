@@ -1,6 +1,7 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('sdk/contract.json').sdkVersion,'1.47.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.49.0'));assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 const runtime=read('src/core/theme/material-renderer.js');
 for(const x of ["const VERSION='3.11.0'","clear','thin-glass','soft-glass','liquid-glass","globalThis.DKDSTheme?.recipePolicy?.()","renderer.liquidGlass","renderer.edgeRefraction","renderer.dynamicSpecular","renderer.profilePolicy","BROKEN_OPTICAL_RENDERER","prefers-reduced-motion","--dkds-optical-shift-x"])assert(runtime.includes(x),`missing optical renderer token: ${x}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(runtime.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Optical material policy must not know plugin identity selectors.');

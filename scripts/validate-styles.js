@@ -97,6 +97,18 @@ const structureDirFinal=path.join(root,'src','styles','structure');
 const presentationFiles=fs.readdirSync(presentationDir).filter(name=>name.endsWith('.css')).sort();
 const structureFiles=fs.readdirSync(structureDirFinal).filter(name=>name.endsWith('.css')).sort();
 if(fs.existsSync(path.join(presentationDir,'workspace-theme-boundary.css')))violations.push('src/styles/presentation/workspace-theme-boundary.css: catch-all compatibility patch layer must not return.');
+function stripNegatedSelectorFunctions(selector){
+  const text=String(selector||'');let out='';
+  for(let i=0;i<text.length;){
+    if(text.startsWith(':not(',i)){
+      let depth=1,quote='';i+=5;
+      while(i<text.length&&depth>0){const c=text[i];if(quote){if(c==='\\'){i+=2;continue;}if(c===quote)quote='';i++;continue;}if(c==='"'||c==="'"){quote=c;i++;continue;}if(c==='(')depth++;else if(c===')')depth--;i++;}
+      continue;
+    }
+    out+=text[i++];
+  }
+  return out;
+}
 function splitSelectorList(text){
   const out=[];let start=0,paren=0,bracket=0,quote='';
   for(let i=0;i<text.length;i++){
@@ -245,9 +257,11 @@ for(const name of structureFiles){
         const container=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
         if(!genericFallback&&!canonical&&!container)violations.push(`src/styles/structure/${name}: scientific floating chrome "${selector}" rewrites ${normalized}. Item height is owned by --dkds-scientific-nav-item-* / --dkds-header-action-height slots in sdk-semantic-surfaces.css.`);
       }
-      if(/(^|[^-])\.dkds-field-control\b/.test(selector)&&!/:not\(\.dkds-field-control\)/.test(selector)&&fieldDensityGeometry.test(normalized)){
+      const positiveSelector=stripNegatedSelectorFunctions(selector);
+      if(/(^|[^-])\.dkds-field-control\b/.test(positiveSelector)&&fieldDensityGeometry.test(normalized)){
         const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-field-control';
-        if(!canonical)violations.push(`src/styles/structure/${name}: semantic field context "${selector}" rewrites ${normalized}. dkds-field-control density belongs to sdk-semantic-surfaces.css and --dkds-field-control-* slots.`);
+        const genericFallback=selector.startsWith('button:not(:is(')||selector.startsWith(':where(button):not(:where(');
+        if(!canonical&&!genericFallback)violations.push(`src/styles/structure/${name}: semantic field context "${selector}" rewrites ${normalized}. dkds-field-control density belongs to sdk-semantic-surfaces.css and --dkds-field-control-* slots.`);
       }
       const portableContext=/\.dkds-portable-view\b/.test(selector)&&/(?:\.is-(?:floating|global-floating|docked|sticky)\b|dkds-plugin-canvas-(?:left|right|bottom)|dkds-analysis-(?:right|bottom|workbench))/.test(selector);
       if(portableContext&&portablePlacementGeometry.test(normalized)){

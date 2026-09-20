@@ -41,11 +41,12 @@ const main=read('desktop/main.js');
 const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const manager=read('desktop/plugin-window-manager.js');
 
-assert(kernel.includes('function applyPackagedManifest('),'Plugin Kernel must own one packaged-manifest merge path.');
-assert(kernel.includes('packageRuntime:Object.freeze({')&&kernel.includes('applyManifest:(id,manifest,source)=>applyPackagedManifest'),'Dedicated renderer must be able to apply the canonical package manifest before activation.');
-const targetManifestApply=runtime.indexOf('packageRuntime?.applyManifest?.(spec.pluginId');
+assert(kernel.includes('function materializeTaskSources(')&&kernel.includes('function applyPackage('),'Plugin Kernel must own one packaged manifest + task-source materialization path.');
+assert(kernel.includes('packageRuntime:Object.freeze({')&&kernel.includes('applyPackage:(id,manifest,source,files,options)=>applyPackage'),'Dedicated renderer must expose canonical package metadata/source materialization before activation.');
+const targetManifestApply=runtime.indexOf('applyRuntimePackage(spec);');
 assert(targetManifestApply>runtime.indexOf('for(const file of (spec.packageScripts'), 'Dedicated renderer must apply target package manifest after evaluating target package scripts.');
 assert(targetManifestApply<runtime.indexOf("measure('plugins-activate'"),'Canonical target package manifest must be applied before Plugin Contract validation/activation.');
+assert(runtime.includes("const files=(source==='external'||source==='override')?(row?.packageFiles||{}):(row?.taskSources||{});"),'Dedicated renderer must route external package bytes and trusted built-in task bytes through one canonical apply operation.');
 assert(runtime.includes('if(!targetPluginState)throw new Error(`插件包没有注册目标插件：${spec.pluginId}`)'),'Dedicated renderer must reject a package that failed to register its target plugin id.');
 assert(runtime.includes('插件没有注册声明的独立工作区'),'Dedicated renderer must verify the target activity contribution.');
 assert(runtime.includes('插件没有注册 TOP Workspace 契约'),'Dedicated renderer must verify the TOP workspace contribution.');

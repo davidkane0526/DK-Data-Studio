@@ -498,6 +498,26 @@
     state.host?.setStatus?.(`安装插件失败：${String(err?.message||err||'未知错误')}`);
   }
 
+  async function exportSdk(){
+    const button=$('#pluginManagerExportSdkBtn');
+    if(button)button.disabled=true;
+    state.host?.setStatus?.('正在导出当前 SDK…');
+    try{
+      const exporter=window.electronAPI?.exportSdkBundle;
+      if(typeof exporter!=='function')throw new Error('当前平台没有提供 SDK 导出能力。');
+      const result=await exporter();
+      if(!result){state.host?.setStatus?.('已取消导出 SDK。');return false;}
+      const version=String(result.sdkVersion||'').trim();
+      state.host?.setStatus?.(`SDK${version?` ${version}`:''} 已导出${result.name?`：${result.name}`:'。'}`);
+      return true;
+    }catch(err){
+      state.host?.setStatus?.(`导出 SDK 失败：${err?.message||err}`);
+      return false;
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
   async function copyDiagnostics(){
     const text=JSON.stringify(window.DKDSPlugins?.diagnostics?.()||{},null,2);
     try{
@@ -570,6 +590,7 @@
       renderList();
     };
     $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{const opened=await window.DKDSPlugins.external.openFolder();if(opened===false)state.host?.setStatus?.('当前平台没有可直接浏览的插件目录；请使用“安装插件”选择 .dkplugin 文件。');}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
+    $('#pluginManagerExportSdkBtn').onclick=exportSdk;
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
       const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'恢复插件默认设置',message:'恢复所有插件的默认启用状态与默认预热设置？插件工程数据不会被删除。',cancelLabel:'取消',confirmLabel:'恢复默认'});if(!confirmed)return;

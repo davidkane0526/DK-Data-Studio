@@ -121,6 +121,26 @@ handle.validate();
 handle.destroy();
 ```
 
+
+## Unit outer-layout ownership
+
+`units.parameterForm.mount(...)` keeps Core ownership of canonical fields, control density, validation, accessibility, focus and Theme appearance. The default outer form grid is also Core-owned.
+
+For accepted source-parity compositions whose **outer grid** is already owned by an enclosing Layout Unit/detail host, declare that relationship explicitly:
+
+```js
+const host = units.layout.create(panel, { variant:'identity', className:'my-form-detail' });
+units.parameterForm.mount(host, schema, {
+  compact:true,
+  autoFit:true,
+  layoutOwner:'host'
+});
+```
+
+`layoutOwner:'host'` is allowed only when the mount node is a Layout Unit. Core then suppresses the default ParameterSchema outer grid on that host, preventing two `grid-template-columns` owners. It does **not** transfer field/control paint, dimensions, validation or accessibility to the plugin. Do not use specificity or `!important` to fight the Core grid.
+
+For nested responsive Unit layouts, `units.layout.create/apply(..., { responsiveTarget })` may measure a declared semantic ancestor instead of the local already-shrunk child. This is a generic source-parity capability and must not be replaced by plugin-id branches in Core.
+
 ## Responsive behavior
 
 The core stylesheet owns `.schema-*` controls.

@@ -17,7 +17,7 @@ button{cursor:pointer;
   .plugin-manager-page button,.dkds-settings-dialog button,.dkds-dialog button,
   .command-menu button,.dkds-scientific-nav-tools>button,
   .dkds-integrated-action-group>button,.dkds-separated-action-group>button,.dkds-portable-controls>button,
-  .panel-header-actions>button,.dkds-plot-view-actions>button
+  .panel-header-actions>button,.dkds-plot-view-actions>button,.dkds-field-control
 )){
   --dkds-generic-button-padding-block:6px;
   --dkds-generic-button-padding-inline:10px;
@@ -96,24 +96,24 @@ button.wide{ width:100%;
   min-width:34px;
   padding:0 9px;
 }
-.schema-parameter-panel{
+.schema-parameter-panel{min-width:0;}
+.schema-parameter-panel:not(.layout-host-owned){
   display:grid;
-  grid-template-columns:repeat(2,minmax(160px,1fr));
+  grid-template-columns:repeat(2,minmax(128px,1fr));
   gap:8px 10px;
-  min-width:0;
 }
-.schema-parameter-panel.compact{grid-template-columns:repeat(2,minmax(130px,1fr));}
+.schema-parameter-panel.compact:not(.layout-host-owned){grid-template-columns:repeat(2,minmax(112px,1fr));}
 /* autoFit is a Core geometry contract, not a plugin-layer override. Small parameter
    sets pack into content-sized tracks and only wrap when their actual Surface no
    longer has enough room. */
-.schema-parameter-panel.auto-fit{
+.schema-parameter-panel.auto-fit:not(.layout-host-owned){
   grid-template-columns:var(--dkds-parameter-auto-fit-columns,repeat(auto-fit,minmax(140px,205px)));
   justify-content:start;align-items:end;gap:5px 8px;
 }
 /* compact + autoFit is deliberately much denser than an ordinary form. It is
    intended for short option rows such as chart axes/mode/legend controls, where
    stretching each field to 200+ px wastes scarce horizontal workspace. */
-.schema-parameter-panel.auto-fit.compact{
+.schema-parameter-panel.auto-fit.compact:not(.layout-host-owned){
   grid-template-columns:var(--dkds-parameter-auto-fit-compact-columns,repeat(auto-fit,minmax(96px,1fr)));
   justify-content:stretch;
   gap:4px 6px;
@@ -147,16 +147,27 @@ button.wide{ width:100%;
 }
 .schema-param-field select[multiple]{min-height:88px;}
 .schema-param-field select.dkds-multiselect-source{display:none}
-.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;box-sizing:border-box;min-height:var(--dkds-schema-field-min-height);padding-block:var(--dkds-schema-field-padding-block);padding-inline:var(--dkds-schema-field-padding-inline)}
+.dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;width:100%;overflow:hidden}
 .dkds-multiselect-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dkds-multiselect-caret{flex:0 0 auto;line-height:1}
+.dkds-multiselect-caret{display:none}
+.dkds-select-control-shell{position:relative;display:block;width:100%;min-width:0}
+.dkds-select-control-shell>.dkds-select-shell-control{width:100%;min-width:0;padding-inline-end:max(var(--dkds-field-control-padding-inline,8px),26px)}
+.dkds-select-caret{position:absolute;right:10px;top:50%;width:6px;height:6px;box-sizing:border-box;transform:translateY(-68%) rotate(45deg);pointer-events:none}
 .schema-param-field textarea{resize:vertical;line-height:1.45;}
 .schema-param-help{font-size:var(--plugin-font-meta,11px);line-height:1.4;}
 .schema-param-error{min-height:10px;font-size:var(--plugin-font-meta,11px);line-height:1.35;}
 .dkds-pointer-coarse .schema-param-field{--dkds-schema-field-min-height:var(--dkds-touch-target,44px);}
 .dkds-pointer-coarse .schema-param-field :where(input,select,textarea):not(.dkds-field-control){font-size:12px;}
 .dkds-pointer-coarse{--dkds-field-control-min-height:var(--dkds-touch-target,44px);}
-.dkds-size-compact .schema-parameter-panel:not(.auto-fit),.dkds-size-compact .schema-parameter-panel.compact:not(.auto-fit){grid-template-columns:1fr;}
+/* Compact host buckets must not greedily collapse ordinary parameter forms.
+   Keep two useful tracks while controls can still shrink; one column is reserved
+   for genuinely tiny viewports only. */
+.dkds-size-compact .schema-parameter-panel:not(.auto-fit):not(.layout-host-owned),
+.dkds-size-compact .schema-parameter-panel.compact:not(.auto-fit):not(.layout-host-owned){grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:310px){
+  .schema-parameter-panel:not(.auto-fit):not(.layout-host-owned),
+  .schema-parameter-panel.compact:not(.auto-fit):not(.layout-host-owned){grid-template-columns:minmax(0,1fr);}
+}
 .schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;}
 .dkds-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}
 
@@ -170,14 +181,14 @@ button.wide{ width:100%;
 .activity-more-menu .activity-tab{display:flex;width:100%;justify-content:flex-start;}
 
 .context-overflow-menu{right:0;left:auto;top:calc(100% + 4px);}
-.context-overflow-menu .plugin-toolbar-btn{display:flex;width:100%;--dkds-command-height:30px;--dkds-command-padding-block:5px;--dkds-command-padding-inline:8px;justify-content:flex-start;font-size:10px;}
+.context-overflow-menu .plugin-toolbar-btn:not(.plugin-activity-hidden){display:flex;width:100%;--dkds-command-height:30px;--dkds-command-padding-block:5px;--dkds-command-padding-inline:8px;justify-content:flex-start;font-size:10px;}
 
 .command-menu{
   position:absolute;
 
   max-width:min(360px,90vw);
 }
-.command-menu>button:not([hidden]),.command-menu>div>.plugin-menu-item:not(.plugin-activity-hidden):not([hidden]){
+.command-menu>button:not([hidden]):not(.plugin-activity-hidden),.command-menu>div>.plugin-menu-item:not(.plugin-activity-hidden):not([hidden]){
   width:100%;
 
   display:flex;

@@ -23,13 +23,14 @@ assert(materialRoles.includes('--dkds-material-base:var(--dkui-role-surface-surf
 assert(materialRenderer.includes('background-color:var(--dkds-material-base,var(--dkui-surface));')&&materialRenderer.includes('border-color:var(--dkds-material-border,var(--dkui-divider));'),'Material Renderer must be the single owner that turns semantic Surface tokens into paint.');
 assert(!ui.includes('body.dkds-modern-ui #resonanceDedicatedPage .respar-left-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-inspector-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-floating-panel{\n  background:#fff'),'Modern UI must not force resonance/plugin panels back to a light-only surface.');
 
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonance.includes('dkds-surface')&&resonance.includes('dkds-floating-surface'),'Resonance must consume Core semantic surfaces instead of painting runtime chrome.');
+const resonance=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonance.includes('units.panel.create')&&resonance.includes('units.header.create')&&resonance.includes('units.floatingChrome.create'),'Resonance production presentation must consume Core Unit semantic surfaces instead of painting runtime chrome.');
 assert(!resonance.includes('background:rgba(255,255,255,.94)'),'Resonance floating tool chrome must not hard-code a light-only white overlay.');
-const dataCenter=read('src/plugins/data-center/shared-views.js');
-assert(dataCenter.includes('dkds-surface')&&dataCenter.includes('dkds-surface-header')&&dataCenter.includes('dkds-field-control'),'Data Center must consume Core surface/header/control roles.');
-const ter=read('src/plugins/ter-analysis/shared-views.js');
-assert(ter.includes('dkds-surface')&&ter.includes('dkds-surface-actions')&&ter.includes('dkds-integrated-action-group'),'TER must consume Core semantic surfaces and integrated header actions without nesting a second toolbar surface.');
+const dataCenter=read('src/plugins/data-center/unit-presentation.js');
+const unitFoundation=read('src/core/ui/modules/composition/unit-template-foundation.js');
+assert(dataCenter.includes('units.panel.create')&&dataCenter.includes('units.header.create')&&dataCenter.includes('units.field.create')&&unitFoundation.includes("plain:'dkds-surface'")&&unitFoundation.includes("panel:'dkds-surface-header'")&&unitFoundation.includes("control.className='dkds-field-control'"),'Data Center must consume Unit/Core surface/header/control roles.');
+const ter=read('src/plugins/ter-analysis/unit-presentation.js');
+assert(ter.includes('ctx.ui.unitTemplates')&&ter.includes('units.panel.create')&&ter.includes('units.header.create')&&ter.includes('units.action.create'),'TER production presentation must consume Core Unit surfaces/header/actions without private visual chrome.');
 const vthCss=read('examples/transfer-vth-lab/plugin.css');
 const vthExample=read('examples/transfer-vth-lab/plugin.js');
 assert(vthExample.includes('dkds-surface')&&vthExample.includes('dkds-field')&&vthExample.includes('dkds-metric'),'First-party Tool/TOP examples must demonstrate Core semantic visual primitives.');

@@ -1,0 +1,1152 @@
+{
+  "version": "2.5.38",
+  "primitivePolicies": {
+    "button": {
+      "unit": "action",
+      "factory": "action.create",
+      "rule": "Every ordinary interactive button is expressible as an Action Unit or as a mandatory Core chrome action."
+    },
+    "input": {
+      "unit": "field",
+      "factory": "field.create",
+      "rule": "Text/number/range inputs use Field; checkbox/radio inputs use Check."
+    },
+    "select": {
+      "unit": "field",
+      "factory": "field.create",
+      "rule": "Select controls use Field/select or schema ParameterForm."
+    },
+    "textarea": {
+      "unit": "field",
+      "factory": "field.create",
+      "rule": "Textarea controls use Field/textarea."
+    },
+    "checkbox": {
+      "unit": "check",
+      "factory": "check.create",
+      "rule": "Checkbox/radio geometry and alignment are Core-owned."
+    },
+    "table": {
+      "unit": "table",
+      "factory": "table.mount",
+      "rule": "Data tables use the managed Table Unit."
+    },
+    "header": {
+      "unit": "header",
+      "factory": "header.create",
+      "rule": "Panel/section/portable headers use Header unless a stronger Unit creates its header."
+    },
+    "surface": {
+      "unit": "surface",
+      "factory": "surface.create",
+      "rule": "Canonical material surfaces use Surface/Panel."
+    },
+    "plot": {
+      "unit": "scientificPlot",
+      "factory": "scientificPlot.create",
+      "rule": "Chrome-free plot canvas is ScientificPlot; complete data figure is PlotView."
+    },
+    "status": {
+      "unit": "status",
+      "factory": "status.create/status.contribute",
+      "rule": "Local/global status presentation uses Status."
+    }
+  },
+  "chromePolicies": {
+    "plotViewComplete": {
+      "unit": "plotView",
+      "variant": "complete",
+      "header": "required",
+      "title": "required",
+      "coreActions": [
+        "placement",
+        "export"
+      ],
+      "logicalOrder": [
+        "placement",
+        "export",
+        "domain-actions"
+      ],
+      "domainActions": "optional-after-export",
+      "invariants": [
+        "header is always present",
+        "placement control is always present because a PlotView is movable",
+        "export menu is always present and contains at least one export/copy action",
+        "plugin actions may extend but may not replace Core placement/export actions"
+      ]
+    },
+    "plotGroupStandard": {
+      "unit": "plotGroup",
+      "header": "standard",
+      "title": "required",
+      "meta": "optional",
+      "coreActions": [
+        "placement",
+        "columns",
+        "collapse",
+        "close"
+      ],
+      "logicalOrder": [
+        "placement",
+        "columns",
+        "domain-actions",
+        "collapse",
+        "close"
+      ],
+      "domainActions": "optional-between-columns-and-collapse",
+      "invariants": [
+        "standard group header is complete; partial group chrome is forbidden",
+        "columns control is Core-owned",
+        "placement/collapse/close are Core-owned",
+        "every child is a complete PlotView"
+      ]
+    },
+    "plotGroupTitleless": {
+      "unit": "plotGroup",
+      "header": "none",
+      "title": "forbidden",
+      "coreActions": [],
+      "logicalOrder": [],
+      "domainActions": "forbidden",
+      "invariants": [
+        "titleless group is fixed to exactly one placement",
+        "titleless group exposes no placement/collapse/close chrome"
+      ]
+    },
+    "movableInspector": {
+      "unit": "prime",
+      "role": "inspector",
+      "header": "required",
+      "title": "required",
+      "coreActions": [
+        "placement",
+        "close"
+      ],
+      "optionalCoreActions": [
+        "collapse"
+      ],
+      "logicalOrder": [
+        "placement",
+        "domain-actions",
+        "collapse?",
+        "close"
+      ],
+      "invariants": [
+        "movable inspector uses canonical header",
+        "close is always discoverable"
+      ]
+    },
+    "movableDataControl": {
+      "unit": "prime",
+      "role": "data-control",
+      "header": "required",
+      "title": "required",
+      "coreActions": [
+        "placement",
+        "close"
+      ],
+      "optionalCoreActions": [
+        "collapse"
+      ],
+      "logicalOrder": [
+        "placement",
+        "domain-actions",
+        "collapse?",
+        "close"
+      ],
+      "invariants": [
+        "movable data-control uses canonical header"
+      ]
+    },
+    "fixedDataControl": {
+      "unit": "prime",
+      "role": "data-control",
+      "header": "optional",
+      "coreActions": [],
+      "logicalOrder": [],
+      "invariants": [
+        "single-placement fixed data-control never exposes a placement chooser"
+      ]
+    },
+    "scientificSecondary": {
+      "unit": "prime",
+      "role": "scientific-secondary",
+      "header": "required",
+      "title": "required",
+      "coreActions": [
+        "placement",
+        "collapse",
+        "close"
+      ],
+      "logicalOrder": [
+        "placement",
+        "domain-actions",
+        "collapse",
+        "close"
+      ],
+      "invariants": [
+        "scientific-secondary canonical header is complete"
+      ]
+    },
+    "portable": {
+      "unit": "portable",
+      "header": "required-when-chrome",
+      "coreActions": [
+        "placement"
+      ],
+      "optionalCoreActions": [
+        "collapse",
+        "close"
+      ],
+      "invariants": [
+        "placement is injected only when more than one placement is available",
+        "drag/resize/placement have one Core owner"
+      ]
+    }
+  },
+  "plugins": {
+    "_template": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "analysis-page-header": 2
+      },
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "aurora-pop-theme": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "connectivity-center": {
+      "buttons": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 17,
+          "tag": "button",
+          "id": "dksmbClose",
+          "type": "",
+          "className": "dksvc-close dkds-icon-button dkds-panel-close-button",
+          "label": "×"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 19,
+          "tag": "button",
+          "id": "dksmbDiscover",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "扫描"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 21,
+          "tag": "button",
+          "id": "dksmbUp",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "↑ 上级"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 21,
+          "tag": "button",
+          "id": "dksmbFavorite",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "☆"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 21,
+          "tag": "button",
+          "id": "dksmbRefresh",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "刷新"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 26,
+          "tag": "button",
+          "id": "dksmbShares",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "列出共享"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 26,
+          "tag": "button",
+          "id": "dksmbCancel",
+          "type": "",
+          "className": "dksmb-btn dkds-action-button",
+          "label": "取消"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 26,
+          "tag": "button",
+          "id": "dksmbCommit",
+          "type": "",
+          "className": "dksmb-primary primary dkds-action-button",
+          "label": "导入所选文件"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 32,
+          "tag": "button",
+          "id": "dkaiSettingsClose",
+          "type": "",
+          "className": "dksvc-close dkds-icon-button dkds-panel-close-button",
+          "label": "×"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 38,
+          "tag": "button",
+          "id": "dkaiSave",
+          "type": "",
+          "className": "primary",
+          "label": "保存"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 38,
+          "tag": "button",
+          "id": "dkaiTest",
+          "type": "",
+          "className": "",
+          "label": "测试连接"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 39,
+          "tag": "button",
+          "id": "dkaiMcpStart",
+          "type": "",
+          "className": "primary",
+          "label": "启动 MCP"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 39,
+          "tag": "button",
+          "id": "dkaiMcpStop",
+          "type": "",
+          "className": "",
+          "label": "停止"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 39,
+          "tag": "button",
+          "id": "dkaiMcpCopy",
+          "type": "",
+          "className": "",
+          "label": "复制地址"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 46,
+          "tag": "button",
+          "id": "dkaiChatSettings",
+          "type": "",
+          "className": "dkds-icon-button",
+          "label": "⚙"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 46,
+          "tag": "button",
+          "id": "dkaiChatClose",
+          "type": "",
+          "className": "dkds-icon-button dkds-panel-close-button",
+          "label": "×"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 49,
+          "tag": "button",
+          "id": "dkaiSend",
+          "type": "",
+          "className": "dkai-send primary",
+          "label": "↑"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 70,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "dksmb-nav-row dkds-list-item",
+          "label": "★ ${…} ${…}"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 71,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "dksmb-nav-row dkds-list-item ${String(row.address||row.name)===current.server?",
+          "label": "▣ ${…} ${…}"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 72,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "dksmb-nav-row dkds-list-item ${name===current.share?",
+          "label": "▤ ${…}"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 156,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "dkai-ref dkds-chip",
+          "label": "@${…} ×"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 159,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "dkai-mention dkds-list-item",
+          "label": "${…} ${…} ${…}"
+        }
+      ],
+      "inputs": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbServer",
+          "type": "",
+          "className": "",
+          "label": "服务器 / IP"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbShare",
+          "type": "",
+          "className": "",
+          "label": "共享"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbDomain",
+          "type": "",
+          "className": "",
+          "label": "域（可选）"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbUser",
+          "type": "",
+          "className": "",
+          "label": "用户名"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbPassword",
+          "type": "password",
+          "className": "",
+          "label": "密码"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 35,
+          "tag": "input",
+          "id": "dkaiModel",
+          "type": "",
+          "className": "",
+          "label": "model id"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 36,
+          "tag": "input",
+          "id": "dkaiEndpoint",
+          "type": "",
+          "className": "",
+          "label": "https://.../chat/completions"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 37,
+          "tag": "input",
+          "id": "dkaiKey",
+          "type": "password",
+          "className": "",
+          "label": "保存在系统安全存储"
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 39,
+          "tag": "input",
+          "id": "dkaiMcpToken",
+          "type": "",
+          "className": "",
+          "label": "任意非空 Token；建议使用随机长 Token"
+        }
+      ],
+      "selects": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 35,
+          "tag": "select",
+          "id": "dkaiPreset",
+          "type": "",
+          "className": "",
+          "label": ""
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 37,
+          "tag": "select",
+          "id": "dkaiAccess",
+          "type": "",
+          "className": "",
+          "label": "完整内核（推荐） 只读分析"
+        }
+      ],
+      "textareas": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 49,
+          "tag": "textarea",
+          "id": "dkaiInput",
+          "type": "",
+          "className": "dkai-input dkds-field-control",
+          "label": ""
+        }
+      ],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "dkds-surface-header": 3,
+        "dkds-list": 6,
+        "dkds-list-item": 5,
+        "dkds-note": 1,
+        "dkds-message": 4
+      },
+      "checks": [
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 23,
+          "tag": "input",
+          "id": "dksmbGuest",
+          "type": "checkbox",
+          "className": "",
+          "label": ""
+        },
+        {
+          "file": "src/plugins/connectivity-center/plugin.js",
+          "line": 79,
+          "tag": "input",
+          "id": "",
+          "type": "checkbox",
+          "className": "",
+          "label": ""
+        }
+      ],
+      "counts": {
+        "buttons": 22,
+        "inputs": 9,
+        "selects": 2,
+        "textareas": 1,
+        "checks": 2,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "data-center": {
+      "buttons": [
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 263,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "",
+          "label": "↑"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 263,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "",
+          "label": "↓"
+        },
+        {
+          "file": "src/plugins/data-center/feature-runtime.js",
+          "line": 263,
+          "tag": "button",
+          "id": "",
+          "type": "",
+          "className": "",
+          "label": "删除"
+        }
+      ],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "empty-state": 7,
+        "dkds-surface-header": 1,
+        "dkds-list": 1,
+        "dkds-list-item": 1
+      },
+      "checks": [],
+      "counts": {
+        "buttons": 3,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "flexible-import": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "pulse-analysis": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "dkds-list": 1,
+        "dkds-list-item": 1,
+        "dkds-metric": 1,
+        "dkds-note": 2
+      },
+      "checks": [
+        {
+          "file": "src/plugins/pulse-analysis/analysis-service.js",
+          "line": 245,
+          "tag": "input",
+          "id": "",
+          "type": "checkbox",
+          "className": "pulse-file-check",
+          "label": ""
+        }
+      ],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 1,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "pulse-import": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "pulse-sampler-tool": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "resonance-detector-robust": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "resonance-workbench": {
+      "buttons": [
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 40,
+          "tag": "button",
+          "id": "",
+          "type": "button",
+          "className": "peak-category-choice dkds-action-button dkds-choice-button ${Number(c.order)===Number(p.peakOrder)?",
+          "label": "${…}"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinAddPeakCategory",
+          "type": "",
+          "className": "",
+          "label": "＋ 新增类别/颜色"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinApplyPeakLabel",
+          "type": "",
+          "className": "",
+          "label": "重命名当前类别"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinAcceptPeak",
+          "type": "",
+          "className": "",
+          "label": "${…}"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinLockPeak",
+          "type": "",
+          "className": "",
+          "label": "${…}"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinResetFwhmWindow",
+          "type": "",
+          "className": "",
+          "label": "FWHM 自动窗口"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinDeletePeak",
+          "type": "",
+          "className": "danger-soft",
+          "label": "删除峰"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "button",
+          "id": "reswinSelectCurve",
+          "type": "",
+          "className": "",
+          "label": "选中所属曲线"
+        }
+      ],
+      "inputs": [
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 132,
+          "tag": "input",
+          "id": "",
+          "type": "number",
+          "className": "reswin-vg",
+          "label": "?"
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "input",
+          "id": "",
+          "type": "text",
+          "className": "",
+          "label": ""
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+          "line": 41,
+          "tag": "input",
+          "id": "reswinPeakLabelInput",
+          "type": "text",
+          "className": "",
+          "label": ""
+        }
+      ],
+      "selects": [
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 132,
+          "tag": "select",
+          "id": "",
+          "type": "",
+          "className": "reswin-dataset-transform",
+          "label": "${…}"
+        }
+      ],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "dkds-list": 1,
+        "dkds-list-item": 1,
+        "empty-state": 2,
+        "dkds-plot-view-head": 1,
+        "dkds-integrated-action-group": 4,
+        "dkds-note": 2,
+        "analysis-page-header": 1,
+        "dkds-surface-header": 3,
+        "dkds-portable-header": 2
+      },
+      "checks": [
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 132,
+          "tag": "input",
+          "id": "",
+          "type": "checkbox",
+          "className": "reswin-master",
+          "label": ""
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 132,
+          "tag": "input",
+          "id": "",
+          "type": "checkbox",
+          "className": "reswin-forward",
+          "label": ""
+        },
+        {
+          "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+          "line": 132,
+          "tag": "input",
+          "id": "",
+          "type": "checkbox",
+          "className": "reswin-reverse",
+          "label": ""
+        }
+      ],
+      "counts": {
+        "buttons": 8,
+        "inputs": 3,
+        "selects": 1,
+        "textareas": 0,
+        "checks": 3,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "scientific-data-contracts": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "shell-navigation": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "standard-transport-algorithms": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "status-monitor": {
+      "buttons": [
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 38,
+          "tag": "button",
+          "id": "dkdsThemeSettingsBtn",
+          "type": "button",
+          "className": "dkds-icon-button dkds-theme-plugin-settings hidden",
+          "label": "⚙"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 39,
+          "tag": "button",
+          "id": "dkdsThemePanelClose",
+          "type": "button",
+          "className": "dkds-icon-button dkds-panel-close-button",
+          "label": "×"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 47,
+          "tag": "button",
+          "id": "",
+          "type": "button",
+          "className": "",
+          "label": "亮色"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 48,
+          "tag": "button",
+          "id": "",
+          "type": "button",
+          "className": "",
+          "label": "暗色"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 62,
+          "tag": "button",
+          "id": "",
+          "type": "button",
+          "className": "dkds-theme-profile-option${active?",
+          "label": "${…} ${…}"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 93,
+          "tag": "button",
+          "id": "dkdsMemoryPanelClose",
+          "type": "button",
+          "className": "dkds-icon-button dkds-panel-close-button",
+          "label": "×"
+        },
+        {
+          "file": "src/plugins/status-monitor/plugin.js",
+          "line": 123,
+          "tag": "button",
+          "id": "",
+          "type": "button",
+          "className": "dkds-memory-release danger-soft",
+          "label": "释放"
+        }
+      ],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {
+        "dkds-surface-header": 1,
+        "dkds-integrated-action-group": 3
+      },
+      "checks": [],
+      "counts": {
+        "buttons": 7,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "ter-analysis": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "thin-glass-theme": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "transfer-vth-lab": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    },
+    "workspace-safeguards": {
+      "buttons": [],
+      "inputs": [],
+      "selects": [],
+      "textareas": [],
+      "tables": [],
+      "dynamicElements": [],
+      "markers": {},
+      "checks": [],
+      "counts": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "textareas": 0,
+        "checks": 0,
+        "tables": 0,
+        "dynamicElements": 0
+      }
+    }
+  }
+}

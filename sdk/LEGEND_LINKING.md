@@ -1,4 +1,4 @@
-# Scientific Legend Visibility Linking — SDK 1.47.0
+# Scientific Legend Visibility Linking — SDK 1.48.0
 
 SDK 1.44.0 adds opt-in cross-view legend visibility linking on the existing `InteractionRuntime` transaction/link path. It does **not** add a legend store, a `dkds:legend-changed` event, or any legend state to Selection schema 2.
 

@@ -209,6 +209,15 @@ const preview=ctx.data.artifacts.readColumnRange(tableId,'signal',{start:0,limit
 
 `listMetadata()` and `columnMetadata()` omit column values. `readColumnRange()` requires a finite integer `limit` and Core caps one call at 65536 cells; it returns `start/end/totalLength/artifactRevision/bufferRevision` with a detached immutable values slice. Use `ctx.data.artifacts.columnRevision(id, column)` when only the current payload-local invalidation stamp is needed. Default complete `get/list` behavior is unchanged. See `sdk/DATA_ARTIFACT_ACCESS.md` for the full contract.
 
+History-dependent analysis must use explicit acquisition metadata rather than UI/source enumeration order. Canonical fields live at `artifact.metadata.acquisition` (`runId`, `sequenceIndex`, `timestamp`, optional `parentSequenceIndex`, `provenance`). Lightweight metadata/source reads retain those fields, and source consumers can request deterministic ordering directly:
+
+```js
+const order=ctx.data.sources.acquisitionOrder({artifactIds});
+// [{artifactId,runId,sequenceIndex,timestamp,parentSequenceIndex?,provenance}]
+```
+
+The shared Import Workbench preserves source-provided acquisition fields. If `sequenceIndex` is absent, it assigns a deterministic index within that multi-file import batch and marks it `provenance:'import-batch'`. Do not infer a physical run across distinct `runId` values. See `sdk/ACQUISITION_ORDER.md`.
+
 ## 6. Domain data types, entities and selection
 
 Every scientific object that appears in more than one view should have one stable Entity ID. Artifacts, sweeps, curves, peaks, matrix points and annotations can form parent/child relationships in `ctx.data.entities`. Core projects Artifact lineage into the Entity graph automatically.
@@ -310,6 +319,26 @@ reactive.transact('move-fit-marker', tx=>{
 For asynchronous work, use a reactive derived node or `runLatest()`. Results whose dependency signature is no longer current are rejected rather than being allowed to overwrite a newer state. A drag, edit or algorithm switch should therefore publish semantic state changes once; dependent tables, inspectors and plots observe the same revision instead of maintaining unrelated plugin-local revision counters.
 
 Range-selection tools must also declare their semantic target. A geometric rectangle may target an Entity type such as `science.resonance.peak`; it must not silently degrade into selecting every raw curve sample inside the same X interval.
+
+### Core Task Runner progress
+
+Worker-backed CPU work uses `ctx.tasks`; plugins do not create private Worker pools. A task worker may publish bounded progress through the worker context without gaining DOM/UI access:
+
+```js
+self.DKDSTaskDefinition={
+  run(input,context){
+    context.reportProgress({stage:'fit',completed:3,total:20,label:'Fitting'});
+    return result;
+  }
+};
+
+const handle=ctx.tasks.submit('fit',input,{key:'fit'});
+const off=handle.onProgress(progress=>updateProgressUI(progress));
+const result=await handle.promise;
+off();
+```
+
+Core normalizes and coalesces progress, suppresses stale latest-wins generations, and stops delivery immediately on cancellation. `handle.progress` exposes the most recently delivered snapshot. See `sdk/TASK_RUNNER.md`.
 
 ## 9. Performance and scientific cache stages
 

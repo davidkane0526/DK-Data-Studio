@@ -3,8 +3,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-const range=read('src/plugins/resonance-workbench/view-components.js');
-assert(range.includes('<button id="resparRangeDetect" class="dkds-action-button primary">局部寻峰</button>'),'Range detect must use the Core primary action semantic while delete remains danger-soft.');
+const range=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(range.includes("directAction(units,grid,{id:'resparRangeDetect',label:'局部寻峰',variant:'primary',className:'dkds-action-button primary'})")&&range.includes("directAction(units,grid,{id:'resparRangeDelete',label:'删除框选峰',variant:'destructive',className:'dkds-action-button danger-soft'})"),'Range detect must use the Core primary action semantic while delete remains danger-soft in the production Unit presentation.');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 assert(resonanceCss.includes('.respar-peak-legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex:0 0 auto}'),'Peak legend items must stay atomic and never wrap label numbers internally.');
 

@@ -12,13 +12,17 @@ assert(versionAtLeast(pkg.version,'3.68.64'),'App version must remain at or abov
 const native=read('src/styles/platform/native-workspace-presentation.css');
 for(const token of [
   ':where(.dkds-analysis-main,.dkds-plugin-canvas-center,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host',
-  '.dkds-table-surface-host,.analysis-table-wrap,.table-wrap,.table-scroll,.data-table-scroll,.dkds-table-wrap)',
-  '{overscroll-behavior-y:auto;}'
+  '.dkds-table-surface-host,.analysis-table-wrap,.table-wrap,.table-scroll,.data-table-scroll,.dkds-table-wrap,.dkds-list',
+  '[data-dkds-unit-template="list-v2"]',
+  '[data-dkds-unit-layout-recipe="scroll-pane"]',
+  '[data-dkds-scroll-policy="chain"]',
+  '[data-dkds-scroll-policy="viewport"]',
+  '{overscroll-behavior-x:contain;overscroll-behavior-y:auto;}'
 ]) assert(native.includes(token),`Mobile vertical scroll-chain contract missing ${token}`);
 
 // Transient overlays must remain isolated from the workspace behind them.
-assert(native.includes('[data-dkds-mobile-frame-region="drawer"]>[data-dkds-mobile-region="drawer"]')&&native.includes('overscroll-behavior:contain'),
-  'Parameter drawers must retain local overscroll containment.');
+assert(native.includes('>.dkds-mobile-drawer-scroll{')&&native.includes('overscroll-behavior:contain'),
+  'Parameter Drawer scroll viewport must remain the terminal local overscroll-containment owner.');
 
 const workbench=read('src/core/ui/modules/workbench/plugin.js');
 assert(workbench.includes("applyScrollPolicy(this.canvasSlots.left,'chain')")&&workbench.includes("applyScrollPolicy(this.canvasSlots.overlay,'contain')"),

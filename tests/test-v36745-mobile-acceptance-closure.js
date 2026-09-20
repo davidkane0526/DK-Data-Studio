@@ -31,10 +31,10 @@ for(const rel of ['src/core/ui/modules/scientific-curve/navigation.js','src/core
 }
 
 const mobilePresentation=read('src/styles/platform/native-workspace-presentation.css');
-for(const token of ['border-radius:10px','right:0','width:12px;height:72px','::-webkit-scrollbar{width:3px;height:3px}','resize:none'])assert(mobilePresentation.includes(token),`Parameter drawer acceptance geometry missing ${token}.`);
+for(const token of ['border-radius:10px','right:0','width:12px;height:72px','::-webkit-scrollbar{width:var(--dkds-mobile-scrollbar-size,3px);height:var(--dkds-mobile-scrollbar-size,3px)}','resize:none'])assert(mobilePresentation.includes(token),`Parameter drawer acceptance geometry missing ${token}.`);
 assert(!mobilePresentation.includes('.dkds-mobile-drawer-resize-handle{position:absolute;z-index:30;right:0;top:0;bottom:0'),'Drawer must not make its entire edge a resize hit area.');
 const presenter=read('src/core/ui/modules/presentation/mobile-web-surface.js');
-for(const token of ['measureDrawerOverflow(frame)','solveCompactDrawerWidth(frame)','fitDrawerToContent(frame,surfaceId','dkdsMobileContentMinWidth','NativeTouchDrag.bind(handle'])assert(presenter.includes(token),`Content-fit parameter drawer missing ${token}.`);
+for(const token of ['measureSurfaceOverflow(frame)','solveMinimumReasonableWidth(frame,region=','fitDrawerToContent(frame,surfaceId','dkdsMobileContentMinWidth','NativeTouchDrag.bind(handle'])assert(presenter.includes(token),`Content-fit parameter drawer missing ${token}.`);
 
 
 // Runtime-level native touch verification: one long finger move must be delivered
@@ -65,10 +65,9 @@ for(const token of ['measureDrawerOverflow(frame)','solveCompactDrawerWidth(fram
   assert.deepStrictEqual(moves.at(-1),['end',240,160],'Native touch drag must persist the actual release coordinate.');
 }
 
-// Drawer content-fit verification: the compact solver must ignore the legacy
-// greedy-width key and expand only as far as an actual width-critical control
-// requires. Long filenames/text and intentionally scrollable content are not
-// allowed to make the drawer consume tablet space.
+// Drawer compact-width verification: the Presenter owns the first-open width.
+// Width-critical children must reflow inside the Unit density contract instead
+// of widening the whole native overlay. Legacy unversioned widths are ignored.
 {
   const oldWindow=global.window,oldStorage=global.localStorage,oldRaf=global.requestAnimationFrame,oldCancel=global.cancelAnimationFrame;
   const store=new Map([['dkds.mobile.drawer-width.parameters','700']]);
@@ -82,9 +81,9 @@ for(const token of ['measureDrawerOverflow(frame)','solveCompactDrawerWidth(fram
   frame={isConnected:true,dataset:{},children:[content],style:{width:''},getBoundingClientRect(){return {width:Number.parseFloat(this.style.width)||300};}};
   presenterRuntime.fitDrawerToContent(frame,'parameters');
   const solved=Number.parseFloat(frame.style.width);
-  assert(solved>=360&&solved<=480,'Parameter drawer must grow only to the compact critical-control requirement.');
-  assert(solved<700,'Legacy greedy drawer width must not leak through the v2 persistence key.');
-  assert(Number(frame.dataset.dkdsMobileContentMinWidth)<=480,'Automatic content-fit minimum must remain inside the compact auto-fit ceiling.');
+  assert(solved>=358&&solved<=360,'Parameter drawer must grow only to the smallest width that removes real width-critical overflow, independent of viewport fractions.');
+  assert(solved<700,'Legacy greedy drawer width must not leak through the versioned persistence key.');
+  assert(Number(frame.dataset.dkdsMobileContentMinWidth)>=358&&Number(frame.dataset.dkdsMobileContentMinWidth)<=360,'Measured minimum must record the actual smallest non-overflowing Unit width.');
   global.window=oldWindow;global.localStorage=oldStorage;global.requestAnimationFrame=oldRaf;global.cancelAnimationFrame=oldCancel;
 }
 
@@ -107,8 +106,12 @@ assert(host.includes('function reconcileWorkspacePresentation(event)'),'Mobile H
 assert(host.includes("window.addEventListener('dkds:workspace-presentation-changed',reconcileWorkspacePresentation)"),'Workspace publication must use route reconciliation, not blind republish.');
 
 const pulseMobile=read('src/plugins/pulse-analysis/mobile.css');
+const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
+const pulseUnit=read('src/plugins/pulse-analysis/unit-presentation.js');
 assert(pulseMobile.includes('[data-dkds-mobile-region="main"][data-dkds-mobile-active="true"]'),'Pulse Mobile density must use Presenter semantic activation.');
-assert(pulseMobile.includes('repeat(auto-fit,minmax(min(100%,240px),1fr))'),'Pulse result charts must auto-fit instead of forcing one full-width row.');
-assert(!read('src/plugins/pulse-analysis/shared-views.js').includes('isNativeClient'),'Pulse shared view must not know platform identity.');
+assert(pulseUnit.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'")&&pulseUnit.includes('responsiveTarget:primaryMain'),'Pulse result charts must preserve two cards on wide projected PRIMARY lanes through Unit Layout.');
+assert(pulseUnit.includes("maxWidth:520,geometry:{gridTemplateColumns:'minmax(0,1fr)'}"),'Pulse result charts may stack only at the accepted Unit narrow-lane threshold.');
+assert(!pulseCss.includes('.pulse-results-grid{')&&!pulseMobile.includes('.pulse-results-grid{'),'Plugin/Mobile viewport CSS must not own Pulse result columns.');
+assert(!pulseUnit.includes('isNativeClient'),'Pulse shared view must not know platform identity.');
 
 console.log('v3.67.45+ mobile acceptance closure PASS: compact non-greedy drawer, edge handle, dense cards, auto-fit derived grids, route reconciliation, and native drag.');

@@ -11,6 +11,7 @@
     const groupPortables=new Map();
     const groupCards=new Map();
     const groupPlotViews=new Map();
+    const groupScientificSurfaces=new Map();
     let groupRenderKey='',groupLayoutKey='',groupGridController=null,metricRenderRaf=0;
 
     function groupColumnPreference({orientation='landscape'}={}){
@@ -33,21 +34,26 @@
     }
     function syncGroupLayout({apply=false,force=false}={}){
       const hostEl=$('#reswinGroupGrid');if(!hostEl)return false;
-      const grid=ensureGroupGrid(hostEl);if(apply)grid?.apply?.();
+      const grid=ensureGroupGrid(hostEl);
+      if(apply){
+        const raw=groupOrientation()==='portrait'?live.workspace.groupColumnsPortrait:live.workspace.groupColumns;
+        const requested=['1','2','3','4','5','6'].includes(String(raw))?String(raw):'auto';
+        grid?.setColumns?.(requested);
+      }
       return syncGroupColumnAction(force);
     }
     function ensureGroupGrid(hostEl){
       if(groupGridController||!hostEl)return groupGridController;
-      const wb=live.workspaceRuntime?.workbench;
-      if(wb?.groupArea)groupGridController=wb.groupArea(hostEl,{columns:6,maxColumns:6,minItemWidth:260,responsive:true,orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference});
+      const factory=live.uiRuntime?.unitTemplates?.plotGroup;
+      if(factory?.create)groupGridController=factory.create(hostEl,{variant:'regular',columns:6,maxColumns:6,minItemWidth:260,responsive:true,orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1},preferredColumns:groupColumnPreference,density:'regular',gapPx:12});
       return groupGridController;
     }
 
     function groupMetricRows(metric){
-      const series=groupSeries();
+      const series=groupSeries(),derived=metric==='fwhm'||metric==='amplitude'||metric==='area';
       return series.map(sr=>({
         ...sr,
-        rows:sr.peaks.map(p=>{const m=peakMetrics(p)||{};return {p,value:metric==='v'?p.v:metric==='i'?p.i:metric==='prominence'?Number(p.prominence):Number(m[metric])};}).filter(r=>Number.isFinite(r.value))
+        rows:sr.peaks.map(p=>{const m=derived?(peakMetrics(p)||{}):null;return {p,value:metric==='v'?p.v:metric==='i'?p.i:metric==='prominence'?Number(p.prominence):Number(m?.[metric])};}).filter(r=>Number.isFinite(r.value))
       })).filter(sr=>sr.rows.length);
     }
     function groupCsv(title,series){
@@ -70,10 +76,11 @@
       dom.append(hostEl,card);
       const plot=dom.query('.reswin-group-plot',card);
       row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
-      const plotView=live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
-        plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
+      const scientificSurface=live.uiRuntime?.unitTemplates?.scientificPlot?.create?.(plot,{variant:'curve',source:`resonance:group:${key}`,renderOwner:'runtime'})||null;if(scientificSurface)groupScientificSurfaces.set(String(key),scientificSurface);
+      const plotView=groupGridController?.adoptPlot?.(`resonance-group:${key}`,card,{
+        title,plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
         placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'workspace-v5',snap:false,
-        contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226,
+        detailGeometry:{contentAspectRatio:1.65,contentMinHeightPx:160,contentMaxHeightPx:226},
         portableFactory:(id,node,spec)=>live.workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
       })||null;
       if(plotView){row.plotView=plotView;row.portable=plotView.portable||null;groupPlotViews.set(String(key),plotView);if(row.portable)groupPortables.set(String(key),row.portable);}
@@ -81,8 +88,7 @@
     }
     function disposeGroupViews(){
       groupRenderKey='';groupLayoutKey='';
-      for(const view of groupPlotViews.values())try{view?.dispose?.();}catch{}groupPlotViews.clear();groupPortables.clear();
-      for(const row of groupCards.values())try{row.card?.remove?.();}catch{}groupCards.clear();
+      for(const key of [...groupCards.keys()])try{groupGridController?.removePlot?.(`resonance-group:${key}`);}catch{}for(const surface of groupScientificSurfaces.values())try{surface?.dispose?.();}catch{}groupScientificSurfaces.clear();groupPlotViews.clear();groupPortables.clear();groupCards.clear();
     }
     function groupDataFingerprint(){
       const visibleIds=visibleSweepIds().map(String).sort();
@@ -112,7 +118,7 @@
       empty?.remove?.();
       const labels=[...new Set(acceptedVisible.map(peakLabel))];
       const terSeries=labels.map(label=>{const representative=acceptedVisible.find(p=>peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {name:`共振TER·${label}`,label,order,color:colorForPeakOrder(order,1),points:resonantTerForLabel?.(label,[...visibleIds])||[]};}).filter(x=>x.points.length);
-      syncGroupLayout();
+      syncGroupLayout({apply:true});
       const activeKeys=new Set();
       for(const [metric,title,unit] of defs){
         activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;dom.text(dom.query('.reswin-group-title',row.card),title);
@@ -133,7 +139,7 @@
     }
 
     function invalidate(){groupRenderKey='';}
-    function metricWaveSettled(){invalidate();const panel=$('#resparGroupPanel');if(!panel?.isConnected||metricRenderRaf)return false;metricRenderRaf=dom.frame(()=>{metricRenderRaf=0;if($('#resparGroupPanel')?.isConnected)renderGroup();});return true;}
+    function metricWaveSettled(){invalidate();const panel=$('#resparGroupPanel');if(!panel||panel.offsetParent===null||metricRenderRaf)return false;metricRenderRaf=dom.frame(()=>{metricRenderRaf=0;if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();});return true;}
     function state(){return {cards:groupCards.size,plots:groupPlotViews.size,renderKey:groupRenderKey};}
     return Object.freeze({render:renderGroup,dispose:disposeGroupViews,invalidate,state,metricWaveSettled,contextText:groupContextText,effectiveColumns:()=>effectiveGroupColumns(),orientation:groupOrientation,syncLayout:syncGroupLayout,applyLayout:()=>syncGroupLayout({apply:true,force:true})});
   }

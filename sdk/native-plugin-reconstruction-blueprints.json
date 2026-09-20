@@ -1,0 +1,6135 @@
+{
+  "version": "2.5.38",
+  "plugins": {
+    "_template": {
+      "unit": {
+        "kind": "developer",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "panel",
+          "header",
+          "toolbar",
+          "action",
+          "field",
+          "actionRow",
+          "componentTree",
+          "prime",
+          "scientificPlot"
+        ],
+        "regions": [
+          {
+            "id": "page",
+            "unit": "page",
+            "variant": "analysis",
+            "role": "activity-root"
+          },
+          {
+            "id": "header",
+            "unit": "pageHeader",
+            "variant": "page-owned",
+            "role": "activity-header"
+          },
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "workspace"
+          },
+          {
+            "id": "component-content",
+            "unit": "componentTree",
+            "variant": "schema",
+            "role": "domain-content"
+          },
+          {
+            "id": "controls",
+            "unit": "prime",
+            "variant": "canonical-header",
+            "role": "data-control"
+          },
+          {
+            "id": "main",
+            "unit": "scientificPlot",
+            "variant": "curve",
+            "role": "scientific-primary"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [
+          "actions",
+          "components",
+          "dom",
+          "interaction",
+          "interactionBehaviors",
+          "pages",
+          "workspaceSurface"
+        ],
+        "migrations": [
+          {
+            "from": "workspaceSurface.create",
+            "to": "workspace",
+            "count": 1
+          },
+          {
+            "from": "actions.mount",
+            "to": "actionRow",
+            "count": 1
+          },
+          {
+            "from": "components.mount",
+            "to": "componentTree",
+            "count": 2
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "analysis-page-header": 2
+        },
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "aurora-pop-theme": {
+      "unit": {
+        "kind": "theme-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "theme",
+            "unit": "provider",
+            "variant": "theme",
+            "role": "theme-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [
+          "theme"
+        ],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "connectivity-center": {
+      "unit": {
+        "kind": "foundation-ui",
+        "units": [
+          "layout",
+          "status",
+          "popover",
+          "surface",
+          "section",
+          "header",
+          "toolbar",
+          "action",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "message",
+          "divider",
+          "emptyState",
+          "list",
+          "dialog",
+          "menu",
+          "movableWindow"
+        ],
+        "regions": [
+          {
+            "id": "status-entry",
+            "unit": "status",
+            "variant": "compact",
+            "role": "statusbar"
+          },
+          {
+            "id": "smb-window",
+            "unit": "movableWindow",
+            "variant": "dialog",
+            "role": "service-window"
+          },
+          {
+            "id": "assistant-settings-window-move",
+            "unit": "movableWindow",
+            "variant": "dialog",
+            "role": "assistant-settings"
+          },
+          {
+            "id": "service-popover",
+            "unit": "popover",
+            "variant": "service",
+            "role": "service-control"
+          },
+          {
+            "id": "service-overlay",
+            "unit": "layout",
+            "variant": "overlay-center",
+            "role": "service-overlay"
+          },
+          {
+            "id": "service-window",
+            "unit": "layout",
+            "variant": "service-window",
+            "role": "service-window"
+          },
+          {
+            "id": "service-split",
+            "unit": "layout",
+            "variant": "sidebar-main-compact",
+            "role": "service-browser"
+          },
+          {
+            "id": "browser-rows",
+            "unit": "layout",
+            "variant": "browser-rows",
+            "role": "service-browser-body"
+          },
+          {
+            "id": "file-row",
+            "unit": "layout",
+            "variant": "list-row-file",
+            "role": "file-browser-row"
+          },
+          {
+            "id": "assistant-settings-window",
+            "unit": "layout",
+            "variant": "settings-window",
+            "role": "assistant-settings"
+          },
+          {
+            "id": "assistant-message-stack",
+            "unit": "layout",
+            "variant": "scroll-stack",
+            "role": "assistant-messages"
+          },
+          {
+            "id": "assistant-reference-strip",
+            "unit": "layout",
+            "variant": "wrap-strip",
+            "role": "assistant-references"
+          },
+          {
+            "id": "assistant-mention-row",
+            "unit": "layout",
+            "variant": "mention-row",
+            "role": "assistant-mentions"
+          },
+          {
+            "id": "connection-grid",
+            "unit": "layout",
+            "variant": "connection-grid",
+            "role": "connection-form"
+          },
+          {
+            "id": "ai-form-grid",
+            "unit": "layout",
+            "variant": "form-grid-2",
+            "role": "settings-form"
+          },
+          {
+            "id": "chat-rows",
+            "unit": "layout",
+            "variant": "chat-rows",
+            "role": "assistant-chat"
+          },
+          {
+            "id": "compose-row",
+            "unit": "layout",
+            "variant": "compose-row",
+            "role": "assistant-compose"
+          },
+          {
+            "id": "messages",
+            "unit": "message",
+            "variant": "assistant",
+            "role": "assistant-message"
+          },
+          {
+            "id": "divider",
+            "unit": "divider",
+            "variant": "horizontal",
+            "role": "service-separator"
+          },
+          {
+            "id": "empty",
+            "unit": "emptyState",
+            "variant": "standard",
+            "role": "service-empty"
+          },
+          {
+            "id": "service-list",
+            "unit": "list",
+            "variant": "selectable",
+            "role": "connections"
+          },
+          {
+            "id": "connection-fields",
+            "unit": "field",
+            "variant": "integrated",
+            "role": "connection-form"
+          },
+          {
+            "id": "service-actions",
+            "unit": "toolbar",
+            "variant": "ordinary",
+            "role": "commands"
+          },
+          {
+            "id": "service-menu",
+            "unit": "menu",
+            "variant": "dropdown",
+            "role": "provider-menu"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "dksvc-overlay",
+          "unit": "layout",
+          "variant": "overlay-center",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "service-overlay"
+        },
+        {
+          "match": "dksvc-(?:window|head|sub|close)",
+          "unit": "popover",
+          "variant": "service",
+          "mechanism": "unit+accepted-geometry",
+          "role": "service-window"
+        },
+        {
+          "match": "dksmb-window",
+          "unit": "layout",
+          "variant": "service-window",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-service-window"
+        },
+        {
+          "match": "dksmb-layout",
+          "unit": "layout",
+          "variant": "sidebar-main-compact",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-service-layout"
+        },
+        {
+          "match": "dksmb-nav-title",
+          "unit": "layout",
+          "variant": "row-between",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "navigation-header"
+        },
+        {
+          "match": "dksmb-nav-row",
+          "unit": "list",
+          "variant": "selectable",
+          "mechanism": "unit+accepted-geometry",
+          "role": "navigation-item"
+        },
+        {
+          "match": "dksmb-nav",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "navigation-scroll"
+        },
+        {
+          "match": "dksmb-browser",
+          "unit": "layout",
+          "variant": "browser-rows",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "browser-body"
+        },
+        {
+          "match": "dksmb-toolbar",
+          "unit": "toolbar",
+          "variant": "ordinary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "browser-toolbar"
+        },
+        {
+          "match": "dksmb-(?:btn|primary)",
+          "unit": "action",
+          "variant": "secondary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "browser-action"
+        },
+        {
+          "match": "dksmb-path",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "path-field"
+        },
+        {
+          "match": "dksmb-(?:list-head|row)",
+          "unit": "layout",
+          "variant": "list-row-file",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-row"
+        },
+        {
+          "match": "dksmb-list",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-list"
+        },
+        {
+          "match": "dksmb-(?:name|foot-note)",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "truncate-content"
+        },
+        {
+          "match": "dksmb-empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "empty"
+        },
+        {
+          "match": "dksmb-connection",
+          "unit": "layout",
+          "variant": "connection-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "connection-form"
+        },
+        {
+          "match": "dksmb-guest",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "guest-option"
+        },
+        {
+          "match": "dksmb-foot",
+          "unit": "layout",
+          "variant": "row-between",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "footer"
+        },
+        {
+          "match": "dkai-window",
+          "unit": "layout",
+          "variant": "settings-window",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "assistant-settings-window"
+        },
+        {
+          "match": "dkai-settings-body",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "settings-scroll"
+        },
+        {
+          "match": "dkai-section(?:-title)?",
+          "unit": "section",
+          "variant": "controls",
+          "mechanism": "unit+accepted-geometry",
+          "role": "settings-section"
+        },
+        {
+          "match": "dkai-grid",
+          "unit": "layout",
+          "variant": "form-grid-2",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "settings-grid"
+        },
+        {
+          "match": "dkai-field",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "settings-field"
+        },
+        {
+          "match": "dkai-actions",
+          "unit": "toolbar",
+          "variant": "ordinary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "settings-actions"
+        },
+        {
+          "match": "dkai-(?:statusline|mcp-state)",
+          "unit": "status",
+          "variant": "compact",
+          "mechanism": "unit+accepted-geometry",
+          "role": "assistant-status"
+        },
+        {
+          "match": "dkai-help",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "help"
+        },
+        {
+          "match": "dkai-chat$",
+          "unit": "layout",
+          "variant": "chat-rows",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "assistant-chat"
+        },
+        {
+          "match": "dkai-chat-head",
+          "unit": "header",
+          "variant": "panel",
+          "mechanism": "unit+accepted-geometry",
+          "role": "assistant-chat-header"
+        },
+        {
+          "match": "dkai-chat-dot",
+          "unit": "status",
+          "variant": "dot",
+          "mechanism": "unit+accepted-geometry",
+          "role": "assistant-state"
+        },
+        {
+          "match": "dkai-messages",
+          "unit": "layout",
+          "variant": "scroll-stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "message-scroll"
+        },
+        {
+          "match": "dkai-msg(?:-meta)?",
+          "unit": "message",
+          "variant": "assistant",
+          "mechanism": "unit+accepted-geometry",
+          "role": "message"
+        },
+        {
+          "match": "dkai-refbar",
+          "unit": "layout",
+          "variant": "wrap-strip",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "reference-strip"
+        },
+        {
+          "match": "dkai-ref$",
+          "unit": "chip",
+          "variant": "quiet",
+          "mechanism": "unit+accepted-geometry",
+          "role": "reference"
+        },
+        {
+          "match": "dkai-compose$",
+          "unit": "surface",
+          "variant": "base",
+          "mechanism": "unit+accepted-geometry",
+          "role": "compose-surface"
+        },
+        {
+          "match": "dkai-compose-row",
+          "unit": "layout",
+          "variant": "compose-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "compose-row"
+        },
+        {
+          "match": "dkai-input",
+          "unit": "field",
+          "variant": "textarea",
+          "mechanism": "unit+accepted-geometry",
+          "role": "compose-input"
+        },
+        {
+          "match": "dkai-send",
+          "unit": "action",
+          "variant": "primary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "send"
+        },
+        {
+          "match": "dkai-compose-hint",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "compose-hint"
+        },
+        {
+          "match": "dkai-mentions",
+          "unit": "popover",
+          "variant": "service",
+          "mechanism": "unit+accepted-geometry",
+          "role": "mention-picker"
+        },
+        {
+          "match": "dkai-mention(?:-label|-detail)?",
+          "unit": "layout",
+          "variant": "mention-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "mention-row"
+        }
+      ],
+      "services": {
+        "services": [
+          "dom",
+          "layout",
+          "menus",
+          "statusBar"
+        ],
+        "migrations": [
+          {
+            "from": "layout.move",
+            "to": "movableWindow",
+            "count": 2
+          },
+          {
+            "from": "menus.add",
+            "to": "menu",
+            "count": 2
+          },
+          {
+            "from": "statusBar.add",
+            "to": "status",
+            "count": 2
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": [
+          {
+            "kind": "status",
+            "id": "smb-browser",
+            "side": "right",
+            "order": 31
+          },
+          {
+            "kind": "status",
+            "id": "ai-agent",
+            "side": "right",
+            "order": 32
+          }
+        ]
+      },
+      "state": {
+        "channels": [
+          "busy",
+          "checked",
+          "enabled",
+          "visible"
+        ],
+        "roles": [
+          "dialog"
+        ],
+        "tabIndex": [],
+        "aria": [
+          "aria-label",
+          "aria-modal"
+        ],
+        "keys": [
+          "Enter"
+        ],
+        "counts": {
+          "states": 11,
+          "roles": 2,
+          "a11y": 8,
+          "keyboard": 2,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 17,
+            "tag": "button",
+            "id": "dksmbClose",
+            "type": "",
+            "className": "dksvc-close dkds-icon-button dkds-panel-close-button",
+            "label": "×"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 19,
+            "tag": "button",
+            "id": "dksmbDiscover",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "扫描"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 21,
+            "tag": "button",
+            "id": "dksmbUp",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "↑ 上级"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 21,
+            "tag": "button",
+            "id": "dksmbFavorite",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "☆"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 21,
+            "tag": "button",
+            "id": "dksmbRefresh",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "刷新"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 26,
+            "tag": "button",
+            "id": "dksmbShares",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "列出共享"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 26,
+            "tag": "button",
+            "id": "dksmbCancel",
+            "type": "",
+            "className": "dksmb-btn dkds-action-button",
+            "label": "取消"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 26,
+            "tag": "button",
+            "id": "dksmbCommit",
+            "type": "",
+            "className": "dksmb-primary primary dkds-action-button",
+            "label": "导入所选文件"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 32,
+            "tag": "button",
+            "id": "dkaiSettingsClose",
+            "type": "",
+            "className": "dksvc-close dkds-icon-button dkds-panel-close-button",
+            "label": "×"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 38,
+            "tag": "button",
+            "id": "dkaiSave",
+            "type": "",
+            "className": "primary",
+            "label": "保存"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 38,
+            "tag": "button",
+            "id": "dkaiTest",
+            "type": "",
+            "className": "",
+            "label": "测试连接"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 39,
+            "tag": "button",
+            "id": "dkaiMcpStart",
+            "type": "",
+            "className": "primary",
+            "label": "启动 MCP"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 39,
+            "tag": "button",
+            "id": "dkaiMcpStop",
+            "type": "",
+            "className": "",
+            "label": "停止"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 39,
+            "tag": "button",
+            "id": "dkaiMcpCopy",
+            "type": "",
+            "className": "",
+            "label": "复制地址"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 46,
+            "tag": "button",
+            "id": "dkaiChatSettings",
+            "type": "",
+            "className": "dkds-icon-button",
+            "label": "⚙"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 46,
+            "tag": "button",
+            "id": "dkaiChatClose",
+            "type": "",
+            "className": "dkds-icon-button dkds-panel-close-button",
+            "label": "×"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 49,
+            "tag": "button",
+            "id": "dkaiSend",
+            "type": "",
+            "className": "dkai-send primary",
+            "label": "↑"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 70,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "dksmb-nav-row dkds-list-item",
+            "label": "★ ${…} ${…}"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 71,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "dksmb-nav-row dkds-list-item ${String(row.address||row.name)===current.server?",
+            "label": "▣ ${…} ${…}"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 72,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "dksmb-nav-row dkds-list-item ${name===current.share?",
+            "label": "▤ ${…}"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 156,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "dkai-ref dkds-chip",
+            "label": "@${…} ×"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 159,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "dkai-mention dkds-list-item",
+            "label": "${…} ${…} ${…}"
+          }
+        ],
+        "inputs": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbServer",
+            "type": "",
+            "className": "",
+            "label": "服务器 / IP"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbShare",
+            "type": "",
+            "className": "",
+            "label": "共享"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbDomain",
+            "type": "",
+            "className": "",
+            "label": "域（可选）"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbUser",
+            "type": "",
+            "className": "",
+            "label": "用户名"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbPassword",
+            "type": "password",
+            "className": "",
+            "label": "密码"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 35,
+            "tag": "input",
+            "id": "dkaiModel",
+            "type": "",
+            "className": "",
+            "label": "model id"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 36,
+            "tag": "input",
+            "id": "dkaiEndpoint",
+            "type": "",
+            "className": "",
+            "label": "https://.../chat/completions"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 37,
+            "tag": "input",
+            "id": "dkaiKey",
+            "type": "password",
+            "className": "",
+            "label": "保存在系统安全存储"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 39,
+            "tag": "input",
+            "id": "dkaiMcpToken",
+            "type": "",
+            "className": "",
+            "label": "任意非空 Token；建议使用随机长 Token"
+          }
+        ],
+        "selects": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 35,
+            "tag": "select",
+            "id": "dkaiPreset",
+            "type": "",
+            "className": "",
+            "label": ""
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 37,
+            "tag": "select",
+            "id": "dkaiAccess",
+            "type": "",
+            "className": "",
+            "label": "完整内核（推荐） 只读分析"
+          }
+        ],
+        "textareas": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 49,
+            "tag": "textarea",
+            "id": "dkaiInput",
+            "type": "",
+            "className": "dkai-input dkds-field-control",
+            "label": ""
+          }
+        ],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "dkds-surface-header": 3,
+          "dkds-list": 6,
+          "dkds-list-item": 5,
+          "dkds-note": 1,
+          "dkds-message": 4
+        },
+        "checks": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 23,
+            "tag": "input",
+            "id": "dksmbGuest",
+            "type": "checkbox",
+            "className": "",
+            "label": ""
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 79,
+            "tag": "input",
+            "id": "",
+            "type": "checkbox",
+            "className": "",
+            "label": ""
+          }
+        ],
+        "counts": {
+          "buttons": 22,
+          "inputs": 9,
+          "selects": 2,
+          "textareas": 1,
+          "checks": 2,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 58,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 58,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 63,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 80,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 164,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 167,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 58,
+            "kind": "dataset",
+            "raw": "busy",
+            "state": "busy",
+            "dataset": "busy"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 58,
+            "kind": "dataset",
+            "raw": "busy",
+            "state": "busy",
+            "dataset": "busy"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 56,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 57,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 169,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 16,
+            "name": "role",
+            "value": "dialog",
+            "kind": "static-attribute"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 31,
+            "name": "role",
+            "value": "dialog",
+            "kind": "static-attribute"
+          }
+        ],
+        "a11y": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 16,
+            "name": "aria-modal",
+            "value": "true",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 17,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 31,
+            "name": "aria-modal",
+            "value": "true",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 32,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 46,
+            "name": "aria-label",
+            "value": "AI / MCP 设置",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 46,
+            "name": "aria-label",
+            "value": "收起",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 49,
+            "name": "aria-label",
+            "value": "发送",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 156,
+            "name": "aria-label",
+            "value": "移除引用 ${esc(row.label)}",
+            "kind": "static-aria"
+          }
+        ],
+        "keyboard": [
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 171,
+            "key": "Enter"
+          },
+          {
+            "file": "src/plugins/connectivity-center/plugin.js",
+            "line": 171,
+            "key": "Enter"
+          }
+        ],
+        "counts": {
+          "states": 11,
+          "roles": 2,
+          "a11y": 8,
+          "keyboard": 2,
+          "unmapped": 0
+        }
+      }
+    },
+    "data-center": {
+      "unit": {
+        "kind": "data-workbench",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "section",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "tabs",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "summary",
+          "emptyState",
+          "metric",
+          "list",
+          "parameterForm",
+          "table",
+          "prime",
+          "plotView",
+          "scientificPlot",
+          "dialog",
+          "menu",
+          "portable",
+          "splitHandle",
+          "status"
+        ],
+        "regions": [
+          {
+            "id": "page",
+            "unit": "page",
+            "variant": "data",
+            "role": "activity-root"
+          },
+          {
+            "id": "header",
+            "unit": "pageHeader",
+            "variant": "page-owned",
+            "role": "activity-header"
+          },
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "data-workspace"
+          },
+          {
+            "id": "desktop-split",
+            "unit": "layout",
+            "variant": "sidebar-main-wide",
+            "role": "data-browser"
+          },
+          {
+            "id": "artifact-list",
+            "unit": "layout",
+            "variant": "artifact-list",
+            "role": "artifact-list"
+          },
+          {
+            "id": "artifact-row",
+            "unit": "layout",
+            "variant": "artifact-row",
+            "role": "artifact-row"
+          },
+          {
+            "id": "primary-flow",
+            "unit": "layout",
+            "variant": "primary-flow",
+            "role": "primary-flow"
+          },
+          {
+            "id": "filter-grid",
+            "unit": "layout",
+            "variant": "form-grid-2",
+            "role": "filters"
+          },
+          {
+            "id": "selection-grid",
+            "unit": "layout",
+            "variant": "action-grid-4",
+            "role": "selection-actions"
+          },
+          {
+            "id": "preview-fields",
+            "unit": "parameterForm",
+            "variant": "auto-fit",
+            "role": "chart-parameters"
+          },
+          {
+            "id": "parameter-forms",
+            "unit": "parameterForm",
+            "variant": "auto-fit",
+            "role": "workflow-parameters"
+          },
+          {
+            "id": "formula-grid",
+            "unit": "layout",
+            "variant": "formula-grid",
+            "role": "formula-parameters"
+          },
+          {
+            "id": "workflow-toolbar",
+            "unit": "layout",
+            "variant": "toolbar-bottom",
+            "role": "workflow-toolbar"
+          },
+          {
+            "id": "workflow-step-head",
+            "unit": "layout",
+            "variant": "workflow-step-head",
+            "role": "workflow-step-header"
+          },
+          {
+            "id": "provenance-list",
+            "unit": "layout",
+            "variant": "provenance-list",
+            "role": "provenance-list"
+          },
+          {
+            "id": "provenance-row",
+            "unit": "layout",
+            "variant": "provenance-row",
+            "role": "provenance"
+          },
+          {
+            "id": "source-actions",
+            "unit": "layout",
+            "variant": "toolbar-wrap",
+            "role": "source-actions"
+          },
+          {
+            "id": "summary",
+            "unit": "summary",
+            "variant": "strip",
+            "role": "data-summary"
+          },
+          {
+            "id": "empty",
+            "unit": "emptyState",
+            "variant": "standard",
+            "role": "data-empty"
+          },
+          {
+            "id": "objects",
+            "unit": "prime",
+            "variant": "fixed-titleless",
+            "role": "data-control",
+            "placements": [
+              "left"
+            ]
+          },
+          {
+            "id": "chart-preview",
+            "unit": "prime",
+            "variant": "canonical-header",
+            "role": "scientific-secondary"
+          },
+          {
+            "id": "chart",
+            "unit": "plotView",
+            "variant": "prime-contained",
+            "role": "data-preview"
+          },
+          {
+            "id": "table",
+            "unit": "table",
+            "variant": "standard",
+            "role": "data-preview"
+          },
+          {
+            "id": "workflow",
+            "unit": "list",
+            "variant": "plain",
+            "role": "recipe-steps"
+          },
+          {
+            "id": "dialogs",
+            "unit": "dialog",
+            "variant": "standard",
+            "role": "workflow-dialogs"
+          },
+          {
+            "id": "context",
+            "unit": "menu",
+            "variant": "context",
+            "role": "data-context"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "data-center-body",
+          "unit": "layout",
+          "variant": "sidebar-main-wide",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "data-workspace"
+        },
+        {
+          "match": "dc-card",
+          "unit": "panel",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "data-card"
+        },
+        {
+          "match": "dc-artifact-pane",
+          "unit": "layout",
+          "variant": "sticky-stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "artifact-pane"
+        },
+        {
+          "match": "dc-chart-provider",
+          "unit": "surface",
+          "variant": "base",
+          "mechanism": "unit+accepted-geometry",
+          "role": "chart-provider"
+        },
+        {
+          "match": "dcPlotViewActions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-actions"
+        },
+        {
+          "match": "dc-assignment-filter",
+          "unit": "field",
+          "variant": "select",
+          "mechanism": "unit+accepted-geometry",
+          "role": "assignment-filter"
+        },
+        {
+          "match": "dc-filter-stack",
+          "unit": "layout",
+          "variant": "stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "filter-stack"
+        },
+        {
+          "match": "dc-filter-row",
+          "unit": "layout",
+          "variant": "form-grid-2",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "filter-row"
+        },
+        {
+          "match": "dc-field-filter",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "filter-field"
+        },
+        {
+          "match": "dc-selection-tools",
+          "unit": "layout",
+          "variant": "action-grid-4",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "selection-actions"
+        },
+        {
+          "match": "dc-artifact-list",
+          "unit": "layout",
+          "variant": "artifact-list",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "artifact-list"
+        },
+        {
+          "match": "dc-artifact-item",
+          "unit": "layout",
+          "variant": "artifact-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "artifact-row"
+        },
+        {
+          "match": "dc-artifact-(?:copy|name|meta|check)",
+          "unit": "list",
+          "variant": "selectable",
+          "mechanism": "unit+accepted-geometry",
+          "role": "artifact-item-content"
+        },
+        {
+          "match": "dc-main",
+          "unit": "layout",
+          "variant": "primary-flow",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "primary-flow"
+        },
+        {
+          "match": "dc-source-preview",
+          "unit": "panel",
+          "variant": "headed",
+          "mechanism": "unit+accepted-geometry",
+          "role": "source-preview"
+        },
+        {
+          "match": "dc-table-preview",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "table-preview"
+        },
+        {
+          "match": "dc-json-preview",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "json-preview"
+        },
+        {
+          "match": "dc-preview-table",
+          "unit": "table",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "preview-table"
+        },
+        {
+          "match": "dc-tool-pane",
+          "unit": "section",
+          "variant": "controls",
+          "mechanism": "unit+accepted-geometry",
+          "role": "tool-pane"
+        },
+        {
+          "match": "dc-chart-pane",
+          "unit": "plotView",
+          "variant": "prime-contained",
+          "mechanism": "unit+accepted-geometry",
+          "role": "chart-preview"
+        },
+        {
+          "match": "dc-chart(?:$|[^-])",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "chart-canvas"
+        },
+        {
+          "match": "dc-chart-params",
+          "unit": "parameterForm",
+          "variant": "auto-fit",
+          "mechanism": "unit+accepted-geometry",
+          "role": "chart-parameter-grid"
+        },
+        {
+          "match": "schema-param-field|dkds-field-control",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "schema-field"
+        },
+        {
+          "match": "dcFormulaParams",
+          "unit": "layout",
+          "variant": "formula-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "formula-grid"
+        },
+        {
+          "match": "schema-parameter-panel|schema-param-help",
+          "unit": "section",
+          "variant": "controls",
+          "mechanism": "unit+accepted-geometry",
+          "role": "schema-panel"
+        },
+        {
+          "match": "dc-inline-actions",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inline-actions"
+        },
+        {
+          "match": "dc-formula-refs",
+          "unit": "layout",
+          "variant": "wrap-strip",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "formula-reference-strip"
+        },
+        {
+          "match": "dc-ref-chip",
+          "unit": "chip",
+          "variant": "quiet",
+          "mechanism": "unit+accepted-geometry",
+          "role": "formula-reference"
+        },
+        {
+          "match": "dc-recipe-bar|dc-add-step",
+          "unit": "layout",
+          "variant": "toolbar-bottom",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "workflow-toolbar"
+        },
+        {
+          "match": "dc-workflow-steps",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "workflow-steps"
+        },
+        {
+          "match": "dc-step-card",
+          "unit": "panel",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "workflow-step"
+        },
+        {
+          "match": "dc-step-head",
+          "unit": "layout",
+          "variant": "workflow-step-head",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "workflow-step-header"
+        },
+        {
+          "match": "dc-step-actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "workflow-step-actions"
+        },
+        {
+          "match": "dc-step-params",
+          "unit": "section",
+          "variant": "controls",
+          "mechanism": "unit+accepted-geometry",
+          "role": "workflow-step-parameters"
+        },
+        {
+          "match": "dc-workflow-status",
+          "unit": "status",
+          "variant": "text",
+          "mechanism": "unit+accepted-geometry",
+          "role": "workflow-status"
+        },
+        {
+          "match": "dc-provenance-list",
+          "unit": "layout",
+          "variant": "provenance-list",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "provenance-list"
+        },
+        {
+          "match": "dc-prov-item",
+          "unit": "layout",
+          "variant": "provenance-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "provenance-row"
+        },
+        {
+          "match": "dc-prov-main",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "provenance-content"
+        },
+        {
+          "match": "dc-source-actions",
+          "unit": "layout",
+          "variant": "toolbar-wrap",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "source-actions"
+        },
+        {
+          "match": "dc-tabs",
+          "unit": "tabs",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "source-tabs"
+        },
+        {
+          "match": "dkds-surface-heading|dkds-meta",
+          "unit": "header",
+          "variant": "panel",
+          "mechanism": "unit+accepted-geometry",
+          "role": "source-header-content"
+        }
+      ],
+      "services": {
+        "services": [
+          "activities",
+          "contextMenus",
+          "dialogs",
+          "dom",
+          "interaction",
+          "interactionBehaviors",
+          "menus",
+          "pages",
+          "parameters",
+          "scientificPlot",
+          "selection",
+          "topWorkspace",
+          "unitTemplates"
+        ],
+        "migrations": [
+          {
+            "from": "menus.add",
+            "to": "menu",
+            "count": 1
+          },
+          {
+            "from": "dialogs.confirm",
+            "to": "dialog",
+            "count": 1
+          },
+          {
+            "from": "dialogs.prompt",
+            "to": "dialog",
+            "count": 1
+          },
+          {
+            "from": "parameters.render",
+            "to": "parameterForm",
+            "count": 1
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "main",
+            "kind": "primary",
+            "role": "data-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "data-control",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 94,
+            "collapsible": true
+          },
+          {
+            "id": "chart-preview",
+            "kind": "prime",
+            "role": "scientific-secondary",
+            "priority": 60,
+            "collapsible": true
+          }
+        ],
+        "contributions": []
+      },
+      "state": {
+        "channels": [
+          "checked",
+          "enabled",
+          "pressed",
+          "selected",
+          "visible"
+        ],
+        "roles": [],
+        "tabIndex": [
+          -1
+        ],
+        "aria": [
+          "aria-label"
+        ],
+        "keys": [
+          "Escape"
+        ],
+        "counts": {
+          "states": 20,
+          "roles": 2,
+          "a11y": 1,
+          "keyboard": 1,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 263,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "",
+            "label": "↑"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 263,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "",
+            "label": "↓"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 263,
+            "tag": "button",
+            "id": "",
+            "type": "",
+            "className": "",
+            "label": "删除"
+          }
+        ],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "empty-state": 7,
+          "dkds-surface-header": 1,
+          "dkds-list": 1,
+          "dkds-list-item": 1
+        },
+        "checks": [],
+        "counts": {
+          "buttons": 3,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/data-center/chart-runtime.js",
+            "line": 23,
+            "kind": "property",
+            "raw": "hidden",
+            "state": "visible",
+            "property": "hidden"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 224,
+            "kind": "aria",
+            "raw": "aria-pressed",
+            "state": "pressed",
+            "attribute": "aria-pressed"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 278,
+            "kind": "aria",
+            "raw": "aria-selected",
+            "state": "selected",
+            "attribute": "aria-selected"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 164,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 222,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 224,
+            "kind": "class",
+            "raw": "selected",
+            "state": "selected",
+            "className": "selected",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 278,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 278,
+            "kind": "class",
+            "raw": "selected",
+            "state": "selected",
+            "className": "selected",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 31,
+            "kind": "aria",
+            "raw": "aria-pressed",
+            "state": "pressed",
+            "attribute": "aria-pressed",
+            "value": "false"
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 48,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 94,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 94,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 94,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 95,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 95,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 95,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 96,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 97,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 97,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 97,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 229,
+            "name": "tabindex",
+            "value": "-1",
+            "kind": "dynamic-attribute"
+          },
+          {
+            "file": "src/plugins/data-center/unit-presentation.js",
+            "line": 3,
+            "name": "role",
+            "kind": "dynamic-attribute"
+          }
+        ],
+        "a11y": [
+          {
+            "file": "src/plugins/data-center/feature-runtime.js",
+            "line": 229,
+            "name": "aria-label",
+            "kind": "dynamic-aria"
+          }
+        ],
+        "keyboard": [
+          {
+            "file": "src/plugins/data-center/artifact-selection.js",
+            "line": 20,
+            "key": "Escape"
+          }
+        ],
+        "counts": {
+          "states": 20,
+          "roles": 2,
+          "a11y": 1,
+          "keyboard": 1,
+          "unmapped": 0
+        }
+      }
+    },
+    "flexible-import": {
+      "unit": {
+        "kind": "data-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "import",
+            "unit": "provider",
+            "variant": "data",
+            "role": "data-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "pulse-analysis": {
+      "unit": {
+        "kind": "scientific-workbench",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "metric",
+          "summary",
+          "emptyState",
+          "list",
+          "table",
+          "prime",
+          "plotView",
+          "scientificPlot",
+          "legend",
+          "portable",
+          "menu"
+        ],
+        "regions": [
+          {
+            "id": "page",
+            "unit": "page",
+            "variant": "analysis",
+            "role": "activity-root"
+          },
+          {
+            "id": "header",
+            "unit": "pageHeader",
+            "variant": "page-owned",
+            "role": "activity-header"
+          },
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "scientific-workspace"
+          },
+          {
+            "id": "primary-stack",
+            "unit": "layout",
+            "variant": "stack-comfortable",
+            "role": "primary-flow"
+          },
+          {
+            "id": "control-grid",
+            "unit": "layout",
+            "variant": "form-grid",
+            "role": "parameter-grid"
+          },
+          {
+            "id": "inline-range",
+            "unit": "layout",
+            "variant": "inline-range",
+            "role": "range-control"
+          },
+          {
+            "id": "result-cards",
+            "unit": "layout",
+            "variant": "two-card-grid",
+            "role": "results-plots"
+          },
+          {
+            "id": "file-head",
+            "unit": "layout",
+            "variant": "active-file-head",
+            "role": "active-file"
+          },
+          {
+            "id": "file-toolbar",
+            "unit": "layout",
+            "variant": "file-toolbar",
+            "role": "file-toolbar"
+          },
+          {
+            "id": "file-list",
+            "unit": "layout",
+            "variant": "artifact-list",
+            "role": "file-list"
+          },
+          {
+            "id": "file-item",
+            "unit": "layout",
+            "variant": "list-row-selectable",
+            "role": "file-list-item"
+          },
+          {
+            "id": "batch-file-row",
+            "unit": "layout",
+            "variant": "batch-file-row",
+            "role": "file-item-content"
+          },
+          {
+            "id": "compare-actions",
+            "unit": "layout",
+            "variant": "compare-actions",
+            "role": "compare-actions"
+          },
+          {
+            "id": "result-visual-stack",
+            "unit": "layout",
+            "variant": "stack",
+            "role": "results-visual"
+          },
+          {
+            "id": "summary",
+            "unit": "summary",
+            "variant": "row",
+            "role": "analysis-summary"
+          },
+          {
+            "id": "empty",
+            "unit": "emptyState",
+            "variant": "standard",
+            "role": "file-empty"
+          },
+          {
+            "id": "controls",
+            "unit": "prime",
+            "variant": "fixed-titleless",
+            "role": "data-control",
+            "placements": [
+              "left",
+              "global",
+              "right",
+              "bottom"
+            ]
+          },
+          {
+            "id": "raw-plot",
+            "unit": "plotView",
+            "variant": "complete",
+            "role": "raw-diagnostic-plot"
+          },
+          {
+            "id": "result-plots",
+            "unit": "plotView",
+            "variant": "complete",
+            "role": "pulse-result-plots"
+          },
+          {
+            "id": "canvas",
+            "unit": "scientificPlot",
+            "variant": "curve",
+            "role": "pulse-plot-canvas"
+          },
+          {
+            "id": "legend",
+            "unit": "legend",
+            "variant": "strip",
+            "role": "series-legend"
+          },
+          {
+            "id": "menu",
+            "unit": "menu",
+            "variant": "dropdown",
+            "role": "plot-actions"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "pulse-analysis-body",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "analysis-flow"
+        },
+        {
+          "match": "pulse-page-header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "mechanism": "unit+accepted-geometry",
+          "role": "activity-header"
+        },
+        {
+          "match": "pulse-(?:card|config-card)",
+          "unit": "panel",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "analysis-card"
+        },
+        {
+          "match": "pulse-control-rail",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "control-rail"
+        },
+        {
+          "match": "pulse-control-grid",
+          "unit": "layout",
+          "variant": "form-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "control-grid"
+        },
+        {
+          "match": "pulse-inline-range",
+          "unit": "layout",
+          "variant": "inline-range",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "range"
+        },
+        {
+          "match": "pulse-analyze-cell",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "analyze-action"
+        },
+        {
+          "match": "pulse-summary(?:-grid|-placeholder|-error)?",
+          "unit": "summary",
+          "variant": "row",
+          "mechanism": "unit+accepted-geometry",
+          "role": "summary"
+        },
+        {
+          "match": "pulse-stat-chip",
+          "unit": "metric",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "summary-metric"
+        },
+        {
+          "match": "pulse-plot-heading",
+          "unit": "header",
+          "variant": "plot",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-heading"
+        },
+        {
+          "match": "pulse-plot-surface",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-canvas"
+        },
+        {
+          "match": "pulse-raw-card",
+          "unit": "plotView",
+          "variant": "complete",
+          "mechanism": "unit+accepted-geometry",
+          "role": "raw-plot"
+        },
+        {
+          "match": "pulse-raw-plot",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "raw-canvas"
+        },
+        {
+          "match": "pulse-results-grid",
+          "unit": "layout",
+          "variant": "two-card-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "results-grid"
+        },
+        {
+          "match": "pulse-result-card",
+          "unit": "panel",
+          "variant": "plot-card",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-card"
+        },
+        {
+          "match": "pulse-result-plot",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-canvas"
+        },
+        {
+          "match": "pulse-table-heading",
+          "unit": "header",
+          "variant": "panel",
+          "mechanism": "unit+accepted-geometry",
+          "role": "table-header"
+        },
+        {
+          "match": "pulse-table-actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "table-actions"
+        },
+        {
+          "match": "pulse-table-wrap",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "result-table-scroll"
+        },
+        {
+          "match": "pulse-result-table",
+          "unit": "table",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-table"
+        },
+        {
+          "match": "pulse-file-manager-card",
+          "unit": "panel",
+          "variant": "headed",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-manager"
+        },
+        {
+          "match": "pulse-file-manager-heading",
+          "unit": "header",
+          "variant": "panel",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-manager-header"
+        },
+        {
+          "match": "pulse-file-toolbar",
+          "unit": "layout",
+          "variant": "file-toolbar",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-toolbar"
+        },
+        {
+          "match": "pulse-file-list",
+          "unit": "layout",
+          "variant": "artifact-list",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-list"
+        },
+        {
+          "match": "pulse-file-empty|pulse-current-empty",
+          "unit": "layout",
+          "variant": "empty-centered",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "empty"
+        },
+        {
+          "match": "pulse-batch-file-item",
+          "unit": "list",
+          "variant": "selectable",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-item"
+        },
+        {
+          "match": "pulse-batch-file-main",
+          "unit": "layout",
+          "variant": "batch-file-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "file-item-main"
+        },
+        {
+          "match": "pulse-file-check",
+          "unit": "check",
+          "variant": "checkbox",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-select"
+        },
+        {
+          "match": "pulse-batch-file-(?:text|label|name|meta)",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-content"
+        },
+        {
+          "match": "pulse-file-state",
+          "unit": "chip",
+          "variant": "quiet",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-state"
+        },
+        {
+          "match": "pulse-file-summary",
+          "unit": "summary",
+          "variant": "strip",
+          "mechanism": "unit+accepted-geometry",
+          "role": "file-summary"
+        },
+        {
+          "match": "pulse-current-file-actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "current-file-actions"
+        },
+        {
+          "match": "pulse-active-file-head",
+          "unit": "layout",
+          "variant": "active-file-head",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "active-file"
+        },
+        {
+          "match": "pulse-active-(?:path|meta)",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "active-file-content"
+        },
+        {
+          "match": "pulse-label-edit",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "label-editor"
+        },
+        {
+          "match": "pulse-compare-toolbar-card",
+          "unit": "panel",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "compare-toolbar"
+        },
+        {
+          "match": "pulse-compare-actions",
+          "unit": "layout",
+          "variant": "compare-actions",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "compare-actions"
+        },
+        {
+          "match": "pulse-scope-action",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "scope-action"
+        },
+        {
+          "match": "pulse-compared-summary",
+          "unit": "summary",
+          "variant": "strip",
+          "mechanism": "unit+accepted-geometry",
+          "role": "compare-summary"
+        },
+        {
+          "match": "pulse-table-(?:label|source)",
+          "unit": "table",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "table-cell"
+        },
+        {
+          "match": "pulse-primary-surface",
+          "unit": "layout",
+          "variant": "stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "primary-surface"
+        },
+        {
+          "match": "pulse-results-visual-pane",
+          "unit": "layout",
+          "variant": "stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "results-visual"
+        },
+        {
+          "match": "pulse-results-table-card",
+          "unit": "panel",
+          "variant": "headed",
+          "mechanism": "unit+accepted-geometry",
+          "role": "results-table"
+        }
+      ],
+      "services": {
+        "services": [
+          "activities",
+          "dom",
+          "interaction",
+          "menus",
+          "pages",
+          "portable",
+          "scientificPlot",
+          "selection",
+          "topWorkspace",
+          "unitTemplates"
+        ],
+        "migrations": [
+          {
+            "from": "menus.add",
+            "to": "menu",
+            "count": 1
+          },
+          {
+            "from": "portable.create",
+            "to": "portable",
+            "count": 1
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "main",
+            "kind": "primary",
+            "role": "scientific-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "data-control",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 92,
+            "collapsible": true
+          }
+        ],
+        "contributions": []
+      },
+      "state": {
+        "channels": [
+          "checked",
+          "enabled",
+          "visible"
+        ],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 8,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "dkds-list": 1,
+          "dkds-list-item": 1,
+          "dkds-metric": 1,
+          "dkds-note": 2
+        },
+        "checks": [
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 245,
+            "tag": "input",
+            "id": "",
+            "type": "checkbox",
+            "className": "pulse-file-check",
+            "label": ""
+          }
+        ],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 1,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 260,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 261,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 297,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 600,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 601,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 289,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 290,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/pulse-analysis/analysis-service.js",
+            "line": 406,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 8,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "pulse-import": {
+      "unit": {
+        "kind": "data-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "import",
+            "unit": "provider",
+            "variant": "data",
+            "role": "data-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "pulse-sampler-tool": {
+      "unit": {
+        "kind": "scientific-tool",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "tabs",
+          "field",
+          "chip",
+          "note",
+          "table",
+          "scientificPlot",
+          "prime"
+        ],
+        "regions": [
+          {
+            "id": "page",
+            "unit": "page",
+            "variant": "tool",
+            "role": "activity-root"
+          },
+          {
+            "id": "header",
+            "unit": "pageHeader",
+            "variant": "page-owned",
+            "role": "activity-header"
+          },
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "tool-workspace"
+          },
+          {
+            "id": "shell",
+            "unit": "layout",
+            "variant": "tool-sidebar-main",
+            "role": "tool-shell"
+          },
+          {
+            "id": "designer-stack",
+            "unit": "layout",
+            "variant": "stack-comfortable",
+            "role": "designer"
+          },
+          {
+            "id": "card-header",
+            "unit": "header",
+            "variant": "panel",
+            "role": "tool-card-header"
+          },
+          {
+            "id": "parameter-grid",
+            "unit": "layout",
+            "variant": "form-grid-2",
+            "role": "parameter-grid"
+          },
+          {
+            "id": "label-control",
+            "unit": "layout",
+            "variant": "control-label-row",
+            "role": "label-control"
+          },
+          {
+            "id": "segment-bar",
+            "unit": "layout",
+            "variant": "segment-bar",
+            "role": "segment-bar"
+          },
+          {
+            "id": "wave-rows",
+            "unit": "layout",
+            "variant": "fill-rows",
+            "role": "waveform-region"
+          },
+          {
+            "id": "analysis-controls",
+            "unit": "layout",
+            "variant": "analysis-control-grid",
+            "role": "analysis-controls"
+          },
+          {
+            "id": "result-controls",
+            "unit": "layout",
+            "variant": "result-control-grid",
+            "role": "result-controls"
+          },
+          {
+            "id": "result-grid",
+            "unit": "layout",
+            "variant": "result-grid-asymmetric",
+            "role": "result-grid"
+          },
+          {
+            "id": "controls",
+            "unit": "prime",
+            "variant": "fixed-titleless",
+            "role": "data-control",
+            "placements": [
+              "left"
+            ]
+          },
+          {
+            "id": "plot",
+            "unit": "scientificPlot",
+            "variant": "curve",
+            "role": "waveform"
+          },
+          {
+            "id": "results",
+            "unit": "table",
+            "variant": "standard",
+            "role": "sampling-results"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [
+          "activities",
+          "dom",
+          "pages",
+          "topWorkspace",
+          "unitTemplates"
+        ],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "main",
+            "kind": "primary",
+            "role": "utility-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "parameters",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 96,
+            "collapsible": true,
+            "embedded": true
+          }
+        ],
+        "contributions": []
+      },
+      "state": {
+        "channels": [
+          "enabled"
+        ],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 1,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/pulse-sampler-tool/unit-presentation.js",
+            "line": 108,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          }
+        ],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 1,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "resonance-detector-robust": {
+      "unit": {
+        "kind": "algorithm-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "detector",
+            "unit": "provider",
+            "variant": "algorithm",
+            "role": "algorithm-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "resonance-workbench": {
+      "unit": {
+        "kind": "scientific-workbench",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "section",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "metric",
+          "summary",
+          "divider",
+          "emptyState",
+          "list",
+          "parameterForm",
+          "table",
+          "prime",
+          "plotView",
+          "plotGroup",
+          "scientificPlot",
+          "legend",
+          "floatingChrome",
+          "portable",
+          "dialog",
+          "menu",
+          "popover",
+          "status"
+        ],
+        "regions": [
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "accepted-scientific",
+            "role": "scientific-workspace"
+          },
+          {
+            "id": "primary-layout",
+            "unit": "layout",
+            "variant": "accepted-main-area",
+            "role": "scientific-primary"
+          },
+          {
+            "id": "dataset-row",
+            "unit": "layout",
+            "variant": "dataset-row",
+            "role": "dataset-row"
+          },
+          {
+            "id": "dataset-transform",
+            "unit": "layout",
+            "variant": "dataset-transform-row",
+            "role": "dataset-transform"
+          },
+          {
+            "id": "detector-parameters",
+            "unit": "parameterForm",
+            "variant": "standard",
+            "role": "detector-parameters"
+          },
+          {
+            "id": "advanced-settings",
+            "unit": "section",
+            "variant": "disclosure",
+            "role": "detector-advanced"
+          },
+          {
+            "id": "inspector-kv",
+            "unit": "layout",
+            "variant": "key-value-standard",
+            "role": "inspector-values"
+          },
+          {
+            "id": "inspector-section",
+            "unit": "layout",
+            "variant": "inspector-section",
+            "role": "inspector-section"
+          },
+          {
+            "id": "choice-grid",
+            "unit": "layout",
+            "variant": "palette-grid",
+            "role": "classification-choices"
+          },
+          {
+            "id": "result-grid",
+            "unit": "layout",
+            "variant": "responsive-two-column",
+            "role": "derived-results"
+          },
+          {
+            "id": "gate-controls",
+            "unit": "layout",
+            "variant": "gate-controls",
+            "role": "gate-controls"
+          },
+          {
+            "id": "inspector-actions",
+            "unit": "layout",
+            "variant": "action-grid-2",
+            "role": "inspector-actions"
+          },
+          {
+            "id": "derived-grid",
+            "unit": "layout",
+            "variant": "two-card-grid",
+            "role": "derived-results"
+          },
+          {
+            "id": "summary-row",
+            "unit": "summary",
+            "variant": "row",
+            "role": "derived-summary"
+          },
+          {
+            "id": "empty",
+            "unit": "emptyState",
+            "variant": "standard",
+            "role": "group-empty"
+          },
+          {
+            "id": "main-tools",
+            "unit": "floatingChrome",
+            "variant": "accepted-main",
+            "role": "plot-tools"
+          },
+          {
+            "id": "legend",
+            "unit": "legend",
+            "variant": "accepted-main",
+            "role": "series-legend"
+          },
+          {
+            "id": "parameters",
+            "unit": "prime",
+            "variant": "accepted-scientific-data-control",
+            "role": "data-control",
+            "placements": [
+              "left"
+            ]
+          },
+          {
+            "id": "inspector",
+            "unit": "prime",
+            "variant": "accepted-scientific-inspector",
+            "role": "inspector",
+            "placements": [
+              "global",
+              "right",
+              "bottom",
+              "float"
+            ]
+          },
+          {
+            "id": "group",
+            "unit": "plotGroup",
+            "variant": "accepted-scientific",
+            "role": "scientific-secondary",
+            "header": "standard",
+            "density": "regular"
+          },
+          {
+            "id": "group-plots",
+            "unit": "plotView",
+            "variant": "complete",
+            "role": "group-child"
+          },
+          {
+            "id": "plot-canvas",
+            "unit": "scientificPlot",
+            "variant": "curve",
+            "role": "plot-canvas"
+          },
+          {
+            "id": "status",
+            "unit": "status",
+            "variant": "accepted-summary",
+            "role": "summary"
+          },
+          {
+            "id": "dialogs",
+            "unit": "dialog",
+            "variant": "standard",
+            "role": "domain-dialogs"
+          },
+          {
+            "id": "menus",
+            "unit": "menu",
+            "variant": "context",
+            "role": "domain-context"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "resonance-dedicated-body|resonance-parity-root",
+          "unit": "workspace",
+          "variant": "accepted-scientific",
+          "mechanism": "unit+accepted-geometry",
+          "role": "accepted-workspace"
+        },
+        {
+          "match": "respar-header-actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "header-actions"
+        },
+        {
+          "match": "respar-header-divider",
+          "unit": "divider",
+          "variant": "vertical",
+          "mechanism": "unit+accepted-geometry",
+          "role": "header-divider"
+        },
+        {
+          "match": "respar-primary",
+          "unit": "layout",
+          "variant": "accepted-main-area",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "primary-layout"
+        },
+        {
+          "match": "respar-left-panel",
+          "unit": "prime",
+          "variant": "accepted-scientific-data-control",
+          "mechanism": "unit+accepted-geometry",
+          "role": "data-control"
+        },
+        {
+          "match": "respar-scan-global|respar-detect-actions",
+          "unit": "layout",
+          "variant": "action-grid-2",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "action-grid"
+        },
+        {
+          "match": "respar-select-label|respar-inspect-controls|respar-label-editor",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "field-stack"
+        },
+        {
+          "match": "respar-dataset-list",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "dataset-list"
+        },
+        {
+          "match": "reswin-dataset|respar-dataset-item",
+          "unit": "layout",
+          "variant": "dataset-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "dataset-row"
+        },
+        {
+          "match": "respar-dataset-(?:content|title)",
+          "unit": "list",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "dataset-content"
+        },
+        {
+          "match": "reswin-vg|reswin-dataset-transform|respar-dataset-vg",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "dataset-field"
+        },
+        {
+          "match": "reswin-transform-row|respar-dataset-transform",
+          "unit": "layout",
+          "variant": "dataset-transform-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "dataset-transform"
+        },
+        {
+          "match": "respar-note",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "note"
+        },
+        {
+          "match": "respar-preset-row|respar-scan-toggle|respar-inspector-row",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inline-row"
+        },
+        {
+          "match": "respar-advanced",
+          "unit": "section",
+          "variant": "disclosure",
+          "mechanism": "unit+accepted-geometry",
+          "role": "advanced-section"
+        },
+        {
+          "match": "respar-peak-legend",
+          "unit": "legend",
+          "variant": "strip",
+          "mechanism": "unit+accepted-geometry",
+          "role": "peak-legend"
+        },
+        {
+          "match": "respar-peak-hit|respar-peak-point|category-pair-swatch",
+          "unit": "legend",
+          "variant": "strip",
+          "mechanism": "unit+accepted-geometry",
+          "role": "legend-mark"
+        },
+        {
+          "match": "respar-main-area|respar-main-workspace|respar-plot-wrap",
+          "unit": "layout",
+          "variant": "accepted-main-workspace",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "main-workspace"
+        },
+        {
+          "match": "respar-main-plot-header",
+          "unit": "layout",
+          "variant": "accepted-main-header",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "main-plot-header"
+        },
+        {
+          "match": "respar-main-tools",
+          "unit": "floatingChrome",
+          "variant": "accepted-main",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-tools"
+        },
+        {
+          "match": "respar-main-legend|respar-legend-chip|respar-legend-line",
+          "unit": "legend",
+          "variant": "accepted-main",
+          "mechanism": "unit+accepted-geometry",
+          "role": "main-legend"
+        },
+        {
+          "match": "respar-main-svg",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "main-plot"
+        },
+        {
+          "match": "respar-status-row|respar-summary|respar-export-row",
+          "unit": "status",
+          "variant": "accepted-summary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "status-summary"
+        },
+        {
+          "match": "respar-hover-tip",
+          "unit": "popover",
+          "variant": "status",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-tooltip"
+        },
+        {
+          "match": "respar-(?:floating-panel|inspector-panel|group-panel|floating-header|floating-body|group-context)",
+          "unit": "portable",
+          "variant": "floating",
+          "mechanism": "unit+accepted-geometry",
+          "role": "portable-panel"
+        },
+        {
+          "match": "respar-inspect-controls",
+          "unit": "layout",
+          "variant": "stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inspector-controls"
+        },
+        {
+          "match": "reswin-kv|respar-inspector-kv",
+          "unit": "layout",
+          "variant": "key-value-standard",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inspector-values"
+        },
+        {
+          "match": "respar-inline-actions",
+          "unit": "toolbar",
+          "variant": "ordinary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "inspector-actions"
+        },
+        {
+          "match": "respar-inspect-plot",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "inspector-plot"
+        },
+        {
+          "match": "respar-group-toolbar|respar-group-cols",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "group-toolbar"
+        },
+        {
+          "match": "reswin-group-grid",
+          "unit": "plotGroup",
+          "variant": "accepted-scientific",
+          "mechanism": "unit+accepted-geometry",
+          "role": "group-grid"
+        },
+        {
+          "match": "reswin-group-empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "group-empty"
+        },
+        {
+          "match": "reswin-group-card",
+          "unit": "plotView",
+          "variant": "complete",
+          "mechanism": "unit+accepted-geometry",
+          "role": "group-plot"
+        },
+        {
+          "match": "reswin-group-plot",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "group-canvas"
+        },
+        {
+          "match": "respar-derived|respar-derived-header",
+          "unit": "section",
+          "variant": "result",
+          "mechanism": "unit+accepted-geometry",
+          "role": "derived-results"
+        },
+        {
+          "match": "reswin-two-col|reswin-gate-grid|gate-analysis-grid",
+          "unit": "layout",
+          "variant": "responsive-two-column",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "result-grid"
+        },
+        {
+          "match": "reswin-medium-plot|reswin-feature-field-plot|gate-analysis-grid .analysis-chart",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-plot"
+        },
+        {
+          "match": "reswin-feature-field-card",
+          "unit": "panel",
+          "variant": "plot-card",
+          "mechanism": "unit+accepted-geometry",
+          "role": "feature-card"
+        },
+        {
+          "match": "reswin-report|gate-analysis-report",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "report"
+        },
+        {
+          "match": "reswin-gate-controls|gate-density-controls|gate-analysis-controls",
+          "unit": "layout",
+          "variant": "gate-controls",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "gate-controls"
+        },
+        {
+          "match": "respar-inspector-section|respar-inspector-transform",
+          "unit": "layout",
+          "variant": "inspector-section",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inspector-section"
+        },
+        {
+          "match": "respar-inspector-hint",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "inspector-hint"
+        },
+        {
+          "match": "respar-inspector-action-grid",
+          "unit": "layout",
+          "variant": "action-grid-2",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "inspector-actions"
+        },
+        {
+          "match": "respar-peak-class-grid|resonance-detector-picker",
+          "unit": "layout",
+          "variant": "key-value-compact",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "classification-grid"
+        },
+        {
+          "match": "peak-category-palette|resonance-display-grid",
+          "unit": "layout",
+          "variant": "palette-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "choice-grid"
+        },
+        {
+          "match": "peak-category-choice",
+          "unit": "check",
+          "variant": "radio",
+          "mechanism": "unit+accepted-geometry",
+          "role": "choice"
+        },
+        {
+          "match": "analysis-inline-formula",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "formula"
+        },
+        {
+          "match": "gate-report-metrics",
+          "unit": "summary",
+          "variant": "row",
+          "mechanism": "unit+accepted-geometry",
+          "role": "report-metrics"
+        },
+        {
+          "match": "gate-analysis-table-wrap",
+          "unit": "table",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-table"
+        },
+        {
+          "match": "reswin-spacing-controls",
+          "unit": "layout",
+          "variant": "form-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "spacing-controls"
+        },
+        {
+          "match": "analysis-chart-card|analysis-table-wrap",
+          "unit": "panel",
+          "variant": "plot-card",
+          "mechanism": "unit+accepted-geometry",
+          "role": "result-surface"
+        },
+        {
+          "match": "respar-data-list-title",
+          "unit": "header",
+          "variant": "section",
+          "mechanism": "unit+accepted-geometry",
+          "role": "data-list-title"
+        }
+      ],
+      "services": {
+        "services": [
+          "actions",
+          "activities",
+          "contextMenus",
+          "dialogs",
+          "dom",
+          "edit",
+          "interaction",
+          "interactionBehaviors",
+          "menus",
+          "pages",
+          "scientificPlot",
+          "selection",
+          "series",
+          "settings",
+          "statusBar",
+          "toolbar",
+          "topWorkspace",
+          "unitTemplates",
+          "parameters"
+        ],
+        "migrations": [
+          {
+            "from": "toolbar.add",
+            "to": "toolbar",
+            "count": 1
+          },
+          {
+            "from": "statusBar.add",
+            "to": "status",
+            "count": 1
+          },
+          {
+            "from": "menus.add",
+            "to": "menu",
+            "count": 1
+          },
+          {
+            "from": "parameters.render",
+            "to": "parameterForm",
+            "count": 1
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "main",
+            "kind": "primary",
+            "role": "scientific-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "data-control",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 95,
+            "collapsible": true
+          },
+          {
+            "id": "curve-inspector",
+            "kind": "prime",
+            "role": "inspector",
+            "priority": 90,
+            "collapsible": true
+          },
+          {
+            "id": "group-analysis",
+            "kind": "prime",
+            "role": "scientific-secondary",
+            "priority": 70,
+            "collapsible": true
+          },
+          {
+            "id": "physics",
+            "kind": "sub",
+            "role": "scientific-secondary",
+            "priority": 60,
+            "collapsible": true
+          },
+          {
+            "id": "spacing",
+            "kind": "sub",
+            "role": "scientific-secondary",
+            "priority": 50,
+            "collapsible": true
+          },
+          {
+            "id": "gate-analysis",
+            "kind": "sub",
+            "role": "scientific-secondary",
+            "priority": 40,
+            "collapsible": true
+          }
+        ],
+        "contributions": [
+          {
+            "kind": "status",
+            "id": "main-summary",
+            "side": "left",
+            "order": 1,
+            "activity": "resonance",
+            "presentationOnly": true
+          },
+          {
+            "kind": "toolbar",
+            "id": "res-settings",
+            "side": "UTILITY",
+            "order": 980,
+            "activity": "resonance",
+            "priority": 10
+          }
+        ]
+      },
+      "state": {
+        "channels": [
+          "checked",
+          "current",
+          "enabled",
+          "pressed",
+          "selected",
+          "visible"
+        ],
+        "roles": [
+          "dialog",
+          "group"
+        ],
+        "tabIndex": [
+          -1
+        ],
+        "aria": [
+          "aria-label"
+        ],
+        "keys": [
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "ArrowUp",
+          "Escape"
+        ],
+        "counts": {
+          "states": 36,
+          "roles": 3,
+          "a11y": 6,
+          "keyboard": 5,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 40,
+            "tag": "button",
+            "id": "",
+            "type": "button",
+            "className": "peak-category-choice dkds-action-button dkds-choice-button ${Number(c.order)===Number(p.peakOrder)?",
+            "label": "${…}"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinAddPeakCategory",
+            "type": "",
+            "className": "",
+            "label": "＋ 新增类别/颜色"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinApplyPeakLabel",
+            "type": "",
+            "className": "",
+            "label": "重命名当前类别"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinAcceptPeak",
+            "type": "",
+            "className": "",
+            "label": "${…}"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinLockPeak",
+            "type": "",
+            "className": "",
+            "label": "${…}"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinResetFwhmWindow",
+            "type": "",
+            "className": "",
+            "label": "FWHM 自动窗口"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinDeletePeak",
+            "type": "",
+            "className": "danger-soft",
+            "label": "删除峰"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "button",
+            "id": "reswinSelectCurve",
+            "type": "",
+            "className": "",
+            "label": "选中所属曲线"
+          }
+        ],
+        "inputs": [
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 132,
+            "tag": "input",
+            "id": "",
+            "type": "number",
+            "className": "reswin-vg",
+            "label": "?"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "input",
+            "id": "",
+            "type": "text",
+            "className": "",
+            "label": ""
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-inspector-runtime.js",
+            "line": 41,
+            "tag": "input",
+            "id": "reswinPeakLabelInput",
+            "type": "text",
+            "className": "",
+            "label": ""
+          }
+        ],
+        "selects": [
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 132,
+            "tag": "select",
+            "id": "",
+            "type": "",
+            "className": "reswin-dataset-transform",
+            "label": "${…}"
+          }
+        ],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "dkds-list": 1,
+          "dkds-list-item": 1,
+          "empty-state": 2,
+          "dkds-plot-view-head": 1,
+          "dkds-integrated-action-group": 4,
+          "dkds-note": 2,
+          "analysis-page-header": 1,
+          "dkds-surface-header": 3,
+          "dkds-portable-header": 2
+        },
+        "checks": [
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 132,
+            "tag": "input",
+            "id": "",
+            "type": "checkbox",
+            "className": "reswin-master",
+            "label": ""
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 132,
+            "tag": "input",
+            "id": "",
+            "type": "checkbox",
+            "className": "reswin-forward",
+            "label": ""
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 132,
+            "tag": "input",
+            "id": "",
+            "type": "checkbox",
+            "className": "reswin-reverse",
+            "label": ""
+          }
+        ],
+        "counts": {
+          "buttons": 8,
+          "inputs": 3,
+          "selects": 1,
+          "textareas": 0,
+          "checks": 3,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/resonance-workbench/feature-analysis-runtime.js",
+            "line": 116,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 77,
+            "kind": "aria",
+            "raw": "aria-pressed",
+            "state": "pressed",
+            "attribute": "aria-pressed"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 77,
+            "kind": "aria",
+            "raw": "aria-current",
+            "state": "current",
+            "attribute": "aria-current"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 169,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 170,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 170,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 187,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 188,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 189,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 190,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 76,
+            "kind": "class",
+            "raw": "active",
+            "state": "pressed",
+            "className": "active",
+            "legacy": true
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-controls-runtime.js",
+            "line": 76,
+            "kind": "class",
+            "raw": "selected",
+            "state": "selected",
+            "className": "selected",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+            "line": 112,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+            "line": 124,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+            "line": 131,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-group-runtime.js",
+            "line": 137,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+            "line": 22,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+            "line": 33,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+            "line": 89,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+            "line": 117,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-main-plot-runtime.js",
+            "line": 117,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-runtime.js",
+            "line": 442,
+            "kind": "class",
+            "raw": "active",
+            "state": "pressed",
+            "className": "active",
+            "legacy": true
+          },
+          {
+            "file": "src/plugins/resonance-workbench/feature-runtime.js",
+            "line": 443,
+            "kind": "class",
+            "raw": "active",
+            "state": "pressed",
+            "className": "active",
+            "legacy": true
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 37,
+            "kind": "aria",
+            "raw": "aria-hidden",
+            "state": "visible",
+            "attribute": "aria-hidden",
+            "value": "true"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 165,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 166,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 167,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 169,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 170,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 171,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 21,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 21,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 23,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 27,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 102,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 104,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 32,
+            "name": "role",
+            "value": "group",
+            "kind": "dynamic-attribute"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 37,
+            "name": "tabindex",
+            "value": "-1",
+            "kind": "dynamic-attribute"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 82,
+            "name": "role",
+            "value": "dialog",
+            "kind": "dynamic-attribute"
+          }
+        ],
+        "a11y": [
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 32,
+            "name": "aria-label",
+            "value": "扫描可见性模式",
+            "kind": "dynamic-aria"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 82,
+            "name": "aria-label",
+            "value": "框选区域操作",
+            "kind": "dynamic-aria"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 102,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "dynamic-aria"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 113,
+            "name": "aria-label",
+            "value": "缩小",
+            "kind": "dynamic-aria"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 114,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "dynamic-aria"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/unit-presentation.js",
+            "line": 158,
+            "name": "aria-label",
+            "value": "共振分析命令",
+            "kind": "dynamic-aria"
+          }
+        ],
+        "keyboard": [
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 47,
+            "key": "ArrowUp"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 47,
+            "key": "ArrowDown"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 48,
+            "key": "ArrowLeft"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 48,
+            "key": "ArrowRight"
+          },
+          {
+            "file": "src/plugins/resonance-workbench/view-components.js",
+            "line": 49,
+            "key": "Escape"
+          }
+        ],
+        "counts": {
+          "states": 36,
+          "roles": 3,
+          "a11y": 6,
+          "keyboard": 5,
+          "unmapped": 0
+        }
+      }
+    },
+    "scientific-data-contracts": {
+      "unit": {
+        "kind": "foundation-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "contracts",
+            "unit": "provider",
+            "variant": "foundation",
+            "role": "foundation-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "shell-navigation": {
+      "unit": {
+        "kind": "shell-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "navigation",
+            "unit": "provider",
+            "variant": "foundation",
+            "role": "shell-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "standard-transport-algorithms": {
+      "unit": {
+        "kind": "algorithm-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "algorithms",
+            "unit": "provider",
+            "variant": "algorithm",
+            "role": "algorithm-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "status-monitor": {
+      "unit": {
+        "kind": "foundation-ui",
+        "units": [
+          "layout",
+          "status",
+          "popover",
+          "surface",
+          "header",
+          "toolbar",
+          "action",
+          "chip",
+          "list",
+          "meter"
+        ],
+        "regions": [
+          {
+            "id": "status",
+            "unit": "status",
+            "variant": "compact",
+            "role": "statusbar"
+          },
+          {
+            "id": "memory-meter",
+            "unit": "meter",
+            "variant": "thin",
+            "role": "memory-usage"
+          },
+          {
+            "id": "status-row",
+            "unit": "layout",
+            "variant": "row",
+            "role": "status-content"
+          },
+          {
+            "id": "memory",
+            "unit": "popover",
+            "variant": "status",
+            "role": "memory-popover"
+          },
+          {
+            "id": "theme",
+            "unit": "popover",
+            "variant": "picker",
+            "role": "theme-popover"
+          },
+          {
+            "id": "list",
+            "unit": "list",
+            "variant": "compact",
+            "role": "memory-components"
+          },
+          {
+            "id": "actions",
+            "unit": "toolbar",
+            "variant": "header",
+            "role": "popover-actions"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [
+          "dom",
+          "statusBar"
+        ],
+        "migrations": [
+          {
+            "from": "statusBar.add",
+            "to": "status",
+            "count": 4
+          },
+          {
+            "from": "dom.style",
+            "to": "meter",
+            "count": 1
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": [
+          {
+            "kind": "status",
+            "id": "theme",
+            "side": "right",
+            "order": 10
+          },
+          {
+            "kind": "status",
+            "id": "memory",
+            "side": "right",
+            "order": 20
+          },
+          {
+            "kind": "status",
+            "id": "devtools",
+            "side": "right",
+            "order": 25
+          },
+          {
+            "kind": "status",
+            "id": "lan-web",
+            "side": "right",
+            "order": 30
+          }
+        ]
+      },
+      "state": {
+        "channels": [
+          "enabled",
+          "pressed",
+          "selected",
+          "visible"
+        ],
+        "roles": [
+          "group",
+          "listbox",
+          "option"
+        ],
+        "tabIndex": [
+          0
+        ],
+        "aria": [
+          "aria-label"
+        ],
+        "keys": [
+          "Escape"
+        ],
+        "counts": {
+          "states": 10,
+          "roles": 4,
+          "a11y": 5,
+          "keyboard": 1,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 38,
+            "tag": "button",
+            "id": "dkdsThemeSettingsBtn",
+            "type": "button",
+            "className": "dkds-icon-button dkds-theme-plugin-settings hidden",
+            "label": "⚙"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 39,
+            "tag": "button",
+            "id": "dkdsThemePanelClose",
+            "type": "button",
+            "className": "dkds-icon-button dkds-panel-close-button",
+            "label": "×"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 47,
+            "tag": "button",
+            "id": "",
+            "type": "button",
+            "className": "",
+            "label": "亮色"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 48,
+            "tag": "button",
+            "id": "",
+            "type": "button",
+            "className": "",
+            "label": "暗色"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 62,
+            "tag": "button",
+            "id": "",
+            "type": "button",
+            "className": "dkds-theme-profile-option${active?",
+            "label": "${…} ${…}"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 93,
+            "tag": "button",
+            "id": "dkdsMemoryPanelClose",
+            "type": "button",
+            "className": "dkds-icon-button dkds-panel-close-button",
+            "label": "×"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 123,
+            "tag": "button",
+            "id": "",
+            "type": "button",
+            "className": "dkds-memory-release danger-soft",
+            "label": "释放"
+          }
+        ],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {
+          "dkds-surface-header": 1,
+          "dkds-integrated-action-group": 3
+        },
+        "checks": [],
+        "counts": {
+          "buttons": 7,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 67,
+            "kind": "aria",
+            "raw": "aria-pressed",
+            "state": "pressed",
+            "attribute": "aria-pressed"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 62,
+            "kind": "aria-static",
+            "raw": "aria-selected=${active?",
+            "state": "selected",
+            "attribute": "aria-selected",
+            "value": "${active?"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 185,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 185,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 64,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 67,
+            "kind": "class",
+            "raw": "active",
+            "state": "pressed",
+            "className": "active",
+            "legacy": true
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 71,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 75,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 101,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 132,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 43,
+            "name": "role",
+            "value": "listbox",
+            "kind": "static-attribute"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 46,
+            "name": "role",
+            "value": "group",
+            "kind": "static-attribute"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 62,
+            "name": "role",
+            "value": "option",
+            "kind": "static-attribute"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 124,
+            "name": "tabindex",
+            "value": "0",
+            "kind": "static-attribute"
+          }
+        ],
+        "a11y": [
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 38,
+            "name": "aria-label",
+            "value": "主题参数",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 39,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 43,
+            "name": "aria-label",
+            "value": "主题配置",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 46,
+            "name": "aria-label",
+            "value": "亮暗模式",
+            "kind": "static-aria"
+          },
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 93,
+            "name": "aria-label",
+            "value": "关闭",
+            "kind": "static-aria"
+          }
+        ],
+        "keyboard": [
+          {
+            "file": "src/plugins/status-monitor/plugin.js",
+            "line": 194,
+            "key": "Escape"
+          }
+        ],
+        "counts": {
+          "states": 10,
+          "roles": 4,
+          "a11y": 5,
+          "keyboard": 1,
+          "unmapped": 0
+        }
+      }
+    },
+    "ter-analysis": {
+      "unit": {
+        "kind": "scientific-workbench",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "summary",
+          "parameterForm",
+          "table",
+          "prime",
+          "plotView",
+          "plotGroup",
+          "scientificPlot",
+          "legend",
+          "portable",
+          "menu"
+        ],
+        "regions": [
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "scientific-workspace"
+          },
+          {
+            "id": "control-row",
+            "unit": "layout",
+            "variant": "row-wrap",
+            "role": "analysis-controls"
+          },
+          {
+            "id": "transform-parameters",
+            "unit": "parameterForm",
+            "variant": "standard",
+            "role": "transform-parameters"
+          },
+          {
+            "id": "resistance-card",
+            "unit": "layout",
+            "variant": "resistance-card",
+            "role": "resistance-card"
+          },
+          {
+            "id": "plot-header",
+            "unit": "layout",
+            "variant": "card-title-row",
+            "role": "plot-header"
+          },
+          {
+            "id": "heatmap-square",
+            "unit": "layout",
+            "variant": "square-plot",
+            "role": "heatmap-canvas"
+          },
+          {
+            "id": "summary",
+            "unit": "summary",
+            "variant": "strip",
+            "role": "ter-summary"
+          },
+          {
+            "id": "controls",
+            "unit": "prime",
+            "variant": "fixed-titleless",
+            "role": "data-control",
+            "placements": [
+              "left",
+              "global",
+              "right",
+              "bottom"
+            ]
+          },
+          {
+            "id": "group",
+            "unit": "plotGroup",
+            "variant": "comfortable",
+            "role": "scientific-secondary",
+            "header": "standard",
+            "density": "comfortable"
+          },
+          {
+            "id": "plots",
+            "unit": "plotView",
+            "variant": "complete",
+            "role": "group-child"
+          },
+          {
+            "id": "canvas",
+            "unit": "scientificPlot",
+            "variant": "heatmap",
+            "role": "plot-canvas"
+          },
+          {
+            "id": "legend",
+            "unit": "legend",
+            "variant": "strip",
+            "role": "plot-legend"
+          },
+          {
+            "id": "menu",
+            "unit": "menu",
+            "variant": "dropdown",
+            "role": "plot-actions"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "ter-workspace-main",
+          "unit": "layout",
+          "variant": "stack",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "primary-container"
+        },
+        {
+          "match": "ter-chart-grid",
+          "unit": "plotGroup",
+          "variant": "comfortable",
+          "mechanism": "unit+accepted-geometry",
+          "role": "scientific-group"
+        },
+        {
+          "match": "heatmap-square-card",
+          "unit": "plotView",
+          "variant": "complete",
+          "mechanism": "unit+accepted-geometry",
+          "role": "heatmap-card"
+        },
+        {
+          "match": "ter-resistance-card$",
+          "unit": "layout",
+          "variant": "resistance-card",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "resistance-card"
+        },
+        {
+          "match": "ter-resistance-card.dkds-portable-view",
+          "unit": "layout",
+          "variant": "portable-resistance-card",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "portable-resistance-card"
+        },
+        {
+          "match": "ter-card-title-row|ter-resistance-card-header",
+          "unit": "layout",
+          "variant": "card-title-row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "plot-header"
+        },
+        {
+          "match": "ter-card-title-text",
+          "unit": "header",
+          "variant": "plot",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-title"
+        },
+        {
+          "match": "ter-chart-actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-actions"
+        },
+        {
+          "match": "ter-chart-actions button|ter-resistance-card-header button",
+          "unit": "action",
+          "variant": "secondary",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-action"
+        },
+        {
+          "match": "ter-resistance-hint",
+          "unit": "note",
+          "variant": "meta",
+          "mechanism": "unit+accepted-geometry",
+          "role": "resistance-hint"
+        },
+        {
+          "match": "ter-resistance-selection",
+          "unit": "summary",
+          "variant": "strip",
+          "mechanism": "unit+accepted-geometry",
+          "role": "resistance-selection"
+        },
+        {
+          "match": "ter-layout-controls",
+          "unit": "layout",
+          "variant": "row-wrap",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "layout-controls"
+        },
+        {
+          "match": "ter-layout-controls strong",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "layout-label"
+        },
+        {
+          "match": "ter-layout-controls label",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "layout-field-row"
+        },
+        {
+          "match": "ter-layout-controls select",
+          "unit": "field",
+          "variant": "select",
+          "mechanism": "unit+accepted-geometry",
+          "role": "layout-select"
+        },
+        {
+          "match": "ter-sticky-check",
+          "unit": "check",
+          "variant": "checkbox",
+          "mechanism": "unit+accepted-geometry",
+          "role": "sticky-option"
+        },
+        {
+          "match": "ter-sticky-check input",
+          "unit": "check",
+          "variant": "checkbox",
+          "mechanism": "unit+accepted-geometry",
+          "role": "sticky-input"
+        },
+        {
+          "match": "ter-heatmap-square",
+          "unit": "layout",
+          "variant": "square-plot",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "heatmap-canvas"
+        },
+        {
+          "match": "analysis-control-card.ter-controls input",
+          "unit": "field",
+          "variant": "analysis-control",
+          "mechanism": "unit+accepted-geometry",
+          "role": "parameter-field"
+        },
+        {
+          "match": "heatmap-display-controls",
+          "unit": "layout",
+          "variant": "row-wrap",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "heatmap-controls"
+        },
+        {
+          "match": "heatmap-display-controls strong",
+          "unit": "layout",
+          "variant": "row",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "heatmap-control-label"
+        },
+        {
+          "match": "heatmap-display-controls select|heatmap-display-controls input",
+          "unit": "field",
+          "variant": "analysis-control",
+          "mechanism": "unit+accepted-geometry",
+          "role": "heatmap-control"
+        }
+      ],
+      "services": {
+        "services": [
+          "activities",
+          "dom",
+          "interaction",
+          "menus",
+          "pages",
+          "portable",
+          "scientificPlot",
+          "selection",
+          "shortcuts",
+          "topWorkspace",
+          "unitTemplates"
+        ],
+        "migrations": [
+          {
+            "from": "menus.add",
+            "to": "menu",
+            "count": 1
+          },
+          {
+            "from": "portable.create",
+            "to": "portable",
+            "count": 1
+          }
+        ]
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "main",
+            "kind": "primary",
+            "role": "scientific-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "data-control",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 90,
+            "collapsible": true
+          }
+        ],
+        "contributions": []
+      },
+      "state": {
+        "channels": [
+          "checked",
+          "enabled",
+          "visible"
+        ],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 5,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/ter-analysis/analysis-service.js",
+            "line": 138,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/ter-analysis/analysis-service.js",
+            "line": 138,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/ter-analysis/analysis-service.js",
+            "line": 138,
+            "kind": "property",
+            "raw": "disabled",
+            "state": "enabled",
+            "property": "disabled"
+          },
+          {
+            "file": "src/plugins/ter-analysis/analysis-service.js",
+            "line": 145,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          },
+          {
+            "file": "src/plugins/ter-analysis/analysis-service.js",
+            "line": 138,
+            "kind": "class",
+            "raw": "hidden",
+            "state": "visible",
+            "className": "hidden",
+            "legacy": false
+          }
+        ],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 5,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "thin-glass-theme": {
+      "unit": {
+        "kind": "theme-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "theme",
+            "unit": "provider",
+            "variant": "theme",
+            "role": "theme-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [
+          "theme"
+        ],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "transfer-vth-lab": {
+      "unit": {
+        "kind": "scientific-workbench",
+        "units": [
+          "page",
+          "pageHeader",
+          "workspace",
+          "layout",
+          "surface",
+          "panel",
+          "section",
+          "header",
+          "toolbar",
+          "action",
+          "actionRow",
+          "field",
+          "check",
+          "chip",
+          "note",
+          "metric",
+          "table",
+          "prime",
+          "scientificPlot",
+          "splitHandle",
+          "splitPane"
+        ],
+        "regions": [
+          {
+            "id": "page",
+            "unit": "page",
+            "variant": "analysis",
+            "role": "activity-root"
+          },
+          {
+            "id": "header",
+            "unit": "pageHeader",
+            "variant": "page-owned",
+            "role": "activity-header"
+          },
+          {
+            "id": "workspace",
+            "unit": "workspace",
+            "variant": "standard",
+            "role": "scientific-workspace"
+          },
+          {
+            "id": "sidebar-stack",
+            "unit": "layout",
+            "variant": "stack-comfortable",
+            "role": "controls-layout"
+          },
+          {
+            "id": "main-rows",
+            "unit": "layout",
+            "variant": "fill-rows",
+            "role": "main-layout"
+          },
+          {
+            "id": "metric-grid",
+            "unit": "layout",
+            "variant": "metric-grid",
+            "role": "results-summary"
+          },
+          {
+            "id": "result-split",
+            "unit": "layout",
+            "variant": "split-results",
+            "role": "results-layout"
+          },
+          {
+            "id": "controls",
+            "unit": "prime",
+            "variant": "fixed-titleless",
+            "role": "data-control",
+            "placements": [
+              "left"
+            ]
+          },
+          {
+            "id": "plot",
+            "unit": "panel",
+            "variant": "plot-card",
+            "role": "primary-plot"
+          },
+          {
+            "id": "canvas",
+            "unit": "scientificPlot",
+            "variant": "curve",
+            "role": "plot-canvas"
+          },
+          {
+            "id": "metrics",
+            "unit": "metric",
+            "variant": "standard",
+            "role": "results-summary"
+          },
+          {
+            "id": "results",
+            "unit": "table",
+            "variant": "standard",
+            "role": "results-table"
+          },
+          {
+            "id": "split",
+            "unit": "splitHandle",
+            "variant": "horizontal",
+            "role": "results-split"
+          },
+          {
+            "id": "results-split-controller",
+            "unit": "splitPane",
+            "variant": "resizable",
+            "role": "results-layout"
+          }
+        ],
+        "parity": [
+          "function",
+          "structure",
+          "geometry",
+          "style",
+          "interaction",
+          "responsive",
+          "mobile"
+        ]
+      },
+      "geometry": [
+        {
+          "match": "dkds-vth-page-body|dkds-vth-workbench",
+          "unit": "workspace",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "scientific-workspace"
+        },
+        {
+          "match": "dkds-vth-sidebar",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "controls-stack"
+        },
+        {
+          "match": "dkds-vth-card$",
+          "unit": "panel",
+          "variant": "plain",
+          "mechanism": "unit+accepted-geometry",
+          "role": "card"
+        },
+        {
+          "match": "dkds-vth-card-body",
+          "unit": "section",
+          "variant": "controls",
+          "mechanism": "unit+accepted-geometry",
+          "role": "card-body"
+        },
+        {
+          "match": "dkds-vth-card-head|dkds-vth-card h3",
+          "unit": "header",
+          "variant": "panel",
+          "mechanism": "unit+accepted-geometry",
+          "role": "card-header"
+        },
+        {
+          "match": "dkds-vth-field",
+          "unit": "field",
+          "variant": "integrated",
+          "mechanism": "unit+accepted-geometry",
+          "role": "field"
+        },
+        {
+          "match": "dkds-vth-check",
+          "unit": "check",
+          "variant": "checkbox",
+          "mechanism": "unit+accepted-geometry",
+          "role": "check"
+        },
+        {
+          "match": "dkds-vth-hint",
+          "unit": "note",
+          "variant": "normal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "hint"
+        },
+        {
+          "match": "dkds-vth-source-badge",
+          "unit": "chip",
+          "variant": "quiet",
+          "mechanism": "unit+accepted-geometry",
+          "role": "source-badge"
+        },
+        {
+          "match": "dkds-vth-main",
+          "unit": "layout",
+          "variant": "fill-rows",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "main"
+        },
+        {
+          "match": "dkds-vth-metrics",
+          "unit": "layout",
+          "variant": "metric-grid",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "metrics"
+        },
+        {
+          "match": "dkds-vth-metric",
+          "unit": "metric",
+          "variant": "standard",
+          "mechanism": "unit+accepted-geometry",
+          "role": "metric"
+        },
+        {
+          "match": "dkds-vth-content-split",
+          "unit": "layout",
+          "variant": "split-results",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "results-split"
+        },
+        {
+          "match": "dkds-vth-plot-card",
+          "unit": "layout",
+          "variant": "plot-card-fill",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "plot-card"
+        },
+        {
+          "match": "dkds-vth-plot-head",
+          "unit": "layout",
+          "variant": "plot-card-header",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "plot-header"
+        },
+        {
+          "match": "dkds-vth-plot-target",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "mechanism": "unit+accepted-geometry",
+          "role": "plot-canvas"
+        },
+        {
+          "match": "dkds-vth-results-host",
+          "unit": "layout",
+          "variant": "scroll-pane",
+          "mechanism": "recipe+accepted-geometry",
+          "role": "results-scroll"
+        },
+        {
+          "match": "dkds-vth-results-splitter",
+          "unit": "splitHandle",
+          "variant": "horizontal",
+          "mechanism": "unit+accepted-geometry",
+          "role": "splitter"
+        }
+      ],
+      "services": {
+        "services": [
+          "activities",
+          "dom",
+          "interactionBehaviors",
+          "pages",
+          "settings",
+          "topWorkspace",
+          "unitTemplates"
+        ],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [
+          {
+            "id": "vth-main",
+            "kind": "primary",
+            "role": "scientific-primary",
+            "priority": 100,
+            "collapsible": false
+          },
+          {
+            "id": "data-control",
+            "kind": "prime",
+            "role": "data-control",
+            "priority": 90,
+            "collapsible": true
+          }
+        ],
+        "contributions": []
+      },
+      "state": {
+        "channels": [
+          "checked"
+        ],
+        "roles": [
+          "separator"
+        ],
+        "tabIndex": [],
+        "aria": [
+          "aria-orientation"
+        ],
+        "keys": [],
+        "counts": {
+          "states": 1,
+          "roles": 1,
+          "a11y": 1,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [
+          {
+            "file": "src/plugins/transfer-vth-lab/plugin.js",
+            "line": 42,
+            "kind": "property",
+            "raw": "checked",
+            "state": "checked",
+            "property": "checked"
+          }
+        ],
+        "roles": [
+          {
+            "file": "unit:splitPane",
+            "line": 0,
+            "name": "role",
+            "value": "separator",
+            "kind": "unit-inherited"
+          }
+        ],
+        "a11y": [
+          {
+            "file": "unit:splitPane",
+            "line": 0,
+            "name": "aria-orientation",
+            "kind": "unit-inherited"
+          }
+        ],
+        "keyboard": [],
+        "counts": {
+          "states": 1,
+          "roles": 1,
+          "a11y": 1,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    },
+    "workspace-safeguards": {
+      "unit": {
+        "kind": "foundation-provider",
+        "units": [
+          "provider"
+        ],
+        "regions": [
+          {
+            "id": "safeguards",
+            "unit": "provider",
+            "variant": "foundation",
+            "role": "foundation-provider"
+          }
+        ],
+        "parity": [
+          "function"
+        ]
+      },
+      "geometry": [],
+      "services": {
+        "services": [],
+        "migrations": []
+      },
+      "presentation": {
+        "surfaces": [],
+        "contributions": []
+      },
+      "state": {
+        "channels": [],
+        "roles": [],
+        "tabIndex": [],
+        "aria": [],
+        "keys": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      },
+      "structure": {
+        "buttons": [],
+        "inputs": [],
+        "selects": [],
+        "textareas": [],
+        "tables": [],
+        "dynamicElements": [],
+        "markers": {},
+        "checks": [],
+        "counts": {
+          "buttons": 0,
+          "inputs": 0,
+          "selects": 0,
+          "textareas": 0,
+          "checks": 0,
+          "tables": 0,
+          "dynamicElements": 0
+        }
+      },
+      "stateCensus": {
+        "states": [],
+        "roles": [],
+        "a11y": [],
+        "keyboard": [],
+        "counts": {
+          "states": 0,
+          "roles": 0,
+          "a11y": 0,
+          "keyboard": 0,
+          "unmapped": 0
+        }
+      }
+    }
+  }
+}

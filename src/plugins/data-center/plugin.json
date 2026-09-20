@@ -1,13 +1,14 @@
 {
   "id": "builtin.data-center",
   "name": "Data Center",
-  "version": "1.15.20",
+  "version": "1.15.37",
   "apiVersion": "1.19.0",
   "requiresCore": [
     "runtime",
     "events",
     "status",
     "io",
+    "services",
     "modules",
     "capabilities",
     "state",
@@ -38,7 +39,8 @@
     "ui.pages",
     "ui.portable",
     "ui.scientific-plot",
-    "ui.dialogs"
+    "ui.dialogs",
+    "ui.unit-templates"
   ],
   "entry": "plugin.js",
   "enabled": true,
@@ -64,7 +66,8 @@
     "ui.scientific-plot",
     "ui.table",
     "data.sources",
-    "ui.interaction-behavior"
+    "ui.interaction-behavior",
+    "ui.unit-templates"
   ],
   "window": {
     "activity": "data-center",
@@ -89,11 +92,16 @@
     "persistence": "project",
     "scripts": [
       "controller.js",
+      "unit-presentation.js",
       "shared-views.js",
       "artifact-selection.js",
       "command-runtime.js",
+      "domain-runtime.js",
+      "chart-runtime.js",
+      "live-domain-bridge.js",
       "feature-runtime.js",
-      "super-layout.js"
+      "super-layout.js",
+      "domain-adapter.js"
     ],
     "artifactHydration": "live"
   },
@@ -105,11 +113,16 @@
   },
   "scripts": [
     "controller.js",
+    "unit-presentation.js",
     "shared-views.js",
     "artifact-selection.js",
     "command-runtime.js",
+    "domain-runtime.js",
+    "chart-runtime.js",
+    "live-domain-bridge.js",
     "feature-runtime.js",
     "super-layout.js",
+    "domain-adapter.js",
     "plugin.js"
   ],
   "systemCritical": true,
@@ -125,9 +138,6 @@
       "mode": "custom",
       "styles": [
         "mobile.css"
-      ],
-      "scripts": [
-        "mobile-presentation.js"
       ]
     }
   }

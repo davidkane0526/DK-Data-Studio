@@ -148,6 +148,7 @@
     const message = err?.message || String(err || '未知错误');
     if (errorTextEl) errorTextEl.textContent = message;
     errorEl?.classList.remove('hidden');
+    document.body.dataset.dkdsPluginStartup='error';
     setStatus(`启动失败：${message}`);
   }
 
@@ -500,7 +501,10 @@
   }
 
   function closeAnalysisPage() {
-    pushSnapshot(true);
+    // Reusable TOP close means hide, not unload. Flush only the target plugin slice;
+    // artifacts already travel through the live delta channel and must not be replayed
+    // during hide because that wakes unrelated scientific consumers.
+    pushSnapshot(false,{includeArtifacts:false,includeProject:false,reason:'hide'});
     return window.electronAPI?.closeCurrentWindow?.();
   }
 
@@ -550,26 +554,40 @@
     return project;
   }
 
-  function buildSnapshotPayload(final=false) {
+  function syncPluginStateFromWindow() {
+    if (!project || typeof project !== 'object') project = {};
+    project.plugins=project.plugins&&typeof project.plugins==='object'?project.plugins:{};
+    try { project.plugins = window.DKDSPlugins?.project?.serialize?.(project.plugins) || project.plugins; }
+    catch (err) { console.warn('[DKDS plugin window] plugin serialization failed', err); }
+    try { pluginRuntime?.syncProject?.(project); }
+    catch (err) { console.warn('[DKDS plugin window] runtime sync failed', err); }
+    return project;
+  }
+
+  function buildSnapshotPayload(final=false,options={}) {
     if (!bootstrap) return null;
     const persistence=bootstrap?.pluginWindow?.persistence||'project';
     if(persistence!=='project')return null;
-    syncProjectFromWindow();
+    const includeArtifacts=options?.includeArtifacts!==false;
+    const includeProject=options?.includeProject!==false;
+    if(includeProject)syncProjectFromWindow();
+    else syncPluginStateFromWindow();
     const pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
     return {
-      project:clone(project),
+      project:includeProject?clone(project):null,
       pluginState:pluginId ? clone(project.plugins?.[pluginId] ?? null) : null,
-      artifactDelta:artifactDeltaPayload(),
-      final:!!final
+      artifactDelta:includeArtifacts?artifactDeltaPayload():null,
+      final:!!final,
+      reason:String(options?.reason||'snapshot')
     };
   }
 
-  function pushSnapshot(final=false) {
+  function pushSnapshot(final=false,options={}) {
     clearTimeout(snapshotTimer);
     snapshotTimer = null;
     if (!bootstrap || bootstrap.prewarm === true || roleTransitionSnapshotTaken || !window.electronAPI?.pushActivityProjectSnapshot) return;
     try {
-      const payload=buildSnapshotPayload(final);
+      const payload=buildSnapshotPayload(final,options);
       if(payload)window.electronAPI.pushActivityProjectSnapshot(payload);
     } catch (err) {
       console.warn('[DKDS plugin window snapshot]', err);
@@ -583,7 +601,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.69.4',
+      appVersion:'3.71.105',
       isAuxiliaryWindow:true,
       isWebClient:false,
       renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
@@ -674,13 +692,18 @@
         for(const row of (provider.styles||[]))loadInlineStyle(row.css,`${provider.pluginId}/${row.file}`);
       }
     };
+    const applyRuntimePackage=row=>{
+      const source=String(row?.source||'builtin');
+      const files=(source==='external'||source==='override')?(row?.packageFiles||{}):(row?.taskSources||{});
+      return window.DKDSPlugins?.packageRuntime?.applyPackage?.(row?.pluginId,row?.packageManifest||{},source,files,{taskCoreSources:row?.taskCoreSources||{}});
+    };
     const host = baseHost();
     window.DKDSPlugins.configure(host);
     installHostDevToolsStatusItem();
     for(const provider of (spec.themeProviders||[])){
       loadProviderStyles(provider);
       for(const file of (provider.scripts||[]))await loadProviderScript(provider,file,'theme-provider');
-      if(provider.source==='external'||provider.source==='override')window.DKDSPlugins?.packageRuntime?.applyManifest?.(provider.pluginId,provider.packageManifest||{},provider.source);
+      applyRuntimePackage(provider);
     }
     if((spec.themeProviders||[]).length)await measure('theme-providers-activate',()=>window.DKDSPlugins.activateAll());
 
@@ -706,19 +729,20 @@
 
     for(const provider of (spec.algorithmProviders||[])){
       for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
+      applyRuntimePackage(provider);
     }
     if(packagedSource){
       for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin');
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
       for(const file of (spec.platformStyles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`,'dkds.plugin-platform');
       for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
-      window.DKDSPlugins?.packageRuntime?.applyManifest?.(spec.pluginId,spec.packageManifest||{},spec.source||'external');
     }else{
       for(const row of (spec.styleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin');
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
       for(const row of (spec.platformStyleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`,'dkds.plugin-platform');
       for(const file of (spec.platformScripts||[]))await loadTargetScript(file,'platform-presentation');
     }
+    applyRuntimePackage(spec);
 
     await measure('plugins-activate',()=>window.DKDSPlugins.activateAll());
     window.DKDSPluginWindowChrome?.connectRuntimeEvents?.();
@@ -818,8 +842,10 @@ async function start() {
       if (!bootstrap?.pluginWindow) throw new Error('当前插件没有独立窗口定义。');
 
       project = ensureProjectShape(bootstrap.project);
-      await measure('window-chrome-ready',()=>window.DKDSPluginWindowChrome?.ready?.()||true);
+      // Configure the Core-owned title immediately after bootstrap resolution.
+      // Plugin activation failures must never erase or delay the host titlebar.
       DKDSPluginWindowChrome?.configure?.(bootstrap);
+      await measure('window-chrome-ready',()=>window.DKDSPluginWindowChrome?.ready?.()||true);
       DKDSPluginWindowDockLayout?.install?.();
 
       window.electronAPI?.onActivityBootstrapChanged?.(async () => {

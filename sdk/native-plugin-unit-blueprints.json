@@ -1,0 +1,1446 @@
+{
+  "version": "2.5.38",
+  "blueprints": {
+    "_template": {
+      "kind": "developer",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "panel",
+        "header",
+        "toolbar",
+        "action",
+        "field",
+        "actionRow",
+        "componentTree",
+        "prime",
+        "scientificPlot"
+      ],
+      "regions": [
+        {
+          "id": "page",
+          "unit": "page",
+          "variant": "analysis",
+          "role": "activity-root"
+        },
+        {
+          "id": "header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "role": "activity-header"
+        },
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "workspace"
+        },
+        {
+          "id": "component-content",
+          "unit": "componentTree",
+          "variant": "schema",
+          "role": "domain-content"
+        },
+        {
+          "id": "controls",
+          "unit": "prime",
+          "variant": "canonical-header",
+          "role": "data-control"
+        },
+        {
+          "id": "main",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "role": "scientific-primary"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "aurora-pop-theme": {
+      "kind": "theme-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "theme",
+          "unit": "provider",
+          "variant": "theme",
+          "role": "theme-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "connectivity-center": {
+      "kind": "foundation-ui",
+      "units": [
+        "layout",
+        "status",
+        "popover",
+        "surface",
+        "section",
+        "header",
+        "toolbar",
+        "action",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "message",
+        "divider",
+        "emptyState",
+        "list",
+        "dialog",
+        "menu",
+        "movableWindow"
+      ],
+      "regions": [
+        {
+          "id": "status-entry",
+          "unit": "status",
+          "variant": "compact",
+          "role": "statusbar"
+        },
+        {
+          "id": "smb-window",
+          "unit": "movableWindow",
+          "variant": "dialog",
+          "role": "service-window"
+        },
+        {
+          "id": "assistant-settings-window-move",
+          "unit": "movableWindow",
+          "variant": "dialog",
+          "role": "assistant-settings"
+        },
+        {
+          "id": "service-popover",
+          "unit": "popover",
+          "variant": "service",
+          "role": "service-control"
+        },
+        {
+          "id": "service-overlay",
+          "unit": "layout",
+          "variant": "overlay-center",
+          "role": "service-overlay"
+        },
+        {
+          "id": "service-window",
+          "unit": "layout",
+          "variant": "service-window",
+          "role": "service-window"
+        },
+        {
+          "id": "service-split",
+          "unit": "layout",
+          "variant": "sidebar-main-compact",
+          "role": "service-browser"
+        },
+        {
+          "id": "browser-rows",
+          "unit": "layout",
+          "variant": "browser-rows",
+          "role": "service-browser-body"
+        },
+        {
+          "id": "file-row",
+          "unit": "layout",
+          "variant": "list-row-file",
+          "role": "file-browser-row"
+        },
+        {
+          "id": "assistant-settings-window",
+          "unit": "layout",
+          "variant": "settings-window",
+          "role": "assistant-settings"
+        },
+        {
+          "id": "assistant-message-stack",
+          "unit": "layout",
+          "variant": "scroll-stack",
+          "role": "assistant-messages"
+        },
+        {
+          "id": "assistant-reference-strip",
+          "unit": "layout",
+          "variant": "wrap-strip",
+          "role": "assistant-references"
+        },
+        {
+          "id": "assistant-mention-row",
+          "unit": "layout",
+          "variant": "mention-row",
+          "role": "assistant-mentions"
+        },
+        {
+          "id": "connection-grid",
+          "unit": "layout",
+          "variant": "connection-grid",
+          "role": "connection-form"
+        },
+        {
+          "id": "ai-form-grid",
+          "unit": "layout",
+          "variant": "form-grid-2",
+          "role": "settings-form"
+        },
+        {
+          "id": "chat-rows",
+          "unit": "layout",
+          "variant": "chat-rows",
+          "role": "assistant-chat"
+        },
+        {
+          "id": "compose-row",
+          "unit": "layout",
+          "variant": "compose-row",
+          "role": "assistant-compose"
+        },
+        {
+          "id": "messages",
+          "unit": "message",
+          "variant": "assistant",
+          "role": "assistant-message"
+        },
+        {
+          "id": "divider",
+          "unit": "divider",
+          "variant": "horizontal",
+          "role": "service-separator"
+        },
+        {
+          "id": "empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "role": "service-empty"
+        },
+        {
+          "id": "service-list",
+          "unit": "list",
+          "variant": "selectable",
+          "role": "connections"
+        },
+        {
+          "id": "connection-fields",
+          "unit": "field",
+          "variant": "integrated",
+          "role": "connection-form"
+        },
+        {
+          "id": "service-actions",
+          "unit": "toolbar",
+          "variant": "ordinary",
+          "role": "commands"
+        },
+        {
+          "id": "service-menu",
+          "unit": "menu",
+          "variant": "dropdown",
+          "role": "provider-menu"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "data-center": {
+      "kind": "data-workbench",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "section",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "tabs",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "summary",
+        "emptyState",
+        "metric",
+        "list",
+        "parameterForm",
+        "table",
+        "prime",
+        "plotView",
+        "scientificPlot",
+        "dialog",
+        "menu",
+        "portable",
+        "splitHandle",
+        "status"
+      ],
+      "regions": [
+        {
+          "id": "page",
+          "unit": "page",
+          "variant": "data",
+          "role": "activity-root"
+        },
+        {
+          "id": "header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "role": "activity-header"
+        },
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "data-workspace"
+        },
+        {
+          "id": "desktop-split",
+          "unit": "layout",
+          "variant": "sidebar-main-wide",
+          "role": "data-browser"
+        },
+        {
+          "id": "artifact-list",
+          "unit": "layout",
+          "variant": "artifact-list",
+          "role": "artifact-list"
+        },
+        {
+          "id": "artifact-row",
+          "unit": "layout",
+          "variant": "artifact-row",
+          "role": "artifact-row"
+        },
+        {
+          "id": "primary-flow",
+          "unit": "layout",
+          "variant": "primary-flow",
+          "role": "primary-flow"
+        },
+        {
+          "id": "filter-grid",
+          "unit": "layout",
+          "variant": "form-grid-2",
+          "role": "filters"
+        },
+        {
+          "id": "selection-grid",
+          "unit": "layout",
+          "variant": "action-grid-4",
+          "role": "selection-actions"
+        },
+        {
+          "id": "preview-fields",
+          "unit": "parameterForm",
+          "variant": "auto-fit",
+          "role": "chart-parameters"
+        },
+        {
+          "id": "parameter-forms",
+          "unit": "parameterForm",
+          "variant": "auto-fit",
+          "role": "workflow-parameters"
+        },
+        {
+          "id": "formula-grid",
+          "unit": "layout",
+          "variant": "formula-grid",
+          "role": "formula-parameters"
+        },
+        {
+          "id": "workflow-toolbar",
+          "unit": "layout",
+          "variant": "toolbar-bottom",
+          "role": "workflow-toolbar"
+        },
+        {
+          "id": "workflow-step-head",
+          "unit": "layout",
+          "variant": "workflow-step-head",
+          "role": "workflow-step-header"
+        },
+        {
+          "id": "provenance-list",
+          "unit": "layout",
+          "variant": "provenance-list",
+          "role": "provenance-list"
+        },
+        {
+          "id": "provenance-row",
+          "unit": "layout",
+          "variant": "provenance-row",
+          "role": "provenance"
+        },
+        {
+          "id": "source-actions",
+          "unit": "layout",
+          "variant": "toolbar-wrap",
+          "role": "source-actions"
+        },
+        {
+          "id": "summary",
+          "unit": "summary",
+          "variant": "strip",
+          "role": "data-summary"
+        },
+        {
+          "id": "empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "role": "data-empty"
+        },
+        {
+          "id": "objects",
+          "unit": "prime",
+          "variant": "fixed-titleless",
+          "role": "data-control",
+          "placements": [
+            "left"
+          ]
+        },
+        {
+          "id": "chart-preview",
+          "unit": "prime",
+          "variant": "canonical-header",
+          "role": "scientific-secondary"
+        },
+        {
+          "id": "chart",
+          "unit": "plotView",
+          "variant": "prime-contained",
+          "role": "data-preview"
+        },
+        {
+          "id": "table",
+          "unit": "table",
+          "variant": "standard",
+          "role": "data-preview"
+        },
+        {
+          "id": "workflow",
+          "unit": "list",
+          "variant": "plain",
+          "role": "recipe-steps"
+        },
+        {
+          "id": "dialogs",
+          "unit": "dialog",
+          "variant": "standard",
+          "role": "workflow-dialogs"
+        },
+        {
+          "id": "context",
+          "unit": "menu",
+          "variant": "context",
+          "role": "data-context"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "flexible-import": {
+      "kind": "data-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "import",
+          "unit": "provider",
+          "variant": "data",
+          "role": "data-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "pulse-analysis": {
+      "kind": "scientific-workbench",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "metric",
+        "summary",
+        "emptyState",
+        "list",
+        "table",
+        "prime",
+        "plotView",
+        "scientificPlot",
+        "legend",
+        "portable",
+        "menu"
+      ],
+      "regions": [
+        {
+          "id": "page",
+          "unit": "page",
+          "variant": "analysis",
+          "role": "activity-root"
+        },
+        {
+          "id": "header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "role": "activity-header"
+        },
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "scientific-workspace"
+        },
+        {
+          "id": "primary-stack",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "role": "primary-flow"
+        },
+        {
+          "id": "control-grid",
+          "unit": "layout",
+          "variant": "form-grid",
+          "role": "parameter-grid"
+        },
+        {
+          "id": "inline-range",
+          "unit": "layout",
+          "variant": "inline-range",
+          "role": "range-control"
+        },
+        {
+          "id": "result-cards",
+          "unit": "layout",
+          "variant": "two-card-grid",
+          "role": "results-plots"
+        },
+        {
+          "id": "file-head",
+          "unit": "layout",
+          "variant": "active-file-head",
+          "role": "active-file"
+        },
+        {
+          "id": "file-toolbar",
+          "unit": "layout",
+          "variant": "file-toolbar",
+          "role": "file-toolbar"
+        },
+        {
+          "id": "file-list",
+          "unit": "layout",
+          "variant": "artifact-list",
+          "role": "file-list"
+        },
+        {
+          "id": "file-item",
+          "unit": "layout",
+          "variant": "list-row-selectable",
+          "role": "file-list-item"
+        },
+        {
+          "id": "batch-file-row",
+          "unit": "layout",
+          "variant": "batch-file-row",
+          "role": "file-item-content"
+        },
+        {
+          "id": "compare-actions",
+          "unit": "layout",
+          "variant": "compare-actions",
+          "role": "compare-actions"
+        },
+        {
+          "id": "result-visual-stack",
+          "unit": "layout",
+          "variant": "stack",
+          "role": "results-visual"
+        },
+        {
+          "id": "summary",
+          "unit": "summary",
+          "variant": "row",
+          "role": "analysis-summary"
+        },
+        {
+          "id": "empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "role": "file-empty"
+        },
+        {
+          "id": "controls",
+          "unit": "prime",
+          "variant": "fixed-titleless",
+          "role": "data-control",
+          "placements": [
+            "left",
+            "global",
+            "right",
+            "bottom"
+          ]
+        },
+        {
+          "id": "raw-plot",
+          "unit": "plotView",
+          "variant": "complete",
+          "role": "raw-diagnostic-plot"
+        },
+        {
+          "id": "result-plots",
+          "unit": "plotView",
+          "variant": "complete",
+          "role": "pulse-result-plots"
+        },
+        {
+          "id": "canvas",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "role": "pulse-plot-canvas"
+        },
+        {
+          "id": "legend",
+          "unit": "legend",
+          "variant": "strip",
+          "role": "series-legend"
+        },
+        {
+          "id": "menu",
+          "unit": "menu",
+          "variant": "dropdown",
+          "role": "plot-actions"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "pulse-import": {
+      "kind": "data-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "import",
+          "unit": "provider",
+          "variant": "data",
+          "role": "data-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "pulse-sampler-tool": {
+      "kind": "scientific-tool",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "tabs",
+        "field",
+        "chip",
+        "note",
+        "table",
+        "scientificPlot",
+        "prime"
+      ],
+      "regions": [
+        {
+          "id": "page",
+          "unit": "page",
+          "variant": "tool",
+          "role": "activity-root"
+        },
+        {
+          "id": "header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "role": "activity-header"
+        },
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "tool-workspace"
+        },
+        {
+          "id": "shell",
+          "unit": "layout",
+          "variant": "tool-sidebar-main",
+          "role": "tool-shell"
+        },
+        {
+          "id": "designer-stack",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "role": "designer"
+        },
+        {
+          "id": "card-header",
+          "unit": "header",
+          "variant": "panel",
+          "role": "tool-card-header"
+        },
+        {
+          "id": "parameter-grid",
+          "unit": "layout",
+          "variant": "form-grid-2",
+          "role": "parameter-grid"
+        },
+        {
+          "id": "label-control",
+          "unit": "layout",
+          "variant": "control-label-row",
+          "role": "label-control"
+        },
+        {
+          "id": "segment-bar",
+          "unit": "layout",
+          "variant": "segment-bar",
+          "role": "segment-bar"
+        },
+        {
+          "id": "wave-rows",
+          "unit": "layout",
+          "variant": "fill-rows",
+          "role": "waveform-region"
+        },
+        {
+          "id": "analysis-controls",
+          "unit": "layout",
+          "variant": "analysis-control-grid",
+          "role": "analysis-controls"
+        },
+        {
+          "id": "result-controls",
+          "unit": "layout",
+          "variant": "result-control-grid",
+          "role": "result-controls"
+        },
+        {
+          "id": "result-grid",
+          "unit": "layout",
+          "variant": "result-grid-asymmetric",
+          "role": "result-grid"
+        },
+        {
+          "id": "controls",
+          "unit": "prime",
+          "variant": "fixed-titleless",
+          "role": "data-control",
+          "placements": [
+            "left"
+          ]
+        },
+        {
+          "id": "plot",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "role": "waveform"
+        },
+        {
+          "id": "results",
+          "unit": "table",
+          "variant": "standard",
+          "role": "sampling-results"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "resonance-detector-robust": {
+      "kind": "algorithm-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "detector",
+          "unit": "provider",
+          "variant": "algorithm",
+          "role": "algorithm-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "resonance-workbench": {
+      "kind": "scientific-workbench",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "section",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "metric",
+        "summary",
+        "divider",
+        "emptyState",
+        "list",
+        "parameterForm",
+        "table",
+        "prime",
+        "plotView",
+        "plotGroup",
+        "scientificPlot",
+        "legend",
+        "floatingChrome",
+        "portable",
+        "dialog",
+        "menu",
+        "popover",
+        "status"
+      ],
+      "regions": [
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "accepted-scientific",
+          "role": "scientific-workspace"
+        },
+        {
+          "id": "primary-layout",
+          "unit": "layout",
+          "variant": "accepted-main-area",
+          "role": "scientific-primary"
+        },
+        {
+          "id": "dataset-row",
+          "unit": "layout",
+          "variant": "dataset-row",
+          "role": "dataset-row"
+        },
+        {
+          "id": "dataset-transform",
+          "unit": "layout",
+          "variant": "dataset-transform-row",
+          "role": "dataset-transform"
+        },
+        {
+          "id": "detector-parameters",
+          "unit": "parameterForm",
+          "variant": "standard",
+          "role": "detector-parameters"
+        },
+        {
+          "id": "advanced-settings",
+          "unit": "section",
+          "variant": "disclosure",
+          "role": "detector-advanced"
+        },
+        {
+          "id": "inspector-kv",
+          "unit": "layout",
+          "variant": "key-value-standard",
+          "role": "inspector-values"
+        },
+        {
+          "id": "inspector-section",
+          "unit": "layout",
+          "variant": "inspector-section",
+          "role": "inspector-section"
+        },
+        {
+          "id": "choice-grid",
+          "unit": "layout",
+          "variant": "palette-grid",
+          "role": "classification-choices"
+        },
+        {
+          "id": "result-grid",
+          "unit": "layout",
+          "variant": "responsive-two-column",
+          "role": "derived-results"
+        },
+        {
+          "id": "gate-controls",
+          "unit": "layout",
+          "variant": "gate-controls",
+          "role": "gate-controls"
+        },
+        {
+          "id": "inspector-actions",
+          "unit": "layout",
+          "variant": "action-grid-2",
+          "role": "inspector-actions"
+        },
+        {
+          "id": "derived-grid",
+          "unit": "layout",
+          "variant": "two-card-grid",
+          "role": "derived-results"
+        },
+        {
+          "id": "summary-row",
+          "unit": "summary",
+          "variant": "row",
+          "role": "derived-summary"
+        },
+        {
+          "id": "empty",
+          "unit": "emptyState",
+          "variant": "standard",
+          "role": "group-empty"
+        },
+        {
+          "id": "main-tools",
+          "unit": "floatingChrome",
+          "variant": "accepted-main",
+          "role": "plot-tools"
+        },
+        {
+          "id": "legend",
+          "unit": "legend",
+          "variant": "accepted-main",
+          "role": "series-legend"
+        },
+        {
+          "id": "parameters",
+          "unit": "prime",
+          "variant": "accepted-scientific-data-control",
+          "role": "data-control",
+          "placements": [
+            "left"
+          ]
+        },
+        {
+          "id": "inspector",
+          "unit": "prime",
+          "variant": "accepted-scientific-inspector",
+          "role": "inspector",
+          "placements": [
+            "global",
+            "right",
+            "bottom",
+            "float"
+          ]
+        },
+        {
+          "id": "group",
+          "unit": "plotGroup",
+          "variant": "accepted-scientific",
+          "role": "scientific-secondary",
+          "header": "standard",
+          "density": "regular"
+        },
+        {
+          "id": "group-plots",
+          "unit": "plotView",
+          "variant": "complete",
+          "role": "group-child"
+        },
+        {
+          "id": "plot-canvas",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "role": "plot-canvas"
+        },
+        {
+          "id": "status",
+          "unit": "status",
+          "variant": "accepted-summary",
+          "role": "summary"
+        },
+        {
+          "id": "dialogs",
+          "unit": "dialog",
+          "variant": "standard",
+          "role": "domain-dialogs"
+        },
+        {
+          "id": "menus",
+          "unit": "menu",
+          "variant": "context",
+          "role": "domain-context"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "scientific-data-contracts": {
+      "kind": "foundation-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "contracts",
+          "unit": "provider",
+          "variant": "foundation",
+          "role": "foundation-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "shell-navigation": {
+      "kind": "shell-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "navigation",
+          "unit": "provider",
+          "variant": "foundation",
+          "role": "shell-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "standard-transport-algorithms": {
+      "kind": "algorithm-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "algorithms",
+          "unit": "provider",
+          "variant": "algorithm",
+          "role": "algorithm-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "status-monitor": {
+      "kind": "foundation-ui",
+      "units": [
+        "layout",
+        "status",
+        "popover",
+        "surface",
+        "header",
+        "toolbar",
+        "action",
+        "chip",
+        "list",
+        "meter"
+      ],
+      "regions": [
+        {
+          "id": "status",
+          "unit": "status",
+          "variant": "compact",
+          "role": "statusbar"
+        },
+        {
+          "id": "memory-meter",
+          "unit": "meter",
+          "variant": "thin",
+          "role": "memory-usage"
+        },
+        {
+          "id": "status-row",
+          "unit": "layout",
+          "variant": "row",
+          "role": "status-content"
+        },
+        {
+          "id": "memory",
+          "unit": "popover",
+          "variant": "status",
+          "role": "memory-popover"
+        },
+        {
+          "id": "theme",
+          "unit": "popover",
+          "variant": "picker",
+          "role": "theme-popover"
+        },
+        {
+          "id": "list",
+          "unit": "list",
+          "variant": "compact",
+          "role": "memory-components"
+        },
+        {
+          "id": "actions",
+          "unit": "toolbar",
+          "variant": "header",
+          "role": "popover-actions"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "ter-analysis": {
+      "kind": "scientific-workbench",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "summary",
+        "parameterForm",
+        "table",
+        "prime",
+        "plotView",
+        "plotGroup",
+        "scientificPlot",
+        "legend",
+        "portable",
+        "menu"
+      ],
+      "regions": [
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "scientific-workspace"
+        },
+        {
+          "id": "control-row",
+          "unit": "layout",
+          "variant": "row-wrap",
+          "role": "analysis-controls"
+        },
+        {
+          "id": "transform-parameters",
+          "unit": "parameterForm",
+          "variant": "standard",
+          "role": "transform-parameters"
+        },
+        {
+          "id": "resistance-card",
+          "unit": "layout",
+          "variant": "resistance-card",
+          "role": "resistance-card"
+        },
+        {
+          "id": "plot-header",
+          "unit": "layout",
+          "variant": "card-title-row",
+          "role": "plot-header"
+        },
+        {
+          "id": "heatmap-square",
+          "unit": "layout",
+          "variant": "square-plot",
+          "role": "heatmap-canvas"
+        },
+        {
+          "id": "summary",
+          "unit": "summary",
+          "variant": "strip",
+          "role": "ter-summary"
+        },
+        {
+          "id": "controls",
+          "unit": "prime",
+          "variant": "fixed-titleless",
+          "role": "data-control",
+          "placements": [
+            "left",
+            "global",
+            "right",
+            "bottom"
+          ]
+        },
+        {
+          "id": "group",
+          "unit": "plotGroup",
+          "variant": "comfortable",
+          "role": "scientific-secondary",
+          "header": "standard",
+          "density": "comfortable"
+        },
+        {
+          "id": "plots",
+          "unit": "plotView",
+          "variant": "complete",
+          "role": "group-child"
+        },
+        {
+          "id": "canvas",
+          "unit": "scientificPlot",
+          "variant": "heatmap",
+          "role": "plot-canvas"
+        },
+        {
+          "id": "legend",
+          "unit": "legend",
+          "variant": "strip",
+          "role": "plot-legend"
+        },
+        {
+          "id": "menu",
+          "unit": "menu",
+          "variant": "dropdown",
+          "role": "plot-actions"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "thin-glass-theme": {
+      "kind": "theme-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "theme",
+          "unit": "provider",
+          "variant": "theme",
+          "role": "theme-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    },
+    "transfer-vth-lab": {
+      "kind": "scientific-workbench",
+      "units": [
+        "page",
+        "pageHeader",
+        "workspace",
+        "layout",
+        "surface",
+        "panel",
+        "section",
+        "header",
+        "toolbar",
+        "action",
+        "actionRow",
+        "field",
+        "check",
+        "chip",
+        "note",
+        "metric",
+        "table",
+        "prime",
+        "scientificPlot",
+        "splitHandle",
+        "splitPane"
+      ],
+      "regions": [
+        {
+          "id": "page",
+          "unit": "page",
+          "variant": "analysis",
+          "role": "activity-root"
+        },
+        {
+          "id": "header",
+          "unit": "pageHeader",
+          "variant": "page-owned",
+          "role": "activity-header"
+        },
+        {
+          "id": "workspace",
+          "unit": "workspace",
+          "variant": "standard",
+          "role": "scientific-workspace"
+        },
+        {
+          "id": "sidebar-stack",
+          "unit": "layout",
+          "variant": "stack-comfortable",
+          "role": "controls-layout"
+        },
+        {
+          "id": "main-rows",
+          "unit": "layout",
+          "variant": "fill-rows",
+          "role": "main-layout"
+        },
+        {
+          "id": "metric-grid",
+          "unit": "layout",
+          "variant": "metric-grid",
+          "role": "results-summary"
+        },
+        {
+          "id": "result-split",
+          "unit": "layout",
+          "variant": "split-results",
+          "role": "results-layout"
+        },
+        {
+          "id": "controls",
+          "unit": "prime",
+          "variant": "fixed-titleless",
+          "role": "data-control",
+          "placements": [
+            "left"
+          ]
+        },
+        {
+          "id": "plot",
+          "unit": "panel",
+          "variant": "plot-card",
+          "role": "primary-plot"
+        },
+        {
+          "id": "canvas",
+          "unit": "scientificPlot",
+          "variant": "curve",
+          "role": "plot-canvas"
+        },
+        {
+          "id": "metrics",
+          "unit": "metric",
+          "variant": "standard",
+          "role": "results-summary"
+        },
+        {
+          "id": "results",
+          "unit": "table",
+          "variant": "standard",
+          "role": "results-table"
+        },
+        {
+          "id": "split",
+          "unit": "splitHandle",
+          "variant": "horizontal",
+          "role": "results-split"
+        },
+        {
+          "id": "results-split-controller",
+          "unit": "splitPane",
+          "variant": "resizable",
+          "role": "results-layout"
+        }
+      ],
+      "parity": [
+        "function",
+        "structure",
+        "geometry",
+        "style",
+        "interaction",
+        "responsive",
+        "mobile"
+      ]
+    },
+    "workspace-safeguards": {
+      "kind": "foundation-provider",
+      "units": [
+        "provider"
+      ],
+      "regions": [
+        {
+          "id": "safeguards",
+          "unit": "provider",
+          "variant": "foundation",
+          "role": "foundation-provider"
+        }
+      ],
+      "parity": [
+        "function"
+      ]
+    }
+  }
+}

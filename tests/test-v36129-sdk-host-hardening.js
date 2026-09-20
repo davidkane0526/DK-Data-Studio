@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const fs=require('fs');
 const os=require('os');
 const path=require('path');
@@ -11,7 +12,7 @@ const json=rel=>JSON.parse(read(rel));
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.19 host guarantees');
-assert.equal(contract.minimumAppVersion,'3.68.103','Current SDK minimum app must include the Theme 3.10 contextual-composition baseline.');
+assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'),'Current SDK minimum app must include the Theme 3.10 contextual-composition baseline.');
 
 const components=read('src/core/ui/component-runtime.js');
 assert(components.includes('isEventTarget')&&components.includes("value===window||value===document"),'scoped DOM runtime must support lifecycle-safe window/document EventTargets');

@@ -9,6 +9,8 @@ const ThemeCoverageContract=require('../theme-coverage-contract');
 const {inspectPluginSource,usesThemeRegister}=require('../source-contract');
 const {inspectPluginCss,collectCoreAliases}=require('../visual-contract');
 const PlatformPresentation=require('../platform-presentation-contract');
+const {inspectCompositionSource,inspectCompositionCss}=require('../composition-contract');
+const {runLayoutHarness}=require('../layout-harness');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
@@ -109,9 +111,12 @@ async function validate(folder){
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
   const sourceAudit=inspectPluginSource(rawSource,{apiVersion:m.apiVersion,requiresCore:m.requiresCore});
   for(const issue of sourceAudit.issues)errors.push(`${issue.message} (${issue.line}:${issue.column})`);
+  const compositionAudit=inspectCompositionSource(rawSource);
+  for(const issue of compositionAudit.issues){const message=`${issue.code}: ${issue.message} (line ${issue.line})`;if(issue.severity==='warning')console.warn(`DKDS SDK WARNING: ${message}`);else errors.push(message);}
   if(/\bmountPrimary\s*\(\s*\{[\s\S]{0,1600}?\b(?:leftNode|leftHtml)\s*:/.test(source)||/\bprimary\s*:\s*\{[\s\S]{0,1600}?\b(?:leftNode|leftHtml)\s*:/.test(source))errors.push('Plugin API 1.19 removed PRIMARY leftNode/leftHtml. Register that semantic region as a PRIME surface with presentationRole instead.');
   for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API ${API} development contract`);
   const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
+  for(const row of styleRows){for(const issue of inspectCompositionCss(row.content,{path:row.name}).issues){const message=`${issue.code}: ${issue.message} (line ${issue.line})`;if(issue.severity==='warning')console.warn(`DKDS SDK WARNING: ${message}`);else errors.push(message);}}
   const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,ui:m.ui||{},styles:styleRows});
   errors.push(...layoutAudit.errors);for(const warning of layoutAudit.warnings)console.warn(`DKDS SDK WARNING: ${warning}`);
   if(m.pluginType!=='theme'){
@@ -208,7 +213,9 @@ const [command,folder,output]=process.argv.slice(2);
 (async()=>{
   try{
     if(command==='validate'&&folder){const result=await validate(folder);console.log(`DKDS SDK validation OK: ${result.manifest.id}@${result.manifest.version}`);}
+    else if(command==='test-runtime'&&folder){const result=await validate(folder);console.log(`DKDS SDK runtime contract OK: ${result.manifest.id}@${result.manifest.version}`);}
+    else if(command==='test-layout'&&folder){const result=await validate(folder);const layout=runLayoutHarness();if(layout.skipped)throw new Error(layout.issues.join('; '));if(!layout.ok)throw new Error(`layout harness failed: ${layout.issues.join('; ')}`);console.log(`DKDS SDK layout harness OK: ${result.manifest.id}@${result.manifest.version} (${layout.cases} canonical cases)`);}
     else if(command==='package'&&folder){console.log(`Created DKDS plugin package: ${await pack(folder,output)}`);}
-    else die('usage: dkds-plugin.js validate <plugin-folder> | package <plugin-folder> [output.dkplugin]');
+    else die('usage: dkds-plugin.js validate <plugin-folder> | test-runtime <plugin-folder> | test-layout <plugin-folder> | package <plugin-folder> [output.dkplugin]');
   }catch(e){die(e.message);}
 })();

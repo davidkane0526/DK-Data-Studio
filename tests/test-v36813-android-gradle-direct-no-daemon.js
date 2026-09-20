@@ -30,7 +30,7 @@ assert(normalize.includes("-Xmx512m -XX:MaxMetaspaceSize=384m"), 'Missing templa
 assert(/\$env:JAVA_OPTS\s*=\s*\$jvmArgs/.test(direct), 'The Gradle client JVM must receive the same JVM args as the build JVM.');
 assert(/Add-GradleJvmSystemProperty\s+'org\.gradle\.jvmargs'\s+\$jvmArgs/.test(direct), 'The requested build JVM args must exactly match the client JVM args.');
 assert(/Add-GradleJvmSystemProperty\s+'org\.gradle\.daemon'\s+'false'/.test(direct), 'Direct mode must disable the daemon at the Gradle property layer as well as the CLI layer.');
-assert(/JVM \+ agent parity enforced/.test(direct), 'Diagnostics must describe the complete direct-process compatibility contract instead of claiming success before runtime verification.');
+assert(/no pre-build probe/.test(direct), 'Diagnostics must make the no-preflight build path explicit.');
 
 assert((gradleBuild.match(/Invoke-Step -FilePath '\\.\\gradlew\.bat'/g) || gradleBuild.match(/Invoke-Step -FilePath '\.\\gradlew\.bat'/g) || []).length === 1,
   'Shared release Gradle owner must make one deterministic invocation instead of retrying the same blocked Java child launch.');

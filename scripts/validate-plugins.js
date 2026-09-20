@@ -3,6 +3,7 @@ const path = require('path');
 const vm = require('vm');
 const {normalizePluginPackage,referencedPluginAssets}=require('../desktop/plugin-package');
 const PlatformPresentation=require('../sdk/platform-presentation-contract');
+const {inspectCompositionSource,inspectCompositionCss}=require('../sdk/composition-contract');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
@@ -23,7 +24,7 @@ const requirementUsage=[
   ['data.artifacts',/ctx\.data\.artifacts\b/],['data.sources',/ctx\.data\.sources\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
   ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['analysis.detectors',/ctx\.analysis\.detectors\b/],
   ['charts',/ctx\.ui\.charts\b/],['charts.providers',/ctx\.charts\b/],['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],
-  ['ui.workspace',/ctx\.ui\.(?:pluginWorkspace|analysisWorkbench|workspaceSurface|analysisSurface|workbench)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.series',/ctx\.ui\.series\b/],['ui.legend-groups',/ctx\.ui\.legends\b/],['ui.group-plots',/ctx\.ui\.groupPlots\b/],['ui.group-area',/ctx\.ui\.groupArea\b|\.groupArea\s*\(/],['ui.tooltips',/ctx\.ui\.tooltips\b/],['ui.design-system',/ctx\.ui\.designSystem\b/],
+  ['ui.workspace',/ctx\.ui\.(?:pluginWorkspace|analysisWorkbench|workspaceSurface|analysisSurface|workbench|sections|scientificWorkbench)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.series',/ctx\.ui\.series\b/],['ui.legend-groups',/ctx\.ui\.legends\b/],['ui.group-plots',/ctx\.ui\.groupPlots\b/],['ui.group-area',/ctx\.ui\.(?:groupArea|plotGroups)\b|\.groupArea\s*\(/],['ui.tooltips',/ctx\.ui\.tooltips\b/],['ui.design-system',/ctx\.ui\.designSystem\b/],
   ['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.dialogs',/ctx\.ui\.dialogs\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],
   ['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.menus',/ctx\.ui\.menus\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],
   ['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],
@@ -135,6 +136,8 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   if(m.window?.runtime)ownedFiles.add(m.window.runtime);
   for(const file of (m.window?.scripts||[]))ownedFiles.add(file);
   const source=[...ownedFiles].filter(file=>fs.existsSync(path.join(dir,file))).map(file=>fs.readFileSync(path.join(dir,file),'utf8')).join('\n');
+  for(const issue of inspectCompositionSource(source).issues){const message=`${name}: ${issue.code}: ${issue.message} (line ${issue.line})`;if(issue.severity==='warning')console.warn(`PLUGIN VALIDATION WARNING: ${message}`);else fail(message);}
+  for(const styleName of (Array.isArray(m.styles)?m.styles:[])){const stylePath=path.join(dir,String(styleName||''));if(!fs.existsSync(stylePath))continue;const css=fs.readFileSync(stylePath,'utf8');for(const issue of inspectCompositionCss(css,{path:styleName}).issues){const message=`${name}: ${issue.code}: ${issue.message} (line ${issue.line})`;if(issue.severity==='warning')console.warn(`PLUGIN VALIDATION WARNING: ${message}`);else fail(message);}}
   const declared=new Set(m.requiresCore||[]);
   for(const [requirement,pattern] of requirementUsage)if(pattern.test(source)&&!declared.has(requirement))fail(`${name}: uses ${requirement} but does not declare it in requiresCore`);
 

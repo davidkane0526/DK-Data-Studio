@@ -19,7 +19,7 @@ assert(semanticCss.includes('.dkds-surface-header{')&&semanticCss.includes('padd
 assert(plotCss.includes('.dkds-plot-view-head{')&&plotCss.includes('height:28px;')&&plotCss.includes('padding:0 8px;'),'PlotView must own its compact zero-vertical-padding geometry.');
 assert(plotView.includes("this.header.classList.remove('dkds-surface-header')"),'PlotView must normalize pre-existing plugin headers away from generic SurfaceHeader geometry.');
 assert(portable.includes("const specializedHeader=header.classList.contains('dkds-plot-view-head')||header.classList.contains('dkds-group-plot-head')")&&portable.includes("if(specializedHeader)header.classList.remove('dkds-surface-header')"),'PortableView must preserve specialized plot-header geometry instead of re-applying SurfaceHeader padding.');
-assert(resonance.includes('reswin-group-head dkds-plot-view-head')&&!resonance.includes('reswin-group-head dkds-surface-header dkds-plot-view-head'),'Resonance must not pre-compose SurfaceHeader and PlotView header classes.');
+assert(resonance.includes('reswin-group-head dkds-plot-view-head')&&!resonance.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonance.includes('adoptPlot?.(`resonance-group:${key}`,card'),'Resonance must preserve the accepted PlotView header DOM and let PlotGroup adopt it semantically without composing generic SurfaceHeader geometry.');
 assert(semantic.includes('.dkds-plot-view-head,.dkds-group-plot-head'),'Plot headers remain first-class Theme Material chrome through the canonical semantic registry without the generic SurfaceHeader class.');
 assert(material.includes('Semantic.resolveMaterialRole(el)'),'Material Renderer must consume the semantic owner for plot-header chrome.');
 

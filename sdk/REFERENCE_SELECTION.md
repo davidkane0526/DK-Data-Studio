@@ -1,4 +1,4 @@
-# Reference-only Selection and linked transactions — SDK 1.47.0
+# Reference-only Selection and linked transactions — SDK 1.48.0
 
 DK Data Studio Phase E extends the existing Entity, Selection and Interaction runtimes. It does not add a second global event bus.
 

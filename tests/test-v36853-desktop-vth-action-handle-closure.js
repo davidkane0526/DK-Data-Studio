@@ -20,12 +20,14 @@ for(const id of ['importChooseFilesBtn','importCloseBtn','importCheckAllBtn','im
 // Vth is a bounded workbench: the primary host is contained, the result table
 // owns the explicit bottom height, and the plot consumes every remaining pixel.
 const vth=read('src/plugins/transfer-vth-lab/plugin.js');
-const vthCss=read('src/plugins/transfer-vth-lab/plugin.css');
-assert(vth.includes("primaryScroll:'contained'")&&vth.includes("scroll:'contained'"),'Vth primary viewport must use the contained contract so 1fr has a definite height.');
-assert(vthCss.includes('--dkds-vth-results-height:180px')&&vthCss.includes('grid-template-rows:minmax(0,1fr) 8px var(--dkds-vth-results-height)'),'Vth plot row must flex-fill above a bounded results row.');
-assert(vth.includes("id:'vth-results-height-v2'")&&vth.includes("target:dom.query('[data-vth=\"results\"]',main)")&&vth.includes("reverse:true")&&vth.includes("cssVar:'--dkds-vth-results-height'"),'Vth splitter must resize the bottom results row rather than freezing plot height.');
-assert(vth.includes("placements:['left'],stateVersion:'presentation-v3',chrome:false"),'Fixed-left Vth Data surface must not create redundant PortableView chrome.');
-assert(vthCss.includes('.dkds-vth-card-head h3{margin:0}'),'Vth Data heading must align vertically with its titlebar actions/badge.');
+const vthUnit=read('src/plugins/transfer-vth-lab/unit-presentation.js');
+const vthManifest=json('src/plugins/transfer-vth-lab/plugin.json');
+assert(vthUnit.includes("primaryScroll:'contained'")&&vthUnit.includes("scroll:'contained'"),'Vth Unit primary viewport must use the contained contract so the fill rows have a definite height.');
+assert(vthUnit.includes("variant:'fill-rows'")&&vthUnit.includes("sizing:'fill'"),'Vth Unit plot row must flex-fill above the bounded results row.');
+assert(vthUnit.includes("id:'vth-results-height-v3'")&&vthUnit.includes("resizeTarget:'second'")&&vthUnit.includes('defaultSize:180')&&vthUnit.includes('min:140')&&vthUnit.includes('reserve:300'),'Vth Unit SplitPane must resize the bottom results row rather than freezing plot height.');
+assert(vthUnit.includes("variant:'fixed-titleless'")&&vthUnit.includes("placements:['left']")&&vthUnit.includes('header:false'),'Fixed-left Vth Data surface must remain titleless and must not create redundant PortableView chrome.');
+assert.deepStrictEqual(vthManifest.styles,[],'Retired Vth private presentation CSS must no longer be loaded after production Unit cutover.');
+assert(vth.includes("ctx.modules.require('unit-presentation')"),'Vth production controller must delegate composition to the Unit presentation.');
 
 // Fixed one-placement PortableViews must not insert an empty control group.
 const portable=read('src/core/ui/modules/layout/portable-view.js');

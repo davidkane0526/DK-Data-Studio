@@ -498,7 +498,8 @@ body.dkds-modern-ui textarea:focus-visible{
 .dkds-field{color:var(--text-secondary);
 }
 .dkds-field>label,
-.dkds-field-label{color:var(--text-secondary);
+.dkds-field-label,
+.dkds-field-unit{color:var(--text-secondary);
 }
 .dkds-field-control:focus{outline-offset:0;
 }
@@ -533,6 +534,8 @@ body.dkds-modern-ui textarea:focus-visible{
 }
 .dkds-overlay{background:rgba(11,18,30,.28);backdrop-filter:blur(2px);
 }
+.dkds-overlay[data-dkds-overlay-effect="dim"]{backdrop-filter:none;-webkit-backdrop-filter:none}
+
 .dkds-status{border:0;border-radius:var(--dkds-visual-radius-sm);background:var(--surface-secondary);color:var(--text-secondary);
 }
 .dkds-status:is(.done,.success,[data-state="success"]){background:var(--success-soft);color:var(--success);

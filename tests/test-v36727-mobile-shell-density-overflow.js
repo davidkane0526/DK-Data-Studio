@@ -33,9 +33,8 @@ const resonancePlugin=read('src/plugins/resonance-workbench/plugin.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const pulse=read('src/plugins/pulse-sampler-tool/plugin.js');
-const pulseCss=read('src/plugins/pulse-sampler-tool/plugin.css');
-const dataCenter=read('src/plugins/data-center/shared-views.js');
-const dataCenterMobile=read('src/plugins/data-center/mobile-presentation.js');
+const pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+const dataCenter=read('src/plugins/data-center/unit-presentation.js');
 const dataCenterCss=read('src/plugins/data-center/plugin.css');
 
 assert(app.includes('<NativeHeader')&&app.includes('<NativeStatusBar')&&!app.includes('<BottomNavigation')&&!app.includes('<NavigationRail'),'The redundant global icon navigation row must be removed while the desktop-style bottom status bar remains.');
@@ -71,8 +70,8 @@ assert(!statusMonitor.includes('dkdsThemePluginSettingsBtn')&&header.includes("{
 assert(statusMonitor.includes('themeAnchor')&&statusMonitor.includes('anchorRect')&&statusMonitor.includes('ThemeLayout.positionThemePanel')&&statusThemeLayout.includes('center-box.width/2'),'Theme popover must keep the presented Theme status-button anchor bridge while the unique theme-layout owner performs centered/clamped geometry.');
 assert(statusCss.includes('.dkds-theme-panel-head-actions')&&!statusMonitor.includes('dkdsThemePluginSettingsBtn'),'Theme header must retain close chrome while Plugin Management settings stay outside Theme UI.');
 
-assert(pulse.includes("presentationRole:'data-control'")&&pulse.includes("label:'参数'")&&pulseCss.includes('container-name:pulse-sampler-workspace')&&pulseCss.includes('grid-template-columns:1fr 1fr')&&pulseCss.includes('@container pulse-sampler-workspace'),'Pulse Designer must publish one generated parameter Surface while its content adapts to actual Surface width; the original Desktop two-column geometry must not be overwritten by Mobile layout work.');
-assert(workspaceCss.includes('data-dkds-mobile-region="drawer"')&&workspaceCss.includes('max-width:min(calc(100vw - 12px),680px)')&&!workspaceCss.includes('@keyframes dkds-native-drawer-in'),'Mobile Parameters must remain a stable semantic drawer with bounded content-fit width and no replayed slide animation.');
+assert(pulseUnit.includes("presentationRole:'data-control'")&&pulseUnit.includes("label:'参数'")&&pulseUnit.includes("variant:'form-grid-2'")&&pulseUnit.includes("variant:'action-grid-4'"),'Pulse Designer must publish one platform-neutral Unit parameter PRIME whose content adapts through accepted Unit recipes rather than Mobile-specific layout patches.');
+assert(workspaceCss.includes('data-dkds-mobile-region="drawer"')&&workspaceCss.includes('max-width:calc(100vw - 12px)')&&!workspaceCss.includes('@keyframes dkds-native-drawer-in'),'Mobile Parameters must remain a stable semantic drawer whose first-open width is solved from live Unit content rather than a historical fixed cap, with no replayed slide animation.');
 
 for(const src of [chartRuntime,curveNav]){
   assert(src.includes('is-touch-visible')&&src.includes('is-dragging'),'Scientific floating toolbar must expose transient touch visibility and dragging states.');
@@ -82,12 +81,12 @@ assert(/html\[data-dkds-host="mobile"\]\.react-native-client \.dkds-scientific-n
 assert(nativeCss.includes('html[data-dkds-host="mobile"].react-native-client')&&!nativeCss.includes('#resonanceDedicatedPage'),'Mobile Core platform styles must remain domain blind and must not pollute Desktop/plugin styling.');
 
 assert(workspaceCss.includes('companion-right')&&workspaceCss.includes('border-radius:10px')&&workspaceCss.includes('companion-bottom'),'Mobile curve inspector and group companion title containers must retain rounded geometry.');
-assert(!/#resonanceDedicatedPage \.reswin-group-grid\{[^}]*grid-template-columns/s.test(resonanceCss)&&read('src/plugins/resonance-workbench/feature-group-runtime.js').includes('wb.groupArea(hostEl')&&read('src/plugins/resonance-workbench/feature-group-runtime.js').includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1}")&&resonanceCss.includes('.reswin-group-card{min-width:0'),'Group plots must let Core reduce effective columns before cards can overlap, while plugin cards remain width-flexible.');
+assert(!/#resonanceDedicatedPage \.reswin-group-grid\{[^}]*grid-template-columns/s.test(resonanceCss)&&read('src/plugins/resonance-workbench/feature-group-runtime.js').includes('factory.create(hostEl')&&read('src/plugins/resonance-workbench/feature-group-runtime.js').includes("orientationPolicy:{mode:'portrait-offset',offset:-1,minColumns:1}")&&resonanceCss.includes('.reswin-group-card{min-width:0'),'Group plots must let Core reduce effective columns before cards can overlap, while plugin cards remain width-flexible.');
 assert(resonancePlugin.includes("side:'left'")&&resonancePlugin.includes("id:'main-summary'")&&resonanceFeature.includes('setPresentationSummary(parts.join'),'Resonance main summary must move from wasted plot-bottom space into the left side of the bottom status information stream on mobile.');
 
-assert(!dataCenter.includes('ctx.ui.workspaceSurface.create')&&dataCenterMobile.includes("id:'data-control'")&&dataCenterMobile.includes("presentationRole:'data-control'")&&!dataCenterMobile.includes('isNativeClient')&&dataCenterCss.includes('.dc-source-preview{container-type:inline-size}')&&dataCenterCss.includes('@container (max-width:760px)'),'Data Center must keep Desktop static composition while its SDK 1.25 Mobile platform presenter publishes the data rail semantically and responds to actual Surface width without a Core domain patch.');
+assert(dataCenter.includes("id:'data-control'")&&dataCenter.includes("presentationRole:'data-control'")&&!dataCenter.includes('isNativeClient')&&dataCenterCss.includes('.dc-source-preview{container-type:inline-size}')&&dataCenterCss.includes('@container (max-width:760px)'),'Data Center production Unit composition must publish the data rail semantically while accepted plugin CSS responds to actual Surface width without a Core domain patch.');
 
-for(const rel of ['src/styles/platform/native-client-shell.css','src/styles/platform/native-workspace-presentation.css','src/plugins/resonance-workbench/plugin.css','src/plugins/data-center/plugin.css','src/plugins/pulse-sampler-tool/plugin.css'])
+for(const rel of ['src/styles/platform/native-client-shell.css','src/styles/platform/native-workspace-presentation.css','src/plugins/resonance-workbench/plugin.css','src/plugins/data-center/plugin.css'])
   assert(!/!important/.test(read(rel)),`${rel} must not introduce !important while fixing mobile layout.`);
 
 console.log('v3.67.27 Mobile shell density/overflow PASS: measured plugin-only top overflow, generated parameter drawer, preserved desktop-style status bar with strict AI>SMB>Web>Theme>Memory>DevTool retention, compact dark-safe header, anchored Theme settings, touch-following scientific tools and non-overlapping responsive scientific/data layouts.');

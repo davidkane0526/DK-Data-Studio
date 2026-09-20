@@ -35,13 +35,14 @@ try{
   const runtime=createPluginPackageRuntime({app:fakeApp,BrowserWindow:{getAllWindows:()=>[]}});
   const bundled=runtime.readBuiltinPluginPackage('com.dkds.tools.pulse-sampler');
   assert(bundled,'Pulse Sampler bundled package is required for exact override regression coverage.');
-  assert.match(bundled.files['plugin.js'],/ctx\.ui\.workspaceSurface\.create/,'Bundled Pulse Sampler must teach the canonical workspaceSurface facade.');
+  assert.match(bundled.files['plugin.js'],/ctx\.modules\.require\('unit-presentation'\)/,'Bundled Pulse Sampler must mount its production Unit presentation through the public module seam.');
+  assert.match(bundled.files['unit-presentation.js'],/ctx\.ui\.unitTemplates/,'Bundled Pulse Sampler must teach the canonical public Unit Templates facade after production cutover.');
 
   const versionParts=bundled.manifest.version.split('.').map(Number);
   const overrideVersion=`${versionParts[0]}.${versionParts[1]}.${versionParts[2]+1}`;
   const badPackage=JSON.parse(JSON.stringify(bundled));
   badPackage.manifest.version=overrideVersion;
-  badPackage.files['plugin.js']=badPackage.files['plugin.js'].replace('ctx.ui.workspaceSurface.create','ctx.ui.pluginWorkspace.create');
+  badPackage.files['plugin.js']+="\nctx.ui.pluginWorkspace.create(document.body,{});\n";
   assert.match(badPackage.files['plugin.js'],/ctx\.ui\.pluginWorkspace\.create/,'Regression fixture must reproduce the non-public workspace facade activation bug.');
   assert.throws(
     ()=>normalizePluginPackage(badPackage,{allowBuiltinId:true}),
@@ -74,7 +75,7 @@ try{
   fs.cpSync(path.join(root,'src','plugins','pulse-sampler-tool'),goodFolder,{recursive:true});
   fs.cpSync(goodFolder,badFolder,{recursive:true});
   const badEntry=path.join(badFolder,'plugin.js');
-  fs.writeFileSync(badEntry,fs.readFileSync(badEntry,'utf8').replace('ctx.ui.workspaceSurface.create','ctx.ui.pluginWorkspace.create'),'utf8');
+  fs.writeFileSync(badEntry,fs.readFileSync(badEntry,'utf8')+"\nctx.ui.pluginWorkspace.create(document.body,{});\n",'utf8');
   const cli=path.join(root,'sdk','tools','dkds-plugin.js');
   const goodCli=spawnSync(process.execPath,[cli,'validate',goodFolder],{cwd:root,encoding:'utf8'});
   assert.strictEqual(goodCli.status,0,`Canonical bundled/exported Plugin API package must validate.\n${goodCli.stdout}\n${goodCli.stderr}`);

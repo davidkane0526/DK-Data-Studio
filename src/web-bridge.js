@@ -355,6 +355,25 @@
       return payload?.defaultName||'image.png';
     },
 
+    exportSdkBundle: async()=>{
+      const reference=await window.DKDSOptionalRuntime?.ensureSdkAuthoringReference?.();
+      const sdkVersion=String(reference?.describe?.().sdkVersion||'current');
+      const response=await fetch(new URL('generated/dkds-sdk-export.zip',window.location.href),{cache:'no-store'});
+      if(!response.ok)throw new Error(`SDK 导出资源读取失败（HTTP ${response.status}）。`);
+      const blob=await response.blob();
+      const name=`DKDS-SDK-${sdkVersion.replace(/[^0-9A-Za-z._-]/g,'_')}.zip`;
+      if(nativeBridge){
+        const intent=nativeUserIntent?.consume?.('export',{source:'core.plugin-manager.export-sdk'});
+        if(!intent)return null;
+        const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';const step=0x8000;
+        for(let i=0;i<bytes.length;i+=step)binary+=String.fromCharCode(...bytes.subarray(i,i+step));
+        const uri=await nativeCall('saveBase64',{name,base64:btoa(binary),mimeType:'application/zip',source:'core.plugin-manager.export-sdk',nativeIntent:intent});
+        return uri?{name,sdkVersion,uri}:null;
+      }
+      downloadBlob(blob,name);
+      return {name,sdkVersion};
+    },
+
     saveProject: async payload=>{
       const mode=payload?.mode==='saveAs'?'saveAs':'current';
       const path=String(payload?.path||'');

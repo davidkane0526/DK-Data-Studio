@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const Domain=require('../src/core/plugins/kernel/modules/commands/domain');
 let rev=3;
@@ -22,7 +23,7 @@ row={id:'analysis.demo',pluginId:'builtin.demo',pluginVersion:'1.7.0',handler:as
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const sdk=JSON.parse(fs.readFileSync(path.join(root,'sdk/contract.json'),'utf8'));
-assert.strictEqual(sdk.sdkVersion,'1.47.0');assert.strictEqual(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 const sdkTypes=fs.readFileSync(path.join(root,'sdk/plugin-api.d.ts'),'utf8');
 const sdkGuide=fs.readFileSync(path.join(root,'sdk/DOMAIN_COMMANDS.md'),'utf8');
 assert(sdkTypes.includes('DKDSDomainCommandRecord')&&sdkTypes.includes('pluginVersion:string'),'SDK types must expose domain-command provenance and plugin package version.');

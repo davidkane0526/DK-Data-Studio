@@ -182,7 +182,7 @@
   --dkds-command-padding-inline:11px;
   --dkds-command-line-height:20px;
 }
-.plugin-context-toolbar .plugin-toolbar-btn{
+.plugin-context-toolbar .plugin-toolbar-btn:not(.plugin-activity-hidden){
   flex:0 0 auto;
   display:inline-flex;
   align-items:center;

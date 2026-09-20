@@ -1,3 +1,4 @@
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -7,10 +8,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.47.0');
+assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));
 assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.10.0');
-assert.equal(sdk.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 assert.equal(Theme.version,'3.10.0');
 for(const historical of ['contract:3.6.0','contract:3.7.0','contract:3.8.0','contract:3.9.0','contract:4.0.0','contract:2.9.0']) assert.equal(Theme.supports(historical),false,`Theme Contract 3.10 must not negotiate version capabilities: ${historical}`);
 assert(Theme.supports('contract.appearance.components')&&Theme.supports('contract.appearance.components.tab'));
@@ -64,11 +65,11 @@ assert(model.includes('curve?.color||scaled||initial?.color||this.categoricalCol
 const series=read('src/core/ui/modules/series/primitives.js');
 assert(series.includes('DKDSTheme?.scientific?.()?.seriesPalette'),'Series Registry must consume Theme palette only as fallback source.');
 
-const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
-for(const title of ['当前文件 · 原始波形诊断','脉冲条件 → 读取电流','脉冲条件 → 脉冲电流']) assert(pulseViews.includes(`<h3 class="dkds-plot-view-title">${title}</h3>`));
-const plotHeaderBlocks=[...pulseViews.matchAll(/<div class="pulse-card-heading pulse-plot-heading" data-dkds-plot-header>([\s\S]*?)<\/div>/g)].map(m=>m[1]);
-assert.equal(plotHeaderBlocks.length,3,'Pulse Analysis must expose exactly three Core PlotView headers.');
-for(const block of plotHeaderBlocks){assert(!/<p\b/.test(block),'PlotView header must keep only the main title.');assert(/pulse-plot-actions/.test(block),'PlotView header must reserve a Core action host at the far edge.');assert(!/dkds-toolbar/.test(block),'Pulse must not create an independent toolbar inside PlotView header.');}
+const pulseViews=read('src/plugins/pulse-analysis/unit-presentation.js');
+for(const title of ['当前文件 · 原始波形诊断','脉冲条件 → 读取电流','脉冲条件 → 脉冲电流']) assert(pulseViews.includes(`title:'${title}'`),`Pulse Unit production presentation must preserve accepted PlotView title: ${title}`);
+assert(pulseViews.includes("variant:'plot-minimal'")&&pulseViews.includes("className:'pulse-card-heading pulse-plot-heading'")&&pulseViews.includes("titleClassName:'dkds-plot-view-title'")&&pulseViews.includes("actionsClassName:'pulse-plot-actions'"),'Pulse production PlotView headers must be expressed through the source-parity Unit Header anatomy.');
+assert.equal((pulseViews.match(/createPlotCard\(/g)||[]).length,4,'Pulse source must define one createPlotCard helper and instantiate exactly three PlotView cards.');
+assert(!pulseViews.includes('dkds-toolbar pulse-plot-actions')&&!pulseViews.includes('pulse-plot-heading dkds-toolbar'),'Pulse must not create an independent toolbar inside PlotView headers.');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
 assert(!pulseCss.includes('.pulse-plot-actions{')&&!pulseCss.includes('.pulse-plot-heading{padding:'),'Pulse plugin must not own PlotView action/header geometry.');
 assert(pulseViews.includes('dkds-surface-heading-stack')&&!pulseCss.includes('.pulse-card-heading:not(.dkds-plot-view-head) h3'),'Non-plot card heading typography must be Core-owned through the shared SurfaceHeader heading stack.');

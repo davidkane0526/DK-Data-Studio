@@ -23,7 +23,7 @@ assert(host.includes("if(typeof api.snapshot==='function')reconcileOpenSurfaceSt
   'Every Native shell snapshot must reconcile PRIME open state, not only presentation events.');
 
 const presenterSource=read('src/core/ui/modules/presentation/mobile-web-surface.js');
-assert(presenterSource.includes("semanticRole==='inspector'||semanticRole==='scientific-secondary'"),
+assert(presenterSource.includes("const semanticHome=semanticRole==='inspector'?'right':semanticRole==='scientific-secondary'?'bottom':''"),
   'Mobile Presenter must own non-user inspector and scientific-secondary default geometry.');
 assert(presenterSource.includes('const detachedFromProjection=!!(frame&&node&&!frame.contains?.(node));'),
   'Mobile Presenter must detect nodes moved away by another Core lifecycle.');
@@ -43,6 +43,13 @@ const context={
     if(id==='ui/style-ownership-gate')return fakeStyleGate;
     if(id.includes('platform-boundary'))return {isMobileDocument:()=>true};
     if(id.includes('native-touch-drag'))return {bind:()=>()=>{}};
+    if(id.includes('unit-template-spec'))return {BASE_METRICS:{portable:{floatingViewportInlineReservePx:12,baseMinWidthPx:260}}};
+    if(id.includes('unit-geometry-constraints'))return {resolveInlineConstraintDeficit:()=>({deficitPx:0}),resolveBlockSurfaceConstraint:()=>({minBlockPx:0,preferredBlockPx:0}),reflowUnitGeometry:()=>0,GEOMETRY_CONSTRAINT_EVENTS:{inline:'dkds:unit-inline-constraint',block:'dkds:unit-block-constraint'}};
+    if(id.includes('interaction/transient-registry'))return {dismissAllContextMenus:()=>0};
+    if(id.includes('mobile-web-surface-geometry'))return require('../src/core/ui/modules/presentation/mobile-web-surface-geometry');
+    if(id.includes('mobile-scientific-track-allocator'))return require('../src/core/ui/modules/presentation/mobile-scientific-track-allocator');
+    if(id.includes('mobile-scientific-workspace-allocation'))return {usesWorkspaceScientificAllocation:()=>false,syncWorkspaceScientificAllocation:()=>null};
+    if(id.includes('mobile-web-projection-contract'))return require('../src/core/ui/modules/presentation/mobile-web-projection-contract');
     throw new Error(`unexpected require: ${id}`);
   },setTimeout,clearTimeout,requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame(){}
 };
@@ -68,7 +75,7 @@ assert.strictEqual(frameRemoved,1,'Presenter must release the stale projection f
 assert.strictEqual(presenter.projectedNodes.has(node),false,'Projection ownership must be released after close.');
 
 const portable=read('src/core/ui/modules/layout/portable-view.js');
-assert(portable.includes("?'mobile.m3':'desktop'"),'Mobile PortableView state must use a new namespace while Desktop state remains untouched.');
+assert(portable.includes("?'mobile.m3':'desktop'"),'Mobile PortableView must restore the pre-content-fit Mobile namespace while Desktop state remains untouched.');
 const css=read('src/styles/platform/native-workspace-presentation.css');
 assert(css.includes('[data-dkds-mobile-companion-right="true"] .dkds-plugin-canvas-frame'),
   'Landscape companion geometry must be orientation-driven for all Mobile profiles, not gated by CSS-pixel width/profile.');

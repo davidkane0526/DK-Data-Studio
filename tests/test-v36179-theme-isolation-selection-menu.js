@@ -18,8 +18,8 @@ const actions=readComposition(root,'src/core/ui/composition');
 assert(actions.includes("'dkds-action-group','dkds-integrated-action-group','dkds-material-role-control'"),'ActionGroup semantic role contract must be preserved.');
 const portable=readComposition(root,'src/core/ui/composition');
 assert(portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group'")&&!portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control'"),'PlotView header actions must remain integrated but be owned by the chrome MaterialSurface.');
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
-assert(resonance.includes('id="resparRangeMenu" class="respar-range-menu command-menu hidden range-action-menu"'),'Resonance box-selection menu must consume the shared Core range-action contract in both SUPER and TOP.');
+const resonance=read('src/plugins/resonance-workbench/unit-presentation.js');
+assert(resonance.includes("className:'respar-range-menu command-menu hidden range-action-menu',id:'resparRangeMenu'"),'Resonance production Unit box-selection menu must consume the shared Core range-action contract in both SUPER and TOP.');
 
 // Shell menu management must not close plugin-owned command menus such as resparRangeMenu.
 const kernel=readComposition(root,'src/core/plugins/kernel');

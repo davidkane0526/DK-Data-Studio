@@ -195,6 +195,7 @@ body.plugin-window-host{
   padding:6px 8px;
 }
 .dkds-analysis-workbench button:not(
+  .dkds-field-control,
   .dkds-integrated-action-group button,
   .dkds-separated-action-group button,
   .dkds-portable-controls button,

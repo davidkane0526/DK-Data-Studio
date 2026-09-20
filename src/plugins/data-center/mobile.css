@@ -1,9 +1,10 @@
 /* Data Center native composition is expressed through plugin-owned layout
    tokens. plugin.css remains the one final geometry owner for .dc-main/.dc-chart. */
 .dc-main{
-  --dc-main-columns:minmax(0,1fr);
-  --dc-main-areas:"source" "tool" "chart";
-  --dc-main-gap:8px
+  --dc-main-columns:minmax(184px,.82fr) minmax(0,1.18fr);
+  --dc-main-areas:"source source" "tool chart";
+  --dc-main-gap:8px;
+  align-items:stretch
 }
 .dc-chart-pane{
   /* Keep preview-owned geometry on the movable Surface so native floating
@@ -12,10 +13,10 @@
   --dc-chart-height:clamp(180px,30dvh,280px);
   --dc-chart-min-height:160px
 }
-@container data-center-workspace (min-width:680px){
+@container data-center-workspace (max-width:419px){
   .dc-main:has(>.dc-chart-pane[data-placement="home"]){
-    --dc-main-columns:minmax(280px,.8fr) minmax(360px,1.2fr);
-    --dc-main-areas:"source source" "tool chart"
+    --dc-main-columns:minmax(0,1fr);
+    --dc-main-areas:"source" "tool" "chart"
   }
 }
 /* Native Data Management is a first-class dense browser, not a shrunken
@@ -78,9 +79,6 @@
   gap:2px;
 }
 .dc-chart-params .schema-param-field[data-param-id="showLegend"]{justify-content:flex-end;align-self:end}
-.dc-chart-params .schema-param-field[data-param-id="ys"] .dkds-field-control,
-.dc-chart-params .schema-param-field[data-param-id="x"] .dkds-field-control,
-.dc-chart-params .schema-param-field[data-param-id="mode"] .dkds-field-control{height:28px;min-height:28px}
 .dc-chart-pane.dkds-portable-view:is(.is-floating,.is-global-floating){
   display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:240px;overflow:hidden;
 }

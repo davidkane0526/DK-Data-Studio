@@ -18,8 +18,7 @@ function block(name, nextName) {
   return backend.slice(start, end < 0 ? backend.length : end);
 }
 
-const direct = block('Enable-AndroidGradleDirectNoDaemon', 'Test-AndroidGradleInProcess');
-const probe = block('Test-AndroidGradleInProcess', 'Test-AndroidApkArtifact');
+const direct = block('Enable-AndroidGradleDirectNoDaemon', 'Test-AndroidApkArtifact');
 const gradleBuild = block('Invoke-AndroidReleaseGradleBuild', 'Build-AndroidRelease');
 const build = block('Build-AndroidRelease', 'Install-UpdateServerAutostart');
 
@@ -29,28 +28,24 @@ assert(direct.includes("Add-GradleJvmSystemProperty 'org.gradle.jvmargs' $jvmArg
   'Agent parity must complement, not replace, immutable JVM-argument parity.');
 assert(direct.includes("Add-GradleJvmSystemProperty 'org.gradle.daemon' 'false'"),
   'Direct mode must remain explicitly non-persistent.');
-assert(!direct.includes('single-use daemon fork disabled'),
-  'Tooling must not claim the child fork is disabled before a real Gradle compatibility check runs.');
-
-assert(probe.includes("@('help','--no-daemon','--max-workers=1','--info')"),
-  'The preflight must execute a cheap real Gradle project action under the same no-daemon contract.');
-assert(probe.includes('single-use Daemon process will be forked') && probe.includes("Starting process 'Gradle build daemon'"),
-  'The preflight must reject both Gradle single-use-daemon announcement and actual daemon process startup.');
-assert(probe.includes('Gradle no-fork preflight: PASS'),
-  'The preflight must only print PASS after the real Gradle action exits successfully without daemon startup.');
+assert(direct.includes('no pre-build probe'),
+  'Tooling must make the no-preflight Android build path explicit.');
+assert(!backend.includes('function Test-AndroidGradleInProcess'),
+  'Android tooling must not retain a separate Gradle preflight owner after removing pre-build tests.');
+assert(!gradleBuild.includes('Test-AndroidGradleInProcess'),
+  'The release build must not run a Gradle help/probe before assembleRelease.');
 const parityIndex = gradleBuild.indexOf('Enable-AndroidGradleDirectNoDaemon');
-const preflightIndex = gradleBuild.indexOf('Test-AndroidGradleInProcess');
 const assembleIndex = gradleBuild.indexOf("Invoke-Step -FilePath '.\\gradlew.bat'");
-assert(parityIndex >= 0 && preflightIndex > parityIndex && assembleIndex > preflightIndex,
-  'The shared release owner must run the real no-fork preflight after parity is configured and before assembleRelease.');
+assert(parityIndex >= 0 && assembleIndex > parityIndex,
+  'The shared release owner must configure direct no-daemon mode and proceed directly to assembleRelease.');
 assert(build.includes('Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDirectory'),
   'android-build must consume the shared Gradle process owner instead of maintaining a divergent release invocation.');
 assert(backend.includes("'android-run'") && backend.includes('Invoke-AndroidReleaseGradleBuild -AndroidDirectory $androidDir'),
-  'android-run must consume the same JVM + agent parity and no-fork preflight as android-build.');
+  'android-run must consume the same direct no-daemon Gradle owner as android-build.');
 
 assert(atLeast(appPackage.version,'3.68.14'), 'Agent-parity closure requires app metadata >= 3.68.14.');
 assert(atLeast(mobilePackage.version,'0.8.41'), 'Agent-parity closure requires Mobile package metadata >= 0.8.41.');
 assert(atLeast(mobileApp.expo?.version,'0.8.41') && Number(mobileApp.expo?.android?.versionCode)>=52,
   'Agent-parity closure requires native version >= 0.8.41 / versionCode >= 52.');
 
-console.log('v3.68.14 Android Gradle agent-status parity + runtime no-fork preflight PASS');
+console.log('v3.68.14 Android Gradle agent-status parity closure PASS: no pre-build Gradle probe');

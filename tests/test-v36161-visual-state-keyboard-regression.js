@@ -11,7 +11,8 @@ const ui=read('src/generated/runtime/ui-infrastructure.js');
 const resonance=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const dc=read('src/plugins/data-center/feature-runtime.js');
-const dcViews=read('src/plugins/data-center/shared-views.js');
+const dcViews=read('src/plugins/data-center/unit-presentation.js');
+const components=read('src/core/ui/component-runtime.js');
 
 assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--dkui-selection-surface)'),'Core linked selection must retain the frozen semantic selection surface contract.');
 assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
@@ -22,7 +23,7 @@ const semanticRegistry=read('src/core/theme/semantic-registry.js');
 const materialRoles=read('src/styles/theme/material-roles.css');
 assert(semanticRegistry.includes('.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel])')&&materialRoles.includes('--dkds-material-border:var(--dkui-role-floating-border,var(--dkui-divider))'),'Floating utility panels must obtain their perimeter from the semantic floating Material role, not a page-local bright border.');
 assert(semanticRegistry.includes("selector:'button,")&&semanticRegistry.includes("id:'toolbarAction'"),'LAN utility buttons must fall through the canonical ToolbarAction component contract rather than private host paint.');
-assert(dcViews.includes('data-dc-tab="formula" role="tab" class="selected" aria-selected="true"'),'Data Center initial tab state must expose tab semantics and aria-selected.');
+assert(dcViews.includes("id:'dcFormulaTab',label:'公式',selected:true,dataset:{dcTab:'formula'}")&&components.includes("root.setAttribute('role','tablist')")&&components.includes("button.setAttribute('role','tab')")&&components.includes("button.setAttribute('aria-selected',String(selected))"),'Data Center initial Unit tab state must expose tab semantics and aria-selected through Core Tabs.');
 assert(dc.includes("b.setAttribute('aria-selected',selected?'true':'false')"),'Data Center tab changes must synchronize aria-selected.');
 assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&&resonance.includes('claimKeyboardFocus()'),'Resonance main plot must explicitly own keyboard focus after plot/peak selection.');
 assert(resonanceViews.includes("['ArrowLeft','builtin.resonance.peak-left']")&&resonanceViews.includes("['ArrowRight','builtin.resonance.peak-right']"),'Resonance arrow bindings must remain declared.');

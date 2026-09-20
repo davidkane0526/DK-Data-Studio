@@ -32,10 +32,10 @@ assert(!host.includes("dispatchEvent(new Event('resize'))"),'Mobile Host must no
 
 // Parameter and companion geometry is isolated by a Mobile-owned shell instead
 // of relying on plugin-specific selector specificity.
-for(const token of ['createFrame(region,surfaceId=\'\',purpose=\'\',presentationRole=\'\')','dkds-mobile-surface-frame','captureInline(node)','normalizeProjectedNode(node,region)','restoreInline(node,saved.inline)'])
+for(const token of ['createFrame(region,surfaceId=\'\',purpose=\'\',presentationRole=\'\',storageScope=\'\')','dkds-mobile-surface-frame','captureInline(node)','normalizeProjectedNode(node,region,purpose=','restoreInline(node,saved.inline)'])
   assert(web.includes(token),`Mobile surface projection shell missing ${token}.`);
 assert(css.includes('.dkds-mobile-surface-frame[data-dkds-mobile-frame-region="drawer"]'),'Parameter drawer geometry must be owned by the Mobile projection shell.');
-assert(css.includes('width:min(320px,calc(100vw - 20px))')&&css.includes('max-width:min(calc(100vw - 12px),680px)')&&web.includes('fitDrawerToContent(frame,surfaceId'),'Parameter drawer must stay bounded while expanding only to its measured content-fit minimum.');
+assert(!css.includes('width:min(32vw,420px')&&css.includes('max-width:calc(100vw - 12px)')&&web.includes('solveMinimumReasonableWidth(frame,region='),'Parameter drawer must use content-derived minimum width with only physical viewport containment.');
 assert(shellModel.includes("surface.role === 'data-control'")&&shellModel.includes('canonicalDataControlSurface'),'Native fixed control command must consume the shared data-control role; presentationPurpose may refine semantics but must not create a second slot.');
 assert(!shellModel.includes('/参数|parameter/i'),'Native Parameters command must not guess parameter UI from a label regex.');
 
@@ -45,8 +45,7 @@ assert(!shellModel.includes('/参数|parameter/i'),'Native Parameters command mu
 // primary scientific row remains explicit, so companions stay visible without
 // covering it or replacing it with a route.
 assert(css.includes('grid-template-columns:var(--dkds-mobile-left-track) var(--dkds-mobile-left-seam) minmax(0,1fr) var(--dkds-mobile-right-seam) var(--dkds-mobile-right-track)')&&css.includes('"cleft clsplit center crsplit cright"'),'Mobile must keep one stable left/main/right canvas topology across responsive profiles.');
-assert(css.includes('var(--dkds-mobile-user-bottom-track,36%)')&&css.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations keep disjoint, bounded companion regions.');
-assert(css.includes('var(--dkds-mobile-user-bottom-track,36%)')&&css.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations keep disjoint, bounded companion regions.');
+assert(css.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)')&&css.includes('--dkds-mobile-bottom-seam:var(--dkds-canvas-resizer-track-size,7px)'),'Both orientations must resolve companion regions from the Workspace split preference with one shared viewport bound.');
 assert(/\[data-dkds-mobile-region="route"\]\[data-dkds-mobile-active="true"\]\{\s*position:relative/.test(css),'SUB routes must stay inside the PluginWorkspace route host instead of adding a second fixed viewport layer.');
 
 // Android WebView toolbar drag uses raw pointer coordinates and a drag-start
@@ -67,7 +66,7 @@ const desktopParent=makeParent('desktop'),center=makeParent('center'),right=make
 const mainNode={dataset:{},parentNode:center,nextSibling:null,style:makeStyle()};center.children=[mainNode];
 const parameterNode={dataset:{},parentNode:desktopParent,nextSibling:null,style:makeStyle({width:'100vw',position:'absolute',left:'32px'})};desktopParent.children=[parameterNode];
 const fakeRoot={dataset:{},querySelector(selector){if(selector.includes('"right"'))return right;if(selector.includes('"bottom"'))return bottom;if(selector.includes('"overlay"'))return overlay;return null;}};
-const makeFrame=()=>{const frame={dataset:{},className:'',parentNode:null,children:[],contains(node){return this.children.includes(node);},append(node){if(node.parentNode?.children)node.parentNode.children=node.parentNode.children.filter(row=>row!==node);this.children.push(node);node.parentNode=this;},remove(){this.parentNode?.removeChild?.(this);}};return frame;};
+const makeFrame=()=>{const frame={dataset:{},className:'',parentNode:null,children:[],contains(node){return this.children.includes(node)||this.children.some(child=>child?.contains?.(node));},append(node){if(node.parentNode?.children)node.parentNode.children=node.parentNode.children.filter(row=>row!==node);this.children.push(node);node.parentNode=this;},insertBefore(node,next){if(node.parentNode?.children)node.parentNode.children=node.parentNode.children.filter(row=>row!==node);const index=next?this.children.indexOf(next):-1;if(index>=0)this.children.splice(index,0,node);else this.children.push(node);node.parentNode=this;},remove(){this.parentNode?.removeChild?.(this);}};return frame;};
 const priorDocument=global.document;
 global.document={
   documentElement:{dataset:{dkdsHost:'mobile'},classList:{contains:value=>value==='react-native-client'}},
@@ -85,7 +84,9 @@ const opened={activityId:'alpha',layout:{profile:'compact'},workspaces:[{activit
 ]}]};
 presenter.apply(opened);
 assert.strictEqual(overlay.appendCount,1,'First parameter projection must append one Mobile frame.');
-assert.strictEqual(parameterNode.parentNode?.dataset?.dkdsMobileFrame,'true','Plugin parameter DOM must live inside a Mobile geometry frame while open.');
+assert.strictEqual(parameterNode.parentNode?.className,'dkds-mobile-drawer-content','Projected parameter DOM must live inside the dedicated Drawer content host.');
+assert.strictEqual(parameterNode.parentNode?.parentNode?.className,'dkds-mobile-drawer-scroll','Drawer content host must live inside the dedicated Drawer scroll viewport.');
+assert.strictEqual(parameterNode.parentNode?.parentNode?.parentNode?.dataset?.dkdsMobileFrame,'true','Drawer scroll viewport must live inside the Mobile geometry frame.');
 assert.strictEqual(parameterNode.style.value('width'),'100%','Desktop/plugin inline width must be neutralized only during Mobile projection.');
 presenter.apply(opened);
 assert.strictEqual(overlay.appendCount,1,'Unchanged state publication must not recreate/reappend the projection frame.');

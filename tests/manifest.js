@@ -1,6 +1,518 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371105-data-center-reparented-unit-list.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371104-data-list-drawer-popup-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371103-mobile-orientation-data-center-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371102-mobile-companion-frame-content-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371101-mobile-companion-home-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371100-mobile-companion-split-single-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37199-mobile-companion-framework-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37198-mobile-scientific-workspace-restoration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37196-mobile-projection-integrity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37195-mobile-companion-fill-parameter-depth.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37194-mobile-final-visible-geometry-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37192-mobile-geometry-root-cause-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37191-mobile-overlay-intrinsic-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37190-mobile-companion-drawer-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37189-mobile-companion-safe-area.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37188-mobile-parameter-surface-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37185-mobile-block-axis-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37182-ter-window-hotpath.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37181-ter-first-open-close-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37177-mobile-drawer-readable-width.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-presentation-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-chrome-anatomy-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-structure-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-dynamic-unit-behaviors.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-core-service-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-state-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-state-accessibility-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-state-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-core-state-a11y-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-reconstruction-completeness.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-unit-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-plugin-geometry-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-geometry-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-geometry-value-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-preset-unit-only.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-domain-adapter-live-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-live-domain-numeric.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3718-empty-plugin-page-shell.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3719-ter-unit-cutover-layout-lifecycle.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37110-ter-source-parity-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37112-scientific-plot-material-startup.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37113-source-parity-runtime-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37114-unit-detail-geometry-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37116-context-overflow-single-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37116-pulse-production-unit-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37117-pulse-parameter-parity-and-overflow-dismiss.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37118-activity-toolbar-visibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37119-resonance-production-unit-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37120-resonance-runtime-source-parity-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37121-resonance-group-prime-runtime-interactions.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37124-resonance-visible-layout-ter-startup-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37125-resonance-columns-range-history-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-resonance-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-data-center-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-sampler-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-live-domain-numeric.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37156-vth-default-settings-semantics.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37157-settings-mobile-touch-arbitration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37158-unit-floating-chrome-vth-spacing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37159-unit-workspace-primary-end-inset.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37160-resonance-mobile-box-and-clear-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37163-pulse-analysis-result-layout.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37164-pulse-mobile-intrinsic-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37165-pulse-unit-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37168-pulse-bounded-primary-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37155-vth-source-faithful-fill-chain.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37154-vth-unit-scientific-interaction-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37153-vth-unit-cutover-mobile-scroll-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-sampler-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37142-pulse-sampler-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37143-unit-nongreedy-pulse-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37144-unit-density-pulse-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37145-pulse-basic-visual-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37146-pulse-source-faithful-workspace-renderer.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37147-unit-minimum-containment-ter-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37148-surface-containment-spacing-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37149-pulse-sampling-intrinsic-row-containment.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37150-unit-panel-shell-body-containment.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37126-data-center-live-domain-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-data-center-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37128-data-center-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37129-data-center-production-visual-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37130-data-center-real-host-parity-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37131-parameter-select-proxy-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37132-data-center-chart-row-and-preview-inset.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37133-data-center-unit-owner-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37134-unit-cross-layer-ownership-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37135-unit-adoption-remount-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37136-parameter-control-and-preview-spacing-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37137-unit-cssom-shorthand-and-field-proxy-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37138-unit-semantic-cascade-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-runtime-catalog-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-contract-detail.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-metric-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-blueprint-reconstructability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-blueprint-runtime-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-layout-recipes-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-design-system-unit-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-existing-plugin-style-freeze.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-unit-template-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-unit-example-layout.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk-prime-spec-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-composition-lint-completeness.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-current-contract-check-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk149-visual-template-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk149-reference-plugin-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-movable-prime-canonical-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-fixed-data-control-no-position-chooser.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-scientific-card-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-plotgroup-plotview-membership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-responsive-plotgroup-no-fixed-height.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-layout-harness-desktop.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-layout-harness-mobile.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-theme-disabled-action-contrast.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-active-activity-contribution-scope.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-external-top-task-materialization-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3705-resonance-dedicated-worker-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3704-builtin-dedicated-task-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3703-plugin-window-error-chrome-survival.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3702-packaged-top-task-window-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3701-task-progress-acquisition-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3700-sdk-export.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v3694-android-worker-single-blob-science.js",
       "args": []
     },
@@ -14,10 +526,6 @@ module.exports = {
     },
     {
       "file": "tests/test-v3691-mobile-regression-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v368104-parameter-drawer-fit.js",
       "args": []
     },
     {
@@ -438,10 +946,6 @@ module.exports = {
     },
     {
       "file": "tests/test-v3680-app-runtime-import-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-hard-visual-invariants.js",
       "args": []
     },
     {
@@ -1445,14 +1949,6 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36745-mobile-acceptance-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v36746-mobile-layout-closure.js",
-      "args": []
-    },
-    {
       "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
       "args": []
     },
@@ -1495,9 +1991,521 @@ module.exports = {
     {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v37173-mobile-drawer-inspector-rollback.js",
+      "args": []
     }
   ],
   "check": [
+    {
+      "file": "tests/test-v371105-data-center-reparented-unit-list.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371104-data-list-drawer-popup-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371103-mobile-orientation-data-center-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371102-mobile-companion-frame-content-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371100-mobile-companion-split-single-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37199-mobile-companion-framework-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37198-mobile-scientific-workspace-restoration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37196-mobile-projection-integrity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37195-mobile-companion-fill-parameter-depth.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37194-mobile-final-visible-geometry-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37192-mobile-geometry-root-cause-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37191-mobile-overlay-intrinsic-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37190-mobile-companion-drawer-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37189-mobile-companion-safe-area.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37188-mobile-parameter-surface-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37185-mobile-block-axis-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37182-ter-window-hotpath.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37181-ter-first-open-close-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37177-mobile-drawer-readable-width.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-presentation-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-chrome-anatomy-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-structure-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-dynamic-unit-behaviors.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-core-service-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-state-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-state-accessibility-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-state-blueprints.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-core-state-a11y-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-reconstruction-completeness.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-unit-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-plugin-geometry-census.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-geometry-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-geometry-value-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-preset-unit-only.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-domain-adapter-live-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-live-domain-numeric.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-ter-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3718-empty-plugin-page-shell.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3719-ter-unit-cutover-layout-lifecycle.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37110-ter-source-parity-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37112-scientific-plot-material-startup.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37113-source-parity-runtime-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37114-unit-detail-geometry-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37116-context-overflow-single-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37116-pulse-production-unit-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37117-pulse-parameter-parity-and-overflow-dismiss.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37118-activity-toolbar-visibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37119-resonance-production-unit-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37120-resonance-runtime-source-parity-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37121-resonance-group-prime-runtime-interactions.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37124-resonance-visible-layout-ter-startup-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37125-resonance-columns-range-history-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-resonance-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-data-center-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-sampler-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-unit-shadow-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-live-domain-numeric.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-vth-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37156-vth-default-settings-semantics.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37157-settings-mobile-touch-arbitration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37158-unit-floating-chrome-vth-spacing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37159-unit-workspace-primary-end-inset.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37160-resonance-mobile-box-and-clear-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37163-pulse-analysis-result-layout.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37164-pulse-mobile-intrinsic-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37165-pulse-unit-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37168-pulse-bounded-primary-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37155-vth-source-faithful-fill-chain.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37154-vth-unit-scientific-interaction-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37153-vth-unit-cutover-mobile-scroll-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-pulse-sampler-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37142-pulse-sampler-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37143-unit-nongreedy-pulse-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37144-unit-density-pulse-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37145-pulse-basic-visual-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37146-pulse-source-faithful-workspace-renderer.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37147-unit-minimum-containment-ter-performance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37148-surface-containment-spacing-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37149-pulse-sampling-intrinsic-row-containment.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37150-unit-panel-shell-body-containment.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37126-data-center-live-domain-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-data-center-side-by-side-live-presentation.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37128-data-center-production-unit-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37129-data-center-production-visual-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37130-data-center-real-host-parity-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37131-parameter-select-proxy-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37132-data-center-chart-row-and-preview-inset.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37133-data-center-unit-owner-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37134-unit-cross-layer-ownership-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37135-unit-adoption-remount-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37136-parameter-control-and-preview-spacing-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37137-unit-cssom-shorthand-and-field-proxy-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37138-unit-semantic-cascade-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-runtime-catalog-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-contract-detail.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-unit-metric-source-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-blueprint-reconstructability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-native-blueprint-runtime-expressibility.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-layout-recipes-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk151-design-system-unit-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-existing-plugin-style-freeze.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-unit-template-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk150-unit-example-layout.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk-prime-spec-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-composition-lint-completeness.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-current-contract-check-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk149-visual-template-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-sdk149-reference-plugin-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-movable-prime-canonical-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-fixed-data-control-no-position-chooser.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-scientific-card-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-plotgroup-plotview-membership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-responsive-plotgroup-no-fixed-height.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-layout-harness-desktop.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-layout-harness-mobile.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-theme-disabled-action-contrast.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-active-activity-contribution-scope.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-external-top-task-materialization-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3705-resonance-dedicated-worker-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3704-builtin-dedicated-task-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3703-plugin-window-error-chrome-survival.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3702-packaged-top-task-window-parity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3701-task-progress-acquisition-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3700-sdk-export.js",
+      "args": []
+    },
     {
       "file": "tests/test-v3694-android-worker-single-blob-science.js",
       "args": []
@@ -1512,10 +2520,6 @@ module.exports = {
     },
     {
       "file": "tests/test-v3691-mobile-regression-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v368104-parameter-drawer-fit.js",
       "args": []
     },
     {
@@ -1932,10 +2936,6 @@ module.exports = {
     },
     {
       "file": "tests/test-v3680-app-runtime-import-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-hard-visual-invariants.js",
       "args": []
     },
     {
@@ -2971,14 +3971,6 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36745-mobile-acceptance-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v36746-mobile-layout-closure.js",
-      "args": []
-    },
-    {
       "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
       "args": []
     },
@@ -3021,9 +4013,97 @@ module.exports = {
     {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v37173-mobile-drawer-inspector-rollback.js",
+      "args": []
     }
   ],
   "mobile": [
+    {
+      "file": "tests/test-v371105-data-center-reparented-unit-list.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371104-data-list-drawer-popup-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371103-mobile-orientation-data-center-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371102-mobile-companion-frame-content-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371101-mobile-companion-home-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v371100-mobile-companion-split-single-owner.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37199-mobile-companion-framework-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37198-mobile-scientific-workspace-restoration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37196-mobile-projection-integrity.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37195-mobile-companion-fill-parameter-depth.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37194-mobile-final-visible-geometry-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37192-mobile-geometry-root-cause-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37191-mobile-overlay-intrinsic-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37190-mobile-companion-drawer-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37189-mobile-companion-safe-area.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37188-mobile-parameter-surface-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37185-mobile-block-axis-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37177-mobile-drawer-readable-width.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3705-resonance-dedicated-worker-stability.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3701-task-progress-acquisition-order.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3700-sdk-export.js",
+      "args": []
+    },
     {
       "file": "tests/test-v3694-android-worker-single-blob-science.js",
       "args": []
@@ -3038,10 +4118,6 @@ module.exports = {
     },
     {
       "file": "tests/test-v3691-mobile-regression-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v368104-parameter-drawer-fit.js",
       "args": []
     },
     {
@@ -3377,14 +4453,6 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v36745-mobile-acceptance-closure.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v36746-mobile-layout-closure.js",
-      "args": []
-    },
-    {
       "file": "tests/test-v36747-mobile-real-layout-desktop-touch-isolation.js",
       "args": []
     },
@@ -3405,6 +4473,54 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v37156-vth-default-settings-semantics.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37157-settings-mobile-touch-arbitration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37158-unit-floating-chrome-vth-spacing.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37159-unit-workspace-primary-end-inset.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37160-resonance-mobile-box-and-clear-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37163-pulse-analysis-result-layout.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37164-pulse-mobile-intrinsic-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37165-pulse-unit-result-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37168-pulse-bounded-primary-flow.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37155-vth-source-faithful-fill-chain.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37154-vth-unit-scientific-interaction-policy.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37153-vth-unit-cutover-mobile-scroll-chrome.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36752-web-mobile-first-paint-closure.js",
       "args": []
     },
@@ -3422,6 +4538,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36723-mobile-host-modularization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v37173-mobile-drawer-inspector-rollback.js",
       "args": []
     }
   ]

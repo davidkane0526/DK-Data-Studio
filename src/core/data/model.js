@@ -46,6 +46,29 @@
     return [];
   }
   function normalizeMetadata(v){ return v&&typeof v==='object'&&!Array.isArray(v)?deepClone(v):{}; }
+  const ACQUISITION_PROVENANCE=Object.freeze(['source','import-batch','unknown']);
+  function normalizeAcquisition(value,options={}){
+    const source=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+    const out={};
+    const runId=String(source.runId??'').trim();if(runId)out.runId=runId.slice(0,256);
+    const sequenceIndex=Number(source.sequenceIndex);if(Number.isInteger(sequenceIndex)&&sequenceIndex>=0)out.sequenceIndex=sequenceIndex;
+    const timestamp=String(source.timestamp??'').trim();if(timestamp)out.timestamp=timestamp.slice(0,256);
+    const parentSequenceIndex=Number(source.parentSequenceIndex);if(Number.isInteger(parentSequenceIndex)&&parentSequenceIndex>=0)out.parentSequenceIndex=parentSequenceIndex;
+    const requested=String(options.provenance??source.provenance??'').trim();
+    if(ACQUISITION_PROVENANCE.includes(requested))out.provenance=requested;
+    return out;
+  }
+  function acquisitionMetadata(artifact){
+    if(!artifact||typeof artifact!=='object')return {};
+    const merged={
+      ...normalizeMetadata(artifact?.source?.acquisition),
+      ...normalizeMetadata(artifact?.acquisition),
+      ...normalizeMetadata(artifact?.metadata?.acquisition)
+    };
+    const normalized=normalizeAcquisition(merged);
+    if(!normalized.provenance&&Number.isInteger(normalized.sequenceIndex))normalized.provenance='source';
+    return normalized;
+  }
   function normalizeColumnBufferDtype(dtype){const kind=String(dtype||'').trim().toLowerCase();if(!COLUMN_BUFFER_DTYPES.includes(kind))throw new TypeError(`Unsupported Column Buffer dtype: ${dtype||'(empty)'}.`);return kind;}
   function validateColumnBufferValues(dtype,values){
     const kind=normalizeColumnBufferDtype(dtype);
@@ -136,6 +159,9 @@
   }
 
   function envelope(kind,spec={}){
+    const metadata=normalizeMetadata(spec.metadata),source=normalizeMetadata(spec.source);
+    const acquisition=normalizeAcquisition({...normalizeMetadata(source.acquisition),...normalizeMetadata(spec.acquisition),...normalizeMetadata(metadata.acquisition)});
+    if(Object.keys(acquisition).length)metadata.acquisition=acquisition;
     const out={
       artifactVersion:ARTIFACT_VERSION,
       id:spec.id||makeId(kind.replace(/[^a-z0-9]+/gi,'-')),
@@ -143,9 +169,9 @@
       name:String(spec.name||kind),
       createdAt:spec.createdAt||nowIso(),
       updatedAt:spec.updatedAt||nowIso(),
-      metadata:normalizeMetadata(spec.metadata),
+      metadata,
       tags:safeArray(spec.tags).map(String),
-      source:normalizeMetadata(spec.source),
+      source,
       provenance:safeArray(spec.provenance).map(p=>provenanceStep(p)),
       lineage:normalizeLineage(spec.lineage||{parents:spec.parents,parentId:spec.parentId,parent:spec.parent,role:spec.role,producer:spec.producer,operation:spec.operation,parameters:spec.parameters}),
       transient:!!spec.transient
@@ -456,6 +482,7 @@
     }
     function artifactMetadataSnapshot(artifact){
       const row={artifactVersion:artifact.artifactVersion,id:String(artifact.id),kind:String(artifact.kind||''),name:String(artifact.name||''),semanticType:String(artifact.semanticType||''),createdAt:String(artifact.createdAt||''),updatedAt:String(artifact.updatedAt||''),transient:artifact.transient===true,tags:safeArray(artifact.tags).map(String),source:normalizeMetadata(artifact.source),metadata:normalizeMetadata(artifact.metadata),lineage:normalizeLineage(artifact.lineage),provenanceCount:safeArray(artifact.provenance).length,provenanceTypes:Object.freeze([...new Set(safeArray(artifact.provenance).map(step=>String(step?.type||'').trim()).filter(Boolean))]),artifactRevision:artifactRevisions.get(String(artifact.id))||0};
+      const acquisition=acquisitionMetadata(artifact);if(Object.keys(acquisition).length)row.acquisition=Object.freeze({...acquisition});
       if(artifact.schemaVersion!==undefined)row.schemaVersion=artifact.schemaVersion;
       if(artifact.kind==='data.table'){row.rowCount=Number(artifact.rowCount)||0;row.columns=Object.freeze(safeArray(artifact.columns).map(column=>columnMetadataSnapshot(artifact,column)));}
       else if(['data.series','data.sweep','data.transform'].includes(artifact.kind)){row.length=Number(artifact.length??artifact.x?.length??0)||0;row.xName=String(artifact.xName||'');row.yName=String(artifact.yName||'');row.xUnit=String(artifact.xUnit||'');row.yUnit=String(artifact.yUnit||'');for(const key of ['xDimension','yDimension','xQuantity','yQuantity'])if(artifact[key])row[key]=String(artifact[key]);}
@@ -543,6 +570,6 @@
     provenanceStep,normalizeLineage,fingerprintArtifact,createTable,createSeries,createSweep,createTransform,createMatrix,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
     column,columnValues,seriesId,rowId,rows,withProvenance,derive,summarize,
-    rehydrateArtifact,createStore,serializeStore,restoreStore,transportDatasetFromTable,transportDatasetsFromArtifacts,normalizeDataTag,dataTagLabel,dataTagsFromText,columnDataTags,artifactDataTags
+    rehydrateArtifact,createStore,serializeStore,restoreStore,transportDatasetFromTable,transportDatasetsFromArtifacts,normalizeDataTag,dataTagLabel,dataTagsFromText,columnDataTags,artifactDataTags,normalizeAcquisition,acquisitionMetadata,ACQUISITION_PROVENANCE
   };
 })();

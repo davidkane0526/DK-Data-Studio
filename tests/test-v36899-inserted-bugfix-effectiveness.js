@@ -24,10 +24,11 @@ const ter=read('src/plugins/ter-analysis/feature-runtime.js');
 assert(d3.includes('yAxis.showgrid!==false'),'D3 axes must honor the standard yaxis.showgrid contract instead of always painting grid lines');
 assert((ter.match(/showgrid:false/g)||[]).length>=4,'both TER heatmaps must disable X/Y grid paint so matrix cells are not crossed by pale grid lines');
 
-const pulse=read('src/plugins/pulse-sampler-tool/plugin.js'),pulseCss=read('src/plugins/pulse-sampler-tool/plugin.css');
-assert(/leftWidth:(?:5\d\d|[6-9]\d\d),leftMin:(?:47\d|4[89]\d|[5-9]\d\d),leftReserve:[5-9]\d\d/.test(pulse),'Pulse Sampler parameter PRIME must preserve a practical intrinsic width for its four actions and parameter grid without regressing to the old narrow rail');
-assert(pulse.includes("classList.add('ps-parameters-extracted')")&&pulseCss.includes('.pulse-sampler-shell.ps-parameters-extracted{grid-template-columns:minmax(0,1fr)}'),'extracting Pulse parameters must collapse the obsolete first Grid column so Merged Waveform fills the primary workspace');
-assert(pulseCss.includes('.ps-segment-bar>strong{min-width:0')&&pulseCss.includes('.ps-segment-bar>button{flex:0 0 auto}'),'Pulse segment header must keep text and the trailing action inside the panel edge');
+const pulse=read('src/plugins/pulse-sampler-tool/plugin.js'),pulseUnit=read('src/plugins/pulse-sampler-tool/unit-presentation.js');
+assert(pulseUnit.includes("variant:'fixed-titleless'")&&pulseUnit.includes("variant:'form-grid-2'")&&pulseUnit.includes("variant:'action-grid-4'"),'Pulse Sampler parameter PRIME must preserve the accepted Unit parameter/action geometry without regressing to the old narrow rail');
+assert(pulseUnit.includes("presentationRole:'data-control'")&&pulseUnit.includes('autoOpen:false'),'Pulse parameters must remain outside PRIMARY as a fixed titleless PRIME so the merged waveform owns the production primary workspace');
+assert(pulseUnit.includes("variant:'segment-bar'")&&pulseUnit.includes('已加入片段')&&pulseUnit.includes('清空'),'Pulse segment header must use the accepted Unit segment-bar composition so label and trailing action stay inside the panel edge');
+assert(pulse.includes('actions:liveDomain.actions')&&pulse.includes('snapshot:liveSnapshot'),'Pulse production presentation must continue to project the existing live-domain owner');
 
 const pluginWindow=read('src/plugin-window/runtime.js'),pluginLifecycle=read('src/plugin-window/lifecycle.js'),main=read('desktop/main.js'),preload=read('desktop/preload.js'),host=read('src/app/modules/dedicated-plugin-windows.js'),status=read('src/plugins/status-monitor/plugin.js');
 assert(pluginLifecycle.includes("lifecycle?.('hidden',{reason:'top-window-hide',purgeManaged:false})"),'hiding a reusable TOP must retain managed plots as a real warm cache instead of purging them and rebuilding on every reopen');
@@ -35,11 +36,11 @@ assert(main.includes("ipcMain.handle('windows:releaseActivity'")&&main.includes(
 assert(main.includes('waitForAuxiliaryWindowClosed')&&preload.includes('releaseActivityWindow:')&&host.includes('releaseActivityWindow:payload=>'),'manual release must wait for actual process teardown and travel through the generic runtime service');
 assert(status.includes('data-release-activity')&&status.includes("runtimeService.releaseActivityWindow?."),'Memory panel must expose explicit release actions for hidden plugin processes');
 
-const dcView=read('src/plugins/data-center/shared-views.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcCss=read('src/plugins/data-center/plugin.css');
-assert(dcView.includes('id="dcMultiSelectBtn"')&&dcView.includes('aria-pressed="false"'),'Data Center must expose an explicit touch-friendly multi-select mode');
+const dcView=read('src/plugins/data-center/unit-presentation.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcCss=read('src/plugins/data-center/plugin.css');
+assert(dcView.includes("id:'dcMultiSelectBtn'")&&dcView.includes("setAttribute('aria-pressed','false')"),'Data Center must expose an explicit touch-friendly multi-select mode through the Unit presentation owner');
 assert(dc.includes('multiSelectMode')&&dc.includes("{ctrlKey:true,metaKey:false,shiftKey:false}")&&dc.includes('syncArtifactChecks()'),'multi-select mode must make ordinary touch/mouse taps toggle the existing canonical selection set');
 assert(dc.includes("selector:'.dc-artifact-item',gestures:['context']")&&dc.includes('contextArtifacts(context.artifact)'),'long-press/right-click must continue routing actions through the selected artifact set');
-assert(dc.includes('type="checkbox"')&&dcCss.includes('.dc-artifact-list.is-multi-select .dc-artifact-check{display:block}'),'multi-select mode must reveal a real Core-themed checkbox at the left of each artifact row');
+assert(dc.includes("attrs:{type:'checkbox'}")&&dc.includes('leading:check')&&dc.includes('artifactListUnit?.setItems')&&dcCss.includes('.dc-artifact-list.is-multi-select .dc-artifact-check{display:block}'),'multi-select mode must reveal a real Core-themed leading checkbox inside the retained canonical Unit ListItem row');
 
 const importCss=read('src/styles/presentation/import-workbench.css'),importStructure=read('src/styles/structure/import-workbench.css');
 assert(importCss.includes('.import-target-chip:has(input:checked)')&&importCss.includes('.import-workbench-header{border-bottom:'),'Import Workbench must retain selected target chips and crisp hierarchy dividers');

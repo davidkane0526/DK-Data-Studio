@@ -29,20 +29,21 @@ assert(Number(expo.android.versionCode)>=43,'Android versionCode must advance fo
 const presentation=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const workspaceCss=read('src/styles/platform/native-workspace-presentation.css');
 for(const token of [
-  "drawerStorageKey(surfaceId=''){return `dkds.mobile.drawer-width.v2.",
-  'solveCompactDrawerWidth(frame)',
-  'Math.min(480,hardMax,viewport*.78)',
+  "drawerStorageKey(surfaceId='',storageScope=''){",
+  'solveMinimumReasonableWidth(frame,region=',
+  'measureSurfaceOverflow(frame)',
   "win?.addEventListener?.('pointermove',pointerMove,{passive:false})",
   'NativeTouchDrag.bind(handle'
-]) assert(presentation.includes(token),`Compact drawer runtime missing ${token}.`);
-assert(!presentation.includes('Math.max(previous,contentMin)'),'Drawer fitting must not monotonically preserve an obsolete greedy content width.');
-for(const token of ['width:min(320px,calc(100vw - 20px))','max-width:min(calc(100vw - 12px),680px)','border-radius:10px','right:0;top:50%;width:12px;height:72px'])
-  assert(workspaceCss.includes(token),`Compact drawer geometry missing ${token}.`);
+]) assert(presentation.includes(token),`Content-derived drawer runtime missing ${token}.`);
+assert(!/viewport\*\.[0-9]+/.test(presentation),'Drawer fitting must not derive automatic width from a viewport ratio.');
+for(const token of ['max-width:calc(100vw - 12px)','border-radius:10px','right:0;top:50%;width:12px;height:72px'])
+  assert(workspaceCss.includes(token),`Drawer safety/interaction geometry missing ${token}.`);
+assert(!workspaceCss.includes('width:min(32vw,420px'),'Retired percentage/cap automatic drawer geometry must stay removed.');
 assert(!/\[data-dkds-mobile-region=\"drawer\"\]\[data-dkds-mobile-active=\"true\"\]\{[^}]*padding-right:0/.test(workspaceCss),'Core Mobile drawer geometry must not erase plugin-owned content inset.');
 assert(!workspaceCss.includes('right:-14px'),'Drawer resize hit target must not sit outside the visible panel edge.');
 
 // Runtime interaction: a pointer drag on the visible handle must update width and
-// persist it under the new v2 key. This catches the prior inert-handle regression.
+// persist it under the current drawer-width key. This catches the prior inert-handle regression.
 {
   const prior={window:global.window,document:global.document,localStorage:global.localStorage,raf:global.requestAnimationFrame,caf:global.cancelAnimationFrame};
   const listeners=new Map();
@@ -68,11 +69,13 @@ assert(!workspaceCss.includes('right:-14px'),'Drawer resize hit target must not 
   const handle=frame.querySelector(':scope > .dkds-mobile-drawer-resize-handle');
   assert(handle,'Drawer handle must be created.');
   const evt=(x,id=4)=>({button:0,pointerId:id,clientX:x,cancelable:true,preventDefault(){},stopPropagation(){}});
+  const beforeWidth=Number.parseFloat(frame.style.width)||runtime.drawerBounds(frame).base;
   handle.emit('pointerdown',evt(320));
   fakeWindow.emit('pointermove',evt(400));
   fakeWindow.emit('pointerup',evt(400));
-  assert(Number.parseFloat(frame.style.width)>=400,'Pointer drag must directly increase the drawer width.');
-  assert(Number(store.get('dkds.mobile.drawer-width.v2.parameters'))>=400,'Dragged drawer width must be persisted under the v2 key.');
+  const afterWidth=Number.parseFloat(frame.style.width)||0;
+  assert(afterWidth>=beforeWidth+70,'Pointer drag must directly increase the compact drawer width by the gesture delta.');
+  assert(Number(store.get('dkds.mobile.drawer-width.v12.parameters'))>=afterWidth-1,'Dragged drawer width must be persisted under the current key.');
   handle.__dkdsTouchResizeCleanup?.();
   if(prior.window===undefined)delete global.window;else global.window=prior.window;
   if(prior.document===undefined)delete global.document;else global.document=prior.document;
@@ -105,11 +108,12 @@ assert(workspaceCss.includes('var(--dkds-mobile-user-bottom-track,36%)')&&worksp
 // ParameterSchema capability and keeps its preview height compact in Mobile CSS.
 const parameterSchema=read('src/core/data/parameter-schema.js');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
+const dcChartRuntime=read('src/plugins/data-center/chart-runtime.js');
 const dcManifest=json('src/plugins/data-center/plugin.json');
 const dcMobile=read('src/plugins/data-center/mobile.css');
 assert(parameterSchema.includes('autoFit=false')&&parameterSchema.includes("classList.toggle('auto-fit',!!autoFit)"),'ParameterSchema must expose a generic opt-in auto-fit form layout.');
 assert(shell.includes('.schema-parameter-panel.auto-fit')&&shell.includes('var(--dkds-parameter-auto-fit-native-columns,repeat(auto-fit,minmax(150px,220px)))'),'Mobile auto-fit parameter fields must retain the compact fallback while allowing a Surface to request an alternate Core-owned track recipe.');
-assert(dcRuntime.includes('compact:true,autoFit:true'),'Data Center chart parameters must opt into compact auto-fit fields.');
+assert(dcRuntime.includes("ctx.modules.require('chart-runtime')")&&dcChartRuntime.includes('compact:true,autoFit:true'),'Data Center delegated chart parameters must opt into compact auto-fit fields.');
 assert(!dcManifest.styles.includes('mobile.css')&&dcManifest.platformPresentation?.mobile?.mode==='custom'&&dcManifest.platformPresentation.mobile.styles?.includes('mobile.css')&&/^1\.15\.(?:[6-9]|\d{2,})$/.test(dcManifest.version),'Data Center must load its Mobile composition stylesheet only through the Mobile platform presentation contract and retain its synchronized Mobile layout version.');
 assert(dcMobile.includes('--dc-chart-height:clamp(180px,30dvh,280px)')&&dcMobile.includes('--dc-chart-min-height:160px'),'Data Center graph preview must remain viewport-bounded through the plugin-owned chart-height token contract.');
 

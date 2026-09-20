@@ -28,7 +28,7 @@ for(const file of walk(path.join(root,'src'))){
 }
 const generated=[
   'src/generated/runtime/app.js','src/generated/runtime/ui-infrastructure.js','src/generated/runtime/plugin-kernel.js',
-  'src/generated/plugin-index.js','src/generated/sdk-authoring-reference.js','assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png'
+  'src/generated/plugin-index.js','src/generated/sdk-authoring-reference.js','src/generated/dkds-sdk-export.zip','assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png'
 ];
 const ignore=read('.gitignore');
 for(const rel of generated)assert(ignore.includes(rel),`${rel} must be declared generated in .gitignore.`);

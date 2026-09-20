@@ -1,4 +1,5 @@
 'use strict';
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
@@ -87,7 +88,7 @@ assert(pluginApi.includes('science: window.DKDSScience || null'),'Plugin API mus
 const dts=read('sdk/plugin-api.d.ts'),sdkDoc=read('sdk/SCIENTIFIC_UNITS.md'),contract=JSON.parse(read('sdk/contract.json'));
 assert(dts.includes('DKDSScientificUnitRuntime')&&dts.includes('axisCompatibility(sourceAxis:'),'SDK types must expose unit compatibility and Interaction delegation.');
 assert(sdkDoc.includes('label')&&sdkDoc.includes('fail')&&sdkDoc.includes('ctx.science.units'),'SDK documentation must prohibit label-based compatibility and document fail-closed units.');
-assert.strictEqual(contract.sdkVersion,'1.47.0');
-assert.strictEqual(contract.minimumAppVersion,'3.68.103');
+assert(sdkAtLeast(contract.sdkVersion,'1.49.0'));
+assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'));
 
 console.log('v3.68.91 Phase E scientific dimension/unit compatibility contract retained');

@@ -48,7 +48,10 @@ function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
     project,
     projectDigest:projectSnapshotDigest(project),
     artifactSnapshot,
-    artifactDigest:projectSnapshotDigest(artifactSnapshot),
+    artifactRevision:Number(payload.artifactRevision)||0,
+    // Owner Artifact Store already has a monotonic revision. Prefer that cheap token
+    // over hashing the complete live Artifact snapshot on every TER open/promotion.
+    artifactDigest:Number(payload.artifactRevision)>0?`revision:${Number(payload.artifactRevision)}`:projectSnapshotDigest(artifactSnapshot),
     projectPath:payload.projectPath || null,
     title:payload.title || '',
     ownerWebContentsId,

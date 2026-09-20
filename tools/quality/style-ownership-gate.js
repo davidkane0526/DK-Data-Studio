@@ -70,7 +70,7 @@ function semanticContextsOf(selector){
   let contexts=[{}];
   for(const axis of gateSemantics.CONTEXT_AXES){
     const axisValues=rows[axis]||[];if(!axisValues.length)continue;
-    const next=[];for(const base of contexts)for(const value of axisValues){next.push({...base,[axis]:value});if(next.length>64)throw new Error(`Style Ownership Gate context expansion exceeded 64 candidates: ${text}`);}contexts=next;
+    const next=[];for(const base of contexts)for(const value of axisValues){next.push({...base,[axis]:value});if(next.length>64)throw new Error(`Style Ownership Audit context expansion exceeded 64 candidates: ${text}`);}contexts=next;
   }
   return Object.freeze((contexts.length?contexts:[{}]).map(row=>gateSemantics.normalizeContext(row)));
 }
@@ -171,7 +171,7 @@ function audit(){
   return Object.freeze({version:'1.5.0',files:exact.files,declarationClaims,registryClaims:registry.claims.size,expected:registry.expectations.size,ownerConflicts:registry.conflictEvents.length,legacyCollisions:exact.collisions.length,semanticViolations:semanticReport.violations.length,semanticLiveClaims:semanticLive.claims,semanticLiveSlots:semanticLive.slots,semanticLiveViolations:semanticLive.violations.length,violations:Object.freeze(violations),ok:violations.length===0,snapshot:registry.snapshot()});
 }
 function format(report){
-  const lines=[`Style Ownership Gate: ${report.files} files, ${report.declarationClaims} claims, ${report.registryClaims} selector slots, ${report.semanticLiveSlots||0} semantic-live slots, ${report.expected} expected, ${report.violations.length} violations.`];
+  const lines=[`Style Ownership Audit: ${report.files} files, ${report.declarationClaims} claims, ${report.registryClaims} selector slots, ${report.semanticLiveSlots||0} semantic-live slots, ${report.expected} expected, ${report.violations.length} violations.`];
   for(const row of report.violations.slice(0,80))lines.push(`- ${row.type}: ${row.component} :: ${row.slot} ownerCount=${row.ownerCount??'?'} ${row.reason||''} ${(row.owners||[]).join(' | ')} ${row.source||''}`.trim());
   return lines.join('\n');
 }

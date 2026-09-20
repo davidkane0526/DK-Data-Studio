@@ -100,6 +100,7 @@
           "ui.legend-groups",
           "ui.group-plots",
           "ui.group-area",
+          "ui.unit-templates",
           "ui.tooltips",
           "ui.design-system",
           "ui.plot-views",

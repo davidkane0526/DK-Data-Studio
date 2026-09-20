@@ -4,7 +4,7 @@ const {listContributions}=require('./registry');
 const {pluginTypeOf}=require('./manifest');
 
   const preferenceStorageKey = 'dkds.plugin.state.preferences.v1';
-  const prewarmPreferenceStorageKey = 'dkds.plugin.prewarm.v1';
+  const prewarmPreferenceStorageKey = 'dkds.plugin.prewarm.v2';
   const superPreferenceStorageKey = 'dkds.workspace.super.v1';
 
   const API_VERSION = '1.19.0';

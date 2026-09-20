@@ -17,7 +17,7 @@ const connectivity=read('src/plugins/connectivity-center/plugin.js');
 const connectivityCss=read('src/plugins/connectivity-center/plugin.css');
 const connectivityPresentation=read('src/styles/presentation/connectivity.css');
 const theme=read('src/plugins/aurora-pop-theme/plugin.js');
-const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceView=read('src/plugins/resonance-workbench/unit-presentation.js');
 const resonanceControls=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
 
 assert(atLeast(tuple(pkg.version),[3,66,9]),'This closure requires DK Data Studio 3.66.9+.');
@@ -26,7 +26,7 @@ assert(desktop.includes("title: '选择数据 / 项目文件'")&&desktop.include
 assert(html.includes('id="importChooseFilesBtn"')&&html.includes('>导入数据/项目</button>')&&html.includes('点击“导入数据/项目”选择本地数据或项目文件'),'Import Workbench must describe the unified data/project action consistently.');
 
 assert(semanticStructure.includes('.dkds-overlay[data-dkds-overlay-stack="foreground"]{z-index:1600}'),'Core must own a reusable foreground nested-overlay layer.');
-assert(connectivity.includes("dataset:{dkdsOverlayStack:'foreground'}"),'SMB browser must request the Core foreground overlay layer when launched from another modal.');
+assert(connectivity.includes("dkdsOverlayStack:'foreground'")&&connectivity.includes("dkdsOverlayEffect:'dim'"),'SMB browser must request the Core foreground overlay layer and current dim effect when launched from another modal.');
 assert(!connectivityCss.includes('z-index:920'),'Connectivity plugin must not privately own Core overlay stacking.');
 
 assert(connectivity.includes('dksmb-browser dkds-material-role-surface')&&connectivity.includes('dksmb-nav dkds-material-role-sidebar')&&connectivity.includes('dksmb-toolbar dkds-material-role-chrome')&&connectivity.includes('dksmb-connection dkds-material-role-sidebar')&&connectivity.includes('dksmb-foot dkds-material-role-chrome'),'SMB must remain one outer dialog while declaring generic Core material roles for flat internal zoning.');
@@ -38,9 +38,9 @@ assert(connectivityCss.includes('.dksmb-window{')&&connectivityCss.includes('.dk
 assert(componentAppearance.includes('[data-dkds-component-variant="primary"]:disabled')&&componentAppearance.includes('color:#fff;-webkit-text-fill-color:#fff'),'Disabled primary commands must retain white labels while Core softens the disabled surface.');
 assert(theme.includes("toolbarAction:{")&&theme.includes("active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent}"),'Light-theme active toolbar actions must use the former bright mint/teal treatment instead of the dark emerald fill.');
 
+assert(resonanceView.includes("const row=units.action.create(host,{id,label,className,variant:variant||undefined,title:title||label,nativeSave:nativeSave||undefined,nativeCopy:nativeCopy||undefined,direct:true})"),'Resonance production presentation must create canonical standalone direct actions through the Action Unit.');
 for(const id of ['reswinShowAll','reswinShowForward','reswinShowReverse','reswinHideAll']){
-  const re=new RegExp(`<button id="${id}" class="dkds-action-button" data-dkds-action-layout="standalone"`);
-  assert(re.test(resonanceView),`${id} must consume the canonical standalone action surface.`);
+  assert(resonanceView.includes(`directAction(units,scan,{id:'${id}'`),`${id} must consume the canonical standalone action surface through the Action Unit.`);
 }
 assert(resonanceControls.includes("button.classList.toggle('selected',selected)")&&resonanceControls.includes("button.setAttribute('aria-pressed',String(selected))")&&resonanceControls.includes("button.classList.remove('active')"),'Resonance visibility presets must expose exactly one canonical selected/fill state for the current scan mode while clearing stale active state.');
 

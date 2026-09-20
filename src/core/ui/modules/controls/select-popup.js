@@ -71,10 +71,11 @@ function syncMenuSelection(select){
 function open(select,anchor=select){
   const multiple=!!select?.multiple;
   if((multiple&&!(anchor?.dataset?.dkdsSelectProxy))||(!multiple&&!singleEligible(select)))return false;
+  if(menu?.element&&activeSelect===select&&activeAnchor===anchor){menu.dispose();menu=null;return true;}
   menu?.dispose?.();
   activeSelect=select;activeAnchor=anchor;
   const rect=anchor.getBoundingClientRect();
-  menu=new ContextMenu(owner,{closeOnInvoke:!multiple,onClose:()=>{
+  menu=new ContextMenu(owner,{anchor,closeOnInvoke:!multiple,onClose:()=>{
     activeAnchor?.setAttribute?.('aria-expanded','false');
     activeSelect=null;activeAnchor=null;
   }});

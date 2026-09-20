@@ -39,13 +39,14 @@ assert(appearance.includes(':is(.project-tab-close,.dkds-panel-close-button,.win
 // Drawer projection owns one vertical scroll axis. No horizontal scrollbar or
 // browser resize corner may reserve a white strip/tail in the projected panel.
 const presenter=read('src/core/ui/modules/presentation/mobile-web-surface.js');
-for(const token of ["'overflow-x':drawer?'hidden'", "resize:overlay?'none':''", "'overflow-y':overlay?'auto':'visible'"])
-  assert(presenter.includes(token),`Drawer projection missing ${token}.`);
+const projectionContract=read('src/core/ui/modules/presentation/mobile-web-projection-contract.js');
+for(const token of ["overflow:drawer?'visible':overlay?'auto':'visible'", "'overflow-x':drawer?'visible':overlay?'auto':'visible'", "'overflow-y':drawer?'visible':overlay?'auto':'visible'", "resize:overlay?'none':''"])
+  assert(projectionContract.includes(token),`Projected PRIME must stay a non-scrolling content owner while the Mobile Drawer viewport owns scrolling; missing ${token}.`);
 const workspace=read('src/styles/platform/native-workspace-presentation.css');
-assert(workspace.includes('scrollbar-gutter:auto')&&workspace.includes('container-name:dkds-mobile-drawer'),'Drawer must own one vertical scroll axis without reserving a scrollbar gutter.');
+assert(workspace.includes('overflow-y:auto')&&workspace.includes('scrollbar-width:none')&&workspace.includes('container-name:dkds-mobile-drawer')&&workspace.includes('>.dkds-mobile-drawer-scroll::-webkit-scrollbar{display:none;width:0;height:0}'),'Drawer must own one vertical gesture-scroll axis while its overall right scrollbar remains hidden.');
 assert(!/\[data-dkds-mobile-region=\"drawer\"\]\[data-dkds-mobile-active=\"true\"\]\{[^}]*padding-right:0/.test(workspace),'Core drawer projection must not erase plugin-owned content inset.');
 assert(workspace.includes('>.dkds-surface-header{display:grid;grid-template-columns:minmax(0,1fr) auto')&&workspace.includes('@container dkds-mobile-drawer (max-width:360px)'),'Core Mobile Presenter geometry must make semantic drawer headers span/reflow across the complete panel width.');
-assert(workspace.includes('width:12px;height:72px')&&workspace.includes('width:2px;height:46px'),'Drawer resize affordance must keep a small visible edge grip without a broad rail.');
+assert(workspace.includes('right:-6px;top:50%;width:12px;height:72px')&&workspace.includes('width:2px;height:46px'),'Drawer resize affordance must straddle the outer edge so its 12 px hit region cannot cover parameter content.');
 assert(workspace.includes('::-webkit-scrollbar-corner')&&workspace.includes('::-webkit-resizer{background:transparent}'),'Scrollbar corner/browser resizer paint must be explicitly transparent.');
 const material=read('src/styles/theme/material-renderer.css');
 assert(/\.dkds-mobile-drawer-resize-handle\{\s*background:transparent\s*\}/.test(material),'Drawer resize hit region must be visually transparent.');

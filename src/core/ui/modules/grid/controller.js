@@ -1,6 +1,7 @@
 'use strict';
 const {resolveElement}=require('../foundation/shortcuts');
 const StyleGate=require('ui/style-ownership-gate');
+const {publishUnitGeometryConstraint,notifyUnitGeometryConstraint}=require('../composition/unit-geometry-constraints');
 const GRID_STYLE_OWNER='core.grid-controller';
 const STYLE_SOURCE='src/core/ui/modules/grid/controller.js';
 const gridSet=(el,property,value)=>StyleGate.set(el,property,value,{owner:GRID_STYLE_OWNER,scope:'runtime-grid',source:STYLE_SOURCE});
@@ -164,10 +165,53 @@ class GroupAreaController extends GridController {
     super(scope,container,spec);
     this.container.classList.add('dkds-group-area-grid');
     this.container.dataset.dkdsGroupArea='true';
+    // GroupArea publishes the one-item inline floor from the same accepted
+    // minItemWidth used by its responsive column solver. This is an intrinsic
+    // Unit constraint only; Presenter still owns the final companion viewport.
+    this.inlineConstraintRelease=publishUnitGeometryConstraint(this.container,'inline','plot-group-item-min',()=>Object.freeze({kind:'plot-group-item-min',minInlinePx:this.minItemWidth,target:this.container,priority:'hard'}));
+    this.container.dataset.dkdsUnitInlineConstraint='plot-group-item-min';
+    this.container.dataset.dkdsUnitInlineMinPx=String(Math.round(this.minItemWidth));
     this.lastApplyKey='';
     this.apply();
   }
   get kind(){return 'group-area';}
+  px(value){const n=Number.parseFloat(String(value??''));return Number.isFinite(n)&&n>=0?n:0;}
+  visibleChildren(){return this.directChildren().filter(node=>!node.hidden&&!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));}
+  childBlockConstraint(node){
+    if(!node)return {min:0,preferred:0};
+    const header=node.querySelector?.('[data-dkds-plot-header],.analysis-chart-title,.dkds-plot-view-head')||null;
+    const plot=node.querySelector?.('.dkds-plot-view-content,.analysis-chart,.dkds-chart-plot,.dkds-scientific-chart-host,[data-dkds-plot]')||null;
+    const headerRect=header?.getBoundingClientRect?.(),headerHeight=Math.max(0,Number(headerRect?.height)||Number(header?.offsetHeight)||Number(header?.clientHeight)||0);
+    const explicitMin=this.px(node.dataset?.dkdsUnitPlotMinHeightPx),explicitMax=this.px(node.dataset?.dkdsUnitPlotMaxHeightPx),ratio=this.px(node.dataset?.dkdsUnitPlotAspectRatio||node.dataset?.dkdsPlotAspectRatio);
+    const computed=globalThis.getComputedStyle?.(plot||node),computedMin=this.px(computed?.minHeight);
+    const inlineHeight=this.px(plot?.style?.height);
+    const width=Math.max(0,Number(plot?.clientWidth)||Number(node?.clientWidth)||Number(plot?.getBoundingClientRect?.().width)||Number(node?.getBoundingClientRect?.().width)||0);
+    const minContent=Math.max(explicitMin,computedMin);
+    let preferredContent=minContent;
+    if(ratio>0&&width>0){preferredContent=Math.max(minContent,width/ratio);if(explicitMax>0)preferredContent=Math.min(preferredContent,explicitMax);}
+    else if(inlineHeight>0)preferredContent=Math.max(preferredContent,inlineHeight);
+    const nodeStyle=globalThis.getComputedStyle?.(node),extra=this.px(nodeStyle?.paddingTop)+this.px(nodeStyle?.paddingBottom)+this.px(nodeStyle?.borderTopWidth)+this.px(nodeStyle?.borderBottomWidth);
+    const min=Math.ceil(Math.max(0,headerHeight+minContent+extra)),preferred=Math.ceil(Math.max(min,headerHeight+preferredContent+extra));
+    return {min,preferred};
+  }
+  blockConstraint(){
+    const children=this.visibleChildren(),cols=Math.max(1,this.getAppliedColumns()),style=globalThis.getComputedStyle?.(this.container),gap=this.px(style?.rowGap||style?.gap);
+    if(!children.length)return {kind:'plot-group-rows',minBlockPx:0,preferredBlockPx:0,rows:0,columns:cols,target:this.container};
+    const rows=[];for(let i=0;i<children.length;i+=cols){let min=0,preferred=0;for(const child of children.slice(i,i+cols)){const row=this.childBlockConstraint(child);min=Math.max(min,row.min);preferred=Math.max(preferred,row.preferred);}rows.push({min,preferred});}
+    const minBlockPx=Math.ceil(Math.max(...rows.map(row=>row.min),0));
+    const preferredBlockPx=Math.ceil(rows.reduce((sum,row)=>sum+Math.max(row.min,row.preferred),0)+gap*Math.max(0,rows.length-1));
+    return {kind:'plot-group-rows',minBlockPx,preferredBlockPx:Math.max(minBlockPx,preferredBlockPx),rows:rows.length,columns:cols,target:this.container};
+  }
+  publishBlockConstraint(){
+    if(!this.blockConstraintRelease)this.blockConstraintRelease=publishUnitGeometryConstraint(this.container,'block','plot-group-rows',()=>this.blockConstraint());
+    const row=this.blockConstraint(),min=String(Math.max(0,Math.round(row.minBlockPx||0))),preferred=String(Math.max(0,Math.round(row.preferredBlockPx||0)));
+    const changed=this.container.dataset.dkdsUnitBlockMinPx!==min||this.container.dataset.dkdsUnitBlockPreferredPx!==preferred||this.container.dataset.dkdsUnitBlockRows!==String(row.rows);
+    this.container.dataset.dkdsUnitBlockConstraint='plot-group-rows';this.container.dataset.dkdsUnitBlockMinPx=min;this.container.dataset.dkdsUnitBlockPreferredPx=preferred;this.container.dataset.dkdsUnitBlockRows=String(row.rows);
+    if(changed)notifyUnitGeometryConstraint(this.container,'block',{kind:'plot-group-rows',minBlockPx:Number(min),preferredBlockPx:Number(preferred),rows:row.rows,columns:row.columns});
+    return row;
+  }
+  apply(){const cols=super.apply();this.publishBlockConstraint?.();return cols;}
+  dispose(){this.inlineConstraintRelease?.();this.inlineConstraintRelease=null;this.blockConstraintRelease?.();this.blockConstraintRelease=null;delete this.container.dataset.dkdsUnitInlineConstraint;delete this.container.dataset.dkdsUnitInlineMinPx;delete this.container.dataset.dkdsUnitBlockConstraint;delete this.container.dataset.dkdsUnitBlockMinPx;delete this.container.dataset.dkdsUnitBlockPreferredPx;delete this.container.dataset.dkdsUnitBlockRows;super.dispose();}
 }
 
 module.exports=Object.freeze({GridController,GroupAreaController});

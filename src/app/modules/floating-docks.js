@@ -29,6 +29,11 @@ const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayou
 const syncAnalysisPageViewport=(...args)=>deps.workspace.syncAnalysisPageViewport(...args);
 const saveProject=(...args)=>deps.projects.saveProject(...args);
 const openPluginActivityWindow=(...args)=>deps.windows.openPluginActivityWindow(...args);
+const isTypingTarget=target=>{
+  if(!target)return false;
+  const tag=String(target.tagName||'').toLowerCase();
+  return ['input','textarea','select'].includes(tag)||target.isContentEditable===true;
+};
 
 function makeFloating(panel){
   const head=panel.querySelector('.drag-handle');if(!head)return;let drag=null;

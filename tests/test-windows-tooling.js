@@ -77,7 +77,7 @@ assert(/if \(\$KeepConsoleOpen\)[\s\S]*?return[\s\S]*?exit 1/.test(backend), 'GU
 assert(/assembleRelease/.test(backend), 'Android build must use Gradle assembleRelease.');
 assert(/'assembleRelease'[\s\S]*?'--no-daemon'[\s\S]*?'--max-workers=4'[\s\S]*?'-PreactNativeArchitectures=arm64-v8a'[\s\S]*?'--stacktrace'/.test(backend), 'Android release build must be non-persistent, bounded, arm64-targeted and retain stack traces.');
 assert(/Enable-AndroidGradleDirectNoDaemon[\s\S]*?\$env:JAVA_OPTS=\$jvmArgs[\s\S]*?'org\.gradle\.jvmargs'\s+\$jvmArgs[\s\S]*?'org\.gradle\.internal\.instrumentation\.agent'\s+'false'[\s\S]*?'org\.gradle\.daemon'\s+'false'/.test(backend), 'Android release builds must align both immutable JVM options and Gradle instrumentation-agent status before requesting an in-process --no-daemon build.');
-assert(/Test-AndroidGradleInProcess[\s\S]*?'help'[\s\S]*?'--no-daemon'[\s\S]*?'--info'/.test(backend), 'Android release builds must runtime-probe the no-fork contract before expensive APK compilation.');
+assert(!/function Test-AndroidGradleInProcess/.test(backend), 'Android release builds must not run a separate Gradle preflight before APK compilation.');
 assert(!/'-Dorg\.gradle\.jvmargs='/.test(backend), 'Android release tooling must not revive the ineffective empty-jvmargs retry that still spawned a single-use daemon.');
 assert(!/assembleDebug/.test(backend), 'Android toolbox must not build the debug variant.');
 assert(/DK-Data-Studio\.apk/.test(backend), 'Android output must use the final DK Data Studio APK name.');
@@ -95,7 +95,7 @@ assert(/(?:Get-FileHash|Get-FileSha256)[\s\S]*SHA256/.test(backend) && /sha256\.
 assert(/New-AndroidBuildWorkspace/.test(backend) && /DKDS_ANDROID_WORK_ROOT/.test(backend), 'Android builds must stage generated native work outside the repository.');
 assert(/D:\\PyDroidTemp\\builds\\dk-data-studio/.test(backend), 'Android staging and APK output should prefer the shared D:\\PyDroidTemp build area.');
 assert(/DKDS_ANDROID_CLEAN/.test(backend) && /Invoke-AndroidPrebuild/.test(backend), 'Android tooling must default to an incremental external prebuild and expose an explicit clean-build switch.');
-assert(/Invoke-AndroidSourceChecks[\s\S]*?mobile:test[\s\S]*?typecheck/.test(backend), 'Android packaging must run mobile architecture and TypeScript checks before compilation.');
+assert(!/Invoke-AndroidSourceChecks/.test(backend) && !/Arguments @\('run','mobile:test'\)/.test(backend) && !/Arguments @\('run','typecheck'\)/.test(backend), 'Android packaging must not run mobile tests or TypeScript checks before compilation.');
 const mobileRuntimeAssets=JSON.parse(read('mobile/runtime-assets.json'));
 assert(/Test-AndroidApkArtifact/.test(backend) && /runtime-assets\.json/.test(backend) && /SHA-256/.test(backend) && mobileRuntimeAssets.apkAssets.includes('assets/dkds/core/host/mobile-plugin-package.js'), 'Android packaging must verify the shared modular offline runtime asset manifest and report the APK checksum.');
 assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling must support a cross-project DK_TOOL_ROOT.');
@@ -151,6 +151,8 @@ assert(/Clear-StaleDependencyStaging/.test(backend) && /Get-Process -Id \$ownerP
   'shared dependency installs must reclaim staging directories left by dead installer processes without touching active installs.');
 assert(/Test-NpmLogNoSpace/.test(backend) && /ENOSPC\|no space left on device/.test(backend) && /New-DependencyNoSpaceMessage/.test(backend),
   'toolbox must translate npm ENOSPC extraction failures into an actionable cache-space diagnostic.');
+assert(/function Format-StorageBytes\(\[Nullable\[Int64\]\]\$Bytes\)[\s\S]*?\$byteValue\s*=\s*\[Int64\]\$Bytes/.test(backend) && !/function Format-StorageBytes[\s\S]*?\$Bytes\.Value/.test(backend),
+  'storage formatting must tolerate PowerShell Nullable[T] unboxing under StrictMode instead of reading a nonexistent .Value property.');
 assert(/--ignore-scripts/.test(backend) && /Ensure-ElectronBinary/.test(backend) && /electron\\install\.js/.test(backend),
   'shared dependency installation must separate npm package extraction from Electron binary installation.');
 assert(/Test-ElectronBinaryReady/.test(backend) && /dist\\electron\.exe/.test(backend),
