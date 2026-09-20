@@ -45,10 +45,6 @@
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-detect-actions{
   grid-template-columns:repeat(auto-fit,minmax(min(145px,100%),1fr));gap:6px
 }
-#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label{
-  display:grid;grid-template-columns:minmax(72px,max-content) minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px;margin:7px 0
-}
-#resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label>select{min-width:0;width:100%;margin:0}
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected){
   display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:7px 12px;align-items:center
 }
@@ -61,6 +57,5 @@
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-dataset-vg input{width:100%;min-width:0}
 #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-dataset-transform{grid-template-columns:minmax(44px,max-content) minmax(0,1fr);align-items:center}
 @container resonance-parameters-mobile (max-width:360px){
-  #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel .respar-select-label{grid-template-columns:1fr}
   #resonanceDedicatedPage [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].respar-left-panel section:has(>h3:first-child):has(#reswinShowRejected){grid-template-columns:1fr}
 }

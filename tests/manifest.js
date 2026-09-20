@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371110-resonance-parameter-density-contract.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371109-mobile-orientation-reflow-contract.js",
       "args": []
     },

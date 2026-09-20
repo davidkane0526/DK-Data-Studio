@@ -1,7 +1,12 @@
 (() => {
   const setId=(node,id)=>{if(node)node.id=String(id);return node;};
   const text=(dom,tag,value,className='')=>{const node=dom.create(tag,{text:String(value??'')});if(className)node.className=className;return node;};
-  const layout=(units,host,{tagName='div',namespace='',variant='identity',className='',id='',dataset}={})=>{const node=units.layout.create(host,{tagName,namespace,variant,className});if(id)setId(node,id);if(dataset)for(const [key,value] of Object.entries(dataset))if(value!==undefined)node.dataset[key]=String(value);return node;};
+  const PARAMETER_INLINE_LABEL_LAYOUT=Object.freeze({
+    variant:'identity',
+    geometry:Object.freeze({display:'grid',gridTemplateColumns:'70px minmax(0,1fr)',alignItems:'center',columnGap:'8px',rowGap:'4px',margin:'7px 0'}),
+    responsiveGeometry:Object.freeze([{maxWidth:310,geometry:Object.freeze({gridTemplateColumns:'minmax(0,1fr)',margin:'6px 0'})}])
+  });
+  const layout=(units,host,{tagName='div',namespace='',variant='identity',className='',id='',dataset,geometry,responsiveGeometry,responsiveTarget}={})=>{const node=units.layout.create(host,{tagName,namespace,variant,className,geometry,responsiveGeometry,responsiveTarget});if(id)setId(node,id);if(dataset)for(const [key,value] of Object.entries(dataset))if(value!==undefined)node.dataset[key]=String(value);return node;};
   const directAction=(units,host,{id,label,className='',variant='',title='',nativeSave='',nativeCopy='',domId=id})=>{
     const row=units.action.create(host,{id,label,className,variant:variant||undefined,title:title||label,nativeSave:nativeSave||undefined,nativeCopy:nativeCopy||undefined,direct:true});
     const button=row.button||row.element;if(domId)setId(button,domId);return button;
@@ -10,8 +15,8 @@
     const row=units.field.create(host,{variant:kind==='select'?'select':'input',controlOnly:true,kind:kind==='select'?'select':undefined,inputType:type,id,className,value,placeholder,min,max,step,options,attributes});
     return setId(row.control,id);
   };
-  const labeledControl=(dom,units,host,{id,label,kind='select',type='text',className='',labelClassName='',value,placeholder,min,max,step,options=[],attributes={}}={})=>{
-    const wrapper=layout(units,host,{tagName:'label',className:labelClassName});wrapper.append(String(label||''));
+  const labeledControl=(dom,units,host,{id,label,kind='select',type='text',className='',labelClassName='',layoutSpec=null,value,placeholder,min,max,step,options=[],attributes={}}={})=>{
+    const wrapper=layout(units,host,{tagName:'label',className:labelClassName,...(layoutSpec||{})});wrapper.append(String(label||''));
     const ctl=control(units,wrapper,{id,kind,type,className,value,placeholder,min,max,step,options,attributes});return {wrapper,control:ctl};
   };
   const check=(units,host,{id,label,className='',checked=false}={})=>{const row=units.check.create(host,{variant:'analysis-check',className,label,checked});setId(row.input,id);return row;};
@@ -39,9 +44,9 @@
 
     const detector=layout(units,left,{tagName:'section'});detector.appendChild(text(dom,'h3','智能寻峰'));
     const note=units.note.create(detector,{variant:'normal',className:'respar-note',text:'自动融合原始 I–V 与辅助通道；最终峰位始终回到原始采样点。'});setId(note,'reswinDetectorDescription');
-    labeledControl(dom,units,detector,{id:'reswinDetectorSelect',label:'寻峰算法',kind:'select',labelClassName:'respar-select-label dkds-field'});
+    labeledControl(dom,units,detector,{id:'reswinDetectorSelect',label:'寻峰算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT});
     directAction(units,detector,{id:'reswinRecoverDetector',label:'定位/恢复缺失寻峰算法',className:'wide hidden'});
-    labeledControl(dom,units,detector,{id:'reswinMetricAlgorithmSelect',label:'峰宽/基线算法',kind:'select',labelClassName:'respar-select-label dkds-field'});
+    labeledControl(dom,units,detector,{id:'reswinMetricAlgorithmSelect',label:'峰宽/基线算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT});
     directAction(units,detector,{id:'reswinRecoverMetricAlgorithm',label:'定位/恢复缺失峰宽算法',className:'wide hidden'});
     const metricNote=units.note.create(detector,{variant:'normal',className:'respar-note',text:'FWHM、峰高、面积与局部基线由可版本化算法插件计算。'});setId(metricNote,'reswinMetricAlgorithmDescription');
     const presetRow=layout(units,detector,{className:'respar-preset-row'});
@@ -58,7 +63,7 @@
     check(units,display,{id:'reswinShowWidth',label:' 显示选中峰宽'});
     check(units,display,{id:'reswinShowPoints',label:' 显示峰位点'});
     check(units,display,{id:'reswinPhysicsLabels',label:' 主图标注物理类型'});
-    labeledControl(dom,units,display,{id:'reswinTransform',label:'辅助视图',kind:'select',labelClassName:'respar-select-label dkds-field',options:transformOptions(ctx)});
+    labeledControl(dom,units,display,{id:'reswinTransform',label:'辅助视图',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT,options:transformOptions(ctx)});
 
     const manual=layout(units,left,{tagName:'section'});manual.appendChild(text(dom,'h3','手动操作'));
     units.note.create(manual,{variant:'meta',className:'respar-hint',html:'Ctrl / Shift + 左键点击曲线：新增峰<br>Ctrl / Shift + 右键点击峰点：删除峰<br>直接拖框：选择峰并打开区域操作<br>Ctrl + 拖框：框选缩放<br>拖峰点：吸附到当前曲线真实采样点<br>拖分析窗口手柄：调整局部基线 / FWHM 自动计算范围<br>L / Shift+L：锁定 / 解锁所选峰<br>滚轮：围绕鼠标缩放<br>双击主图：恢复全部范围<br>↑/↓：切换曲线；←/→：移动峰'});
