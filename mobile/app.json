@@ -2,7 +2,7 @@
   "expo": {
     "name": "DK Data Studio",
     "slug": "dk-data-studio",
-    "version": "3.71.106",
+    "version": "3.71.107",
     "orientation": "default",
     "android": {
       "package": "com.dk.datastudio",
