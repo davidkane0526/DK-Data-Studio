@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - plugin
+      - dev
     paths:
+      - '.github/workflows/build-android.yml'
       - 'mobile/**'
       - 'src/**'
       - 'scripts/generate-brand-assets.js'
