@@ -45,7 +45,7 @@ assert(vth.includes("axis:'y'")&&vth.includes('reflowBelow:920')&&vth.includes("
 
 // 3. Data Center portrait keeps formula + generic preview in the accepted two-column row.
 assert(dcMobile.includes('--dc-main-columns:minmax(184px,.82fr) minmax(0,1.18fr)')&&dcMobile.includes('--dc-main-areas:"source source" "tool chart"'),'Data Center native home layout must default to the accepted two-column detail row.');
-assert(dcMobile.includes('@container data-center-workspace (max-width:419px)'),'Only genuinely narrow containers may collapse the Data Center detail row to one column.');
+assert(!dcMobile.includes('@container data-center-workspace (max-width:419px)')&&!dcMobile.includes('--dc-main-areas:"source" "tool" "chart"'),'Native Data Center must not use a hard portrait breakpoint to force the detail row into one column.');
 
 // 4. The growing auto-flow PRIMARY host is geometry only; child Unit Panels own visible depth.
 assert(material.includes('.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host[data-primary-scroll="auto"]')&&material.includes('box-shadow:none'),'Mobile auto-flow PRIMARY host must not paint a second shadow through long content.');

@@ -15,6 +15,7 @@
 
   let configured={};
   let publishTimer=null;
+  let viewportSettleFrame=0,viewportSettleTimer=0;
   let previewAttempts=0;
   const routeStack=[];
   const openSurfaceState=new Map();
@@ -65,7 +66,7 @@
   };
   const coreSnapshot=()=>{const core=presentation()?.snapshot?.({route:currentRoute()})||null;reconcileOpenSurfaceState(core);return core;};
   const currentOrientation=()=>text(window.DKDSPlatform?.profile?.orientation)==='landscape'?'landscape':'portrait';
-  const currentViewport=()=>Object.freeze({width:Math.max(0,Math.round(Number(window.innerWidth)||0)),height:Math.max(0,Math.round(Number(window.innerHeight)||0))});
+  const currentViewport=()=>{const visual=window.visualViewport,width=Number(visual?.width)||Number(window.innerWidth)||0,height=Number(visual?.height)||Number(window.innerHeight)||0;return Object.freeze({width:Math.max(0,Math.round(width)),height:Math.max(0,Math.round(height))});};
   const workspaceRows=()=>coreSnapshot()?.workspaces||[];
   const openSurfacesFor=activityId=>openSurfaceState.get(text(activityId))||[];
   const openSurfacesSnapshot=()=>Object.fromEntries([...openSurfaceState.entries()].filter(([,rows])=>rows.length).map(([activityId,rows])=>[activityId,[...rows]]));
@@ -101,6 +102,18 @@
   function publish(){
     clearTimeout(publishTimer);
     publishTimer=setTimeout(()=>{const state=snapshot();window.DKDSMobileWebPresentation?.apply?.(state);post({kind:'event',event:'state',payload:state});},0);
+  }
+  function publishSettledViewport(){
+    // Android WebView may emit resize/orientation signals before the visual
+    // viewport reaches its final dimensions. Publish immediately for feedback,
+    // then republish after layout/visualViewport settlement so Presenter-owned
+    // Surface constraints are recomputed from the final portrait/landscape box.
+    publish();
+    const raf=window.requestAnimationFrame||globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));
+    const caf=window.cancelAnimationFrame||globalThis.cancelAnimationFrame||clearTimeout;
+    if(viewportSettleFrame)try{caf(viewportSettleFrame);}catch{}
+    viewportSettleFrame=raf(()=>{viewportSettleFrame=raf(()=>{viewportSettleFrame=0;publish();});});
+    clearTimeout(viewportSettleTimer);viewportSettleTimer=setTimeout(()=>{viewportSettleTimer=0;publish();},120);
   }
   function closeLayer(){return !!mobileAdapter()?.closeTransient?.();}
 
@@ -322,8 +335,10 @@
   window.addEventListener('dkds:history-changed',publish);
   window.addEventListener('dkds:status-changed',publish);
   window.addEventListener('dkds:workspace-presentation-changed',reconcileWorkspacePresentation);
-  window.addEventListener('dkds:platform-change',publish);
-  window.addEventListener('resize',publish,{passive:true});
+  window.addEventListener('dkds:platform-change',publishSettledViewport);
+  window.addEventListener('resize',publishSettledViewport,{passive:true});
+  window.addEventListener('orientationchange',publishSettledViewport,{passive:true});
+  window.visualViewport?.addEventListener?.('resize',publishSettledViewport,{passive:true});
   window.addEventListener('load',()=>{
     announceReady();
     const adapter=mobileAdapter();adapter?.setDispatcher?.(dispatchIntent);adapter?.setPublisher?.(publish);adapter?.installDocumentBindings?.({dispatch:dispatchIntent,publish});

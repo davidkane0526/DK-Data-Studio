@@ -1,3 +1,5 @@
+> **v3.71.109 WIP — Mobile Presenter orientation / reflow contract**：旋转与 WebView viewport 变化统一经过 settled viewport publication，优先使用 `visualViewport` 并在布局稳定后再次发布 Presenter 快照；Unit Direct Action 统一消费 Core `dkds-action-button` 单行操作几何，使 Drawer 最小宽度由真实不可换行控件参与求解。Vth 数据控制 PRIME 显式声明 `sizing:fill`，并移除已退休的私有 920px 响应式覆盖；Data Center 移除 419px 强制单列阈值，移动端继续保持 source 全宽、tool/chart 并排。
+
 > **v3.71.108 WIP — Mobile Drawer fill-sizing 合同修复**：修复 PRIME 经 Mobile Presenter 重投影后丢失 `sizing=fill` 的通用问题。此前 Presenter 会把非参数 Drawer 根强制写成 `height:auto`，导致需要占满剩余空间的列表/表格在真实移动端被压缩；现在 Unit 的 fill sizing 会传递到 Drawer frame，并由 Core 提供确定的 block-size containing block。Data Center 仅通过标准 PRIME 参数声明 `sizing:'fill'`，不再用插件私有 `height:100%` 抢占 Presenter 几何所有权。
 
 > **v3.71.107 WIP — Data Center 初始 Catalog Seed 生命周期修复**：Data Center 挂载完成后立即从当前 canonical Artifact Store 建立首个 Unit/Presentation 快照，不再依赖后续 `analysis:opened` 或 `data:artifacts-changed` 才让已有工程数据出现；事件只负责 mount 后的增量同步。新增 executable mount 回归：预载 DataTable 后不发送任何刷新事件，列表必须立即出现条目。Data Center 1.15.39，Android versionCode 247。
@@ -45,7 +47,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.108**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.43**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.109**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.43**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

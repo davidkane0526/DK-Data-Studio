@@ -3,13 +3,14 @@ const assert=require('assert');const fs=require('fs');const path=require('path')
 function digest(root,{include=()=>true}={}){const files=[];function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else if(include(path.relative(root,file).replace(/\\/g,'/')))files.push(file);}}walk(root);const hash=crypto.createHash('sha256');for(const file of files){hash.update(path.relative(root,file).replace(/\\/g,'/'));hash.update('\0');hash.update(fs.readFileSync(file));hash.update('\0');}return {count:files.length,sha256:hash.digest('hex')};}
 const nonMigrating=digest('src/plugins',{include:rel=>!rel.startsWith('ter-analysis/')&&!rel.startsWith('pulse-analysis/')&&!rel.startsWith('resonance-workbench/')&&!rel.startsWith('data-center/')&&!rel.startsWith('pulse-sampler-tool/')&&!rel.startsWith('transfer-vth-lab/')});
 assert.deepStrictEqual(nonMigrating,{count:37,sha256:'8aea181dbfcd7b67572a9105d54b9ffe95c15767b359f1a3eb21c0b66b3c80d7'},'Active TER/Pulse/Resonance/Data Center/Pulse Sampler/Vth Unit migrations must not modify any unrelated built-in plugin asset.');
+const vthRetiredCss=fs.readFileSync('src/plugins/transfer-vth-lab/plugin.css','utf8');
+assert(!vthRetiredCss.includes('@container vth-primary')&&!vthRetiredCss.includes('.dkds-vth-results-splitter{display:none}'),'Retired Vth CSS must not preserve the private portrait override after Unit/Presenter ownership closure.');
 for(const [rel,expected] of [
-  ['plugin.css','b56cb70582da3102ee4d057349715db8707762d8702f377b660ebb3c5632d7ee'],
   ['analysis-runtime.js','236fd11a5490ab7745585033935a428059d654c9874cd21803a04141f2713b3d'],
   ['vth-task.js','cc2230b56d9f0fad8f040d70dd50bc27b29585e4ec47c9cde9b1e65672246cb1']
 ]){
   const bytes=fs.readFileSync(`src/plugins/transfer-vth-lab/${rel}`);
-  assert.strictEqual(crypto.createHash('sha256').update(bytes).digest('hex'),expected,`Vth ${rel} production numeric/presentation baseline must remain byte-identical while only the dependency-gated live-domain seam is introduced.`);
+  assert.strictEqual(crypto.createHash('sha256').update(bytes).digest('hex'),expected,`Vth ${rel} production numerical baseline must remain byte-identical during presentation lifecycle repair.`);
 }
 
 
@@ -48,7 +49,7 @@ const stableFileHashes={
 };
 for(const [file,expected] of Object.entries(stableFileHashes)){const actual=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');assert.strictEqual(actual,expected,`${file} domain/runtime owner must remain byte-frozen while presentation geometry ownership is repaired.`);}
 const dcMobile=fs.readFileSync('src/plugins/data-center/mobile.css','utf8');
-assert(dcMobile.includes('--dc-main-columns')&&dcMobile.includes('--dc-main-areas')&&dcMobile.includes('@container data-center-workspace (max-width:419px)'),'Data Center Mobile layout must be protected by responsive semantic contracts rather than a whole-file SHA freeze.');
+assert(dcMobile.includes('--dc-main-columns')&&dcMobile.includes('--dc-main-areas')&&!dcMobile.includes('@container data-center-workspace (max-width:419px)'),'Data Center Mobile layout must keep its semantic two-column tokens without a hard portrait collapse threshold.');
 const crossLayer=require('../tools/quality/unit-runtime-style-ownership').audit();
 assert.strictEqual(crossLayer.violations.length,0,'Migrated production Unit presentation must be protected by semantic cross-layer ownership, not whole-file CSS hashes.');
 

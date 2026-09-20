@@ -13,12 +13,6 @@
   --dc-chart-height:clamp(180px,30dvh,280px);
   --dc-chart-min-height:160px
 }
-@container data-center-workspace (max-width:419px){
-  .dc-main:has(>.dc-chart-pane[data-placement="home"]){
-    --dc-main-columns:minmax(0,1fr);
-    --dc-main-areas:"source" "tool" "chart"
-  }
-}
 /* Native Data Management is a first-class dense browser, not a shrunken
    Desktop sidebar. The projected drawer itself owns the viewport height while
    this surface keeps commands fixed and gives the remaining space to the
@@ -49,9 +43,6 @@
 }
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-selection-tools{
   grid-template-columns:repeat(4,minmax(0,1fr));gap:4px
-}
-[data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-selection-tools>button{
-  white-space:nowrap
 }
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-artifact-list{
   flex:1 1 0;min-height:0;padding:4px 6px 6px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:auto

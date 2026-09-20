@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371109-mobile-orientation-reflow-contract.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
       "args": []
     },

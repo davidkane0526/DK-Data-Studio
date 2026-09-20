@@ -46,7 +46,7 @@
     const showAllCurves=units.check.create(extraction.body,{variant:'checkbox',label:'显示全部曲线',checked:true});
     const controls=Object.freeze({curve:curve.control,method:method.control,branch:branch.control,targetCurrent:targetCurrent.control,lowCurrent:lowCurrent.control,highCurrent:highCurrent.control,absoluteCurrent:absoluteCurrent.input,logY:logY.input,showAllCurves:showAllCurves.input});
 
-    const dataControl=units.prime.build({id:'data-control',label:'数据',variant:'fixed-titleless',presentationRole:'data-control',presentationPurpose:'parameters',semanticKind:'panel',priority:90,collapsible:true,fixed:true,header:false,existingNode:controlsHost,autoOpen:true,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v4'});
+    const dataControl=units.prime.build({id:'data-control',label:'数据',variant:'fixed-titleless',presentationRole:'data-control',presentationPurpose:'parameters',semanticKind:'panel',priority:90,collapsible:true,fixed:true,header:false,existingNode:controlsHost,sizing:'fill',autoOpen:true,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v4'});
 
     const main=units.layout.create(null,{variant:'fill-rows',geometry:{width:'100%',height:'100%',minWidth:'0',minHeight:'0',gap:'10px'}});
     const metricsHost=units.layout.create(main,{variant:'metric-grid'});
