@@ -19,11 +19,11 @@ jobs:
       - name: Archive source
         shell: bash
         run: |
-          tar --exclude='./.git' -cJf dev-source.tar.xz .
+          tar --exclude='./.git' -cJf "$RUNNER_TEMP/dev-source.tar.xz" .
       - name: Upload source snapshot
         uses: actions/upload-artifact@v7
         with:
           name: dev-source-snapshot-${{ github.sha }}
-          path: dev-source.tar.xz
+          path: ${{ runner.temp }}/dev-source.tar.xz
           if-no-files-found: error
           retention-days: 1
