@@ -47,6 +47,7 @@ jobs:
         run: |
           node tests/test-v371106-data-center-live-hydration-presentation.js
           node tests/test-data-center-runtime-v36113.js
+          node tests/test-v371108-mobile-drawer-fill-sizing.js
 
       - name: Select preinstalled JDK 21
         shell: bash

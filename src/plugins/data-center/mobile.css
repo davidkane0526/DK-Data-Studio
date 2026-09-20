@@ -24,7 +24,7 @@
    this surface keeps commands fixed and gives the remaining space to the
    artifact list. All paint remains Core Theme-owned. */
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane{
-  container-type:inline-size;container-name:data-center-artifacts-mobile;display:flex;flex-direction:column;height:100%;min-height:0;max-height:none;--dkds-field-control-min-height:34px;--dkds-generic-button-min-height:32px;--dkds-generic-button-padding-block:3px;--dkds-generic-button-padding-inline:7px
+  container-type:inline-size;container-name:data-center-artifacts-mobile;display:flex;flex-direction:column;min-height:0;max-height:none;--dkds-field-control-min-height:34px;--dkds-generic-button-min-height:32px;--dkds-generic-button-padding-block:3px;--dkds-generic-button-padding-inline:7px
 }
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane>.dc-section-head{
   flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(118px,150px);align-items:center;gap:6px;padding:5px 8px;min-height:34px

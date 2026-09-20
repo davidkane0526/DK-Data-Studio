@@ -33,7 +33,7 @@
     directAction(units,selectionActions,{id:'dcInvertSelectionBtn',label:'反选'});
     directAction(units,selectionActions,{id:'dcClearSelectionBtn',label:'清除'});
     const artifactList=units.list.create(objects.element,{variant:'selectable',className:'dc-artifact-list'});setId(artifactList.element,'dcArtifactList');setAttrs(artifactList.element,{tabIndex:0,role:'listbox','aria-label':'数据对象列表'});
-    const dataControl=units.prime.build({id:'data-control',label:'数据',variant:'fixed-titleless',presentationRole:'data-control',semanticKind:'panel',priority:94,collapsible:true,fixed:true,header:false,existingNode:objects.element,autoOpen:true,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v1'});
+    const dataControl=units.prime.build({id:'data-control',label:'数据',variant:'fixed-titleless',presentationRole:'data-control',semanticKind:'panel',priority:94,collapsible:true,fixed:true,header:false,existingNode:objects.element,sizing:'fill',autoOpen:true,defaultPlacement:'left',placements:['left'],stateVersion:'presentation-v1'});
 
     // PRIMARY: bounded preview + formula/workflow/provenance tool flow.
     const main=units.layout.create(null,{variant:'identity',className:'dc-main',geometry:{padding:'12px',boxSizing:'border-box',width:'100%',maxWidth:'100%'}});

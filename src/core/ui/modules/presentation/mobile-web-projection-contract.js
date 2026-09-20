@@ -9,16 +9,21 @@ const PROJECTION_STYLE=Object.freeze([
 function styleValues(node,region,purpose=''){
   const drawer=region==='drawer',overlay=drawer||region==='sheet',companion=region==='companion-right'||region==='companion-bottom';
   const plot=node?.classList?.contains?.('dkds-plot-view');
+  const parameterDrawer=drawer&&(text(purpose)==='parameters'||text(node?.dataset?.dkdsPresentationPurpose)==='parameters');
+  // Unit sizing is semantic input to the Presenter. A fill PRIME must keep the
+  // same remaining-space intent after Mobile reparenting; forcing every Drawer
+  // root to height:auto silently discarded that contract and collapsed nested
+  // flex/list surfaces even though their data remained mounted.
+  const fillDrawer=drawer&&(parameterDrawer||text(node?.dataset?.dkdsPortableSizing).trim().toLowerCase()==='fill');
   const values={
     ...(plot?{display:'flex','flex-direction':'column'}:{}),
     ...(companion?{flex:'1 1 0'}:{flex:''}),
     position:'relative',left:'auto',right:'auto',top:'auto',bottom:'auto',inset:'auto',width:'100%',
-    height:drawer?'auto':companion?'100%':'100%','min-width':'0','min-height':'0','max-width':'none','max-height':'none',transform:'none','box-sizing':'border-box',
+    height:drawer?(fillDrawer?'100%':'auto'):companion?'100%':'100%','min-width':'0','min-height':'0','max-width':'none','max-height':'none',transform:'none','box-sizing':'border-box',
     overflow:drawer?'visible':overlay?'auto':'visible','overflow-x':drawer?'visible':overlay?'auto':'visible','overflow-y':drawer?'visible':overlay?'auto':'visible',resize:overlay?'none':''
   };
-  const parameterDrawer=drawer&&(text(purpose)==='parameters'||text(node?.dataset?.dkdsPresentationPurpose)==='parameters');
   if(parameterDrawer)Object.assign(values,{height:'100%',padding:'0px','padding-top':'0px','padding-right':'0px','padding-bottom':'0px','padding-left':'0px'});
-  return Object.freeze({values:Object.freeze(values),parameterDrawer});
+  return Object.freeze({values:Object.freeze(values),parameterDrawer,fillDrawer});
 }
 
 function releaseDetachObserver(frame){
