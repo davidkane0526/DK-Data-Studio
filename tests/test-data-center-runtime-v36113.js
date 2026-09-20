@@ -119,6 +119,15 @@ const views={pageHtml:()=>'',attach:()=>presentationStub};
   const mounted=await feature.mount(ctx,controller,views,{});
   assert(mounted?.deactivate,'Data Center mount must return a disposable runtime.');
 
+  // A populated canonical Store must seed the production Unit tree during mount.
+  // No analysis:opened or data:artifacts-changed event is allowed to be required
+  // merely to make already-existing project data visible.
+  const seededList=page.querySelector('#dcArtifactList');
+  const seededCount=page.querySelector('#dcArtifactCount');
+  assert(seededCount.textContent==='1 个',`Data Center mount must seed the current Artifact count, got ${JSON.stringify(seededCount.textContent)}.`);
+  assert(seededList.children.length===1,'Data Center mount must render existing Artifacts before any refresh event.');
+  assert(seededList.children[0].getAttribute('aria-label')==='VG=0','Initial seeded row must preserve the canonical Artifact label.');
+
   const layout=(handlers.get('layout:resize')||[])[0];
   assert(typeof layout==='function','Data Center must subscribe to Core layout resize.');
   layout();
