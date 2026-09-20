@@ -326,6 +326,13 @@
     });
 
     ctx.events.on('analysis:opened',({id})=>{if(id===page.id)renderAllUi();});
+
+    // Mount establishes the initial projection from the current canonical
+    // Artifact Store. Events only synchronize later changes; they must never be
+    // required for an already-populated project to become visible.
+    invalidateArtifactCaches();
+    renderAllUi();
+
     return {domain,presentation,deactivate(){offArtifactSelectionChecks?.();artifactSelectionView?.dispose?.();quickPanel?.destroy?.();stepPanels.forEach(h=>h?.destroy?.());chartRuntime.dispose?.();presentation?.dispose?.();}};
   }
   window.DKDSPluginModules.define('builtin.data-center','feature-runtime',Object.freeze({mount}));
