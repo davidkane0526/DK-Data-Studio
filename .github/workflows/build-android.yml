@@ -42,7 +42,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Verify Data Center catalog lifecycle
+      - name: Verify mobile presentation contracts
         shell: bash
         run: |
           node tests/test-v371106-data-center-live-hydration-presentation.js
