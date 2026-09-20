@@ -316,13 +316,13 @@
     dom.on($('#dcCopyProvenance'),'click',()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2)));
     dom.delegate($('#dcFormulaRefs'),'click','.dc-ref-chip',(_event,button)=>{const host=$('#dcFormulaParams'),ta=dom.query('[data-param-id="formula"] textarea',host);if(!ta)return;const token=/\s/.test(button.dataset.ref)?`[${button.dataset.ref}]`:button.dataset.ref;ta.setRangeText(token,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));});
     dom.delegate($('#dcWorkflowSteps'),'click','[data-act]',(_event,button)=>{const card=button.closest('.dc-step-card'),index=Number(card?.dataset?.stepIndex),act=button.dataset.act;if(!Number.isInteger(index)||index<0||index>=state.steps.length)return;if(act==='up'&&index){[state.steps[index-1],state.steps[index]]=[state.steps[index],state.steps[index-1]];renderSteps();}else if(act==='down'&&index<state.steps.length-1){[state.steps[index+1],state.steps[index]]=[state.steps[index],state.steps[index+1]];renderSteps();}else if(act==='remove'){state.steps.splice(index,1);renderSteps();}});
-    ctx.events.on('data:artifacts-changed',()=>{invalidateArtifactCaches();if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))dom.frame(()=>chartRuntime.resize());});
+    ctx.events.on('data:artifacts-changed',()=>{invalidateArtifactCaches();renderAllUi();});ctx.events.on('layout:resize',()=>{dom.frame(()=>chartRuntime.resize());});
 
     stateStore.subscribe((next,meta)=>{
       state=next;
       if(meta?.reason==='project-reset'||meta?.reason==='reset')lastExecution=null;
       if(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset')invalidateArtifactCaches();
-      if(page&&!page.classList.contains('hidden')&&(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset')){renderAllUi();if(artifactListEl)artifactListEl.scrollTop=0;}
+      if(page&&(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset')){renderAllUi();if(artifactListEl)artifactListEl.scrollTop=0;}
     });
 
     ctx.events.on('analysis:opened',({id})=>{if(id===page.id)renderAllUi();});
