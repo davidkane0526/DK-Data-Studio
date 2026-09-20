@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371105-data-center-reparented-unit-list.js",
       "args": []
     },
@@ -1998,6 +2002,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371105-data-center-reparented-unit-list.js",
       "args": []
@@ -4020,6 +4028,10 @@ module.exports = {
     }
   ],
   "mobile": [
+    {
+      "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371105-data-center-reparented-unit-list.js",
       "args": []
