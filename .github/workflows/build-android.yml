@@ -42,6 +42,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Verify Data Center live hydration regression
+        shell: bash
+        run: node tests/test-v371106-data-center-live-hydration-presentation.js
+
       - name: Select preinstalled JDK 21
         shell: bash
         run: |
