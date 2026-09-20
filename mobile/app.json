@@ -6,7 +6,7 @@
     "orientation": "default",
     "android": {
       "package": "com.dk.datastudio",
-      "versionCode": 246,
+      "versionCode": 247,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
