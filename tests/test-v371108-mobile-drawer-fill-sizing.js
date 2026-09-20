@@ -25,6 +25,6 @@ const dcMobile=read('src/plugins/data-center/mobile.css');
 assert(presenter.includes("dkdsMobileSurfaceSizing',text(node?.dataset?.dkdsPortableSizing||'content')"),'Presenter frame must carry the Unit sizing contract across reparenting.');
 assert(css.includes('[data-dkds-mobile-surface-sizing="fill"]>.dkds-mobile-drawer-scroll>.dkds-mobile-drawer-content{height:100%;min-height:100%}'),'Fill Drawer wrapper must expose a definite 100% containing block to its projected Unit.');
 assert(dcUnit.includes("existingNode:objects.element,sizing:'fill'"),'Data Center data-control must request fill through the canonical PRIME sizing parameter.');
-assert(!/\\.dc-artifact-pane\\{[^}]*height:100%/.test(dcMobile),'Data Center must not privately own projected Drawer block-size after declaring PRIME sizing=fill.');
+assert(!/\.dc-artifact-pane\{[^}]*height:100%/.test(dcMobile),'Data Center must not privately own projected Drawer block-size after declaring PRIME sizing=fill.');
 
 console.log('v3.71.108 Mobile Drawer fill sizing PASS: Unit fill intent survives Presenter reparenting and owns Data Center list viewport without plugin height CSS.');
