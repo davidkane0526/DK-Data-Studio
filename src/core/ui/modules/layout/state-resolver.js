@@ -69,7 +69,11 @@ function resolveLayout(state,viewport={},platformProfile={}){
     max=state.max||Math.max(min,total-Math.max(120,state.reserve));
   }
   const mobileDefault=nativeMobile&&state.mobileOverlay&&state.mobileDefaultRatio&&!state.explicitPreference?total*state.mobileDefaultRatio:0;
-  const requested=mobileDefault||positive(state.preferredSize,state.preferredRatio?state.preferredRatio*total:state.defaultSize);
+  // A user-resized split records both pixels and ratio. The ratio is the durable
+  // intent across viewport/orientation changes; replaying the old pixel size is
+  // only correct when no proportional preference exists.
+  const proportionalPreference=state.explicitPreference&&state.preferredRatio?state.preferredRatio*total:0;
+  const requested=mobileDefault||positive(proportionalPreference,positive(state.preferredSize,state.defaultSize));
   const effectiveSize=visible?Math.round(clamp(requested,min,Math.max(min,max))):0;
   return Object.freeze({
     id:state.id,axis:state.axis,placement:state.placement,collapsed:state.collapsed,

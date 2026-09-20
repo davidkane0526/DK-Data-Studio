@@ -101,11 +101,17 @@ class MobileWebSurfacePresenter {
       onDetached:()=>this.restoreNode(node)
     });
   }
+  viewportOrientation(){
+    const declared=text(this.activeRoot?.dataset?.dkdsMobileOrientation||globalThis.window?.DKDSPlatform?.profile?.orientation).trim().toLowerCase();
+    if(declared==='landscape'||declared==='portrait')return declared;
+    const visual=globalThis.window?.visualViewport,width=Number(visual?.width)||Number(globalThis.window?.innerWidth)||Number(globalThis.innerWidth)||0,height=Number(visual?.height)||Number(globalThis.window?.innerHeight)||Number(globalThis.innerHeight)||0;
+    return width>height?'landscape':'portrait';
+  }
   drawerStorageKey(surfaceId='',storageScope=''){
     const scope=text(storageScope||surfaceId||'parameters').trim().replace(/[^a-zA-Z0-9_.:-]+/g,'-')||'parameters';
-    return `dkds.mobile.drawer-width.v20.${scope}`;
+    return `dkds.mobile.drawer-width.v21.${this.viewportOrientation()}.${scope}`;
   }
-  viewportInlineSize(){return Math.max(0,Number(globalThis.window?.innerWidth)||Number(globalThis.innerWidth)||320);}
+  viewportInlineSize(){const visual=globalThis.window?.visualViewport;return Math.max(0,Number(visual?.width)||Number(globalThis.window?.innerWidth)||Number(globalThis.innerWidth)||320);}
   surfaceInlineReservePx(){return Math.max(0,Number(BASE_METRICS?.portable?.floatingViewportInlineReservePx)||12);}
   semanticSearchFloorPx(){
     // Probe from the smallest canonical single-control footprint. This is not a
@@ -128,15 +134,13 @@ class MobileWebSurfacePresenter {
     }
     return Math.max(1,available);
   }
-  parameterSurfaceFloorPx(){return Math.max(1,Math.ceil(this.viewportInlineSize()*0.25));}
   surfaceReasonableFloor(frame,region='drawer'){
     const available=this.surfaceAvailableWidth(frame,region);
-    // Parameter Drawers have one product-level hard floor: 25% of the live page.
-    // This is a lower bound only. The Unit tree may raise it through published
-    // constraints/live intrinsic overflow, and Presenter remains the sole writer
-    // of the final Surface allocation.
-    const productFloor=region==='drawer'?this.parameterSurfaceFloorPx():this.semanticSearchFloorPx();
-    return Math.max(1,Math.min(available,Math.max(this.semanticSearchFloorPx(),productFloor)));
+    // Start from the smallest canonical control footprint only. The actual Drawer
+    // minimum is discovered from live Unit density constraints and intrinsic
+    // overflow in solveMinimumReasonableWidth(); Presenter must not substitute a
+    // viewport-percentage guess for the content contract.
+    return Math.max(1,Math.min(available,this.semanticSearchFloorPx()));
   }
   drawerBounds(frame=null){const max=this.surfaceAvailableWidth(frame,'drawer'),base=this.surfaceReasonableFloor(frame,'drawer');return {base,max};}
   storedReasonableMin(frame){const raw=Number(frame?.dataset?.dkdsMobileReasonableMinWidth);return Number.isFinite(raw)&&raw>0?raw:0;}

@@ -1,4 +1,4 @@
-> **v3.71.109 WIP — Mobile Presenter orientation / reflow contract**：旋转与 WebView viewport 变化统一经过 settled viewport publication，优先使用 `visualViewport` 并在布局稳定后再次发布 Presenter 快照；Unit Direct Action 统一消费 Core `dkds-action-button` 单行操作几何，使 Drawer 最小宽度由真实不可换行控件参与求解。Vth 数据控制 PRIME 显式声明 `sizing:fill`，并移除已退休的私有 920px 响应式覆盖；Data Center 移除 419px 强制单列阈值，移动端继续保持 source 全宽、tool/chart 并排。
+> **v3.71.109 WIP — Mobile orientation / reflow contract**：移动端 Presenter 改用 live visualViewport 尺寸并在 orientation/viewport settle 后统一重投影；Drawer 用户宽度按 portrait/landscape 分域持久化，删除 25% 页面机械硬下限，最小合理宽度完全由 Unit intrinsic/density constraint 与真实 overflow 求解。Core Unit Action 强制原子单行文字。SplitPane 在用户调整后以保存的 ratio 作为跨 viewport 的首选意图，横竖屏切换时自动按新的可见 block extent 重算，避免 Vth 结果区和拖拽手柄停留在旧像素轨道。\n\n> **v3.71.109 WIP — Mobile Presenter orientation / reflow contract**：旋转与 WebView viewport 变化统一经过 settled viewport publication，优先使用 `visualViewport` 并在布局稳定后再次发布 Presenter 快照；Unit Direct Action 统一消费 Core `dkds-action-button` 单行操作几何，使 Drawer 最小宽度由真实不可换行控件参与求解。Vth 数据控制 PRIME 显式声明 `sizing:fill`，并移除已退休的私有 920px 响应式覆盖；Data Center 移除 419px 强制单列阈值，移动端继续保持 source 全宽、tool/chart 并排。
 
 > **v3.71.108 WIP — Mobile Drawer fill-sizing 合同修复**：修复 PRIME 经 Mobile Presenter 重投影后丢失 `sizing=fill` 的通用问题。此前 Presenter 会把非参数 Drawer 根强制写成 `height:auto`，导致需要占满剩余空间的列表/表格在真实移动端被压缩；现在 Unit 的 fill sizing 会传递到 Drawer frame，并由 Core 提供确定的 block-size containing block。Data Center 仅通过标准 PRIME 参数声明 `sizing:'fill'`，不再用插件私有 `height:100%` 抢占 Presenter 几何所有权。
 
@@ -56,7 +56,7 @@ DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron
 - **Core 保持领域中立。** 共振、TER、Pulse、Vth 等领域逻辑不得进入 Core selector、Material role 判定或通用布局 fallback。
 - **Core 按职责组织。** `src/core/` 根目录不放实现文件，代码进入 `data / project / scientific / plugins / ui / theme / services / host / performance / workflow / recipes`。
 - **插件声明语义，Core 提供基础设施。** PlotView、ScientificPlot、Table、ActionGroup、Selection、History、Theme Material 等由 Core/SDK 统一实现。
-- **Mobile 参数 Drawer 使用“25% 页面硬下限 + Unit intrinsic constraint”。** 25% 只防止参数面板过窄，不是默认目标；可缩控件可以缩小并由 Unit 响应式重排，既定控件间距、Surface/Unit padding、必要结构以及主要 Fill/Primary 操作文字不可压缩。参数图例不拥有 Drawer 宽度，只跟随面板宽度重排/横向滚动。
+- **Mobile 参数 Drawer 完全由 Unit intrinsic / density constraint 求最小合理宽度。** Presenter 只从最小 canonical control footprint 开始探测，并由真实 Unit 双列密度、固定 gap/padding、必要结构及主要 Action 完整文字反向抬高宽度；不再设置页面百分比或固定 px 硬下限。横竖屏分别保存用户宽度偏好，避免旧方向的窄宽度污染新方向。参数图例不拥有 Drawer 宽度，只跟随面板宽度重排/横向滚动。
 - **参数 PRIME 的最小宽度是受约束的 Workspace/Unit 几何参数。** Desktop 必须尊重插件通过公共合同声明的克制 `leftMin`，不能把面板压过最小可用宽度后再依靠子控件异常换行兜底；同时用 `leftReserve` 保护主工作区，禁止贪婪占宽。
 - **Domain migration 共享唯一业务 owner。** `ctx.services.domain` 只投影 production service 的可序列化 snapshot、白名单 action 与订阅事件；并行 Unit shell 不得复制 controller、state store、算法或计算 pipeline，跨插件消费必须显式声明 `pluginDependencies`。
 - **科学显示投影与科学数据分离。** 超大曲线允许按可视区做有界显示采样，但 Artifact、计算、复制与导出始终保持全分辨率；显示采样必须保留端点、极值、NaN gap、scan segment 与原始 source row identity。

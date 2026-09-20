@@ -217,7 +217,7 @@ button.plugin-status-item{cursor:pointer;}
    DKDS UI Infrastructure — plugin-neutral workspace layer
    ========================================================= */
 .dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
-.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
+.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;}.dkds-action-button:disabled{cursor:not-allowed;}
 /* Core-owned semantic action density. Plugins may request a density on a
    container, but the Core component owner remains the only geometry writer. */
 [data-dkds-action-density="regular"] .dkds-action-button{
