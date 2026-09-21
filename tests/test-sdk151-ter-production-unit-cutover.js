@@ -2,11 +2,9 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const crypto=require('crypto');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
-const sha=text=>crypto.createHash('sha256').update(text).digest('hex');
 const geometryOnlyCss=css=>!/(?:^|[;{}]\s*)(?:background(?:-color)?|color|border(?:-[\w-]+)?|box-shadow|text-shadow|font(?:-family|-size|-weight)?|filter|backdrop-filter)\s*:/mi.test(css);
 
 const manifest=json('src/plugins/ter-analysis/plugin.json');
@@ -22,7 +20,7 @@ assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert(Number(manifest.version.split('.').at(-1))>=0&&manifest.version.startsWith('3.14.'),'TER production Unit cutover baseline must remain on 3.14.x or later patch.');
 assert.deepStrictEqual(manifest.styles,['plugin.css'],'TER must retain its accepted plugin-owned detail geometry through manifest.styles.');
 assert(fs.existsSync(path.join(root,'src/plugins/ter-analysis/plugin.css')),'TER accepted geometry stylesheet must exist.');
-assert.strictEqual(sha(css),'a601985b774667acb6c8d8fea9255db87537a46afe4bdecc2d07504ef7a1442b','TER geometry stylesheet must remain byte-identical to the accepted pre-cutover source.');
+assert(!/--dkds-(?:grid-(?:gap|align-items|auto-rows|columns)|plot-content-(?:flex|min-height|height))\s*:/.test(css),'TER private CSS must not reclaim managed PlotGroup/PlotView geometry after the Unit maturity freeze.');
 assert(geometryOnlyCss(css),'TER plugin.css may own source-parity geometry only, never material/theme paint.');
 assert(!fs.existsSync(path.join(root,'src/plugins/ter-analysis/shared-views.js')),'Legacy TER shared-views.js must stay removed after Unit reconstruction.');
 assert(manifest.scripts.includes('unit-presentation.js')&&!manifest.scripts.includes('shared-views.js'));
@@ -54,7 +52,7 @@ assert(unit.includes("actionsTagName:'div'")&&unit.includes("titleClassName:'ter
 assert(unit.includes("accessibleTitle:'全部 Vg 的电阻–电压（R–V）正扫 / 反扫'"));
 assert(!unit.includes('ctx.ui.styles.add(')&&!unit.includes('.style.')&&!unit.includes('style='),'TER Unit JS must not establish a second CSS/inline geometry owner.');
 
-for(const cssToken of ['min-width:118px;width:135px','min-width:105px;width:112px','width:min(860px,100%)','width:min(760px,100%)','--dkds-grid-gap:14px','grid-template-rows:auto auto auto minmax(320px,1fr)','min-height:38px'])assert(css.replace(/\s+/g,'').includes(cssToken.replace(/\s+/g,'')),`Accepted TER detail geometry missing: ${cssToken}`);
+for(const cssToken of ['min-width:118px;width:135px','min-width:105px;width:112px','width:min(860px,100%)','width:min(760px,100%)','grid-template-rows:auto auto auto minmax(320px,1fr)','min-height:38px'])assert(css.replace(/\s+/g,'').includes(cssToken.replace(/\s+/g,'')),`Accepted TER detail geometry missing: ${cssToken}`);
 
 assert(!feature.includes('sharedViews')&&!feature.includes('shared-views')&&!feature.includes('ctx.ui.plotViews.bind'),'Feature runtime must consume Unit-owned PlotViews and contain behavior/scientific rendering only.');
 assert(feature.includes("if(!presentation?.plotViews?.size)throw new Error('TER Unit presentation did not provide PlotViews.')"));
@@ -64,4 +62,4 @@ assert(superLayout.includes("get('builtin.ter-analysis','unit-presentation')")&&
 assert(entry.split(/\r?\n/).length<40,'TER plugin.js must remain a thin composition entry.');
 assert((entry.match(/analysisService\.create/g)||[]).length===1&&(entry.match(/C\.create/g)||[]).length===1,'TER must retain exactly one service/controller owner.');
 
-console.log('SDK 1.51.11 TER production source parity PASS: 41 Units + Unit-owned accepted detail geometry + titleless parameters.');
+console.log('SDK 1.51.45 TER production source parity PASS: source-detail CSS retained + managed scientific geometry Unit-owned + titleless parameters.');
