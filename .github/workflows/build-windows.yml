@@ -21,6 +21,9 @@ on:
       - 'scripts/**'
       - 'tools/windows/**'
       - 'services/update-server/**'
+      - 'sdk/**'
+      - 'tools/quality/**'
+      - 'tests/**'
   pull_request:
     branches:
       - main

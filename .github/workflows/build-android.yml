@@ -12,6 +12,10 @@ on:
       - 'scripts/generate-brand-assets.js'
       - 'scripts/generate-plugin-index.js'
       - 'scripts/validate-plugins.js'
+      - 'package.json'
+      - 'sdk/**'
+      - 'tools/quality/**'
+      - 'tests/**'
   pull_request:
     branches:
       - main
