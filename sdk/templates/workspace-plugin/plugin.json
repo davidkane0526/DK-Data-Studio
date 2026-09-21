@@ -1,34 +1,27 @@
 {
   "id": "com.example.workspace",
   "name": "SDK Workspace Example",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "apiVersion": "1.19.0",
   "entry": "plugin.js",
-  "scripts": [
-    "plugin.js"
-  ],
+  "scripts": ["plugin.js"],
   "platformPresentation": {
-    "desktop": {
-      "mode": "shared"
-    },
-    "mobile": {
-      "mode": "adaptive"
-    }
+    "desktop": {"mode": "shared"},
+    "mobile": {"mode": "adaptive"}
   },
   "enabled": true,
   "order": 900,
-  "description": "Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.",
+  "description": "Unit-first standalone SDK workbench using scoped data, Unit Templates, Core scientific plotting and command infrastructure.",
   "requiresCore": [
     "status",
     "state",
     "project",
     "data.types",
     "data.sources",
-    "ui.scientific-plot",
-    "ui.dom",
-    "ui.components",
     "ui.workspace",
+    "ui.unit-templates",
     "ui.actions",
+    "ui.scientific-plot",
     "ui.interaction-behavior",
     "ui.pages"
   ],
@@ -42,9 +35,5 @@
     "ui.plugin-workspace"
   ],
   "pluginType": "workbench",
-  "data": {
-    "accepts": [
-      "science.transport.iv"
-    ]
-  }
+  "data": {"accepts": ["science.transport.iv"]}
 }

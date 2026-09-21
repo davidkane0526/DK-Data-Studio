@@ -77,7 +77,7 @@ function lightweightActivityProject(tab,pluginId='',options={}){
   return {
     format:'dk-data-studio-project',
     schemaVersion:3,
-    version:'3.71.112',
+    version:'3.71.113',
     // Live dedicated windows hydrate scientific data from artifactSnapshot / owner
     // capability. Duplicating the entire Artifact Store into project.dataModel on
     // every open is unnecessary synchronous work on the user's click path.
@@ -318,7 +318,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.71.112',
+    appVersion:'3.71.113',
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
     renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false}),
@@ -352,7 +352,7 @@ async function initializePluginArchitecture(){
   // Platform presentation state is owned by Core registries and app state, not by
   // the desktop DOM. Desktop and mobile presenters consume this same model.
   window.DKDSPresentation?.configure?.({
-    appVersion:'3.71.112',
+    appVersion:'3.71.113',
     projectSnapshot:()=>{
       const active=activeProjectTab();
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty}));

@@ -1,19 +1,18 @@
 # SDK TOP Workspace Example
 
-Reference template for a **true TOP workbench** in Plugin API 1.19.
+This is the **Unit-first** reference template for a true TOP workbench in Plugin API 1.19.
 
-A TOP is not created by `pluginType: "workbench"` alone. The four parts must agree:
+A TOP still requires the same machine lifecycle contract: matching `workspace.role:"top"`, `window.activity`, `ctx.ui.activities.add({openMode:"window"})`, and `ctx.ui.topWorkspace.register(...)`. The UI composition itself should now be built from `ctx.ui.unitTemplates`.
 
-1. `workspace.role: "top"` and `workspace.activity` in `plugin.json`.
-2. A dedicated `window` whose `activity` matches the workspace activity.
-3. `ctx.ui.activities.add({ openMode: "window", ... })` at runtime.
-4. `ctx.ui.topWorkspace.register(...)` for the shared TOP/SUPER layout contract.
+Default authoring path:
 
-Core owns the workbench import action. Declare `data.accepts`, include the `workbench-import` slot, and read assigned project data through `ctx.data.sources` / `ctx.data.artifacts`.
+```text
+domain/state -> Unit Page/Header/Layout -> Unit Workspace -> PRIMARY / PRIME / SUB -> Presenter
+```
 
-For scientific charts, use `ctx.ui.workspaceSurface.create(..., { primaryScroll: "safe" })`. In `safe` mode Core owns a bounded Primary viewport and its scrollbar; keep plugin roots flexible (`width:100%; min-width:0; min-height:0`) instead of chaining percentage heights. Use `minmax(0, 1fr)` only inside a genuinely bounded grid, and add `align-content:start` to form/card grids whose `auto` rows must stay compact. Use `primaryScroll:"auto"` only for intentionally document-flow pages. Do not take ownership of the host viewport with `100vh`/root `height:100%`, and do not clip semantic UI with `overflow:hidden/clip`; SDK validation flags these patterns, and `layoutDiagnostics()` provides bounded read-only inspection during development.
+The template intentionally ships **no plugin.css** and no hand-written page HTML. Named Unit variants provide the default complete presentation. Add bounded Unit parameters only when domain structure genuinely requires them.
 
-This template intentionally uses a **main-only PRIMARY**. Plugin API 1.19 removes `leftNode` / `leftHtml`; if the domain has an independently placeable persistent rail, register it as a PRIME surface with `presentationRole: 'data-control'` or `inspector`. Keep file managers, batch controls, plots, result tables, and other single-task composition inside `mainNode`. Use `ctx.ui.layout.split(...)` for user-adjustable pane boundaries inside plugin-owned content instead of implementing private drag-resize logic.
+The lower-level `ctx.ui.workspaceSurface` facade remains available as an advanced Plugin API primitive; do not use it as the starting point for ordinary generated/new workbenches.
 
 Validate/package:
 

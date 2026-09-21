@@ -1,5 +1,7 @@
 # Tool Workspaces — Plugin API 1.19
 
+> **默认作者路径（SDK 1.51.44）：Unit-first。** Tool Workspace 的 lifecycle 仍与 TOP 相同，但页面、布局、Workspace 与 PRIMARY/PRIME/SUB 组合应优先使用 `ctx.ui.unitTemplates`。默认模板不再附带私有布局 CSS。低层 `ctx.ui.workspaceSurface` 继续保留为高级原语，而不是新插件起点。
+
 工具（`pluginType: "tool"`）现在是与 TOP 工作台并列的正式 UI 分类。
 
 **当前版本刻意不定义额外的工具语义。** 一个拥有界面的 Tool Workspace 与 TOP 使用相同的 workspace/window/activity 生命周期；当前唯一宿主级区别是入口分类：

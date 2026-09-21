@@ -12,8 +12,8 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const contract=json('sdk/contract.json');
 const css=readCoreCss(root);
-const toolCss=read('sdk/templates/tool-plugin/plugin.css');
-const topCss=read('sdk/templates/top-workspace-plugin/plugin.css');
+const toolTemplate=read('sdk/templates/tool-plugin/plugin.js');
+const topTemplate=read('sdk/templates/top-workspace-plugin/plugin.js');
 const sdkReadme=read('sdk/README.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
@@ -29,10 +29,12 @@ assert(/\[data-primary-scroll="safe"\] \.dkds-analysis-primary-host\s*\{[^}]*hei
 assert(!/\[data-primary-scroll="safe"\] \.dkds-analysis-primary-host\s*\{[^}]*height\s*:\s*auto[^}]*min-height\s*:\s*100%[^}]*overflow\s*:\s*visible/i.test(css),'safe mode must never return to document-flow self-growth semantics.');
 assert(/\[data-primary-scroll="auto"\] \.dkds-analysis-primary-host\s*\{[^}]*height\s*:\s*auto[^}]*min-height\s*:\s*100%[^}]*overflow\s*:\s*visible[^}]*flex\s*:\s*0 0 auto/i.test(css),'auto mode must remain the explicit document-flow growth contract.');
 
-for(const [name,text] of [['tool template',toolCss],['TOP template',topCss]]){
-  assert(!/min-height\s*:\s*100%/i.test(text),`${name} must not teach percentage min-height chains inside safe workspaces.`);
-  assert(/min-height\s*:\s*0/i.test(text),`${name} must teach min-height:0 flexible roots.`);
+for(const [name,text] of [['tool template',toolTemplate],['TOP template',topTemplate]]){
+  assert(text.includes('ctx.ui.unitTemplates'),`${name} must teach the Unit-first authoring path.`);
+  assert(text.includes('units.workspace.create')&&text.includes('.compose({'),`${name} must compose the default workspace through Unit Templates.`);
+  assert(!text.includes('ctx.ui.workspaceSurface.create'),`${name} must not teach the low-level workspaceSurface path by default.`);
 }
+assert(!fs.existsSync(path.join(root,'sdk/templates/tool-plugin/plugin.css'))&&!fs.existsSync(path.join(root,'sdk/templates/top-workspace-plugin/plugin.css')),'Default TOP/Tool templates must not ship private layout CSS after the Unit-first authoring closure.');
 for(const [name,text] of [['SDK README',sdkReadme],['TOP docs',topDocs],['Tool docs',toolDocs]]){
   assert(/bounded|固定视口|fixed Primary viewport/i.test(text),`${name} must document the bounded safe viewport contract.`);
 }

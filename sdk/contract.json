@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.43",
+  "sdkVersion": "1.51.44",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.71.99",
+  "minimumAppVersion": "3.71.113",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.44 makes Unit Templates the default official authoring path: the built-in developer template plus Workspace/TOP/Tool SDK templates compose Page/Header/Layout/Workspace/PRIMARY through public Units, ship no private layout CSS or hand-written page HTML, and keep the lower-level workspaceSurface facade only as an explicit advanced primitive. Unit Templates remain 2.5.38 with 41 Units / 73 Layout recipes.",
     "SDK 1.51.42 / Unit Templates 2.5.37 unifies Mobile companion outer geometry under one framework contract: Workspace SplitController state is the only right/bottom preference source and resolves its bounded final size from the actual Workspace geometry; shared Mobile CSS only consumes that resolved track token, while Unit intrinsic/block constraints remain internal to their allocated Surface, Presenter performs no companion content measurement/observation, and one Core-owned Mobile split-state schema replaces profile-specific generations. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.",
     "Historical SDK 1.51.41 note: this release attempted content-aware Mobile companion fitting. SDK 1.51.42 retires that outer-track behavior; descendant/root settlement details remain historical context only.",
     "Historical SDK 1.51.41 note: this release changed Drawer/Tabs containment and companion inline constraints. SDK 1.51.42 keeps the Drawer/Tabs containment work but retires Unit-driven scientific companion outer sizing.",

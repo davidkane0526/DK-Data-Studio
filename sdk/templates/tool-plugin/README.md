@@ -1,7 +1,14 @@
 # SDK Tool Workspace Example
 
-Reference `pluginType: "tool"` workspace for Plugin API 1.19.0.
+This is the **Unit-first** Tool Workspace template for Plugin API 1.19.
 
-It intentionally uses the same machine contract as a TOP workspace (`workspace.role: "top"`, matching dedicated `window`, `openMode: "window"`, `ctx.ui.topWorkspace.register`). Core distinguishes it only by presentation: the opener is grouped under the global **工具** button instead of the TOP activity strip.
+Tool Workspace keeps the same machine lifecycle as TOP; the only host-level distinction is that Core places its opener under the global Tools entry. The presentation is composed from public Unit Templates and contains no private layout stylesheet.
 
-No additional Tool-only semantics are required in the current SDK. The template uses `primaryScroll:"safe"`: Core owns the bounded Primary viewport and scrollbar, so plugin roots stay flexible with `min-height:0`. For compact form/card grids made from `auto` rows, declare `align-content:start` when spare height must not be distributed between rows. See `sdk/TOOL_PLUGINS.md`.
+Use Unit Workspace + PRIMARY/PRIME/SUB for composition, Unit ScientificPlot for scientific content, and named Layout recipes for internal flow. Keep `ctx.ui.workspaceSurface` only for advanced low-level infrastructure cases.
+
+Validate/package:
+
+```bash
+node sdk/tools/dkds-plugin.js validate sdk/templates/tool-plugin
+node sdk/tools/dkds-plugin.js package sdk/templates/tool-plugin sdk-tool-example.dkplugin
+```

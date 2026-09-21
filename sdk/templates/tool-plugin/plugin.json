@@ -1,14 +1,11 @@
 {
   "id": "com.example.tool-workspace",
   "name": "SDK Tool Workspace Example",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "scripts": [
     "plugin.js"
-  ],
-  "styles": [
-    "plugin.css"
   ],
   "platformPresentation": {
     "desktop": {
@@ -20,12 +17,12 @@
   },
   "enabled": true,
   "order": 920,
-  "description": "Tool Workspace using the same dedicated-window contract as TOP, grouped under the Core Tools button.",
+  "description": "Unit-first Tool Workspace using the same shared Unit composition and dedicated-window contract as TOP.",
   "pluginType": "tool",
   "requiresCore": [
     "workspace",
-    "ui.dom",
     "ui.workspace",
+    "ui.unit-templates",
     "ui.scientific-plot",
     "ui.activities",
     "ui.top-workspace",

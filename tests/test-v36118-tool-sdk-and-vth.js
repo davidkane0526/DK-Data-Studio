@@ -47,7 +47,7 @@ try{runValidate(tmp);}catch(err){rejected=String(err.stderr||err.message||err).i
 fs.rmSync(tmp,{recursive:true,force:true});
 assert(rejected,'SDK validator must reject a dedicated ScientificCurveSurface workspace without scientific-renderer.');
 const PluginPackage=require(path.join(root,'desktop/plugin-package.js'));
-const toolPayload={schema:1,manifest:tool,files:{'plugin.js':read('sdk/templates/tool-plugin/plugin.js'),'plugin.css':read('sdk/templates/tool-plugin/plugin.css'),'README.md':read('sdk/templates/tool-plugin/README.md')}};
+const toolPayload={schema:1,manifest:tool,files:{'plugin.js':read('sdk/templates/tool-plugin/plugin.js'),'README.md':read('sdk/templates/tool-plugin/README.md')}};
 const normalized=PluginPackage.normalizePluginPackage(toolPayload);
 assert(normalized.manifest.pluginType==='tool','Installed plugin package normalization must accept pluginType=tool.');
 console.log('v3.61.29 Tool Workspace SDK 1.18 + Vth renderer-neutral dependency checks passed.');

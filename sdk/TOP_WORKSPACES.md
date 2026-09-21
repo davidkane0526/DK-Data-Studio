@@ -1,5 +1,7 @@
 # TOP Workspaces — Plugin API 1.19
 
+> **Default authoring path (SDK 1.51.44): Unit-first.** Register the TOP lifecycle with Activity/TopWorkspace as described below, but compose the actual Page/Header/Layout/Workspace/PRIMARY/PRIME/SUB tree through `ctx.ui.unitTemplates`. Start from `sdk/templates/top-workspace-plugin/`. The lower-level `ctx.ui.workspaceSurface` facade remains public for advanced infrastructure cases and existing Plugin API 1.19 consumers; it is no longer the default template pattern.
+
 This document defines the public contract for third-party analysis plugins that must behave like built-in TOP workspaces.
 
 ## 1. Workbench is not TOP
@@ -106,7 +108,7 @@ const table = ctx.data.artifacts.get(sources[0].artifactId);
 
 Use `window.artifactHydration: "live"` only when the dedicated renderer must receive the exact live Artifact snapshot at open/reuse time. The manifest value is part of the machine-readable Window Spec and does not rely on plugin activation timing.
 
-## 3. Bounded scientific layout
+## 3. Advanced low-level bounded scientific layout
 
 A plot that fills the TOP viewport must have a bounded height chain. The reference pattern is:
 

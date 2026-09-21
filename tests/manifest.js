@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371113-unit-first-sdk-authoring.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371112-production-unit-cutover-closure.js",
       "args": []
     },

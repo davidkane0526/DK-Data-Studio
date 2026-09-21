@@ -117,12 +117,22 @@ Use the state meanings literally: `visible` controls scientific participation; `
 
 Use `bindView()` for focus/selected/dimmed UI and automatic reveal; `entityLinked:true` lets a focused Peak resolve to its Sweep/Dataset representation. Use `horizontalWheel:true` for overflowing legend/tab strips instead of plugin-local wheel or scrollbar code.
 
-## 8. Build UI only from Core mechanisms
+## 8. Build UI Unit-first
+
+For new or generated UI plugins, start from `ctx.ui.unitTemplates`. Compose Page/Header/Layout/Workspace plus PRIMARY/PRIME/SUB from named Units and Layout recipes before considering lower-level UI primitives. This is the default authoring path used by the official Workspace/TOP/Tool templates and is the basis for declarative/Python generation.
+
+Do not begin a new plugin by hand-writing page HTML, private layout CSS, direct DOM structure, host-specific Desktop/Mobile branches, or `ctx.ui.workspaceSurface.create(...)`. The lower-level Workspace facade remains public for advanced infrastructure work and existing Plugin API 1.19 consumers, but generated ordinary plugins should not need it.
+
+Core/Unit ownership remains the same: plugins provide domain content and bounded Unit parameters; Unit Templates own default anatomy/geometry/responsive behavior; Presenter owns outer platform allocation.
+
+### Public mechanisms
+
 
 Core owns the page/workbench, placement, resize, charts, generic controls and lifecycle. Plugins provide domain content.
 
-- page: `ctx.ui.pages.add`;
-- workspace: `ctx.ui.workspaceSurface`;
+- page registration: `ctx.ui.pages.add` with an empty shell, then `ctx.ui.unitTemplates.page` / `pageHeader`;
+- workspace composition: `ctx.ui.unitTemplates.workspace` plus `workbench.compose(...)`;
+- reusable UI anatomy: `ctx.ui.unitTemplates` Units and named Layout recipes;
 - PRIMARY/PRIME/SUB: Workbench registration;
 - generic controls: `ctx.ui.components.mount` and `ctx.parameters.render`;
 - persistent DOM listeners/observers/timers: `ctx.ui.dom`;

@@ -1,50 +1,14 @@
 (() => {
-  const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.interaction-behavior','ui.pages'];
-  DKDSPlugins.define({
-  "id": "example.plugin",
-  "name": "Example Plugin",
-  "version": "0.4.0",
-  "apiVersion": "1.19.0",
-  "entry": "plugin.js",
-  "enabled": true,
-  "order": 900,
-  "description": "Core-first Plugin API 1.19 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
-  "capabilities": [
-    "ui.page",
-    "ui.interaction",
-    "ui.interaction-behavior",
-    "data.types",
-    "state.store",
-    "workflow.processor",
-    "ui.plugin-workspace"
-  ],
-  "requiresCore": [
-    "status",
-    "capabilities",
-    "state",
-    "data.types",
-    "data.model",
-    "data.formula",
-    "workflow",
-    "ui.dom",
-    "ui.components",
-    "ui.workspace",
-    "ui.actions",
-    "ui.interaction",
-    "ui.interaction-behavior",
-    "ui.pages"
-  ],
-  "pluginType": "developer",
-  "platformPresentation": {
-    "desktop": {
-      "mode": "shared"
-    },
-    "mobile": {
-      "mode": "adaptive"
-    }
-  }
-}, async ctx => {
-    const dom=ctx.ui.dom;
+  const manifest={
+    id:'example.plugin',name:'Example Plugin',version:'0.5.0',apiVersion:'1.19.0',entry:'plugin.js',enabled:true,order:900,
+    description:'Unit-first Plugin API 1.19 template. Domain logic is plugin-owned; complete default presentation is composed from public Unit Templates.',
+    capabilities:['ui.page','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor','ui.plugin-workspace'],
+    requiresCore:['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.workspace','ui.unit-templates','ui.actions','ui.interaction','ui.interaction-behavior','ui.pages'],
+    pluginType:'developer',
+    platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
+  };
+  DKDSPlugins.define(manifest, async ctx => {
+    const units=ctx.ui.unitTemplates;
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});
 
     ctx.data.types.register('example.result',{
@@ -72,23 +36,39 @@
     });
     ctx.capabilities.register('example.summary',{kind:'example.service',title:'Example Summary',methods:{summary:()=>({lastRun:store.get().lastRun})}});
 
-    const page=ctx.ui.pages.add({
-      id:'example-page',label:'示例插件',title:'Example plugin page',order:900,
-      html:'<div class="analysis-page-header"><div><h2>示例插件</h2><div class="analysis-subtitle">领域逻辑由插件声明，布局、交互、组件与生命周期由 Core 管理。</div></div></div><div class="analysis-page-body"><div class="example-workbench-root"></div></div>'
-    });
-    const root=dom.query('.example-workbench-root',page);
-    const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'example'});
-    wb.mountPrimary({id:'main',label:'主界面',mount:({main})=>ctx.ui.components.mount(main,{type:'stack',children:[{type:'text',text:'PRIMARY · Plugin domain content'}]})});
-    wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',presentationRole:'inspector',semanticKind:'inspector',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>ctx.ui.components.mount(container,{type:'stack',children:[{type:'text',text:'PRIME · Domain details'}]})});
-    const actions=dom.create('div',{className:'dkds-plugin-header-actions'});
-    dom.append(dom.query('.analysis-page-header',page),actions);
-    const runCommand=()=>{store.patch({lastRun:Date.now()});ctx.status.set('Example command executed.');return true;};
+    const page=ctx.ui.pages.add({id:'example-page',label:'示例插件',title:'Example plugin page',order:900,html:''});
+    let workbench=null;
+    const runCommand=()=>{
+      const stamp=Date.now();store.patch({lastRun:stamp});status.textContent=`最近运行：${new Date(stamp).toLocaleString()}`;ctx.status.set('Example command executed.');return true;
+    };
     ctx.commands.register('example.run',runCommand);
     ctx.ui.interactionBehaviors.create('example-keys',{activity:'example',bindings:[{gesture:'key',target:'keyboard',chord:'Ctrl+Enter',command:'example.run'}]});
-    ctx.ui.actions.mount(actions,{actions:[
-      {id:'run',label:'运行',onInvoke:()=>ctx.commands.run('example.run')},
-      {id:'details',label:'详情',onInvoke:()=>wb.togglePrime('details')}
+
+    units.pageHeader.create(page,{variant:'page-owned',title:'示例插件',subtitle:'Unit-first · domain logic + public Unit Templates',actions:[
+      {id:'run',label:'运行',variant:'primary',onInvoke:()=>ctx.commands.run('example.run')},
+      {id:'details',label:'详情',onInvoke:()=>workbench?.togglePrime?.('details')}
     ]});
-    return {deactivate(){wb.dispose?.();}};
+    const body=units.page.create(page,{variant:'analysis'}).element;
+    const workspaceHost=units.layout.create(body,{variant:'identity'});
+    workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'example',primaryScroll:'safe'});
+
+    const main=units.layout.create(null,{variant:'stack-comfortable'});
+    units.note.create(main,{variant:'normal',text:'PRIMARY · 在这里组合领域内容。'});
+    const status=units.note.create(main,{variant:'meta',text:'尚未运行。'});
+
+    const details=units.layout.create(null,{variant:'stack-comfortable'});
+    units.note.create(details,{variant:'normal',text:'PRIME · 当前选择与领域详情。'});
+    const detailsPrime=units.prime.build({
+      id:'details',label:'详情',title:'示例 PRIME',variant:'canonical-header',
+      presentationRole:'inspector',semanticKind:'inspector',priority:70,collapsible:true,
+      existingNode:details,defaultPlacement:'right',placements:['inline','right','bottom','float'],
+      stateVersion:'unit-first-template-v1'
+    });
+
+    workbench.compose({
+      primary:{id:'main',label:'主界面',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},
+      primes:[detailsPrime],subs:[]
+    });
+    return {deactivate(){workbench?.dispose?.();}};
   });
 })();
