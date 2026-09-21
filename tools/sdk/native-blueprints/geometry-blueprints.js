@@ -23,7 +23,6 @@ const PRIVATE_GEOMETRY_BRIDGES=Object.freeze({
   '--dkds-plot-content-flex':Object.freeze({mechanism:'plot-view-content-geometry',unit:'plotView',publicProperties:['flex'],resolvedValues:['1 1 0']}),
   '--dkds-plot-content-height':Object.freeze({mechanism:'plot-view-content-geometry',unit:'plotView',publicProperties:['height'],resolvedValues:['auto']}),
   '--dkds-plot-content-min-height':Object.freeze({mechanism:'plot-view-content-geometry',unit:'plotView',publicProperties:['min-height'],resolvedValues:['0px','320px']}),
-  '--dkds-vth-results-height':Object.freeze({mechanism:'accepted-layout-geometry',unit:'layout',variant:'split-results',publicProperties:['grid-template-rows'],resolvedValues:['minmax(0,1fr) 8px 180px']}),
   '--pulse-raw-plot-height':Object.freeze({mechanism:'accepted-layout-geometry',unit:'layout',publicProperties:['height','max-height'],resolvedValues:['clamp(290px,44vh,360px)','clamp(360px,42vh,440px)','calc(clamp(360px,42vh,440px) + 60px)']}),
   '--respar-main-chrome-height':Object.freeze({mechanism:'accepted-layout-geometry',unit:'layout',publicProperties:['height','min-height'],resolvedValues:['34px']})
 });

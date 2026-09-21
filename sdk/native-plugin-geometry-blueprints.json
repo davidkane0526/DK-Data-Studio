@@ -1558,17 +1558,6 @@
         "320px"
       ]
     },
-    "--dkds-vth-results-height": {
-      "mechanism": "accepted-layout-geometry",
-      "unit": "layout",
-      "variant": "split-results",
-      "publicProperties": [
-        "grid-template-rows"
-      ],
-      "resolvedValues": [
-        "minmax(0,1fr) 8px 180px"
-      ]
-    },
     "--pulse-raw-plot-height": {
       "mechanism": "accepted-layout-geometry",
       "unit": "layout",

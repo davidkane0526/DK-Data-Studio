@@ -2,8 +2,7 @@
   "version": "2.5.38",
   "properties": {
     "align-content": [
-      "start",
-      "stretch"
+      "start"
     ],
     "align-items": [
       "baseline",
@@ -184,7 +183,6 @@
       "210px",
       "360px",
       "380px",
-      "460px",
       "560px",
       "620px",
       "auto",
@@ -218,7 +216,6 @@
       "0",
       "0 0 7px",
       "0 0 8px",
-      "0 0 9px",
       "0 12px",
       "0 14px 13px",
       "0 auto",
@@ -228,8 +225,7 @@
       "6px 10px 0",
       "7px 0",
       "7px 10px 0",
-      "8px 0",
-      "8px 0 0"
+      "8px 0"
     ],
     "margin-bottom": [
       "3px",

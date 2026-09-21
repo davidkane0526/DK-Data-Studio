@@ -9,8 +9,7 @@
  */
 const ACCEPTED_LAYOUT_GEOMETRY_VALUES=Object.freeze({
   "align-content": [
-    "start",
-    "stretch"
+    "start"
   ],
   "align-items": [
     "baseline",
@@ -191,7 +190,6 @@ const ACCEPTED_LAYOUT_GEOMETRY_VALUES=Object.freeze({
     "210px",
     "360px",
     "380px",
-    "460px",
     "560px",
     "620px",
     "auto",
@@ -225,7 +223,6 @@ const ACCEPTED_LAYOUT_GEOMETRY_VALUES=Object.freeze({
     "0",
     "0 0 7px",
     "0 0 8px",
-    "0 0 9px",
     "0 12px",
     "0 14px 13px",
     "0 auto",
@@ -235,8 +232,7 @@ const ACCEPTED_LAYOUT_GEOMETRY_VALUES=Object.freeze({
     "6px 10px 0",
     "7px 0",
     "7px 10px 0",
-    "8px 0",
-    "8px 0 0"
+    "8px 0"
   ],
   "margin-bottom": [
     "3px",
