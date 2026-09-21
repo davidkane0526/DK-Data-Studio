@@ -52,8 +52,13 @@ assert(group.includes("detailGeometry:{contentAspectRatio:1.65,contentMinHeightP
 assert(group.includes("unitTemplates?.scientificPlot?.create?.(plot,{variant:'curve'")&&group.includes("renderOwner:'runtime'"),'Dynamic group plots must declare one Unit ScientificPlot lifecycle while retaining the accepted runtime renderer owner.');
 
 assert(!/container-name:resonance-parameters-mobile;padding:10px/.test(read('src/plugins/resonance-workbench/mobile.css')),'Resonance Mobile CSS must not remain a second PRIME outer-inset owner.');
-assert.strictEqual(sha('src/plugins/resonance-workbench/plugin.css'),'dfa8e25f1463431420432ea95a64a81351eb9195c7986885ba507d61b80363c5','Resonance production Unit CSS must preserve accepted geometry except the reviewed v3.71.91 Mobile-region exclusion that removes Desktop floating/docked ownership from projected companions.');
-assert.strictEqual(sha('src/plugins/resonance-workbench/mobile.css'),'853c639753657813d6e27a4c30e8d33320d869b0b5703b40b6797e15fed79ccf','Resonance mobile source may change only for the reviewed PRIME inset ownership migration.');
+const resonanceCss=read('src/plugins/resonance-workbench/plugin.css'),resonanceMobile=read('src/plugins/resonance-workbench/mobile.css');
+assert.strictEqual(spec.LAYOUT_RECIPES['action-grid-2']?.gridTemplateColumns,'repeat(2,minmax(0,1fr))','Canonical ActionGrid must preserve the accepted Resonance two-column action geometry.');
+assert.strictEqual(spec.LAYOUT_RECIPES['action-grid-2']?.gapPx,5,'Canonical ActionGrid must preserve the accepted Resonance 5 px action gap.');
+assert((unit.match(/variant:'action-grid-2'/g)||[]).length>=2,'Resonance scan/detect action groups must reproduce accepted Desktop geometry through Unit Layout.');
+assert(!/respar-scan-global[^\n{]*\{[^}]*grid-template-columns/.test(resonanceCss)&&!/respar-detect-actions[^\n{]*\{[^}]*grid-template-columns/.test(resonanceCss),'Resonance plugin.css must not duplicate Unit-owned parameter action geometry.');
+assert(!resonanceMobile.split('\n').some(line=>/respar-(scan-global|detect-actions)/.test(line)&&line.includes('grid-template-columns')),'Resonance Mobile CSS must not re-own Unit parameter action density.');
+assert(unit.includes('layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null'),'Mobile parameter label density must stay Unit-owned without changing accepted Desktop label flow.');
 assert.strictEqual(sha('src/plugins/resonance-workbench/workbench-shared.js'),'fe49fa74d2ef018c5558c0098bb10fea5e449b6e8a0ca246151fb12a2577321b','Shared Resonance controller/domain contract must remain byte-frozen during presentation cutover.');
 assert.strictEqual(sha('src/plugins/resonance-workbench/task-core.js'),'9f6ceda742c2ae0523161ae66d268ef324059f9e8e3219a839702fa3ce439da8','Resonance task/numeric core must remain byte-frozen during presentation cutover.');
 assert.strictEqual(sha('src/plugins/resonance-workbench/resonant-ter-task.js'),'cc201a6a30baf8dcfacad903d9bc7a9c417dd40dc55c56a485f3bc6afb831e44','Resonance TER task must remain byte-frozen during presentation cutover.');

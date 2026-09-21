@@ -1,3 +1,5 @@
+> **v3.71.111 WIP — Parameter Unit Responsive/Density Ownership Closure**：完成五个生产参数 PRIME（Resonance / TER / Pulse Analysis / Pulse Sampler / Vth）的响应式密度所有权审计。Resonance 的扫描按钮、寻峰按钮与移动端显示参数网格迁回 Unit Layout；Pulse Analysis 主参数表改用 canonical `form-grid-2`。TER、Pulse Sampler、Vth 已有 Unit-owned 结构保持不动。`unit:density` 现在同时审计生产参数 PRIME，禁止把已迁移的列数/单列降级重新写回插件 Mobile CSS。插件仍可声明领域内容和允许的 Unit geometry，Presenter 继续只消费通用 intrinsic constraint。
+
 > **v3.71.110 WIP — Resonance parameter Unit density closure**：修复共振参数 Drawer 在移动端竖屏被压得过窄的问题。没有恢复 25%/固定 px 最小宽度，也没有在 Presenter 中加入共振插件分支；共振的“标签 + 控件”响应式结构改为通过 Unit Layout 的 accepted geometry / responsiveGeometry 声明，Unit 自动发布 avoid-last-resort intrinsic constraint，Presenter 继续只消费通用 Unit 约束。宽度足够时保持紧凑的标签/控件同行，只有真实内容宽度不足时才退回单列。其他已验收移动端布局保持不变。
 
 > **v3.71.109 WIP — Mobile orientation / reflow contract**：移动端 Presenter 改用 live visualViewport 尺寸并在 orientation/viewport settle 后统一重投影；Drawer 用户宽度按 portrait/landscape 分域持久化，删除 25% 页面机械硬下限，最小合理宽度完全由 Unit intrinsic/density constraint 与真实 overflow 求解。Core Unit Action 强制原子单行文字。SplitPane 在用户调整后以保存的 ratio 作为跨 viewport 的首选意图，横竖屏切换时自动按新的可见 block extent 重算，避免 Vth 结果区和拖拽手柄停留在旧像素轨道。
@@ -51,7 +53,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.110**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.43**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.111**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.43**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

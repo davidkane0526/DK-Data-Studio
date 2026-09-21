@@ -29,12 +29,12 @@
   }
 
   function buildDataControl(ctx){
-    const dom=ctx.ui.dom,units=ctx.ui.unitTemplates;
+    const dom=ctx.ui.dom,units=ctx.ui.unitTemplates,nativeMobile=!!ctx.runtime?.host?.profile?.nativeMobile;
     const left=layout(units,null,{className:'respar-left-panel'});
 
     const dataSection=layout(units,left,{tagName:'section'});
     dataSection.appendChild(text(dom,'h3','数据列表','respar-data-list-title'));
-    const scan=layout(units,dataSection,{className:'respar-scan-global dkds-mode-group'});scan.setAttribute('role','group');scan.setAttribute('aria-label','扫描可见性模式');
+    const scan=layout(units,dataSection,{variant:'action-grid-2',className:'respar-scan-global dkds-mode-group'});scan.setAttribute('role','group');scan.setAttribute('aria-label','扫描可见性模式');
     directAction(units,scan,{id:'reswinShowAll',label:'全部扫描',className:'dkds-action-button'});
     directAction(units,scan,{id:'reswinShowForward',label:'仅正扫',className:'dkds-action-button'});
     directAction(units,scan,{id:'reswinShowReverse',label:'仅反扫',className:'dkds-action-button'});
@@ -44,26 +44,29 @@
 
     const detector=layout(units,left,{tagName:'section'});detector.appendChild(text(dom,'h3','智能寻峰'));
     const note=units.note.create(detector,{variant:'normal',className:'respar-note',text:'自动融合原始 I–V 与辅助通道；最终峰位始终回到原始采样点。'});setId(note,'reswinDetectorDescription');
-    labeledControl(dom,units,detector,{id:'reswinDetectorSelect',label:'寻峰算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT});
+    labeledControl(dom,units,detector,{id:'reswinDetectorSelect',label:'寻峰算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null});
     directAction(units,detector,{id:'reswinRecoverDetector',label:'定位/恢复缺失寻峰算法',className:'wide hidden'});
-    labeledControl(dom,units,detector,{id:'reswinMetricAlgorithmSelect',label:'峰宽/基线算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT});
+    labeledControl(dom,units,detector,{id:'reswinMetricAlgorithmSelect',label:'峰宽/基线算法',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null});
     directAction(units,detector,{id:'reswinRecoverMetricAlgorithm',label:'定位/恢复缺失峰宽算法',className:'wide hidden'});
     const metricNote=units.note.create(detector,{variant:'normal',className:'respar-note',text:'FWHM、峰高、面积与局部基线由可版本化算法插件计算。'});setId(metricNote,'reswinMetricAlgorithmDescription');
     const presetRow=layout(units,detector,{className:'respar-preset-row'});
     labeledControl(dom,units,presetRow,{id:'reswinPreset',label:'预设',kind:'select',options:[{value:'strict',label:'可靠'},{value:'balanced',label:'平衡'},{value:'sensitive',label:'灵敏'}]});
     const advanced=layout(units,detector,{tagName:'details',className:'respar-advanced'});advanced.dataset.dkdsUnitTemplate='section-v2';advanced.dataset.dkdsUnitVariant='disclosure';advanced.appendChild(text(dom,'summary','高级设置（一般不用改）'));layout(units,advanced,{id:'reswinDetectorParams'});
-    const detectActions=layout(units,detector,{className:'respar-detect-actions'});
+    const detectActions=layout(units,detector,{variant:'action-grid-2',className:'respar-detect-actions'});
     directAction(units,detectActions,{id:'reswinDetectSelected',label:'当前扫描寻峰',variant:'primary',className:'primary'});
     directAction(units,detectActions,{id:'reswinDetectAll',label:'全部可见寻峰'});
     directAction(units,detector,{id:'reswinSortPeaks',label:'跨 Vg 智能整理峰序',className:'wide'});
     const legend=units.legend.create(detector,{variant:'strip',className:'respar-peak-legend dkds-toolbar dkds-surface-muted'});setId(legend,'reswinPeakLegend');legend.dataset.dkdsLegend='true';
 
-    const display=layout(units,left,{tagName:'section'});display.appendChild(text(dom,'h3','显示'));
+    const display=layout(units,left,{tagName:'section'});
+    if(nativeMobile)units.layout.apply(display,{variant:'form-grid-2'});
+    const displayTitle=text(dom,'h3','显示');display.appendChild(displayTitle);if(nativeMobile)units.layout.apply(displayTitle,{variant:'identity',geometry:{gridColumn:'1 / -1'}});
     check(units,display,{id:'reswinShowRejected',label:' 显示不采纳峰'});
     check(units,display,{id:'reswinShowWidth',label:' 显示选中峰宽'});
     check(units,display,{id:'reswinShowPoints',label:' 显示峰位点'});
     check(units,display,{id:'reswinPhysicsLabels',label:' 主图标注物理类型'});
-    labeledControl(dom,units,display,{id:'reswinTransform',label:'辅助视图',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT,options:transformOptions(ctx)});
+    const transform=labeledControl(dom,units,display,{id:'reswinTransform',label:'辅助视图',kind:'select',labelClassName:'respar-select-label dkds-field',layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null,options:transformOptions(ctx)});
+    if(nativeMobile)units.layout.apply(transform.wrapper,{variant:'identity',geometry:{gridColumn:'1 / -1'}});
 
     const manual=layout(units,left,{tagName:'section'});manual.appendChild(text(dom,'h3','手动操作'));
     units.note.create(manual,{variant:'meta',className:'respar-hint',html:'Ctrl / Shift + 左键点击曲线：新增峰<br>Ctrl / Shift + 右键点击峰点：删除峰<br>直接拖框：选择峰并打开区域操作<br>Ctrl + 拖框：框选缩放<br>拖峰点：吸附到当前曲线真实采样点<br>拖分析窗口手柄：调整局部基线 / FWHM 自动计算范围<br>L / Shift+L：锁定 / 解锁所选峰<br>滚轮：围绕鼠标缩放<br>双击主图：恢复全部范围<br>↑/↓：切换曲线；←/→：移动峰'});

@@ -1,7 +1,7 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.12.12",
+  "version": "2.12.13",
   "apiVersion": "1.19.0",
   "requiresCore": [
     "runtime",

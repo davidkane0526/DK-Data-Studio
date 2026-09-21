@@ -9,11 +9,12 @@ const unit=read('src/plugins/resonance-workbench/unit-presentation.js');
 const mobile=read('src/plugins/resonance-workbench/mobile.css');
 const presenter=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 
-assert.strictEqual(pkg.version,'3.71.110','v3.71.110 source required.');
+const atLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(atLeast(pkg.version,'3.71.110'),'v3.71.110+ source required.');
 assert(unit.includes("const PARAMETER_INLINE_LABEL_LAYOUT=Object.freeze"),'Resonance parameter inline label density must be declared through Unit Layout.');
 assert(unit.includes("gridTemplateColumns:'70px minmax(0,1fr)'"),'Wide-enough parameter labels must preserve the accepted inline label/control structure.');
 assert(unit.includes("maxWidth:310")&&unit.includes("gridTemplateColumns:'minmax(0,1fr)'"),'Single-column label fallback must remain the Unit last resort.');
-assert(unit.includes('geometry,responsiveGeometry,responsiveTarget')&&unit.includes('layoutSpec:PARAMETER_INLINE_LABEL_LAYOUT'),'The plugin helper must pass public Unit responsive geometry instead of writing Mobile CSS.');
+assert(unit.includes('geometry,responsiveGeometry,responsiveTarget')&&unit.includes('layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null'),'The plugin helper must pass public Unit responsive geometry instead of writing Mobile CSS.');
 assert(!unit.includes("minContentInlinePx:")||!unit.match(/id:'data-control'[^\n]*minContentInlinePx:/),'Resonance data-control must not restore a plugin-specific fixed minimum width.');
 assert(!mobile.includes('.respar-select-label{\n  display:grid')&&!mobile.includes('.respar-select-label{grid-template-columns:1fr}'),'Mobile CSS must not remain a second owner of the migrated parameter label layout.');
 assert(presenter.includes('resolveInlineConstraintDeficit')&&!presenter.includes('resonance-workbench'),'Presenter must remain domain-blind and consume Unit intrinsic constraints only.');

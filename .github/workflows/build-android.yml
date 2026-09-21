@@ -50,6 +50,8 @@ jobs:
           node tests/test-v371108-mobile-drawer-fill-sizing.js
           node tests/test-v371109-mobile-orientation-reflow-contract.js
           node tests/test-v371110-resonance-parameter-density-contract.js
+          node tests/test-v371111-parameter-unit-density-ownership.js
+          node tools/quality/unit-responsive-density-audit.js
 
       - name: Select preinstalled JDK 21
         shell: bash

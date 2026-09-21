@@ -59,7 +59,7 @@
     textNode(dom,activeIdentity,{id:'pulseActiveFileMeta',className:'pulse-active-meta',text:'—'});
     units.field.create(activeHead,{variant:'analysis-control',className:'pulse-label-edit dkds-field',id:'pulseSeriesLabel',label:'显示标签',inputType:'text',placeholder:'例如 read=0.5 V / Device A'});
 
-    const form=units.layout.create(editor,{variant:'identity',className:'pulse-control-grid',geometry:{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',rowGap:'8px',columnGap:'9px',alignItems:'end',minWidth:'0',padding:'10px 11px 11px'}});
+    const form=units.layout.create(editor,{variant:'form-grid-2',className:'pulse-control-grid',responsiveTarget:controls,geometry:{padding:'10px 11px 11px'}});
     field(units,form,{id:'pulseSegmentationMode',label:'分段方式',kind:'select',options:[
       {value:'auto',label:'自动（推荐）'},{value:'cycle',label:'按周期点数'},{value:'timing',label:'按时间协议'},{value:'waveform',label:'按记录电压平台'},{value:'equal-count',label:'等点数分段'}
     ]});

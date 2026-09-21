@@ -83,4 +83,50 @@ assert(schemaCss.includes('@media(max-width:310px)'),'ParameterForm single-colum
 const runtime=fs.readFileSync(path.join(ROOT,'src/core/ui/modules/composition/unit-template-layout.js'),'utf8');
 assert(runtime.includes('if(!(Number(width)>0))return [];'),'Unknown width must not activate responsive geometry.');
 assert(runtime.includes("if(!(Number(width)>0)){const base={...recipe};delete base.responsive;return base;}"),'Unknown width must preserve the base recipe.');
+
+
+// Production parameter PRIME ownership closure.  This is intentionally kept in
+// the Unit density audit because architecture:hygiene already executes it.  A
+// plugin may choose its semantic density through public Unit recipes/geometry,
+// but Mobile/Presenter CSS must not become a second responsive geometry owner.
+const pluginRoot=path.join(ROOT,'src/plugins');
+const parameterPrimeFiles=[];
+for(const name of fs.readdirSync(pluginRoot)){
+  const file=path.join(pluginRoot,name,'unit-presentation.js');
+  if(!fs.existsSync(file))continue;
+  const source=fs.readFileSync(file,'utf8');
+  if(source.includes("presentationPurpose:'parameters'"))parameterPrimeFiles.push(`${name}/unit-presentation.js`);
+}
+assert.deepStrictEqual(parameterPrimeFiles.sort(),[
+  'pulse-analysis/unit-presentation.js',
+  'pulse-sampler-tool/unit-presentation.js',
+  'resonance-workbench/unit-presentation.js',
+  'ter-analysis/unit-presentation.js',
+  'transfer-vth-lab/unit-presentation.js'
+].sort(),'Production parameter PRIME inventory drifted; audit the new/removed owner explicitly.');
+
+const resonanceUnit=fs.readFileSync(path.join(pluginRoot,'resonance-workbench/unit-presentation.js'),'utf8');
+const resonanceMobile=fs.readFileSync(path.join(pluginRoot,'resonance-workbench/mobile.css'),'utf8');
+const resonanceCss=fs.readFileSync(path.join(pluginRoot,'resonance-workbench/plugin.css'),'utf8');
+assert((resonanceUnit.match(/variant:'action-grid-2'/g)||[]).length>=2,'Resonance scan/detect action density must be Unit-owned.');
+assert(resonanceUnit.includes("if(nativeMobile)units.layout.apply(display,{variant:'form-grid-2'})"),'Resonance display parameter density must be Unit-owned on Mobile.');
+assert(resonanceUnit.includes('layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null'),'Resonance inline label/control density must use Unit geometry only on the Mobile parameter projection.');
+assert(!/respar-scan-global[^\n{]*\{[^}]*grid-template-columns/.test(resonanceCss),'Resonance plugin.css must not own the scan action grid.');
+assert(!/respar-detect-actions[^\n{]*\{[^}]*grid-template-columns/.test(resonanceCss),'Resonance plugin.css must not own the detect action grid.');
+for(const token of ['respar-scan-global','respar-detect-actions','#reswinShowRejected']){
+  const row=resonanceMobile.split('\n').filter(line=>line.includes(token)&&line.includes('grid-template-columns'));
+  assert.strictEqual(row.length,0,`Resonance Mobile CSS must not own parameter density for ${token}.`);
+}
+
+const pulseAnalysisUnit=fs.readFileSync(path.join(pluginRoot,'pulse-analysis/unit-presentation.js'),'utf8');
+assert(pulseAnalysisUnit.includes("variant:'form-grid-2',className:'pulse-control-grid',responsiveTarget:controls"),'Pulse Analysis parameter form must use the standard Unit density recipe.');
+assert(!pulseAnalysisUnit.includes("className:'pulse-control-grid',geometry:{display:'grid'"),'Pulse Analysis must not privately recreate the Unit form-grid geometry.');
+
+const pulseSamplerUnit=fs.readFileSync(path.join(pluginRoot,'pulse-sampler-tool/unit-presentation.js'),'utf8');
+assert(pulseSamplerUnit.includes("variant:'form-grid-2'")&&pulseSamplerUnit.includes("variant:'action-grid-4'"),'Pulse Sampler parameter density must remain Unit-owned.');
+const terUnit=fs.readFileSync(path.join(pluginRoot,'ter-analysis/unit-presentation.js'),'utf8');
+assert((terUnit.match(/variant:'form-grid-2'/g)||[]).length>=2,'TER parameter/display density must remain Unit-owned.');
+const vthUnit=fs.readFileSync(path.join(pluginRoot,'transfer-vth-lab/unit-presentation.js'),'utf8');
+assert(vthUnit.includes("const controlsHost=units.layout.create(null,{variant:'stack-comfortable'"),'Vth intentionally uses the canonical compact stack for its parameter PRIME.');
+
 console.log(`Unit responsive/density audit PASS: ${ids.length} Units / ${Object.keys(LAYOUT_RECIPES).length} recipes / compact-first-single-last-v1`);
