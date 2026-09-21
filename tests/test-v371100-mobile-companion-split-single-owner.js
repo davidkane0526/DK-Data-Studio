@@ -34,7 +34,7 @@ assert.strictEqual(State.resolveLayout(right,{width:744,height:900},{nativeMobil
 // same resolver on future viewport changes. There is no second CSS clamp.
 const adjusted=State.withLayoutPreference(bottom,300,{height:700});
 assert.strictEqual(State.resolveLayout(adjusted,{height:700},{nativeMobile:true}).effectiveSize,300);
-assert.strictEqual(State.resolveLayout(adjusted,{height:420},{nativeMobile:true}).effectiveSize,244,'Persisted intent must be safely clamped by the Workspace resolver when the viewport shrinks.');
+assert.strictEqual(State.resolveLayout(adjusted,{height:420},{nativeMobile:true}).effectiveSize,180,'Persisted user intent must replay from the saved ratio when the Workspace extent shrinks, rather than reusing stale pixels.');
 assert.strictEqual(State.resolveLayout(adjusted,{height:700},{nativeMobile:true}).effectiveSize,300,'The preferred size must recover when space returns.');
 
 assert(pluginWorkspace.includes('mobileDefaultRatio:.34,mobileMin:0'),'Right companion must declare a generic Mobile proportional default at the Workspace split owner.');
