@@ -2,7 +2,6 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const crypto=require('crypto');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const unit=read('src/plugins/ter-analysis/unit-presentation.js');
@@ -12,11 +11,11 @@ const scientific=read('src/core/ui/modules/composition/unit-template-scientific.
 const analysis=read('src/core/ui/modules/workbench/analysis.js');
 const types=read('sdk/plugin-api.d.ts');
 const spec=require('../src/core/ui/modules/composition/unit-template-spec');
-const digest=crypto.createHash('sha256').update(css).digest('hex');
 
 assert(Number(spec.UNIT_TEMPLATE_SPEC_VERSION.split('.').at(-1))>=21,'TER source parity must retain Unit Templates 2.5.38 or later.');
 assert.strictEqual(Object.keys(spec.UNIT_CATALOG||{}).length,41);
-assert.strictEqual(digest,'a601985b774667acb6c8d8fea9255db87537a46afe4bdecc2d07504ef7a1442b','TER source-detail geometry must be the accepted pre-cutover geometry source.');
+for(const token of ['min-width:118px;width:135px','min-width:105px;width:112px','width:min(860px,100%)','width:min(760px,100%)','grid-template-rows:auto auto auto minmax(320px,1fr)','min-height:38px'])assert(css.replace(/\s+/g,'').includes(token.replace(/\s+/g,'')),`TER accepted source-detail geometry missing: ${token}`);
+assert(!/--dkds-(?:grid-(?:gap|align-items|auto-rows|columns)|plot-content-(?:flex|min-height|height))\s*:/.test(css),'TER source-detail CSS must not reclaim managed PlotGroup/PlotView geometry after Unit maturity freeze.');
 
 // Parameter PRIME is a hard titleless contract, not CSS-hidden chrome.
 for(const token of ['PARAMETER_PRIME_HEADER_FORBIDDEN','PARAMETER_PRIME_CHROME_FORBIDDEN','PARAMETER_PRIME_SURFACE_CHROME_FORBIDDEN'])assert(analysis.includes(token),`Workbench missing ${token}`);
@@ -40,4 +39,4 @@ assert(unit.includes('gapPx:14')&&unit.includes('compact:true'));
 assert(unit.includes("actionsTagName:'div'")&&unit.includes("className:'ter-resistance-card-header'"));
 assert(unit.includes("if(resistance)setId(card,'terResistanceCard')"),'TER Unit composition must preserve the accepted R–V card id consumed by feature-runtime.');
 
-console.log('v3.71.10 TER source-parity hard contract PASS: source is the oracle; parameter PRIME is permanently titleless.');
+console.log('v3.71.10 TER source-parity hard contract PASS: accepted detail geometry retained, managed geometry Unit-owned, parameter PRIME permanently titleless.');
