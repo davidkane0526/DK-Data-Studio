@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('assert');const fs=require('fs');const path=require('path');const crypto=require('crypto');
 function digest(root,{include=()=>true}={}){const files=[];function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else if(include(path.relative(root,file).replace(/\\/g,'/')))files.push(file);}}walk(root);const hash=crypto.createHash('sha256');for(const file of files){hash.update(path.relative(root,file).replace(/\\/g,'/'));hash.update('\0');hash.update(fs.readFileSync(file));hash.update('\0');}return {count:files.length,sha256:hash.digest('hex')};}
-const blobSha=file=>{const bytes=fs.readFileSync(file),header=Buffer.from('blob '+bytes.length+'\\0');return crypto.createHash('sha1').update(header).update(bytes).digest('hex');};
+const blobSha=file=>{const bytes=fs.readFileSync(file),header=Buffer.from('blob '+bytes.length+'\x00');return crypto.createHash('sha1').update(header).update(bytes).digest('hex');};
 const NON_MIGRATING_EXCLUDED=['ter-analysis/','pulse-analysis/','resonance-workbench/','data-center/','pulse-sampler-tool/','transfer-vth-lab/','_template/'];
 const EXPECTED_NON_MIGRATING_BLOBS=Object.freeze({
   "aurora-pop-theme/plugin.js":"9a0a1f3197e1359bd46041cf53c18e2e7fd4894a",
@@ -41,7 +41,7 @@ const EXPECTED_NON_MIGRATING_BLOBS=Object.freeze({
   "workspace-safeguards/README.md":"98420d99147d1a1c8b497ef288a8d4c4698ec886"
 });
 const currentNonMigrating=[];
-(function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else{const rel=path.relative('src/plugins',file).replace(/\\\\/g,'/');if(!NON_MIGRATING_EXCLUDED.some(prefix=>rel.startsWith(prefix)))currentNonMigrating.push(rel);}}})('src/plugins');
+(function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else{const rel=path.relative('src/plugins',file).replace(/\\/g,'/');if(!NON_MIGRATING_EXCLUDED.some(prefix=>rel.startsWith(prefix)))currentNonMigrating.push(rel);}}})('src/plugins');
 assert.deepStrictEqual(currentNonMigrating.sort(),Object.keys(EXPECTED_NON_MIGRATING_BLOBS).sort(),'Non-migrating built-in plugin inventory changed; SDK _template is intentionally excluded from the built-in byte freeze.');
 for(const [rel,expected] of Object.entries(EXPECTED_NON_MIGRATING_BLOBS))assert.strictEqual(blobSha(path.join('src/plugins',rel)),expected,`Unrelated built-in plugin asset changed during Unit migration: ${rel}`);
 assert(!fs.existsSync('src/plugins/transfer-vth-lab/plugin.css'),'Vth production private presentation CSS must remain physically retired after Unit cutover.');
