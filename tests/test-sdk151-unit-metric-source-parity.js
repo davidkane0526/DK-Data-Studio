@@ -29,7 +29,7 @@ assert.deepStrictEqual({min:BASE_METRICS.pageHeader.pageMinHeightPx,pb:BASE_METR
 has('src/styles/structure/sdk-semantic-surfaces.css','.dkds-surface-header{ box-sizing:border-box; min-width:0; display:flex; align-items:center; gap:var(--dkds-visual-gap); padding:7px var(--dkds-visual-pad-x); }','surface header');
 has('src/styles/structure/metrics.css','--dkds-visual-gap:8px;','visual gap token');
 has('src/styles/structure/metrics.css','--dkds-visual-pad-x:10px;','visual horizontal inset token');
-has('src/styles/structure/super-top-contract.css','.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}','action geometry');
+has('src/styles/structure/super-top-contract.css','.dkds-action-button{min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;}','action geometry + atomic text');
 has('src/styles/structure/desktop-chrome-geometry.css','.dkds-portable-icon-action{ box-sizing:border-box;width:26px;min-width:26px;max-width:26px;','header icon geometry');
 has('src/styles/structure/sdk-semantic-surfaces.css','.dkds-check{display:flex;align-items:center;gap:7px;font-size:var(--plugin-font-label,12px)}','check gap');
 
