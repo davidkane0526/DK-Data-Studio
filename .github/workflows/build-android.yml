@@ -54,6 +54,8 @@ jobs:
           node tests/test-v371112-production-unit-cutover-closure.js
           node tools/quality/unit-responsive-density-audit.js
           node tools/quality/unit-production-cutover-audit.js --strict
+          node tests/test-v371113-unit-first-sdk-authoring.js
+          node tools/quality/unit-sdk-authoring-audit.js --strict
 
       - name: Select preinstalled JDK 21
         shell: bash
