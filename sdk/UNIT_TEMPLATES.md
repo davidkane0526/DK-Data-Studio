@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.43): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.45): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.43
+# Unit Templates 2.5.38 — SDK 1.51.45
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,18 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.45 maturity freeze
+
+SDK 1.51.45 freezes the mature Unit ownership model without adding a 42nd Unit or a 74th Layout recipe. The production catalog remains **41 Units / 73 Layout recipes**.
+
+Production plugin CSS may retain only source-faithful internal detail geometry that is not already managed by a Unit. Managed PlotGroup/PlotView geometry, canonical parameter density, responsive Form/Action grids, and Vth production presentation geometry are Unit-owned. The production CSS dependency audit is part of architecture hygiene and rejects a second private owner for those managed properties.
+
+Vth production presentation is fully CSS-free after cutover; its PlotView, result SplitPane, parameter stack and responsive behavior are expressed through public Unit contracts. TER and Resonance retain only source-detail CSS that is not duplicated by managed scientific Unit geometry.
+
+The SDK geometry vocabulary remains source-derived: retired private CSS cannot survive only as a stale geometry blueprint, bridge, or accepted value. Historical blueprint/value provenance must be removed when its production owner is retired.
+
+`UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. SDK 1.51.45 is therefore a contract/ownership maturity release, not a Unit-catalog expansion.
 
 ## 2.5.38 Mobile workspace-owned companion geometry contract
 
@@ -159,7 +171,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.43.
+`units.version` is `2.5.38` in SDK 1.51.45.
 
 
 

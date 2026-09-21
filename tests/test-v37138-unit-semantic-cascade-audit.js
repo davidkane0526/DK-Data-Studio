@@ -20,7 +20,7 @@ assert.deepStrictEqual(Object.fromEntries(Object.entries(byPlugin).map(([id,row]
   'data-center':[15,2],
   'pulse-analysis':[18,10],
   'pulse-sampler-tool':[15,9],
-  'resonance-workbench':[43,0],
+  'resonance-workbench':[43,2],
   'ter-analysis':[5,0],
   'transfer-vth-lab':[6,5]
 },'Production Unit presentation cascade census changed; review the mount instead of silently changing coverage.');
@@ -43,8 +43,8 @@ assert(/data-dkds-mobile-density="compact"\]\s+\.dkds-field-control\{font-size:1
   'Mobile compact density must target canonical Field identity so select and popup proxy stay identical.');
 
 const unitDoc=fs.readFileSync(path.join(root,'sdk/UNIT_TEMPLATES.md'),'utf8');
-assert(unitDoc.includes('# Unit Templates 2.5.38 — SDK 1.51.43'));
-assert(unitDoc.includes('`units.version` is `2.5.38` in SDK 1.51.43.'));
-assert(!unitDoc.includes('2.5.39')&&!unitDoc.includes('1.51.44'),'SDK Unit documentation must not advertise a future/unpublished contract.');
+assert(unitDoc.includes('# Unit Templates 2.5.38 — SDK 1.51.45'));
+assert(unitDoc.includes('`units.version` is `2.5.38` in SDK 1.51.45.'));
+assert(!unitDoc.includes('2.5.39'),'SDK Unit documentation must not advertise a future/unpublished Unit contract.');
 
 console.log('v3.71.38 Unit semantic/cascade audit PASS');
