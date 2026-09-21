@@ -10,7 +10,8 @@ const json=rel=>JSON.parse(read(rel));
 
 assert(Number(json('package.json').version.split('.').at(-1))>=59,'App must retain the v3.71.59+ baseline.');
 assert(Number(json('mobile/app.json').expo.android.versionCode)>=200,'Android versionCode must retain the v3.71.59+ baseline.');
-assert.strictEqual(json('sdk/contract.json').sdkVersion,'1.51.43');
+const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
+assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.51.43'),'SDK must retain the 1.51.43+ workspace inset contract.');
 const spec=require('../src/core/ui/modules/composition/unit-template-spec');
 assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(spec.UNIT_CATALOG).length,41,'PRIMARY edge inset must not add a new Unit type.');
