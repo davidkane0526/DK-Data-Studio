@@ -236,26 +236,6 @@ const NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS=Object.freeze({
     entry('heatmap-display-controls','layout','row-wrap',{role:'heatmap-controls'}),
     entry('heatmap-display-controls strong','layout','row',{role:'heatmap-control-label'}),
     entry('heatmap-display-controls select|heatmap-display-controls input','field','analysis-control',{role:'heatmap-control'}),
-  ]),
-  'transfer-vth-lab':Object.freeze([
-    entry('dkds-vth-page-body|dkds-vth-workbench','workspace','standard',{role:'scientific-workspace'}),
-    entry('dkds-vth-sidebar','layout','stack-comfortable',{role:'controls-stack'}),
-    entry('dkds-vth-card$','panel','plain',{role:'card'}),
-    entry('dkds-vth-card-body','section','controls',{role:'card-body'}),
-    entry('dkds-vth-card-head|dkds-vth-card h3','header','panel',{role:'card-header'}),
-    entry('dkds-vth-field','field','integrated',{role:'field'}),
-    entry('dkds-vth-check','check','checkbox',{role:'check'}),
-    entry('dkds-vth-hint','note','normal',{role:'hint'}),
-    entry('dkds-vth-source-badge','chip','quiet',{role:'source-badge'}),
-    entry('dkds-vth-main','layout','fill-rows',{role:'main'}),
-    entry('dkds-vth-metrics','layout','metric-grid',{role:'metrics'}),
-    entry('dkds-vth-metric','metric','standard',{role:'metric'}),
-    entry('dkds-vth-content-split','layout','split-results',{role:'results-split'}),
-    entry('dkds-vth-plot-card','layout','plot-card-fill',{role:'plot-card'}),
-    entry('dkds-vth-plot-head','layout','plot-card-header',{role:'plot-header'}),
-    entry('dkds-vth-plot-target','scientificPlot','curve',{role:'plot-canvas'}),
-    entry('dkds-vth-results-host','layout','scroll-pane',{role:'results-scroll'}),
-    entry('dkds-vth-results-splitter','splitHandle','horizontal',{role:'splitter'})
   ])
 });
 module.exports=Object.freeze({NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS,PRIVATE_GEOMETRY_BRIDGES});
