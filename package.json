@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.71.113",
+  "version": "3.71.114",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -73,7 +73,7 @@
     "visual:closure:windows": "electron . --visual-closure",
     "ui:owners": "node tools/quality/style-ownership.js",
     "ui:owners:strict": "node tools/quality/style-ownership.js --strict",
-    "architecture:hygiene": "node tools/quality/architecture-hygiene.js && npm run ui:owners:strict && npm run unit:owners && npm run native-analysis:audit:strict && npm run unit:semantic-cascade && npm run unit:density && npm run unit:production-cutover && npm run unit:sdk-authoring",
+    "architecture:hygiene": "node tools/quality/architecture-hygiene.js && npm run ui:owners:strict && npm run unit:owners && npm run native-analysis:audit:strict && npm run unit:semantic-cascade && npm run unit:density && npm run unit:production-cutover && npm run unit:sdk-authoring && npm run unit:css-dependency",
     "native-analysis:audit": "node tools/quality/native-analysis-audit.js",
     "native-analysis:audit:strict": "node tools/quality/native-analysis-audit.js --strict",
     "reachability:audit": "node tools/quality/reachability-audit.js --strict",
@@ -90,7 +90,8 @@
     "mobile:layout:acceptance": "node tests/test-v371100-mobile-companion-split-single-owner.js && node tests/test-v37199-mobile-companion-framework-contract.js && node tests/test-v37194-mobile-final-visible-geometry-closure.js && node tests/test-v37192-mobile-geometry-root-cause-closure.js && node tests/test-v37191-mobile-overlay-intrinsic-closure.js && node tests/test-v37190-mobile-companion-drawer-closure.js && node tests/test-v37189-mobile-companion-safe-area.js && node tests/test-v37188-mobile-parameter-surface-closure.js && node tests/test-v37185-mobile-block-axis-ownership.js && node tests/test-v37177-mobile-drawer-readable-width.js && node tests/test-v37173-mobile-drawer-inspector-rollback.js && node tests/test-v36827-real-mobile-lifecycle.js && node tests/test-v37149-pulse-sampling-intrinsic-row-containment.js && node tests/test-v37163-pulse-analysis-result-layout.js && node tests/test-v37164-pulse-mobile-intrinsic-result-flow.js && node tests/test-v37165-pulse-unit-result-flow.js && node tests/test-v37168-pulse-bounded-primary-flow.js",
     "ui:ownership:audit": "node tools/quality/style-ownership-gate.js",
     "ui:ownership:audit:strict": "node tools/quality/style-ownership-gate.js --strict",
-    "unit:sdk-authoring": "node tools/quality/unit-sdk-authoring-audit.js --strict"
+    "unit:sdk-authoring": "node tools/quality/unit-sdk-authoring-audit.js --strict",
+    "unit:css-dependency": "node tools/quality/unit-production-css-dependency-audit.js --strict"
   },
   "dependencies": {
     "d3": "^7.9.0",

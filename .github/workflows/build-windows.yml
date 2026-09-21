@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - plugin
+      - dev
     paths:
       - '.github/workflows/build-windows.yml'
       - 'main.js'

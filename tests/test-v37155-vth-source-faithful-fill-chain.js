@@ -11,7 +11,7 @@ const spec=require('../src/core/ui/modules/composition/unit-template-spec');
 
 assert(Number(json('package.json').version.split('.').at(-1))>=56,'App version must retain the v3.71.56+ baseline.');
 assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
-assert.strictEqual(json('sdk/contract.json').sdkVersion,'1.51.43');
+assert(Number(json('sdk/contract.json').sdkVersion.split('.').at(-1))>=43,'Vth fill-chain contract requires SDK 1.51.43+');
 assert(spec.UNIT_CONTRACTS.panel.invariants.some(row=>row.includes('continuous fill chain')),'Panel sizing=fill must publish continuous shell/body fill propagation.');
 assert(spec.UNIT_CONTRACTS.splitPane.invariants.some(row=>row.includes('fill their allocated track')),'Created SplitPane regions must publish fill-host semantics.');
 
@@ -44,8 +44,8 @@ for(const token of ["title:'数据',sizing:'content'","variant:'meta',text:'数�
 const manifest=json('src/plugins/transfer-vth-lab/plugin.json');
 assert(Number(manifest.version.split('.').at(-1))>=3,'Vth must retain the accepted 3.3.3+ baseline.');
 assert.deepStrictEqual(manifest.styles,[],'Vth source-faithful correction must not restore private plugin CSS.');
+assert(!fs.existsSync(path.join(root,'src/plugins/transfer-vth-lab/plugin.css')),'Retired Vth stylesheet must be physically removed rather than retained as dead source.');
 for(const [rel,expected] of Object.entries({
-  'src/plugins/transfer-vth-lab/plugin.css':'b56cb70582da3102ee4d057349715db8707762d8702f377b660ebb3c5632d7ee',
   'src/plugins/transfer-vth-lab/analysis-runtime.js':'236fd11a5490ab7745585033935a428059d654c9874cd21803a04141f2713b3d',
   'src/plugins/transfer-vth-lab/vth-task.js':'cc2230b56d9f0fad8f040d70dd50bc27b29585e4ec47c9cde9b1e65672246cb1',
   'src/plugins/transfer-vth-lab/live-domain.js':'1ffa1fda16b3c4b710b325689bdb507e2b5b7155f34823d0d3949374fc4acf68',

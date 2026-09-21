@@ -56,6 +56,8 @@ jobs:
           node tools/quality/unit-production-cutover-audit.js --strict
           node tests/test-v371113-unit-first-sdk-authoring.js
           node tools/quality/unit-sdk-authoring-audit.js --strict
+          node tests/test-v371114-unit-maturity-freeze.js
+          node tools/quality/unit-production-css-dependency-audit.js --strict
 
       - name: Select preinstalled JDK 21
         shell: bash

@@ -121,7 +121,7 @@
     const collapse=directAction(units,header.actions,{id:'resparGroupCollapse',label:'−'});collapse.dataset.resparCollapse='group';collapse.setAttribute('aria-label','缩小');
     const close=directAction(units,header.actions,{id:'resparGroupClose',label:'×',className:'respar-panel-close'});close.dataset.resparClose='group';close.setAttribute('aria-label','关闭');
     const body=layout(units,panel,{className:'respar-floating-body'});
-    const grid=layout(units,body,{className:'reswin-group-grid dkds-managed-grid',id:'reswinGroupGrid'});grid.dataset.dkdsUnitTemplate='plot-group-v2';grid.dataset.dkdsUnitVariant='regular';
+    const grid=layout(units,body,{variant:'accepted-group-grid',className:'reswin-group-grid',id:'reswinGroupGrid'});
     return {panel,header,grid};
   }
 

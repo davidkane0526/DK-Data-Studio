@@ -1,3 +1,5 @@
+> **v3.71.114 WIP — Unit Maturity Freeze / Production CSS Dependency Closure**：完成生产 Unit 最终纯度审计。Unit Templates 继续冻结为 2.5.38（41 Units / 73 Layout recipes），不增加第 42 个 Unit。删除 Vth production cutover 后未被 manifest 加载的死 `plugin.css`；Resonance 组图改用 canonical `accepted-group-grid`，删除与 Unit PlotGroup 重复的 grid token；TER 由 Unit PlotGroup / PlotView `detailGeometry` 独占 group gap 与 scientific content minimum，删除重复 CSS token。新增 `unit:css-dependency` 全局门禁：禁止生产目录残留未加载 CSS、禁止插件 CSS 抢占 Presenter 外框或 Unit 内部 selector、禁止再次写回由 Unit runtime 持有的 managed Grid / Plot content token。SDK 升至 1.51.45；Windows `dev` CI 同步执行完整 `npm run check`，用于架构冻结验证。
+
 > **v3.71.113 WIP — Unit-first SDK Authoring Closure / Declarative Generation Readiness**：官方新插件作者入口统一切换为 Unit-first：`src/plugins/_template` 与 SDK Workspace / TOP / Tool 模板均由 `ctx.ui.unitTemplates` 创建 Page、Layout、Workspace 与 PRIMARY/PRIME 组合，TOP/Tool 默认私有 `plugin.css` 删除，模板不再手写页面 HTML、`workspaceSurface.create` 或细节 geometry。低层 Workspace facade 继续作为 Plugin API 1.19 高级原语保留。新增 `unit:sdk-authoring` 长期审计并接入 `architecture:hygiene` 与 Android CI；Unit Templates 仍冻结为 2.5.38、41 Units / 73 recipes，生产插件 UI 不变。SDK 升至 1.51.44。
 
 > **v3.71.112 WIP — Production Unit Cutover Closure / Generability Gate**：六个生产 UI 插件（Resonance / TER / Pulse Analysis / Pulse Sampler / Vth / Data Center）现已统一进入 production Unit presentation inventory。新增全局 cutover audit，要求生产 manifest 显式依赖 `ui.unit-templates`、加载 `unit-presentation.js`、机器可读 Unit blueprint 与当前 Unit Templates 版本同步，并禁止其它生产 JS 重新创建 Workspace / PRIME / composition 第二 owner。本轮不修改 Presenter、Unit runtime 或已验收界面，只把“生产 Unit 已完成切换、可作为声明式/Python 生成插件的稳定参照”变成长期架构门禁。
@@ -57,7 +59,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.113**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.44**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.114**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.45**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

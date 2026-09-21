@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371114-unit-maturity-freeze.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371113-unit-first-sdk-authoring.js",
       "args": []
     },

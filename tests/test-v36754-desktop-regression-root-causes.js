@@ -22,9 +22,10 @@ assert(touch.includes('--dkds-scientific-nav-item-width:28px;'),'Desktop scienti
 assert(touch.includes('--dkds-scientific-nav-item-height:28px;'),'Desktop scientific action height must retain the restored readable contract.');
 assert(touch.includes('--dkds-scientific-nav-padding-inline:2px;'),'Desktop floating navigation must keep bounded inner padding with the restored target size.');
 {const native=read('src/styles/platform/native-client-shell.css');assert(native.includes('html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools')&&native.includes('--dkds-scientific-nav-item-width:')&&native.includes('--dkds-scientific-nav-item-height:'),'Mobile must retain its independently owned scientific-control geometry.');}
-for(const rel of ['src/plugins/resonance-workbench/plugin.css','src/plugins/transfer-vth-lab/plugin.css']){
+for(const rel of ['src/plugins/resonance-workbench/plugin.css']){
   const text=read(rel);assert(!text.includes('--dkds-scientific-nav-item-width')&&!text.includes('--dkds-scientific-nav-item-height'),`${rel} must not specialize shared scientific floating-tool geometry.`);
 }
+assert(!fs.existsSync(path.join(root,'src/plugins/transfer-vth-lab/plugin.css')),'Retired Vth private stylesheet must stay deleted after production Unit cutover.');
 
 // Patch audit: platform presenters must consume semantic annotations instead of
 // hard-coding first-party plugin class names. Plugins may declare generic width/
@@ -92,10 +93,8 @@ assert(pulse.includes('actions:liveDomain.actions')&&pulse.includes('snapshot:li
 // 5: Vth plot owns no scrollbar around a responsive ResizeObserver surface. The
 // result table is the scroll owner, preventing scrollbar appearance/disappearance
 // from feeding back into chart width and triggering repeated re-render.
-const vthCss=read('src/plugins/transfer-vth-lab/plugin.css');
-assert(vthCss.includes('.dkds-vth-plot-card{min-width:0;min-height:220px;height:100%;overflow:hidden;'));
-assert(vthCss.includes('.dkds-vth-plot-target{width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}'));
-assert(vthCss.includes('.dkds-vth-results-host{min-width:0;min-height:140px;overflow:auto}'));
+assert(vthUnit.includes("units.layout.apply(plotPanel.body,{variant:'plot-card-fill'})"),'Vth plot fill geometry must remain Unit-owned.');
+assert(vthUnit.includes("const resultsHost=units.layout.create(null,{variant:'scroll-pane',geometry:{minHeight:'140px'}})"),'Vth results scroll/minimum geometry must remain Unit-owned.');
 
 // 7/8: PlotView must reuse a canonical authored surface header/action host. A
 // second injected header breaks PortableView dragging and creates the split-row
@@ -142,5 +141,5 @@ assert(visual.includes('last action no longer fills the right interior edge'));
 const isolationGate=read('tests/test-v36743-desktop-mobile-projection-isolation.js');
 assert(!isolationGate.includes('Desktop Visual Closure owner changed during Mobile work'),'Brittle global SHA visual freeze must not be restored as an active gate.');
 
-for(const rel of ['src/styles/platform/touch.css','src/styles/theme/component-appearance.css','src/styles/structure/super-top-contract.css','src/styles/structure/analysis-workbench.css','src/styles/structure/analysis-shell.css','src/plugins/transfer-vth-lab/plugin.css'])assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);
+for(const rel of ['src/styles/platform/touch.css','src/styles/theme/component-appearance.css','src/styles/structure/super-top-contract.css','src/styles/structure/analysis-workbench.css','src/styles/structure/analysis-shell.css'])assert(!read(rel).includes('!important'),`${rel} must remain free of !important.`);
 console.log('v3.67.54 Desktop regression root-cause contracts PASS.');
