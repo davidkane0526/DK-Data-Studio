@@ -12,7 +12,7 @@ const sdk=require('../sdk/contract.json');
 const atLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
 assert(atLeast(pkg.version,'3.71.105'));
 assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
-assert.strictEqual(sdk.sdkVersion,'1.51.43');
+assert(atLeast(sdk.sdkVersion,'1.51.43'),'SDK must remain at or above the Data Center retained-list contract version.');
 
 const presentation=read('src/plugins/data-center/unit-presentation.js');
 const runtimeSource=read('src/plugins/data-center/feature-runtime.js');
