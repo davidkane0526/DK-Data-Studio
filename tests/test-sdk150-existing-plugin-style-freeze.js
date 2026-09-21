@@ -1,10 +1,52 @@
 'use strict';
 const assert=require('assert');const fs=require('fs');const path=require('path');const crypto=require('crypto');
 function digest(root,{include=()=>true}={}){const files=[];function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else if(include(path.relative(root,file).replace(/\\/g,'/')))files.push(file);}}walk(root);const hash=crypto.createHash('sha256');for(const file of files){hash.update(path.relative(root,file).replace(/\\/g,'/'));hash.update('\0');hash.update(fs.readFileSync(file));hash.update('\0');}return {count:files.length,sha256:hash.digest('hex')};}
-const nonMigrating=digest('src/plugins',{include:rel=>!rel.startsWith('ter-analysis/')&&!rel.startsWith('pulse-analysis/')&&!rel.startsWith('resonance-workbench/')&&!rel.startsWith('data-center/')&&!rel.startsWith('pulse-sampler-tool/')&&!rel.startsWith('transfer-vth-lab/')});
-assert.deepStrictEqual(nonMigrating,{count:37,sha256:'8aea181dbfcd7b67572a9105d54b9ffe95c15767b359f1a3eb21c0b66b3c80d7'},'Active TER/Pulse/Resonance/Data Center/Pulse Sampler/Vth Unit migrations must not modify any unrelated built-in plugin asset.');
-const vthRetiredCss=fs.readFileSync('src/plugins/transfer-vth-lab/plugin.css','utf8');
-assert(!vthRetiredCss.includes('@container vth-primary')&&!vthRetiredCss.includes('.dkds-vth-results-splitter{display:none}'),'Retired Vth CSS must not preserve the private portrait override after Unit/Presenter ownership closure.');
+const blobSha=file=>{const bytes=fs.readFileSync(file),header=Buffer.from('blob '+bytes.length+'\\0');return crypto.createHash('sha1').update(header).update(bytes).digest('hex');};
+const NON_MIGRATING_EXCLUDED=['ter-analysis/','pulse-analysis/','resonance-workbench/','data-center/','pulse-sampler-tool/','transfer-vth-lab/','_template/'];
+const EXPECTED_NON_MIGRATING_BLOBS=Object.freeze({
+  "aurora-pop-theme/plugin.js":"9a0a1f3197e1359bd46041cf53c18e2e7fd4894a",
+  "aurora-pop-theme/plugin.json":"0ecbbd1123e46490f45e88da0679b4f38e64be43",
+  "aurora-pop-theme/README.md":"f74e5d6a4d6df03a868130fc8c11900ecc250dd0",
+  "connectivity-center/plugin.css":"a63b2cb1aa3a6b716b24c409919edbfcaa14f332",
+  "connectivity-center/plugin.js":"20a63411dba6310c3fcdd5276b000934f8b2ba52",
+  "connectivity-center/plugin.json":"4bfa151de5f0cc77b15006cb8cf42b2fbb6b3cc5",
+  "flexible-import/plugin.js":"61018d5ff02369c88d51fb173c2f9fdd6516a7c2",
+  "flexible-import/plugin.json":"d128231eb1658a28131e38b4124878aaf7d0024e",
+  "flexible-import/README.md":"b9d55ca9df6569d4643d7b39e29008e20f75b023",
+  "pulse-import/plugin.js":"e5953f9d370a0f17d10b44c963d6ca735d0868e4",
+  "pulse-import/plugin.json":"18231bda3627a7757f0853334af5e2a06017579f",
+  "README.md":"afd5ed4b956c3026bfa8d4a06259da88fc180f5f",
+  "resonance-detector-robust/algorithm.js":"98d18528b2d6d97d096ad297eba7fd2f47833960",
+  "resonance-detector-robust/plugin.js":"ceb2a2644c2499d09efa3ddab459a5ce65f2c33d",
+  "resonance-detector-robust/plugin.json":"e7c8c74c5a3be1c64515960c2ed3575c9c693a2d",
+  "resonance-detector-robust/README.md":"9dc6387e5d420f79f4fb182e69d84332732b0ae4",
+  "resonance-detector-robust/resonance-task.js":"94f79edb55385ba85642c096f916025f6fc6565b",
+  "resonance-detector-robust/task-core.js":"28844f21e28ade33058af49ad90b94bcf59ede88",
+  "scientific-data-contracts/plugin.js":"abf2a77e970af586d66f8fa430678da5ad018b51",
+  "scientific-data-contracts/plugin.json":"203b940f0c5aba28a799efc157d4a21f0f8a2b78",
+  "shell-navigation/plugin.js":"0c97340330bcf8f59f57697211e139eb41c83106",
+  "shell-navigation/plugin.json":"60713ad460c4aa8bbee9cf2824d496c803e63bce",
+  "standard-transport-algorithms/algorithm.js":"05ce09d6551a31831487db1c8b0eb7ac90adb803",
+  "standard-transport-algorithms/plugin.js":"33ec00d2c2906c7e2bb18fc828c02b9632dfb08b",
+  "standard-transport-algorithms/plugin.json":"98e6cb5e7fac747f4dd25a34039b56ec2c3614ff",
+  "standard-transport-algorithms/transport-task.js":"bef97a02028af5e9dffd764fdb4403aab30e9f7a",
+  "status-monitor/plugin.js":"3c2f8c1eeaf4fe766723824b7841bbe5af660675",
+  "status-monitor/plugin.json":"6f343ae58541f88a0c5fe59df51e7a4a40bf9acd",
+  "status-monitor/theme-layout.js":"ffc71cd7445cfdbc32457035f2f96fddd8052625",
+  "thin-glass-theme/plugin.js":"8465ddb48d7e062b598489f1a5d4eec493b0b34d",
+  "thin-glass-theme/plugin.json":"e401b16c97901b28ec2c3aa10116b12b90140805",
+  "thin-glass-theme/README.md":"390002676c04a6ef5c7c04aa9fc2dfd96a60040d",
+  "workspace-safeguards/plugin.js":"83783d0f3360a67ce105d2ba08fa9ab47aee8fbf",
+  "workspace-safeguards/plugin.json":"9aca3a1068d54dc50dbd57fc9e3b4fda46a3d3d8",
+  "workspace-safeguards/README.md":"98420d99147d1a1c8b497ef288a8d4c4698ec886"
+});
+const currentNonMigrating=[];
+(function walk(dir){for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),stat=fs.statSync(file);if(stat.isDirectory())walk(file);else{const rel=path.relative('src/plugins',file).replace(/\\\\/g,'/');if(!NON_MIGRATING_EXCLUDED.some(prefix=>rel.startsWith(prefix)))currentNonMigrating.push(rel);}}})('src/plugins');
+assert.deepStrictEqual(currentNonMigrating.sort(),Object.keys(EXPECTED_NON_MIGRATING_BLOBS).sort(),'Non-migrating built-in plugin inventory changed; SDK _template is intentionally excluded from the built-in byte freeze.');
+for(const [rel,expected] of Object.entries(EXPECTED_NON_MIGRATING_BLOBS))assert.strictEqual(blobSha(path.join('src/plugins',rel)),expected,`Unrelated built-in plugin asset changed during Unit migration: ${rel}`);
+assert(!fs.existsSync('src/plugins/transfer-vth-lab/plugin.css'),'Vth production private presentation CSS must remain physically retired after Unit cutover.');
+const vthManifest=JSON.parse(fs.readFileSync('src/plugins/transfer-vth-lab/plugin.json','utf8'));
+assert.deepStrictEqual(vthManifest.styles,[],'Vth production Unit presentation must load no private stylesheet.');
 for(const [rel,expected] of [
   ['analysis-runtime.js','236fd11a5490ab7745585033935a428059d654c9874cd21803a04141f2713b3d'],
   ['vth-task.js','cc2230b56d9f0fad8f040d70dd50bc27b29585e4ec47c9cde9b1e65672246cb1']
@@ -52,14 +94,15 @@ const dcMobile=fs.readFileSync('src/plugins/data-center/mobile.css','utf8');
 assert(dcMobile.includes('--dc-main-columns')&&dcMobile.includes('--dc-main-areas')&&!dcMobile.includes('@container data-center-workspace (max-width:419px)'),'Data Center Mobile layout must keep its semantic two-column tokens without a hard portrait collapse threshold.');
 const crossLayer=require('../tools/quality/unit-runtime-style-ownership').audit();
 assert.strictEqual(crossLayer.violations.length,0,'Migrated production Unit presentation must be protected by semantic cross-layer ownership, not whole-file CSS hashes.');
+const cssDependency=require('../tools/quality/unit-production-css-dependency-audit').audit();
+assert.strictEqual(cssDependency.ok,true,require('../tools/quality/unit-production-css-dependency-audit').format(cssDependency));
 
 const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css']);
 const resonanceStable=digest('src/plugins/resonance-workbench',{include:rel=>!resonanceWiring.has(rel)});
 assert.deepStrictEqual(resonanceStable,{count:16,sha256:'da57e713611efdae250e1ad1f5d6abfba570d3de18c87cc99d7d77a68243c7dd'},'Resonance production Unit reconstruction may change presentation/wiring adapters and the reviewed parameter Legend flow CSS, including the main ScientificCurveSurface attachment adapter; the v3.71.24 post-closure orchestration/domain/task baseline remains byte-frozen after this explicit rendering-lifecycle correction.');
-for(const [rel,expected] of [['plugin.css','dfa8e25f1463431420432ea95a64a81351eb9195c7986885ba507d61b80363c5'],['mobile.css','853c639753657813d6e27a4c30e8d33320d869b0b5703b40b6797e15fed79ccf']]){
-  const bytes=fs.readFileSync(`src/plugins/resonance-workbench/${rel}`);
-  assert.strictEqual(crypto.createHash('sha256').update(bytes).digest('hex'),expected,`Resonance ${rel} must match the reviewed current presentation baseline during Unit reconstruction.`);
-}
+const resonanceCss=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),resonanceMobile=fs.readFileSync('src/plugins/resonance-workbench/mobile.css','utf8');
+assert(!/\.respar-(?:scan-global|detect-actions)[^{]*\{[^}]*grid-template-columns/s.test(resonanceCss),'Resonance plugin CSS must not reclaim Unit-owned parameter ActionGrid density.');
+assert(!/resonance-display-grid[^{]*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance Mobile CSS must not reclaim Unit-owned display FormGrid density.');
 
 const presentationWiring=new Set(['plugin.js','plugin.json','feature-runtime.js','super-layout.js','shared-views.js','plugin.css','unit-presentation.js']);
 const terStable=digest('src/plugins/ter-analysis',{include:rel=>!presentationWiring.has(rel)});
@@ -68,8 +111,8 @@ assert(!fs.existsSync('src/plugins/ter-analysis/shared-views.js')&&fs.existsSync
 const manifest=JSON.parse(fs.readFileSync('src/plugins/ter-analysis/plugin.json','utf8'));
 assert.deepStrictEqual(manifest.styles,['plugin.css'],'TER source-parity cutover must load its accepted geometry-only stylesheet.');
 const terCss=fs.readFileSync('src/plugins/ter-analysis/plugin.css','utf8');
-assert.strictEqual(crypto.createHash('sha256').update(terCss).digest('hex'),'a601985b774667acb6c8d8fea9255db87537a46afe4bdecc2d07504ef7a1442b','TER source-detail geometry must remain byte-identical to the accepted baseline.');
 assert(!/(?:^|[;{}]\s*)(?:background(?:-color)?|color|border(?:-[\w-]+)?|box-shadow|text-shadow|font(?:-family|-size|-weight)?)\s*:/mi.test(terCss),'TER plugin.css may own geometry only, never visual paint.');
+assert(!/--dkds-(?:grid-(?:gap|align-items|auto-rows|columns)|plot-content-(?:flex|min-height|height))\s*:/.test(terCss),'TER plugin.css must not reclaim managed PlotGroup/PlotView geometry.');
 assert(manifest.scripts.includes('unit-presentation.js')&&!manifest.scripts.includes('shared-views.js'),'TER manifest must load Unit presentation and must not retain the legacy template.');
 assert((manifest.requiresCore||[]).includes('ui.unit-templates')&&(manifest.requiresCore||[]).includes('ui.table'),'TER production cutover must declare its Unit/Table dependencies.');
 const entry=fs.readFileSync('src/plugins/ter-analysis/plugin.js','utf8'),adapter=fs.readFileSync('src/plugins/ter-analysis/domain-adapter.js','utf8');
