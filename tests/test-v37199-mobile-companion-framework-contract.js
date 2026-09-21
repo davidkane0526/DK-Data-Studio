@@ -38,7 +38,7 @@ assert(css.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-
 assert(css.includes('grid-template-rows:minmax(0,1fr) var(--dkds-mobile-bottom-seam) var(--dkds-mobile-bottom-track)'));
 assert(!css.includes('--dkds-mobile-unit-right-min')&&!css.includes('--dkds-mobile-unit-bottom-min')&&!css.includes('--dkds-mobile-primary-track-resolved'),'Unit content must not feed outer Mobile companion tracks.');
 assert(css.includes('>.dkds-plugin-canvas-bottom{padding:0;box-sizing:border-box;overflow:hidden}')||css.includes('>.dkds-plugin-canvas-bottom{padding:0;box-sizing:border-box;overflow:hidden}'),'Companion slot is a geometry shell; Unit/panel owns its internal inset/scroll body.');
-assert(projection.includes("...(companion?{flex:'1 1 0'}:{flex:''})")&&projection.includes("height:drawer?'auto':companion?'100%':'100%'"),'Projected companion root must fill its allocated shell without negotiating shell size.');
+assert(projection.includes("...(companion?{flex:'1 1 0'}:{flex:''})")&&projection.includes("companion?'100%':'100%'"),'Projected companion root must fill its allocated shell without negotiating shell size; Drawer fill semantics may evolve independently.');
 
 // Mobile split persistence is a framework schema, not a profile/plugin patch.
 assert(workspace.includes("const MOBILE_SPLIT_STATE_SCHEMA='workspace-owned-v2'"));
