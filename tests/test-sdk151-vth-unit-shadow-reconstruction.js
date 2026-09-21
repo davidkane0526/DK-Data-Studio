@@ -15,7 +15,6 @@ const source=read(path.join(example,'plugin.js'));
 const parity=json(path.join(example,'parity.json'));
 const manifest=json(path.join(example,'plugin.json'));
 const native=read('src/plugins/transfer-vth-lab/plugin.js');
-const nativeCss=read('src/plugins/transfer-vth-lab/plugin.css');
 const nativeUnit=read('src/plugins/transfer-vth-lab/unit-presentation.js');
 const blueprint=NATIVE_PLUGIN_BLUEPRINTS['transfer-vth-lab'];
 
@@ -66,10 +65,10 @@ assert(nativeUnit.includes("units.prime.build")&&nativeUnit.includes("variant:'f
 assert(nativeUnit.includes("units.splitPane.create")&&nativeUnit.includes("defaultSize:180")&&nativeUnit.includes("min:140")&&nativeUnit.includes("reserve:300")&&nativeUnit.includes("reflowBelow:920"),'Production Vth Unit presentation must preserve reviewed split geometry.');
 assert.strictEqual(sha('src/plugins/transfer-vth-lab/live-domain.js'),'1ffa1fda16b3c4b710b325689bdb507e2b5b7155f34823d0d3949374fc4acf68','Vth live-domain owner helper changed unexpectedly.');
 assert.strictEqual(sha('src/plugins/transfer-vth-lab/domain-adapter.js'),'bf8cb24e1180af7723fd67b31392b8c1aad8fc366813e624881c4ddcbf956cb7','Vth dependency-gated domain adapter changed unexpectedly.');
-assert(!nativeCss.includes('@container vth-primary')&&!nativeCss.includes('.dkds-vth-results-splitter{display:none}'),'Retired Vth CSS must not preserve a private narrow-layout override that conflicts with the Unit SplitPane.');
+assert(!fs.existsSync('src/plugins/transfer-vth-lab/plugin.css'),'Production Vth private stylesheet must stay physically removed after Unit cutover.');
 assert.strictEqual(sha('src/plugins/transfer-vth-lab/analysis-runtime.js'),'236fd11a5490ab7745585033935a428059d654c9874cd21803a04141f2713b3d','Vth live-parity seam must not modify the production numerical runtime.');
 assert.strictEqual(sha('src/plugins/transfer-vth-lab/vth-task.js'),'cc2230b56d9f0fad8f040d70dd50bc27b29585e4ec47c9cde9b1e65672246cb1','Vth live-parity seam must not modify the production task entry.');
-assert(nativeCss.includes('--dkds-vth-results-height:180px')&&!nativeCss.includes('@container vth-primary'),'Retired Vth CSS may retain neutral historical tokens but must not own responsive breakpoint geometry after Unit cutover.');
+assert(nativeUnit.includes("units.layout.apply(plotPanel.body,{variant:'plot-card-fill'})")&&nativeUnit.includes("units.splitPane.create"),'Vth plot/result geometry must remain expressed through Unit Layout + SplitPane after private CSS removal.');
 
 for(const command of ['validate','test-runtime','test-layout']){
   const result=spawnSync(process.execPath,['sdk/tools/dkds-plugin.js',command,example],{encoding:'utf8',timeout:120000});
