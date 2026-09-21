@@ -274,31 +274,12 @@
   "blueprints": {
     "_template": {
       "services": [
-        "actions",
-        "components",
-        "dom",
         "interaction",
         "interactionBehaviors",
         "pages",
-        "workspaceSurface"
+        "unitTemplates"
       ],
-      "migrations": [
-        {
-          "from": "workspaceSurface.create",
-          "to": "workspace",
-          "count": 1
-        },
-        {
-          "from": "actions.mount",
-          "to": "actionRow",
-          "count": 1
-        },
-        {
-          "from": "components.mount",
-          "to": "componentTree",
-          "count": 2
-        }
-      ]
+      "migrations": []
     },
     "aurora-pop-theme": {
       "services": [

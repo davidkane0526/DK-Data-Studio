@@ -1,7 +1,7 @@
 'use strict';
 
 const NATIVE_PLUGIN_SERVICE_BLUEPRINTS=Object.freeze({
-  '_template':Object.freeze({services:['actions','components','dom','interaction','interactionBehaviors','pages','workspaceSurface'],migrations:[Object.freeze({from:'workspaceSurface.create',to:'workspace',count:1}),Object.freeze({from:'actions.mount',to:'actionRow',count:1}),Object.freeze({from:'components.mount',to:'componentTree',count:2})]}),
+  '_template':Object.freeze({services:['interaction','interactionBehaviors','pages','unitTemplates'],migrations:[]}),
   'aurora-pop-theme':Object.freeze({services:['theme'],migrations:[]}),
   'connectivity-center':Object.freeze({services:['dom','layout','menus','statusBar'],migrations:[Object.freeze({from:'layout.move',to:'movableWindow',count:2}),Object.freeze({from:'menus.add',to:'menu',count:2}),Object.freeze({from:'statusBar.add',to:'status',count:2})]}),
   'data-center':Object.freeze({services:['activities','contextMenus','dialogs','dom','interaction','interactionBehaviors','menus','pages','parameters','scientificPlot','selection','topWorkspace','unitTemplates'],migrations:[Object.freeze({from:'menus.add',to:'menu',count:1}),Object.freeze({from:'dialogs.confirm',to:'dialog',count:1}),Object.freeze({from:'dialogs.prompt',to:'dialog',count:1}),Object.freeze({from:'parameters.render',to:'parameterForm',count:1})]}),
