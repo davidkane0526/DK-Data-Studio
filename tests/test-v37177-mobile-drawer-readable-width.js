@@ -17,7 +17,7 @@ const presenter=new MobileWebSurfacePresenter();
 
 assert.strictEqual(lastResortMaxWidth(LAYOUT_RECIPES['form-grid-2'],[]),310,'Canonical two-column form must publish its true last-resort threshold.');
 assert.strictEqual(lastResortMaxWidth({},[{maxWidth:310,geometry:{'flex-direction':'column'}}]),310,'Plugin responsiveGeometry must feed the same intrinsic constraint source.');
-assert(presenter.drawerStorageKey('data-control','ter:data-control').startsWith('dkds.mobile.drawer-width.v20.'),'v20 must invalidate widths saved before the physical Drawer safe-area/header-row contract.');
+assert(presenter.drawerStorageKey('data-control','ter:data-control').startsWith('dkds.mobile.drawer-width.v21.'),'v21 must invalidate widths saved before the current intrinsic-density/orientation contract.');
 
 // Runtime evidence: the Presenter allocates the frame, while a nested Layout Unit
 // reports the local width it needs. The canonical 6 px PRIME inset on each side is
