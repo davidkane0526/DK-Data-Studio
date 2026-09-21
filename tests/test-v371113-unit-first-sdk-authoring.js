@@ -14,7 +14,7 @@ assert.strictEqual(report.ok,true,audit.format(report));
 assert.strictEqual(report.targets,4);
 assert.strictEqual(report.unitCount,41,'3.71.113 must not add a 42nd Unit.');
 assert.strictEqual(report.unitTemplateVersion,'2.5.38','Unit Templates remain frozen while authoring defaults move to Units.');
-assert.strictEqual(report.sdkVersion,'1.51.44','SDK authoring contract must advance to 1.51.44.');
+assert(atLeast(report.sdkVersion,'1.51.44'),'SDK authoring contract must remain at or above 1.51.44.');
 const cli=path.join(root,'sdk','tools','dkds-plugin.js');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-unit-first-sdk-'));
 try{

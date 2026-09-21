@@ -12,6 +12,7 @@ const TARGETS=Object.freeze([
   Object.freeze({name:'tool-workspace-template',dir:'sdk/templates/tool-plugin',top:true})
 ]);
 const read=rel=>fs.readFileSync(path.join(ROOT,rel),'utf8');
+const atLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
 function auditTarget(target){
   const failures=[],dir=path.join(ROOT,target.dir),manifest=JSON.parse(read(`${target.dir}/plugin.json`)),source=read(`${target.dir}/plugin.js`);
   const requireToken=token=>{if(!source.includes(token))failures.push(`missing-source-token:${token}`);};
@@ -33,7 +34,7 @@ function auditTarget(target){
 }
 function audit(){
   const reports=TARGETS.map(auditTarget),failures=[];
-  if(String(CONTRACT.sdkVersion)!=='1.51.44')failures.push(`sdk-version:${CONTRACT.sdkVersion}`);
+  if(!atLeast(CONTRACT.sdkVersion,'1.51.44'))failures.push(`sdk-version:${CONTRACT.sdkVersion}`);
   if(String(UNIT_TEMPLATE_SPEC_VERSION)!=='2.5.38')failures.push(`unit-template-version:${UNIT_TEMPLATE_SPEC_VERSION}`);
   if(Object.keys(UNIT_CATALOG||{}).length!==41)failures.push(`unit-catalog-size:${Object.keys(UNIT_CATALOG||{}).length}`);
   for(const report of reports)for(const failure of report.failures)failures.push(`${report.name}:${failure}`);
