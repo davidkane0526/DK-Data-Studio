@@ -21,8 +21,8 @@ assert(!/'file-toolbar'[^\n]+maxWidth:520/.test(layoutSpec),
   'Generic file-toolbar Unit must not force the historical <=520 px column regression.');
 assert(pulse.includes("variant:'file-toolbar',className:'pulse-file-toolbar dkds-toolbar'")&&!pulse.includes("maxWidth:310,geometry:{flexDirection:'column',alignItems:'stretch'}"),
   'Pulse file toolbar must stay horizontal and let live intrinsic width, not a private breakpoint, raise the Drawer.');
-assert(pulse.includes("variant:'identity',className:'pulse-control-grid'")&&pulse.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'"),
-  'Pulse parameter form must keep a fluid accepted two-column Unit layout instead of owning a minimum Drawer width.');
+assert(pulse.includes("variant:'form-grid-2',className:'pulse-control-grid'")&&!pulse.includes("gridTemplateColumns:'repeat(2,minmax(0,1fr))'"),
+  'Pulse parameter form must use the canonical form-grid-2 Unit recipe; plugin source must not own the two-column geometry.');
 assert(!pulseCss.includes('.pulse-file-toolbar{flex-direction:column;align-items:stretch}'),
   'Pulse stylesheet must not remain a second file-toolbar responsive owner after the Unit contract adopts the accepted breakpoint.');
 
