@@ -172,7 +172,6 @@ const ACCEPTED_LAYOUT_GEOMETRY_VALUES=Object.freeze({
     "auto minmax(0,1fr)",
     "auto minmax(0,1fr) auto",
     "auto minmax(0,1fr) minmax(0,.58fr)",
-    "minmax(0,1fr) 8px 180px",
     "minmax(0,1fr) 8px var(--dkds-unit-results-height,180px)",
     "minmax(0,1fr) auto",
     "none"
