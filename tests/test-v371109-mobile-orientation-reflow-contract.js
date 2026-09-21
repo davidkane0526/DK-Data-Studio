@@ -12,7 +12,6 @@ const mobileHost=read('src/core/host/mobile-host-runtime.js');
 const structure=read('src/styles/structure/super-top-contract.css');
 const presenter=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const vthUnit=read('src/plugins/transfer-vth-lab/unit-presentation.js');
-const vthCss=read('src/plugins/transfer-vth-lab/plugin.css');
 const vthManifest=JSON.parse(read('src/plugins/transfer-vth-lab/plugin.json'));
 const dcMobile=read('src/plugins/data-center/mobile.css');
 const layout=require('../src/core/ui/modules/layout/state-resolver');
@@ -39,7 +38,7 @@ assert.strictEqual(portrait.handleVisible,true,'Visible split handle must remain
 
 assert(vthUnit.includes("presentationPurpose:'parameters'")&&vthUnit.includes("existingNode:controlsHost,sizing:'fill'"),'Vth data-control must use the standard fill PRIME contract.');
 assert(vthUnit.includes("axis:'y'")&&vthUnit.includes("resizeTarget:'second'")&&vthUnit.includes('defaultSize:180'),'Vth results remain a generic y-axis SplitPane.');
-assert(!vthCss.includes('@container vth-primary')&&!vthCss.includes('.dkds-vth-results-splitter{display:none}')&&!vthCss.includes('height:460px'),'Vth must not own a portrait-only geometry override.');
+assert(!fs.existsSync(path.join(root,'src/plugins/transfer-vth-lab/plugin.css')),'Vth must not restore any private portrait/layout stylesheet after Unit cutover.');
 assert.deepStrictEqual(vthManifest.styles,[],'Production Vth presentation remains Unit-owned.');
 
 assert(dcMobile.includes('--dc-main-columns:minmax(184px,.82fr) minmax(0,1.18fr)')&&dcMobile.includes('--dc-main-areas:"source source" "tool chart"'),'Data Center native detail layout must retain its accepted two-column composition.');
