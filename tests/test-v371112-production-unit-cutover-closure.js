@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert');
+const pkg=require('../package.json');
+const audit=require('../tools/quality/unit-production-cutover-audit');
+const atLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(atLeast(pkg.version,'3.71.112'),'v3.71.112+ source required.');
+const report=audit.audit();
+assert.strictEqual(report.plugins,6,'Production Unit cutover closure must inventory all six production UI plugins.');
+assert.strictEqual(report.ok,true,audit.format(report));
+assert.deepStrictEqual(audit.PRODUCTION.map(row=>row.dir).sort(),['data-center','pulse-analysis','pulse-sampler-tool','resonance-workbench','ter-analysis','transfer-vth-lab'].sort());
+for(const row of report.reports)assert.strictEqual(row.failures.length,0,`${row.plugin} must have a single production Unit composition owner.`);
+console.log(`v3.71.112 production Unit cutover closure PASS: ${report.plugins} plugins / Unit Templates ${report.unitTemplateVersion} / single composition owner.`);

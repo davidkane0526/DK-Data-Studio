@@ -51,7 +51,9 @@ jobs:
           node tests/test-v371109-mobile-orientation-reflow-contract.js
           node tests/test-v371110-resonance-parameter-density-contract.js
           node tests/test-v371111-parameter-unit-density-ownership.js
+          node tests/test-v371112-production-unit-cutover-closure.js
           node tools/quality/unit-responsive-density-audit.js
+          node tools/quality/unit-production-cutover-audit.js --strict
 
       - name: Select preinstalled JDK 21
         shell: bash

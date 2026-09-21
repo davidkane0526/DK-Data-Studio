@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371112-production-unit-cutover-closure.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371111-parameter-unit-density-ownership.js",
       "args": []
     },
@@ -2014,6 +2018,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-v371112-production-unit-cutover-closure.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
       "args": []
@@ -4040,6 +4048,10 @@ module.exports = {
     }
   ],
   "mobile": [
+    {
+      "file": "tests/test-v371112-production-unit-cutover-closure.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371106-data-center-live-hydration-presentation.js",
       "args": []
