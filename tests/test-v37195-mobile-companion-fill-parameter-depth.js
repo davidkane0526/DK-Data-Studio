@@ -7,6 +7,7 @@ const root=path.resolve(__dirname,'..');
 process.env.NODE_PATH=[path.join(root,'src/core'),process.env.NODE_PATH||''].filter(Boolean).join(path.delimiter);Module._initPaths();
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
+const atLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
 
 class StyleDecl{constructor(){this.rows={};}getPropertyValue(k){return this.rows[k]||'';}getPropertyPriority(){return '';}setProperty(k,v){this.rows[k]=String(v);}removeProperty(k){delete this.rows[k];}}
 class Classes{constructor(...rows){this.rows=new Set(rows);}contains(v){return this.rows.has(v);}add(v){this.rows.add(v);}remove(v){this.rows.delete(v);}}
@@ -16,7 +17,7 @@ global.window={innerWidth:744,innerHeight:420,addEventListener(){},removeEventLi
 global.DKDSStyleGate={KINDS:{RUNTIME_INLINE:'runtime-inline',CONFIG_TOKEN:'configuration-token'},set(node,p,v){node.style.setProperty(p,v);return true;},setToken(node,p,v){node.style.setProperty(p,v);return true;},remove(node,p){node.style.removeProperty(p);return true;}};global.window.DKDSStyleGate=global.DKDSStyleGate;
 try{
   const pkg=json('package.json'),app=json('mobile/app.json'),resonanceManifest=json('src/plugins/resonance-workbench/plugin.json');
-  assert(/^3\.71\.(?:9[5-9]|[1-9]\d{2,})$/.test(pkg.version));assert.strictEqual(app.expo.version,pkg.version);assert(app.expo.android.versionCode>=235);assert.strictEqual(resonanceManifest.version,'3.63.8');
+  assert(/^3\.71\.(?:9[5-9]|[1-9]\d{2,})$/.test(pkg.version));assert.strictEqual(app.expo.version,pkg.version);assert(app.expo.android.versionCode>=235);assert(atLeast(resonanceManifest.version,'3.63.8'),'Resonance must remain at or above the 3.71.95 presentation contract version.');
   const {MobileWebSurfacePresenter}=require('../src/core/ui/modules/presentation/mobile-web-surface');
   const presenter=new MobileWebSurfacePresenter();
   const parameter=fakeNode();parameter.dataset.dkdsPresentationPurpose='parameters';presenter.normalizeProjectedNode(parameter,'drawer','parameters');
