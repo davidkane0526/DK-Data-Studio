@@ -115,7 +115,7 @@ assert(nativeCss.includes('.lan-web-panel.dkds-mobile-service')&&nativeCss.inclu
 
 
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css'),resonanceUnits=read('src/plugins/resonance-workbench/unit-presentation.js');
-assert(resonanceUnits.includes('reswin-group-grid dkds-managed-grid')&&terUnits.includes('units.plotGroup.create'),'Both Unit-cutover Resonance and TER must delegate managed group geometry to Core.');
+assert(resonanceUnits.includes("variant:'accepted-group-grid',className:'reswin-group-grid'")&&resonance.includes('unitTemplates?.plotGroup')&&resonance.includes('factory.create(hostEl')&&terUnits.includes('units.plotGroup.create'),'Both Unit-cutover Resonance and TER must delegate managed group geometry to the public Unit PlotGroup owner.');
 assert(!/#resonanceDedicatedPage \.reswin-group-grid\{[^}]*grid-template-columns/s.test(resonanceCss)&&!terUnits.includes('gridTemplateColumns'),'Resonance and TER plugins must not own final managed-grid columns.');
 const semanticAudit=read('tools/quality/semantic-style-ownership.js');
 assert(semanticAudit.includes('core-managed-grid-final-geometry')&&semanticAudit.includes('dkds-managed-grid'),'Authored-style Gate must reject alias selectors that try to retake final geometry from a Core-managed grid.');
