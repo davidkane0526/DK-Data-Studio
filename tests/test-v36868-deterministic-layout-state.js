@@ -16,7 +16,7 @@ assert.strictEqual(preferred.preferredSize,400);assert.strictEqual(preferred.pre
 const hidden=State.resolveLayout(preferred,{width:0,height:0},{nativeMobile:true});
 assert.strictEqual(hidden.effectiveSize,0);assert.strictEqual(hidden.preferredSize,400,'Zero geometry must not overwrite user intent.');
 const compact=State.resolveLayout(preferred,{width:500,height:900},{nativeMobile:true});
-assert.strictEqual(compact.effectiveSize,240,'Native Mobile must clamp against its owned ratio/reserve policy.');
+assert.strictEqual(compact.effectiveSize,200,'Native Mobile must replay the durable 0.4 user ratio at the compact viewport; max-ratio/reserve are upper bounds, not target widths.');
 assert.strictEqual(State.resolveLayout(preferred,{width:1000,height:700},{nativeMobile:true}).effectiveSize,400,'Returning to a larger/original viewport must restore the preferred size.');
 const collapsed=State.resolveLayout(State.withLayoutIntent(preferred,{collapsed:true}),{width:1000,height:700},{nativeMobile:true});
 assert.strictEqual(collapsed.effectiveSize,0);assert.strictEqual(collapsed.handleVisible,false);assert.strictEqual(collapsed.preferredSize,400);
@@ -61,7 +61,7 @@ assert(analysis.includes("applyScrollPolicy(this.slots.overlay,'contain')")&&ana
   assert.strictEqual(split.size,320);split.apply(400);assert.strictEqual(split.size,400);
   width=0;height=0;observers[0].callback();assert.strictEqual(split.size,400);assert.strictEqual(split.stateSnapshot().preferredSize,400,'A zero-size observer turn must leave both effective and preferred geometry intact.');
   split.setCollapsed(true,{persist:false,notify:false});assert.strictEqual(split.size,0);assert.strictEqual(container.style.getPropertyValue('--right-track'),'0px');
-  width=500;height=900;split.setCollapsed(false,{persist:false,notify:false});assert.strictEqual(split.size,240);assert.strictEqual(split.stateSnapshot().preferredSize,400);
+  width=500;height=900;split.setCollapsed(false,{persist:false,notify:false});assert.strictEqual(split.size,200);assert.strictEqual(split.stateSnapshot().preferredSize,400);
   width=1000;height=700;observers[0].callback();assert.strictEqual(split.size,400,'Reopening/orientation restoration must recover the unclamped preference.');
   const persisted=JSON.parse(store.get(split.key));assert.strictEqual(persisted.size,400);assert.strictEqual(persisted.ratio,.4,'Persistence must store intent, not the compact effective size.');
   split.dispose();
