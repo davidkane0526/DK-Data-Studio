@@ -58,7 +58,8 @@ assert(nativeShell.includes('var(--dkds-parameter-auto-fit-native-columns,repeat
 assert(dcMobile.includes('--dkds-parameter-auto-fit-native-columns:repeat(4,minmax(0,1fr))'),'X/Y/mode/legend controls must request four equal tracks through the Core configuration token.');
 assert(dcMobile.includes('--dkds-field-control-min-height:28px'),'Mobile chart fields must request compact density through the canonical Field token.');
 assert(!/\.dc-chart-params[^}]*?\.dkds-field-control[^}]*?(?:height|min-height)\s*:/.test(dcMobile),'Mobile Data Center must not re-own canonical Field rendered height.');
-assert(dcMobile.includes('--dc-main-areas:"source" "tool" "chart"'),'Narrow Data Center must keep formula/derived tools before Generic Chart.');
+assert(dcMobile.includes('--dc-main-columns:minmax(184px,.82fr) minmax(0,1.18fr)')&&dcMobile.includes('--dc-main-areas:"source source" "tool chart"'),'Native Data Center must keep the compact two-column source/tool/chart composition while room remains.');
+assert(!dcMobile.includes('@container data-center-workspace (max-width:419px)')&&!dcMobile.includes('--dc-main-areas:"source" "tool" "chart"'),'Data Center must not mechanically force the Generic Chart into a portrait-only single row; Unit/Surface geometry collapses only when genuinely necessary.');
 assert(dcMobile.includes('.dc-chart-pane.dkds-portable-view:is(.is-floating,.is-global-floating)')&&dcMobile.includes('grid-template-rows:auto auto minmax(0,1fr)'),'Moved Generic Chart must reserve a flexing plot row instead of letting controls displace the graph.');
 
 // 5) Portrait Plugin Manager cards are content-sized, not stretched viewport rows.
