@@ -19,7 +19,7 @@ const mobileCss=read('src/styles/platform/native-workspace-presentation.css');
 const changelog=read('CHANGELOG.md');
 
 assert(host.includes('currentOrientation')&&host.includes('DKDSPlatform?.profile?.orientation'),'Mobile Host must project the actual WebView orientation.');
-assert(host.includes("addEventListener('dkds:platform-change',publish)"),'Platform/orientation changes must republish Mobile Presenter state.');
+assert(host.includes("addEventListener('dkds:platform-change',publishSettledViewport)")&&host.includes("addEventListener('orientationchange',publishSettledViewport")&&host.includes("visualViewport?.addEventListener?.('resize',publishSettledViewport"),'Platform/orientation changes must converge through the settled live-viewport publication path before Presenter geometry is finalized.');
 assert(host.includes('workspaces?.activate?.')&&host.includes('openSurfaceState')&&host.includes('currentViewport'),'Mobile surface navigation must use idempotent Core activation plus independent responsive PRIME visibility state.');
 assert(presenters.includes('mobileViewportProfile')&&presenters.includes('openSurfaces')&&presenters.includes("kind==='prime'")&&presenters.includes("kind==='sub'"),'Mobile Presenter must derive responsive geometry and keep PRIME visibility distinct from SUB routes.');
 assert(hostApi.includes('activate(activity,id)')&&hostApi.includes("openPrime?.(surfaceId)")&&hostApi.includes("openSub?.(surfaceId)"),'Core workspace API must provide explicit idempotent activation for Mobile Host.');
