@@ -97,9 +97,28 @@ assert.strictEqual(crossLayer.violations.length,0,'Migrated production Unit pres
 const cssDependency=require('../tools/quality/unit-production-css-dependency-audit').audit();
 assert.strictEqual(cssDependency.ok,true,require('../tools/quality/unit-production-css-dependency-audit').format(cssDependency));
 
-const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css']);
-const resonanceStable=digest('src/plugins/resonance-workbench',{include:rel=>!resonanceWiring.has(rel)});
-assert.deepStrictEqual(resonanceStable,{count:16,sha256:'da57e713611efdae250e1ad1f5d6abfba570d3de18c87cc99d7d77a68243c7dd'},'Resonance production Unit reconstruction may change presentation/wiring adapters and the reviewed parameter Legend flow CSS, including the main ScientificCurveSurface attachment adapter; the v3.71.24 post-closure orchestration/domain/task baseline remains byte-frozen after this explicit rendering-lifecycle correction.');
+const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css','mobile.css']);
+const EXPECTED_RESONANCE_STABLE_BLOBS=Object.freeze({
+  'README.md':'5f67f4b6b91643ecf69d7daf53f2b61c5c0d82d3',
+  'feature-analysis-runtime.js':'eebd6ecab0824f55e130704ff7f26b17cbb70ae0',
+  'feature-context.js':'d02ad9248ff7d0a628538048b4e1cb63a3ef9644',
+  'feature-controls-runtime.js':'48c0da0227272a9a6f71ab18ccc0c2b1b4d1d95f',
+  'feature-data-runtime.js':'f7c13abe007ac02cf84d068505c2d465b4d3649b',
+  'feature-inspector-runtime.js':'08391561814fb42d1d4ca1d6046050c27e8ba1a2',
+  'feature-peak-runtime.js':'2452b08fb29c2cd84ecfcfe1893aea7b99f7f42e',
+  'feature-runtime.js':'5249e996b4125fdc81c52100f4e6e95292314513',
+  'feature-selection-runtime.js':'bff05c01614dd7ca937f816c4a82bb91e9ebd5da',
+  'feature-ter-runtime.js':'dc63f4d91ecea4205d97d1e4e03c2aa88fa11c2c',
+  'resonant-ter-task.js':'e83335ab6205a6bbcaeddc83fb15d028222605a3',
+  'super-layout.js':'2d22d8df429844be0dd3e4b28f6c6d8562bfa29a',
+  'task-core.js':'a0f5fc92d47cc896414f3497439a64f500eef36b',
+  'window-runtime.js':'ca629f61617593c2414eac9e53fe50da4972a1a5',
+  'workbench-shared.js':'60fab128a8f90edaa7e13e1ac27f637c489553b6'
+});
+const resonanceDir='src/plugins/resonance-workbench';
+const resonanceStableFiles=fs.readdirSync(resonanceDir).filter(name=>fs.statSync(path.join(resonanceDir,name)).isFile()&&!resonanceWiring.has(name)).sort();
+assert.deepStrictEqual(resonanceStableFiles,Object.keys(EXPECTED_RESONANCE_STABLE_BLOBS).sort(),'Resonance stable orchestration/domain/task inventory changed; presentation/mobile wiring is intentionally excluded and protected semantically.');
+for(const [rel,expected] of Object.entries(EXPECTED_RESONANCE_STABLE_BLOBS))assert.strictEqual(blobSha(path.join(resonanceDir,rel)),expected,`Resonance stable orchestration/domain/task file changed unexpectedly: ${rel}`);
 const resonanceCss=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),resonanceMobile=fs.readFileSync('src/plugins/resonance-workbench/mobile.css','utf8');
 assert(!/\.respar-(?:scan-global|detect-actions)[^{]*\{[^}]*grid-template-columns/s.test(resonanceCss),'Resonance plugin CSS must not reclaim Unit-owned parameter ActionGrid density.');
 assert(!/resonance-display-grid[^{]*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance Mobile CSS must not reclaim Unit-owned display FormGrid density.');
