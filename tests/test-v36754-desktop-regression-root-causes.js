@@ -90,6 +90,8 @@ assert(!pulse.includes('ps-analysis-command-surface')&&!pulseUnit.includes('dkds
 assert(Array.isArray(pulseManifest.styles)&&pulseManifest.styles.length===0,'Pulse production Unit presentation must load no legacy plugin CSS.');
 assert(pulse.includes('actions:liveDomain.actions')&&pulse.includes('snapshot:liveSnapshot'),'Pulse Unit presentation must remain projected from the existing production live-domain owner.');
 
+const vthUnit=read('src/plugins/transfer-vth-lab/unit-presentation.js');
+
 // 5: Vth plot owns no scrollbar around a responsive ResizeObserver surface. The
 // result table is the scroll owner, preventing scrollbar appearance/disappearance
 // from feeding back into chart width and triggering repeated re-render.
