@@ -14,6 +14,8 @@ The template intentionally ships **no plugin.css** and no hand-written page HTML
 
 The lower-level `ctx.ui.workspaceSurface` facade remains available as an advanced Plugin API primitive; do not use it as the starting point for ordinary generated/new workbenches.
 
+Plugin API 1.19 keeps a **main-only PRIMARY** contract even when authored through Unit Workspace. PRIMARY is exactly one semantic main surface; persistent controls/parameters/inspectors are separate PRIME surfaces and derived full analyses are SUB surfaces. This cutover removes `leftNode` / `leftHtml` from the public contract rather than recreating a Desktop-shaped left rail inside the Unit-first template.
+
 Validate/package:
 
 ```bash
