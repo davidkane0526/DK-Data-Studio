@@ -16,9 +16,10 @@
     ctx.data.types.register('example.workspace.result',{title:'SDK example result',parents:['result.analysis'],kind:'result',key:v=>v?.id});
 
     const page=ctx.ui.pages.add({id:'sdk-workspace',label:'SDK 示例',title:'SDK Workspace Example',order:900,html:''});
-    units.pageHeader.create(page,{variant:'page-owned',title:'SDK Workspace Example',subtitle:'Unit-first standalone workbench',actions:[
+    const pageHeader=units.pageHeader.create(page,{variant:'page-owned',title:'SDK Workspace Example',subtitle:'Unit-first standalone workbench',actions:[
       {id:'run',label:'运行',variant:'primary',onInvoke:()=>ctx.commands.run('com.example.workspace.run')}
     ]});
+    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});
     const body=units.page.create(page,{variant:'analysis'}).element;
     const workspaceHost=units.layout.create(body,{variant:'identity'});
     const workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'sdk-example',primaryScroll:'safe'});

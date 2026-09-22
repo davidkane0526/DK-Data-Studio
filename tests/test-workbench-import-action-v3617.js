@@ -31,7 +31,7 @@ assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(ty
 assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
 assert(index.includes('id="importTargetOptions"'),'Global Import Workbench target routing must remain available.');
 assert(sdkManifest.apiVersion==='1.19.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
-assert(sdk.includes('data-dkds-slot="workbench-import"'),'SDK template must mark the Core-owned import-action position.');
+assert(sdk.includes("dataset:{dkdsSlot:'workbench-import'}"),'SDK Unit-first template must mark the Core-owned import-action position through a public Unit dataset, not raw page HTML.');
 assert(!sdk.includes('ctx.data.importWorkbench.open'),'SDK workbench template must not create or invoke a private import button.');
 assert(!pulseFeature.includes("label:'添加文件'")&&!pulseFeature.includes('P.addFiles()'),'Pulse must use the Core-owned import action instead of a plugin button.');
 assert(!pulsePlugin.includes('ctx.data.importWorkbench')&&!pulseService.includes('openImportWorkbench'),'First-party Pulse workbench must not own Import Workbench invocation.');

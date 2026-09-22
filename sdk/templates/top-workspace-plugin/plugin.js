@@ -18,7 +18,8 @@
 
     ctx.ui.activities.add({id:'sdk-top-example',label:'SDK TOP',contextLabel:'SDK TOP Example',icon:'◇',order:910,primary:true,openMode:'window',artifactHydration:'live',description:'Unit-first Plugin API TOP workspace reference',onActivate:()=>{ctx.workspace.openPage('sdkTopExamplePage');refresh();}});
     const page=ctx.ui.pages.add({id:'sdk-top-example-page',pageId:'sdkTopExamplePage',activity:'sdk-top-example',label:'SDK TOP',title:'SDK TOP Workspace Example',toolbar:false,html:''});
-    units.pageHeader.create(page,{variant:'page-owned',activity:'sdk-top-example',title:'SDK TOP Workspace Example',subtitle:'Dedicated TOP · shared Unit composition'});
+    const pageHeader=units.pageHeader.create(page,{variant:'page-owned',activity:'sdk-top-example',title:'SDK TOP Workspace Example',subtitle:'Dedicated TOP · shared Unit composition'});
+    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});
     const body=units.page.create(page,{variant:'analysis'}).element;
     const workspaceHost=units.layout.create(body,{variant:'identity'});
     workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'sdk-top-example',primaryScroll:'safe'});
