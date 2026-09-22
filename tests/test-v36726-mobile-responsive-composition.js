@@ -73,7 +73,7 @@ assert(shellCss.includes('.dkds-action-row>button')&&shellCss.includes('width:au
 assert(shellCss.includes('.dkds-inline-form-row')&&shellCss.includes('flex-wrap:wrap'),'Mobile Core form rows must responsively flow controls instead of forcing a fixed two-column layout.');
 assert(resonanceView.includes('respar-scan-global dkds-mode-group')&&!resonanceView.includes('respar-scan-global dkds-mode-group dkds-action-row'),'Mobile composition must not rewrite the established Desktop scan-mode group into a generic action-row surface.');
 assert(resonanceView.includes('respar-detect-actions')&&!resonanceView.includes('respar-detect-actions dkds-action-row'),'Mobile composition must not rewrite the established Desktop detector-action geometry.');
-assert(/#resonanceDedicatedPage \.respar-scan-global\{[^}]*display:grid;[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),'Desktop Resonance scan controls must retain their established two-column grid.');
+assert(resonanceView.includes("variant:'action-grid-2',className:'respar-scan-global dkds-mode-group'")&&!/\.respar-scan-global[^{}]*\{[^}]*grid-template-columns/s.test(resonanceCss),'Resonance scan controls must retain the accepted two-column density through the canonical Unit action-grid-2 recipe, not plugin CSS.');
 assert(!resonanceCss.includes('resonance-native-client')&&!resonanceView.includes('isNativeClient'),'Resonance must not own a Native-client style or runtime branch; Presenter geometry is external to plugin content.');
 assert(resonanceInspector.includes('respar-inspector-action-grid dkds-action-row'),'Inspector actions continue to use canonical action identity while their geometry remains plugin-owned.');
 
