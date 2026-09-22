@@ -28,5 +28,5 @@ assert(runtime.includes('if(!canPreservePendingBoot(next)){applyProfileTokens(ne
 assert(runtime.includes("if(!pendingProfile||activeProfile===preferredProfile)persistBootState(theme);"),'Only the resolved preferred profile may replace the persisted first-frame snapshot.');
 assert(runtime.includes('resolved:Object.freeze({tokens:resolved.tokens')&&runtime.includes('recipes:computeRecipePolicy(profile,mode)')&&runtime.includes('recipeContexts:profile?.recipes?.contexts'),'Boot snapshot must persist resolved material/appearance plus recipe policy, not CSS variables alone.');
 assert(runtime.includes('function pendingBootMatches')&&runtime.includes('bootState?.recipes')&&runtime.includes('const resolved=bootState.resolved||{}'),'Pending Theme composition must consume the cached resolved profile before the selected Theme plugin registers.');
-assert(changelog.includes(pkg.version),'Current patch identity must remain explicit in CHANGELOG; obsolete visual-freeze labels are not runtime gates.');
+assert(new RegExp(`^# ${String(pkg.version).replace(/\\./g,'\\\\.')}(?:\\s|$)`,'m').test(changelog),'Current patch identity must have an explicit CHANGELOG heading; obsolete visual-freeze labels are not runtime gates.');
 console.log('v3.67.19 R7V Aurora segmented hover + first-frame Theme bootstrap PASS.');
