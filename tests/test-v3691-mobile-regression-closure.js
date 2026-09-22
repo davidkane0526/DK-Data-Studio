@@ -39,9 +39,10 @@ function loadPluginModule(relative,moduleId){
   assert.strictEqual(peakRuntime.settledRevision(),1,'Settled metric revision must advance exactly once when the full metric wave is ready.');
 
   // 2) Data Center Mobile selection commands stay in one four-cell row.
-  const dcMobile=read('src/plugins/data-center/mobile.css');
+  const dcMobile=read('src/plugins/data-center/mobile.css'),dcUnits=read('src/plugins/data-center/unit-presentation.js'),nativeShell=read('src/styles/platform/native-client-shell.css');
   assert(/\.dc-selection-tools\{\s*\n\s*grid-template-columns:repeat\(4,minmax\(0,1fr\)\);gap:4px/.test(dcMobile),'Mobile Data Center 多选/全选/反选/清除 must stay in one four-column row.');
-  assert(dcMobile.includes('.dc-selection-tools>button{\n  white-space:nowrap'),'Mobile selection commands must not wrap their two-character labels.');
+  assert(dcUnits.includes("className:'dc-selection-tools'")&&['dcMultiSelectBtn','dcSelectAllBtn','dcInvertSelectionBtn','dcClearSelectionBtn'].every(id=>dcUnits.includes(`id:'${id}'`)),'Data Center selection commands must remain canonical Unit Actions in the four-cell row.');
+  assert(nativeShell.includes(':where(button,[data-dkds-unit-template="action-v2"] button){min-inline-size:max-content;white-space:nowrap;text-overflow:clip}'),'Mobile Drawer Action Unit must keep command labels atomic without plugin-owned nowrap CSS.');
 
   // 3) Native floating PlotView drag uses the raw touch stream and a compositor
   // preview. Pointermove remains measurement-free, and collision/snap repair is
