@@ -24,7 +24,7 @@
     const plotPanel=units.panel.create(main,{variant:'plot-card',header:false,sizing:'content'});
     const plot=units.layout.create(plotPanel.body,{variant:'plot-card-fill'});
     surface=units.scientificPlot.create(plot,{variant:'curve',source:'sdk-tool-example',xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});
-    workbench.compose({primary:{id:'main',label:'工具',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},primes:[],subs:[]});
+    workbench.compose({primary:{id:'main',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},primes:[],subs:[]});
 
     ctx.ui.topWorkspace.register({id:'sdk-tool-example',activity:'sdk-tool-example',label:'SDK Tool',icon:'⌁',layout:{mode:'native',root:{selector:'#sdkToolExamplePage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[],sub:[]}});
     return{deactivate(){surface?.dispose?.();workbench?.dispose?.();}};
