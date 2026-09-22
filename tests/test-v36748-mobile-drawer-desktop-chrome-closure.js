@@ -54,8 +54,12 @@ assert(/\.dkds-mobile-drawer-resize-handle\{\s*background:transparent\s*\}/.test
 // Resonance and Data Center own their local Mobile reflow while Core owns the
 // generic drawer geometry.
 const resonanceMobile=read('src/plugins/resonance-workbench/mobile.css');
-for(const token of ['container-name:resonance-parameters-mobile','repeat(auto-fit,minmax(min(145px,100%),1fr))','grid-template-columns:minmax(72px,max-content) minmax(0,1fr)', '@container resonance-parameters-mobile (max-width:360px)'])
-  assert(resonanceMobile.includes(token),`Resonance parameter reflow missing ${token}.`);
+const resonanceUnit=read('src/plugins/resonance-workbench/unit-presentation.js');
+for(const token of ['container-name:resonance-parameters-mobile','grid-template-columns:auto minmax(72px,110px) auto','grid-template-columns:minmax(44px,max-content) minmax(0,1fr)'])
+  assert(resonanceMobile.includes(token),`Resonance domain-row drawer reflow missing ${token}.`);
+assert(resonanceUnit.includes("variant:'action-grid-2',className:'respar-scan-global dkds-mode-group'")&&resonanceUnit.includes("variant:'action-grid-2',className:'respar-detect-actions'"),'Resonance parameter action density must be Unit-owned.');
+assert(resonanceUnit.includes("if(nativeMobile)units.layout.apply(display,{variant:'form-grid-2'})")&&resonanceUnit.includes('layoutSpec:nativeMobile?PARAMETER_INLINE_LABEL_LAYOUT:null')&&resonanceUnit.includes("maxWidth:310"),'Resonance Mobile field/display reflow must be declared through Unit responsive geometry, not plugin CSS.');
+assert(!/respar-(?:scan-global|detect-actions)[^{]*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance mobile.css must not reclaim Unit-owned parameter action columns.');
 const resonance=json('src/plugins/resonance-workbench/plugin.json');
 {const [major,minor,patch]=String(resonance.version).split('.').map(Number);assert(major>3||(major===3&&(minor>61||(minor===61&&patch>=18))),'Resonance plugin version must retain the Mobile parameter layout.');}
 {
