@@ -33,7 +33,7 @@ if(process.argv.includes('--windows-package')){
     '--win','nsis','portable','--publish','never'
   ];
   console.log(`Packaging with electron-builder ${ELECTRON_BUILDER_VERSION} (on-demand toolchain).`);
-  const result=spawnSync(command,args,{cwd:root,env:process.env,stdio:'inherit',shell:false});
+  const result=spawnSync(command,args,{cwd:root,env:process.env,stdio:'inherit',shell:process.platform==='win32'});
   if(result.error){
     console.error(result.error.message||String(result.error));
     process.exit(1);

@@ -9,6 +9,7 @@ assert(/^\^43\.4\./.test(String(pkg.devDependencies?.electron||'')),'Electron mu
 assert(!pkg.devDependencies?.['electron-builder'],'electron-builder must not inflate ordinary desktop dependency installs; packaging owns it on demand.');
 const builderRunner=fs.readFileSync(path.join(root,'scripts','prepare-build.js'),'utf8');
 assert(/ELECTRON_BUILDER_VERSION\s*=\s*'26\.15\.7'/.test(builderRunner),'Windows packaging must pin the current electron-builder 26.15.7 tool contract.');
+assert(/spawnSync\(command,args,\{cwd:root,env:process\.env,stdio:'inherit',shell:process\.platform==='win32'\}\)/.test(builderRunner),'Windows on-demand packaging must launch npx.cmd through the system shell; direct shell:false execution of .cmd fails with EINVAL on Node 22.');
 assert(String(pkg.scripts?.dist||'').includes('node scripts/prepare-build.js --windows-package'),'dist must invoke the on-demand electron-builder path through the existing build-preparation owner.');
 const overrides=JSON.stringify(pkg.overrides||{});
 for(const name of ['glob','rimraf','inflight']) assert(!overrides.includes(`"${name}"`),`Do not force incompatible ${name} transitive overrides solely to hide upstream warnings.`);
