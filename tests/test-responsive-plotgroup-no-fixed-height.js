@@ -2,8 +2,8 @@
 const assert=require('assert');const fs=require('fs');const {inspectCompositionCss}=require('../sdk/composition-contract');
 const core=fs.readFileSync('src/styles/structure/analysis-workbench.css','utf8'),sdkStyle=fs.readFileSync('src/styles/structure/plugin-workspace.css','utf8');
 assert(core.includes('gap:var(--dkds-grid-gap,10px)'),'GroupArea must retain the pre-SDK managed-grid geometry contract');
-const resonance=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),terUnits=fs.readFileSync('src/plugins/ter-analysis/unit-presentation.js','utf8'),unitSpec=fs.readFileSync('src/core/ui/modules/composition/unit-template-spec.js','utf8');
-assert(/reswin-group-grid\{[^}]*--dkds-grid-gap:12px/.test(resonance),'Resonance accepted group gap must remain 12 px');
+const resonance=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),resonanceUnits=fs.readFileSync('src/plugins/resonance-workbench/unit-presentation.js','utf8'),terUnits=fs.readFileSync('src/plugins/ter-analysis/unit-presentation.js','utf8'),unitSpec=fs.readFileSync('src/core/ui/modules/composition/unit-template-spec.js','utf8');
+assert(resonanceUnits.includes("variant:'accepted-group-grid'")&&sdkStyle.includes('.dkds-scientific-reference-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}')&&!/reswin-group-grid\{[^}]*--dkds-grid-gap:/.test(resonance),'Resonance accepted 12 px group gap must come from the public accepted-group-grid profile, not private CSS.');
 assert(terUnits.includes('gapPx:14')&&unitSpec.includes('explicit source-parity gapPx detail'),'TER accepted 14 px group gap must be an explicit plugin source-detail parameter while Core owns responsive grid behavior.');
 assert(!/\.dkds-(?:plot-group|group-area-grid)[^{]*\{[^}]*(?:gap|row-gap|column-gap)\s*:/.test(sdkStyle),'SDK 1.49 must not overwrite accepted GroupArea spacing with a new visual default');
 assert(!inspectCompositionCss(resonance,{path:'resonance/plugin.css'}).issues.some(x=>x.code==='PLOT_GROUP_NONCANONICAL_GAP'));
