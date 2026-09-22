@@ -66,7 +66,6 @@ const cssPairs=[
   ['#resonanceDedicatedPage .respar-floating-header>div{display:flex;gap:5px}', '.dkds-scientific-reference-header-actions{display:flex;gap:5px}'],
   ['#resonanceDedicatedPage .respar-floating-body{min-height:0;overflow:auto;padding:10px}', '.dkds-scientific-reference-body{min-height:0;overflow:auto;padding:10px}'],
   ['#resonanceDedicatedPage .respar-group-context{margin-left:6px}', '.dkds-scientific-reference-meta{margin-left:6px}'],
-  ['#resonanceDedicatedPage .reswin-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}', '.dkds-scientific-reference-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}'],
   ['#resonanceDedicatedPage .reswin-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}', '.dkds-scientific-reference-group-card{min-width:0;display:grid;grid-template-rows:auto auto;align-content:start}'],
   ['#resonanceDedicatedPage .reswin-group-plot{width:100%;min-height:0}', '.dkds-scientific-reference-group-plot{width:100%;min-height:0}'],
   ['#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px;min-height:280px;resize:none}', '.dkds-scientific-reference-group-card.dkds-portable-view.is-floating{--dkds-portable-floating-min-width:360px;--dkds-portable-floating-min-height:280px;--dkds-portable-floating-resize:none}'],
@@ -74,6 +73,9 @@ const cssPairs=[
   ['#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px;min-height:300px;resize:none}', '.dkds-scientific-reference-group-card.dkds-portable-view.is-global-floating{--dkds-portable-floating-min-width:380px;--dkds-portable-floating-min-height:300px;--dkds-portable-floating-resize:none}']
 ];
 for(const [accepted,reference] of cssPairs){has(resonanceCss,accepted,`accepted Resonance CSS drifted: ${accepted}`);has(profileCss,reference,`public SDK reference CSS missing parity rule: ${reference}`);}
+assert(resonanceUnits.includes("variant:'accepted-group-grid'"),'Production Resonance group grid must select the public accepted-group-grid Unit variant.');
+assert(!/\.reswin-group-grid[^{}]*\{[^}]*--dkds-grid-(?:gap|align-items|auto-rows|columns)\s*:/s.test(resonanceCss),'Production Resonance CSS must not duplicate Core/Unit managed group-grid tokens.');
+has(profileCss,'.dkds-scientific-reference-group-grid{--dkds-grid-gap:12px;--dkds-grid-align-items:start;width:100%}','Public accepted-scientific-v1 profile must retain the shared 12 px/start group-grid default consumed through the Unit variant.');
 
 has(resonanceCss,'@media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}', 'accepted 1050px header geometry changed');
 has(profileCss,'@media(max-width:1050px){.dkds-plugin-workspace[data-dkds-scientific-profile="accepted-scientific-v1"] .dkds-scientific-reference-main-plot-header{left:72px;right:10px}}','public SDK reference missing accepted 1050px header geometry');
