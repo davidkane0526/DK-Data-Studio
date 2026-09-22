@@ -1,3 +1,11 @@
+# 3.71.114 WIP — Unit maturity freeze / production CSS ownership closure
+
+- Froze Unit Templates at 2.5.38 with 41 public Units and 73 Layout recipes; no plugin-specific Unit or Presenter branch was added.
+- Added production CSS-dependency auditing and retired duplicate managed PlotGroup/PlotView, parameter-density and responsive geometry ownership from production plugin styles. Vth production presentation is CSS-free; TER/Resonance/Pulse/Data Center retain only bounded source/domain detail where still required.
+- Preserved one composition owner across the six production UI plugins and kept Core/Presenter domain-blind. Historical byte-level style locks that conflicted with reviewed Unit ownership were replaced by semantic ownership/parity gates while scientific algorithms, tasks and domain runtimes remain independently frozen.
+- Tightened Unit-first SDK authoring: official Workspace/TOP templates expose the Core-owned import slot through Unit composition, the single-page Tool template no longer teaches a redundant PRIMARY navigation label, and TOP authoring documentation explicitly preserves the Plugin API 1.19 main-only PRIMARY / PRIME / SUB boundary.
+- Full architecture freeze verification is performed through the complete project check plus Windows/Android CI. Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.105 WIP — retained Unit List identity across Presenter reparent
 
 - Added a retained Unit List handle with atomic `setItems()` / `items()` and Core-owned ListItem `leading / title / meta` anatomy. Dynamic collections now update the concrete Unit instance instead of rediscovering DOM after Presenter reparenting.
