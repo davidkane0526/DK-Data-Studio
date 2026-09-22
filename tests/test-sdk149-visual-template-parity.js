@@ -12,7 +12,10 @@ const nativeShell=read('src/styles/platform/native-client-shell.css'),nativeWork
 assert(nativeShell.includes('--dkds-mobile-scrollbar-size:3px')&&nativeShell.includes('.analysis-page .analysis-page-header{display:none}'),'Native Mobile shared shell invariants must remain explicit.');
 assert(nativeWorkspace.includes('overscroll-behavior-y:auto'),'Native Mobile vertical scroll chaining must remain explicit.');
 assert.strictEqual(treeDigest(walk('src/core/theme')),'b9195f8f4315861fe4caabbaca1980ad4cd6723412f5d92bf8d0fa34b1d390b6','SDK 1.49 migration changed the accepted 3.70.5 Core Theme snapshot.');
-assert.strictEqual(treeDigest(['src/plugins/ter-analysis/plugin.css']),'14625f1f285e033fd86437b84ed75d23aa9a100d06e6d7194c95c0a542321b69','TER source-parity reconstruction must retain the accepted geometry source exactly.');
+const terCss=read('src/plugins/ter-analysis/plugin.css');
+for(const token of ['min-width:118px;width:135px','min-width:105px;width:112px','width:min(860px,100%)','width:min(760px,100%)','grid-template-rows:auto auto auto minmax(320px,1fr)','min-height:38px'])assert(terCss.replace(/\s+/g,'').includes(token.replace(/\s+/g,'')),`TER accepted source-detail geometry missing: ${token}`);
+assert(!/(?:^|[;{}]\s*)(?:background(?:-color)?|color|border(?:-[\w-]+)?|box-shadow|text-shadow|font(?:-family|-size|-weight)?)\s*:/mi.test(terCss),'TER source-parity stylesheet may own geometry only, never visual paint.');
+assert(!/--dkds-(?:grid-(?:gap|align-items|auto-rows|columns)|plot-content-(?:flex|min-height|height))\s*:/.test(terCss),'TER source-detail CSS must not reclaim Unit-managed PlotGroup/PlotView geometry.');
 assert(!fs.existsSync('src/plugins/data-center/mobile-presentation.js'),'Data Center production Unit cutover must remove the obsolete Mobile-only presentation source.');
 const crossLayer=require('../tools/quality/unit-runtime-style-ownership').audit();assert.strictEqual(crossLayer.violations.length,0,'Migrated Unit plugin geometry must be protected by cross-layer single ownership rather than byte-freezing presentation CSS.');
 assert.strictEqual(treeDigest(['src/plugins/aurora-pop-theme/plugin.js']),'c71e11148900d4d968a12869920bf84e098b60b2b2ac40e81f87644e98f81be8','Production Unit cutovers must not alter the remaining accepted Aurora visual template source.');
