@@ -17,12 +17,12 @@ assert(resonancePresentation.includes("className:'respar-scan-global dkds-mode-g
   'Desktop scan-mode commands must not be converted into a generic action-row container by Mobile work.');
 assert(resonancePresentation.includes("className:'respar-detect-actions'")&&!resonancePresentation.includes('respar-detect-actions dkds-action-row'),
   'Desktop detector commands must keep their established container identity.');
-assert(/#resonanceDedicatedPage \.respar-scan-global\{[^}]*display:grid;[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
-  'Desktop scan-mode controls must retain their two-column plugin layout.');
+assert(resonancePresentation.includes("variant:'action-grid-2',className:'respar-scan-global dkds-mode-group'")&&!/\.respar-scan-global[^{}]*\{[^}]*grid-template-columns/s.test(resonanceCss),
+  'Desktop scan-mode controls must retain their accepted two-column density through the canonical Unit action-grid-2 owner.');
 assert(/#resonanceDedicatedPage \.respar-scan-global button\{width:100%\}/.test(resonanceCss),
   'Desktop scan-mode controls must retain equal-width buttons.');
-assert(/#resonanceDedicatedPage \.respar-detect-actions\{[^}]*display:grid;[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
-  'Desktop detector actions must retain their two-column plugin layout.');
+assert(resonancePresentation.includes("variant:'action-grid-2',className:'respar-detect-actions'")&&!/\.respar-detect-actions[^{}]*\{[^}]*grid-template-columns/s.test(resonanceCss),
+  'Desktop detector actions must retain their accepted two-column density through the canonical Unit action-grid-2 owner.');
 assert(/#resonanceDedicatedPage \.respar-inspector-action-grid\{[^}]*display:grid;[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
   'Desktop inspector action geometry must not be flattened by Mobile responsive composition.');
 
