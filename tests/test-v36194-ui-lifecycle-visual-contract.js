@@ -23,6 +23,7 @@ const resonanceView=read('src/plugins/resonance-workbench/unit-presentation.js')
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
+const unitLayout=read('src/core/ui/modules/composition/unit-template-layout-spec.js');
 const scientificComposition=read('src/core/ui/modules/composition/scientific.js');
 const automationRuntime=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 const index=read('src/index.html');
@@ -73,9 +74,11 @@ assert(materialCss.includes('Popover surfaces own the optical material')&&compon
 assert(resonanceView.includes('respar-scan-global dkds-mode-group')&&!resonanceView.includes('respar-scan-global dkds-mode-group dkds-action-row'),
   'Resonance scan buttons must keep canonical mode-button identity without converting the Desktop domain layout into a toolbar-group surface.');
 assert(resonanceView.includes('respar-detect-actions')&&!resonanceView.includes('respar-detect-actions dkds-action-row'),
-  'Resonance detector buttons use the ordinary-button ToolbarAction fallback while Desktop geometry stays plugin-owned.');
-assert(/#resonanceDedicatedPage \.respar-(?:scan-global|detect-actions)\{[^}]*grid-template-columns:1fr 1fr/.test(resonanceCss),
-  'Resonance Desktop scan/detector command geometry must remain the established two-column plugin layout.');
+  'Resonance detector buttons use ordinary ToolbarAction identity while density stays Unit-owned.');
+assert((resonanceView.match(/variant:'action-grid-2'/g)||[]).length>=2&&unitLayout.includes("'action-grid-2':Object.freeze({display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gapPx:5,minWidth:0})"),
+  'Resonance Desktop scan/detector command geometry must use the canonical two-column ActionGrid Unit recipe.');
+assert(!/#resonanceDedicatedPage \.respar-(?:scan-global|detect-actions)\{[^}]*grid-template-columns/s.test(resonanceCss),
+  'Resonance private CSS must not retake Desktop scan/detector density ownership.');
 assert(resonanceView.includes("dataset:{dkdsMenuBehavior:'rich'}"),
   'Range-selection Unit panel must identify itself as a rich popover so its buttons retain normal control chrome.');
 assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
