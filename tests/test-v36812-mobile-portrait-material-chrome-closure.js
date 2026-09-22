@@ -14,6 +14,8 @@ const projection=read('src/core/ui/modules/presentation/mobile-web-surface.js');
 const nativeShell=read('src/styles/platform/native-client-shell.css');
 const nativeWorkspace=read('src/styles/platform/native-workspace-presentation.css');
 const resonanceMobile=read('src/plugins/resonance-workbench/mobile.css');
+const resonanceUnits=read('src/plugins/resonance-workbench/unit-presentation.js');
+const unitLayout=read('src/core/ui/modules/composition/unit-template-layout-spec.js');
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const analysis=read('src/styles/structure/analysis-workbench.css');
 const desktopTouch=read('src/styles/platform/touch.css');
@@ -65,10 +67,10 @@ assert(schema.includes('min-height:var(--dkds-generic-button-min-height,30px)'),
 assert(!schema.includes('--dkds-generic-button-min-height:30px;'),'Generic button structure must not shadow the Native touch-density token on the button itself.');
 assert(analysis.includes('--dkds-workbench-button-min-height:var(--plugin-control-height)')&&analysis.includes('min-height:var(--dkds-workbench-button-min-height)'),'Analysis workbench generic buttons must expose their own density slot.');
 
-// 4) Four scan-visibility commands use an intentional 2x2 compact grid. Detector
-// actions remain adaptive and are not mechanically forced into the same layout.
-assert(resonanceMobile.includes('.respar-scan-global{\n  grid-template-columns:repeat(2,minmax(0,1fr));gap:6px'),'Mobile parameter scan-mode commands must be a stable 2×2 grid.');
-assert(resonanceMobile.includes('.respar-scan-global>button{min-width:0}'),'2×2 scan controls must be allowed to shrink rather than collapse to one column without plugin-owned button chrome.');
-assert(resonanceMobile.includes('.respar-detect-actions{\n  grid-template-columns:repeat(auto-fit,minmax(min(145px,100%),1fr));gap:6px'),'Detector actions must retain adaptive layout.');
+// 4) Resonance scan/detector command density is one public Unit recipe.
+// Mobile CSS must not become a second action-grid owner.
+assert((resonanceUnits.match(/variant:'action-grid-2'/g)||[]).length>=2&&resonanceUnits.includes("className:'respar-scan-global dkds-mode-group'")&&resonanceUnits.includes("className:'respar-detect-actions'"),'Scan and detector commands must both use the canonical action-grid-2 Unit recipe.');
+assert(unitLayout.includes("'action-grid-2':Object.freeze({display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gapPx:5,minWidth:0})"),'Canonical action-grid-2 must preserve the compact two-column geometry.');
+assert(!/\.respar-(?:scan-global|detect-actions)\s*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance Mobile CSS must not re-own canonical ActionGrid density.');
 
 console.log('v3.68.12 Mobile portrait/material/scientific chrome + tokenized Native touch density closure PASS');
