@@ -82,9 +82,9 @@ for(const token of [
   'grid-template-columns:repeat(2,minmax(0,1fr));gap:5px',
   'grid-template-columns:repeat(4,minmax(0,1fr));gap:4px',
   'flex:1 1 0;min-height:0;padding:4px 6px 6px',
-  'margin:0 0 3px;padding:6px 7px',
-  '@container data-center-artifacts-mobile (max-width:339px)'
+  'margin:0 0 3px;padding:6px 7px'
 ])assert(dcMobile.includes(token),`Native Data Management layout missing ${token}.`);
+assert(!dcMobile.includes('@container data-center-artifacts-mobile (max-width:339px)'),'Native Data Management must not collapse hierarchy/field filters into a one-column ultra-narrow fallback.');
 assert(/^1\.15\.(?:[8-9]|\d{2,})$/.test(dc.version));
 {
   let runtimeManifest=null;
