@@ -52,6 +52,7 @@ function walk(rel) {
   const stat = fs.statSync(abs);
   if (stat.isFile()) return [rel.replaceAll('\\', '/')];
   return fs.readdirSync(abs, { withFileTypes: true })
+    .filter(entry => entry.name !== '__pycache__' && !/\.py[co]$/i.test(entry.name))
     .sort((a, b) => a.name.localeCompare(b.name))
     .flatMap(entry => walk(path.join(rel, entry.name)));
 }
