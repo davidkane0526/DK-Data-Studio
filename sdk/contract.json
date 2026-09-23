@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.45",
+  "sdkVersion": "1.51.46",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.71.114",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.46 adds Phase F portable Python authoring without adding a Python runtime backend: a bounded fail-closed AST lowerer converts proven pure Python functions into ordinary JavaScript DKDSTaskDefinition workers consumed by the existing Core Task Runner. Unsupported imports, free globals, async/stateful constructs and unproven syntax fail generation. Generated plugin packages contain no Python source/bytecode and require no Python runtime. Unit Templates remain frozen at 2.5.38 with 41 Units / 73 Layout recipes.",
     "SDK 1.51.45 freezes the mature Unit ownership boundary: production CSS may retain source-parity domain-internal layout only, while Unit/Presenter outer geometry, managed PlotGroup/PlotView runtime tokens and canonical Unit internals remain single-owner. A production CSS dependency audit rejects unreachable dead styles, Presenter-frame ownership, Unit-internal selector ownership and duplicate managed scientific geometry tokens. Vth's retired stylesheet is physically removed; Resonance/TER duplicate managed-grid/plot-content ownership is retired. Unit Templates remain 2.5.38 with 41 Units / 73 Layout recipes.",
     "SDK 1.51.44 makes Unit Templates the default official authoring path: the built-in developer template plus Workspace/TOP/Tool SDK templates compose Page/Header/Layout/Workspace/PRIMARY through public Units, ship no private layout CSS or hand-written page HTML, and keep the lower-level workspaceSurface facade only as an explicit advanced primitive. Unit Templates remain 2.5.38 with 41 Units / 73 Layout recipes.",
     "SDK 1.51.42 / Unit Templates 2.5.37 unifies Mobile companion outer geometry under one framework contract: Workspace SplitController state is the only right/bottom preference source and resolves its bounded final size from the actual Workspace geometry; shared Mobile CSS only consumes that resolved track token, while Unit intrinsic/block constraints remain internal to their allocated Surface, Presenter performs no companion content measurement/observation, and one Core-owned Mobile split-state schema replaces profile-specific generations. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.",
