@@ -38,6 +38,8 @@ assert(header.indexOf("onAction('history-redo')")<header.indexOf('accessibilityL
 const dcViews=read('src/plugins/data-center/unit-presentation.js'),dcMobile=read('src/plugins/data-center/mobile.css'),nativeCss=read('src/styles/platform/native-workspace-presentation.css');
 assert(dcViews.includes("dataset:{dkdsMobileHeaderLayout:'row'}"),'Data Center Unit presentation must explicitly request its compact title/action row through the generic semantic dataset hint.');
 assert(dcMobile.includes('grid-template-columns:minmax(0,1fr) minmax(118px,150px)')&&dcMobile.includes('min-height:34px'),'Data object title and purpose filter must fit one compact row.');
+const dcFilterLayouts=[...dcMobile.matchAll(/\.dc-filter-row\{([^}]*)\}/g)].map(match=>match[1]);
+assert(dcFilterLayouts.length>0&&dcFilterLayouts.every(rule=>rule.includes('grid-template-columns:repeat(2,minmax(0,1fr))')),'Data Center hierarchy/field filters must remain one two-column row at every valid Mobile Drawer width.');
 assert(nativeCss.includes(':not([data-dkds-mobile-header-layout="row"])'),'Core narrow-drawer stacking must respect the generic keep-row semantic hint.');
 assert(!nativeCss.includes('--dkds-mobile-unit-bottom-min')&&!nativeCss.includes('--dkds-mobile-unit-bottom-preferred'),'GroupArea Unit block constraints must remain internal and must not own Mobile companion tracks.');
 assert(nativeCss.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)'),'Every semantic bottom companion must consume the final Workspace SplitController track token without a second CSS geometry owner.');
