@@ -559,7 +559,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         builder.write(args.output)
         print(f"Generated DKDS plugin: {builder.spec['plugin']['id']}@{builder.spec['plugin']['version']} -> {args.output}")
         return 0
-    except (OSError, json.JSONDecodeError, SpecError) as exc:
+    except (OSError, json.JSONDecodeError, SpecError, PortableTaskError) as exc:
         print(f"DKDS generator error: {exc}", file=sys.stderr)
         return 2
 
