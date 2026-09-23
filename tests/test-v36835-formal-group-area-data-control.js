@@ -44,4 +44,4 @@ assert(nativeCss.includes(':not([data-dkds-mobile-header-layout="row"])'),'Core 
 assert(!nativeCss.includes('--dkds-mobile-unit-bottom-min')&&!nativeCss.includes('--dkds-mobile-unit-bottom-preferred'),'GroupArea Unit block constraints must remain internal and must not own Mobile companion tracks.');
 assert(nativeCss.includes('--dkds-mobile-bottom-track:var(--dkds-plugin-canvas-bottom-height,36%)'),'Every semantic bottom companion must consume the final Workspace SplitController track token without a second CSS geometry owner.');
 
-console.log('v3.71.115 formal GroupArea + Mobile data-control/filter/header/height contract PASS.');
+console.log('v3.71.115 release baseline + formal GroupArea + Mobile data-control/filter/header/height contract PASS.');
