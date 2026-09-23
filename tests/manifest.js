@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-declarative-python-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
@@ -2026,6 +2030,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-declarative-python-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371112-production-unit-cutover-closure.js",
       "args": []
