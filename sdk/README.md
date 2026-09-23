@@ -1,4 +1,6 @@
-# DK Data Studio Plugin SDK 1.51.45
+# DK Data Studio Plugin SDK 1.51.46
+SDK 1.51.46 adds **portable Python authoring for Core Tasks** while keeping the runtime JavaScript-only. `sdk/python/dkds_portable_task.py` statically lowers a conservative Python AST subset into ordinary `self.DKDSTaskDefinition` JavaScript. The generated package contains no Python source or bytecode and declares only the existing `execution.tasks` capability. Unsupported/unproven Python constructs fail generation; there is no Python fallback/provider/backend. Unit Templates remain 2.5.38 with 41 Units / 73 Layout recipes.
+
 Phase F prototype adds a **thin declarative/Python authoring layer** without changing the runtime SDK version or Unit catalog. `sdk/python/dkds_plugin_gen.py` consumes `dkds.declarative-plugin.v1` and emits an ordinary Plugin API 1.19 Unit-first workbench; generated output must pass the existing SDK validator and may not introduce private CSS, raw page DOM, Presenter rules or specialized Units. See [DECLARATIVE_PLUGIN_GENERATOR.md](./DECLARATIVE_PLUGIN_GENERATOR.md).
 
 SDK 1.51.45 freezes the **mature Unit ownership boundary**. Production plugin CSS is allowed only for source-parity domain-internal layout/state that does not compete with a selected Unit/Presenter owner. The release gate rejects unreachable production CSS, Presenter outer-frame selectors, Unit-internal selectors, and duplicate managed PlotGroup/PlotView geometry tokens. Unit Templates remain 2.5.38 with 41 Units / 73 Layout recipes; no new Unit was added for this closure.
