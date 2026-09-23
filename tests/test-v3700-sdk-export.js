@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=rel=>{
   const dir=path.join(root,rel),out=[];
-  for(const entry of fs.readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){
+  for(const entry of fs.readdirSync(dir,{withFileTypes:true}).filter(entry=>entry.name!=='__pycache__'&&!/\.py[co]$/i.test(entry.name)).sort((a,b)=>a.name.localeCompare(b.name))){
     const child=path.join(rel,entry.name).replaceAll('\\','/');
     if(entry.isDirectory())out.push(...walk(child));else out.push(child);
   }
@@ -53,4 +53,5 @@ const manifest=JSON.parse(entries.get('SDK_MANIFEST.json').toString('utf8')),con
 assert.strictEqual(manifest.sdkVersion,contract.sdkVersion);assert.strictEqual(manifest.pluginApiVersion,contract.pluginApiVersion);assert.strictEqual(manifest.appVersion,pkg.version);
 assert.strictEqual(manifest.fileCount,walk('sdk').length+12,'SDK manifest must enumerate the complete SDK plus the selected public authoring guides exactly once.');
 assert(read('.gitignore').includes('src/generated/dkds-sdk-export.zip')&&read('scripts/clean-generated.js').includes('src/generated/dkds-sdk-export.zip'),'The SDK ZIP must remain a reproducible generated artifact, not tracked source.');
+assert(read('.gitignore').includes('__pycache__/')&&read('scripts/clean-generated.js').includes('sdk/python/__pycache__'),'Python generator bytecode must remain generated/cache state, never public SDK source.');
 console.log('v3.70.0 SDK export PASS: Plugin Manager exports one current complete SDK ZIP on Electron, Web and Android with explicit save intent.');
