@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.46): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.47): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.46
+# Unit Templates 2.5.38 — SDK 1.51.47
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.47 generated Artifact pipeline authoring
+
+SDK 1.51.47 does not change Unit Templates. Phase F generation can now bind lowered JavaScript Tasks to bounded canonical DataTable inputs and project results into the existing Table and ScientificPlot Units. Source discovery remains `ctx.data.sources`; column enumeration/range reads remain Artifact Store contracts; derived publication remains `ctx.data.model` + `ctx.data.artifacts`. The generator adds no UI renderer, data store, Presenter behavior, Python runtime, or alternate worker path.
+
+The public catalog therefore remains **41 Units / 73 Layout recipes**, and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
 
 ## SDK 1.51.46 authoring-only portable Task lowering
 
@@ -177,7 +183,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.46.
+`units.version` is `2.5.38` in SDK 1.51.47.
 
 
 
