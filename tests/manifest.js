@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-artifact-pipeline-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-portable-python-task-lowering.js",
       "args": []
     },
@@ -2034,6 +2038,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-artifact-pipeline-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-portable-python-task-lowering.js",
       "args": []
