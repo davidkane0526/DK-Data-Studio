@@ -246,8 +246,38 @@ class PluginBuilder:
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
                 })
+            elif kind == "table":
+                extra = sorted(set(row) - {"kind", "id", "title", "columns", "rows"})
+                if extra:
+                    raise SpecError(f"unsupported table fields at {index}: {', '.join(extra)}")
+                columns = []
+                for c_index, column in enumerate(_expect_list(row.get("columns"), f"content[{index}].columns")):
+                    column = _expect_object(column, f"content[{index}].columns[{c_index}]")
+                    extra = sorted(set(column) - {"key", "label", "unit"})
+                    if extra:
+                        raise SpecError(f"unsupported table column fields at {index}:{c_index}: {', '.join(extra)}")
+                    normalized_column = {
+                        "key": _ident(column.get("key"), f"content[{index}].columns[{c_index}].key"),
+                        "label": _nonempty(column.get("label"), f"content[{index}].columns[{c_index}].label"),
+                    }
+                    if "unit" in column:
+                        normalized_column["unit"] = str(column.get("unit", ""))
+                    columns.append(normalized_column)
+                if not columns:
+                    raise SpecError(f"content[{index}].columns must not be empty")
+                rows = []
+                for r_index, item in enumerate(row.get("rows", [])):
+                    item = _expect_object(item, f"content[{index}].rows[{r_index}]")
+                    rows.append({str(key): value for key, value in item.items()})
+                content.append({
+                    "kind": "table",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "title": _nonempty(row.get("title"), f"content[{index}].title"),
+                    "columns": columns,
+                    "rows": rows,
+                })
             else:
-                raise SpecError(f"content[{index}].kind must be note or plot")
+                raise SpecError(f"content[{index}].kind must be note, plot or table")
         if not content:
             raise SpecError("content must not be empty")
 
@@ -269,47 +299,143 @@ class PluginBuilder:
         *,
         action_id: str,
         parameter_map: Dict[str, str] | None = None,
+        input_bindings: Dict[str, Dict[str, Any]] | None = None,
         result_plot: str | None = None,
         result_key: str = "points",
+        result_table: str | None = None,
+        result_rows_key: str = "rows",
+        publish_table: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
         function_name: str | None = None,
     ) -> "PluginBuilder":
-        """Bind an authoring-time Python function to a Core Task Runner action.
+        """Bind authoring-time Python to the existing Core Task Runner.
 
-        Python is compiled immediately into a JavaScript DKDSTaskDefinition.
-        The generated plugin package never contains Python source or requires a
-        Python runtime.
+        Python is lowered immediately to JavaScript. Runtime inputs may come from
+        parameter Units or bounded columns of the plugin-scoped Artifact source
+        catalog. Result projection may update Unit Plot/Table surfaces and/or
+        publish one canonical DataTable Artifact with lineage.
         """
         compiled = compile_portable_task(task_id, function, function_name=function_name)
         action_ids = {row["id"] for row in self.spec["actions"]}
         if action_id not in action_ids:
             raise SpecError(f"portable task action_id not found: {action_id}")
+        if parameter_map is not None and input_bindings is not None:
+            raise SpecError("use parameter_map or input_bindings, not both")
 
         fields = {
             row["id"]: row
             for row in (self.spec.get("parameters") or {}).get("fields", [])
         }
-        mapping = dict(parameter_map or {name: name for name in compiled.parameters})
-        missing_args = [name for name in compiled.parameters if name not in mapping]
-        extra_args = [name for name in mapping if name not in compiled.parameters]
+        if input_bindings is None:
+            mapping = dict(parameter_map or {name: name for name in compiled.parameters})
+            raw_bindings: Dict[str, Dict[str, Any]] = {
+                argument: {"kind": "parameter", "field": field_id}
+                for argument, field_id in mapping.items()
+            }
+        else:
+            raw_bindings = dict(input_bindings)
+
+        missing_args = [name for name in compiled.parameters if name not in raw_bindings]
+        extra_args = [name for name in raw_bindings if name not in compiled.parameters]
         if missing_args or extra_args:
             raise SpecError(
-                "portable task parameter_map must match function arguments exactly; "
+                "portable task input bindings must match function arguments exactly; "
                 f"missing={missing_args}, extra={extra_args}"
             )
-        for argument, field_id in mapping.items():
-            if field_id not in fields:
-                raise SpecError(f"portable task parameter {argument} references unknown field {field_id}")
 
-        plot_ids = {
-            row["id"]
-            for row in self.spec["content"]
-            if row["kind"] == "plot"
-        }
+        bindings: Dict[str, Dict[str, Any]] = {}
+        for argument in compiled.parameters:
+            binding = _expect_object(raw_bindings[argument], f"input_bindings[{argument}]")
+            kind = str(binding.get("kind", "parameter"))
+            if kind == "parameter":
+                extra = sorted(set(binding) - {"kind", "field"})
+                if extra:
+                    raise SpecError(f"unsupported parameter binding fields for {argument}: {', '.join(extra)}")
+                field_id = _ident(binding.get("field"), f"input_bindings[{argument}].field")
+                if field_id not in fields:
+                    raise SpecError(f"portable task parameter {argument} references unknown field {field_id}")
+                bindings[argument] = {"kind": "parameter", "field": field_id}
+                continue
+            if kind != "artifact-column":
+                raise SpecError(f"input_bindings[{argument}].kind must be parameter or artifact-column")
+
+            extra = sorted(set(binding) - {"kind", "source", "column", "maxRows"})
+            if extra:
+                raise SpecError(f"unsupported artifact binding fields for {argument}: {', '.join(extra)}")
+            source = _expect_object(binding.get("source", {}), f"input_bindings[{argument}].source")
+            extra = sorted(set(source) - {"semanticType", "kind", "index", "includeExcluded"})
+            if extra:
+                raise SpecError(f"unsupported source selector fields for {argument}: {', '.join(extra)}")
+            source_index = int(source.get("index", 0))
+            if source_index < 0:
+                raise SpecError(f"input_bindings[{argument}].source.index must be >= 0")
+            normalized_source = {
+                "semanticType": str(source.get("semanticType", "")),
+                "kind": str(source.get("kind", "data.table")),
+                "index": source_index,
+                "includeExcluded": bool(source.get("includeExcluded", False)),
+            }
+            column = _expect_object(binding.get("column"), f"input_bindings[{argument}].column")
+            allowed_selectors = {"id", "key", "name", "role", "quantity", "dimension"}
+            extra = sorted(set(column) - allowed_selectors)
+            if extra:
+                raise SpecError(f"unsupported column selector fields for {argument}: {', '.join(extra)}")
+            normalized_column = {
+                str(key): _nonempty(value, f"input_bindings[{argument}].column.{key}")
+                for key, value in column.items()
+            }
+            if not normalized_column:
+                raise SpecError(f"input_bindings[{argument}].column must select at least one metadata field")
+            max_rows = int(binding.get("maxRows", 65536))
+            if max_rows < 1 or max_rows > 65536:
+                raise SpecError(f"input_bindings[{argument}].maxRows must be in 1..65536")
+            bindings[argument] = {
+                "kind": "artifact-column",
+                "source": normalized_source,
+                "column": normalized_column,
+                "maxRows": max_rows,
+            }
+
+        plot_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "plot"}
+        table_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "table"}
         if result_plot is not None and result_plot not in plot_ids:
             raise SpecError(f"portable task result_plot not found: {result_plot}")
-        if not IDENT.fullmatch(str(result_key or "").replace("-", "_")):
-            raise SpecError(f"invalid portable task result_key: {result_key}")
+        if result_table is not None and result_table not in table_ids:
+            raise SpecError(f"portable task result_table not found: {result_table}")
+        for key_name, key_value in (("result_key", result_key), ("result_rows_key", result_rows_key)):
+            if not IDENT.fullmatch(str(key_value or "").replace("-", "_")):
+                raise SpecError(f"invalid portable task {key_name}: {key_value}")
+
+        normalized_publish = None
+        if publish_table is not None:
+            row = _expect_object(publish_table, "publish_table")
+            extra = sorted(set(row) - {"id", "name", "semanticType", "columns"})
+            if extra:
+                raise SpecError(f"unsupported publish_table fields: {', '.join(extra)}")
+            semantic_type = _nonempty(row.get("semanticType"), "publish_table.semanticType")
+            if semantic_type not in self.spec["data"].get("produces", []):
+                raise SpecError("publish_table.semanticType must be declared in data.produces")
+            columns = []
+            for index, column in enumerate(_expect_list(row.get("columns"), "publish_table.columns")):
+                column = _expect_object(column, f"publish_table.columns[{index}]")
+                extra = sorted(set(column) - {"key", "name", "unit", "role", "resultKey"})
+                if extra:
+                    raise SpecError(f"unsupported publish_table column fields at {index}: {', '.join(extra)}")
+                columns.append({
+                    "key": _ident(column.get("key"), f"publish_table.columns[{index}].key"),
+                    "name": _nonempty(column.get("name", column.get("key")), f"publish_table.columns[{index}].name"),
+                    "unit": str(column.get("unit", "")),
+                    "role": str(column.get("role", "")),
+                    "resultKey": _ident(column.get("resultKey", column.get("key")), f"publish_table.columns[{index}].resultKey"),
+                })
+            if not columns:
+                raise SpecError("publish_table.columns must not be empty")
+            normalized_publish = {
+                "id": _ident(row.get("id"), "publish_table.id"),
+                "name": _nonempty(row.get("name"), "publish_table.name"),
+                "semanticType": semantic_type,
+                "columns": columns,
+            }
 
         if any(row["compiled"].task_id == compiled.task_id for row in self._portable_tasks):
             raise SpecError(f"duplicate portable task id: {compiled.task_id}")
@@ -319,9 +445,12 @@ class PluginBuilder:
         self._portable_tasks.append({
             "compiled": compiled,
             "action_id": action_id,
-            "parameter_map": mapping,
+            "input_bindings": bindings,
             "result_plot": result_plot,
             "result_key": str(result_key),
+            "result_table": result_table,
+            "result_rows_key": str(result_rows_key),
+            "publish_table": normalized_publish,
             "success_status": str(success_status),
         })
         return self
@@ -346,19 +475,50 @@ class PluginBuilder:
     def _task_handlers_source(self) -> List[str]:
         lines: List[str] = []
         action_lookup = {row["id"]: row for row in self.spec["actions"]}
+        table_lookup = {row["id"]: row for row in self.spec["content"] if row["kind"] == "table"}
         for row in self._portable_tasks:
             compiled: CompiledPortableTask = row["compiled"]
             handler = self._task_handler_name(compiled.task_id)
-            payload = ",".join(
-                f"{_js(argument)}:{self._field_read_expr(field_id)}"
-                for argument, field_id in row["parameter_map"].items()
-            )
             action = action_lookup[row["action_id"]]
             lines += [
                 f"    async function {handler}(){{",
                 f"      ctx.status.set({_js(action['statusMessage'])});",
                 "      try{",
-                f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},{{{payload}}},{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
+                "        const __dkdsPayload={};",
+                "        const __dkdsParameters={};",
+                "        const __dkdsSourceIds=[];",
+            ]
+            for argument, binding in row["input_bindings"].items():
+                if binding["kind"] == "parameter":
+                    expression = self._field_read_expr(binding["field"])
+                    lines += [
+                        f"        __dkdsPayload[{_js(argument)}]={expression};",
+                        f"        __dkdsParameters[{_js(argument)}]=__dkdsPayload[{_js(argument)}];",
+                    ]
+                    continue
+                source = binding["source"]
+                column = binding["column"]
+                max_rows = binding["maxRows"]
+                token = re.sub(r"[^A-Za-z0-9_]", "_", argument)
+                lines += [
+                    f"        const __dkdsSources_{token}=ctx.data.sources.list().filter(row=>"
+                    + ("true" if source["includeExcluded"] else "!row?.excluded")
+                    + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
+                    + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
+                    f"        const __dkdsSource_{token}=__dkdsSources_{token}[{source['index']}];",
+                    f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('No scoped source matches artifact binding for '+argument)});",
+                    f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
+                    f"        const __dkdsMatches_{token}=__dkdsColumns_{token}.filter(column=>Object.entries({_js(column)}).every(([key,value])=>String(column?.[key]??'')===String(value)));",
+                    f"        if(__dkdsMatches_{token}.length!==1)throw new Error({_js('Artifact column binding for '+argument+' must resolve exactly one column')});",
+                    f"        const __dkdsColumn_{token}=__dkdsMatches_{token}[0];",
+                    f"        if(Number(__dkdsColumn_{token}.length||0)>{max_rows})throw new Error({_js('Artifact column '+argument+' exceeds declared maxRows '+str(max_rows))});",
+                    f"        const __dkdsRange_{token}=Number(__dkdsColumn_{token}.length||0)>0?ctx.data.artifacts.readColumnRange(__dkdsSource_{token}.artifactId,__dkdsColumn_{token}.id,{{start:0,limit:Number(__dkdsColumn_{token}.length)}}):null;",
+                    f"        if(Number(__dkdsColumn_{token}.length||0)>0&&!__dkdsRange_{token})throw new Error({_js('Unable to read bounded Artifact column for '+argument)});",
+                    f"        __dkdsPayload[{_js(argument)}]=__dkdsRange_{token}?Array.from(__dkdsRange_{token}.values||[]):[];",
+                    f"        if(!__dkdsSourceIds.includes(String(__dkdsSource_{token}.artifactId)))__dkdsSourceIds.push(String(__dkdsSource_{token}.artifactId));",
+                ]
+            lines += [
+                f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},__dkdsPayload,{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
                 "        const result=await handle.promise;",
             ]
             if row["result_plot"] is not None:
@@ -368,6 +528,38 @@ class PluginBuilder:
                     f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
                     f"        {base}_points=result[{_js(key)}];",
                     f"        {base}_surface.requestRender?.();",
+                ]
+            if row["result_table"] is not None:
+                table = table_lookup[row["result_table"]]
+                base = _var(row["result_table"])
+                key = row["result_rows_key"]
+                lines += [
+                    f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
+                    f"        {base}_surface.setData({_js(table['columns'])},result[{_js(key)}]);",
+                ]
+            publish = row["publish_table"]
+            if publish is not None:
+                column_rows = []
+                for column in publish["columns"]:
+                    result_key = column["resultKey"]
+                    column_rows.append(
+                        "{key:%s,name:%s,unit:%s,role:%s,values:result[%s]}"
+                        % (_js(column["key"]), _js(column["name"]), _js(column["unit"]), _js(column["role"]), _js(result_key))
+                    )
+                    lines.append(
+                        f"        if(!Array.isArray(result?.[{_js(result_key)}]))throw new Error({_js('Generated task result.'+result_key+' must be an array for Artifact publication')});"
+                    )
+                lines += [
+                    "        const __dkdsLengths=["
+                    + ",".join(f"result[{_js(column['resultKey'])}].length" for column in publish["columns"])
+                    + "];",
+                    "        if(new Set(__dkdsLengths).size>1)throw new Error('Published DataTable result columns must have equal lengths.');",
+                    "        const __dkdsArtifact=ctx.data.model.createTable({"
+                    + f"id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},"
+                    + "columns:[" + ",".join(column_rows) + "],"
+                    + f"lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}"
+                    + "});",
+                    "        ctx.data.artifacts.publish(__dkdsArtifact);",
                 ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
@@ -382,13 +574,30 @@ class PluginBuilder:
 
     def manifest(self) -> Dict[str, Any]:
         has_plot = any(row["kind"] == "plot" for row in self.spec["content"])
+        has_table = any(row["kind"] == "table" for row in self.spec["content"])
+        has_artifact_input = any(
+            binding["kind"] == "artifact-column"
+            for task in self._portable_tasks
+            for binding in task["input_bindings"].values()
+        )
+        has_artifact_output = any(task["publish_table"] is not None for task in self._portable_tasks)
         requires = ["status", "ui.workspace", "ui.unit-templates", "ui.pages"]
         capabilities = ["ui.page", "ui.plugin-workspace"]
         if has_plot:
             requires.append("ui.scientific-plot")
             capabilities.append("ui.scientific-plot")
+        if has_table:
+            requires.append("ui.table")
+            capabilities.append("ui.table")
         if self._portable_tasks:
             requires.append("execution.tasks")
+        if has_artifact_input:
+            requires.extend(["data.sources", "data.artifacts"])
+            capabilities.append("data.scoped-sources")
+        if has_artifact_output:
+            if "data.artifacts" not in requires:
+                requires.append("data.artifacts")
+            requires.append("data.model")
         plugin = self.spec["plugin"]
         manifest = {
             "id": plugin["id"],
@@ -473,6 +682,14 @@ class PluginBuilder:
         for row in self.spec["content"]:
             if row["kind"] == "note":
                 lines.append(f"    units.note.create(main,{{variant:{_js(row['variant'])},text:{_js(row['text'])}}});")
+                continue
+            if row["kind"] == "table":
+                base = _var(row["id"])
+                lines += [
+                    f"    const {base}_section=units.section.create(main,{{role:'controls',title:{_js(row['title'])}}});",
+                    f"    const {base}_surface=units.table.mount({_js(row['id'])},{base}_section.body,{{variant:'standard',columns:{_js(row['columns'])},rows:{_js(row['rows'])},persistKey:{_js(row['id']+'-declarative-v1')}}});",
+                    f"    disposables.push({base}_surface);",
+                ]
                 continue
             points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]
             base = _var(row["id"])
