@@ -91,7 +91,8 @@
     "ui:ownership:audit": "node tools/quality/style-ownership-gate.js",
     "ui:ownership:audit:strict": "node tools/quality/style-ownership-gate.js --strict",
     "unit:sdk-authoring": "node tools/quality/unit-sdk-authoring-audit.js --strict",
-    "unit:css-dependency": "node tools/quality/unit-production-css-dependency-audit.js --strict"
+    "unit:css-dependency": "node tools/quality/unit-production-css-dependency-audit.js --strict",
+    "sdk:generator:test": "node tests/test-phase-f-declarative-python-generator.js"
   },
   "dependencies": {
     "d3": "^7.9.0",
