@@ -35,7 +35,7 @@ assert(plotView.includes("this.header.querySelector('.dkds-plot-view-title')")&&
 // installing a competing responsive grid owner.
 assert(presentation.includes("variant:'identity',className:'dc-filter-row'"),'Desktop artifact filters must use the accepted-detail identity host.');
 assert(!/className:'dc-filter-row'[^\n]*(?:geometry|responsiveGeometry)/.test(presentation),'Detached artifact filters must not carry a second Unit grid/breakpoint owner.');
-assert(mobile.includes('@container data-center-artifacts-mobile (max-width:339px)')&&mobile.includes('.dc-filter-row{grid-template-columns:minmax(0,1fr)}'),'Mobile must retain the mounted-container one-column fallback.');
+assert(mobile.includes('grid-template-columns:repeat(2,minmax(0,1fr));gap:5px')&&!mobile.includes('@container data-center-artifacts-mobile (max-width:339px)'),'Mobile hierarchy/field filters must stay one two-column row across every valid Drawer width.');
 
 // The chart still belongs to the authored Data Center main grid, is visible on
 // first open, and keeps its full PRIME placement contract.
