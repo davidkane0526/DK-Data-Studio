@@ -24,7 +24,7 @@ assert(!/className:'dc-filter-row'[^\n]*(?:geometry|responsiveGeometry)/.test(pr
 assert(!/className:'dc-selection-tools'[^\n]*(?:geometry|responsiveGeometry)/.test(presentation),'Selection row must not have a second Unit geometry owner.');
 assert(dcCss.includes('.dc-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0}'),'Accepted Desktop filter row remains two columns.');
 assert(dcCss.includes('.dc-selection-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;min-width:0}'),'Accepted Desktop selection row remains four columns.');
-assert(dcMobile.includes('@container data-center-artifacts-mobile (max-width:339px)')&&dcMobile.includes('.dc-filter-row{grid-template-columns:minmax(0,1fr)}'),'The true ultra-narrow Mobile fallback remains plugin-owned after mount.');
+assert(dcMobile.includes('.dc-filter-row{\n  grid-template-columns:repeat(2,minmax(0,1fr));gap:5px\n}')&&!dcMobile.includes('@container data-center-artifacts-mobile (max-width:339px)'),'Mobile hierarchy/field filters must remain one two-column row across every valid Drawer width.');
 
 // Both production PRIME surfaces remain semantic surfaces; Desktop workspace
 // navigation is hidden so no duplicate Data/Chart commands are generated.
