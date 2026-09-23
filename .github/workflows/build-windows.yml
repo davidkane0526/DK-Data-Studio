@@ -46,6 +46,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: build-windows-${{ github.ref }}
@@ -82,6 +83,34 @@ jobs:
           if (-not (Test-Path -LiteralPath (Join-Path $stage (Split-Path $zip -Leaf)))) {
             throw 'Clean project ZIP staging failed.'
           }
+
+      - name: Upload clean project package
+        id: upload_project
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Project-${{ github.sha }}
+          path: artifact-project/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish clean project artifact locator
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload_project.outputs.artifact-id }}
+        run: |
+          $headers = @{
+            Accept = 'application/vnd.github+json'
+            Authorization = "Bearer $env:GH_TOKEN"
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $body = @{
+            state = 'success'
+            context = 'dkds/project-artifact'
+            description = "run=$env:GITHUB_RUN_ID; artifact=$env:ARTIFACT_ID"
+            target_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          } | ConvertTo-Json
+          Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/statuses/$env:GITHUB_SHA" -Headers $headers -Body $body -ContentType 'application/json' | Out-Null
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -259,10 +288,3 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload clean project package
-        uses: actions/upload-artifact@v7
-        with:
-          name: DK-Data-Studio-Project-${{ github.sha }}
-          path: artifact-project/*.zip
-          if-no-files-found: error
-          retention-days: 30
