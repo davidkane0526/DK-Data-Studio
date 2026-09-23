@@ -1,3 +1,10 @@
+# 3.71.115 WIP — Data Center Mobile filter-row acceptance
+
+- Data Center Mobile keeps the hierarchy and field filters in one two-column row across every valid Drawer width; the obsolete ultra-narrow one-column fallback is retired.
+- Updated the relevant historical regression gates to the accepted two-column contract without changing Core, Presenter, Unit Templates, scientific algorithms, or plugin domain logic.
+- Synchronized application, Mobile, visible shell, project-envelope, plugin-window, README and Android release identity to 3.71.115 / versionCode 255.
+- Unit Templates remain 2.5.38 with 41 public Units and 73 Layout recipes; Plugin API remains 1.19.0 and SDK remains 1.51.45.
+
 # 3.71.114 WIP — Unit maturity freeze / production CSS ownership closure
 
 - Froze Unit Templates at 2.5.38 with 41 public Units and 73 Layout recipes; no plugin-specific Unit or Presenter branch was added.
