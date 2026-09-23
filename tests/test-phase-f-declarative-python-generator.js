@@ -12,6 +12,7 @@ const reference=path.join(root,'examples','declarative-python-reference','build_
 const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const schema=JSON.parse(fs.readFileSync(path.join(root,'sdk','declarative-plugin.schema.json'),'utf8'));
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
+const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
 assert.strictEqual(schema.properties.schema.const,'dkds.declarative-plugin.v1');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Phase F generator must consume the frozen Unit contract, not advance it.');
@@ -24,7 +25,7 @@ function pythonCommand(){
     : [['python3',[]],['python',[]]];
   for(const row of candidates){
     const cmd=row[0],prefix=row[1];
-    const probe=spawnSync(cmd,prefix.concat(['--version']),{encoding:'utf8'});
+    const probe=spawnSync(cmd,prefix.concat(['--version']),{encoding:'utf8',env:pythonEnv});
     if(!probe.error&&probe.status===0)return {cmd,prefix};
   }
   throw new Error('Python 3 is required for the Phase F generator gate.');
@@ -34,7 +35,7 @@ const py=pythonCommand();
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-generator-'));
 try{
   const generated=path.join(temp,'generated');
-  const build=spawnSync(py.cmd,py.prefix.concat([reference,generated]),{cwd:root,encoding:'utf8'});
+  const build=spawnSync(py.cmd,py.prefix.concat([reference,generated]),{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.strictEqual(build.status,0,'Python reference generation failed:\n'+build.stdout+'\n'+build.stderr);
 
   const manifest=JSON.parse(fs.readFileSync(path.join(generated,'plugin.json'),'utf8'));
@@ -62,7 +63,7 @@ try{
   assert(source.includes("variant:'form-grid-2'"),'Generated parameters must consume the published two-column form recipe.');
   assert(!/ctx\.ui\.styles|document\.|Unit_for_|plugin\.css/.test(source),'Generator must not create a private styling/DOM/specialized-Unit path.');
 
-  const validation=spawnSync(process.execPath,[validator,'validate',generated],{cwd:root,encoding:'utf8'});
+  const validation=spawnSync(process.execPath,[validator,'validate',generated],{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.strictEqual(validation.status,0,'Generated plugin failed the ordinary SDK validator:\n'+validation.stdout+'\n'+validation.stderr);
   assert(validation.stdout.includes('DKDS SDK validation OK: com.example.generated-workbench@1.0.0'));
 
@@ -76,7 +77,7 @@ try{
     content:[{kind:'note',text:'invalid'}],
     styles:['plugin.css']
   },null,2));
-  const rejection=spawnSync(py.cmd,py.prefix.concat([generator,'check',invalidSpec]),{cwd:root,encoding:'utf8'});
+  const rejection=spawnSync(py.cmd,py.prefix.concat([generator,'check',invalidSpec]),{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.notStrictEqual(rejection.status,0,'Generator must fail closed on undeclared/private authoring fields.');
   assert((rejection.stderr||'').includes('unsupported top-level fields: styles'));
 
