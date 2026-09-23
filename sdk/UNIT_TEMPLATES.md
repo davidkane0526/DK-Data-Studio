@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.45): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.46): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.45
+# Unit Templates 2.5.38 — SDK 1.51.46
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.46 authoring-only portable Task lowering
+
+SDK 1.51.46 does not change the Unit catalog. Phase F adds an authoring compiler outside the application runtime: Python source may be used to describe a bounded pure function, but generation must lower it completely to a JavaScript `DKDSTaskDefinition` before packaging. Runtime plugins continue to use the existing Plugin API 1.19 + Core Task Runner path and do not load Python, Pyodide, Python providers, or a second execution backend.
+
+Unsupported or semantically unproven Python constructs fail closed during generation. This authoring capability therefore does not alter Unit/Presenter ownership, Mobile behavior, or production UI.
 
 ## SDK 1.51.45 maturity freeze
 
@@ -171,7 +177,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.45.
+`units.version` is `2.5.38` in SDK 1.51.46.
 
 
 
