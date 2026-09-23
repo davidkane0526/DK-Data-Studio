@@ -318,7 +318,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.71.114',
+    appVersion:'3.71.115',
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
     renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false}),
@@ -352,7 +352,7 @@ async function initializePluginArchitecture(){
   // Platform presentation state is owned by Core registries and app state, not by
   // the desktop DOM. Desktop and mobile presenters consume this same model.
   window.DKDSPresentation?.configure?.({
-    appVersion:'3.71.114',
+    appVersion:'3.71.115',
     projectSnapshot:()=>{
       const active=activeProjectTab();
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty}));
