@@ -71,8 +71,9 @@ const resonance=json('src/plugins/resonance-workbench/plugin.json');
   assert.strictEqual(runtimeManifest.version,resonance.version,'Resonance runtime version must match plugin manifest.');
 }
 const dcMobile=read('src/plugins/data-center/mobile.css');
-for(const token of ['container-name:data-center-artifacts-mobile','.dc-assignment-filter{','grid-template-columns:repeat(2,minmax(0,1fr))','@container data-center-artifacts-mobile (max-width:339px)'])
+for(const token of ['container-name:data-center-artifacts-mobile','.dc-assignment-filter{','grid-template-columns:repeat(2,minmax(0,1fr))'])
   assert(dcMobile.includes(token),`Data Center drawer reflow missing ${token}.`);
+assert(!dcMobile.includes('@container data-center-artifacts-mobile (max-width:339px)'),'Data Center drawer must keep hierarchy/field filters in the accepted two-column row at every valid width.');
 const dc=json('src/plugins/data-center/plugin.json');
 assert(/^1\.15\.(?:[8-9]|\d{2,})$/.test(dc.version),'Data Center must retain the denser native artifact-drawer version.');
 {
