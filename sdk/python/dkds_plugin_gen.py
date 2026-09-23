@@ -12,7 +12,9 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Callable, Dict, Iterable, List
+
+from dkds_portable_task import CompiledPortableTask, PortableTaskError, compile_portable_task
 
 SCHEMA = "dkds.declarative-plugin.v1"
 PLUGIN_API = "1.19.0"
@@ -67,6 +69,7 @@ class PluginBuilder:
     """Build one Unit-first standalone workbench from a declarative spec."""
 
     def __init__(self, spec: Dict[str, Any]):
+        self._portable_tasks: list[dict[str, Any]] = []
         self.spec = self._normalize(spec)
 
     @classmethod
@@ -259,6 +262,124 @@ class PluginBuilder:
             "content": content,
         }
 
+    def add_portable_task(
+        self,
+        task_id: str,
+        function: Callable[..., Any] | str,
+        *,
+        action_id: str,
+        parameter_map: Dict[str, str] | None = None,
+        result_plot: str | None = None,
+        result_key: str = "points",
+        success_status: str = "任务完成",
+        function_name: str | None = None,
+    ) -> "PluginBuilder":
+        """Bind an authoring-time Python function to a Core Task Runner action.
+
+        Python is compiled immediately into a JavaScript DKDSTaskDefinition.
+        The generated plugin package never contains Python source or requires a
+        Python runtime.
+        """
+        compiled = compile_portable_task(task_id, function, function_name=function_name)
+        action_ids = {row["id"] for row in self.spec["actions"]}
+        if action_id not in action_ids:
+            raise SpecError(f"portable task action_id not found: {action_id}")
+
+        fields = {
+            row["id"]: row
+            for row in (self.spec.get("parameters") or {}).get("fields", [])
+        }
+        mapping = dict(parameter_map or {name: name for name in compiled.parameters})
+        missing_args = [name for name in compiled.parameters if name not in mapping]
+        extra_args = [name for name in mapping if name not in compiled.parameters]
+        if missing_args or extra_args:
+            raise SpecError(
+                "portable task parameter_map must match function arguments exactly; "
+                f"missing={missing_args}, extra={extra_args}"
+            )
+        for argument, field_id in mapping.items():
+            if field_id not in fields:
+                raise SpecError(f"portable task parameter {argument} references unknown field {field_id}")
+
+        plot_ids = {
+            row["id"]
+            for row in self.spec["content"]
+            if row["kind"] == "plot"
+        }
+        if result_plot is not None and result_plot not in plot_ids:
+            raise SpecError(f"portable task result_plot not found: {result_plot}")
+        if not IDENT.fullmatch(str(result_key or "").replace("-", "_")):
+            raise SpecError(f"invalid portable task result_key: {result_key}")
+
+        if any(row["compiled"].task_id == compiled.task_id for row in self._portable_tasks):
+            raise SpecError(f"duplicate portable task id: {compiled.task_id}")
+        if any(row["action_id"] == action_id for row in self._portable_tasks):
+            raise SpecError(f"action already bound to a portable task: {action_id}")
+
+        self._portable_tasks.append({
+            "compiled": compiled,
+            "action_id": action_id,
+            "parameter_map": mapping,
+            "result_plot": result_plot,
+            "result_key": str(result_key),
+            "success_status": str(success_status),
+        })
+        return self
+
+    def _task_for_action(self, action_id: str) -> dict[str, Any] | None:
+        return next((row for row in self._portable_tasks if row["action_id"] == action_id), None)
+
+    def _field_read_expr(self, field_id: str) -> str:
+        parameters = self.spec.get("parameters") or {}
+        field = next(row for row in parameters.get("fields", []) if row["id"] == field_id)
+        name = _var(field_id)
+        if field["type"] == "checkbox":
+            return f"Boolean({name}.input?.checked)"
+        raw = f"{name}.control?.value"
+        if field["type"] == "number":
+            return f"Number({raw}??0)"
+        return f"String({raw}??'')"
+
+    def _task_handler_name(self, task_id: str) -> str:
+        return "run_task_" + re.sub(r"[^A-Za-z0-9_]", "_", task_id)
+
+    def _task_handlers_source(self) -> List[str]:
+        lines: List[str] = []
+        action_lookup = {row["id"]: row for row in self.spec["actions"]}
+        for row in self._portable_tasks:
+            compiled: CompiledPortableTask = row["compiled"]
+            handler = self._task_handler_name(compiled.task_id)
+            payload = ",".join(
+                f"{_js(argument)}:{self._field_read_expr(field_id)}"
+                for argument, field_id in row["parameter_map"].items()
+            )
+            action = action_lookup[row["action_id"]]
+            lines += [
+                f"    async function {handler}(){{",
+                f"      ctx.status.set({_js(action['statusMessage'])});",
+                "      try{",
+                f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},{{{payload}}},{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
+                "        const result=await handle.promise;",
+            ]
+            if row["result_plot"] is not None:
+                base = _var(row["result_plot"])
+                key = row["result_key"]
+                lines += [
+                    f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
+                    f"        {base}_points=result[{_js(key)}];",
+                    f"        {base}_surface.requestRender?.();",
+                ]
+            lines += [
+                f"        ctx.status.set({_js(row['success_status'])});",
+                "        return true;",
+                "      }catch(error){",
+                "        ctx.status.set(String(error?.message||error||'任务失败'));",
+                "        throw error;",
+                "      }",
+                "    }",
+            ]
+        return lines
+
     def manifest(self) -> Dict[str, Any]:
         has_plot = any(row["kind"] == "plot" for row in self.spec["content"])
         requires = ["status", "ui.workspace", "ui.unit-templates", "ui.pages"]
@@ -266,8 +387,10 @@ class PluginBuilder:
         if has_plot:
             requires.append("ui.scientific-plot")
             capabilities.append("ui.scientific-plot")
+        if self._portable_tasks:
+            requires.append("execution.tasks")
         plugin = self.spec["plugin"]
-        return {
+        manifest = {
             "id": plugin["id"],
             "name": plugin["name"],
             "version": plugin["version"],
@@ -283,14 +406,25 @@ class PluginBuilder:
             "pluginType": "workbench",
             "data": self.spec["data"],
         }
+        if self._portable_tasks:
+            manifest["tasks"] = [
+                {"id": row["compiled"].task_id, "entry": row["compiled"].entry}
+                for row in self._portable_tasks
+            ]
+        return manifest
 
     def _action_source(self) -> str:
         rows = []
         for action in self.spec["actions"]:
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
+            task = self._task_for_action(action["id"])
+            if task is not None:
+                invoke = f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
+            else:
+                invoke = f"()=>{{ctx.status.set({_js(action['statusMessage'])});return true;}}"
             rows.append(
-                "{id:%s,label:%s%s,onInvoke:()=>{ctx.status.set(%s);return true;}}"
-                % (_js(action["id"]), _js(action["label"]), variant, _js(action["statusMessage"]))
+                "{id:%s,label:%s%s,onInvoke:%s}"
+                % (_js(action["id"]), _js(action["label"]), variant, invoke)
             )
         return "[" + ",".join(rows) + "]"
 
@@ -345,7 +479,7 @@ class PluginBuilder:
             lines += [
                 f"    const {base}_panel=units.panel.create(main,{{variant:'plot-card',title:{_js(row['title'])},sizing:'content'}});",
                 f"    const {base}_host=units.layout.create({base}_panel.body,{{variant:'plot-card-fill'}});",
-                f"    const {base}_points={_js(points)};",
+                f"    let {base}_points={_js(points)};",
                 f"    const {base}_surface=units.scientificPlot.create({base}_host,{{variant:'curve',source:{_js(row['source'])},xTitle:{_js(row['xTitle'])},yTitle:{_js(row['yTitle'])},getCurves:()=>[{{id:{_js(row['id'])},points:{base}_points}}],getMarkers:()=>[]}});",
                 f"    disposables.push({base}_surface);",
             ]
@@ -370,6 +504,7 @@ class PluginBuilder:
         ]
         lines += self._parameter_source()
         lines += self._content_source()
+        lines += self._task_handlers_source()
         lines += [
             "    workbench.compose({primary:{"
             + f"id:'main',label:{_js(workspace['primaryLabel'])},presentationRole:{_js(workspace['primaryRole'])},"
@@ -387,7 +522,8 @@ class PluginBuilder:
         return (
             f"# {plugin['name']}\n\n"
             "Generated by sdk/python/dkds_plugin_gen.py from the Phase F declarative schema.\n"
-            "The generated runtime uses only Plugin API 1.19 and public Unit Templates; it ships no private CSS.\n"
+            "The generated runtime uses only Plugin API 1.19, Core Task Runner and public Unit Templates; it ships no private CSS.\n"
+            "Python is authoring-time input only; generated packages contain JavaScript tasks and require no Python backend.\n"
         )
 
     def write(self, output: str | Path) -> Path:
@@ -395,6 +531,9 @@ class PluginBuilder:
         target.mkdir(parents=True, exist_ok=True)
         (target / "plugin.json").write_text(json.dumps(self.manifest(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         (target / "plugin.js").write_text(self.render_plugin_js(), encoding="utf-8")
+        for row in self._portable_tasks:
+            compiled: CompiledPortableTask = row["compiled"]
+            (target / compiled.entry).write_text(compiled.source, encoding="utf-8")
         (target / "README.md").write_text(self.render_readme(), encoding="utf-8")
         return target
 
