@@ -121,7 +121,7 @@ class _Lowerer:
             _annotation_root(fn.returns)
 
         assigned = _assigned_names(fn)
-        allowed_names = assigned | _ALLOWED_CALLS | {"range", "math", "True", "False", "None"}
+        allowed_names = assigned | _ALLOWED_CALLS | _SUPPORTED_ANNOTATION_ROOTS | {"range", "math", "True", "False", "None"}
         free = sorted(_loaded_names(fn) - allowed_names)
         if free:
             raise self._fail(fn, "Portable task has free/global names: " + ", ".join(free))
