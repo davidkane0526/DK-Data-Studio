@@ -363,19 +363,26 @@ class _Lowerer:
                     start, stop, step = parts[0], parts[1], "1"
                 else:
                     start, stop, step = parts
+                suffix = str(getattr(node, "lineno", 0))
+                stop_name = f"__dkdsStop_{suffix}"
+                step_name = f"__dkdsStep_{suffix}"
                 lines = [
-                    f"{indent}for({target}=({start}),__dkdsStop=({stop}),__dkdsStep=({step});"
-                    f"__dkdsStep>0?{target}<__dkdsStop:{target}>__dkdsStop;{target}+=__dkdsStep){{",
-                    f"{indent}  if(__dkdsStep===0)throw new Error('Portable task range step cannot be zero');",
-                    f"{indent}  {guard}",
+                    f"{indent}{{",
+                    f"{indent}  const {stop_name}=({stop}),{step_name}=({step});",
+                    f"{indent}  if({step_name}===0)throw new Error('Portable task range step cannot be zero');",
+                    f"{indent}  for({target}=({start});{step_name}>0?{target}<{stop_name}:{target}>{stop_name};{target}+={step_name}){{",
+                    f"{indent}    {guard}",
                 ]
             else:
                 lines = [
                     f"{indent}for({target} of {self.expr(node.iter)}){{",
                     f"{indent}  {guard}",
                 ]
-            lines += self.statements(node.body, indent + "  ")
-            lines.append(f"{indent}}}")
+            body_indent = indent + ("    " if isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range" else "  ")
+            lines += self.statements(node.body, body_indent)
+            lines.append(f"{indent}{'  ' if isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name) and node.iter.func.id == 'range' else ''}}}")
+            if isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range":
+                lines.append(f"{indent}}}")
             if node.orelse:
                 raise self._fail(node, "for ... else is not portable")
             return lines
