@@ -41,6 +41,9 @@
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-filter-row>select{
   width:100%;min-width:0
 }
+/* Hierarchy and field filters are one semantic pair. Keep the accepted
+   two-column row even at the narrowest valid Drawer width; Drawer sizing,
+   rather than a plugin-private one-column breakpoint, protects readability. */
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-selection-tools{
   grid-template-columns:repeat(4,minmax(0,1fr));gap:4px
 }
@@ -55,9 +58,6 @@
 }
 [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-artifact-meta{
   margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25
-}
-@container data-center-artifacts-mobile (max-width:339px){
-  [data-dkds-mobile-region="drawer"][data-dkds-mobile-active="true"].dc-artifact-pane .dc-filter-row{grid-template-columns:minmax(0,1fr)}
 }
 
 /* The chart-preview option row is intentionally one line. All four fields
