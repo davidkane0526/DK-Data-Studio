@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const app=json('package.json'),mobile=json('mobile/package.json'),expo=json('mobile/app.json').expo,sdk=json('sdk/contract.json');
-assert.strictEqual(mobile.version,app.version);assert.strictEqual(expo.version,app.version);assert(expo.android.versionCode>=69);
+assert.strictEqual(mobile.version,app.version);assert.strictEqual(expo.version,app.version);assert(sdkAtLeast(app.version,'3.71.115'));assert(expo.android.versionCode>=255);
 assert(sdkAtLeast(sdk.sdkVersion,'1.49.0'));assert(sdkAtLeast(sdk.minimumAppVersion,'3.70.6'));
 
 const grid=read('src/core/ui/modules/grid/controller.js');
