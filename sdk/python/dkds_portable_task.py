@@ -121,7 +121,7 @@ class _Lowerer:
             _annotation_root(fn.returns)
 
         assigned = _assigned_names(fn)
-        allowed_names = assigned | _ALLOWED_CALLS | {"math", "True", "False", "None"}
+        allowed_names = assigned | _ALLOWED_CALLS | {"range", "math", "True", "False", "None"}
         free = sorted(_loaded_names(fn) - allowed_names)
         if free:
             raise self._fail(fn, "Portable task has free/global names: " + ", ".join(free))
@@ -148,6 +148,9 @@ class _Lowerer:
             "    const __dkdsInput=(input&&typeof input==='object')?input:{};",
             "    let __dkdsIterations=0;",
         ]
+        local_names = sorted(_assigned_names(self.fn) - set(self.parameters))
+        if local_names:
+            lines.append("    let " + ",".join(local_names) + ";")
         for index, arg in enumerate(self.fn.args.args):
             root = _annotation_root(arg.annotation)
             default = self._parameter_default(index)
@@ -308,14 +311,12 @@ class _Lowerer:
             if len(node.targets) != 1:
                 raise self._fail(node, "Chained assignment is not portable")
             target = self._target(node.targets[0])
-            declaration = "let " if isinstance(node.targets[0], ast.Name) else ""
-            return [f"{indent}{declaration}{target}={self.expr(node.value)};"]
+            return [f"{indent}{target}={self.expr(node.value)};"]
         if isinstance(node, ast.AnnAssign):
             if node.value is None:
                 raise self._fail(node, "Annotated assignment requires a value")
             target = self._target(node.target)
-            declaration = "let " if isinstance(node.target, ast.Name) else ""
-            return [f"{indent}{declaration}{target}={self.expr(node.value)};"]
+            return [f"{indent}{target}={self.expr(node.value)};"]
         if isinstance(node, ast.AugAssign):
             target = self._target(node.target)
             ops = {ast.Add: "+=", ast.Sub: "-=", ast.Mult: "*=", ast.Div: "/=", ast.Mod: "%="}
@@ -363,14 +364,14 @@ class _Lowerer:
                 else:
                     start, stop, step = parts
                 lines = [
-                    f"{indent}for(let {target}=({start}),__dkdsStop=({stop}),__dkdsStep=({step});"
+                    f"{indent}for({target}=({start}),__dkdsStop=({stop}),__dkdsStep=({step});"
                     f"__dkdsStep>0?{target}<__dkdsStop:{target}>__dkdsStop;{target}+=__dkdsStep){{",
                     f"{indent}  if(__dkdsStep===0)throw new Error('Portable task range step cannot be zero');",
                     f"{indent}  {guard}",
                 ]
             else:
                 lines = [
-                    f"{indent}for(const {target} of {self.expr(node.iter)}){{",
+                    f"{indent}for({target} of {self.expr(node.iter)}){{",
                     f"{indent}  {guard}",
                 ]
             lines += self.statements(node.body, indent + "  ")
