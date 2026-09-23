@@ -10,6 +10,9 @@ const explicit = [
   'sdk/contract.json',
   'sdk/plugin-manifest.schema.json',
   'sdk/plugin-api.d.ts',
+  'sdk/declarative-plugin.schema.json',
+  'sdk/DECLARATIVE_PLUGIN_GENERATOR.md',
+  'sdk/python/dkds_plugin_gen.py',
   'sdk/README.md',
   'sdk/DATA_ARTIFACT_ACCESS.md',
   'sdk/SCIENTIFIC_UNITS.md',
@@ -168,7 +171,7 @@ function buildSdkExport() {
     fileCount:rows.length,
     files:rows.map(({path:rel,bytes,sha256})=>({path:rel,bytes,sha256}))
   };
-  const startHere = `# DK Data Studio SDK — AI START HERE\n\nThis archive is exported directly from DK Data Studio ${manifest.appVersion} and contains the complete public plugin SDK plus the public authoring guides bundled for AI-assisted plugin development.\n\nCurrent contracts:\n- SDK: ${manifest.sdkVersion}\n- Plugin API: ${manifest.pluginApiVersion}\n- Theme Contract: ${manifest.themeContractVersion}\n- Minimum app version declared by the SDK: ${manifest.minimumAppVersion}\n\nRecommended reading order for an AI coding assistant:\n1. sdk/README.md\n2. sdk/contract.json\n3. sdk/plugin-api.d.ts\n4. sdk/plugin-manifest.schema.json\n5. docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md\n6. the specific SDK guide and template relevant to the requested plugin\n\nTreat the files in this archive as the authoritative current contract. Do not invent deprecated aliases, compatibility shims, private Core APIs, or platform-specific shortcuts that are not documented here.\n`;
+  const startHere = `# DK Data Studio SDK — AI START HERE\n\nThis archive is exported directly from DK Data Studio ${manifest.appVersion} and contains the complete public plugin SDK plus the public authoring guides bundled for AI-assisted plugin development.\n\nCurrent contracts:\n- SDK: ${manifest.sdkVersion}\n- Plugin API: ${manifest.pluginApiVersion}\n- Theme Contract: ${manifest.themeContractVersion}\n- Minimum app version declared by the SDK: ${manifest.minimumAppVersion}\n\nRecommended reading order for an AI coding assistant:\n1. sdk/README.md\n2. sdk/contract.json\n3. sdk/plugin-api.d.ts\n4. sdk/plugin-manifest.schema.json\n5. docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md\n6. sdk/DECLARATIVE_PLUGIN_GENERATOR.md when generating a plugin from Python/declarative source\n7. the specific SDK guide and template relevant to the requested plugin\n\nTreat the files in this archive as the authoritative current contract. Do not invent deprecated aliases, compatibility shims, private Core APIs, or platform-specific shortcuts that are not documented here.\n`;
   const entries = [
     {name:'AI_START_HERE.md',data:startHere},
     {name:'SDK_MANIFEST.json',data:JSON.stringify(manifest,null,2)+'\n'},
