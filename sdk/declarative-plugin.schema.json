@@ -303,6 +303,41 @@
                     }
                   }
                 }
+              },
+              "binding": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "statePath",
+                  "domainAction"
+                ],
+                "properties": {
+                  "statePath": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+                  },
+                  "domainAction": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "argumentKey": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                    "default": "value"
+                  },
+                  "staticArgs": {
+                    "type": "object",
+                    "maxProperties": 8,
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  }
+                }
               }
             }
           }
@@ -395,6 +430,41 @@
                           "label": {
                             "type": "string",
                             "minLength": 1
+                          }
+                        }
+                      }
+                    },
+                    "binding": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "statePath",
+                        "domainAction"
+                      ],
+                      "properties": {
+                        "statePath": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+                        },
+                        "domainAction": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "argumentKey": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                          "default": "value"
+                        },
+                        "staticArgs": {
+                          "type": "object",
+                          "maxProperties": 8,
+                          "additionalProperties": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean",
+                              "null"
+                            ]
                           }
                         }
                       }
