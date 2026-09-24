@@ -332,6 +332,127 @@
                   "minItems": 2,
                   "maxItems": 2
                 }
+              },
+              "selectionTarget": {
+                "enum": [
+                  "series"
+                ],
+                "default": "series"
+              },
+              "identity": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input"
+                ],
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "entityType": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "data.series"
+                  }
+                }
+              },
+              "axisSemantics": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "dimension": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "y": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "dimension": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "viewport": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "linkGroup"
+                ],
+                "properties": {
+                  "link": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "linkGroup": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "linkedAxes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "x",
+                        "y"
+                      ]
+                    },
+                    "default": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                }
+              },
+              "legend": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "linkGroup"
+                ],
+                "properties": {
+                  "link": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "linkGroup": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxLinkedTargets": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24,
+                    "default": 24
+                  }
+                }
               }
             }
           },
@@ -483,6 +604,127 @@
                           }
                         ]
                       }
+                    },
+                    "selectionTarget": {
+                      "enum": [
+                        "series"
+                      ],
+                      "default": "series"
+                    },
+                    "identity": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "input"
+                      ],
+                      "properties": {
+                        "input": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "entityType": {
+                          "type": "string",
+                          "minLength": 1,
+                          "default": "data.series"
+                        }
+                      }
+                    },
+                    "axisSemantics": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "dimension": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "y": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "dimension": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "viewport": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "linkGroup"
+                      ],
+                      "properties": {
+                        "link": {
+                          "type": "boolean",
+                          "default": false
+                        },
+                        "linkGroup": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "linkedAxes": {
+                          "type": "array",
+                          "minItems": 1,
+                          "uniqueItems": true,
+                          "items": {
+                            "enum": [
+                              "x",
+                              "y"
+                            ]
+                          },
+                          "default": [
+                            "x",
+                            "y"
+                          ]
+                        }
+                      }
+                    },
+                    "legend": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "linkGroup"
+                      ],
+                      "properties": {
+                        "link": {
+                          "type": "boolean",
+                          "default": false
+                        },
+                        "linkGroup": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "maxLinkedTargets": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 24,
+                          "default": 24
+                        }
+                      }
                     }
                   }
                 }
@@ -490,6 +732,59 @@
             }
           }
         ]
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "multiple": {
+              "type": "boolean",
+              "default": true
+            },
+            "defaultType": {
+              "type": "string",
+              "minLength": 1,
+              "default": "data.series"
+            }
+          }
+        },
+        "selectionLink": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "group"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "group": {
+              "type": "string",
+              "minLength": 1
+            },
+            "acceptTypes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
       }
     }
   }
