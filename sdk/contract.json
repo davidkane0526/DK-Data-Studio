@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.61",
+  "sdkVersion": "1.51.62",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.71.114",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.62 adds bounded two-way Domain Adapter bindings to canonical parameter PRIME fields. Number/Text/Select/Checkbox fields may declare statePath + domainAction with one dynamic argument and up to eight static scalar arguments. The same authoritative snapshot refresh pipeline updates public Unit handles; public Unit onChange invokes only the declared adapter action. No generated local state mirror, custom DOM listener, private selector, Unit, Presenter branch or plugin-specific path is introduced.",
     "SDK 1.51.61 adds one-way declarative live snapshot projection onto existing public Unit handles. Bound Status, Metric, Field/Check and Table nodes consume one shared Domain Adapter snapshot refresh pipeline; Table uses setData, Metric uses its public value node, Field/Check use public control/input handles, and Status updates the returned element. Bindings are read-only and require top-level domainAdapter. Summary remains intentionally unbound because its public Unit handle has no update method. No private selectors, second data model, Unit, Presenter branch or plugin-local state owner is introduced.",
     "SDK 1.51.60 adds dependency-scoped Domain Adapter consumption to declarative plugins. A top-level domainAdapter ref/dependency connects through the existing services.domain registry; choice-menu actions may bind to domainAction + statePath, reading the authoritative snapshot and invoking the same owner without a local mirror. Existing commandId/history choice-menu binding remains supported. No Domain Adapter runtime, state store, Unit, Presenter path, or plugin-specific branch is added.",
     "SDK 1.51.59 closes the remaining Resonance-shaped local action gap without adding a Unit or state store. Generic PRIME surfaces can declare bounded choice-menu actions that lower to the existing Workbench ActionGroup and canonical Header action host. Current selection is derived synchronously from Core command history; changes invoke the declared domain command and re-render the existing ActionGroup after completion. No plugin-local mutable preference mirror, menu runtime, plugin-id branch, private CSS, or Presenter change is introduced.",

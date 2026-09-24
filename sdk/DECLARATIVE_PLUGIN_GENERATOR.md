@@ -486,3 +486,10 @@ PRIME `choice-menu` actions support either the existing `commandId` path or a mu
 Surface nodes may bind public Status, Metric, Field/Check and Table Units to a `domainAdapter` snapshot through a dotted `statePath`. Text-like bindings may add `fallback`, `prefix` and `suffix`; Table bindings consume an array path. The generated shell creates one `liveBindings` collection and one `refreshLiveBindings()` pass, so one authoritative adapter snapshot fans out to every bound public Unit handle.
 
 The lowering uses only public update surfaces: Table `setData(columns, rows)`, Metric `value.textContent`, Field `control.value`, Check `input.checked`, and the Status element returned by the Unit. Bindings are read-only. Summary is intentionally not supported because the current public Summary handle exposes no `setItems()`-style updater; the generator will not reach into private descendants to simulate one.
+
+
+## Writable live parameter bindings — SDK 1.51.62
+
+Canonical parameter PRIME fields may declare a bounded `binding` with `statePath`, `domainAction`, optional `argumentKey` (default `value`) and up to eight flat scalar `staticArgs`. The field still comes from the existing public Field/Check Unit. Snapshot refresh writes through the public handle; user change is captured only by the Unit's public `onChange` callback and invokes `liveDomain.invoke(domainAction, payload)`.
+
+Type lowering is fixed: Checkbox -> boolean, Number -> finite number or null for an empty field, Select/Text -> string. No authored JavaScript, nested payload object, private selector, DOM query, local state store or second command bus is accepted. The Resonance specimen now binds `showRejected` and `showWidth` directly to the production `setPeakDisplay` Domain Adapter action while reading `workspace.peakDisplay.*` from the same owner snapshot.
