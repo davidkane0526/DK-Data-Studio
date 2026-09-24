@@ -142,6 +142,7 @@
     "feature-controls-runtime.js",
     "feature-runtime.js",
     "super-layout.js",
+    "domain-adapter.js",
     "plugin.js"
   ],
   "algorithmCategories": [
