@@ -917,7 +917,7 @@ class PluginBuilder:
                 f"      algorithm:()=>({{category:{_js(algorithm['category'])},id:{_js(algorithm['id'])},version:{_js(algorithm['version'])},provider:{provider_expr}}}),",
                 "      parameters:args=>args?.parameters||{},",
                 "      outputs:result=>(result?.artifactIds||[]).map(artifactId=>({artifactId,role:'result'}))",
-                "    }}});",
+                "    }});",
             ]
         return lines
 
