@@ -305,6 +305,14 @@ class PluginBuilder:
             selection_target = str(row.get("selectionTarget", "series"))
             if selection_target != "series":
                 raise SpecError(f"{name}.selectionTarget currently supports only stable series references")
+            if viewport is not None and viewport["link"]:
+                if axes is None:
+                    raise SpecError(f"{name}.viewport linkage requires axisSemantics")
+                for axis in viewport["linkedAxes"]:
+                    if not axes[axis]["unit"] or not axes[axis]["quantity"]:
+                        raise SpecError(f"{name}.viewport linked axis {axis} requires unit and quantity")
+            if legend is not None and legend["link"] and identity is None:
+                raise SpecError(f"{name}.legend linkage requires stable identity.input")
             if any(value is not None for value in (identity, axes, viewport, legend)) and normalized_interaction is None:
                 raise SpecError(f"{name} interaction policy requires top-level interaction")
             return {
@@ -923,6 +931,13 @@ class PluginBuilder:
             for binding in task["input_bindings"].values()
         )
         has_artifact_output = any(bool(task["publish_tables"]) for task in self._portable_tasks)
+        has_interaction = self.spec.get("interaction") is not None
+        has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
+        has_stable_plot_identity = any(
+            plot.get("identity") is not None
+            for row in self.spec["content"]
+            for plot in ([row] if row["kind"] == "plot" else row.get("plots", []) if row["kind"] == "plot-group" else [])
+        )
         requires = ["status", "ui.workspace", "ui.unit-templates", "ui.pages"]
         capabilities = ["ui.page", "ui.plugin-workspace"]
         if has_plot:
@@ -936,6 +951,11 @@ class PluginBuilder:
             capabilities.append("ui.table")
         if self._portable_tasks:
             requires.append("execution.tasks")
+        if has_interaction:
+            requires.extend(["ui.selection", "ui.interaction"])
+            capabilities.append("ui.interaction")
+        if has_domain_commands:
+            requires.append("execution.commands")
         if has_artifact_input:
             requires.extend(["data.sources", "data.artifacts"])
             capabilities.append("data.scoped-sources")
@@ -943,6 +963,10 @@ class PluginBuilder:
             if "data.artifacts" not in requires:
                 requires.append("data.artifacts")
             requires.append("data.model")
+        elif has_stable_plot_identity:
+            requires.append("data.model")
+        requires = list(dict.fromkeys(requires))
+        capabilities = list(dict.fromkeys(capabilities))
         plugin = self.spec["plugin"]
         manifest = {
             "id": plugin["id"],
@@ -973,7 +997,10 @@ class PluginBuilder:
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
             task = self._task_for_action(action["id"])
             if task is not None:
-                invoke = f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
+                if task.get("domain_command") is not None:
+                    invoke = f"()=>ctx.commands.run({_js(task['domain_command']['id'])},{{}})"
+                else:
+                    invoke = f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
             else:
                 invoke = f"()=>{{ctx.status.set({_js(action['statusMessage'])});return true;}}"
             rows.append(
@@ -981,6 +1008,24 @@ class PluginBuilder:
                 % (_js(action["id"]), _js(action["label"]), variant, invoke)
             )
         return "[" + ",".join(rows) + "]"
+
+    def _interaction_source(self) -> List[str]:
+        interaction = self.spec.get("interaction")
+        if not interaction:
+            return ["    const interaction=null;"]
+        selection = interaction["selection"]
+        lines = [
+            f"    const interaction=ctx.ui.interaction.create({_js(interaction['id'])},{{selection:{{multiple:{str(selection['multiple']).lower()},defaultType:{_js(selection['defaultType'])}}}}});",
+            "    disposables.push(interaction);",
+        ]
+        link = interaction.get("selectionLink")
+        if link and link["enabled"]:
+            options = {"acceptTypes": link["acceptTypes"]} if link["acceptTypes"] else {}
+            lines += [
+                f"    const unlinkSelection=interaction.link({_js(link['group'])},{_js(options)});",
+                "    disposables.push({dispose(){try{unlinkSelection?.();}catch{}}});",
+            ]
+        return lines
 
     def _parameter_source(self) -> List[str]:
         parameters = self.spec.get("parameters")
@@ -1022,8 +1067,49 @@ class PluginBuilder:
         ]
         return lines
 
+    def _scientific_plot_spec_source(self, row: Dict[str, Any], base: str) -> str:
+        curve_parts = [
+            f"id:{_js(row['id'])}",
+            f"points:{base}_points",
+        ]
+        identity = row.get("identity")
+        if identity is not None:
+            curve_parts += [
+                f"artifactId:{base}_artifact_id",
+                f"artifactRevision:{base}_artifact_revision",
+                f"seriesId:{base}_series_id",
+                f"entityType:{_js(identity['entityType'])}",
+            ]
+        parts = [
+            "variant:'curve'",
+            f"source:{_js(row['source'])}",
+            f"xTitle:{_js(row['xTitle'])}",
+            f"yTitle:{_js(row['yTitle'])}",
+            "interaction:interaction",
+            f"selectionTarget:{_js(row['selectionTarget'])}",
+            "getCurves:()=>[{" + ",".join(curve_parts) + "}]",
+            "getMarkers:()=>[]",
+        ]
+        if row.get("axisSemantics") is not None:
+            parts.append(f"axisSemantics:{_js(row['axisSemantics'])}")
+        if row.get("viewport") is not None:
+            viewport = row["viewport"]
+            parts.append(
+                "viewportPolicy:{"
+                + f"link:{str(viewport['link']).lower()},linkGroup:{_js(viewport['linkGroup'])},linkedAxes:{_js(viewport['linkedAxes'])}"
+                + "}"
+            )
+        if row.get("legend") is not None:
+            legend = row["legend"]
+            parts.append(
+                "legendPolicy:{"
+                + f"link:{str(legend['link']).lower()},linkGroup:{_js(legend['linkGroup'])},maxLinkedTargets:{legend['maxLinkedTargets']}"
+                + "}"
+            )
+        return "{" + ",".join(parts) + "}"
+
     def _content_source(self) -> List[str]:
-        lines = ["    const main=units.layout.create(null,{variant:'stack-comfortable'});", "    const disposables=[];"]
+        lines = ["    const main=units.layout.create(null,{variant:'stack-comfortable'});"]
         for row in self.spec["content"]:
             if row["kind"] == "note":
                 lines.append(f"    units.note.create(main,{{variant:{_js(row['variant'])},text:{_js(row['text'])}}});")
@@ -1049,8 +1135,9 @@ class PluginBuilder:
                     points = [{"x": pair[0], "y": pair[1]} for pair in plot["points"]]
                     lines += [
                         f"    let {plot_base}_points={_js(points)};",
+                        f"    let {plot_base}_artifact_id='',{plot_base}_series_id='',{plot_base}_artifact_revision=0;",
                         f"    let {plot_base}_surface=null;",
-                        f"    const {plot_base}_view={base}_group.addPlot({{id:{_js(plot['id'])},title:{_js(plot['title'])},placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',render:host=>{{{plot_base}_surface=units.scientificPlot.create(host,{{variant:'curve',source:{_js(plot['source'])},xTitle:{_js(plot['xTitle'])},yTitle:{_js(plot['yTitle'])},getCurves:()=>[{{id:{_js(plot['id'])},points:{plot_base}_points}}],getMarkers:()=>[]}});return()=>{{try{{{plot_base}_surface?.dispose?.();}}catch{{}};{plot_base}_surface=null;}};}}}});",
+                        f"    const {plot_base}_view={base}_group.addPlot({{id:{_js(plot['id'])},title:{_js(plot['title'])},placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',render:host=>{{{plot_base}_surface=units.scientificPlot.create(host,{self._scientific_plot_spec_source(plot, plot_base)});return()=>{{try{{{plot_base}_surface?.dispose?.();}}catch{{}};{plot_base}_surface=null;}};}}}});",
                     ]
                 continue
             points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]
@@ -1059,7 +1146,8 @@ class PluginBuilder:
                 f"    const {base}_panel=units.panel.create(main,{{variant:'plot-card',title:{_js(row['title'])},sizing:'content'}});",
                 f"    const {base}_host=units.layout.create({base}_panel.body,{{variant:'plot-card-fill'}});",
                 f"    let {base}_points={_js(points)};",
-                f"    const {base}_surface=units.scientificPlot.create({base}_host,{{variant:'curve',source:{_js(row['source'])},xTitle:{_js(row['xTitle'])},yTitle:{_js(row['yTitle'])},getCurves:()=>[{{id:{_js(row['id'])},points:{base}_points}}],getMarkers:()=>[]}});",
+                f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
+                f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
                 f"    disposables.push({base}_surface);",
             ]
         return lines
@@ -1080,10 +1168,13 @@ class PluginBuilder:
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
             "    const workspaceHost=units.layout.create(body,{variant:'identity'});",
             f"    const workbench=units.workspace.create(workspaceHost,{{variant:'standard',header:false,activity:{_js(workspace['activity'])},primaryScroll:{_js(workspace['primaryScroll'])}}});",
+            "    const disposables=[];",
         ]
         lines += self._parameter_source()
+        lines += self._interaction_source()
         lines += self._content_source()
         lines += self._task_handlers_source()
+        lines += self._command_registration_source()
         lines += [
             "    workbench.compose({primary:{"
             + f"id:'main',label:{_js(workspace['primaryLabel'])},presentationRole:{_js(workspace['primaryRole'])},"
