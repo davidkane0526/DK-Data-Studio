@@ -117,7 +117,7 @@ class PluginBuilder:
         }
 
         workspace = _expect_object(spec.get("workspace"), "workspace")
-        extra = sorted(set(workspace) - {"activity", "primaryRole", "primaryLabel", "primaryScroll"})
+        extra = sorted(set(workspace) - {"activity", "primaryRole", "primaryLabel", "primaryScroll", "mainLayout"})
         if extra:
             raise SpecError(f"unsupported workspace fields: {', '.join(extra)}")
         role = str(workspace.get("primaryRole", ""))
@@ -126,11 +126,15 @@ class PluginBuilder:
         scroll = str(workspace.get("primaryScroll", "safe"))
         if scroll not in {"safe", "contained"}:
             raise SpecError("workspace.primaryScroll must be safe or contained")
+        main_layout = str(workspace.get("mainLayout", "stack-comfortable"))
+        if main_layout not in {"stack-comfortable", "fill-rows"}:
+            raise SpecError("workspace.mainLayout must be stack-comfortable or fill-rows")
         normalized_workspace = {
             "activity": _ident(workspace.get("activity"), "workspace.activity"),
             "primaryRole": role,
             "primaryLabel": str(workspace.get("primaryLabel", "主界面")),
             "primaryScroll": scroll,
+            "mainLayout": main_layout,
         }
 
         host = _expect_object(spec.get("host", {"kind": "standalone"}), "host")
@@ -465,6 +469,116 @@ class PluginBuilder:
                     "responsive": bool(row.get("responsive", True)),
                     "plots": plots,
                 })
+            elif kind == "metrics":
+                extra = sorted(set(row) - {"kind", "id", "items"})
+                if extra:
+                    raise SpecError(f"unsupported metrics fields at {index}: {', '.join(extra)}")
+                items = []
+                for m_index, item in enumerate(_expect_list(row.get("items"), f"content[{index}].items")):
+                    item = _expect_object(item, f"content[{index}].items[{m_index}]")
+                    extra = sorted(set(item) - {"id", "label", "value"})
+                    if extra:
+                        raise SpecError(f"unsupported metric fields at {index}:{m_index}: {', '.join(extra)}")
+                    items.append({
+                        "id": _ident(item.get("id"), f"content[{index}].items[{m_index}].id"),
+                        "label": _nonempty(item.get("label"), f"content[{index}].items[{m_index}].label"),
+                        "value": str(item.get("value", "—")),
+                    })
+                if not items:
+                    raise SpecError(f"content[{index}].items must not be empty")
+                if len({item["id"] for item in items}) != len(items):
+                    raise SpecError(f"content[{index}].items metric ids must be unique")
+                content.append({
+                    "kind": "metrics",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "items": items,
+                })
+            elif kind == "result-split":
+                extra = sorted(set(row) - {"kind", "id", "axis", "resizeTarget", "defaultSize", "min", "reserve", "reflowBelow", "plot", "table"})
+                if extra:
+                    raise SpecError(f"unsupported result-split fields at {index}: {', '.join(extra)}")
+                axis = str(row.get("axis", "y"))
+                if axis not in {"x", "y"}:
+                    raise SpecError(f"content[{index}].axis must be x or y")
+                resize_target = str(row.get("resizeTarget", "second"))
+                if resize_target not in {"first", "second"}:
+                    raise SpecError(f"content[{index}].resizeTarget must be first or second")
+                default_size = int(row.get("defaultSize", 180))
+                minimum = int(row.get("min", 140))
+                reserve = int(row.get("reserve", 300))
+                reflow_below = int(row.get("reflowBelow", 920))
+                if default_size < 80 or default_size > 1600:
+                    raise SpecError(f"content[{index}].defaultSize must be in 80..1600")
+                if minimum < 60 or minimum > default_size:
+                    raise SpecError(f"content[{index}].min must be in 60..defaultSize")
+                if reserve < 120 or reserve > 2400:
+                    raise SpecError(f"content[{index}].reserve must be in 120..2400")
+                if reflow_below < 480 or reflow_below > 1920:
+                    raise SpecError(f"content[{index}].reflowBelow must be in 480..1920")
+
+                plot = _expect_object(row.get("plot"), f"content[{index}].plot")
+                extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                if extra:
+                    raise SpecError(f"unsupported result-split plot fields at {index}: {', '.join(extra)}")
+                points = []
+                for point_index, pair in enumerate(plot.get("points", [])):
+                    if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                        raise SpecError(f"content[{index}].plot.points[{point_index}] must be [x,y]")
+                    try:
+                        points.append([float(pair[0]), float(pair[1])])
+                    except (TypeError, ValueError) as exc:
+                        raise SpecError(f"content[{index}].plot.points[{point_index}] must be numeric") from exc
+                normalized_plot = {
+                    "id": _ident(plot.get("id"), f"content[{index}].plot.id"),
+                    "title": _nonempty(plot.get("title"), f"content[{index}].plot.title"),
+                    "xTitle": str(plot.get("xTitle", "")),
+                    "yTitle": str(plot.get("yTitle", "")),
+                    "source": str(plot.get("source") or plot.get("id")),
+                    "points": points,
+                    **normalize_plot_interaction(plot, f"content[{index}].plot"),
+                }
+
+                table = _expect_object(row.get("table"), f"content[{index}].table")
+                extra = sorted(set(table) - {"id", "title", "columns", "rows"})
+                if extra:
+                    raise SpecError(f"unsupported result-split table fields at {index}: {', '.join(extra)}")
+                columns = []
+                for c_index, column in enumerate(_expect_list(table.get("columns"), f"content[{index}].table.columns")):
+                    column = _expect_object(column, f"content[{index}].table.columns[{c_index}]")
+                    extra = sorted(set(column) - {"key", "label", "unit"})
+                    if extra:
+                        raise SpecError(f"unsupported result-split table column fields at {index}:{c_index}: {', '.join(extra)}")
+                    normalized_column = {
+                        "key": _ident(column.get("key"), f"content[{index}].table.columns[{c_index}].key"),
+                        "label": _nonempty(column.get("label"), f"content[{index}].table.columns[{c_index}].label"),
+                    }
+                    if "unit" in column:
+                        normalized_column["unit"] = str(column.get("unit", ""))
+                    columns.append(normalized_column)
+                if not columns:
+                    raise SpecError(f"content[{index}].table.columns must not be empty")
+                rows = []
+                for r_index, item in enumerate(table.get("rows", [])):
+                    item = _expect_object(item, f"content[{index}].table.rows[{r_index}]")
+                    rows.append({str(key): value for key, value in item.items()})
+                normalized_table = {
+                    "id": _ident(table.get("id"), f"content[{index}].table.id"),
+                    "title": _nonempty(table.get("title", "结果"), f"content[{index}].table.title"),
+                    "columns": columns,
+                    "rows": rows,
+                }
+                content.append({
+                    "kind": "result-split",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "axis": axis,
+                    "resizeTarget": resize_target,
+                    "defaultSize": default_size,
+                    "min": minimum,
+                    "reserve": reserve,
+                    "reflowBelow": reflow_below,
+                    "plot": normalized_plot,
+                    "table": normalized_table,
+                })
             elif kind == "table":
                 extra = sorted(set(row) - {"kind", "id", "title", "columns", "rows"})
                 if extra:
@@ -496,7 +610,7 @@ class PluginBuilder:
                     "rows": rows,
                 })
             else:
-                raise SpecError(f"content[{index}].kind must be note, plot, plot-group or table")
+                raise SpecError(f"content[{index}].kind must be note, plot, plot-group, metrics, result-split or table")
         if not content:
             raise SpecError("content must not be empty")
 
@@ -528,6 +642,7 @@ class PluginBuilder:
         publish_table: Dict[str, Any] | None = None,
         result_plots: List[Dict[str, str]] | None = None,
         result_tables: List[Dict[str, str]] | None = None,
+        result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
@@ -624,14 +739,21 @@ class PluginBuilder:
 
         plot_lookup: Dict[str, Dict[str, Any]] = {}
         table_lookup: Dict[str, Dict[str, Any]] = {}
+        metric_lookup: Dict[str, Dict[str, Any]] = {}
         for content_row in self.spec["content"]:
             if content_row["kind"] == "plot":
                 plot_lookup[content_row["id"]] = content_row
             elif content_row["kind"] == "plot-group":
                 for plot in content_row["plots"]:
                     plot_lookup[plot["id"]] = plot
+            elif content_row["kind"] == "result-split":
+                plot_lookup[content_row["plot"]["id"]] = content_row["plot"]
+                table_lookup[content_row["table"]["id"]] = content_row["table"]
             elif content_row["kind"] == "table":
                 table_lookup[content_row["id"]] = content_row
+            elif content_row["kind"] == "metrics":
+                for metric in content_row["items"]:
+                    metric_lookup[metric["id"]] = metric
 
         normalized_result_plots: List[Dict[str, str]] = []
         if result_plot is not None:
@@ -672,6 +794,22 @@ class PluginBuilder:
                 raise SpecError(f"invalid portable task result table key: {projection['key']}")
         if len({row["id"] for row in normalized_result_tables}) != len(normalized_result_tables):
             raise SpecError("portable task result tables must target unique table ids")
+
+        normalized_result_metrics: List[Dict[str, str]] = []
+        for index, projection in enumerate(result_metrics or []):
+            projection = _expect_object(projection, f"result_metrics[{index}]")
+            extra = sorted(set(projection) - {"id", "key"})
+            if extra:
+                raise SpecError(f"unsupported result_metrics fields at {index}: {', '.join(extra)}")
+            normalized_result_metrics.append({
+                "id": _ident(projection.get("id"), f"result_metrics[{index}].id"),
+                "key": _ident(projection.get("key"), f"result_metrics[{index}].key"),
+            })
+        for projection in normalized_result_metrics:
+            if projection["id"] not in metric_lookup:
+                raise SpecError(f"portable task result metric not found: {projection['id']}")
+        if len({row["id"] for row in normalized_result_metrics}) != len(normalized_result_metrics):
+            raise SpecError("portable task result metrics must target unique metric ids")
 
         def normalize_publish(row: Dict[str, Any], name: str) -> Dict[str, Any]:
             row = _expect_object(row, name)
@@ -779,6 +917,7 @@ class PluginBuilder:
             "input_bindings": bindings,
             "result_plots": normalized_result_plots,
             "result_tables": normalized_result_tables,
+            "result_metrics": normalized_result_metrics,
             "publish_tables": normalized_publish_tables,
             "domain_command": normalized_domain_command,
             "success_status": str(success_status),
@@ -890,6 +1029,13 @@ class PluginBuilder:
                     f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
                     f"        {base}_surface.setData({_js(table['columns'])},result[{_js(key)}]);",
                 ]
+            for projection in row["result_metrics"]:
+                base = _var(projection["id"])
+                key = projection["key"]
+                lines += [
+                    f"        if(result?.[{_js(key)}]===undefined)throw new Error({_js('Generated task result.'+key+' is required for metric projection')});",
+                    f"        {base}_metric_value.textContent=String(result[{_js(key)}]);",
+                ]
             for publish_index, publish in enumerate(row["publish_tables"]):
                 column_rows = []
                 for column in publish["columns"]:
@@ -979,9 +1125,9 @@ class PluginBuilder:
         return lines
 
     def manifest(self) -> Dict[str, Any]:
-        has_plot = any(row["kind"] in {"plot", "plot-group"} for row in self.spec["content"])
+        has_plot = any(row["kind"] in {"plot", "plot-group", "result-split"} for row in self.spec["content"])
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
-        has_table = any(row["kind"] == "table" for row in self.spec["content"])
+        has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
             for task in self._portable_tasks
@@ -993,7 +1139,7 @@ class PluginBuilder:
         has_stable_plot_identity = any(
             plot.get("identity") is not None
             for row in self.spec["content"]
-            for plot in ([row] if row["kind"] == "plot" else row.get("plots", []) if row["kind"] == "plot-group" else [])
+            for plot in ([row] if row["kind"] == "plot" else row.get("plots", []) if row["kind"] == "plot-group" else [row["plot"]] if row["kind"] == "result-split" else [])
         )
         host = self.spec["host"]
         hosted = host["kind"] in {"top", "tool"}
@@ -1186,10 +1332,43 @@ class PluginBuilder:
         return "{" + ",".join(parts) + "}"
 
     def _content_source(self) -> List[str]:
-        lines = ["    const main=units.layout.create(null,{variant:'stack-comfortable'});"]
+        lines = [f"    const main=units.layout.create(null,{{variant:{_js(self.spec['workspace']['mainLayout'])}}});"]
         for row in self.spec["content"]:
             if row["kind"] == "note":
                 lines.append(f"    units.note.create(main,{{variant:{_js(row['variant'])},text:{_js(row['text'])}}});")
+                continue
+            if row["kind"] == "metrics":
+                base = _var(row["id"])
+                lines.append(f"    const {base}_host=units.layout.create(main,{{variant:'metric-grid'}});")
+                for metric in row["items"]:
+                    metric_base = _var(metric["id"])
+                    lines.append(
+                        f"    const {metric_base}_metric=units.metric.create({base}_host,{{variant:'standard',label:{_js(metric['label'])},value:{_js(metric['value'])}}});"
+                    )
+                    lines.append(f"    const {metric_base}_metric_value={metric_base}_metric.value;")
+                continue
+            if row["kind"] == "result-split":
+                base = _var(row["id"])
+                plot = row["plot"]
+                table = row["table"]
+                plot_base = _var(plot["id"])
+                table_base = _var(table["id"])
+                points = [{"x": pair[0], "y": pair[1]} for pair in plot["points"]]
+                lines += [
+                    f"    const {base}_plot_panel=units.panel.detached({{variant:'plot-card',header:false,sizing:'fill'}});",
+                    f"    units.layout.apply({base}_plot_panel.body,{{variant:'plot-card-fill'}});",
+                    f"    const {base}_plot_header=units.header.create({base}_plot_panel.body,{{kind:'plot',variant:'plot',title:{_js(plot['title'])},actions:false}});",
+                    f"    const {plot_base}_host=units.layout.create({base}_plot_panel.body,{{variant:'plot-card-fill'}});",
+                    f"    let {plot_base}_points={_js(points)};",
+                    f"    let {plot_base}_artifact_id='',{plot_base}_series_id='',{plot_base}_artifact_revision=0;",
+                    f"    const {plot_base}_surface=units.scientificPlot.create({plot_base}_host,{self._scientific_plot_spec_source(plot, plot_base)});",
+                    f"    disposables.push({plot_base}_surface);",
+                    f"    const {base}_table_host=units.layout.create(null,{{variant:'scroll-pane'}});",
+                    f"    const {table_base}_surface=units.table.mount({_js(table['id'])},{base}_table_host,{{variant:'standard',columns:{_js(table['columns'])},rows:{_js(table['rows'])},persistKey:{_js(table['id']+'-declarative-v1')}}});",
+                    f"    disposables.push({table_base}_surface);",
+                    f"    const {base}_split=units.splitPane.create(main,{{id:{_js(row['id']+'-split-v1')},variant:'resizable',axis:{_js(row['axis'])},resizeTarget:{_js(row['resizeTarget'])},defaultSize:{row['defaultSize']},min:{row['min']},reserve:{row['reserve']},reflowBelow:{row['reflowBelow']},first:{base}_plot_panel.element,second:{base}_table_host}});",
+                    f"    disposables.push({base}_split);",
+                ]
                 continue
             if row["kind"] == "table":
                 base = _var(row["id"])
