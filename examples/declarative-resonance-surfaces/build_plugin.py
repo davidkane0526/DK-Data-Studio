@@ -88,7 +88,17 @@ SPEC = {
             "xTitle": "V",
             "yTitle": "I",
             "source": "resonance:main",
-            "renderOwner": "runtime",
+            "renderOwner": "unit",
+            "binding": {
+                "statePath": "visibleSweeps",
+                "pointsPath": "points",
+                "xKey": "v",
+                "yKey": "i",
+                "idKey": "id",
+                "labelKey": "id",
+                "colorValueKey": "vg",
+                "directionKey": "direction",
+            },
         }
     ],
     "surfaces": [
