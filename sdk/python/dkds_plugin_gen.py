@@ -473,9 +473,9 @@ class PluginBuilder:
                             form_fields.append(normalized_form_field)
                         if not form_fields:
                             raise SpecError(f"parameters.groups[{group_index}].parameterForm.fields must not be empty")
-                        layout_owner = str(raw_form.get("layoutOwner", "unit"))
-                        if layout_owner not in {"unit", "presenter"}:
-                            raise SpecError(f"parameters.groups[{group_index}].parameterForm.layoutOwner must be unit or presenter")
+                        layout_owner = str(raw_form.get("layoutOwner", "core"))
+                        if layout_owner not in {"core", "host"}:
+                            raise SpecError(f"parameters.groups[{group_index}].parameterForm.layoutOwner must be core or host")
                         group_parameter_form = {
                             "id": _ident(raw_form.get("id"), f"parameters.groups[{group_index}].parameterForm.id"),
                             "fields": form_fields,
@@ -710,9 +710,9 @@ class PluginBuilder:
                 raise SpecError(f"{name}.fields must not be empty")
             if len({field["id"] for field in fields}) != len(fields):
                 raise SpecError(f"{name}.field ids must be unique")
-            layout_owner = str(raw_form.get("layoutOwner", "unit"))
-            if layout_owner not in {"unit", "presenter"}:
-                raise SpecError(f"{name}.layoutOwner must be unit or presenter")
+            layout_owner = str(raw_form.get("layoutOwner", "core"))
+            if layout_owner not in {"core", "host"}:
+                raise SpecError(f"{name}.layoutOwner must be core or host")
             return {
                 "id": _ident(raw_form.get("id"), f"{name}.id"),
                 "fields": fields,

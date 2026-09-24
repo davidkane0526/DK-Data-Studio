@@ -430,7 +430,7 @@ This is the third independent production-shaped reconstruction gate after the Vt
 
 ## Nested public ParameterForm in grouped PRIME — SDK 1.51.55
 
-The first TER reconstruction gap is now represented without adding a Unit or a second parameter runtime. A grouped titleless parameter PRIME may declare one bounded `parameterForm` child with `id`, public Parameter Schema `fields`, `compact`, `autoFit`, and `layoutOwner:"unit"|"presenter"`.
+The first TER reconstruction gap is now represented without adding a Unit or a second parameter runtime. A grouped titleless parameter PRIME may declare one bounded `parameterForm` child with `id`, public Parameter Schema `fields`, `compact`, `autoFit`, and `layoutOwner:"core"|"host"`.
 
 The compiler lowers this directly to `units.parameterForm.mount(...)` inside the existing group Panel and keeps the outer PRIME on the canonical `fixed-titleless` data-control contract. Arbitrary JavaScript, private CSS, plugin-owned layout, and plugin-specific Unit names remain invalid.
 

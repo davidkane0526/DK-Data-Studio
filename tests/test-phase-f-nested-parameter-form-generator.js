@@ -22,7 +22,7 @@ function pythonCommand(){
 
 const parameterFormSchema=schema.properties.parameters.properties.groups.items.properties.parameterForm;
 assert(parameterFormSchema,'Declarative schema must expose nested parameterForm in parameter PRIME groups.');
-assert.deepStrictEqual(parameterFormSchema.properties.layoutOwner.enum,['unit','presenter']);
+assert.deepStrictEqual(parameterFormSchema.properties.layoutOwner.enum,['core','host']);
 
 const spec={
   schema:'dkds.declarative-plugin.v1',
@@ -34,7 +34,7 @@ const spec={
     id:'data-control',label:'参数',groups:[{
       id:'transform',title:'Vg–Vd 数据变换热图',variant:'plain',layout:'stack',
       parameterForm:{
-        id:'transform-settings',compact:true,autoFit:true,layoutOwner:'unit',
+        id:'transform-settings',compact:true,autoFit:true,layoutOwner:'core',
         fields:[
           {id:'type',type:'select',label:'处理量',required:true,default:'didv',options:[{value:'didv',label:'dI/dV（微分电导）'}]},
           {id:'direction',type:'select',label:'扫描方向',required:true,default:'1',options:[{value:'1',label:'正扫'},{value:'-1',label:'反扫'}]}
@@ -56,14 +56,14 @@ try{
   const source=fs.readFileSync(path.join(out,'plugin.js'),'utf8');
   assert(source.includes('units.parameterForm.mount'),'Nested group must lower to the existing public ParameterForm Unit.');
   assert(source.includes("variant:'fixed-titleless'"),'Nested form must remain inside the canonical titleless parameter PRIME.');
-  assert(source.includes("layoutOwner:\"unit\""),'Nested form must preserve bounded Unit layout ownership.');
+  assert(source.includes("layoutOwner:\"core\""),'Nested form must preserve bounded Unit layout ownership.');
   assert(!/Unit_for_|TERUnit|plugin\.css|document\./.test(source),'Nested form generation must not create specialization/private styling paths.');
 
   const invalid={...spec,parameters:{...spec.parameters,groups:[{...spec.parameters.groups[0],parameterForm:{...spec.parameters.groups[0].parameterForm,layoutOwner:'plugin'}}]}};
   fs.writeFileSync(specPath,JSON.stringify(invalid,null,2));
   const rejected=spawnSync(py.cmd,py.prefix.concat([generator,'check',specPath]),{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.notStrictEqual(rejected.status,0,'Private layout ownership must fail closed.');
-  assert((rejected.stderr||'').includes('layoutOwner must be unit or presenter'));
+  assert((rejected.stderr||'').includes('layoutOwner must be core or host'));
 
   console.log('Phase F nested ParameterForm PASS: grouped PRIME -> public ParameterForm -> frozen Unit Templates.');
 }finally{

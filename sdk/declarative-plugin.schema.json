@@ -690,10 +690,10 @@
                   },
                   "layoutOwner": {
                     "enum": [
-                      "unit",
-                      "presenter"
+                      "core",
+                      "host"
                     ],
-                    "default": "unit"
+                    "default": "core"
                   }
                 }
               }
@@ -2449,10 +2449,10 @@
             },
             "layoutOwner": {
               "enum": [
-                "unit",
-                "presenter"
+                "core",
+                "host"
               ],
-              "default": "unit"
+              "default": "core"
             }
           }
         },

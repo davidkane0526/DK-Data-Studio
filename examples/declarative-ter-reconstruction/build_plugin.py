@@ -121,7 +121,7 @@ SPEC = {
                     "id": "transform-settings",
                     "compact": True,
                     "autoFit": True,
-                    "layoutOwner": "unit",
+                    "layoutOwner": "core",
                     "fields": [
                         {
                             "id": "type", "type": "select", "label": "处理量", "required": True, "default": "didv",
