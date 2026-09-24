@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-writable-parameter-domain-bindings.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-domain-snapshot-bindings.js",
       "args": []
     },
