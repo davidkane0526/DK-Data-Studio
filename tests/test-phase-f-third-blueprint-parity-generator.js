@@ -28,6 +28,7 @@ const kinds=schema.properties.content.items.oneOf.map(row=>row?.properties?.kind
 for(const kind of ['summary','empty-state','list','plot-view'])
   assert(kinds.includes(kind),'Declarative schema missing generic content kind: '+kind);
 
+assert.strictEqual(sdk.sdkVersion,'1.51.54','Third production blueprint parity requires the SDK 1.51.54 authoring contract.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 const pulse=blueprints.blueprints['pulse-analysis'];
 assert(pulse,'Pulse Analysis production blueprint must remain published as external parity evidence.');
