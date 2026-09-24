@@ -369,3 +369,44 @@ Top-level \`actions[]\` remains the only action catalog. Actions may declare \`i
 \`page.close:true\` is valid only for \`host.kind:"top"\` or \`"tool"\` and lowers to the existing hosted workspace close lifecycle. Standalone generation emits no \`ctx.workspace\` close reference.
 
 The executable reference \`examples/declarative-python-unit-blueprint-parity\` now covers the accepted Transfer Vth public Unit spine including grouped Data/Extraction controls, hosted TOP lifecycle, titleless data-control PRIME, Metric grid, ScientificPlot and resizable SplitPane/Table. The generator contains no Transfer-Vth-specific branch and production plugin source remains unchanged.
+
+
+## Second production blueprint: Tool-designer composition — SDK 1.51.53
+
+SDK 1.51.53 adds a second independent production-shaped reconstruction gate so Phase F is not validated only against one Vth-style scientific workbench. The accepted Pulse Sampler Unit presentation is used as external evidence for generic Tool composition only; the generator does not branch on its plugin id or copy its domain/runtime source.
+
+The public declarative vocabulary now includes bounded Workspace rail preferences:
+
+    "workspace": {
+        "primaryRole": "utility-primary",
+        "leftWidth": 540,
+        "leftMin": 520,
+        "leftReserve": 520,
+        "primaryEndInset": "content",
+        "layoutStateVersion": "tool-layout-v1"
+    }
+
+and a titleless parameter PRIME may declare public presentation metadata:
+
+    "parameters": {
+        "priority": 96,
+        "embedded": true,
+        "autoOpen": false,
+        "stateVersion": "tool-parameters-v1",
+        "groups": [...]
+    }
+
+A group may independently select:
+
+- a body layout such as \`stack\` or \`fill-rows\`;
+- a field-only sublayout such as \`form-grid-2\`, \`analysis-control-grid\`, or \`result-control-grid\`;
+- compact/standard Tabs;
+- an \`action-grid-2\` or \`action-grid-4\` populated from the single validated top-level action catalog;
+- an ordinary/header/floating/segmented Toolbar, optionally projected through the public \`segment-bar\` or \`toolbar-wrap\` recipe;
+- one parameter-owned Unit Table.
+
+All action surfaces reuse the same action-to-Task/Command/status invocation mapping. Explicit \`page.actionIds: []\` now means no PageHeader actions; only an omitted \`actionIds\` field inherits the full catalog.
+
+The executable reference is \`examples/declarative-python-tool-blueprint-parity\`. Its gate compares the generated public Unit vocabulary with the accepted Pulse Sampler blueprint and production Unit presentation as independent evidence, then executes the generated Tool host and verifies Workspace 540/520/520 preferences, compact Tabs, form-grid-2, action-grid-4, segment Toolbar, parameter Table, and PRIME priority/embedded/auto-open metadata.
+
+This proof does not copy Pulse Sampler live-domain/state, waveform generation, steady-state extraction Task, private DOM hooks or plugin-specific presentation logic. Python remains authoring-time only and the generated runtime stays on existing Plugin API 1.19 + Unit/Core contracts.
