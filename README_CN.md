@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Third Production Scientific Blueprint Parity**：声明式/Python 生成器完成第三个独立生产形态重建门禁。新增均为已有公共 Unit 的作者侧声明：Summary、retained List、EmptyState 和 portable PlotView；PlotView 继续由 Core 持有移动/停靠/导出生命周期，ScientificPlot 继续持有科学渲染与交互。验收使用 Pulse Analysis 的 Unit blueprint 作为独立结构证据，但生成器不读取 Pulse 插件 ID 做分支，也不复制批处理状态、分段/读取算法、生产 DOM/CSS、feature runtime 或 Presenter 路径。SDK 升至 1.51.54；Plugin API 保持 1.19.0；Unit Templates 保持 2.5.38（41 Units / 73 Layout recipes）。
+
 > **v3.71.115 WIP — Phase F Second Production Tool Blueprint Parity**：声明式/Python 生成器完成第二个独立生产形态重建门禁，不再只以 Vth 类工作台验证通用性。新增的均为公共作者侧声明：Workspace `leftWidth/leftMin/leftReserve` 与 content end inset、参数 PRIME 的 priority/embedded/autoOpen、compact Tabs、独立 Field Grid、Action Grid、segment Toolbar 和参数内 Table。验收使用 Pulse Sampler 的 Unit blueprint 与生产 Unit presentation 作为独立结构证据，但生成器不读取 Pulse 插件 ID 做分支，也不复制 live-domain/state、波形算法、稳态提取 Task、私有 DOM/CSS 或 Presenter 路径。SDK 升至 1.51.53；Plugin API 保持 1.19.0；Unit Templates 保持 2.5.38（41 Units / 73 Layout recipes）。
 
 > **v3.71.115 WIP — Phase F Grouped Control Surface Generation**：声明式/Python 生成器继续向第一方插件完整可重建推进。`data-control` PRIME 现在可声明多组 headed/plain Panel，并组合现有 Header、Chip、Field、Check、Note、Toolbar Unit；PageHeader 与组内 Toolbar 从同一 action catalog 投影，不增加第二套命令系统。`page.close` 仅允许 TOP/Tool hosted 生命周期，standalone 生成物不再携带任何 workspace-only close 代码。Transfer Vth 仍只作为独立 Unit blueprint 验收样本，生产 Vth 源码、Core、Presenter 与 Unit 合同均未特化。SDK 升至 1.51.52；Plugin API 保持 1.19.0；Unit Templates 保持 2.5.38（41 Units / 73 Layout recipes）。
@@ -75,7 +77,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.53**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.54**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
