@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-hosted-workspace-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-interaction-command-generator.js",
       "args": []
     },
@@ -2046,6 +2050,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-hosted-workspace-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-interaction-command-generator.js",
       "args": []
