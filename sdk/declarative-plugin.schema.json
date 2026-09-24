@@ -2496,6 +2496,9 @@
             "step": {},
             "options": {
               "type": "array"
+            },
+            "binding": {
+              "$ref": "#/$defs/domainTextBinding"
             }
           }
         },
@@ -2751,6 +2754,9 @@
               "items": {
                 "type": "object"
               }
+            },
+            "binding": {
+              "$ref": "#/$defs/domainRowsBinding"
             }
           }
         },
@@ -2779,6 +2785,9 @@
             },
             "state": {
               "type": "string"
+            },
+            "binding": {
+              "$ref": "#/$defs/domainTextBinding"
             }
           }
         },
@@ -2872,8 +2881,76 @@
               "type": "string"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "label"
+          ],
+          "properties": {
+            "kind": {
+              "const": "metric"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "variant": {
+              "type": "string",
+              "minLength": 1,
+              "default": "standard"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "type": "string"
+            },
+            "binding": {
+              "$ref": "#/$defs/domainTextBinding"
+            }
+          }
         }
       ]
+    },
+    "domainTextBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statePath"
+      ],
+      "properties": {
+        "statePath": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+        },
+        "fallback": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "suffix": {
+          "type": "string"
+        }
+      }
+    },
+    "domainRowsBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statePath"
+      ],
+      "properties": {
+        "statePath": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+        }
+      }
     }
   }
 }

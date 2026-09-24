@@ -734,6 +734,26 @@ class PluginBuilder:
                 "layoutOwner": layout_owner,
             }
 
+        def normalize_domain_binding(raw_binding: Dict[str, Any], name: str, mode: str = "text") -> Dict[str, Any]:
+            if domain_adapter is None:
+                raise SpecError(f"{name} requires top-level domainAdapter")
+            raw_binding = _expect_object(raw_binding, name)
+            allowed = {"statePath"} if mode == "rows" else {"statePath", "fallback", "prefix", "suffix"}
+            extra = sorted(set(raw_binding) - allowed)
+            if extra:
+                raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
+            state_path = str(raw_binding.get("statePath", "")).strip()
+            if not state_path or not all(IDENT.fullmatch(part) for part in state_path.split(".")):
+                raise SpecError(f"{name}.statePath must be a dotted identifier path")
+            normalized = {"statePath": state_path, "mode": mode}
+            if mode != "rows":
+                normalized.update({
+                    "fallback": str(raw_binding.get("fallback", "")),
+                    "prefix": str(raw_binding.get("prefix", "")),
+                    "suffix": str(raw_binding.get("suffix", "")),
+                })
+            return normalized
+
         def normalize_surface_node(raw_node: Dict[str, Any], name: str) -> Dict[str, Any]:
             node = _expect_object(raw_node, name)
             kind = str(node.get("kind", "")).strip()
@@ -801,11 +821,12 @@ class PluginBuilder:
                 }
 
             if kind == "field":
-                extra = sorted(set(node) - {"kind", "id", "type", "label", "value", "step", "options"})
+                extra = sorted(set(node) - {"kind", "id", "type", "label", "value", "step", "options", "binding"})
                 if extra:
                     raise SpecError(f"unsupported {name} field keys: {', '.join(extra)}")
-                normalized = normalize_parameter_field({key: value for key, value in node.items() if key != "kind"}, name)
+                normalized = normalize_parameter_field({key: value for key, value in node.items() if key not in {"kind", "binding"}}, name)
                 normalized["kind"] = "field"
+                normalized["binding"] = normalize_domain_binding(node["binding"], f"{name}.binding") if node.get("binding") is not None else None
                 return normalized
 
             if kind == "toolbar":
@@ -907,7 +928,7 @@ class PluginBuilder:
                 }
 
             if kind == "table":
-                extra = sorted(set(node) - {"kind", "id", "columns", "rows", "layout"})
+                extra = sorted(set(node) - {"kind", "id", "columns", "rows", "layout", "binding"})
                 if extra:
                     raise SpecError(f"unsupported {name} table fields: {', '.join(extra)}")
                 columns = []
@@ -935,10 +956,11 @@ class PluginBuilder:
                     "columns": columns,
                     "rows": rows,
                     "layout": _nonempty(node.get("layout", "scroll-pane"), f"{name}.layout"),
+                    "binding": normalize_domain_binding(node["binding"], f"{name}.binding", mode="rows") if node.get("binding") is not None else None,
                 }
 
             if kind == "status":
-                extra = sorted(set(node) - {"kind", "id", "variant", "text", "state"})
+                extra = sorted(set(node) - {"kind", "id", "variant", "text", "state", "binding"})
                 if extra:
                     raise SpecError(f"unsupported {name} status fields: {', '.join(extra)}")
                 return {
@@ -947,6 +969,20 @@ class PluginBuilder:
                     "variant": _nonempty(node.get("variant", "text"), f"{name}.variant"),
                     "text": str(node.get("text", "")),
                     "state": str(node.get("state", "")),
+                    "binding": normalize_domain_binding(node["binding"], f"{name}.binding") if node.get("binding") is not None else None,
+                }
+
+            if kind == "metric":
+                extra = sorted(set(node) - {"kind", "id", "variant", "label", "value", "binding"})
+                if extra:
+                    raise SpecError(f"unsupported {name} metric fields: {', '.join(extra)}")
+                return {
+                    "kind": "metric",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "standard"), f"{name}.variant"),
+                    "label": _nonempty(node.get("label"), f"{name}.label"),
+                    "value": str(node.get("value", "—")),
+                    "binding": normalize_domain_binding(node["binding"], f"{name}.binding") if node.get("binding") is not None else None,
                 }
 
             if kind == "action":
@@ -2480,24 +2516,49 @@ class PluginBuilder:
         ]
         return lines
 
+    def _live_binding_read_source(self, binding: Dict[str, Any], state_var: str = "state") -> str:
+        return f"{_js(binding['statePath'].split('.'))}.reduce((value,key)=>value?.[key],{state_var})"
+
+    def _live_binding_text_source(self, binding: Dict[str, Any], raw_expr: str) -> str:
+        return (
+            f"(()=>{{const raw={raw_expr};const value=(raw===undefined||raw===null||String(raw)==='')?{_js(binding['fallback'])}:String(raw);"
+            + f"return {_js(binding['prefix'])}+value+{_js(binding['suffix'])};}})()"
+        )
+
     def _surface_field_source(self, field: Dict[str, Any], host: str, base: str) -> List[str]:
+        binding = field.get("binding")
+        lines: List[str] = []
         if field["type"] == "checkbox":
             checked = bool(field.get("value", False))
-            return [
-                f"    const {base}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}}});"
-            ]
+            lines.append(
+                f"    const {base}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()},disabled:{str(bool(binding)).lower()}}});"
+            )
+            if binding:
+                raw = self._live_binding_read_source(binding)
+                lines.append(f"    liveBindings.push(state=>{{const raw={raw};{base}.input.checked=Boolean(raw);}});")
+            return lines
         if field["type"] == "select":
             value = field.get("value", field["options"][0]["value"])
-            return [
-                f"    const {base}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}}});"
-            ]
+            lines.append(
+                f"    const {base}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])},disabled:{str(bool(binding)).lower()}}});"
+            )
+            if binding:
+                raw = self._live_binding_read_source(binding)
+                lines.append(f"    liveBindings.push(state=>{{const raw={raw};if(raw!==undefined&&raw!==null){base}.control.value=String(raw);}});")
+            return lines
         input_type = "number" if field["type"] == "number" else "text"
         parts = ["variant:'input'", f"label:{_js(field['label'])}", f"inputType:{_js(input_type)}"]
         if "value" in field:
             parts.append(f"value:{_js(field['value'])}")
         if field["type"] == "number":
             parts.append(f"step:{_js(field.get('step', 'any'))}")
-        return [f"    const {base}=units.field.create({host},{{{','.join(parts)}}});"]
+        if binding:
+            parts.append("readOnly:true")
+        lines.append(f"    const {base}=units.field.create({host},{{{','.join(parts)}}});")
+        if binding:
+            raw = self._live_binding_read_source(binding)
+            lines.append(f"    liveBindings.push(state=>{{const raw={raw};{base}.control.value=raw===undefined||raw===null?'':String(raw);}});")
+        return lines
 
     def _surface_node_source(self, node: Dict[str, Any], host: str, prefix: str) -> List[str]:
         base = _var(prefix + "-" + node["id"])
@@ -2585,6 +2646,9 @@ class PluginBuilder:
                 f"    const {base}=units.table.mount({_js(node['id'])},{base}_host,{{variant:'standard',columns:{_js(node['columns'])},rows:{_js(node['rows'])},persistKey:{_js(node['id']+'-declarative-surface-v1')}}});",
                 f"    disposables.push({base});",
             ]
+            if node.get("binding"):
+                raw = self._live_binding_read_source(node["binding"])
+                lines.append(f"    liveBindings.push(state=>{{const rows={raw};{base}?.setData?.({_js(node['columns'])},Array.isArray(rows)?rows:[]);}});")
             return lines
 
         if kind == "status":
@@ -2592,6 +2656,18 @@ class PluginBuilder:
             if node["state"]:
                 parts.append(f"state:{_js(node['state'])}")
             lines.append(f"    const {base}=units.status.create({host},{{{','.join(parts)}}});")
+            if node.get("binding"):
+                raw = self._live_binding_read_source(node["binding"])
+                text = self._live_binding_text_source(node["binding"], raw)
+                lines.append(f"    liveBindings.push(state=>{{{base}.textContent={text};}});")
+            return lines
+
+        if kind == "metric":
+            lines.append(f"    const {base}=units.metric.create({host},{{variant:{_js(node['variant'])},label:{_js(node['label'])},value:{_js(node['value'])}}});")
+            if node.get("binding"):
+                raw = self._live_binding_read_source(node["binding"])
+                text = self._live_binding_text_source(node["binding"], raw)
+                lines.append(f"    liveBindings.push(state=>{{{base}.value.textContent={text};}});")
             return lines
 
         if kind == "action":
@@ -2962,8 +3038,8 @@ class PluginBuilder:
             ]
             lines += [
                 f"    const liveDomain=ctx.services.domain.connect({_js(domain_adapter['ref'])});",
-                f"    const offLiveDomain=liveDomain.subscribe(()=>{{for(const id of {_js(domain_surfaces)})workbench.primes?.get?.(id)?.actionGroup?.render?.();}},{{immediate:false}});",
-                "    disposables.push({dispose:offLiveDomain});",
+                "    const liveBindings=[];",
+                "    const refreshLiveBindings=()=>{let state={};try{if(liveDomain.available())state=liveDomain.snapshot()?.state||{};}catch{}for(const bind of liveBindings){try{bind(state);}catch(error){console.warn('[DKDS declarative live binding]',error);}}};",
             ]
         lines += self._parameter_source()
         lines += self._interaction_source()
@@ -2977,6 +3053,12 @@ class PluginBuilder:
             + f"scroll:{_js(workspace['primaryScroll'])},titlePolicy:'host-only',mainNode:main"
             + "},primes,subs});",
         ]
+        if self.spec.get("domainAdapter") is not None:
+            lines += [
+                "    refreshLiveBindings();",
+                f"    const offLiveDomain=liveDomain.subscribe(()=>{{refreshLiveBindings();for(const id of {_js(domain_surfaces)})workbench.primes?.get?.(id)?.actionGroup?.render?.();}},{{immediate:false}});",
+                "    disposables.push({dispose:offLiveDomain});",
+            ]
         if hosted:
             top_primes = []
             parameters = self.spec.get("parameters")
