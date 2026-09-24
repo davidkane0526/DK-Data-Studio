@@ -944,7 +944,7 @@ class PluginBuilder:
     def _task_handlers_source(self) -> List[str]:
         lines: List[str] = []
         action_lookup = {row["id"]: row for row in self.spec["actions"]}
-        table_lookup = {row["id"]: row for row in self.spec["content"] if row["kind"] == "table"}
+        table_lookup: Dict[str, Dict[str, Any]] = {}
         plot_lookup: Dict[str, Dict[str, Any]] = {}
         for content_row in self.spec["content"]:
             if content_row["kind"] == "plot":
@@ -952,6 +952,11 @@ class PluginBuilder:
             elif content_row["kind"] == "plot-group":
                 for plot in content_row["plots"]:
                     plot_lookup[plot["id"]] = plot
+            elif content_row["kind"] == "result-split":
+                plot_lookup[content_row["plot"]["id"]] = content_row["plot"]
+                table_lookup[content_row["table"]["id"]] = content_row["table"]
+            elif content_row["kind"] == "table":
+                table_lookup[content_row["id"]] = content_row
 
         for row in self._portable_tasks:
             compiled: CompiledPortableTask = row["compiled"]
