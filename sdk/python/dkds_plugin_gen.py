@@ -625,6 +625,22 @@ class PluginBuilder:
                 "legend": legend,
             }
 
+        def normalize_plot_render(row: Dict[str, Any], name: str) -> Dict[str, Any]:
+            variant = str(row.get("plotVariant", "curve"))
+            if variant not in {"curve", "heatmap", "scalar-field"}:
+                raise SpecError(f"{name}.plotVariant must be curve, heatmap or scalar-field")
+            render_owner = str(row.get("renderOwner", "unit"))
+            if render_owner not in {"unit", "runtime"}:
+                raise SpecError(f"{name}.renderOwner must be unit or runtime")
+            if variant != "curve" and render_owner != "runtime":
+                raise SpecError(f"{name} non-curve generated plots currently require renderOwner=runtime")
+            if render_owner == "runtime":
+                if row.get("points"):
+                    raise SpecError(f"{name} runtime-owned plot may not declare generated curve points")
+                if any(row.get(key) is not None for key in ("identity", "axisSemantics", "viewport", "legend")):
+                    raise SpecError(f"{name} runtime-owned plot delegates interaction/link policy to the existing renderer")
+            return {"plotVariant": variant, "renderOwner": render_owner}
+
         content = []
         for index, row in enumerate(_expect_list(spec.get("content"), "content")):
             row = _expect_object(row, f"content[{index}]")
@@ -638,7 +654,7 @@ class PluginBuilder:
                     raise SpecError(f"content[{index}].variant is invalid")
                 content.append({"kind": "note", "text": str(row.get("text", "")), "variant": note_variant})
             elif kind == "plot":
-                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
                 if extra:
                     raise SpecError(f"unsupported plot fields at {index}: {', '.join(extra)}")
                 points = []
@@ -657,6 +673,7 @@ class PluginBuilder:
                     "yTitle": str(row.get("yTitle", "")),
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
+                    **normalize_plot_render(row, f"content[{index}]"),
                     **normalize_plot_interaction(row, f"content[{index}]"),
                 })
             elif kind == "plot-group":
@@ -678,7 +695,7 @@ class PluginBuilder:
                 plots = []
                 for p_index, plot in enumerate(_expect_list(row.get("plots"), f"content[{index}].plots")):
                     plot = _expect_object(plot, f"content[{index}].plots[{p_index}]")
-                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
                     if extra:
                         raise SpecError(f"unsupported plot-group plot fields at {index}:{p_index}: {', '.join(extra)}")
                     points = []
@@ -696,6 +713,7 @@ class PluginBuilder:
                         "yTitle": str(plot.get("yTitle", "")),
                         "source": str(plot.get("source") or plot.get("id")),
                         "points": points,
+                        **normalize_plot_render(plot, f"content[{index}].plots[{p_index}]"),
                         **normalize_plot_interaction(plot, f"content[{index}].plots[{p_index}]"),
                     })
                 if len(plots) < 2:
@@ -791,6 +809,7 @@ class PluginBuilder:
                     "yTitle": str(row.get("yTitle", "")),
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
+                    **normalize_plot_render(row, f"content[{index}]"),
                     "placements": placements,
                     "defaultPlacement": default_placement,
                     "contentMinHeight": min_height,
@@ -845,7 +864,7 @@ class PluginBuilder:
                     raise SpecError(f"content[{index}].reflowBelow must be in 480..1920")
 
                 plot = _expect_object(row.get("plot"), f"content[{index}].plot")
-                extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
                 if extra:
                     raise SpecError(f"unsupported result-split plot fields at {index}: {', '.join(extra)}")
                 points = []
@@ -863,6 +882,7 @@ class PluginBuilder:
                     "yTitle": str(plot.get("yTitle", "")),
                     "source": str(plot.get("source") or plot.get("id")),
                     "points": points,
+                    **normalize_plot_render(plot, f"content[{index}].plot"),
                     **normalize_plot_interaction(plot, f"content[{index}].plot"),
                 }
 
