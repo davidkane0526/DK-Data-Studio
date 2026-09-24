@@ -12,6 +12,7 @@ const reference=path.join(root,'examples','declarative-python-tool-blueprint-par
 const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const schema=JSON.parse(fs.readFileSync(path.join(root,'sdk','declarative-plugin.schema.json'),'utf8'));
 const blueprints=JSON.parse(fs.readFileSync(path.join(root,'sdk','native-plugin-unit-blueprints.json'),'utf8'));
+const sdk=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
 const pulseProduction=fs.readFileSync(path.join(root,'src','plugins','pulse-sampler-tool','unit-presentation.js'),'utf8');
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
@@ -34,6 +35,8 @@ function node(){
 }
 
 (async()=>{
+  assert.strictEqual(sdk.sdkVersion,'1.51.53','Second production tool blueprint parity requires the SDK 1.51.53 authoring contract.');
+  assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Second blueprint parity must consume the frozen Unit 2.5.38 contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
   const pulse=blueprints.blueprints['pulse-sampler-tool'];
   assert(pulse,'Pulse Sampler production blueprint must remain available as independent evidence.');
