@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-scientific-workbench-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-artifact-pipeline-generator.js",
       "args": []
     },
@@ -2038,6 +2042,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-scientific-workbench-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-artifact-pipeline-generator.js",
       "args": []
