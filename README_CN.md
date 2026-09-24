@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Live ScientificPlot Projection**：声明式/Python 生成器新增 Unit-owned curve plot 的 live curve-array binding。声明只提供 Domain Adapter `statePath`、点数组路径和 x/y/id 等字段键；生成壳只构造 detached render projection 并请求公共 ScientificPlot 重绘，不自行判断可见 sweep、不计算峰/TER/物理量、不保存第二份科学状态。共振生产 adapter 仅投影现有 `visibleSweepIds()` 选中的 sweep，生产 service/算法 owner 不变。SDK 升至 1.51.63；Plugin API 保持 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
+
 > **v3.71.115 WIP — Phase F Writable Live Parameter Binding**：声明式/Python 生成器将 canonical 参数 PRIME 接入双向 Domain Adapter binding。Number/Text/Select/Checkbox 只声明 `statePath + domainAction`，可附一个动态值与最多 8 个固定标量参数；状态回读复用同一 authoritative snapshot refresh，用户修改只通过公共 Unit `onChange` 调用生产 owner 白名单 action，不保存第二份领域状态、不写私有 DOM listener、不增加 Unit/Presenter/plugin-id 特化。SDK 升至 1.51.62；Plugin API 仍为 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
 
 > **v3.71.115 WIP — Phase F Live Snapshot Projection**：声明式/Python 生成器新增只读 Domain Adapter snapshot 绑定：Status、Metric、Field/Check、Table 通过同一次 authoritative snapshot 刷新各自公开 Unit handle；Table 使用 `setData()`，Metric 使用公开 `value`，Field/Check 使用公开 `control/input`，不使用私有 selector，也不保存第二份领域状态。Summary 暂不绑定，因为当前公开 Unit handle 没有更新接口。SDK 升至 1.51.61；Plugin API 仍为 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
@@ -85,7 +87,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.62**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.63**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

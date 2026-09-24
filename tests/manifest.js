@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-live-scientific-plot-binding.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-writable-parameter-domain-bindings.js",
       "args": []
     },
@@ -2090,6 +2094,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-live-scientific-plot-binding.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-writable-parameter-domain-bindings.js",
       "args": []
