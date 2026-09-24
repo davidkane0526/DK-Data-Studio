@@ -502,3 +502,10 @@ A top-level Unit-owned `content.kind:"plot"` may declare a bounded `binding` wit
 The generated shell owns only a detached `curves[]` render projection. Each live snapshot refresh maps finite x/y values to the public ScientificCurve shape and calls the existing ScientificPlot handle's `requestRender('domain-adapter')`. The generator does not decide visibility, filtering, peak acceptance, analysis or scientific identity. A bound plot must be `plotVariant:"curve"`, `renderOwner:"unit"`, must declare a top-level Domain Adapter, and may not also declare static points or explicit linked interaction policy.
 
 The Resonance specimen uses this path for its PRIMARY plot: production `visibleSweepIds()` remains the visibility owner; the Resonance Domain Adapter publishes only the matching detached `visibleSweeps`; the declarative plot maps each sweep's `points[].v/i` into ScientificCurve points.
+
+
+## Live curve selection — SDK 1.51.64
+
+A live curve-array binding may optionally declare `selectAction`. The generated public ScientificPlot receives an `onCurveSelect` callback that extracts only the projected `curve.id` and invokes `liveDomain.invoke(selectAction, { id })`. No arbitrary payload mapping, authored callback, local selected-id store or domain navigation logic is accepted. The production Domain Adapter remains responsible for what selecting that id means.
+
+The Resonance specimen declares `selectAction:"selectSweep"`; therefore PRIMARY curve clicks reach the same production selection owner while the declarative shell remains presentation-only. Marker selection, direct peak manipulation, double-click navigation and range actions remain outside this gate.
