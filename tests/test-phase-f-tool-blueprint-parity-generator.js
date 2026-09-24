@@ -12,6 +12,7 @@ const reference=path.join(root,'examples','declarative-python-tool-blueprint-par
 const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const schema=JSON.parse(fs.readFileSync(path.join(root,'sdk','declarative-plugin.schema.json'),'utf8'));
 const blueprints=JSON.parse(fs.readFileSync(path.join(root,'sdk','native-plugin-unit-blueprints.json'),'utf8'));
+const pulseProduction=fs.readFileSync(path.join(root,'src','plugins','pulse-sampler-tool','unit-presentation.js'),'utf8');
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
@@ -38,8 +39,9 @@ function node(){
   assert(pulse,'Pulse Sampler production blueprint must remain available as independent evidence.');
   for(const unit of ['page','pageHeader','workspace','layout','panel','header','toolbar','action','tabs','field','table','scientificPlot','prime'])
     assert(pulse.units.includes(unit),'Pulse blueprint lost generic Unit evidence: '+unit);
-  for(const variant of ['form-grid-2','action-grid-4','segment-bar'])
+  for(const variant of ['form-grid-2','segment-bar'])
     assert(pulse.regions.some(row=>row.variant===variant),'Pulse blueprint lost generic layout evidence: '+variant);
+  assert(pulseProduction.includes("variant:'action-grid-4'"),'Pulse production Unit presentation lost accepted action-grid-4 evidence.');
 
   const group=schema.properties.parameters.properties.groups.items;
   assert(group.properties.tabs,'Declarative parameter groups must expose Tabs.');
