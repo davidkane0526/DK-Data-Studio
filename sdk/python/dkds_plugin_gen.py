@@ -119,7 +119,7 @@ class PluginBuilder:
         }
 
         workspace = _expect_object(spec.get("workspace"), "workspace")
-        extra = sorted(set(workspace) - {"activity", "primaryRole", "primaryLabel", "primaryScroll", "mainLayout"})
+        extra = sorted(set(workspace) - {"activity", "primaryRole", "primaryLabel", "primaryScroll", "mainLayout", "leftWidth", "leftMin", "leftReserve", "primaryEndInset", "layoutStateVersion"})
         if extra:
             raise SpecError(f"unsupported workspace fields: {', '.join(extra)}")
         role = str(workspace.get("primaryRole", ""))
@@ -131,12 +131,30 @@ class PluginBuilder:
         main_layout = str(workspace.get("mainLayout", "stack-comfortable"))
         if main_layout not in {"stack-comfortable", "fill-rows"}:
             raise SpecError("workspace.mainLayout must be stack-comfortable or fill-rows")
+        left_width = workspace.get("leftWidth")
+        left_min = workspace.get("leftMin")
+        left_reserve = workspace.get("leftReserve")
+        for key, value in (("leftWidth", left_width), ("leftMin", left_min), ("leftReserve", left_reserve)):
+            if value is not None:
+                number = int(value)
+                if number < 180 or number > 1200:
+                    raise SpecError(f"workspace.{key} must be in 180..1200")
+        if left_width is not None and left_min is not None and int(left_width) < int(left_min):
+            raise SpecError("workspace.leftWidth must be >= leftMin")
+        primary_end_inset = str(workspace.get("primaryEndInset", "none"))
+        if primary_end_inset not in {"none", "content"}:
+            raise SpecError("workspace.primaryEndInset must be none or content")
         normalized_workspace = {
             "activity": _ident(workspace.get("activity"), "workspace.activity"),
             "primaryRole": role,
             "primaryLabel": str(workspace.get("primaryLabel", "主界面")),
             "primaryScroll": scroll,
             "mainLayout": main_layout,
+            "leftWidth": int(left_width) if left_width is not None else None,
+            "leftMin": int(left_min) if left_min is not None else None,
+            "leftReserve": int(left_reserve) if left_reserve is not None else None,
+            "primaryEndInset": primary_end_inset,
+            "layoutStateVersion": str(workspace.get("layoutStateVersion", "declarative-workspace-v1")),
         }
 
         host = _expect_object(spec.get("host", {"kind": "standalone"}), "host")
@@ -276,7 +294,7 @@ class PluginBuilder:
         parameters = None
         if spec.get("parameters") is not None:
             row = _expect_object(spec["parameters"], "parameters")
-            extra = sorted(set(row) - {"id", "label", "fields", "groups"})
+            extra = sorted(set(row) - {"id", "label", "fields", "groups", "priority", "embedded", "autoOpen", "stateVersion"})
             if extra:
                 raise SpecError(f"unsupported parameters fields: {', '.join(extra)}")
             raw_fields = row.get("fields")
@@ -296,15 +314,20 @@ class PluginBuilder:
             else:
                 for group_index, group in enumerate(_expect_list(raw_groups, "parameters.groups")):
                     group = _expect_object(group, f"parameters.groups[{group_index}]")
-                    extra = sorted(set(group) - {"id", "title", "variant", "layout", "fields", "badge", "note", "actionIds"})
+                    extra = sorted(set(group) - {"id", "title", "variant", "layout", "fieldLayout", "fields", "badge", "note", "actionIds", "tabs", "actionGrid", "toolbar", "table"})
                     if extra:
                         raise SpecError(f"unsupported parameters.groups[{group_index}] fields: {', '.join(extra)}")
                     variant = str(group.get("variant", "headed"))
                     if variant not in {"headed", "plain"}:
                         raise SpecError(f"parameters.groups[{group_index}].variant must be headed or plain")
                     layout = str(group.get("layout", "stack"))
-                    if layout not in {"stack", "form-grid-2"}:
-                        raise SpecError(f"parameters.groups[{group_index}].layout must be stack or form-grid-2")
+                    if layout not in {"stack", "form-grid-2", "fill-rows"}:
+                        raise SpecError(f"parameters.groups[{group_index}].layout must be stack, form-grid-2 or fill-rows")
+                    field_layout = group.get("fieldLayout")
+                    if field_layout is not None:
+                        field_layout = str(field_layout)
+                        if field_layout not in {"form-grid-2", "analysis-control-grid", "result-control-grid"}:
+                            raise SpecError(f"parameters.groups[{group_index}].fieldLayout is invalid")
                     group_fields = []
                     for field_index, field in enumerate(_expect_list(group.get("fields", []), f"parameters.groups[{group_index}].fields")):
                         normalized_field = normalize_parameter_field(
@@ -348,28 +371,147 @@ class PluginBuilder:
                         raise SpecError(
                             f"parameters.groups[{group_index}].actionIds references unknown actions: {', '.join(unknown_actions)}"
                         )
-                    if not group_fields and note is None and not group_action_ids:
+
+                    tabs = None
+                    if group.get("tabs") is not None:
+                        raw_tabs = _expect_object(group["tabs"], f"parameters.groups[{group_index}].tabs")
+                        extra = sorted(set(raw_tabs) - {"id", "variant", "items"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].tabs fields: {', '.join(extra)}")
+                        tabs_variant = str(raw_tabs.get("variant", "compact"))
+                        if tabs_variant not in {"compact", "standard"}:
+                            raise SpecError(f"parameters.groups[{group_index}].tabs.variant is invalid")
+                        tab_items = []
+                        for tab_index, item in enumerate(_expect_list(raw_tabs.get("items"), f"parameters.groups[{group_index}].tabs.items")):
+                            item = _expect_object(item, f"parameters.groups[{group_index}].tabs.items[{tab_index}]")
+                            extra = sorted(set(item) - {"id", "label", "selected"})
+                            if extra:
+                                raise SpecError(f"unsupported tab item fields at {group_index}:{tab_index}: {', '.join(extra)}")
+                            tab_items.append({
+                                "id": _ident(item.get("id"), f"parameters.groups[{group_index}].tabs.items[{tab_index}].id"),
+                                "label": _nonempty(item.get("label"), f"parameters.groups[{group_index}].tabs.items[{tab_index}].label"),
+                                "selected": bool(item.get("selected", False)),
+                            })
+                        if not tab_items:
+                            raise SpecError(f"parameters.groups[{group_index}].tabs.items must not be empty")
+                        if sum(1 for item in tab_items if item["selected"]) > 1:
+                            raise SpecError(f"parameters.groups[{group_index}].tabs may select at most one item")
+                        tabs = {
+                            "id": _ident(raw_tabs.get("id"), f"parameters.groups[{group_index}].tabs.id"),
+                            "variant": tabs_variant,
+                            "items": tab_items,
+                        }
+
+                    action_grid = None
+                    if group.get("actionGrid") is not None:
+                        raw_grid = _expect_object(group["actionGrid"], f"parameters.groups[{group_index}].actionGrid")
+                        extra = sorted(set(raw_grid) - {"layout", "actionIds"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].actionGrid fields: {', '.join(extra)}")
+                        grid_layout = str(raw_grid.get("layout", "action-grid-4"))
+                        if grid_layout not in {"action-grid-2", "action-grid-4"}:
+                            raise SpecError(f"parameters.groups[{group_index}].actionGrid.layout is invalid")
+                        grid_actions = [_ident(value, f"parameters.groups[{group_index}].actionGrid.actionIds[]") for value in raw_grid.get("actionIds", [])]
+                        unknown = [action_id for action_id in grid_actions if action_id not in action_ids]
+                        if unknown:
+                            raise SpecError(f"parameters.groups[{group_index}].actionGrid references unknown actions: {', '.join(unknown)}")
+                        if not grid_actions:
+                            raise SpecError(f"parameters.groups[{group_index}].actionGrid.actionIds must not be empty")
+                        action_grid = {"layout": grid_layout, "actionIds": grid_actions}
+
+                    toolbar = None
+                    if group.get("toolbar") is not None:
+                        raw_toolbar = _expect_object(group["toolbar"], f"parameters.groups[{group_index}].toolbar")
+                        extra = sorted(set(raw_toolbar) - {"variant", "layout", "label", "actionIds"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].toolbar fields: {', '.join(extra)}")
+                        toolbar_variant = str(raw_toolbar.get("variant", "ordinary"))
+                        if toolbar_variant not in {"ordinary", "header", "floating", "segmented"}:
+                            raise SpecError(f"parameters.groups[{group_index}].toolbar.variant is invalid")
+                        toolbar_layout = raw_toolbar.get("layout")
+                        if toolbar_layout is not None:
+                            toolbar_layout = str(toolbar_layout)
+                            if toolbar_layout not in {"segment-bar", "toolbar-wrap"}:
+                                raise SpecError(f"parameters.groups[{group_index}].toolbar.layout is invalid")
+                        toolbar_actions = [_ident(value, f"parameters.groups[{group_index}].toolbar.actionIds[]") for value in raw_toolbar.get("actionIds", [])]
+                        unknown = [action_id for action_id in toolbar_actions if action_id not in action_ids]
+                        if unknown:
+                            raise SpecError(f"parameters.groups[{group_index}].toolbar references unknown actions: {', '.join(unknown)}")
+                        toolbar = {
+                            "variant": toolbar_variant,
+                            "layout": toolbar_layout,
+                            "label": str(raw_toolbar.get("label", "")),
+                            "actionIds": toolbar_actions,
+                        }
+
+                    group_table = None
+                    if group.get("table") is not None:
+                        raw_table = _expect_object(group["table"], f"parameters.groups[{group_index}].table")
+                        extra = sorted(set(raw_table) - {"id", "columns", "rows", "layout"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].table fields: {', '.join(extra)}")
+                        table_columns = []
+                        for column_index, column in enumerate(_expect_list(raw_table.get("columns"), f"parameters.groups[{group_index}].table.columns")):
+                            column = _expect_object(column, f"parameters.groups[{group_index}].table.columns[{column_index}]")
+                            extra = sorted(set(column) - {"key", "label", "unit"})
+                            if extra:
+                                raise SpecError(f"unsupported group table column fields at {group_index}:{column_index}: {', '.join(extra)}")
+                            normalized_column = {
+                                "key": _ident(column.get("key"), f"parameters.groups[{group_index}].table.columns[{column_index}].key"),
+                                "label": _nonempty(column.get("label"), f"parameters.groups[{group_index}].table.columns[{column_index}].label"),
+                            }
+                            if "unit" in column:
+                                normalized_column["unit"] = str(column.get("unit", ""))
+                            table_columns.append(normalized_column)
+                        if not table_columns:
+                            raise SpecError(f"parameters.groups[{group_index}].table.columns must not be empty")
+                        table_rows = []
+                        for row_index, table_row in enumerate(raw_table.get("rows", [])):
+                            table_row = _expect_object(table_row, f"parameters.groups[{group_index}].table.rows[{row_index}]")
+                            table_rows.append({str(key): value for key, value in table_row.items()})
+                        table_layout = str(raw_table.get("layout", "scroll-pane"))
+                        if table_layout not in {"scroll-pane", "identity"}:
+                            raise SpecError(f"parameters.groups[{group_index}].table.layout is invalid")
+                        group_table = {
+                            "id": _ident(raw_table.get("id"), f"parameters.groups[{group_index}].table.id"),
+                            "columns": table_columns,
+                            "rows": table_rows,
+                            "layout": table_layout,
+                        }
+                    if not group_fields and note is None and not group_action_ids and tabs is None and action_grid is None and toolbar is None and group_table is None:
                         raise SpecError(f"parameters.groups[{group_index}] must contain fields, note, or actions")
                     groups.append({
                         "id": _ident(group.get("id"), f"parameters.groups[{group_index}].id"),
                         "title": _nonempty(group.get("title"), f"parameters.groups[{group_index}].title"),
                         "variant": variant,
                         "layout": layout,
+                        "fieldLayout": field_layout,
                         "fields": group_fields,
                         "badge": badge,
                         "note": note,
                         "actionIds": group_action_ids,
+                        "tabs": tabs,
+                        "actionGrid": action_grid,
+                        "toolbar": toolbar,
+                        "table": group_table,
                     })
                 if not groups:
                     raise SpecError("parameters.groups must not be empty")
 
             if len({field["id"] for field in fields}) != len(fields):
                 raise SpecError("parameter field ids must be unique across the parameter PRIME")
+            priority = int(row.get("priority", 90))
+            if priority < 1 or priority > 100:
+                raise SpecError("parameters.priority must be in 1..100")
             parameters = {
                 "id": _ident(row.get("id"), "parameters.id"),
                 "label": _nonempty(row.get("label"), "parameters.label"),
                 "fields": fields,
                 "groups": groups,
+                "priority": priority,
+                "embedded": bool(row.get("embedded", False)),
+                "autoOpen": bool(row.get("autoOpen", True)),
+                "stateVersion": str(row.get("stateVersion", "declarative-v2")),
             }
 
         normalized_interaction = None
@@ -1406,17 +1548,57 @@ class PluginBuilder:
                     lines.append(
                         f"    const {base}_badge=units.chip.create({action_host},{{variant:{_js(badge['variant'])},text:{_js(badge['text'])}}});"
                     )
+                if group.get("tabs") is not None:
+                    tabs = group["tabs"]
+                    lines.append(
+                        f"    const {base}_tabs=units.tabs.create({action_host},{{variant:{_js(tabs['variant'])},items:{_js(tabs['items'])}}});"
+                    )
+                field_host = f"{base}_panel.body"
+                if group.get("fieldLayout") is not None:
+                    field_host = f"{base}_fields"
+                    lines.append(
+                        f"    const {base}_fields=units.layout.create({base}_panel.body,{{variant:{_js(group['fieldLayout'])}}});"
+                    )
                 for field in group["fields"]:
-                    lines += self._parameter_field_source(field, f"{base}_panel.body")
+                    lines += self._parameter_field_source(field, field_host)
                 if group.get("note") is not None:
                     note = group["note"]
                     lines.append(
                         f"    units.note.create({base}_panel.body,{{variant:{_js(note['variant'])},text:{_js(note['text'])}}});"
                     )
+                if group.get("actionGrid") is not None:
+                    action_grid = group["actionGrid"]
+                    lines.append(
+                        f"    const {base}_action_grid=units.layout.create({base}_panel.body,{{variant:{_js(action_grid['layout'])}}});"
+                    )
+                    for action_id in action_grid["actionIds"]:
+                        action = next(row for row in self.spec["actions"] if row["id"] == action_id)
+                        variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
+                        lines.append(
+                            f"    units.action.create({base}_action_grid,{{id:{_js(action_id)},label:{_js(action['label'])}{variant},direct:true,onInvoke:{self._action_invoke_source(action_id)}}});"
+                        )
+                if group.get("toolbar") is not None:
+                    toolbar = group["toolbar"]
+                    lines.append(
+                        f"    const {base}_toolbar=units.toolbar.create({base}_panel.body,{{variant:{_js(toolbar['variant'])},actions:{self._action_source(toolbar['actionIds'])}}});"
+                    )
+                    if toolbar.get("layout") is not None:
+                        lines.append(f"    units.layout.apply({base}_toolbar.element,{{variant:{_js(toolbar['layout'])}}});")
+                    if toolbar.get("label"):
+                        lines.append(
+                            f"    units.note.create({base}_toolbar.element,{{variant:'ordinary',text:{_js(toolbar['label'])}}});"
+                        )
                 if group["actionIds"]:
                     lines.append(
-                        f"    const {base}_toolbar=units.toolbar.create({base}_panel.body,{{variant:'ordinary',actions:{self._action_source(group['actionIds'])}}});"
+                        f"    const {base}_legacy_toolbar=units.toolbar.create({base}_panel.body,{{variant:'ordinary',actions:{self._action_source(group['actionIds'])}}});"
                     )
+                if group.get("table") is not None:
+                    table = group["table"]
+                    lines += [
+                        f"    const {base}_table_host=units.layout.create({base}_panel.body,{{variant:{_js(table['layout'])}}});",
+                        f"    const {_var(table['id'])}_surface=units.table.mount({_js(table['id'])},{base}_table_host,{{variant:'standard',columns:{_js(table['columns'])},rows:{_js(table['rows'])},persistKey:{_js(table['id']+'-declarative-v1')}}});",
+                        f"    disposables.push({_var(table['id'])}_surface);",
+                    ]
         else:
             lines += [
                 f"    const parameterPanel=units.panel.create(controlsHost,{{variant:'headed',title:{_js(parameters['label'])},sizing:'content'}});",
@@ -1428,9 +1610,9 @@ class PluginBuilder:
             "    const parameterPrime=units.prime.build({"
             + f"id:{_js(parameters['id'])},label:{_js(parameters['label'])},"
             + "variant:'fixed-titleless',presentationRole:'data-control',presentationPurpose:'parameters',"
-            + "semanticKind:'panel',priority:90,collapsible:true,fixed:true,header:false,"
-            + "existingNode:controlsHost,sizing:'fill',autoOpen:true,defaultPlacement:'left',placements:['left'],"
-            + "stateVersion:'declarative-v2'});",
+            + f"semanticKind:'panel',priority:{parameters['priority']},collapsible:true,fixed:true,header:false,embedded:{str(parameters['embedded']).lower()},"
+            + f"existingNode:controlsHost,sizing:'fill',autoOpen:{str(parameters['autoOpen']).lower()},defaultPlacement:'left',placements:['left'],"
+            + f"stateVersion:{_js(parameters['stateVersion'])}}});",
             "    const primes=[parameterPrime];",
         ]
         return lines
@@ -1603,7 +1785,14 @@ class PluginBuilder:
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
             "    const workspaceHost=units.layout.create(body,{variant:'identity'});",
-            f"    const workbench=units.workspace.create(workspaceHost,{{variant:'standard',header:false,activity:{_js(workspace['activity'])},primaryScroll:{_js(workspace['primaryScroll'])}}});",
+            "    const workbench=units.workspace.create(workspaceHost,{"
+            + f"variant:'standard',header:false,activity:{_js(workspace['activity'])},primaryScroll:{_js(workspace['primaryScroll'])}"
+            + (f",leftWidth:{workspace['leftWidth']}" if workspace.get("leftWidth") is not None else "")
+            + (f",leftMin:{workspace['leftMin']}" if workspace.get("leftMin") is not None else "")
+            + (f",leftReserve:{workspace['leftReserve']}" if workspace.get("leftReserve") is not None else "")
+            + (",primaryEndInset:{mode:'content'}" if workspace.get("primaryEndInset") == "content" else "")
+            + f",layoutStateVersion:{_js(workspace['layoutStateVersion'])}"
+            + "});",
             "    const disposables=[];",
         ]
         lines += self._parameter_source()
@@ -1627,7 +1816,7 @@ class PluginBuilder:
                     "semanticKind": "panel",
                     "presentationPurpose": "parameters",
                     "presentationRole": "data-control",
-                    "priority": 90,
+                    "priority": parameters["priority"],
                     "collapsible": True,
                 })
             layout = {
