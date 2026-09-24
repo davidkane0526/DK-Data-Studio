@@ -118,6 +118,27 @@ SPEC = {
                 "onCloseCommand": "resonance.closeGroupViews",
                 "onPlacementChangedCommand": "resonance.resize",
             },
+            "actions": [
+                {
+                    "id": "group-columns",
+                    "kind": "choice-menu",
+                    "labelPrefix": "每行：",
+                    "title": "设置每行子图数量",
+                    "order": 10,
+                    "commandId": "resonance.setGroupColumns",
+                    "argumentKey": "value",
+                    "defaultValue": "auto",
+                    "items": [
+                        {"value": "auto", "label": "自动排列"},
+                        {"value": "1", "label": "每行 1 个子图"},
+                        {"value": "2", "label": "每行 2 个子图"},
+                        {"value": "3", "label": "每行 3 个子图"},
+                        {"value": "4", "label": "每行 4 个子图"},
+                        {"value": "5", "label": "每行 5 个子图"},
+                        {"value": "6", "label": "每行 6 个子图"},
+                    ],
+                }
+            ],
             "children": [
                 {
                     "kind": "header",
