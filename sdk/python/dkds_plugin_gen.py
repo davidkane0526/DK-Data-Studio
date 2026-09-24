@@ -78,7 +78,7 @@ class PluginBuilder:
 
     def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         spec = _expect_object(raw, "spec")
-        allowed = {"schema", "plugin", "page", "workspace", "host", "data", "actions", "parameters", "interaction", "content", "surfaces"}
+        allowed = {"schema", "plugin", "page", "workspace", "host", "data", "actions", "parameters", "interaction", "content", "surfaces", "domainAdapter"}
         extra = sorted(set(spec) - allowed)
         if extra:
             raise SpecError(f"unsupported top-level fields: {', '.join(extra)}")
@@ -100,6 +100,19 @@ class PluginBuilder:
             "order": int(plugin.get("order", 900)),
             "enabled": bool(plugin.get("enabled", True)),
         }
+
+        domain_adapter = None
+        if spec.get("domainAdapter") is not None:
+            raw_domain = _expect_object(spec.get("domainAdapter"), "domainAdapter")
+            extra = sorted(set(raw_domain) - {"ref", "dependency"})
+            if extra:
+                raise SpecError(f"unsupported domainAdapter fields: {', '.join(extra)}")
+            dependency = _ident(raw_domain.get("dependency"), "domainAdapter.dependency")
+            ref = _nonempty(raw_domain.get("ref"), "domainAdapter.ref")
+            if not ref.startswith(dependency + "/") or ref.count("/") != 1:
+                raise SpecError("domainAdapter.ref must be dependency/id for the declared dependency")
+            adapter_id = _ident(ref.split("/", 1)[1], "domainAdapter.ref id")
+            domain_adapter = {"ref": dependency + "/" + adapter_id, "dependency": dependency}
 
         page = _expect_object(spec.get("page"), "page")
         extra = sorted(set(page) - {"id", "label", "title", "subtitle", "variant", "close", "actionIds"})
@@ -1062,7 +1075,7 @@ class PluginBuilder:
             surface_actions = []
             for action_index, raw_action in enumerate(_expect_list(surface.get("actions", []), f"surfaces[{surface_index}].actions")):
                 raw_action = _expect_object(raw_action, f"surfaces[{surface_index}].actions[{action_index}]")
-                extra = sorted(set(raw_action) - {"id", "kind", "labelPrefix", "title", "order", "commandId", "argumentKey", "defaultValue", "items"})
+                extra = sorted(set(raw_action) - {"id", "kind", "labelPrefix", "title", "order", "commandId", "domainAction", "statePath", "argumentKey", "defaultValue", "items"})
                 if extra:
                     raise SpecError(f"unsupported surfaces[{surface_index}].actions[{action_index}] fields: {', '.join(extra)}")
                 if role != "prime":
@@ -1070,7 +1083,20 @@ class PluginBuilder:
                 action_kind = str(raw_action.get("kind", "choice-menu"))
                 if action_kind != "choice-menu":
                     raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].kind currently supports choice-menu only")
-                command_id = _ident(raw_action.get("commandId"), f"surfaces[{surface_index}].actions[{action_index}].commandId")
+                has_command = raw_action.get("commandId") is not None
+                has_domain_action = raw_action.get("domainAction") is not None
+                if has_command == has_domain_action:
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}] requires exactly one of commandId or domainAction")
+                command_id = _ident(raw_action.get("commandId"), f"surfaces[{surface_index}].actions[{action_index}].commandId") if has_command else ""
+                domain_action = _ident(raw_action.get("domainAction"), f"surfaces[{surface_index}].actions[{action_index}].domainAction") if has_domain_action else ""
+                state_path = str(raw_action.get("statePath", "")).strip()
+                if has_domain_action:
+                    if domain_adapter is None:
+                        raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].domainAction requires top-level domainAdapter")
+                    if not state_path or not all(IDENT.fullmatch(part) for part in state_path.split(".")):
+                        raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].statePath must be a dotted identifier path")
+                elif state_path:
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].statePath is only valid with domainAction")
                 argument_key = _ident(raw_action.get("argumentKey", "value"), f"surfaces[{surface_index}].actions[{action_index}].argumentKey")
                 items = []
                 for item_index, raw_item in enumerate(_expect_list(raw_action.get("items"), f"surfaces[{surface_index}].actions[{action_index}].items")):
@@ -1102,6 +1128,8 @@ class PluginBuilder:
                     "title": _nonempty(raw_action.get("title", raw_action.get("id")), f"surfaces[{surface_index}].actions[{action_index}].title"),
                     "order": int(raw_action.get("order", (action_index + 1) * 10)),
                     "commandId": command_id,
+                    "domainAction": domain_action,
+                    "statePath": state_path,
                     "argumentKey": argument_key,
                     "defaultValue": default_value,
                     "items": items,
@@ -1639,6 +1667,7 @@ class PluginBuilder:
             "interaction": normalized_interaction,
             "content": content,
             "surfaces": surfaces,
+            "domainAdapter": domain_adapter,
         }
 
     def add_portable_task(
@@ -2182,7 +2211,8 @@ class PluginBuilder:
         has_interaction = self.spec.get("interaction") is not None
         has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
         has_surface_lifecycle_commands = any(bool(surface.get("lifecycle")) for surface in self.spec.get("surfaces", []))
-        has_surface_action_commands = any(bool(surface.get("actions")) for surface in self.spec.get("surfaces", []))
+        has_surface_action_commands = any(action.get("commandId") for surface in self.spec.get("surfaces", []) for action in surface.get("actions", []))
+        has_domain_adapter = self.spec.get("domainAdapter") is not None
         has_stable_plot_identity = any(
             plot.get("identity") is not None
             for row in self.spec["content"]
@@ -2220,6 +2250,8 @@ class PluginBuilder:
             capabilities.append("ui.interaction")
         if has_domain_commands or has_surface_lifecycle_commands or has_surface_action_commands:
             requires.append("execution.commands")
+        if has_domain_adapter:
+            requires.append("services")
         if has_artifact_input:
             requires.extend(["data.sources", "data.artifacts"])
             capabilities.append("data.scoped-sources")
@@ -2248,6 +2280,8 @@ class PluginBuilder:
             "pluginType": "tool" if host["kind"] == "tool" else "workbench",
             "data": self.spec["data"],
         }
+        if has_domain_adapter:
+            manifest["pluginDependencies"] = [{"id": self.spec["domainAdapter"]["dependency"]}]
         if hosted:
             workspace = self.spec["workspace"]
             manifest["workspace"] = {
@@ -2596,19 +2630,35 @@ class PluginBuilder:
             lines += [
                 f"    const {action_base}_allowed={_js(item_values)};",
                 f"    const {action_base}_labels={_js(labels)};",
-                f"    const {action_base}_current=()=>{{const row=ctx.commands.history({{commandId:{_js(action['commandId'])},status:'completed',limit:1}})[0];const raw=row?.arguments?.[{_js(action['argumentKey'])}];const value=String(raw??{_js(str(action['defaultValue']))});return {action_base}_allowed.includes(value)?value:{_js(str(action['defaultValue']))};}};",
             ]
-            item_expr = (
-                f"{action_base}_allowed.map(value=>({{id:{_js(action['id']+'-')}+value,"
-                + f"icon:{action_base}_current()===value?'✓':'',label:{action_base}_labels[value]||value,"
-                + f"onInvoke:()=>{{if(!ctx.commands.get({_js(action['commandId'])})){{ctx.status.set({_js(action['title']+'命令不可用')});return false;}}"
-                + f"void ctx.commands.run({_js(action['commandId'])},{{[{_js(action['argumentKey'])}]:value}}).then(()=>workbench.primes?.get?.({_js(surface['id'])})?.actionGroup?.render?.()).catch(error=>ctx.status.set(String(error?.message||error||{_js(action['title']+'失败')})));return true;}}}}))"
-            )
+            if action.get("domainAction"):
+                path = action["statePath"].split(".")
+                lines.append(
+                    f"    const {action_base}_current=()=>{{try{{if(!liveDomain?.available?.())return {_js(str(action['defaultValue']))};const raw={_js(path)}.reduce((value,key)=>value?.[key],liveDomain.snapshot()?.state||{{}});const selected=String(raw??{_js(str(action['defaultValue']))});return {action_base}_allowed.includes(selected)?selected:{_js(str(action['defaultValue']))};}}catch{{return {_js(str(action['defaultValue']))};}}}};"
+                )
+                item_expr = (
+                    f"{action_base}_allowed.map(value=>({{id:{_js(action['id']+'-')}+value,"
+                    + f"icon:{action_base}_current()===value?'✓':'',label:{action_base}_labels[value]||value,"
+                    + f"onInvoke:()=>{{if(!liveDomain?.available?.()){{ctx.status.set({_js(action['title']+'领域服务不可用')});return false;}}"
+                    + f"void liveDomain.invoke({_js(action['domainAction'])},{{[{_js(action['argumentKey'])}]:value}}).then(()=>workbench.primes?.get?.({_js(surface['id'])})?.actionGroup?.render?.()).catch(error=>ctx.status.set(String(error?.message||error||{_js(action['title']+'失败')})));return true;}}}}))"
+                )
+                enabled = "()=>!!liveDomain?.available?.()"
+            else:
+                lines.append(
+                    f"    const {action_base}_current=()=>{{const row=ctx.commands.history({{commandId:{_js(action['commandId'])},status:'completed',limit:1}})[0];const raw=row?.arguments?.[{_js(action['argumentKey'])}];const value=String(raw??{_js(str(action['defaultValue']))});return {action_base}_allowed.includes(value)?value:{_js(str(action['defaultValue']))};}};"
+                )
+                item_expr = (
+                    f"{action_base}_allowed.map(value=>({{id:{_js(action['id']+'-')}+value,"
+                    + f"icon:{action_base}_current()===value?'✓':'',label:{action_base}_labels[value]||value,"
+                    + f"onInvoke:()=>{{if(!ctx.commands.get({_js(action['commandId'])})){{ctx.status.set({_js(action['title']+'命令不可用')});return false;}}"
+                    + f"void ctx.commands.run({_js(action['commandId'])},{{[{_js(action['argumentKey'])}]:value}}).then(()=>workbench.primes?.get?.({_js(surface['id'])})?.actionGroup?.render?.()).catch(error=>ctx.status.set(String(error?.message||error||{_js(action['title']+'失败')})));return true;}}}}))"
+                )
+                enabled = f"()=>!!ctx.commands.get({_js(action['commandId'])})"
             action_rows.append(
                 "{"
                 + f"id:{_js(action['id'])},menu:true,order:{action['order']},"
                 + f"label:()=>{_js(action['labelPrefix'])}+{action_base}_current(),title:{_js(action['title'])},"
-                + f"enabled:()=>!!ctx.commands.get({_js(action['commandId'])}),items:()=>{item_expr}"
+                + f"enabled:{enabled},items:()=>{item_expr}"
                 + "}"
             )
         return lines, "[" + ",".join(action_rows) + "]"
@@ -2903,6 +2953,18 @@ class PluginBuilder:
             + "});",
             "    const disposables=[];",
         ]
+        if self.spec.get("domainAdapter") is not None:
+            domain_adapter = self.spec["domainAdapter"]
+            domain_surfaces = [
+                surface["id"]
+                for surface in self.spec.get("surfaces", [])
+                if any(action.get("domainAction") for action in surface.get("actions", []))
+            ]
+            lines += [
+                f"    const liveDomain=ctx.services.domain.connect({_js(domain_adapter['ref'])});",
+                f"    const offLiveDomain=liveDomain.subscribe(()=>{{for(const id of {_js(domain_surfaces)})workbench.primes?.get?.(id)?.actionGroup?.render?.();}},{{immediate:false}});",
+                "    disposables.push({dispose:offLiveDomain});",
+            ]
         lines += self._parameter_source()
         lines += self._interaction_source()
         lines += self._content_source()

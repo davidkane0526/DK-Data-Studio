@@ -2209,7 +2209,6 @@
               "required": [
                 "id",
                 "kind",
-                "commandId",
                 "items"
               ],
               "properties": {
@@ -2268,10 +2267,59 @@
                       }
                     }
                   }
+                },
+                "domainAction": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                },
+                "statePath": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
                 }
-              }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "commandId"
+                  ],
+                  "not": {
+                    "required": [
+                      "domainAction"
+                    ]
+                  }
+                },
+                {
+                  "required": [
+                    "domainAction",
+                    "statePath"
+                  ],
+                  "not": {
+                    "required": [
+                      "commandId"
+                    ]
+                  }
+                }
+              ]
             }
           }
+        }
+      }
+    },
+    "domainAdapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "dependency"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 3
+        },
+        "dependency": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         }
       }
     }
