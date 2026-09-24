@@ -30,6 +30,7 @@ function node(){
 }
 
 (async()=>{
+  assert.strictEqual(sdk.sdkVersion,'1.51.49','Phase F interaction/command generation requires the SDK 1.51.49 authoring contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38',
     'Generated interaction must consume the frozen Unit 2.5.38 contract.');
   assert(schema.properties.interaction,'Declarative schema must expose the Core Interaction declaration.');
