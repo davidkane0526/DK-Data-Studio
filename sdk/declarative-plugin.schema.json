@@ -114,6 +114,13 @@
             "contained"
           ],
           "default": "safe"
+        },
+        "mainLayout": {
+          "enum": [
+            "stack-comfortable",
+            "fill-rows"
+          ],
+          "default": "stack-comfortable"
         }
       }
     },
@@ -725,6 +732,324 @@
                           "default": 24
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "items"
+            ],
+            "properties": {
+              "kind": {
+                "const": "metrics"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "plot",
+              "table"
+            ],
+            "properties": {
+              "kind": {
+                "const": "result-split"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "axis": {
+                "enum": [
+                  "x",
+                  "y"
+                ],
+                "default": "y"
+              },
+              "resizeTarget": {
+                "enum": [
+                  "first",
+                  "second"
+                ],
+                "default": "second"
+              },
+              "defaultSize": {
+                "type": "integer",
+                "minimum": 80,
+                "maximum": 1600,
+                "default": 180
+              },
+              "min": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 1600,
+                "default": 140
+              },
+              "reserve": {
+                "type": "integer",
+                "minimum": 120,
+                "maximum": 2400,
+                "default": 300
+              },
+              "reflowBelow": {
+                "type": "integer",
+                "minimum": 480,
+                "maximum": 1920,
+                "default": 920
+              },
+              "plot": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "xTitle": {
+                    "type": "string"
+                  },
+                  "yTitle": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "prefixItems": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  },
+                  "selectionTarget": {
+                    "enum": [
+                      "series"
+                    ],
+                    "default": "series"
+                  },
+                  "identity": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "entityType": {
+                        "type": "string",
+                        "minLength": 1,
+                        "default": "data.series"
+                      }
+                    }
+                  },
+                  "axisSemantics": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "x": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "dimension": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "y": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "dimension": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "viewport": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "linkGroup"
+                    ],
+                    "properties": {
+                      "link": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "linkGroup": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "linkedAxes": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                          "enum": [
+                            "x",
+                            "y"
+                          ]
+                        },
+                        "default": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    }
+                  },
+                  "legend": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "linkGroup"
+                    ],
+                    "properties": {
+                      "link": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "linkGroup": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "maxLinkedTargets": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24,
+                        "default": 24
+                      }
+                    }
+                  }
+                }
+              },
+              "table": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "columns"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "结果"
+                  },
+                  "columns": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "key",
+                        "label"
+                      ],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
                     }
                   }
                 }
