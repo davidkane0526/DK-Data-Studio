@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.47): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.48): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.47
+# Unit Templates 2.5.38 — SDK 1.51.48
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.48 generated scientific workbench composition
+
+SDK 1.51.48 does not add or modify a Unit. Phase F generation may now select the already-published PlotGroup, PlotView, ScientificPlot and Table composition paths to build multi-result scientific workbenches. Multiple scoped DataTable inputs and multiple result projections are authoring/compiler concerns only; Core remains the sole Task/Artifact owner, Unit remains the sole scientific composition owner, and Presenter remains platform-only.
+
+The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. Generated workbenches receive Mobile/Desktop behavior from those existing contracts rather than generated CSS or plugin-specific Presenter rules.
 
 ## SDK 1.51.47 generated Artifact pipeline authoring
 
@@ -183,7 +189,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.47.
+`units.version` is `2.5.38` in SDK 1.51.48.
 
 
 
