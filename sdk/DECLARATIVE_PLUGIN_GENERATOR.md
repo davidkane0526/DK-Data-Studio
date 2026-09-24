@@ -223,3 +223,31 @@ The singular \`result_plot\`, \`result_table\` and \`publish_table\` arguments r
 The executable reference is \`examples/declarative-python-scientific-workbench\`. Its gate proves two separate scoped DataTables, four bounded column reads, one lowered JavaScript Task, three generated PlotGroup curves, one Unit Table projection, two canonical output Artifacts, dual-source lineage, and preservation of the existing strict plot-projection lifecycle.
 
 This remains an authoring capability only. It does not change Plugin API 1.19, Unit Templates 2.5.38, Core Task Runner, Artifact Store, Presenter, or the production plugins.
+
+
+## Scientific interaction and replay-safe domain commands — SDK 1.51.49
+
+Phase F generated workbenches may now opt into the existing scientific interaction path instead of writing plot-local synchronization code.
+
+Top-level \`interaction\` declares one Core interaction context. Individual generated plots may then declare:
+
+- \`identity.input\` and \`identity.entityType\` for stable reference identity;
+- \`selectionTarget:"series"\` for reference-only selection;
+- \`axisSemantics\` with explicit quantity/unit/dimension metadata;
+- \`viewport.link\`, \`linkGroup\` and bounded \`linkedAxes\`;
+- \`legend.link\`, \`linkGroup\` and bounded \`maxLinkedTargets\`.
+
+Viewport linking is accepted only when every linked axis has explicit quantity and unit semantics. Legend linking is accepted only when the plot declares stable identity. The generator does not infer scientific compatibility from labels or colors.
+
+Generated runtime wiring remains:
+
+    generated plot declaration
+        -> Unit ScientificPlot / PlotView
+        -> ctx.ui.interaction
+        -> existing project-scoped transaction/link machinery
+
+Portable Tasks may also declare \`domain_command\`. The generator registers that command through the existing validated command registry and attaches the same task/data bindings needed for replay metadata. Re-execution remains subject to existing source identity/revision checks; the generator does not create a second command bus or bypass stale-input rejection.
+
+The checked-in executable reference under \`examples/declarative-python-interactive-workbench\` and \`tests/test-phase-f-interaction-command-generator.js\` verifies interaction creation/link lifecycle, stable series reference metadata, scientific viewport semantics, bounded legend linkage, domain-command registration/execution and replay-safe source snapshots.
+
+This release changes only the authoring/compiler surface. Plugin API remains 1.19.0; Unit Templates remain 2.5.38; Core Interaction, Selection, command registry, Artifact Store, Task Runner, Presenter and production plugins retain their existing ownership.
