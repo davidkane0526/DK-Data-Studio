@@ -246,6 +246,57 @@ class PluginBuilder:
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
                 })
+            elif kind == "plot-group":
+                extra = sorted(set(row) - {"kind", "id", "title", "columns", "maxColumns", "minItemWidth", "density", "responsive", "plots"})
+                if extra:
+                    raise SpecError(f"unsupported plot-group fields at {index}: {', '.join(extra)}")
+                columns = int(row.get("columns", 2))
+                max_columns = int(row.get("maxColumns", max(columns, 4)))
+                min_item_width = int(row.get("minItemWidth", 260))
+                density = str(row.get("density", "regular"))
+                if columns < 1 or columns > 12:
+                    raise SpecError(f"content[{index}].columns must be in 1..12")
+                if max_columns < columns or max_columns > 12:
+                    raise SpecError(f"content[{index}].maxColumns must be in columns..12")
+                if min_item_width < 120 or min_item_width > 1200:
+                    raise SpecError(f"content[{index}].minItemWidth must be in 120..1200")
+                if density not in {"compact", "regular", "comfortable"}:
+                    raise SpecError(f"content[{index}].density is invalid")
+                plots = []
+                for p_index, plot in enumerate(_expect_list(row.get("plots"), f"content[{index}].plots")):
+                    plot = _expect_object(plot, f"content[{index}].plots[{p_index}]")
+                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points"})
+                    if extra:
+                        raise SpecError(f"unsupported plot-group plot fields at {index}:{p_index}: {', '.join(extra)}")
+                    points = []
+                    for point_index, pair in enumerate(plot.get("points", [])):
+                        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                            raise SpecError(f"content[{index}].plots[{p_index}].points[{point_index}] must be [x,y]")
+                        try:
+                            points.append([float(pair[0]), float(pair[1])])
+                        except (TypeError, ValueError) as exc:
+                            raise SpecError(f"content[{index}].plots[{p_index}].points[{point_index}] must be numeric") from exc
+                    plots.append({
+                        "id": _ident(plot.get("id"), f"content[{index}].plots[{p_index}].id"),
+                        "title": _nonempty(plot.get("title"), f"content[{index}].plots[{p_index}].title"),
+                        "xTitle": str(plot.get("xTitle", "")),
+                        "yTitle": str(plot.get("yTitle", "")),
+                        "source": str(plot.get("source") or plot.get("id")),
+                        "points": points,
+                    })
+                if len(plots) < 2:
+                    raise SpecError(f"content[{index}].plots must contain at least two plots")
+                content.append({
+                    "kind": "plot-group",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "title": _nonempty(row.get("title"), f"content[{index}].title"),
+                    "columns": columns,
+                    "maxColumns": max_columns,
+                    "minItemWidth": min_item_width,
+                    "density": density,
+                    "responsive": bool(row.get("responsive", True)),
+                    "plots": plots,
+                })
             elif kind == "table":
                 extra = sorted(set(row) - {"kind", "id", "title", "columns", "rows"})
                 if extra:
@@ -277,7 +328,7 @@ class PluginBuilder:
                     "rows": rows,
                 })
             else:
-                raise SpecError(f"content[{index}].kind must be note, plot or table")
+                raise SpecError(f"content[{index}].kind must be note, plot, plot-group or table")
         if not content:
             raise SpecError("content must not be empty")
 
@@ -305,15 +356,18 @@ class PluginBuilder:
         result_table: str | None = None,
         result_rows_key: str = "rows",
         publish_table: Dict[str, Any] | None = None,
+        result_plots: List[Dict[str, str]] | None = None,
+        result_tables: List[Dict[str, str]] | None = None,
+        publish_tables: List[Dict[str, Any]] | None = None,
         success_status: str = "任务完成",
         function_name: str | None = None,
     ) -> "PluginBuilder":
         """Bind authoring-time Python to the existing Core Task Runner.
 
         Python is lowered immediately to JavaScript. Runtime inputs may come from
-        parameter Units or bounded columns of the plugin-scoped Artifact source
-        catalog. Result projection may update Unit Plot/Table surfaces and/or
-        publish one canonical DataTable Artifact with lineage.
+        parameter Units or bounded columns of plugin-scoped Artifact sources.
+        One task may project multiple result arrays into Unit Plot/Table surfaces
+        and publish multiple declared canonical DataTable Artifacts with lineage.
         """
         compiled = compile_portable_task(task_id, function, function_name=function_name)
         action_ids = {row["id"] for row in self.spec["actions"]}
@@ -396,46 +450,94 @@ class PluginBuilder:
                 "maxRows": max_rows,
             }
 
-        plot_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "plot"}
-        table_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "table"}
-        if result_plot is not None and result_plot not in plot_ids:
-            raise SpecError(f"portable task result_plot not found: {result_plot}")
-        if result_table is not None and result_table not in table_ids:
-            raise SpecError(f"portable task result_table not found: {result_table}")
-        for key_name, key_value in (("result_key", result_key), ("result_rows_key", result_rows_key)):
-            if not IDENT.fullmatch(str(key_value or "").replace("-", "_")):
-                raise SpecError(f"invalid portable task {key_name}: {key_value}")
+        plot_lookup: Dict[str, Dict[str, Any]] = {}
+        table_lookup: Dict[str, Dict[str, Any]] = {}
+        for content_row in self.spec["content"]:
+            if content_row["kind"] == "plot":
+                plot_lookup[content_row["id"]] = content_row
+            elif content_row["kind"] == "plot-group":
+                for plot in content_row["plots"]:
+                    plot_lookup[plot["id"]] = plot
+            elif content_row["kind"] == "table":
+                table_lookup[content_row["id"]] = content_row
 
-        normalized_publish = None
-        if publish_table is not None:
-            row = _expect_object(publish_table, "publish_table")
+        normalized_result_plots: List[Dict[str, str]] = []
+        if result_plot is not None:
+            normalized_result_plots.append({"id": result_plot, "key": str(result_key)})
+        for index, projection in enumerate(result_plots or []):
+            projection = _expect_object(projection, f"result_plots[{index}]")
+            extra = sorted(set(projection) - {"id", "key"})
+            if extra:
+                raise SpecError(f"unsupported result_plots fields at {index}: {', '.join(extra)}")
+            normalized_result_plots.append({
+                "id": _ident(projection.get("id"), f"result_plots[{index}].id"),
+                "key": _ident(projection.get("key"), f"result_plots[{index}].key"),
+            })
+        for projection in normalized_result_plots:
+            if projection["id"] not in plot_lookup:
+                raise SpecError(f"portable task result plot not found: {projection['id']}")
+            if not IDENT.fullmatch(str(projection["key"]).replace("-", "_")):
+                raise SpecError(f"invalid portable task result plot key: {projection['key']}")
+        if len({row["id"] for row in normalized_result_plots}) != len(normalized_result_plots):
+            raise SpecError("portable task result plots must target unique plot ids")
+
+        normalized_result_tables: List[Dict[str, str]] = []
+        if result_table is not None:
+            normalized_result_tables.append({"id": result_table, "key": str(result_rows_key)})
+        for index, projection in enumerate(result_tables or []):
+            projection = _expect_object(projection, f"result_tables[{index}]")
+            extra = sorted(set(projection) - {"id", "key"})
+            if extra:
+                raise SpecError(f"unsupported result_tables fields at {index}: {', '.join(extra)}")
+            normalized_result_tables.append({
+                "id": _ident(projection.get("id"), f"result_tables[{index}].id"),
+                "key": _ident(projection.get("key"), f"result_tables[{index}].key"),
+            })
+        for projection in normalized_result_tables:
+            if projection["id"] not in table_lookup:
+                raise SpecError(f"portable task result table not found: {projection['id']}")
+            if not IDENT.fullmatch(str(projection["key"]).replace("-", "_")):
+                raise SpecError(f"invalid portable task result table key: {projection['key']}")
+        if len({row["id"] for row in normalized_result_tables}) != len(normalized_result_tables):
+            raise SpecError("portable task result tables must target unique table ids")
+
+        def normalize_publish(row: Dict[str, Any], name: str) -> Dict[str, Any]:
+            row = _expect_object(row, name)
             extra = sorted(set(row) - {"id", "name", "semanticType", "columns"})
             if extra:
-                raise SpecError(f"unsupported publish_table fields: {', '.join(extra)}")
-            semantic_type = _nonempty(row.get("semanticType"), "publish_table.semanticType")
+                raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
+            semantic_type = _nonempty(row.get("semanticType"), f"{name}.semanticType")
             if semantic_type not in self.spec["data"].get("produces", []):
-                raise SpecError("publish_table.semanticType must be declared in data.produces")
+                raise SpecError(f"{name}.semanticType must be declared in data.produces")
             columns = []
-            for index, column in enumerate(_expect_list(row.get("columns"), "publish_table.columns")):
-                column = _expect_object(column, f"publish_table.columns[{index}]")
+            for index, column in enumerate(_expect_list(row.get("columns"), f"{name}.columns")):
+                column = _expect_object(column, f"{name}.columns[{index}]")
                 extra = sorted(set(column) - {"key", "name", "unit", "role", "resultKey"})
                 if extra:
-                    raise SpecError(f"unsupported publish_table column fields at {index}: {', '.join(extra)}")
+                    raise SpecError(f"unsupported {name} column fields at {index}: {', '.join(extra)}")
                 columns.append({
-                    "key": _ident(column.get("key"), f"publish_table.columns[{index}].key"),
-                    "name": _nonempty(column.get("name", column.get("key")), f"publish_table.columns[{index}].name"),
+                    "key": _ident(column.get("key"), f"{name}.columns[{index}].key"),
+                    "name": _nonempty(column.get("name", column.get("key")), f"{name}.columns[{index}].name"),
                     "unit": str(column.get("unit", "")),
                     "role": str(column.get("role", "")),
-                    "resultKey": _ident(column.get("resultKey", column.get("key")), f"publish_table.columns[{index}].resultKey"),
+                    "resultKey": _ident(column.get("resultKey", column.get("key")), f"{name}.columns[{index}].resultKey"),
                 })
             if not columns:
-                raise SpecError("publish_table.columns must not be empty")
-            normalized_publish = {
-                "id": _ident(row.get("id"), "publish_table.id"),
-                "name": _nonempty(row.get("name"), "publish_table.name"),
+                raise SpecError(f"{name}.columns must not be empty")
+            return {
+                "id": _ident(row.get("id"), f"{name}.id"),
+                "name": _nonempty(row.get("name"), f"{name}.name"),
                 "semanticType": semantic_type,
                 "columns": columns,
             }
+
+        normalized_publish_tables: List[Dict[str, Any]] = []
+        if publish_table is not None:
+            normalized_publish_tables.append(normalize_publish(publish_table, "publish_table"))
+        for index, row in enumerate(publish_tables or []):
+            normalized_publish_tables.append(normalize_publish(row, f"publish_tables[{index}]"))
+        if len({row["id"] for row in normalized_publish_tables}) != len(normalized_publish_tables):
+            raise SpecError("portable task published Artifact ids must be unique")
 
         if any(row["compiled"].task_id == compiled.task_id for row in self._portable_tasks):
             raise SpecError(f"duplicate portable task id: {compiled.task_id}")
@@ -446,11 +548,9 @@ class PluginBuilder:
             "compiled": compiled,
             "action_id": action_id,
             "input_bindings": bindings,
-            "result_plot": result_plot,
-            "result_key": str(result_key),
-            "result_table": result_table,
-            "result_rows_key": str(result_rows_key),
-            "publish_table": normalized_publish,
+            "result_plots": normalized_result_plots,
+            "result_tables": normalized_result_tables,
+            "publish_tables": normalized_publish_tables,
             "success_status": str(success_status),
         })
         return self
@@ -521,24 +621,23 @@ class PluginBuilder:
                 f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},__dkdsPayload,{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
                 "        const result=await handle.promise;",
             ]
-            if row["result_plot"] is not None:
-                base = _var(row["result_plot"])
-                key = row["result_key"]
+            for projection in row["result_plots"]:
+                base = _var(projection["id"])
+                key = projection["key"]
                 lines += [
                     f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
                     f"        {base}_points=result[{_js(key)}];",
-                    f"        {base}_surface.requestRender?.();",
+                    f"        {base}_surface?.requestRender?.();",
                 ]
-            if row["result_table"] is not None:
-                table = table_lookup[row["result_table"]]
-                base = _var(row["result_table"])
-                key = row["result_rows_key"]
+            for projection in row["result_tables"]:
+                table = table_lookup[projection["id"]]
+                base = _var(projection["id"])
+                key = projection["key"]
                 lines += [
                     f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
                     f"        {base}_surface.setData({_js(table['columns'])},result[{_js(key)}]);",
                 ]
-            publish = row["publish_table"]
-            if publish is not None:
+            for publish_index, publish in enumerate(row["publish_tables"]):
                 column_rows = []
                 for column in publish["columns"]:
                     result_key = column["resultKey"]
@@ -549,17 +648,17 @@ class PluginBuilder:
                     lines.append(
                         f"        if(!Array.isArray(result?.[{_js(result_key)}]))throw new Error({_js('Generated task result.'+result_key+' must be an array for Artifact publication')});"
                     )
+                token = f"__dkdsArtifact_{publish_index}"
+                lengths = f"__dkdsLengths_{publish_index}"
                 lines += [
-                    "        const __dkdsLengths=["
-                    + ",".join(f"result[{_js(column['resultKey'])}].length" for column in publish["columns"])
-                    + "];",
-                    "        if(new Set(__dkdsLengths).size>1)throw new Error('Published DataTable result columns must have equal lengths.');",
-                    "        const __dkdsArtifact=ctx.data.model.createTable({"
+                    f"        const {lengths}=[" + ",".join(f"result[{_js(column['resultKey'])}].length" for column in publish["columns"]) + "];",
+                    f"        if(new Set({lengths}).size>1)throw new Error('Published DataTable result columns must have equal lengths.');",
+                    f"        const {token}=ctx.data.model.createTable({{"
                     + f"id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},"
                     + "columns:[" + ",".join(column_rows) + "],"
                     + f"lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}"
                     + "});",
-                    "        ctx.data.artifacts.publish(__dkdsArtifact);",
+                    f"        ctx.data.artifacts.publish({token});",
                 ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
@@ -573,19 +672,23 @@ class PluginBuilder:
         return lines
 
     def manifest(self) -> Dict[str, Any]:
-        has_plot = any(row["kind"] == "plot" for row in self.spec["content"])
+        has_plot = any(row["kind"] in {"plot", "plot-group"} for row in self.spec["content"])
+        has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
         has_table = any(row["kind"] == "table" for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
             for task in self._portable_tasks
             for binding in task["input_bindings"].values()
         )
-        has_artifact_output = any(task["publish_table"] is not None for task in self._portable_tasks)
+        has_artifact_output = any(bool(task["publish_tables"]) for task in self._portable_tasks)
         requires = ["status", "ui.workspace", "ui.unit-templates", "ui.pages"]
         capabilities = ["ui.page", "ui.plugin-workspace"]
         if has_plot:
             requires.append("ui.scientific-plot")
             capabilities.append("ui.scientific-plot")
+        if has_plot_group:
+            requires.extend(["ui.group-area", "ui.plot-views"])
+            capabilities.append("ui.group-area")
         if has_table:
             requires.append("ui.table")
             capabilities.append("ui.table")
@@ -690,6 +793,23 @@ class PluginBuilder:
                     f"    const {base}_surface=units.table.mount({_js(row['id'])},{base}_section.body,{{variant:'standard',columns:{_js(row['columns'])},rows:{_js(row['rows'])},persistKey:{_js(row['id']+'-declarative-v1')}}});",
                     f"    disposables.push({base}_surface);",
                 ]
+                continue
+            if row["kind"] == "plot-group":
+                base = _var(row["id"])
+                lines += [
+                    f"    const {base}_section=units.section.create(main,{{variant:'plot-group',title:{_js(row['title'])}}});",
+                    f"    const {base}_host=units.layout.create({base}_section.body,{{variant:'identity'}});",
+                    f"    const {base}_group=units.plotGroup.create({base}_host,{{columns:{row['columns']},preferredColumns:{row['columns']},maxColumns:{row['maxColumns']},minItemWidth:{row['minItemWidth']},responsive:{str(row['responsive']).lower()},density:{_js(row['density'])}}});",
+                    f"    disposables.push({base}_group);",
+                ]
+                for plot in row["plots"]:
+                    plot_base = _var(plot["id"])
+                    points = [{"x": pair[0], "y": pair[1]} for pair in plot["points"]]
+                    lines += [
+                        f"    let {plot_base}_points={_js(points)};",
+                        f"    let {plot_base}_surface=null;",
+                        f"    const {plot_base}_view={base}_group.addPlot({{id:{_js(plot['id'])},title:{_js(plot['title'])},placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',render:host=>{{{plot_base}_surface=units.scientificPlot.create(host,{{variant:'curve',source:{_js(plot['source'])},xTitle:{_js(plot['xTitle'])},yTitle:{_js(plot['yTitle'])},getCurves:()=>[{{id:{_js(plot['id'])},points:{plot_base}_points}}],getMarkers:()=>[]}});return()=>{{try{{{plot_base}_surface?.dispose?.();}}catch{{}};{plot_base}_surface=null;}};}}}});",
+                    ]
                 continue
             points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]
             base = _var(row["id"])
