@@ -116,6 +116,7 @@ class PluginBuilder:
             "variant": page_variant,
             "close": bool(page.get("close", False)),
             "actionIds": [_ident(value, "page.actionIds[]") for value in page.get("actionIds", [])],
+            "actionIdsExplicit": "actionIds" in page,
         }
 
         workspace = _expect_object(spec.get("workspace"), "workspace")
@@ -251,7 +252,7 @@ class PluginBuilder:
             raise SpecError("actions supports at most 8 entries")
 
         action_ids = {row["id"] for row in actions}
-        if not normalized_page["actionIds"]:
+        if not normalized_page["actionIdsExplicit"]:
             normalized_page["actionIds"] = [row["id"] for row in actions]
         unknown_page_actions = [action_id for action_id in normalized_page["actionIds"] if action_id not in action_ids]
         if unknown_page_actions:
