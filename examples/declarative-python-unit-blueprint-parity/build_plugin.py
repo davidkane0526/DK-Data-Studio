@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "sdk" / "python"))
 from dkds_plugin_gen import PluginBuilder
 
 
-def analyze_threshold(x: list, y: list, offset: float) -> dict:
+def analyze_threshold(x: list, y: list, branch: str) -> dict:
     count = len(x)
     if len(y) < count:
         count = len(y)
@@ -24,7 +24,7 @@ def analyze_threshold(x: list, y: list, offset: float) -> dict:
 
     for i in range(count):
         xv = float(x[i])
-        yv = float(y[i]) + offset
+        yv = float(y[i])
         points.append({"x": xv, "y": yv})
         rows.append({"x": xv, "y": yv})
         sx = sx + xv
@@ -49,7 +49,7 @@ def analyze_threshold(x: list, y: list, offset: float) -> dict:
             ss_res = 0.0
             for i in range(count):
                 xv = float(x[i])
-                yv = float(y[i]) + offset
+                yv = float(y[i])
                 fitted = slope * xv + intercept
                 dy = yv - mean
                 dr = yv - fitted
@@ -64,6 +64,7 @@ def analyze_threshold(x: list, y: list, offset: float) -> dict:
         "vth": vth,
         "r2": r2,
         "n": count,
+        "branch": branch,
     }
 
 
@@ -82,6 +83,8 @@ SPEC = {
         "title": "Generated Unit Blueprint Parity",
         "subtitle": "Metric + ScientificPlot + SplitPane + Table",
         "variant": "analysis",
+        "close": True,
+        "actionIds": ["refresh", "fit", "settings"],
     },
     "workspace": {
         "activity": "generated-unit-blueprint-parity",
@@ -95,17 +98,102 @@ SPEC = {
     },
     "actions": [
         {
+            "id": "refresh",
+            "label": "刷新数据",
+            "icon": "↻",
+            "order": 10,
+            "statusMessage": "数据已刷新",
+        },
+        {
+            "id": "fit",
+            "label": "适应视图",
+            "icon": "⌂",
+            "order": 20,
+            "statusMessage": "视图已适应",
+        },
+        {
+            "id": "settings",
+            "label": "默认设置",
+            "icon": "⚙",
+            "order": 30,
+            "statusMessage": "打开默认设置",
+        },
+        {
+            "id": "demo",
+            "label": "示例",
+            "order": 40,
+            "statusMessage": "示例已载入",
+        },
+        {
             "id": "analyze",
             "label": "执行分析",
             "variant": "primary",
+            "order": 50,
             "statusMessage": "正在执行分析...",
-        }
+        },
     ],
     "parameters": {
-        "id": "parameters",
-        "label": "参数",
-        "fields": [
-            {"id": "offset", "type": "number", "label": "Y 偏移", "value": 0.0, "step": 0.1},
+        "id": "data-control",
+        "label": "数据",
+        "groups": [
+            {
+                "id": "data",
+                "title": "数据",
+                "variant": "headed",
+                "layout": "stack",
+                "badge": {"text": "—", "variant": "quiet"},
+                "fields": [
+                    {
+                        "id": "curve",
+                        "type": "select",
+                        "label": "当前曲线",
+                        "value": "active",
+                        "options": [{"value": "active", "label": "当前数据"}],
+                    }
+                ],
+                "note": {
+                    "variant": "meta",
+                    "text": "数据导入由 Core 统一提供；这里只显示分配给工作台的数据。",
+                },
+                "actionIds": ["refresh", "demo"],
+            },
+            {
+                "id": "extraction",
+                "title": "阈值提取",
+                "variant": "plain",
+                "layout": "stack",
+                "fields": [
+                    {
+                        "id": "method",
+                        "type": "select",
+                        "label": "方法",
+                        "value": "linear-window",
+                        "options": [
+                            {"value": "linear-window", "label": "恒流邻域线性回归"},
+                            {"value": "interpolation", "label": "恒流插值"},
+                        ],
+                    },
+                    {
+                        "id": "branch",
+                        "type": "select",
+                        "label": "扫描段",
+                        "value": "auto",
+                        "options": [
+                            {"value": "auto", "label": "自动"},
+                            {"value": "first", "label": "第一扫描段"},
+                            {"value": "second", "label": "第二扫描段"},
+                            {"value": "all", "label": "全部数据"},
+                        ],
+                    },
+                    {"id": "target-current", "type": "number", "label": "目标电流 / A", "value": 0.0, "step": "any"},
+                    {"id": "low-current", "type": "number", "label": "拟合下限 / A", "value": 0.0, "step": "any"},
+                    {"id": "high-current", "type": "number", "label": "拟合上限 / A", "value": 0.0, "step": "any"},
+                    {"id": "absolute-current", "type": "checkbox", "label": "使用 |I|", "value": True},
+                    {"id": "log-y", "type": "checkbox", "label": "对数显示", "value": True},
+                    {"id": "show-all-curves", "type": "checkbox", "label": "显示全部曲线", "value": True},
+                ],
+                "actionIds": ["analyze"],
+            },
         ],
     },
     "content": [
@@ -114,6 +202,7 @@ SPEC = {
             "id": "analysis-metrics",
             "items": [
                 {"id": "metric-vth", "label": "Vth", "value": "—"},
+                {"id": "metric-branch", "label": "扫描段", "value": "—"},
                 {"id": "metric-r2", "label": "R²", "value": "—"},
                 {"id": "metric-n", "label": "拟合点数", "value": "—"},
             ],
@@ -165,7 +254,7 @@ builder.add_portable_task(
             "column": {"role": "y"},
             "maxRows": 65536,
         },
-        "offset": {"kind": "parameter", "field": "offset"},
+        "branch": {"kind": "parameter", "field": "branch"},
     },
     result_plots=[
         {"id": "transfer-curve", "key": "points"},
@@ -175,6 +264,7 @@ builder.add_portable_task(
     ],
     result_metrics=[
         {"id": "metric-vth", "key": "vth"},
+        {"id": "metric-branch", "key": "branch"},
         {"id": "metric-r2", "key": "r2"},
         {"id": "metric-n", "key": "n"},
     ],
