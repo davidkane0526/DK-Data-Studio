@@ -42,10 +42,12 @@ function node(){
   assert(kinds.includes('metrics'),'Declarative schema must expose Metric composition.');
   assert(kinds.includes('result-split'),'Declarative schema must expose SplitPane result composition.');
   assert.deepStrictEqual(schema.properties.workspace.properties.mainLayout.enum,['stack-comfortable','fill-rows']);
+  assert(schema.properties.parameters.properties.groups,'Declarative schema must expose grouped control surfaces.');
+  assert(schema.properties.page.properties.actionIds,'Page action projection must be declarative.');
 
   const referenceBlueprint=blueprints.blueprints['transfer-vth-lab'];
   assert(referenceBlueprint,'Accepted production Vth blueprint must remain published as independent reconstruction evidence.');
-  for(const unit of ['page','pageHeader','workspace','layout','panel','metric','table','prime','scientificPlot','splitPane'])
+  for(const unit of ['page','pageHeader','workspace','layout','panel','header','toolbar','action','field','check','chip','note','metric','table','prime','scientificPlot','splitPane'])
     assert(referenceBlueprint.units.includes(unit),'Reference production blueprint lost required generic Unit: '+unit);
 
   const py=pythonCommand();
@@ -64,6 +66,14 @@ function node(){
     for(const token of [
       "units.layout.create(null,{variant:\"fill-rows\"})",
       'units.metric.create',
+      "units.panel.create(controlsHost,{variant:'headed'",
+      "units.panel.create(controlsHost,{variant:'plain',header:false",
+      'units.header.create',
+      'units.toolbar.create',
+      'units.chip.create',
+      'units.field.create',
+      'units.check.create',
+      'units.note.create',
       'units.panel.detached',
       "units.layout.apply",
       'units.header.create',
@@ -99,10 +109,12 @@ function node(){
     vm.runInContext(pluginSource,pluginSandbox,{filename:'plugin.js'});
     assert(registered&&typeof registered.factory==='function');
 
-    let actionRows=null,tableRows=null,plotSpec=null,splitSpec=null;
+    let pageHeaderSpec=null,tableRows=null,plotSpec=null,splitSpec=null;
+    const toolbarSpecs=[];
+    const panelSpecs=[];
     const metricValues=new Map();
     const units={
-      pageHeader:{create(_host,spec){actionRows=spec.actions;return {actions:node()};}},
+      pageHeader:{create(_host,spec){pageHeaderSpec=spec;return {actions:node()};}},
       page:{create(){return {element:node()};}},
       workspace:{create(){return {compose(){},dispose(){}};}},
       layout:{
@@ -110,12 +122,14 @@ function node(){
         apply(host){return host;}
       },
       panel:{
-        create(){return {element:node(),body:node()};},
-        detached(){return {element:node(),body:node()};}
+        create(_host,spec){panelSpecs.push(spec);return {element:node(),body:node(),header:{actions:node()}};},
+        detached(){return {element:node(),body:node(),header:{actions:node()}};}
       },
-      header:{create(){return {element:node()};}},
+      header:{create(){return {element:node(),actions:node()};}},
+      toolbar:{create(_host,spec){toolbarSpecs.push(spec);return {element:node()};}},
+      chip:{create(){return {element:node()};}},
       field:{create(_host,spec){return {control:{value:String(spec.value??'')}};}},
-      check:{create(){return {input:{checked:false}};}},
+      check:{create(_host,spec){return {input:{checked:Boolean(spec.checked)}};}},
       prime:{build(spec){return spec;}},
       note:{create(){return node();}},
       section:{create(){return {element:node(),body:node()};}},
@@ -167,9 +181,16 @@ function node(){
     assert.strictEqual(splitSpec.min,140);
     assert.strictEqual(splitSpec.reserve,300);
     assert.strictEqual(splitSpec.reflowBelow,920);
-    assert(Array.isArray(actionRows)&&actionRows.length===1);
+    assert(pageHeaderSpec,'Generated workbench must create the canonical PageHeader.');
+    assert.strictEqual(pageHeaderSpec.close,true);
+    assert.deepStrictEqual(pageHeaderSpec.actions.map(row=>row.id),['refresh','fit','settings']);
+    assert(panelSpecs.some(spec=>spec.variant==='headed'&&spec.title==='数据'),'Data control must contain a headed Data panel.');
+    assert(panelSpecs.some(spec=>spec.variant==='plain'&&spec.header===false),'Data control must contain a plain extraction panel.');
+    assert.strictEqual(toolbarSpecs.length,2,'Grouped control surfaces must create the declared Data and Extraction toolbars.');
+    assert.deepStrictEqual(toolbarSpecs[0].actions.map(row=>row.id),['refresh','demo']);
+    assert.deepStrictEqual(toolbarSpecs[1].actions.map(row=>row.id),['analyze']);
 
-    await actionRows[0].onInvoke();
+    await toolbarSpecs[1].actions[0].onInvoke();
 
     assert.deepStrictEqual(JSON.parse(JSON.stringify(tableRows)),[
       {x:0,y:1},{x:1,y:3},{x:2,y:5}
@@ -178,11 +199,12 @@ function node(){
       {x:0,y:1},{x:1,y:3},{x:2,y:5}
     ]);
     assert.strictEqual(metricValues.get('Vth').textContent,'-0.5');
+    assert.strictEqual(metricValues.get('扫描段').textContent,'auto');
     assert.strictEqual(metricValues.get('R²').textContent,'1');
     assert.strictEqual(metricValues.get('拟合点数').textContent,'3');
 
     activation?.deactivate?.();
-    console.log('Phase F Unit blueprint parity PASS: Python -> titleless PRIME + metric-grid + ScientificPlot + canonical SplitPane/Table; no production-plugin specialization.');
+    console.log('Phase F Unit blueprint parity PASS: grouped Data/Extraction controls + titleless PRIME + metric-grid + ScientificPlot + canonical SplitPane/Table; no production-plugin specialization.');
   }finally{
     fs.rmSync(temp,{recursive:true,force:true});
   }
