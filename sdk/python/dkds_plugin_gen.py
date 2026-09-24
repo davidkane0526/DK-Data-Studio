@@ -315,7 +315,7 @@ class PluginBuilder:
             else:
                 for group_index, group in enumerate(_expect_list(raw_groups, "parameters.groups")):
                     group = _expect_object(group, f"parameters.groups[{group_index}]")
-                    extra = sorted(set(group) - {"id", "title", "variant", "layout", "fieldLayout", "fields", "badge", "note", "actionIds", "tabs", "actionGrid", "toolbar", "table"})
+                    extra = sorted(set(group) - {"id", "title", "variant", "layout", "fieldLayout", "fields", "badge", "note", "actionIds", "tabs", "actionGrid", "toolbar", "parameterForm", "table"})
                     if extra:
                         raise SpecError(f"unsupported parameters.groups[{group_index}] fields: {', '.join(extra)}")
                     variant = str(group.get("variant", "headed"))
@@ -445,6 +445,45 @@ class PluginBuilder:
                             "actionIds": toolbar_actions,
                         }
 
+                    group_parameter_form = None
+                    if group.get("parameterForm") is not None:
+                        raw_form = _expect_object(group["parameterForm"], f"parameters.groups[{group_index}].parameterForm")
+                        extra = sorted(set(raw_form) - {"id", "fields", "compact", "autoFit", "layoutOwner"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].parameterForm fields: {', '.join(extra)}")
+                        form_fields = []
+                        allowed_form_types = {"text", "textarea", "formula", "number", "integer", "boolean", "select", "multiselect", "column", "columns", "color"}
+                        for form_index, form_field in enumerate(_expect_list(raw_form.get("fields"), f"parameters.groups[{group_index}].parameterForm.fields")):
+                            form_field = _expect_object(form_field, f"parameters.groups[{group_index}].parameterForm.fields[{form_index}]")
+                            extra = sorted(set(form_field) - {"id", "type", "label", "required", "default", "options", "min", "max", "visibleWhen"})
+                            if extra:
+                                raise SpecError(f"unsupported nested parameter-form field keys at {group_index}:{form_index}: {', '.join(extra)}")
+                            form_type = str(form_field.get("type", "text"))
+                            if form_type not in allowed_form_types:
+                                raise SpecError(f"parameters.groups[{group_index}].parameterForm.fields[{form_index}].type is unsupported")
+                            normalized_form_field = {
+                                "id": _ident(form_field.get("id"), f"parameters.groups[{group_index}].parameterForm.fields[{form_index}].id"),
+                                "type": form_type,
+                                "label": _nonempty(form_field.get("label"), f"parameters.groups[{group_index}].parameterForm.fields[{form_index}].label"),
+                                "required": bool(form_field.get("required", False)),
+                            }
+                            for key in ("default", "options", "min", "max", "visibleWhen"):
+                                if key in form_field:
+                                    normalized_form_field[key] = form_field[key]
+                            form_fields.append(normalized_form_field)
+                        if not form_fields:
+                            raise SpecError(f"parameters.groups[{group_index}].parameterForm.fields must not be empty")
+                        layout_owner = str(raw_form.get("layoutOwner", "unit"))
+                        if layout_owner not in {"unit", "presenter"}:
+                            raise SpecError(f"parameters.groups[{group_index}].parameterForm.layoutOwner must be unit or presenter")
+                        group_parameter_form = {
+                            "id": _ident(raw_form.get("id"), f"parameters.groups[{group_index}].parameterForm.id"),
+                            "fields": form_fields,
+                            "compact": bool(raw_form.get("compact", True)),
+                            "autoFit": bool(raw_form.get("autoFit", True)),
+                            "layoutOwner": layout_owner,
+                        }
+
                     group_table = None
                     if group.get("table") is not None:
                         raw_table = _expect_object(group["table"], f"parameters.groups[{group_index}].table")
@@ -479,8 +518,8 @@ class PluginBuilder:
                             "rows": table_rows,
                             "layout": table_layout,
                         }
-                    if not group_fields and note is None and not group_action_ids and tabs is None and action_grid is None and toolbar is None and group_table is None:
-                        raise SpecError(f"parameters.groups[{group_index}] must contain fields, note, or actions")
+                    if not group_fields and note is None and not group_action_ids and tabs is None and action_grid is None and toolbar is None and group_parameter_form is None and group_table is None:
+                        raise SpecError(f"parameters.groups[{group_index}] must contain fields, note, actions, parameterForm, or table")
                     groups.append({
                         "id": _ident(group.get("id"), f"parameters.groups[{group_index}].id"),
                         "title": _nonempty(group.get("title"), f"parameters.groups[{group_index}].title"),
@@ -494,6 +533,7 @@ class PluginBuilder:
                         "tabs": tabs,
                         "actionGrid": action_grid,
                         "toolbar": toolbar,
+                        "parameterForm": group_parameter_form,
                         "table": group_table,
                     })
                 if not groups:
@@ -1815,6 +1855,14 @@ class PluginBuilder:
                     lines.append(
                         f"    const {base}_legacy_toolbar=units.toolbar.create({base}_panel.body,{{variant:'ordinary',actions:{self._action_source(group['actionIds'])}}});"
                     )
+                if group.get("parameterForm") is not None:
+                    parameter_form = group["parameterForm"]
+                    parameter_form_base = _var(parameter_form["id"])
+                    lines += [
+                        f"    const {parameter_form_base}_host=units.layout.create({base}_panel.body,{{variant:'identity'}});",
+                        f"    const {parameter_form_base}_form=units.parameterForm.mount({parameter_form_base}_host,{{fields:{_js(parameter_form['fields'])}}},{{compact:{str(parameter_form['compact']).lower()},autoFit:{str(parameter_form['autoFit']).lower()},layoutOwner:{_js(parameter_form['layoutOwner'])}}});",
+                        f"    disposables.push({{dispose(){{try{{{parameter_form_base}_form?.destroy?.();}}catch{{}};try{{{parameter_form_base}_form?.dispose?.();}}catch{{}};}}}});",
+                    ]
                 if group.get("table") is not None:
                     table = group["table"]
                     lines += [
