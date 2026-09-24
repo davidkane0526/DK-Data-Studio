@@ -78,7 +78,7 @@ class PluginBuilder:
 
     def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         spec = _expect_object(raw, "spec")
-        allowed = {"schema", "plugin", "page", "workspace", "data", "actions", "parameters", "content"}
+        allowed = {"schema", "plugin", "page", "workspace", "data", "actions", "parameters", "interaction", "content"}
         extra = sorted(set(spec) - allowed)
         if extra:
             raise SpecError(f"unsupported top-level fields: {', '.join(extra)}")
@@ -213,6 +213,108 @@ class PluginBuilder:
                 "fields": fields,
             }
 
+        normalized_interaction = None
+        if spec.get("interaction") is not None:
+            interaction = _expect_object(spec["interaction"], "interaction")
+            extra = sorted(set(interaction) - {"id", "selection", "selectionLink"})
+            if extra:
+                raise SpecError(f"unsupported interaction fields: {', '.join(extra)}")
+            selection = _expect_object(interaction.get("selection", {}), "interaction.selection")
+            extra = sorted(set(selection) - {"multiple", "defaultType"})
+            if extra:
+                raise SpecError(f"unsupported interaction.selection fields: {', '.join(extra)}")
+            normalized_selection = {
+                "multiple": bool(selection.get("multiple", True)),
+                "defaultType": _nonempty(selection.get("defaultType", "data.series"), "interaction.selection.defaultType"),
+            }
+            selection_link = None
+            if interaction.get("selectionLink") is not None:
+                link = _expect_object(interaction["selectionLink"], "interaction.selectionLink")
+                extra = sorted(set(link) - {"enabled", "group", "acceptTypes"})
+                if extra:
+                    raise SpecError(f"unsupported interaction.selectionLink fields: {', '.join(extra)}")
+                accept_types = [_nonempty(value, "interaction.selectionLink.acceptTypes[]") for value in link.get("acceptTypes", [])]
+                selection_link = {
+                    "enabled": bool(link.get("enabled", True)),
+                    "group": _nonempty(link.get("group"), "interaction.selectionLink.group"),
+                    "acceptTypes": accept_types,
+                }
+            normalized_interaction = {
+                "id": _ident(interaction.get("id"), "interaction.id"),
+                "selection": normalized_selection,
+                "selectionLink": selection_link,
+            }
+
+        def normalize_plot_interaction(row: Dict[str, Any], name: str) -> Dict[str, Any]:
+            identity = None
+            if row.get("identity") is not None:
+                raw_identity = _expect_object(row["identity"], f"{name}.identity")
+                extra = sorted(set(raw_identity) - {"input", "entityType"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.identity fields: {', '.join(extra)}")
+                identity = {
+                    "input": _ident(raw_identity.get("input"), f"{name}.identity.input"),
+                    "entityType": _nonempty(raw_identity.get("entityType", "data.series"), f"{name}.identity.entityType"),
+                }
+            axes = None
+            if row.get("axisSemantics") is not None:
+                raw_axes = _expect_object(row["axisSemantics"], f"{name}.axisSemantics")
+                extra = sorted(set(raw_axes) - {"x", "y"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.axisSemantics fields: {', '.join(extra)}")
+                axes = {}
+                for axis in ("x", "y"):
+                    raw_axis = _expect_object(raw_axes.get(axis, {}), f"{name}.axisSemantics.{axis}")
+                    extra = sorted(set(raw_axis) - {"name", "unit", "dimension", "quantity"})
+                    if extra:
+                        raise SpecError(f"unsupported {name}.axisSemantics.{axis} fields: {', '.join(extra)}")
+                    axes[axis] = {
+                        "name": str(raw_axis.get("name", "")),
+                        "unit": str(raw_axis.get("unit", "")),
+                        "dimension": str(raw_axis.get("dimension", "")),
+                        "quantity": str(raw_axis.get("quantity", "")),
+                    }
+            viewport = None
+            if row.get("viewport") is not None:
+                raw_viewport = _expect_object(row["viewport"], f"{name}.viewport")
+                extra = sorted(set(raw_viewport) - {"link", "linkGroup", "linkedAxes"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.viewport fields: {', '.join(extra)}")
+                linked_axes = [str(axis).lower() for axis in raw_viewport.get("linkedAxes", ["x", "y"])]
+                if not linked_axes or any(axis not in {"x", "y"} for axis in linked_axes):
+                    raise SpecError(f"{name}.viewport.linkedAxes must contain x/y")
+                viewport = {
+                    "link": bool(raw_viewport.get("link", False)),
+                    "linkGroup": _nonempty(raw_viewport.get("linkGroup"), f"{name}.viewport.linkGroup"),
+                    "linkedAxes": list(dict.fromkeys(linked_axes)),
+                }
+            legend = None
+            if row.get("legend") is not None:
+                raw_legend = _expect_object(row["legend"], f"{name}.legend")
+                extra = sorted(set(raw_legend) - {"link", "linkGroup", "maxLinkedTargets"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.legend fields: {', '.join(extra)}")
+                max_targets = int(raw_legend.get("maxLinkedTargets", 24))
+                if max_targets < 1 or max_targets > 24:
+                    raise SpecError(f"{name}.legend.maxLinkedTargets must be in 1..24")
+                legend = {
+                    "link": bool(raw_legend.get("link", False)),
+                    "linkGroup": _nonempty(raw_legend.get("linkGroup"), f"{name}.legend.linkGroup"),
+                    "maxLinkedTargets": max_targets,
+                }
+            selection_target = str(row.get("selectionTarget", "series"))
+            if selection_target != "series":
+                raise SpecError(f"{name}.selectionTarget currently supports only stable series references")
+            if any(value is not None for value in (identity, axes, viewport, legend)) and normalized_interaction is None:
+                raise SpecError(f"{name} interaction policy requires top-level interaction")
+            return {
+                "selectionTarget": selection_target,
+                "identity": identity,
+                "axisSemantics": axes,
+                "viewport": viewport,
+                "legend": legend,
+            }
+
         content = []
         for index, row in enumerate(_expect_list(spec.get("content"), "content")):
             row = _expect_object(row, f"content[{index}]")
@@ -226,7 +328,7 @@ class PluginBuilder:
                     raise SpecError(f"content[{index}].variant is invalid")
                 content.append({"kind": "note", "text": str(row.get("text", "")), "variant": note_variant})
             elif kind == "plot":
-                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points"})
+                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
                 if extra:
                     raise SpecError(f"unsupported plot fields at {index}: {', '.join(extra)}")
                 points = []
@@ -245,6 +347,7 @@ class PluginBuilder:
                     "yTitle": str(row.get("yTitle", "")),
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
+                    **normalize_plot_interaction(row, f"content[{index}]"),
                 })
             elif kind == "plot-group":
                 extra = sorted(set(row) - {"kind", "id", "title", "columns", "maxColumns", "minItemWidth", "density", "responsive", "plots"})
@@ -265,7 +368,7 @@ class PluginBuilder:
                 plots = []
                 for p_index, plot in enumerate(_expect_list(row.get("plots"), f"content[{index}].plots")):
                     plot = _expect_object(plot, f"content[{index}].plots[{p_index}]")
-                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points"})
+                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
                     if extra:
                         raise SpecError(f"unsupported plot-group plot fields at {index}:{p_index}: {', '.join(extra)}")
                     points = []
@@ -283,6 +386,7 @@ class PluginBuilder:
                         "yTitle": str(plot.get("yTitle", "")),
                         "source": str(plot.get("source") or plot.get("id")),
                         "points": points,
+                        **normalize_plot_interaction(plot, f"content[{index}].plots[{p_index}]"),
                     })
                 if len(plots) < 2:
                     raise SpecError(f"content[{index}].plots must contain at least two plots")
@@ -340,6 +444,7 @@ class PluginBuilder:
             "data": normalized_data,
             "actions": actions,
             "parameters": parameters,
+            "interaction": normalized_interaction,
             "content": content,
         }
 
