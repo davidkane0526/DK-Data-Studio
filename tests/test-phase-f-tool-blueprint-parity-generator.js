@@ -17,6 +17,11 @@ const pulseProduction=fs.readFileSync(path.join(root,'src','plugins','pulse-samp
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
+function sdkAtLeast(actual,minimum){
+  const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);
+  for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}
+  return true;
+}
 function pythonCommand(){
   const candidates=process.platform==='win32'?[['python',[]],['py',['-3']]]:[['python3',[]],['python',[]]];
   for(const [cmd,prefix] of candidates){
@@ -35,7 +40,7 @@ function node(){
 }
 
 (async()=>{
-  assert.strictEqual(sdk.sdkVersion,'1.51.54','Second production tool blueprint parity remains valid under the SDK 1.51.54 authoring contract.');
+  assert(sdkAtLeast(sdk.sdkVersion,'1.51.54'),'Second production tool blueprint parity requires SDK 1.51.54+.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Second blueprint parity must consume the frozen Unit 2.5.38 contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
   const pulse=blueprints.blueprints['pulse-sampler-tool'];

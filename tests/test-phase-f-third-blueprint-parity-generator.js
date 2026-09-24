@@ -15,6 +15,11 @@ const sdk=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
+function sdkAtLeast(actual,minimum){
+  const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);
+  for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}
+  return true;
+}
 function pythonCommand(){
   const candidates=process.platform==='win32'?[['python',[]],['py',['-3']]]:[['python3',[]],['python',[]]];
   for(const [cmd,prefix] of candidates){
@@ -28,7 +33,7 @@ const kinds=schema.properties.content.items.oneOf.map(row=>row?.properties?.kind
 for(const kind of ['summary','empty-state','list','plot-view'])
   assert(kinds.includes(kind),'Declarative schema missing generic content kind: '+kind);
 
-assert.strictEqual(sdk.sdkVersion,'1.51.54','Third production blueprint parity requires the SDK 1.51.54 authoring contract.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.54'),'Third production blueprint parity requires SDK 1.51.54+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 const pulse=blueprints.blueprints['pulse-analysis'];
 assert(pulse,'Pulse Analysis production blueprint must remain published as external parity evidence.');
