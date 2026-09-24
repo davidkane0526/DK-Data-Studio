@@ -2153,6 +2153,49 @@
             "items": {
               "$ref": "#/$defs/surfaceNode"
             }
+          },
+          "detailGeometry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "contentInsetPx": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 96
+              },
+              "minContentInlinePx": {
+                "type": "integer",
+                "minimum": 120,
+                "maximum": 2400
+              },
+              "minContentBlockPx": {
+                "type": "integer",
+                "minimum": 80,
+                "maximum": 2400
+              }
+            }
+          },
+          "lifecycle": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "onOpenCommand": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "onShowCommand": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "onCloseCommand": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "onPlacementChangedCommand": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              }
+            }
           }
         }
       }
@@ -2585,6 +2628,125 @@
               "items": {
                 "type": "object"
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "status"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "variant": {
+              "type": "string",
+              "minLength": 1,
+              "default": "text"
+            },
+            "text": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "actionId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "action"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "actionId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "floating-chrome"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "variant": {
+              "type": "string",
+              "minLength": 1,
+              "default": "ordinary"
+            },
+            "actionIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "scientific-plot"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "plotVariant": {
+              "enum": [
+                "curve",
+                "heatmap",
+                "scalar-field"
+              ],
+              "default": "curve"
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "renderOwner": {
+              "const": "runtime",
+              "default": "runtime"
+            },
+            "xTitle": {
+              "type": "string"
+            },
+            "yTitle": {
+              "type": "string"
             }
           }
         }

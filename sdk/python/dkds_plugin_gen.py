@@ -924,6 +924,66 @@ class PluginBuilder:
                     "layout": _nonempty(node.get("layout", "scroll-pane"), f"{name}.layout"),
                 }
 
+            if kind == "status":
+                extra = sorted(set(node) - {"kind", "id", "variant", "text", "state"})
+                if extra:
+                    raise SpecError(f"unsupported {name} status fields: {', '.join(extra)}")
+                return {
+                    "kind": "status",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "text"), f"{name}.variant"),
+                    "text": str(node.get("text", "")),
+                    "state": str(node.get("state", "")),
+                }
+
+            if kind == "action":
+                extra = sorted(set(node) - {"kind", "id", "actionId"})
+                if extra:
+                    raise SpecError(f"unsupported {name} action fields: {', '.join(extra)}")
+                action_id = _ident(node.get("actionId"), f"{name}.actionId")
+                if action_id not in action_ids:
+                    raise SpecError(f"{name}.actionId references unknown action: {action_id}")
+                return {
+                    "kind": "action",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "actionId": action_id,
+                }
+
+            if kind == "floating-chrome":
+                extra = sorted(set(node) - {"kind", "id", "variant", "actionIds"})
+                if extra:
+                    raise SpecError(f"unsupported {name} floating-chrome fields: {', '.join(extra)}")
+                action_ids_local = [_ident(value, f"{name}.actionIds[]") for value in node.get("actionIds", [])]
+                unknown = [action_id for action_id in action_ids_local if action_id not in action_ids]
+                if unknown:
+                    raise SpecError(f"{name}.actionIds references unknown actions: {', '.join(unknown)}")
+                return {
+                    "kind": "floating-chrome",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "ordinary"), f"{name}.variant"),
+                    "actionIds": action_ids_local,
+                }
+
+            if kind == "scientific-plot":
+                extra = sorted(set(node) - {"kind", "id", "plotVariant", "source", "renderOwner", "xTitle", "yTitle"})
+                if extra:
+                    raise SpecError(f"unsupported {name} scientific-plot fields: {', '.join(extra)}")
+                variant = str(node.get("plotVariant", "curve"))
+                if variant not in {"curve", "heatmap", "scalar-field"}:
+                    raise SpecError(f"{name}.plotVariant must be curve, heatmap or scalar-field")
+                render_owner = str(node.get("renderOwner", "runtime"))
+                if render_owner != "runtime":
+                    raise SpecError(f"{name}.renderOwner currently supports runtime only inside generic surfaces")
+                return {
+                    "kind": "scientific-plot",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "plotVariant": variant,
+                    "source": _nonempty(node.get("source", node.get("id")), f"{name}.source"),
+                    "renderOwner": render_owner,
+                    "xTitle": str(node.get("xTitle", "")),
+                    "yTitle": str(node.get("yTitle", "")),
+                }
+
             raise SpecError(f"{name}.kind is not in the bounded public surface vocabulary")
 
         surfaces = []
@@ -932,7 +992,7 @@ class PluginBuilder:
             extra = sorted(set(surface) - {
                 "id", "label", "role", "presentationRole", "presentationPurpose", "semanticKind",
                 "priority", "order", "collapsible", "fixed", "embedded", "autoOpen", "defaultPlacement",
-                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "children"
+                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "detailGeometry", "lifecycle", "children"
             })
             if extra:
                 raise SpecError(f"unsupported surfaces[{surface_index}] fields: {', '.join(extra)}")
@@ -958,6 +1018,47 @@ class PluginBuilder:
                 fixed = False
                 default_placement = ""
                 placements = []
+            detail_geometry = None
+            if surface.get("detailGeometry") is not None:
+                raw_geometry = _expect_object(surface["detailGeometry"], f"surfaces[{surface_index}].detailGeometry")
+                extra = sorted(set(raw_geometry) - {"contentInsetPx", "minContentInlinePx", "minContentBlockPx"})
+                if extra:
+                    raise SpecError(f"unsupported surfaces[{surface_index}].detailGeometry fields: {', '.join(extra)}")
+                if role != "prime":
+                    raise SpecError(f"surfaces[{surface_index}].detailGeometry is only valid for PRIME surfaces")
+                detail_geometry = {}
+                bounds = {
+                    "contentInsetPx": (0, 96),
+                    "minContentInlinePx": (120, 2400),
+                    "minContentBlockPx": (80, 2400),
+                }
+                for key, bounds_row in bounds.items():
+                    if raw_geometry.get(key) is None:
+                        continue
+                    value = int(raw_geometry[key])
+                    if value < bounds_row[0] or value > bounds_row[1]:
+                        raise SpecError(f"surfaces[{surface_index}].detailGeometry.{key} must be in {bounds_row[0]}..{bounds_row[1]}")
+                    detail_geometry[key] = value
+                if not detail_geometry:
+                    detail_geometry = None
+
+            lifecycle = None
+            if surface.get("lifecycle") is not None:
+                raw_lifecycle = _expect_object(surface["lifecycle"], f"surfaces[{surface_index}].lifecycle")
+                extra = sorted(set(raw_lifecycle) - {"onOpenCommand", "onShowCommand", "onCloseCommand", "onPlacementChangedCommand"})
+                if extra:
+                    raise SpecError(f"unsupported surfaces[{surface_index}].lifecycle fields: {', '.join(extra)}")
+                lifecycle = {}
+                for key in ("onOpenCommand", "onShowCommand", "onCloseCommand", "onPlacementChangedCommand"):
+                    if raw_lifecycle.get(key) is not None:
+                        lifecycle[key] = _ident(raw_lifecycle[key], f"surfaces[{surface_index}].lifecycle.{key}")
+                if role == "sub" and any(key in lifecycle for key in ("onOpenCommand", "onCloseCommand", "onPlacementChangedCommand")):
+                    raise SpecError(f"surfaces[{surface_index}] SUB lifecycle supports onShowCommand only")
+                if role == "prime" and "onShowCommand" in lifecycle:
+                    raise SpecError(f"surfaces[{surface_index}] PRIME lifecycle uses onOpenCommand, not onShowCommand")
+                if not lifecycle:
+                    lifecycle = None
+
             children = [
                 normalize_surface_node(child, f"surfaces[{surface_index}].children[{index}]")
                 for index, child in enumerate(_expect_list(surface.get("children"), f"surfaces[{surface_index}].children"))
@@ -984,6 +1085,8 @@ class PluginBuilder:
                 "keepLeft": bool(surface.get("keepLeft", False)),
                 "persistent": bool(surface.get("persistent", True)),
                 "layout": _nonempty(surface.get("layout", "stack-comfortable"), f"surfaces[{surface_index}].layout"),
+                "detailGeometry": detail_geometry,
+                "lifecycle": lifecycle,
                 "children": children,
             })
         if len({surface["id"] for surface in surfaces}) != len(surfaces):
@@ -1967,7 +2070,7 @@ class PluginBuilder:
                 stack.extend(node.get("children", []))
 
         normalized_surface_nodes = list(surface_nodes())
-        has_plot = any(row["kind"] in {"plot", "plot-view", "plot-group", "result-split"} for row in self.spec["content"])
+        has_plot = any(row["kind"] in {"plot", "plot-view", "plot-group", "result-split"} for row in self.spec["content"]) or any(node["kind"] == "scientific-plot" for node in normalized_surface_nodes)
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
         has_plot_view = any(row["kind"] == "plot-view" for row in self.spec["content"])
         parameter_groups = (self.spec.get("parameters") or {}).get("groups", [])
@@ -1990,6 +2093,7 @@ class PluginBuilder:
         has_artifact_output = any(bool(task["publish_tables"]) for task in self._portable_tasks)
         has_interaction = self.spec.get("interaction") is not None
         has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
+        has_surface_lifecycle_commands = any(bool(surface.get("lifecycle")) for surface in self.spec.get("surfaces", []))
         has_stable_plot_identity = any(
             plot.get("identity") is not None
             for row in self.spec["content"]
@@ -2025,7 +2129,7 @@ class PluginBuilder:
         if has_interaction:
             requires.extend(["ui.selection", "ui.interaction"])
             capabilities.append("ui.interaction")
-        if has_domain_commands:
+        if has_domain_commands or has_surface_lifecycle_commands:
             requires.append("execution.commands")
         if has_artifact_input:
             requires.extend(["data.sources", "data.artifacts"])
@@ -2360,6 +2464,34 @@ class PluginBuilder:
             ]
             return lines
 
+        if kind == "status":
+            parts = [f"variant:{_js(node['variant'])}", f"text:{_js(node['text'])}"]
+            if node["state"]:
+                parts.append(f"state:{_js(node['state'])}")
+            lines.append(f"    const {base}=units.status.create({host},{{{','.join(parts)}}});")
+            return lines
+
+        if kind == "action":
+            action = next(row for row in self.spec["actions"] if row["id"] == node["actionId"])
+            variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
+            lines.append(
+                f"    const {base}=units.action.create({host},{{id:{_js(node['actionId'])},label:{_js(action['label'])}{variant},direct:true,onInvoke:{self._action_invoke_source(node['actionId'])}}});"
+            )
+            return lines
+
+        if kind == "floating-chrome":
+            lines.append(
+                f"    const {base}=units.floatingChrome.create({host},{{variant:{_js(node['variant'])},actions:{self._action_source(node['actionIds'])}}});"
+            )
+            return lines
+
+        if kind == "scientific-plot":
+            lines += [
+                f"    const {base}=units.scientificPlot.create({host},{{variant:{_js(node['plotVariant'])},source:{_js(node['source'])},renderOwner:'runtime',xTitle:{_js(node['xTitle'])},yTitle:{_js(node['yTitle'])}}});",
+                f"    disposables.push({base});",
+            ]
+            return lines
+
         raise SpecError(f"unsupported normalized surface node kind: {kind}")
 
     def _surface_source(self) -> List[str]:
@@ -2381,6 +2513,12 @@ class PluginBuilder:
                     + f"collapsible:{str(surface['collapsible']).lower()},fixed:{str(surface['fixed']).lower()},embedded:{str(surface['embedded']).lower()},"
                     + f"existingNode:{root},sizing:{_js(surface['sizing'])},autoOpen:{str(surface['autoOpen']).lower()},"
                     + f"defaultPlacement:{_js(surface['defaultPlacement'])},placements:{_js(surface['placements'])},stateVersion:{_js(surface['stateVersion'])}"
+                    + (f",detailGeometry:{_js(surface['detailGeometry'])}" if surface.get("detailGeometry") else "")
+                    + (
+                        (f",mount:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onOpenCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onOpenCommand'])},{{surfaceId:{_js(surface['id'])},event:'open'}});}}" if surface.get("lifecycle", {}).get("onOpenCommand") else "")
+                        + (f",onClose:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onCloseCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onCloseCommand'])},{{surfaceId:{_js(surface['id'])},event:'close'}});}}" if surface.get("lifecycle", {}).get("onCloseCommand") else "")
+                        + (f",onPlacementChanged:placement=>{{if(ctx.commands.get({_js(surface['lifecycle']['onPlacementChangedCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onPlacementChangedCommand'])},{{surfaceId:{_js(surface['id'])},event:'placement',placement:String(placement?.placement||placement||'')}});}}" if surface.get("lifecycle", {}).get("onPlacementChangedCommand") else "")
+                    )
                     + "});"
                 )
                 lines.append(f"    primes.push({prime});")
@@ -2388,8 +2526,9 @@ class PluginBuilder:
                 lines.append(
                     "    subs.push({"
                     + f"id:{_js(surface['id'])},label:{_js(surface['label'])},presentationRole:{_js(surface['presentationRole'])},"
-                    + f"semanticKind:{_js(surface['semanticKind'])},order:{surface['order']},keepLeft:{str(surface['keepLeft']).lower()},"
+                    + f"semanticKind:{_js(surface['semanticKind'])},priority:{surface['priority']},order:{surface['order']},collapsible:{str(surface['collapsible']).lower()},keepLeft:{str(surface['keepLeft']).lower()},"
                     + f"persistent:{str(surface['persistent']).lower()},existingNode:{root}"
+                    + (f",onShow:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onShowCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onShowCommand'])},{{surfaceId:{_js(surface['id'])},event:'show'}});}}" if surface.get("lifecycle", {}).get("onShowCommand") else "")
                     + "});"
                 )
         return lines
