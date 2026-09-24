@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-tool-blueprint-parity-generator.js",
       "args": []
     },
@@ -2058,6 +2062,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-tool-blueprint-parity-generator.js",
       "args": []
