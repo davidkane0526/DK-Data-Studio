@@ -741,24 +741,35 @@ class PluginBuilder:
         lines: List[str] = []
         action_lookup = {row["id"]: row for row in self.spec["actions"]}
         table_lookup = {row["id"]: row for row in self.spec["content"] if row["kind"] == "table"}
+        plot_lookup: Dict[str, Dict[str, Any]] = {}
+        for content_row in self.spec["content"]:
+            if content_row["kind"] == "plot":
+                plot_lookup[content_row["id"]] = content_row
+            elif content_row["kind"] == "plot-group":
+                for plot in content_row["plots"]:
+                    plot_lookup[plot["id"]] = plot
+
         for row in self._portable_tasks:
             compiled: CompiledPortableTask = row["compiled"]
             handler = self._task_handler_name(compiled.task_id)
             action = action_lookup[row["action_id"]]
             lines += [
-                f"    async function {handler}(){{",
+                f"    async function {handler}(__dkdsCommandArgs=null){{",
                 f"      ctx.status.set({_js(action['statusMessage'])});",
                 "      try{",
+                "        const __dkdsCanonical=(__dkdsCommandArgs&&typeof __dkdsCommandArgs==='object')?__dkdsCommandArgs:null;",
                 "        const __dkdsPayload={};",
                 "        const __dkdsParameters={};",
                 "        const __dkdsSourceIds=[];",
+                "        const __dkdsPublishedIds=[];",
             ]
             for argument, binding in row["input_bindings"].items():
                 if binding["kind"] == "parameter":
-                    expression = self._field_read_expr(binding["field"])
+                    field_id = binding["field"]
+                    expression = self._field_read_expr(field_id)
                     lines += [
-                        f"        __dkdsPayload[{_js(argument)}]={expression};",
-                        f"        __dkdsParameters[{_js(argument)}]=__dkdsPayload[{_js(argument)}];",
+                        f"        __dkdsPayload[{_js(argument)}]=(__dkdsCanonical?.parameters&&Object.prototype.hasOwnProperty.call(__dkdsCanonical.parameters,{_js(field_id)}))?__dkdsCanonical.parameters[{_js(field_id)}]:{expression};",
+                        f"        __dkdsParameters[{_js(field_id)}]=__dkdsPayload[{_js(argument)}];",
                     ]
                     continue
                 source = binding["source"]
@@ -770,7 +781,8 @@ class PluginBuilder:
                     + ("true" if source["includeExcluded"] else "!row?.excluded")
                     + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
                     + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
-                    f"        const __dkdsSource_{token}=__dkdsSources_{token}[{source['index']}];",
+                    f"        const __dkdsExplicitSource_{token}=String(__dkdsCanonical?.sources?.[{_js(argument)}]||'');",
+                    f"        const __dkdsSource_{token}=__dkdsExplicitSource_{token}?__dkdsSources_{token}.find(row=>String(row?.artifactId||'')===__dkdsExplicitSource_{token}):__dkdsSources_{token}[{source['index']}];",
                     f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('No scoped source matches artifact binding for '+argument)});",
                     f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
                     f"        const __dkdsMatches_{token}=__dkdsColumns_{token}.filter(column=>Object.entries({_js(column)}).every(([key,value])=>String(column?.[key]??'')===String(value)));",
@@ -782,6 +794,17 @@ class PluginBuilder:
                     f"        __dkdsPayload[{_js(argument)}]=__dkdsRange_{token}?Array.from(__dkdsRange_{token}.values||[]):[];",
                     f"        if(!__dkdsSourceIds.includes(String(__dkdsSource_{token}.artifactId)))__dkdsSourceIds.push(String(__dkdsSource_{token}.artifactId));",
                 ]
+                for projection in row["result_plots"]:
+                    plot = plot_lookup[projection["id"]]
+                    identity = plot.get("identity")
+                    if not identity or identity["input"] != argument:
+                        continue
+                    base = _var(projection["id"])
+                    lines += [
+                        f"        {base}_artifact_id=String(__dkdsSource_{token}.artifactId);",
+                        f"        {base}_series_id=String(__dkdsColumn_{token}.id||__dkdsColumn_{token}.key||'');",
+                        f"        {base}_artifact_revision=Number(__dkdsColumn_{token}.artifactRevision??__dkdsSource_{token}.artifactRevision??0)||0;",
+                    ]
             lines += [
                 f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},__dkdsPayload,{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
                 "        const result=await handle.promise;",
@@ -824,15 +847,69 @@ class PluginBuilder:
                     + f"lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}"
                     + "});",
                     f"        ctx.data.artifacts.publish({token});",
+                    f"        __dkdsPublishedIds.push(String({token}.id));",
                 ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
-                "        return true;",
+                "        " + ("return {taskResult:result,artifactIds:__dkdsPublishedIds.slice(),sourceIds:__dkdsSourceIds.slice()};" if row.get("domain_command") else "return true;"),
                 "      }catch(error){",
                 "        ctx.status.set(String(error?.message||error||'任务失败'));",
                 "        throw error;",
                 "      }",
                 "    }",
+            ]
+        return lines
+
+    def _command_registration_source(self) -> List[str]:
+        lines: List[str] = []
+        for row in self._portable_tasks:
+            command = row.get("domain_command")
+            if not command:
+                continue
+            compiled: CompiledPortableTask = row["compiled"]
+            handler = self._task_handler_name(compiled.task_id)
+            capture = "capture_" + re.sub(r"[^A-Za-z0-9_]", "_", command["id"])
+            lines += [
+                f"    function {capture}(payload={{}}){{",
+                "      const explicit=(payload&&typeof payload==='object')?payload:{};",
+                "      const sources={...(explicit.sources&&typeof explicit.sources==='object'?explicit.sources:{})};",
+                "      const parameters={...(explicit.parameters&&typeof explicit.parameters==='object'?explicit.parameters:{})};",
+            ]
+            for argument, binding in row["input_bindings"].items():
+                if binding["kind"] == "parameter":
+                    field_id = binding["field"]
+                    expression = self._field_read_expr(field_id)
+                    lines.append(
+                        f"      if(!Object.prototype.hasOwnProperty.call(parameters,{_js(field_id)}))parameters[{_js(field_id)}]={expression};"
+                    )
+                    continue
+                source = binding["source"]
+                token = re.sub(r"[^A-Za-z0-9_]", "_", argument)
+                lines += [
+                    f"      if(!String(sources[{_js(argument)}]||'')){{",
+                    f"        const __dkdsCaptureSources_{token}=ctx.data.sources.list().filter(row=>"
+                    + ("true" if source["includeExcluded"] else "!row?.excluded")
+                    + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
+                    + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
+                    f"        const __dkdsCaptureSource_{token}=__dkdsCaptureSources_{token}[{source['index']}];",
+                    f"        if(!__dkdsCaptureSource_{token}?.artifactId)throw new Error({_js('No scoped source matches domain-command binding for '+argument)});",
+                    f"        sources[{_js(argument)}]=String(__dkdsCaptureSource_{token}.artifactId);",
+                    "      }",
+                ]
+            algorithm = command["algorithm"]
+            provider_expr = _js(algorithm["provider"]) if algorithm["provider"] else "manifest.id+'@'+manifest.version"
+            lines += [
+                "      return {sources,parameters};",
+                "    }",
+                f"    ctx.commands.register({_js(command['id'])},payload=>{handler}(payload),{{domainCommand:{{",
+                f"      domain:{_js(command['domain'])},version:{_js(command['version'])},title:{_js(command['title'])},description:{_js(command['description'])},replayable:{str(command['replayable']).lower()},destructive:{str(command['destructive']).lower()},",
+                "      inputSchema:{type:'object',properties:{sources:{type:'object'},parameters:{type:'object'}},additionalProperties:false},",
+                f"      captureArgs:payload=>{capture}(payload),",
+                "      inputs:args=>[...new Set(Object.values(args?.sources||{}).map(String).filter(Boolean))].map(artifactId=>({artifactId,role:'input'})),",
+                f"      algorithm:()=>({{category:{_js(algorithm['category'])},id:{_js(algorithm['id'])},version:{_js(algorithm['version'])},provider:{provider_expr}}}),",
+                "      parameters:args=>args?.parameters||{},",
+                "      outputs:result=>(result?.artifactIds||[]).map(artifactId=>({artifactId,role:'result'}))",
+                "    }}});",
             ]
         return lines
 
