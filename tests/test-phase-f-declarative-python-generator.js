@@ -16,6 +16,7 @@ const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
 assert.strictEqual(schema.properties.schema.const,'dkds.declarative-plugin.v1');
 assert(schema.properties.content.items.oneOf.some(row=>row?.properties?.kind?.const==='table'),'Declarative schema v1 must expose the canonical Unit table content kind.');
+assert(schema.properties.content.items.oneOf.some(row=>row?.properties?.kind?.const==='plot-group'),'Declarative schema v1 must expose the canonical Unit PlotGroup content kind.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Phase F generator must consume the frozen Unit contract, not advance it.');
 assert(fs.existsSync(generator),'Python generator must exist.');
 assert(fs.existsSync(reference),'Python reference authoring script must exist.');
