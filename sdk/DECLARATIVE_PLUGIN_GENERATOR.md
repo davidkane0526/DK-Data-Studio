@@ -410,3 +410,19 @@ All action surfaces reuse the same action-to-Task/Command/status invocation mapp
 The executable reference is \`examples/declarative-python-tool-blueprint-parity\`. Its gate compares the generated public Unit vocabulary with the accepted Pulse Sampler blueprint and production Unit presentation as independent evidence, then executes the generated Tool host and verifies Workspace 540/520/520 preferences, compact Tabs, form-grid-2, action-grid-4, segment Toolbar, parameter Table, and PRIME priority/embedded/auto-open metadata.
 
 This proof does not copy Pulse Sampler live-domain/state, waveform generation, steady-state extraction Task, private DOM hooks or plugin-specific presentation logic. Python remains authoring-time only and the generated runtime stays on existing Plugin API 1.19 + Unit/Core contracts.
+
+
+## Third production scientific blueprint parity — SDK 1.51.54
+
+SDK 1.51.54 extends the declarative authoring vocabulary with four existing public Units that are important for production scientific workbenches:
+
+- \`summary\` -> Unit Summary (\`row\` or \`strip\`);
+- \`list\` -> retained Unit List with canonical leading/title/meta item anatomy;
+- \`empty-state\` -> Unit EmptyState;
+- \`plot-view\` -> portable Unit PlotView wrapping the existing Unit ScientificPlot.
+
+A declarative PlotView owns only bounded public authoring preferences such as placements, default placement and content min/max height. Portable lifecycle, plot chrome, export actions and move/dock behavior remain owned by Core PlotView/Portable; rendering and scientific interaction remain owned by ScientificPlot.
+
+The executable reference is \`examples/declarative-python-pulse-analysis-parity\`. The accepted production Pulse Analysis blueprint is used only as independent structural evidence that these Units are required by a real first-party scientific workflow. The generated reference deliberately contains no Pulse batch controller, segmentation/read-window algorithm, production DOM ids, plugin CSS, feature runtime or Presenter branch.
+
+This is the third independent production-shaped reconstruction gate after the Vth-style scientific workbench and Pulse Sampler-style Tool designer. Python remains authoring-time only and Unit Templates remain unchanged.
