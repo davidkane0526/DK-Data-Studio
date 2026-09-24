@@ -27,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for live ScientificPlot binding gate.');
 }
 
-assert(sdkAtLeast(sdk.sdkVersion,'1.51.63'),'Live ScientificPlot curve-array projection requires SDK 1.51.63+.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.64'),'Live ScientificPlot curve-array projection requires SDK 1.51.64+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -40,7 +40,7 @@ const spec={
   domainAdapter:{ref:'builtin.example/live',dependency:'builtin.example'},
   content:[{
     kind:'plot',id:'main',title:'Main',xTitle:'Voltage',yTitle:'Current',source:'example:main',renderOwner:'unit',
-    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction'}
+    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction',selectAction:'selectCurve'}
   }]
 };
 
@@ -64,6 +64,8 @@ try{
   assert(source.includes('if(Number.isFinite(colorValue))curve.colorValue=colorValue'),'Optional numeric color projection must remain bounded.');
   assert(source.includes('if(Number.isFinite(direction))curve.direction=direction'),'Optional direction projection must remain bounded.');
   assert(source.includes("g_main_surface.requestRender?.('domain-adapter')"),'Snapshot refresh must ask the existing ScientificPlot owner to render.');
+  assert(source.includes('onCurveSelect:({curve})=>{const id=String(curve?.id||\'\');if(id&&liveDomain?.available?.())void liveDomain.invoke("selectCurve",{id})'),'Curve selection must route only the projected curve id to the declared Domain Adapter action.');
+  assert(!/selectedCurve\s*=|selectedSweep\s*=/.test(source),'Generated live plot must not own a duplicate domain selection state.');
   assert(!/visibleSweepIds|resonance|querySelector|document\./.test(source),'Generic generated plot must not implement domain visibility logic or private DOM access.');
   assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.scientific-plot'));
   assert.deepStrictEqual(manifest.pluginDependencies,[{id:'builtin.example'}]);
