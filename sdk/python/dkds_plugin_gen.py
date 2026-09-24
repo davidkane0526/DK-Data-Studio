@@ -2421,23 +2421,59 @@ class PluginBuilder:
 
     def _parameter_field_source(self, field: Dict[str, Any], host: str) -> List[str]:
         name = _var(field["id"])
+        binding = field.get("binding")
+        on_change = ""
+        if binding:
+            static_args = _js(binding["staticArgs"])
+            argument_key = _js(binding["argumentKey"])
+            action_id = _js(binding["domainAction"])
+            if field["type"] == "checkbox":
+                value_expr = "!!event?.target?.checked"
+            elif field["type"] == "number":
+                value_expr = "(()=>{const raw=String(event?.target?.value??'');if(raw==='')return null;const value=Number(raw);return Number.isFinite(value)?value:null;})()"
+            else:
+                value_expr = "String(event?.target?.value??'')"
+            on_change = (
+                ",onChange:event=>{const value=" + value_expr + ";"
+                + "void liveDomain.invoke(" + action_id + ",{..." + static_args + ",[" + argument_key + "]:value})"
+                + ".catch(error=>ctx.status.set(String(error?.message||error||'领域更新失败')));}"
+            )
+
         if field["type"] == "checkbox":
             checked = bool(field.get("value", False))
-            return [
-                f"    const {name}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}}});"
+            lines = [
+                f"    const {name}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}{on_change}}});"
             ]
+            if binding:
+                raw = self._live_binding_read_source(binding)
+                lines.append(f"    liveBindings.push(state=>{{const raw={raw};{name}.input.checked=Boolean(raw);}});")
+            return lines
+
         if field["type"] == "select":
             value = field.get("value", field["options"][0]["value"])
-            return [
-                f"    const {name}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}}});"
+            lines = [
+                f"    const {name}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}{on_change}}});"
             ]
+            if binding:
+                raw = self._live_binding_read_source(binding)
+                fallback = _js(value)
+                lines.append(f"    liveBindings.push(state=>{{const raw={raw};{name}.control.value=String(raw??{fallback});}});")
+            return lines
+
         input_type = "number" if field["type"] == "number" else "text"
         parts = ["variant:'input'", f"label:{_js(field['label'])}", f"inputType:{_js(input_type)}"]
         if "value" in field:
             parts.append(f"value:{_js(field['value'])}")
         if field["type"] == "number":
             parts.append(f"step:{_js(field.get('step', 'any'))}")
-        return [f"    const {name}=units.field.create({host},{{{','.join(parts)}}});"]
+        if on_change:
+            parts.append(on_change[1:])
+        lines = [f"    const {name}=units.field.create({host},{{{','.join(parts)}}});"]
+        if binding:
+            raw = self._live_binding_read_source(binding)
+            fallback = _js(field.get("value", ""))
+            lines.append(f"    liveBindings.push(state=>{{const raw={raw};{name}.control.value=String(raw??{fallback});}});")
+        return lines
 
     def _parameter_source(self) -> List[str]:
         parameters = self.spec.get("parameters")
