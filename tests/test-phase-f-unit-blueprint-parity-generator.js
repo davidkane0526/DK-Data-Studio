@@ -91,6 +91,10 @@ function node(){
     assert(manifest.requiresCore.includes('execution.tasks'));
     assert(manifest.requiresCore.includes('data.sources'));
     assert(manifest.requiresCore.includes('data.artifacts'));
+    assert.strictEqual(manifest.workspace?.role,'top');
+    assert.strictEqual(manifest.workspace?.activity,'generated-unit-blueprint-parity');
+    assert.strictEqual(manifest.window?.activity,'generated-unit-blueprint-parity');
+    assert(manifest.window?.dependencies?.includes('scientific-renderer'));
 
     const validation=spawnSync(process.execPath,[validator,'validate',generated],{cwd:root,encoding:'utf8',env:pythonEnv});
     assert.strictEqual(validation.status,0,'Generated production-shaped plugin failed ordinary SDK validation:\n'+validation.stdout+'\n'+validation.stderr);
@@ -110,6 +114,7 @@ function node(){
     assert(registered&&typeof registered.factory==='function');
 
     let pageHeaderSpec=null,tableRows=null,plotSpec=null,splitSpec=null;
+    let activitySpec=null,topWorkspaceSpec=null,closedPage=null;
     const toolbarSpecs=[];
     const panelSpecs=[];
     const metricValues=new Map();
@@ -151,7 +156,16 @@ function node(){
     const sourceValues={'source:vth':{'col:x':[0,1,2],'col:y':[1,3,5]}};
     const ctx={
       status:{set(){}},
-      ui:{unitTemplates:units,pages:{add(){return node();}}},
+      ui:{
+        unitTemplates:units,
+        pages:{add(){return node();}},
+        activities:{add(spec){activitySpec=spec;return spec;}},
+        topWorkspace:{register(spec){topWorkspaceSpec=spec;return spec;}}
+      },
+      workspace:{
+        openPage(){return true;},
+        closePage(id){closedPage=id;return true;}
+      },
       data:{
         sources:{list(){return [{artifactId:'source:vth',kind:'data.table',semanticType:'science.transport.iv',excluded:false}];}},
         artifacts:{
@@ -181,8 +195,14 @@ function node(){
     assert.strictEqual(splitSpec.min,140);
     assert.strictEqual(splitSpec.reserve,300);
     assert.strictEqual(splitSpec.reflowBelow,920);
+    assert(activitySpec,'Hosted generated workbench must register one Activity.');
+    assert(topWorkspaceSpec,'Hosted generated workbench must register one TopWorkspace projection.');
+    assert.strictEqual(activitySpec.id,'generated-unit-blueprint-parity');
+    assert.strictEqual(topWorkspaceSpec.activity,'generated-unit-blueprint-parity');
     assert(pageHeaderSpec,'Generated workbench must create the canonical PageHeader.');
     assert.strictEqual(pageHeaderSpec.close,true);
+    pageHeaderSpec.onClose();
+    assert.strictEqual(closedPage,'dkdsGeneratedPage_generated-unit-blueprint-parity');
     assert.deepStrictEqual(pageHeaderSpec.actions.map(row=>row.id),['refresh','fit','settings']);
     assert(panelSpecs.some(spec=>spec.variant==='headed'&&spec.title==='数据'),'Data control must contain a headed Data panel.');
     assert(panelSpecs.some(spec=>spec.variant==='plain'&&spec.header===false),'Data control must contain a plain extraction panel.');
