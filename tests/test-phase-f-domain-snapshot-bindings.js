@@ -10,8 +10,13 @@ const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const sdk=require('../sdk/contract.json');
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
+function sdkAtLeast(actual,minimum){
+  const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);
+  for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}
+  return true;
+}
 function pythonCommand(){for(const [cmd,prefix] of (process.platform==='win32'?[['python',[]],['py',['-3']]]:[['python3',[]],['python',[]]])){const p=spawnSync(cmd,prefix.concat(['--version']),{encoding:'utf8',env:pythonEnv});if(!p.error&&p.status===0)return {cmd,prefix};}throw new Error('Python 3 required');}
-assert.strictEqual(sdk.sdkVersion,'1.51.61');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.61'),'Live snapshot projection requires SDK 1.51.61+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 const spec={schema:'dkds.declarative-plugin.v1',plugin:{id:'com.example.live-bindings',name:'Live Bindings',version:'1.0.0',description:'Read-only snapshot binding gate'},page:{id:'live-bindings',label:'Live Bindings',title:'Live Bindings',actionIds:[]},workspace:{activity:'live-bindings',primaryRole:'scientific-primary'},data:{accepts:['science.transport.iv']},domainAdapter:{ref:'builtin.example/live',dependency:'builtin.example'},content:[{kind:'note',text:'primary'}],surfaces:[{id:'inspector',label:'Inspector',role:'prime',presentationRole:'inspector',semanticKind:'inspector',placements:['right','bottom','float'],defaultPlacement:'right',chromeHeaderId:'head',children:[{kind:'header',id:'head',title:'Inspector'},{kind:'status',id:'selection',text:'—',binding:{statePath:'selection.label',fallback:'none',prefix:'Selected: '}},{kind:'metric',id:'count',label:'Count',binding:{statePath:'diagnostics.count',fallback:'0'}},{kind:'field',id:'view',type:'text',label:'Active view',binding:{statePath:'activeView'}},{kind:'field',id:'enabled',type:'checkbox',label:'Enabled',binding:{statePath:'settings.enabled'}},{kind:'table',id:'rows',columns:[{key:'name',label:'Name'},{key:'value',label:'Value'}],rows:[],binding:{statePath:'rows'}}]}]};

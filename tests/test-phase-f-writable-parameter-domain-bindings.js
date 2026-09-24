@@ -13,6 +13,11 @@ const sdk=require('../sdk/contract.json');
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
+function sdkAtLeast(actual,minimum){
+  const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);
+  for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}
+  return true;
+}
 function pythonCommand(){
   const candidates=process.platform==='win32'?[['python',[]],['py',['-3']]]:[['python3',[]],['python',[]]];
   for(const [cmd,prefix] of candidates){
@@ -22,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for writable parameter binding gate.');
 }
 
-assert.strictEqual(sdk.sdkVersion,'1.51.62');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.62'),'Writable live parameter binding requires SDK 1.51.62+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
