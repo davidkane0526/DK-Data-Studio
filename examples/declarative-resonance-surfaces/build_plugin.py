@@ -100,7 +100,7 @@ SPEC = {
                     "title": "曲线检查器",
                     "actionIds": ["close-inspector"],
                 },
-                {"kind": "status", "id": "inspector-status", "variant": "text", "text": "尚未选择曲线。"},
+                {"kind": "status", "id": "inspector-status", "variant": "text", "text": "尚未选择曲线。", "binding": {"statePath": "activeView", "fallback": "main", "prefix": "当前视图："}},
             ],
         },
         {
@@ -160,7 +160,10 @@ SPEC = {
                     "kind": "layout",
                     "id": "group-grid",
                     "variant": "accepted-group-grid",
-                    "children": [plot_panel("group-preview", "组图预览", "resonance:group")],
+                    "children": [
+                        {"kind": "metric", "id": "group-series-count", "label": "组图序列", "binding": {"statePath": "diagnostics.series", "fallback": "0"}},
+                        plot_panel("group-preview", "组图预览", "resonance:group"),
+                    ],
                 },
             ],
         },
@@ -218,6 +221,7 @@ SPEC = {
                     "id": "spacing-table",
                     "columns": [{"key": "vg", "label": "Vg"}, {"key": "spacing", "label": "间距"}],
                     "rows": [],
+                    "binding": {"statePath": "spacingResult"},
                 },
             ],
         },

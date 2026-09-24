@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-domain-snapshot-bindings.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-resonance-domain-adapter-seam.js",
       "args": []
     },
@@ -2082,6 +2086,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-domain-snapshot-bindings.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
       "args": []

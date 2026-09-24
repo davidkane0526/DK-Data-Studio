@@ -22,7 +22,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for the Resonance surface reconstruction gate.');
 }
 
-assert.strictEqual(sdk.sdkVersion,'1.51.60');
+assert.strictEqual(sdk.sdkVersion,'1.51.61');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -47,6 +47,7 @@ try{
   assert(source.includes('units.floatingChrome.create'),'Group controls must stay in the public FloatingChrome Unit.');
   assert(source.includes('id:"group-columns",menu:true'),'Group-columns must lower to the existing Core ActionGroup menu contract.');
   assert(source.includes('liveDomain.snapshot()?.state')&&source.includes('liveDomain.invoke("setGroupColumns"'),'Domain-bound menu must project and mutate the single production owner through the generic Domain Adapter.');
+  assert(source.includes('g_curve_inspector_inspector_status.textContent=')&&source.includes('g_group_analysis_group_series_count.value.textContent=')&&source.includes('g_spacing_spacing_table?.setData?.'),'Resonance specimen must project the live owner into public Status/Metric/Table handles.');
   assert(source.includes('actionHost:g_group_analysis_group_header.actions'),'The dynamic menu must reuse the same canonical public Header action host.');
   assert(!/let\s+[^;]*group[_-]?columns[^;]*=/.test(source),'Generated group-columns menu must not create a second mutable state owner.');
   assert(source.includes('units.scientificPlot.create')&&source.includes("renderOwner:'runtime'"),'Derived scientific plots must preserve the runtime render-owner bridge.');
