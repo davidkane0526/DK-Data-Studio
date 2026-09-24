@@ -93,6 +93,23 @@ SPEC = {
         "primaryScroll": "contained",
         "mainLayout": "fill-rows",
     },
+    "host": {
+        "kind": "top",
+        "label": "Vth",
+        "contextLabel": "Vth 工作台",
+        "icon": "Vₜ",
+        "window": {
+            "title": "Vth 工作台",
+            "width": 1420,
+            "height": 900,
+            "minWidth": 900,
+            "minHeight": 620,
+            "prewarm": False,
+            "reuse": True,
+            "persistence": "project",
+            "artifactHydration": "live",
+        },
+    },
     "data": {
         "accepts": ["science.transport.iv"],
     },
