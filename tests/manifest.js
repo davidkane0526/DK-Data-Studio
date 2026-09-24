@@ -1,6 +1,18 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-generic-surface-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-nested-parameter-form-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
       "args": []
     },
@@ -2062,6 +2074,18 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-generic-surface-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-nested-parameter-form-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
       "args": []

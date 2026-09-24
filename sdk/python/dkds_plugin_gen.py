@@ -1970,8 +1970,17 @@ class PluginBuilder:
         has_plot = any(row["kind"] in {"plot", "plot-view", "plot-group", "result-split"} for row in self.spec["content"])
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
         has_plot_view = any(row["kind"] == "plot-view" for row in self.spec["content"])
-        has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"]) or any(node["kind"] == "table" for node in normalized_surface_nodes)
-        has_parameter_form = any(row["kind"] == "parameter-form" for row in self.spec["content"]) or any(node["kind"] == "parameter-form" for node in normalized_surface_nodes)
+        parameter_groups = (self.spec.get("parameters") or {}).get("groups", [])
+        has_table = (
+            any(row["kind"] in {"table", "result-split"} for row in self.spec["content"])
+            or any(node["kind"] == "table" for node in normalized_surface_nodes)
+            or any(group.get("table") is not None for group in parameter_groups)
+        )
+        has_parameter_form = (
+            any(row["kind"] == "parameter-form" for row in self.spec["content"])
+            or any(node["kind"] == "parameter-form" for node in normalized_surface_nodes)
+            or any(group.get("parameterForm") is not None for group in parameter_groups)
+        )
         has_menu = any(row["kind"] == "menu" for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
