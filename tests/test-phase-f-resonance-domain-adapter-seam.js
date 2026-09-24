@@ -20,10 +20,10 @@ const window={DKDSPluginModules:{define(owner,id,value){modules[owner+':'+id]=va
 vm.runInNewContext(source,{window,console},{filename:'resonance-domain-adapter.js'});
 const adapter=modules['builtin.resonance-workbench:domain-adapter'];
 assert(adapter?.provide,'Adapter module must publish provide().');
-let state={workspace:{groupColumns:'auto'},datasets:[{id:'d1'}],sweeps:[{id:'s1'}],activeView:'main'};
+let state={workspace:{groupColumns:'auto'},datasets:[{id:'d1'}],sweeps:[{id:'s1',points:[{v:0.1,i:2}]},{id:'s2',points:[{v:0.2,i:3}]}],activeView:'main'};
 const calls=[];
 const service={
-  getState:()=>state,getCurrentGroupColumnPreference:()=>state.workspace.groupColumns,getEffectiveGroupColumns:()=>state.workspace.groupColumns==='auto'?'2':state.workspace.groupColumns,getGroupContext:()=> '2 series',getGroupDiagnostics:()=>({series:2}),
+  getState:()=>state,visibleSweepIds:()=>['s1'],getCurrentGroupColumnPreference:()=>state.workspace.groupColumns,getEffectiveGroupColumns:()=>state.workspace.groupColumns==='auto'?'2':state.workspace.groupColumns,getGroupContext:()=> '2 series',getGroupDiagnostics:()=>({series:2}),
   setGroupColumns:value=>{state={...state,workspace:{...state.workspace,groupColumns:String(value)}};calls.push(['setGroupColumns',String(value)]);return String(value);},
   setPeakDisplay:(key,value)=>calls.push(['setPeakDisplay',key,value]),setTransform:value=>calls.push(['setTransform',value]),setPreset:value=>calls.push(['setPreset',value]),setAllVisibility:value=>calls.push(['setAllVisibility',value]),
   selectPeak:(id,opt)=>calls.push(['selectPeak',id,opt.source]),selectSweep:(id,opt)=>calls.push(['selectSweep',id,opt.source]),selectRange:(range,opt)=>calls.push(['selectRange',range,opt.source]),clearSelection:()=>calls.push(['clearSelection']),resetMainView:()=>calls.push(['resetMainView']),reset:()=>calls.push(['reset']),refreshData:()=>calls.push(['refreshData'])
@@ -33,6 +33,9 @@ adapter.provide(ctx,service);
 assert.strictEqual(provided.id,'live');
 assert.strictEqual(provided.spec.snapshot().group.preference,'auto');
 assert.strictEqual(provided.spec.snapshot().group.effective,'2');
+const projected=provided.spec.snapshot().visibleSweeps;
+assert.deepStrictEqual(projected.map(row=>row.id),['s1'],'Adapter must project only sweeps selected by the authoritative visibleSweepIds owner.');
+assert.deepStrictEqual(projected[0].points,[{v:0.1,i:2}],'Adapter must preserve production sweep point values without recalculation.');
 provided.spec.actions.setGroupColumns({value:'3'});
 assert.deepStrictEqual(calls[0],['setGroupColumns','3']);
 assert.strictEqual(provided.spec.snapshot().group.preference,'3','Snapshot must project the same authoritative production service after actions.');

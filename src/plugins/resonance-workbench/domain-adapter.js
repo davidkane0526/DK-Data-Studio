@@ -3,8 +3,11 @@
     if(!service?.getState||!ctx.services?.domain)return null;
     const snapshot=()=>{
       const state=service.getState?.()||{};
+      const visibleIds=new Set((service.visibleSweepIds?.()||[]).map(String));
+      const visibleSweeps=(Array.isArray(state.sweeps)?state.sweeps:[]).filter(sw=>visibleIds.has(String(sw?.id||'')));
       return {
         ...state,
+        visibleSweeps,
         group:{
           preference:String(service.getCurrentGroupColumnPreference?.()||state?.workspace?.groupColumns||'auto'),
           effective:String(service.getEffectiveGroupColumns?.()||1),
