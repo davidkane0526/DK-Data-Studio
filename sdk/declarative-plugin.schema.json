@@ -2200,6 +2200,77 @@
           "chromeHeaderId": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "commandId",
+                "items"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                },
+                "kind": {
+                  "const": "choice-menu"
+                },
+                "labelPrefix": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "order": {
+                  "type": "integer"
+                },
+                "commandId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                },
+                "argumentKey": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                  "default": "value"
+                },
+                "defaultValue": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "items": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value",
+                      "label"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

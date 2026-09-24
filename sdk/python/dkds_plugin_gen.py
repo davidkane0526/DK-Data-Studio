@@ -992,7 +992,7 @@ class PluginBuilder:
             extra = sorted(set(surface) - {
                 "id", "label", "role", "presentationRole", "presentationPurpose", "semanticKind",
                 "priority", "order", "collapsible", "fixed", "embedded", "autoOpen", "defaultPlacement",
-                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "chromeHeaderId", "detailGeometry", "lifecycle", "children"
+                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "chromeHeaderId", "detailGeometry", "lifecycle", "actions", "children"
             })
             if extra:
                 raise SpecError(f"unsupported surfaces[{surface_index}] fields: {', '.join(extra)}")
@@ -1059,6 +1059,56 @@ class PluginBuilder:
                 if not lifecycle:
                     lifecycle = None
 
+            surface_actions = []
+            for action_index, raw_action in enumerate(_expect_list(surface.get("actions", []), f"surfaces[{surface_index}].actions")):
+                raw_action = _expect_object(raw_action, f"surfaces[{surface_index}].actions[{action_index}]")
+                extra = sorted(set(raw_action) - {"id", "kind", "labelPrefix", "title", "order", "commandId", "argumentKey", "defaultValue", "items"})
+                if extra:
+                    raise SpecError(f"unsupported surfaces[{surface_index}].actions[{action_index}] fields: {', '.join(extra)}")
+                if role != "prime":
+                    raise SpecError(f"surfaces[{surface_index}].actions are only valid for PRIME surfaces")
+                action_kind = str(raw_action.get("kind", "choice-menu"))
+                if action_kind != "choice-menu":
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].kind currently supports choice-menu only")
+                command_id = _ident(raw_action.get("commandId"), f"surfaces[{surface_index}].actions[{action_index}].commandId")
+                argument_key = _ident(raw_action.get("argumentKey", "value"), f"surfaces[{surface_index}].actions[{action_index}].argumentKey")
+                items = []
+                for item_index, raw_item in enumerate(_expect_list(raw_action.get("items"), f"surfaces[{surface_index}].actions[{action_index}].items")):
+                    raw_item = _expect_object(raw_item, f"surfaces[{surface_index}].actions[{action_index}].items[{item_index}]")
+                    extra = sorted(set(raw_item) - {"value", "label"})
+                    if extra:
+                        raise SpecError(f"unsupported surfaces[{surface_index}].actions[{action_index}].items[{item_index}] fields: {', '.join(extra)}")
+                    if "value" not in raw_item:
+                        raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].items[{item_index}].value is required")
+                    value = raw_item["value"]
+                    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+                        raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].items[{item_index}].value must be string or number")
+                    items.append({
+                        "value": value,
+                        "label": _nonempty(raw_item.get("label"), f"surfaces[{surface_index}].actions[{action_index}].items[{item_index}].label"),
+                    })
+                if not items:
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].items must not be empty")
+                item_keys = [str(item["value"]) for item in items]
+                if len(set(item_keys)) != len(item_keys):
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].item values must be unique")
+                default_value = raw_action.get("defaultValue", items[0]["value"])
+                if str(default_value) not in item_keys:
+                    raise SpecError(f"surfaces[{surface_index}].actions[{action_index}].defaultValue must match one declared item")
+                surface_actions.append({
+                    "id": _ident(raw_action.get("id"), f"surfaces[{surface_index}].actions[{action_index}].id"),
+                    "kind": action_kind,
+                    "labelPrefix": str(raw_action.get("labelPrefix", "")),
+                    "title": _nonempty(raw_action.get("title", raw_action.get("id")), f"surfaces[{surface_index}].actions[{action_index}].title"),
+                    "order": int(raw_action.get("order", (action_index + 1) * 10)),
+                    "commandId": command_id,
+                    "argumentKey": argument_key,
+                    "defaultValue": default_value,
+                    "items": items,
+                })
+            if len({action["id"] for action in surface_actions}) != len(surface_actions):
+                raise SpecError(f"surfaces[{surface_index}].action ids must be unique")
+
             children = [
                 normalize_surface_node(child, f"surfaces[{surface_index}].children[{index}]")
                 for index, child in enumerate(_expect_list(surface.get("children"), f"surfaces[{surface_index}].children"))
@@ -1098,6 +1148,8 @@ class PluginBuilder:
                     stack.extend(node.get("children", []))
                 if not found_header:
                     raise SpecError(f"surfaces[{surface_index}].chromeHeaderId must reference a Header child")
+            if surface_actions and not chrome_header_id:
+                raise SpecError(f"surfaces[{surface_index}].actions require chromeHeaderId or one inferable top-level Header child")
 
             surfaces.append({
                 "id": _ident(surface.get("id"), f"surfaces[{surface_index}].id"),
@@ -1122,6 +1174,7 @@ class PluginBuilder:
                 "chromeHeaderId": chrome_header_id,
                 "detailGeometry": detail_geometry,
                 "lifecycle": lifecycle,
+                "actions": surface_actions,
                 "children": children,
             })
         if len({surface["id"] for surface in surfaces}) != len(surfaces):
@@ -2129,6 +2182,7 @@ class PluginBuilder:
         has_interaction = self.spec.get("interaction") is not None
         has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
         has_surface_lifecycle_commands = any(bool(surface.get("lifecycle")) for surface in self.spec.get("surfaces", []))
+        has_surface_action_commands = any(bool(surface.get("actions")) for surface in self.spec.get("surfaces", []))
         has_stable_plot_identity = any(
             plot.get("identity") is not None
             for row in self.spec["content"]
@@ -2164,7 +2218,7 @@ class PluginBuilder:
         if has_interaction:
             requires.extend(["ui.selection", "ui.interaction"])
             capabilities.append("ui.interaction")
-        if has_domain_commands or has_surface_lifecycle_commands:
+        if has_domain_commands or has_surface_lifecycle_commands or has_surface_action_commands:
             requires.append("execution.commands")
         if has_artifact_input:
             requires.extend(["data.sources", "data.artifacts"])
@@ -2529,6 +2583,36 @@ class PluginBuilder:
 
         raise SpecError(f"unsupported normalized surface node kind: {kind}")
 
+    def _surface_actions_source(self, surface: Dict[str, Any], header_var: str, base: str) -> tuple[List[str], str]:
+        actions = surface.get("actions", [])
+        if not actions:
+            return [], ""
+        lines: List[str] = []
+        action_rows: List[str] = []
+        for action in actions:
+            action_base = _var(surface["id"] + "-" + action["id"])
+            item_values = [str(item["value"]) for item in action["items"]]
+            labels = {str(item["value"]): item["label"] for item in action["items"]}
+            lines += [
+                f"    const {action_base}_allowed={_js(item_values)};",
+                f"    const {action_base}_labels={_js(labels)};",
+                f"    const {action_base}_current=()=>{{const row=ctx.commands.history({{commandId:{_js(action['commandId'])},status:'completed',limit:1}})[0];const raw=row?.arguments?.[{_js(action['argumentKey'])}];const value=String(raw??{_js(str(action['defaultValue']))});return {action_base}_allowed.includes(value)?value:{_js(str(action['defaultValue']))};}};",
+            ]
+            item_expr = (
+                f"{action_base}_allowed.map(value=>({{id:{_js(action['id']+'-')}+value,"
+                + f"icon:{action_base}_current()===value?'✓':'',label:{action_base}_labels[value]||value,"
+                + f"onInvoke:()=>{{if(!ctx.commands.get({_js(action['commandId'])})){{ctx.status.set({_js(action['title']+'命令不可用')});return false;}}"
+                + f"void ctx.commands.run({_js(action['commandId'])},{{[{_js(action['argumentKey'])}]:value}}).then(()=>workbench.primes?.get?.({_js(surface['id'])})?.actionGroup?.render?.()).catch(error=>ctx.status.set(String(error?.message||error||{_js(action['title']+'失败')})));return true;}}}}))"
+            )
+            action_rows.append(
+                "{"
+                + f"id:{_js(action['id'])},menu:true,order:{action['order']},"
+                + f"label:()=>{_js(action['labelPrefix'])}+{action_base}_current(),title:{_js(action['title'])},"
+                + f"enabled:()=>!!ctx.commands.get({_js(action['commandId'])}),items:()=>{item_expr}"
+                + "}"
+            )
+        return lines, "[" + ",".join(action_rows) + "]"
+
     def _surface_source(self) -> List[str]:
         lines = ["    const subs=[];"]
         for surface in self.spec.get("surfaces", []):
@@ -2540,6 +2624,9 @@ class PluginBuilder:
 
             if surface["role"] == "prime":
                 prime = f"{base}_prime"
+                header_var = _var(surface["id"] + "-" + surface["chromeHeaderId"]) if surface.get("chromeHeaderId") else ""
+                action_lines, action_source = self._surface_actions_source(surface, header_var, base)
+                lines += action_lines
                 lines.append(
                     f"    const {prime}=units.prime.build({{"
                     + f"id:{_js(surface['id'])},label:{_js(surface['label'])},variant:'canonical-header',"
@@ -2556,6 +2643,7 @@ class PluginBuilder:
                             else ""
                         )
                     )
+                    + (f",actionHost:{header_var}.actions,actions:{action_source}" if action_source else "")
                     + (
                         (f",mount:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onOpenCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onOpenCommand'])},{{surfaceId:{_js(surface['id'])},event:'open'}});}}" if (surface.get("lifecycle") or {}).get("onOpenCommand") else "")
                         + (f",onClose:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onCloseCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onCloseCommand'])},{{surfaceId:{_js(surface['id'])},event:'close'}});}}" if (surface.get("lifecycle") or {}).get("onCloseCommand") else "")
