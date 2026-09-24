@@ -1210,6 +1210,53 @@
                           "default": 24
                         }
                       }
+                    },
+                    "placements": {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "home",
+                          "left",
+                          "right",
+                          "bottom",
+                          "float",
+                          "global"
+                        ]
+                      }
+                    },
+                    "defaultPlacement": {
+                      "enum": [
+                        "home",
+                        "left",
+                        "right",
+                        "bottom",
+                        "float",
+                        "global"
+                      ],
+                      "default": "home"
+                    },
+                    "detailGeometry": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "contentAspectRatio": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10
+                        },
+                        "contentMinHeightPx": {
+                          "type": "integer",
+                          "minimum": 40,
+                          "maximum": 4000
+                        },
+                        "contentMaxHeightPx": {
+                          "type": "integer",
+                          "minimum": 40,
+                          "maximum": 4000
+                        }
+                      }
                     }
                   }
                 }

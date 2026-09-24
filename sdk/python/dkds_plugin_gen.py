@@ -1045,7 +1045,7 @@ class PluginBuilder:
                 plots = []
                 for p_index, plot in enumerate(_expect_list(row.get("plots"), f"content[{index}].plots")):
                     plot = _expect_object(plot, f"content[{index}].plots[{p_index}]")
-                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                    extra = sorted(set(plot) - {"id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend", "placements", "defaultPlacement", "detailGeometry"})
                     if extra:
                         raise SpecError(f"unsupported plot-group plot fields at {index}:{p_index}: {', '.join(extra)}")
                     points = []
@@ -1056,6 +1056,36 @@ class PluginBuilder:
                             points.append([float(pair[0]), float(pair[1])])
                         except (TypeError, ValueError) as exc:
                             raise SpecError(f"content[{index}].plots[{p_index}].points[{point_index}] must be numeric") from exc
+                    placements = [str(value) for value in plot.get("placements", ["home", "left", "right", "bottom", "float", "global"])]
+                    if not placements or any(value not in {"home", "left", "right", "bottom", "float", "global"} for value in placements):
+                        raise SpecError(f"content[{index}].plots[{p_index}].placements contains an unsupported placement")
+                    default_placement = str(plot.get("defaultPlacement", placements[0]))
+                    if default_placement not in placements:
+                        raise SpecError(f"content[{index}].plots[{p_index}].defaultPlacement must be listed in placements")
+                    detail_geometry = None
+                    if plot.get("detailGeometry") is not None:
+                        raw_geometry = _expect_object(plot["detailGeometry"], f"content[{index}].plots[{p_index}].detailGeometry")
+                        extra = sorted(set(raw_geometry) - {"contentAspectRatio", "contentMinHeightPx", "contentMaxHeightPx"})
+                        if extra:
+                            raise SpecError(f"unsupported plot detailGeometry fields at {index}:{p_index}: {', '.join(extra)}")
+                        detail_geometry = {}
+                        if raw_geometry.get("contentAspectRatio") is not None:
+                            aspect = float(raw_geometry["contentAspectRatio"])
+                            if aspect <= 0 or aspect > 10:
+                                raise SpecError(f"content[{index}].plots[{p_index}].detailGeometry.contentAspectRatio must be in (0,10]")
+                            detail_geometry["contentAspectRatio"] = aspect
+                        for key in ("contentMinHeightPx", "contentMaxHeightPx"):
+                            if raw_geometry.get(key) is not None:
+                                value = int(raw_geometry[key])
+                                if value < 40 or value > 4000:
+                                    raise SpecError(f"content[{index}].plots[{p_index}].detailGeometry.{key} must be in 40..4000")
+                                detail_geometry[key] = value
+                        if (
+                            detail_geometry.get("contentMinHeightPx") is not None
+                            and detail_geometry.get("contentMaxHeightPx") is not None
+                            and detail_geometry["contentMinHeightPx"] > detail_geometry["contentMaxHeightPx"]
+                        ):
+                            raise SpecError(f"content[{index}].plots[{p_index}].detailGeometry min height must be <= max height")
                     plots.append({
                         "id": _ident(plot.get("id"), f"content[{index}].plots[{p_index}].id"),
                         "title": _nonempty(plot.get("title"), f"content[{index}].plots[{p_index}].title"),
@@ -1063,6 +1093,9 @@ class PluginBuilder:
                         "yTitle": str(plot.get("yTitle", "")),
                         "source": str(plot.get("source") or plot.get("id")),
                         "points": points,
+                        "placements": list(dict.fromkeys(placements)),
+                        "defaultPlacement": default_placement,
+                        "detailGeometry": detail_geometry,
                         **normalize_plot_render(plot, f"content[{index}].plots[{p_index}]"),
                         **normalize_plot_interaction(plot, f"content[{index}].plots[{p_index}]"),
                     })
@@ -2258,12 +2291,8 @@ class PluginBuilder:
 
         if kind == "header":
             lines.append(
-                f"    const {base}=units.header.create({host},{{kind:{_js(node['headerKind'])},variant:{_js(node['variant'])},title:{_js(node['title'])},actions:{str(bool(node['actionIds'])).lower()}}});"
+                f"    const {base}=units.header.create({host},{{kind:{_js(node['headerKind'])},variant:{_js(node['variant'])},title:{_js(node['title'])},actions:{self._action_source(node['actionIds']) if node['actionIds'] else 'false'}}});"
             )
-            if node["actionIds"]:
-                lines.append(
-                    f"    const {base}_actions=units.toolbar.create({base}.actions,{{variant:'header',actions:{self._action_source(node['actionIds'])}}});"
-                )
             return lines
 
         if kind == "note":
@@ -2521,7 +2550,7 @@ class PluginBuilder:
                         f"    let {plot_base}_points={_js(points)};",
                         f"    let {plot_base}_artifact_id='',{plot_base}_series_id='',{plot_base}_artifact_revision=0;",
                         f"    let {plot_base}_surface=null;",
-                        f"    const {plot_base}_view={base}_group.addPlot({{id:{_js(plot['id'])},title:{_js(plot['title'])},placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',render:host=>{{{plot_base}_surface=units.scientificPlot.create(host,{self._scientific_plot_spec_source(plot, plot_base)});return()=>{{try{{{plot_base}_surface?.dispose?.();}}catch{{}};{plot_base}_surface=null;}};}}}});",
+                        f"    const {plot_base}_view={base}_group.addPlot({{id:{_js(plot['id'])},title:{_js(plot['title'])},placements:{_js(plot['placements'])},defaultPlacement:{_js(plot['defaultPlacement'])}" + (f",detailGeometry:{_js(plot['detailGeometry'])}" if plot.get("detailGeometry") else "") + f",render:host=>{{{plot_base}_surface=units.scientificPlot.create(host,{self._scientific_plot_spec_source(plot, plot_base)});return()=>{{try{{{plot_base}_surface?.dispose?.();}}catch{{}};{plot_base}_surface=null;}};}}}});",
                     ]
                 continue
             points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]

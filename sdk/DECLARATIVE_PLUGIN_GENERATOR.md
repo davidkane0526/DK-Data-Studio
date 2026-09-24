@@ -446,3 +446,10 @@ Current bounded child vocabulary: `layout`, `panel`, `header`, `note`, `field`, 
 PRIME surfaces lower through `units.prime.build(...)`; SUB surfaces lower to the existing Workbench SUB registration shape; both are passed to the same `workbench.compose({ primary, primes, subs })` call as production plugins. Hosted TOP/Tool metadata is derived from the same normalized surfaces, avoiding a second presentation description.
 
 This is the generic compiler mechanism needed by Resonance's inspector/group/detail surfaces while preserving the frozen 41-Unit / 73-recipe catalog and Plugin API 1.19.0.
+
+
+## TER reconstruction specimen — SDK 1.51.57
+
+PlotGroup child declarations now carry bounded public `placements`, `defaultPlacement`, and `detailGeometry` (`contentAspectRatio`, `contentMinHeightPx`, `contentMaxHeightPx`). These values lower directly to the existing PlotView contract owned by PlotGroup; they do not create plugin CSS or a second geometry engine.
+
+`examples/declarative-ter-reconstruction/build_plugin.py` is the first production-shaped reconstruction specimen. It proves the TER presentation spine can be authored through the frozen public vocabulary: canonical titleless parameter PRIME, grouped controls, nested ParameterForm, seven runtime-owned scientific plots in PlotGroup, accepted heatmap/R–V detail geometry, and the two result tables. Production TER algorithms/controllers remain intentionally outside this authoring specimen and are not duplicated.
