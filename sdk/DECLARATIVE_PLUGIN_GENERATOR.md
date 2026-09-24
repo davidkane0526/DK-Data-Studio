@@ -465,3 +465,10 @@ Generic non-parameter PRIME surfaces now support bounded `detailGeometry` and li
 ### Movable PRIME canonical chrome ownership
 
 A generic movable PRIME must bind exactly one declared public Header child as its canonical drag/control chrome. `chromeHeaderId` may select that Header explicitly; when exactly one top-level Header exists it is inferred. The compiler lowers the same Header handle to PRIME `handle` and `controlsHost`, so Core does not synthesize a duplicate titlebar. A movable PRIME without a canonical Header fails generation rather than falling back to private selectors or duplicate chrome.
+
+
+## PRIME choice-menu actions — SDK 1.51.59
+
+Generic PRIME surfaces may declare bounded `actions` of kind `choice-menu`. The compiler does not create a menu implementation: it passes a dynamic action descriptor to the existing Workbench `ActionGroup` and reuses the same canonical Header action host selected by `chromeHeaderId`.
+
+The menu's current value is projected from `ctx.commands.history({ commandId, status: 'completed', limit: 1 })`. Selecting an item invokes only the declared command with one bounded argument key, then asks the existing PRIME ActionGroup to render again after completion. This deliberately avoids a second mutable preference/state owner in generated presentation code. The Resonance-shaped specimen now covers the accepted `每行：auto/1..6` group-columns action structurally; production numerical/state ownership remains outside the generator.
