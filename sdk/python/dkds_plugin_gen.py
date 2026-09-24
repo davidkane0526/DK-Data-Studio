@@ -273,7 +273,7 @@ class PluginBuilder:
 
         def normalize_parameter_field(field: Dict[str, Any], name: str) -> Dict[str, Any]:
             field = _expect_object(field, name)
-            extra = sorted(set(field) - {"id", "type", "label", "value", "step", "options"})
+            extra = sorted(set(field) - {"id", "type", "label", "value", "step", "options", "binding"})
             if extra:
                 raise SpecError(f"unsupported parameter field keys in {name}: {', '.join(extra)}")
             kind = str(field.get("type", ""))
@@ -284,6 +284,33 @@ class PluginBuilder:
                 "type": kind,
                 "label": _nonempty(field.get("label"), f"{name}.label"),
             }
+            if field.get("binding") is not None:
+                if domain_adapter is None:
+                    raise SpecError(f"{name}.binding requires top-level domainAdapter")
+                raw_binding = _expect_object(field["binding"], f"{name}.binding")
+                extra = sorted(set(raw_binding) - {"statePath", "domainAction", "argumentKey", "staticArgs"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.binding fields: {', '.join(extra)}")
+                state_path = str(raw_binding.get("statePath", "")).strip()
+                if not state_path or not all(IDENT.fullmatch(part) for part in state_path.split(".")):
+                    raise SpecError(f"{name}.binding.statePath must be a dotted identifier path")
+                domain_action = _ident(raw_binding.get("domainAction"), f"{name}.binding.domainAction")
+                argument_key = _ident(raw_binding.get("argumentKey", "value"), f"{name}.binding.argumentKey")
+                raw_static = _expect_object(raw_binding.get("staticArgs", {}), f"{name}.binding.staticArgs")
+                if len(raw_static) > 8:
+                    raise SpecError(f"{name}.binding.staticArgs supports at most 8 entries")
+                static_args = {}
+                for key, value in raw_static.items():
+                    normalized_key = _ident(key, f"{name}.binding.staticArgs key")
+                    if value is not None and (isinstance(value, (dict, list)) or not isinstance(value, (str, int, float, bool))):
+                        raise SpecError(f"{name}.binding.staticArgs.{normalized_key} must be a scalar")
+                    static_args[normalized_key] = value
+                normalized["binding"] = {
+                    "statePath": state_path,
+                    "domainAction": domain_action,
+                    "argumentKey": argument_key,
+                    "staticArgs": static_args,
+                }
             if "value" in field:
                 normalized["value"] = field["value"]
             if "step" in field:
