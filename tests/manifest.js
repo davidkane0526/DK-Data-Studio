@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
       "args": []
     },
@@ -2074,6 +2078,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
       "args": []

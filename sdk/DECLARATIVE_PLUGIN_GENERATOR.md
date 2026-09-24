@@ -453,3 +453,10 @@ This is the generic compiler mechanism needed by Resonance's inspector/group/det
 PlotGroup child declarations now carry bounded public `placements`, `defaultPlacement`, and `detailGeometry` (`contentAspectRatio`, `contentMinHeightPx`, `contentMaxHeightPx`). These values lower directly to the existing PlotView contract owned by PlotGroup; they do not create plugin CSS or a second geometry engine.
 
 `examples/declarative-ter-reconstruction/build_plugin.py` is the first production-shaped reconstruction specimen. It proves the TER presentation spine can be authored through the frozen public vocabulary: canonical titleless parameter PRIME, grouped controls, nested ParameterForm, seven runtime-owned scientific plots in PlotGroup, accepted heatmap/R–V detail geometry, and the two result tables. Production TER algorithms/controllers remain intentionally outside this authoring specimen and are not duplicated.
+
+
+## Resonance-shaped multi-surface reconstruction — SDK 1.51.58
+
+Generic non-parameter PRIME surfaces now support bounded `detailGeometry` and lifecycle command references (`onOpenCommand`, `onCloseCommand`, `onPlacementChangedCommand`); SUB surfaces support `onShowCommand`. These callbacks contain no authored JavaScript: generated code only routes a bounded event payload to the existing `ctx.commands` service when that command is registered. Surface children additionally support public Status, direct Action, FloatingChrome, and runtime-owned ScientificPlot Units.
+
+`examples/declarative-resonance-surfaces/build_plugin.py` proves the structural spine required by the production Resonance workbench: curve-inspector PRIME, group-analysis PRIME, and physics/spacing/gate SUB surfaces with nested public Units. The remaining production-shaped gap is the dynamic local group-columns menu/action model; it is deliberately not replaced with a plugin-id branch or copied Resonance domain state.
