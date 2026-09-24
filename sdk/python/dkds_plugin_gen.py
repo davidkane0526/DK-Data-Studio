@@ -711,6 +711,92 @@ class PluginBuilder:
                     "responsive": bool(row.get("responsive", True)),
                     "plots": plots,
                 })
+            elif kind == "summary":
+                extra = sorted(set(row) - {"kind", "id", "variant", "items"})
+                if extra:
+                    raise SpecError(f"unsupported summary fields at {index}: {', '.join(extra)}")
+                variant = str(row.get("variant", "row"))
+                if variant not in {"row", "strip"}:
+                    raise SpecError(f"content[{index}].variant must be row or strip")
+                items = []
+                for item_index, item in enumerate(_expect_list(row.get("items", []), f"content[{index}].items")):
+                    item = _expect_object(item, f"content[{index}].items[{item_index}]")
+                    extra = sorted(set(item) - {"text", "variant"})
+                    if extra:
+                        raise SpecError(f"unsupported summary item fields at {index}:{item_index}: {', '.join(extra)}")
+                    items.append({"text": str(item.get("text", "")), "variant": str(item.get("variant", ""))})
+                content.append({
+                    "kind": "summary",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "variant": variant,
+                    "items": items,
+                })
+            elif kind == "empty-state":
+                extra = sorted(set(row) - {"kind", "id", "text"})
+                if extra:
+                    raise SpecError(f"unsupported empty-state fields at {index}: {', '.join(extra)}")
+                content.append({
+                    "kind": "empty-state",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "text": str(row.get("text", "")),
+                })
+            elif kind == "list":
+                extra = sorted(set(row) - {"kind", "id", "items", "emptyText"})
+                if extra:
+                    raise SpecError(f"unsupported list fields at {index}: {', '.join(extra)}")
+                items = []
+                for item_index, item in enumerate(_expect_list(row.get("items", []), f"content[{index}].items")):
+                    item = _expect_object(item, f"content[{index}].items[{item_index}]")
+                    extra = sorted(set(item) - {"title", "meta", "leading", "selectable", "selected"})
+                    if extra:
+                        raise SpecError(f"unsupported list item fields at {index}:{item_index}: {', '.join(extra)}")
+                    items.append({
+                        "title": str(item.get("title", "")),
+                        "meta": str(item.get("meta", "")),
+                        "leading": str(item.get("leading", "")),
+                        "selectable": bool(item.get("selectable", False)),
+                        "selected": bool(item.get("selected", False)),
+                    })
+                content.append({
+                    "kind": "list",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "items": items,
+                    "emptyText": str(row.get("emptyText", "")),
+                })
+            elif kind == "plot-view":
+                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "placements", "defaultPlacement", "contentMinHeight", "contentMaxHeight", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                if extra:
+                    raise SpecError(f"unsupported plot-view fields at {index}: {', '.join(extra)}")
+                points = []
+                for p_index, pair in enumerate(row.get("points", [])):
+                    if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                        raise SpecError(f"content[{index}].points[{p_index}] must be [x,y]")
+                    points.append([float(pair[0]), float(pair[1])])
+                placements = [str(value) for value in row.get("placements", ["home", "left", "right", "bottom", "float", "global"])]
+                allowed_placements = {"home", "left", "right", "bottom", "float", "global"}
+                if not placements or any(value not in allowed_placements for value in placements):
+                    raise SpecError(f"content[{index}].placements contains invalid placement")
+                default_placement = str(row.get("defaultPlacement", "home"))
+                if default_placement not in placements:
+                    raise SpecError(f"content[{index}].defaultPlacement must appear in placements")
+                min_height = int(row.get("contentMinHeight", 280))
+                max_height = int(row.get("contentMaxHeight", max(320, min_height)))
+                if min_height < 120 or min_height > 1400 or max_height < min_height or max_height > 1800:
+                    raise SpecError(f"content[{index}] plot-view height bounds are invalid")
+                content.append({
+                    "kind": "plot-view",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "title": _nonempty(row.get("title"), f"content[{index}].title"),
+                    "xTitle": str(row.get("xTitle", "")),
+                    "yTitle": str(row.get("yTitle", "")),
+                    "source": str(row.get("source") or row.get("id")),
+                    "points": points,
+                    "placements": placements,
+                    "defaultPlacement": default_placement,
+                    "contentMinHeight": min_height,
+                    "contentMaxHeight": max_height,
+                    **normalize_plot_interaction(row, f"content[{index}]"),
+                })
             elif kind == "metrics":
                 extra = sorted(set(row) - {"kind", "id", "items"})
                 if extra:
@@ -852,7 +938,7 @@ class PluginBuilder:
                     "rows": rows,
                 })
             else:
-                raise SpecError(f"content[{index}].kind must be note, plot, plot-group, metrics, result-split or table")
+                raise SpecError(f"content[{index}].kind must be note, plot, plot-view, plot-group, summary, empty-state, list, metrics, result-split or table")
         if not content:
             raise SpecError("content must not be empty")
 
@@ -983,7 +1069,7 @@ class PluginBuilder:
         table_lookup: Dict[str, Dict[str, Any]] = {}
         metric_lookup: Dict[str, Dict[str, Any]] = {}
         for content_row in self.spec["content"]:
-            if content_row["kind"] == "plot":
+            if content_row["kind"] in {"plot", "plot-view"}:
                 plot_lookup[content_row["id"]] = content_row
             elif content_row["kind"] == "plot-group":
                 for plot in content_row["plots"]:
@@ -1189,7 +1275,7 @@ class PluginBuilder:
         table_lookup: Dict[str, Dict[str, Any]] = {}
         plot_lookup: Dict[str, Dict[str, Any]] = {}
         for content_row in self.spec["content"]:
-            if content_row["kind"] == "plot":
+            if content_row["kind"] in {"plot", "plot-view"}:
                 plot_lookup[content_row["id"]] = content_row
             elif content_row["kind"] == "plot-group":
                 for plot in content_row["plots"]:
@@ -1372,8 +1458,9 @@ class PluginBuilder:
         return lines
 
     def manifest(self) -> Dict[str, Any]:
-        has_plot = any(row["kind"] in {"plot", "plot-group", "result-split"} for row in self.spec["content"])
+        has_plot = any(row["kind"] in {"plot", "plot-view", "plot-group", "result-split"} for row in self.spec["content"])
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
+        has_plot_view = any(row["kind"] == "plot-view" for row in self.spec["content"])
         has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
@@ -1386,7 +1473,7 @@ class PluginBuilder:
         has_stable_plot_identity = any(
             plot.get("identity") is not None
             for row in self.spec["content"]
-            for plot in ([row] if row["kind"] == "plot" else row.get("plots", []) if row["kind"] == "plot-group" else [row["plot"]] if row["kind"] == "result-split" else [])
+            for plot in ([row] if row["kind"] in {"plot", "plot-view"} else row.get("plots", []) if row["kind"] == "plot-group" else [row["plot"]] if row["kind"] == "result-split" else [])
         )
         host = self.spec["host"]
         hosted = host["kind"] in {"top", "tool"}
@@ -1401,6 +1488,11 @@ class PluginBuilder:
         if has_plot_group:
             requires.extend(["ui.group-area", "ui.plot-views"])
             capabilities.append("ui.group-area")
+        if has_plot_view:
+            if "ui.plot-views" not in requires:
+                requires.append("ui.plot-views")
+            requires.append("ui.portable")
+            capabilities.append("ui.portable")
         if has_table:
             requires.append("ui.table")
             capabilities.append("ui.table")
@@ -1675,6 +1767,35 @@ class PluginBuilder:
         for row in self.spec["content"]:
             if row["kind"] == "note":
                 lines.append(f"    units.note.create(main,{{variant:{_js(row['variant'])},text:{_js(row['text'])}}});")
+                continue
+            if row["kind"] == "summary":
+                base = _var(row["id"])
+                lines.append(f"    const {base}_summary=units.summary.create(main,{{variant:{_js(row['variant'])},items:{_js(row['items'])}}});")
+                continue
+            if row["kind"] == "empty-state":
+                base = _var(row["id"])
+                lines.append(f"    const {base}_empty=units.emptyState.create(main,{{variant:'standard',text:{_js(row['text'])}}});")
+                continue
+            if row["kind"] == "list":
+                base = _var(row["id"])
+                lines.append(f"    const {base}_list=units.list.create(main,{{variant:'plain',items:{_js(row['items'])}}});")
+                if row["emptyText"]:
+                    lines.append(f"    if(!{base}_list.items().length)units.emptyState.create({base}_list.element,{{variant:'standard',text:{_js(row['emptyText'])}}});")
+                continue
+            if row["kind"] == "plot-view":
+                base = _var(row["id"])
+                points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]
+                lines += [
+                    f"    const {base}_panel=units.panel.create(main,{{variant:'plot-card',header:false,sizing:'content'}});",
+                    f"    units.layout.apply({base}_panel.element,{{variant:'plot-card-fill'}});",
+                    f"    const {base}_header=units.header.create({base}_panel.element,{{kind:'plot',variant:'plot-minimal',title:{_js(row['title'])},actions:false}});",
+                    f"    const {base}_host=units.layout.create({base}_panel.element,{{variant:'plot-card-fill'}});",
+                    f"    let {base}_points={_js(points)};",
+                    f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
+                    f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
+                    f"    const {base}_view=units.plotView.adopt({_js('generated:'+row['id'])},{base}_panel.element,{{variant:'complete',title:{_js(row['title'])},plot:{base}_host,header:{base}_header.element,placements:{_js(row['placements'])},defaultPlacement:{_js(row['defaultPlacement'])},detailGeometry:{{contentMinHeightPx:{row['contentMinHeight']},contentMaxHeightPx:{row['contentMaxHeight']}}},stateVersion:'declarative-plot-view-v1',portableFactory:(id,node,pSpec)=>workbench?.portable?workbench.portable(id,node,pSpec):ctx.ui.portable.create(id,node,pSpec)}});",
+                    f"    disposables.push({base}_view,{base}_surface);",
+                ]
                 continue
             if row["kind"] == "metrics":
                 base = _var(row["id"])
