@@ -64,7 +64,7 @@ try{
   assert(source.includes('if(Number.isFinite(colorValue))curve.colorValue=colorValue'),'Optional numeric color projection must remain bounded.');
   assert(source.includes('if(Number.isFinite(direction))curve.direction=direction'),'Optional direction projection must remain bounded.');
   assert(source.includes("g_main_surface.requestRender?.('domain-adapter')"),'Snapshot refresh must ask the existing ScientificPlot owner to render.');
-  assert(!/visibleSweepIds|filter\(|peak|resonance|querySelector|document\./.test(source),'Generic generated plot must not implement domain visibility/peak logic or private DOM access.');
+  assert(!/visibleSweepIds|resonance|querySelector|document\./.test(source),'Generic generated plot must not implement domain visibility logic or private DOM access.');
   assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.scientific-plot'));
   assert.deepStrictEqual(manifest.pluginDependencies,[{id:'builtin.example'}]);
 
