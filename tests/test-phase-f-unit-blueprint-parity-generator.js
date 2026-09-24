@@ -34,7 +34,7 @@ function node(){
 }
 
 (async()=>{
-  assert(atLeast(sdk.sdkVersion,'1.51.50'),'Production-shaped generation must build on the current hosted-generator baseline.');
+  assert(atLeast(sdk.sdkVersion,'1.51.51'),'Production-shaped generation requires the SDK 1.51.51 authoring contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
   assert.strictEqual(blueprints.version,'2.5.38');
 
