@@ -61,7 +61,7 @@ For JSON-driven workflows the same schema is available through the CLI:
 
 Schema v1 remains additive and deliberately bounded. It supports standalone workbench identity, data accepts/produces, page metadata, semantic PRIMARY role, header actions, a titleless parameter PRIME with number/text/select/checkbox fields, notes, curve plots, canonical Unit tables, and bounded Unit PlotGroup compositions. Python-authored pure functions may be lowered at build time and bound to existing Core Task Runner actions.
 
-Generated data bindings use only current Plugin API contracts. Task inputs may come from parameter Units or bounded columns of one or more plugin-scoped DataTable sources. Task results may update multiple Unit ScientificPlot/Table surfaces, including plots owned by a Unit PlotGroup, and may publish multiple declared canonical DataTable Artifacts. TOP/dedicated-window lifecycle, arbitrary data mutation, dynamic Python semantics, private interaction semantics, and new runtime abstractions remain outside this generator layer unless separately expressed by existing public SDK contracts.
+Generated data bindings use only current Plugin API contracts. Task inputs may come from parameter Units or bounded columns of one or more plugin-scoped DataTable sources. Task results may update multiple Unit ScientificPlot/Table surfaces, including plots owned by a Unit PlotGroup, and may publish multiple declared canonical DataTable Artifacts. Standalone, TOP and Tool hosting may be selected through the bounded host declaration. Arbitrary data mutation, dynamic Python semantics, private interaction semantics, and new runtime abstractions remain outside this generator layer unless separately expressed by existing public SDK contracts.
 
 ## Acceptance rules
 
@@ -251,3 +251,59 @@ Portable Tasks may also declare \`domain_command\`. The generator registers that
 The checked-in executable reference under \`examples/declarative-python-interactive-workbench\` and \`tests/test-phase-f-interaction-command-generator.js\` verifies interaction creation/link lifecycle, stable series reference metadata, scientific viewport semantics, bounded legend linkage, domain-command registration/execution and replay-safe source snapshots.
 
 This release changes only the authoring/compiler surface. Plugin API remains 1.19.0; Unit Templates remain 2.5.38; Core Interaction, Selection, command registry, Artifact Store, Task Runner, Presenter and production plugins retain their existing ownership.
+
+
+## Hosted TOP / Tool workspace generation — SDK 1.51.50
+
+The declarative \`host\` block chooses only among existing host contracts:
+
+    "host": {
+      "kind": "standalone" | "top" | "tool"
+    }
+
+\`standalone\` remains the default and does not emit a dedicated-window contract. TOP and Tool hosting add a bounded host declaration with labels/icon and window preferences:
+
+    "host": {
+      "kind": "top",
+      "label": "Generated TOP",
+      "contextLabel": "Generated TOP Workspace",
+      "icon": "◇",
+      "defaultSuper": true,
+      "window": {
+        "title": "Generated TOP Workspace",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 860,
+        "minHeight": 560,
+        "prewarm": false,
+        "reuse": true,
+        "persistence": "project",
+        "artifactHydration": "live"
+      }
+    }
+
+The generator does not accept raw host scripts, runtime files or arbitrary dependency arrays. It derives the ordinary Plugin API manifest and runtime wiring:
+
+    host.kind = top
+        -> pluginType: workbench
+        -> workspace.role: top
+        -> matching workspace.activity / window.activity
+        -> ctx.ui.activities.add(... openMode:'window')
+        -> ctx.ui.pages.add(... activity/pageId)
+        -> ctx.ui.topWorkspace.register(...)
+        -> the same generated Unit Workspace
+
+    host.kind = tool
+        -> the same lifecycle
+        -> pluginType: tool
+        -> Core places the opener in the existing Tool category
+
+If generated content contains ScientificPlot surfaces, the hosted manifest automatically declares the established \`scientific-renderer\` dedicated-window dependency. It is not an author-controlled renderer selector.
+
+Generated parameter PRIME metadata is mirrored into the TopWorkspace layout as the standard \`presentationPurpose:'parameters'\` / \`presentationRole:'data-control'\` contract. PRIMARY retains the declared public \`workspace.primaryRole\`. Mobile/Desktop projection remains owned by the existing Presenter and Unit contracts.
+
+Window geometry is deliberately bounded. Width/height and minima are author preferences inside the existing window contract; they do not become Unit geometry and do not affect Mobile Presenter allocation.
+
+The executable reference is \`examples/declarative-python-hosted-workspace\`. Its gate builds both a TOP package and a Tool package, validates each with the ordinary SDK validator, executes each generated plugin in a VM host, and verifies Activity -> Page -> TopWorkspace -> Unit Workspace lifecycle plus canonical parameter PRIME projection.
+
+No private BrowserWindow code, IPC path, Presenter branch, dedicated-window fork, specialized Unit or alternate lifecycle is generated.
