@@ -195,6 +195,9 @@ class PluginBuilder:
                 },
             }
 
+        if normalized_page["close"] and normalized_host["kind"] == "standalone":
+            raise SpecError("page.close requires host.kind top or tool")
+
         data = _expect_object(spec.get("data"), "data")
         extra = sorted(set(data) - {"accepts", "produces"})
         if extra:
@@ -1567,6 +1570,7 @@ class PluginBuilder:
             page_options["pageId"] = host["pageId"]
             page_options["activity"] = workspace["activity"]
             page_options["toolbar"] = False
+        close_target = host["pageId"] if hosted else page["id"]
 
         lines = [
             "(() => {",
@@ -1589,7 +1593,7 @@ class PluginBuilder:
             "    const pageHeader=units.pageHeader.create(page,{"
             + f"variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},"
             + f"actions:{self._action_source(page['actionIds'])},close:{str(page['close']).lower()},"
-            + f"onClose:()=>ctx.workspace?.closePage?.({_js(page['id'])})"
+            + f"onClose:()=>ctx.workspace?.closePage?.({_js(close_target)})"
             + "});",
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
