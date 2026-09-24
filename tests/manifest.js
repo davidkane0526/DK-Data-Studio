@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-interaction-command-generator.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-scientific-workbench-generator.js",
       "args": []
     },
@@ -2042,6 +2046,10 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-interaction-command-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-phase-f-scientific-workbench-generator.js",
       "args": []
