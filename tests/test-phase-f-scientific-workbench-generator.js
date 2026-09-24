@@ -30,7 +30,7 @@ function node(){
 }
 
 (async()=>{
-  assert.strictEqual(sdk.sdkVersion,'1.51.48','Phase F scientific workbench generation requires the SDK 1.51.48 authoring contract.');
+  assert.strictEqual(sdk.sdkVersion,'1.51.49','Phase F scientific workbench generation requires the current SDK 1.51.49 authoring contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Scientific workbench generation must consume the frozen Unit 2.5.38 contract.');
   assert(schema.properties.content.items.oneOf.some(row=>row?.properties?.kind?.const==='plot-group'),
     'Declarative schema v1 must expose PlotGroup content.');
