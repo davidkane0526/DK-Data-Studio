@@ -37,6 +37,7 @@ const spec={
     {
       id:'curve-inspector',label:'曲线检查器',role:'prime',presentationRole:'inspector',semanticKind:'inspector',
       priority:80,collapsible:true,defaultPlacement:'right',placements:['right','bottom','float'],layout:'stack-comfortable',
+      actions:[{id:'columns',kind:'choice-menu',labelPrefix:'Cols: ',title:'Columns',commandId:'surface.columns',argumentKey:'value',defaultValue:'auto',items:[{value:'auto',label:'Auto'},{value:'2',label:'2'}]}],
       children:[
         {kind:'header',id:'inspector-header',title:'曲线检查器',actionIds:['clear']},
         {kind:'panel',id:'selection',variant:'plain',header:false,layout:'stack',children:[
@@ -77,6 +78,7 @@ try{
     assert(source.includes(token),'Generated surfaces missing public Unit call: '+token);
   }
   assert(manifest.requiresCore.includes('ui.table'),'Nested surface tables must declare the existing table capability.');
+  assert(source.includes('ctx.commands.history({commandId:"surface.columns",status:\'completed\',limit:1})'),'Command-backed choice-menu must remain supported alongside Domain Adapter binding.');
   assert(!/Unit_for_|ResonanceUnit|TERUnit|plugin\.css|document\./.test(source),'Generic surface generation must not create plugin-specific/private presentation paths.');
 
   const validation=spawnSync(process.execPath,[validator,'validate',out],{cwd:root,encoding:'utf8',env:pythonEnv});

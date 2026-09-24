@@ -22,7 +22,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for the Resonance surface reconstruction gate.');
 }
 
-assert.strictEqual(sdk.sdkVersion,'1.51.59');
+assert.strictEqual(sdk.sdkVersion,'1.51.60');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -46,12 +46,14 @@ try{
   assert(source.includes('units.status.create'),'Inspector composition must stay in the public Status Unit.');
   assert(source.includes('units.floatingChrome.create'),'Group controls must stay in the public FloatingChrome Unit.');
   assert(source.includes('id:"group-columns",menu:true'),'Group-columns must lower to the existing Core ActionGroup menu contract.');
-  assert(source.includes('ctx.commands.history({commandId:"resonance.setGroupColumns",status:\'completed\',limit:1})'),'Dynamic menu state must be projected from Core command history, not a plugin-local mirror.');
+  assert(source.includes('liveDomain.snapshot()?.state')&&source.includes('liveDomain.invoke("setGroupColumns"'),'Domain-bound menu must project and mutate the single production owner through the generic Domain Adapter.');
   assert(source.includes('actionHost:g_group_analysis_group_header.actions'),'The dynamic menu must reuse the same canonical public Header action host.');
   assert(!/let\s+[^;]*group[_-]?columns[^;]*=/.test(source),'Generated group-columns menu must not create a second mutable state owner.');
   assert(source.includes('units.scientificPlot.create')&&source.includes("renderOwner:'runtime'"),'Derived scientific plots must preserve the runtime render-owner bridge.');
   assert(source.includes('ctx.commands.get("resonance.renderPhysics")')&&source.includes('ctx.commands.get("resonance.resize")'),'Lifecycle behavior must be represented only as bounded command references.');
   assert(manifest.requiresCore.includes('execution.commands'));
+  assert(manifest.requiresCore.includes('services'),'Domain-bound reconstruction must declare the generic services capability.');
+  assert.deepStrictEqual(manifest.pluginDependencies,[{id:'builtin.resonance-workbench'}],'Domain adapter access must remain dependency-scoped.');
   assert(manifest.requiresCore.includes('ui.scientific-plot'));
   assert(manifest.requiresCore.includes('ui.table'));
   assert(!/Unit_for_|ResonanceUnit|plugin\.css|document\./.test(source),'Resonance reconstruction must not introduce plugin-specialized Units/private DOM/CSS.');

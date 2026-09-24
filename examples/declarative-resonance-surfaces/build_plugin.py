@@ -52,6 +52,7 @@ SPEC = {
         "primaryScroll": "contained",
     },
     "data": {"accepts": ["science.transport.iv"]},
+    "domainAdapter": {"ref": "builtin.resonance-workbench/live", "dependency": "builtin.resonance-workbench"},
     "actions": ACTIONS,
     "parameters": {
         "id": "data-control",
@@ -125,7 +126,8 @@ SPEC = {
                     "labelPrefix": "每行：",
                     "title": "设置每行子图数量",
                     "order": 10,
-                    "commandId": "resonance.setGroupColumns",
+                    "domainAction": "setGroupColumns",
+                    "statePath": "group.preference",
                     "argumentKey": "value",
                     "defaultValue": "auto",
                     "items": [
