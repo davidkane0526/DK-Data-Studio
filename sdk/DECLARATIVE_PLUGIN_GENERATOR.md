@@ -356,3 +356,16 @@ Portable Tasks may project scalar outputs into Metric Units through \`result_met
 The executable reference is \`examples/declarative-python-unit-blueprint-parity\`. Its release gate compares the generated public Unit vocabulary against the accepted production \`transfer-vth-lab\` Unit blueprint as independent evidence, then executes the generated plugin and task. The generator never switches on that plugin id and does not copy its private CSS, state store, threshold implementation or presentation source.
 
 This is the first production-shaped reconstruction gate, not a production-plugin replacement. Full 1:1 native-plugin reconstruction still requires the remaining generic composition vocabulary to be represented declaratively and validated under the same no-specialization rule.
+
+
+## Grouped control surfaces — SDK 1.51.52
+
+A titleless parameter/data-control PRIME may use either the original flat \`parameters.fields\` form or a grouped form. The two forms are mutually exclusive. Grouped authoring reuses existing Units and does not define a new panel runtime.
+
+Each group declares \`id\`, \`title\`, \`variant:"headed"|"plain"\`, \`layout:"stack"|"form-grid-2"\`, optional \`badge\`, \`fields\`, \`note\`, and \`actionIds\`. Headed groups use the canonical headed Panel. Plain groups use a plain Panel plus canonical content Header. Fields map to Field/Check, badges to Chip, notes to Note, and actions to Toolbar.
+
+Top-level \`actions[]\` remains the only action catalog. Actions may declare \`icon\` and \`order\`; \`page.actionIds\` and group \`actionIds\` only select from that catalog and create no second command path.
+
+\`page.close:true\` is valid only for \`host.kind:"top"\` or \`"tool"\` and lowers to the existing hosted workspace close lifecycle. Standalone generation emits no \`ctx.workspace\` close reference.
+
+The executable reference \`examples/declarative-python-unit-blueprint-parity\` now covers the accepted Transfer Vth public Unit spine including grouped Data/Extraction controls, hosted TOP lifecycle, titleless data-control PRIME, Metric grid, ScientificPlot and resizable SplitPane/Table. The generator contains no Transfer-Vth-specific branch and production plugin source remains unchanged.

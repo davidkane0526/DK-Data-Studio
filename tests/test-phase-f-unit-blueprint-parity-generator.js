@@ -34,7 +34,7 @@ function node(){
 }
 
 (async()=>{
-  assert(atLeast(sdk.sdkVersion,'1.51.51'),'Production-shaped generation requires the SDK 1.51.51 authoring contract.');
+  assert(atLeast(sdk.sdkVersion,'1.51.52'),'Grouped production-shaped generation requires the SDK 1.51.52 authoring contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
   assert.strictEqual(blueprints.version,'2.5.38');
 

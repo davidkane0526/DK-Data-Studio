@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.51): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.52): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.51
+# Unit Templates 2.5.38 — SDK 1.51.52
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.52 generated grouped control-surface authoring
+
+SDK 1.51.52 does not add or modify a Unit. Phase F can now reconstruct a multi-section data-control PRIME by declaring groups that compose the existing Panel, Header, Chip, Field, Check, Note and Toolbar Units. Headed/plain group choice, stack/form-grid layout and action placement are authoring declarations only; Core continues to own Unit anatomy, geometry, accessibility, paint and interaction plumbing.
+
+PageHeader actions and group Toolbars project from one shared action catalog. Hosted TOP/Tool pages may declare close behavior through the already-published workspace lifecycle; standalone generated plugins do not acquire workspace-only close code. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
 
 ## SDK 1.51.51 generated production-shaped blueprint reconstruction
 
@@ -207,7 +213,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.51.
+`units.version` is `2.5.38` in SDK 1.51.52.
 
 
 
