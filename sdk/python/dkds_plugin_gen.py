@@ -1460,6 +1460,17 @@ class PluginBuilder:
             ]
         return manifest
 
+    def _action_invoke_source(self, action_id: str) -> str:
+        action = next((row for row in self.spec["actions"] if row["id"] == action_id), None)
+        if action is None:
+            raise SpecError(f"unknown action id: {action_id}")
+        task = self._task_for_action(action_id)
+        if task is not None:
+            if task.get("domain_command") is not None:
+                return f"()=>ctx.commands.run({_js(task['domain_command']['id'])},{{}})"
+            return f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
+        return f"()=>{{ctx.status.set({_js(action['statusMessage'])});return true;}}"
+
     def _action_source(self, action_ids: List[str] | None = None) -> str:
         selected = set(action_ids) if action_ids is not None else None
         rows = []
