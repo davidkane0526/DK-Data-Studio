@@ -472,3 +472,10 @@ A generic movable PRIME must bind exactly one declared public Header child as it
 Generic PRIME surfaces may declare bounded `actions` of kind `choice-menu`. The compiler does not create a menu implementation: it passes a dynamic action descriptor to the existing Workbench `ActionGroup` and reuses the same canonical Header action host selected by `chromeHeaderId`.
 
 The menu's current value is projected from `ctx.commands.history({ commandId, status: 'completed', limit: 1 })`. Selecting an item invokes only the declared command with one bounded argument key, then asks the existing PRIME ActionGroup to render again after completion. This deliberately avoids a second mutable preference/state owner in generated presentation code. The Resonance-shaped specimen now covers the accepted `每行：auto/1..6` group-columns action structurally; production numerical/state ownership remains outside the generator.
+
+
+## Dependency-scoped live Domain Adapter consumption — SDK 1.51.60
+
+A declarative package may declare one top-level `domainAdapter` with a provider-qualified `ref` and matching plugin `dependency`. The generated manifest adds the ordinary `services` Core requirement and a dependency-scoped `pluginDependencies` entry; activation connects through `ctx.services.domain.connect(ref)`. No raw service is exposed.
+
+PRIME `choice-menu` actions support either the existing `commandId` path or a mutually exclusive `domainAction + statePath` path. Domain-bound menus read the selected value from `liveDomain.snapshot().state` and invoke only the declared adapter action. The connection subscription re-renders only affected ActionGroups when the authoritative owner publishes a change. The generator stores no duplicate preference value.
