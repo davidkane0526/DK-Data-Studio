@@ -35,7 +35,7 @@ function node(){
 }
 
 (async()=>{
-  assert.strictEqual(sdk.sdkVersion,'1.51.53','Second production tool blueprint parity requires the SDK 1.51.53 authoring contract.');
+  assert.strictEqual(sdk.sdkVersion,'1.51.54','Second production tool blueprint parity remains valid under the SDK 1.51.54 authoring contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Second blueprint parity must consume the frozen Unit 2.5.38 contract.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
   const pulse=blueprints.blueprints['pulse-sampler-tool'];
