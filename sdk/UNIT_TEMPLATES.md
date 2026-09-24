@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.52): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.53): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.52
+# Unit Templates 2.5.38 — SDK 1.51.53
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.53 generated Tool-designer blueprint reconstruction
+
+SDK 1.51.53 does not add or modify a Unit. The second production-shaped Phase F gate proves that the existing Workspace, Tabs, Layout, Action, Toolbar, Table and PRIME contracts can reproduce a Tool-designer spine independently of the first Vth-style workbench proof. Authors may declare the already-public bounded Workspace left width/minimum/reserve and content end inset, explicit parameter PRIME priority/embedded/auto-open state, compact Tabs, field-layout recipes, Action Grid, segment Toolbar and parameter-owned Table.
+
+The accepted Pulse Sampler presentation is reconstruction evidence only. Its plugin id, live-domain/state, waveform algorithm, Task implementation, private DOM hooks and historical presentation details are not imported into generated runtime. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
 
 ## SDK 1.51.52 generated grouped control-surface authoring
 
