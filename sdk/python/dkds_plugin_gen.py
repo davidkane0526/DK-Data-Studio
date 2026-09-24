@@ -1118,6 +1118,8 @@ class PluginBuilder:
         for projection in normalized_result_plots:
             if projection["id"] not in plot_lookup:
                 raise SpecError(f"portable task result plot not found: {projection['id']}")
+            if plot_lookup[projection["id"]].get("renderOwner", "unit") != "unit":
+                raise SpecError(f"portable task result plot {projection['id']} is runtime-owned and cannot receive generated curve projection")
             if not IDENT.fullmatch(str(projection["key"]).replace("-", "_")):
                 raise SpecError(f"invalid portable task result plot key: {projection['key']}")
         if len({row["id"] for row in normalized_result_plots}) != len(normalized_result_plots):
@@ -1742,6 +1744,16 @@ class PluginBuilder:
         return lines
 
     def _scientific_plot_spec_source(self, row: Dict[str, Any], base: str) -> str:
+        variant = row.get("plotVariant", "curve")
+        render_owner = row.get("renderOwner", "unit")
+        if render_owner == "runtime":
+            return (
+                "{"
+                + f"variant:{_js(variant)},source:{_js(row['source'])},renderOwner:'runtime',"
+                + f"xTitle:{_js(row.get('xTitle',''))},yTitle:{_js(row.get('yTitle',''))}"
+                + "}"
+            )
+
         curve_parts = [
             f"id:{_js(row['id'])}",
             f"points:{base}_points",
@@ -1755,7 +1767,7 @@ class PluginBuilder:
                 f"entityType:{_js(identity['entityType'])}",
             ]
         parts = [
-            "variant:'curve'",
+            f"variant:{_js(variant)}",
             f"source:{_js(row['source'])}",
             f"xTitle:{_js(row['xTitle'])}",
             f"yTitle:{_js(row['yTitle'])}",
