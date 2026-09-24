@@ -203,12 +203,12 @@ function node(){
     assert.strictEqual(pageHeaderSpec.close,true);
     pageHeaderSpec.onClose();
     assert.strictEqual(closedPage,'dkdsGeneratedPage_generated-unit-blueprint-parity');
-    assert.deepStrictEqual(pageHeaderSpec.actions.map(row=>row.id),['refresh','fit','settings']);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(pageHeaderSpec.actions.map(row=>row.id))),['refresh','fit','settings']);
     assert(panelSpecs.some(spec=>spec.variant==='headed'&&spec.title==='数据'),'Data control must contain a headed Data panel.');
     assert(panelSpecs.some(spec=>spec.variant==='plain'&&spec.header===false),'Data control must contain a plain extraction panel.');
     assert.strictEqual(toolbarSpecs.length,2,'Grouped control surfaces must create the declared Data and Extraction toolbars.');
-    assert.deepStrictEqual(toolbarSpecs[0].actions.map(row=>row.id),['refresh','demo']);
-    assert.deepStrictEqual(toolbarSpecs[1].actions.map(row=>row.id),['analyze']);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(toolbarSpecs[0].actions.map(row=>row.id))),['refresh','demo']);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(toolbarSpecs[1].actions.map(row=>row.id))),['analyze']);
 
     await toolbarSpecs[1].actions[0].onInvoke();
 
