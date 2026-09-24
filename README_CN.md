@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Scientific Interaction / Replay Command Generation**：声明式/Python 生成器继续复用现有 Core Interaction 与 validated domain-command registry。生成 Plot 可声明稳定 series identity、reference-only selection、带维度/单位语义的 viewport linking，以及有界 legend visibility linking；portable Task 可同时生成可重放 domain command 元数据，并依赖现有 replay/stale-input 校验，不另建 Interaction Hub、command bus、Worker、Data Store、Python runtime 或 Presenter 分支。SDK 升至 1.51.49；Plugin API 仍为 1.19.0，Unit Templates 继续冻结为 2.5.38（41 Units / 73 Layout recipes）。
+
 > **v3.71.115 WIP — Phase F Multi-source Scientific Workbench Generation**：声明式/Python 生成器扩展到多源、多结果科学分析工作台。一个 lowered JavaScript `DKDSTaskDefinition` 现在可以同时消费多个独立 scoped DataTable 源，在同一次 Core Task Runner 执行后刷新多个 Unit PlotGroup / PlotView / ScientificPlot 子图与多个结果表，并发布多个声明在 `data.produces` 中的 canonical DataTable Artifact；每个派生对象保留全部真实输入 Artifact lineage，参数 provenance 仍只记录参数而不复制源列。整个能力复用现有 Plugin API 1.19、Artifact Store、Task Runner 与 Unit 科学图体系，不新增 Python runtime、私有 Worker、第二 Data Store、私有科学图渲染器或 Presenter 分支。SDK 升至 1.51.48；Unit Templates 继续冻结为 2.5.38（41 Units / 73 Layout recipes）。
 
 > **v3.71.115 WIP — Phase F Bounded Artifact/DataTable Pipeline Generation**：声明式/Python 生成插件扩展到真实科学数据链路。Python 仍只存在于作者侧/构建侧；生成运行时通过当前插件的 scoped `ctx.data.sources` 选择输入，只用 `columnMetadata()` 枚举列并以作者声明的 `maxRows ≤ 65536` 调用 `readColumnRange()` 做显式有界读取，再由既有 Core Task Runner 执行已 lowering 的 JavaScript `DKDSTaskDefinition`。结果可进入 Unit ScientificPlot / Table，也可通过 `ctx.data.model.createTable()` + `ctx.data.artifacts.publish()` 发布声明在 `data.produces` 中的 canonical DataTable，并记录真实 source lineage 与参数快照。禁止整表 `get()` 输入、Python fallback/provider、第二 Data Store 或第二 Worker 路径。SDK 升至 1.51.47；Unit Templates 继续冻结为 2.5.38（41 Units / 73 Layout recipes）。
@@ -65,7 +67,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.48**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.49**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
