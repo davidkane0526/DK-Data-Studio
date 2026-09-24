@@ -59,9 +59,9 @@ For JSON-driven workflows the same schema is available through the CLI:
 
 ## v1 scope
 
-Schema v1 remains additive and deliberately bounded. It supports standalone workbench identity, data accepts/produces, page metadata, semantic PRIMARY role, header actions, a titleless parameter PRIME with number/text/select/checkbox fields, notes, curve plots, and canonical Unit tables. Python-authored pure functions may be lowered at build time and bound to existing Core Task Runner actions.
+Schema v1 remains additive and deliberately bounded. It supports standalone workbench identity, data accepts/produces, page metadata, semantic PRIMARY role, header actions, a titleless parameter PRIME with number/text/select/checkbox fields, notes, curve plots, canonical Unit tables, and bounded Unit PlotGroup compositions. Python-authored pure functions may be lowered at build time and bound to existing Core Task Runner actions.
 
-Generated data bindings use only current Plugin API contracts. Task inputs may come from parameter Units or bounded columns of a plugin-scoped DataTable source. Task results may update Unit ScientificPlot/Table surfaces and may publish one declared canonical DataTable Artifact. TOP/dedicated-window lifecycle, PlotGroup composition, interaction linking, arbitrary data mutation, dynamic Python semantics, and new runtime abstractions remain outside this generator layer unless separately expressed by existing public SDK contracts.
+Generated data bindings use only current Plugin API contracts. Task inputs may come from parameter Units or bounded columns of one or more plugin-scoped DataTable sources. Task results may update multiple Unit ScientificPlot/Table surfaces, including plots owned by a Unit PlotGroup, and may publish multiple declared canonical DataTable Artifacts. TOP/dedicated-window lifecycle, arbitrary data mutation, dynamic Python semantics, private interaction semantics, and new runtime abstractions remain outside this generator layer unless separately expressed by existing public SDK contracts.
 
 ## Acceptance rules
 
@@ -160,3 +160,66 @@ A published semantic type must already appear in `data.produces`. The generator 
 Table output uses the existing Unit Table/TableSurface path, plot output uses Unit ScientificPlot, and execution remains the existing Core Task Runner. No Python source, Python bytecode, Python provider, alternate Store, alternate table renderer, or private worker pool is generated.
 
 The executable reference is `examples/declarative-python-artifact-reference`; its release gate verifies bounded reads, numerical JS-task execution, Unit Table/Plot projection, canonical Artifact publication, lineage, oversized-input rejection, ordinary SDK validation, and absence of Python runtime files.
+
+## Multi-source scientific workbench generation — SDK 1.51.48
+
+SDK 1.51.48 generalizes the bounded pipeline without adding another runtime. A single generated Task may bind arguments to different scoped source indexes and may fan one immutable Task result out to several public scientific surfaces:
+
+    scoped DataTable A ─┐
+                         ├─> bounded column reads ─> generated JS Task
+    scoped DataTable B ─┘                              │
+    parameter Units ──────────────────────────────────┘
+                                                       ├─> Unit PlotGroup / PlotView / ScientificPlot
+                                                       ├─> Unit Table
+                                                       └─> one or more canonical DataTable Artifacts
+
+A declarative \`plot-group\` selects the existing public PlotGroup contract. Its bounded authoring fields are \`columns\`, \`maxColumns\`, \`minItemWidth\`, \`density\`, \`responsive\`, and two or more child curve plots. The generator does not emit group CSS, draggable-window geometry, Mobile rules, or a private plot implementation. PlotGroup owns grouping and responsive scientific layout; PlotView owns portable plot lifecycle; ScientificPlot owns rendering and standard scientific interaction.
+
+Plural Task projections are explicit:
+
+    builder.add_portable_task(
+        "compare-curves",
+        compare_curves,
+        action_id="compare",
+        input_bindings={
+            "x_a": {
+                "kind": "artifact-column",
+                "source": {"semanticType": "science.transport.iv", "index": 0},
+                "column": {"role": "x"},
+                "maxRows": 65536
+            },
+            "x_b": {
+                "kind": "artifact-column",
+                "source": {"semanticType": "science.transport.iv", "index": 1},
+                "column": {"role": "x"},
+                "maxRows": 65536
+            }
+        },
+        result_plots=[
+            {"id": "curve-a", "key": "points_a"},
+            {"id": "curve-b", "key": "points_b"}
+        ],
+        result_tables=[
+            {"id": "comparison-table", "key": "rows"}
+        ],
+        publish_tables=[
+            {
+                "id": "comparison",
+                "name": "Comparison",
+                "semanticType": "science.generated.comparison",
+                "columns": [...]
+            },
+            {
+                "id": "delta",
+                "name": "Delta",
+                "semanticType": "science.generated.delta",
+                "columns": [...]
+            }
+        ]
+    )
+
+The singular \`result_plot\`, \`result_table\` and \`publish_table\` arguments remain supported for backward-compatible simple generators. Plural projections must target unique declared IDs. Every published semantic type must be listed in \`data.produces\`.
+
+The executable reference is \`examples/declarative-python-scientific-workbench\`. Its gate proves two separate scoped DataTables, four bounded column reads, one lowered JavaScript Task, three generated PlotGroup curves, one Unit Table projection, two canonical output Artifacts, dual-source lineage, and preservation of the existing strict plot-projection lifecycle.
+
+This remains an authoring capability only. It does not change Plugin API 1.19, Unit Templates 2.5.38, Core Task Runner, Artifact Store, Presenter, or the production plugins.
