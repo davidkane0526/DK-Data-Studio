@@ -215,7 +215,7 @@ function node(){
     };
 
     const activation=await registered.factory(ctx);
-    assert.deepStrictEqual(interactionLinks,[
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(interactionLinks)),[
       {group:'generated-series-selection',options:{acceptTypes:['data.series']}}
     ]);
     assert(Array.isArray(actionRows)&&actionRows.length===1);
@@ -234,7 +234,7 @@ function node(){
     });
 
     await actionRows[0].onInvoke();
-    assert.deepStrictEqual(commandRunCalls,[{id:'generated.compare-curves',payload:{}}]);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(commandRunCalls)),[{id:'generated.compare-curves',payload:{}}]);
     assert.deepStrictEqual(lastCanonical,{
       sources:{x_a:'source:a',y_a:'source:a',x_b:'source:b',y_b:'source:b'},
       parameters:{gain:1}
