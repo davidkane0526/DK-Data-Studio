@@ -78,7 +78,7 @@ class PluginBuilder:
 
     def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         spec = _expect_object(raw, "spec")
-        allowed = {"schema", "plugin", "page", "workspace", "data", "actions", "parameters", "interaction", "content"}
+        allowed = {"schema", "plugin", "page", "workspace", "host", "data", "actions", "parameters", "interaction", "content"}
         extra = sorted(set(spec) - allowed)
         if extra:
             raise SpecError(f"unsupported top-level fields: {', '.join(extra)}")
@@ -132,6 +132,62 @@ class PluginBuilder:
             "primaryLabel": str(workspace.get("primaryLabel", "主界面")),
             "primaryScroll": scroll,
         }
+
+        host = _expect_object(spec.get("host", {"kind": "standalone"}), "host")
+        extra = sorted(set(host) - {"kind", "label", "contextLabel", "icon", "defaultSuper", "window"})
+        if extra:
+            raise SpecError(f"unsupported host fields: {', '.join(extra)}")
+        host_kind = str(host.get("kind", "standalone"))
+        if host_kind not in {"standalone", "top", "tool"}:
+            raise SpecError("host.kind must be standalone, top or tool")
+        if host_kind == "standalone":
+            extra_host = sorted(set(host) - {"kind"})
+            if extra_host:
+                raise SpecError("standalone host supports only kind")
+            normalized_host = {"kind": "standalone"}
+        else:
+            window = _expect_object(host.get("window", {}), "host.window")
+            extra_window = sorted(set(window) - {
+                "title", "width", "height", "minWidth", "minHeight",
+                "prewarm", "reuse", "persistence", "artifactHydration"
+            })
+            if extra_window:
+                raise SpecError(f"unsupported host.window fields: {', '.join(extra_window)}")
+            width = int(window.get("width", 1280 if host_kind == "top" else 1080))
+            height = int(window.get("height", 820 if host_kind == "top" else 720))
+            min_width = int(window.get("minWidth", 860 if host_kind == "top" else 760))
+            min_height = int(window.get("minHeight", 560 if host_kind == "top" else 520))
+            if width < 480 or width > 4096 or height < 360 or height > 2160:
+                raise SpecError("host.window width/height are outside the bounded desktop range")
+            if min_width < 320 or min_width > width:
+                raise SpecError("host.window.minWidth must be in 320..width")
+            if min_height < 240 or min_height > height:
+                raise SpecError("host.window.minHeight must be in 240..height")
+            persistence = str(window.get("persistence", "project"))
+            if persistence not in {"project", "memory", "none"}:
+                raise SpecError("host.window.persistence must be project, memory or none")
+            artifact_hydration = str(window.get("artifactHydration", "live"))
+            if artifact_hydration not in {"project", "live"}:
+                raise SpecError("host.window.artifactHydration must be project or live")
+            normalized_host = {
+                "kind": host_kind,
+                "label": _nonempty(host.get("label", normalized_page["label"]), "host.label"),
+                "contextLabel": _nonempty(host.get("contextLabel", normalized_page["title"]), "host.contextLabel"),
+                "icon": _nonempty(host.get("icon", "◇" if host_kind == "top" else "⌁"), "host.icon"),
+                "defaultSuper": bool(host.get("defaultSuper", False)),
+                "pageId": "dkdsGeneratedPage_" + re.sub(r"[^A-Za-z0-9_-]", "_", normalized_page["id"]),
+                "window": {
+                    "title": _nonempty(window.get("title", normalized_page["title"]), "host.window.title"),
+                    "width": width,
+                    "height": height,
+                    "minWidth": min_width,
+                    "minHeight": min_height,
+                    "prewarm": bool(window.get("prewarm", False)),
+                    "reuse": bool(window.get("reuse", True)),
+                    "persistence": persistence,
+                    "artifactHydration": artifact_hydration,
+                },
+            }
 
         data = _expect_object(spec.get("data"), "data")
         extra = sorted(set(data) - {"accepts", "produces"})
@@ -449,6 +505,7 @@ class PluginBuilder:
             "plugin": normalized_plugin,
             "page": normalized_page,
             "workspace": normalized_workspace,
+            "host": normalized_host,
             "data": normalized_data,
             "actions": actions,
             "parameters": parameters,
@@ -938,8 +995,13 @@ class PluginBuilder:
             for row in self.spec["content"]
             for plot in ([row] if row["kind"] == "plot" else row.get("plots", []) if row["kind"] == "plot-group" else [])
         )
+        host = self.spec["host"]
+        hosted = host["kind"] in {"top", "tool"}
         requires = ["status", "ui.workspace", "ui.unit-templates", "ui.pages"]
         capabilities = ["ui.page", "ui.plugin-workspace"]
+        if hosted:
+            requires.extend(["workspace", "ui.activities", "ui.top-workspace"])
+            capabilities.append("ui.top-workspace")
         if has_plot:
             requires.append("ui.scientific-plot")
             capabilities.append("ui.scientific-plot")
@@ -981,9 +1043,24 @@ class PluginBuilder:
             "description": plugin["description"],
             "requiresCore": requires,
             "capabilities": capabilities,
-            "pluginType": "workbench",
+            "pluginType": "tool" if host["kind"] == "tool" else "workbench",
             "data": self.spec["data"],
         }
+        if hosted:
+            workspace = self.spec["workspace"]
+            manifest["workspace"] = {
+                "role": "top",
+                "activity": workspace["activity"],
+                "icon": host["icon"],
+                "title": host["contextLabel"],
+            }
+            if host["defaultSuper"]:
+                manifest["workspace"]["defaultSuper"] = True
+            window = dict(host["window"])
+            window["activity"] = workspace["activity"]
+            if has_plot:
+                window["dependencies"] = ["scientific-renderer"]
+            manifest["window"] = window
         if self._portable_tasks:
             manifest["tasks"] = [
                 {"id": row["compiled"].task_id, "entry": row["compiled"].entry}
@@ -1156,14 +1233,39 @@ class PluginBuilder:
         manifest = self.manifest()
         page = self.spec["page"]
         workspace = self.spec["workspace"]
+        host = self.spec["host"]
+        hosted = host["kind"] in {"top", "tool"}
+        page_options = {
+            "id": page["id"],
+            "label": page["label"],
+            "title": page["title"],
+            "order": manifest["order"],
+            "html": "",
+        }
+        if hosted:
+            page_options["pageId"] = host["pageId"]
+            page_options["activity"] = workspace["activity"]
+            page_options["toolbar"] = False
+
         lines = [
             "(() => {",
             f"  const manifest={_js(manifest)};",
             "  DKDSPlugins.define(manifest, async ctx => {",
             "    const units=ctx.ui.unitTemplates;",
             "    if(!units)throw new Error('Declarative plugin requires ui.unit-templates.');",
-            f"    const page=ctx.ui.pages.add({{id:{_js(page['id'])},label:{_js(page['label'])},title:{_js(page['title'])},order:{manifest['order']},html:''}});",
-            f"    const pageHeader=units.pageHeader.create(page,{{variant:'page-owned',title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},actions:{self._action_source()}}});",
+        ]
+        if hosted:
+            lines += [
+                "    ctx.ui.activities.add({"
+                + f"id:{_js(workspace['activity'])},label:{_js(host['label'])},contextLabel:{_js(host['contextLabel'])},"
+                + f"icon:{_js(host['icon'])},order:{manifest['order']},primary:true,openMode:'window',"
+                + f"artifactHydration:{_js(host['window']['artifactHydration'])},description:{_js(manifest['description'])},"
+                + f"onActivate:()=>ctx.workspace.openPage({_js(host['pageId'])})"
+                + "});",
+            ]
+        lines += [
+            f"    const page=ctx.ui.pages.add({_js(page_options)});",
+            f"    const pageHeader=units.pageHeader.create(page,{{variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},actions:{self._action_source()}}});",
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
             "    const workspaceHost=units.layout.create(body,{variant:'identity'});",
@@ -1180,6 +1282,39 @@ class PluginBuilder:
             + f"id:'main',label:{_js(workspace['primaryLabel'])},presentationRole:{_js(workspace['primaryRole'])},"
             + f"scroll:{_js(workspace['primaryScroll'])},titlePolicy:'host-only',mainNode:main"
             + "},primes,subs:[]});",
+        ]
+        if hosted:
+            top_primes = []
+            parameters = self.spec.get("parameters")
+            if parameters is not None:
+                top_primes.append({
+                    "id": parameters["id"],
+                    "label": parameters["label"],
+                    "semanticKind": "panel",
+                    "presentationPurpose": "parameters",
+                    "presentationRole": "data-control",
+                    "priority": 90,
+                    "collapsible": True,
+                })
+            layout = {
+                "mode": "native",
+                "root": {"selector": f"#{host['pageId']} .dkds-plugin-workspace"},
+                "primary": {
+                    "id": "main",
+                    "role": "analysis-primary",
+                    "presentationRole": workspace["primaryRole"],
+                    "priority": 100,
+                    "collapsible": False,
+                },
+                "prime": top_primes,
+                "sub": [],
+            }
+            lines += [
+                "    ctx.ui.topWorkspace.register({"
+                + f"id:{_js(workspace['activity'])},activity:{_js(workspace['activity'])},label:{_js(host['label'])},icon:{_js(host['icon'])},layout:{_js(layout)}"
+                + "});",
+            ]
+        lines += [
             "    return {deactivate(){for(const item of disposables.reverse())try{item?.dispose?.();}catch{};workbench?.dispose?.();}};",
             "  });",
             "})();",
