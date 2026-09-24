@@ -100,6 +100,7 @@ assert.strictEqual(cssDependency.ok,true,require('../tools/quality/unit-producti
 const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css','mobile.css']);
 const EXPECTED_RESONANCE_STABLE_BLOBS=Object.freeze({
   'README.md':'5f67f4b6b91643ecf69d7daf53f2b61c5c0d82d3',
+  'domain-adapter.js':'edb91a047ff6559f1f27f0090aa824b09a96bb70',
   'feature-analysis-runtime.js':'eebd6ecab0824f55e130704ff7f26b17cbb70ae0',
   'feature-context.js':'d02ad9248ff7d0a628538048b4e1cb63a3ef9644',
   'feature-controls-runtime.js':'48c0da0227272a9a6f71ab18ccc0c2b1b4d1d95f',
@@ -119,6 +120,8 @@ const resonanceDir='src/plugins/resonance-workbench';
 const resonanceStableFiles=fs.readdirSync(resonanceDir).filter(name=>fs.statSync(path.join(resonanceDir,name)).isFile()&&!resonanceWiring.has(name)).sort();
 assert.deepStrictEqual(resonanceStableFiles,Object.keys(EXPECTED_RESONANCE_STABLE_BLOBS).sort(),'Resonance stable orchestration/domain/task inventory changed; presentation/mobile wiring is intentionally excluded and protected semantically.');
 for(const [rel,expected] of Object.entries(EXPECTED_RESONANCE_STABLE_BLOBS))assert.strictEqual(blobSha(path.join(resonanceDir,rel)),expected,`Resonance stable orchestration/domain/task file changed unexpectedly: ${rel}`);
+const resonanceDomainAdapter=fs.readFileSync('src/plugins/resonance-workbench/domain-adapter.js','utf8');
+assert(resonanceDomainAdapter.includes("ctx.services.domain.provide('live'")&&!/createTop|createController/.test(resonanceDomainAdapter),'Resonance domain adapter must remain a projection seam over the single production owner.');
 const resonanceCss=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),resonanceMobile=fs.readFileSync('src/plugins/resonance-workbench/mobile.css','utf8');
 assert(!/\.respar-(?:scan-global|detect-actions)[^{]*\{[^}]*grid-template-columns/s.test(resonanceCss),'Resonance plugin CSS must not reclaim Unit-owned parameter ActionGrid density.');
 assert(!/resonance-display-grid[^{]*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance Mobile CSS must not reclaim Unit-owned display FormGrid density.');

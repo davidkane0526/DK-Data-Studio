@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-phase-f-resonance-domain-adapter-seam.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
       "args": []
     },
