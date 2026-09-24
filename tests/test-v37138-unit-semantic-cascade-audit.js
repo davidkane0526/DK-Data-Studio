@@ -43,8 +43,8 @@ assert(/data-dkds-mobile-density="compact"\]\s+\.dkds-field-control\{font-size:1
   'Mobile compact density must target canonical Field identity so select and popup proxy stay identical.');
 
 const unitDoc=fs.readFileSync(path.join(root,'sdk/UNIT_TEMPLATES.md'),'utf8');
-assert(unitDoc.includes('# Unit Templates 2.5.38 — SDK 1.51.53'));
-assert(unitDoc.includes('`units.version` is `2.5.38` in SDK 1.51.53.'));
+assert(unitDoc.includes('# Unit Templates 2.5.38 — SDK 1.51.54'));
+assert(unitDoc.includes('`units.version` is `2.5.38` in SDK 1.51.54.'));
 assert(!unitDoc.includes('2.5.39'),'SDK Unit documentation must not advertise a future/unpublished Unit contract.');
 
 console.log('v3.71.38 Unit semantic/cascade audit PASS');
