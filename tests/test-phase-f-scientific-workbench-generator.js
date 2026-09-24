@@ -11,6 +11,8 @@ const root=path.resolve(__dirname,'..');
 const reference=path.join(root,'examples','declarative-python-scientific-workbench','build_plugin.py');
 const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const schema=JSON.parse(fs.readFileSync(path.join(root,'sdk','declarative-plugin.schema.json'),'utf8'));
+const sdk=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
+const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
 
 function pythonCommand(){
@@ -28,6 +30,8 @@ function node(){
 }
 
 (async()=>{
+  assert.strictEqual(sdk.sdkVersion,'1.51.48','Phase F scientific workbench generation requires the SDK 1.51.48 authoring contract.');
+  assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Scientific workbench generation must consume the frozen Unit 2.5.38 contract.');
   assert(schema.properties.content.items.oneOf.some(row=>row?.properties?.kind?.const==='plot-group'),
     'Declarative schema v1 must expose PlotGroup content.');
 
