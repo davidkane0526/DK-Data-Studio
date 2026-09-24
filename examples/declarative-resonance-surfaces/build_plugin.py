@@ -60,8 +60,24 @@ SPEC = {
         "priority": 100,
         "autoOpen": True,
         "fields": [
-            {"id": "show-rejected", "type": "checkbox", "label": "显示不采纳峰", "value": False},
-            {"id": "show-width", "type": "checkbox", "label": "显示选中峰宽", "value": False},
+            {
+                "id": "show-rejected", "type": "checkbox", "label": "显示不采纳峰", "value": False,
+                "binding": {
+                    "statePath": "workspace.peakDisplay.showRejected",
+                    "domainAction": "setPeakDisplay",
+                    "argumentKey": "value",
+                    "staticArgs": {"key": "showRejected"},
+                },
+            },
+            {
+                "id": "show-width", "type": "checkbox", "label": "显示选中峰宽", "value": False,
+                "binding": {
+                    "statePath": "workspace.peakDisplay.showWidth",
+                    "domainAction": "setPeakDisplay",
+                    "argumentKey": "value",
+                    "staticArgs": {"key": "showWidth"},
+                },
+            },
         ],
     },
     "content": [
