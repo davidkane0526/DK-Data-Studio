@@ -627,7 +627,7 @@ class PluginBuilder:
                 lines += [
                     f"        if(!Array.isArray(result?.[{_js(key)}]))throw new Error({_js('Generated task result.'+key+' must be an array')});",
                     f"        {base}_points=result[{_js(key)}];",
-                    f"        {base}_surface?.requestRender?.();",
+                    f"        {base}_surface.requestRender?.();",
                 ]
             for projection in row["result_tables"]:
                 table = table_lookup[projection["id"]]
