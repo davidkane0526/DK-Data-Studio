@@ -219,7 +219,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.52.
+`units.version` is `2.5.38` in SDK 1.51.53.
 
 
 
