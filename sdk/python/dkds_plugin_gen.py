@@ -1571,6 +1571,11 @@ class PluginBuilder:
             page_options["activity"] = workspace["activity"]
             page_options["toolbar"] = False
         close_target = host["pageId"] if hosted else page["id"]
+        page_header_close = (
+            f",close:true,onClose:()=>ctx.workspace.closePage({_js(close_target)})"
+            if hosted and page["close"]
+            else ""
+        )
 
         lines = [
             "(() => {",
@@ -1592,8 +1597,8 @@ class PluginBuilder:
             f"    const page=ctx.ui.pages.add({_js(page_options)});",
             "    const pageHeader=units.pageHeader.create(page,{"
             + f"variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},"
-            + f"actions:{self._action_source(page['actionIds'])},close:{str(page['close']).lower()},"
-            + f"onClose:()=>ctx.workspace?.closePage?.({_js(close_target)})"
+            + f"actions:{self._action_source(page['actionIds'])}"
+            + page_header_close
             + "});",
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
