@@ -992,7 +992,7 @@ class PluginBuilder:
             extra = sorted(set(surface) - {
                 "id", "label", "role", "presentationRole", "presentationPurpose", "semanticKind",
                 "priority", "order", "collapsible", "fixed", "embedded", "autoOpen", "defaultPlacement",
-                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "detailGeometry", "lifecycle", "children"
+                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "chromeHeaderId", "detailGeometry", "lifecycle", "children"
             })
             if extra:
                 raise SpecError(f"unsupported surfaces[{surface_index}] fields: {', '.join(extra)}")
@@ -1065,6 +1065,40 @@ class PluginBuilder:
             ]
             if not children:
                 raise SpecError(f"surfaces[{surface_index}].children must not be empty")
+
+            chrome_header_id = ""
+            if surface.get("chromeHeaderId") is not None:
+                chrome_header_id = _ident(surface.get("chromeHeaderId"), f"surfaces[{surface_index}].chromeHeaderId")
+                if role != "prime":
+                    raise SpecError(f"surfaces[{surface_index}].chromeHeaderId is only valid for PRIME surfaces")
+            if role == "prime" and len(set(placements)) > 1:
+                top_headers = [node["id"] for node in children if node.get("kind") == "header"]
+                if not chrome_header_id and len(top_headers) == 1:
+                    chrome_header_id = top_headers[0]
+                if not chrome_header_id:
+                    raise SpecError(f"surfaces[{surface_index}] movable PRIME requires one canonical top-level Header child or chromeHeaderId")
+                stack = list(children)
+                found_header = False
+                while stack:
+                    node = stack.pop()
+                    if node.get("id") == chrome_header_id and node.get("kind") == "header":
+                        found_header = True
+                        break
+                    stack.extend(node.get("children", []))
+                if not found_header:
+                    raise SpecError(f"surfaces[{surface_index}].chromeHeaderId must reference a Header child")
+            elif chrome_header_id:
+                stack = list(children)
+                found_header = False
+                while stack:
+                    node = stack.pop()
+                    if node.get("id") == chrome_header_id and node.get("kind") == "header":
+                        found_header = True
+                        break
+                    stack.extend(node.get("children", []))
+                if not found_header:
+                    raise SpecError(f"surfaces[{surface_index}].chromeHeaderId must reference a Header child")
+
             surfaces.append({
                 "id": _ident(surface.get("id"), f"surfaces[{surface_index}].id"),
                 "label": _nonempty(surface.get("label"), f"surfaces[{surface_index}].label"),
@@ -1085,6 +1119,7 @@ class PluginBuilder:
                 "keepLeft": bool(surface.get("keepLeft", False)),
                 "persistent": bool(surface.get("persistent", True)),
                 "layout": _nonempty(surface.get("layout", "stack-comfortable"), f"surfaces[{surface_index}].layout"),
+                "chromeHeaderId": chrome_header_id,
                 "detailGeometry": detail_geometry,
                 "lifecycle": lifecycle,
                 "children": children,
@@ -2514,6 +2549,13 @@ class PluginBuilder:
                     + f"existingNode:{root},sizing:{_js(surface['sizing'])},autoOpen:{str(surface['autoOpen']).lower()},"
                     + f"defaultPlacement:{_js(surface['defaultPlacement'])},placements:{_js(surface['placements'])},stateVersion:{_js(surface['stateVersion'])}"
                     + (f",detailGeometry:{_js(surface['detailGeometry'])}" if surface.get("detailGeometry") else "")
+                    + (
+                        (
+                            f",handle:{_var(surface['id']+'-'+surface['chromeHeaderId'])}.element,controlsHost:{_var(surface['id']+'-'+surface['chromeHeaderId'])}.actions"
+                            if surface.get("chromeHeaderId")
+                            else ""
+                        )
+                    )
                     + (
                         (f",mount:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onOpenCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onOpenCommand'])},{{surfaceId:{_js(surface['id'])},event:'open'}});}}" if surface.get("lifecycle", {}).get("onOpenCommand") else "")
                         + (f",onClose:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onCloseCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onCloseCommand'])},{{surfaceId:{_js(surface['id'])},event:'close'}});}}" if surface.get("lifecycle", {}).get("onCloseCommand") else "")

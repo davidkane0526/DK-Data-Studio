@@ -460,3 +460,8 @@ PlotGroup child declarations now carry bounded public `placements`, `defaultPlac
 Generic non-parameter PRIME surfaces now support bounded `detailGeometry` and lifecycle command references (`onOpenCommand`, `onCloseCommand`, `onPlacementChangedCommand`); SUB surfaces support `onShowCommand`. These callbacks contain no authored JavaScript: generated code only routes a bounded event payload to the existing `ctx.commands` service when that command is registered. Surface children additionally support public Status, direct Action, FloatingChrome, and runtime-owned ScientificPlot Units.
 
 `examples/declarative-resonance-surfaces/build_plugin.py` proves the structural spine required by the production Resonance workbench: curve-inspector PRIME, group-analysis PRIME, and physics/spacing/gate SUB surfaces with nested public Units. The remaining production-shaped gap is the dynamic local group-columns menu/action model; it is deliberately not replaced with a plugin-id branch or copied Resonance domain state.
+
+
+### Movable PRIME canonical chrome ownership
+
+A generic movable PRIME must bind exactly one declared public Header child as its canonical drag/control chrome. `chromeHeaderId` may select that Header explicitly; when exactly one top-level Header exists it is inferred. The compiler lowers the same Header handle to PRIME `handle` and `controlsHost`, so Core does not synthesize a duplicate titlebar. A movable PRIME without a canonical Header fails generation rather than falling back to private selectors or duplicate chrome.

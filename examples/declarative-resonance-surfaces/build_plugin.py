@@ -84,6 +84,7 @@ SPEC = {
             "priority": 90,
             "defaultPlacement": "right",
             "placements": ["float", "global", "left", "right", "bottom"],
+            "chromeHeaderId": "inspector-header",
             "detailGeometry": {"minContentInlinePx": 320, "minContentBlockPx": 220},
             "lifecycle": {
                 "onOpenCommand": "resonance.renderInspection",
@@ -110,6 +111,7 @@ SPEC = {
             "priority": 70,
             "defaultPlacement": "bottom",
             "placements": ["float", "global", "left", "right", "bottom"],
+            "chromeHeaderId": "group-header",
             "detailGeometry": {"minContentBlockPx": 220},
             "lifecycle": {
                 "onOpenCommand": "resonance.renderGroup",

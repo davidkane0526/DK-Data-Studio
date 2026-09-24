@@ -41,6 +41,8 @@ try{
     assert(source.includes('subs.push({id:"'+id+'"'),'Missing Resonance SUB '+id);
   }
   assert(source.includes('detailGeometry:{"minContentInlinePx":320,"minContentBlockPx":220}'),'Inspector PRIME must preserve accepted minimum content geometry.');
+  assert(source.includes('handle:curve_inspector_inspector_header.element,controlsHost:curve_inspector_inspector_header.actions'),'Movable inspector PRIME must adopt the same public Header Unit as its single chrome owner.');
+  assert(source.includes('handle:group_analysis_group_header.element,controlsHost:group_analysis_group_header.actions'),'Movable group PRIME must adopt the same public Header Unit as its single chrome owner.');
   assert(source.includes('units.status.create'),'Inspector composition must stay in the public Status Unit.');
   assert(source.includes('units.floatingChrome.create'),'Group controls must stay in the public FloatingChrome Unit.');
   assert(source.includes('units.scientificPlot.create')&&source.includes("renderOwner:'runtime'"),'Derived scientific plots must preserve the runtime render-owner bridge.');
