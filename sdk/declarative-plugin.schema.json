@@ -1449,6 +1449,315 @@
                 }
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "const": "summary"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "variant": {
+                "enum": [
+                  "row",
+                  "strip"
+                ],
+                "default": "row"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "variant": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "const": "empty-state"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "const": "list"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "emptyText": {
+                "type": "string"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "type": "string"
+                    },
+                    "leading": {
+                      "type": "string"
+                    },
+                    "selectable": {
+                      "type": "boolean"
+                    },
+                    "selected": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "title"
+            ],
+            "properties": {
+              "kind": {
+                "const": "plot-view"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "xTitle": {
+                "type": "string"
+              },
+              "yTitle": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "selectionTarget": {
+                "enum": [
+                  "series"
+                ],
+                "default": "series"
+              },
+              "identity": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input"
+                ],
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "entityType": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "data.series"
+                  }
+                }
+              },
+              "axisSemantics": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "dimension": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "y": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "dimension": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "viewport": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "linkGroup"
+                ],
+                "properties": {
+                  "link": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "linkGroup": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "linkedAxes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "x",
+                        "y"
+                      ]
+                    },
+                    "default": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                }
+              },
+              "legend": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "linkGroup"
+                ],
+                "properties": {
+                  "link": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "linkGroup": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxLinkedTargets": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24,
+                    "default": 24
+                  }
+                }
+              },
+              "placements": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "home",
+                    "left",
+                    "right",
+                    "bottom",
+                    "float",
+                    "global"
+                  ]
+                }
+              },
+              "defaultPlacement": {
+                "enum": [
+                  "home",
+                  "left",
+                  "right",
+                  "bottom",
+                  "float",
+                  "global"
+                ],
+                "default": "home"
+              },
+              "contentMinHeight": {
+                "type": "integer",
+                "minimum": 120,
+                "maximum": 1400,
+                "default": 280
+              },
+              "contentMaxHeight": {
+                "type": "integer",
+                "minimum": 120,
+                "maximum": 1800,
+                "default": 360
+              }
+            }
           }
         ]
       }
