@@ -388,6 +388,106 @@
                 }
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "title",
+              "plots"
+            ],
+            "properties": {
+              "kind": {
+                "const": "plot-group"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "columns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "default": 2
+              },
+              "maxColumns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "default": 4
+              },
+              "minItemWidth": {
+                "type": "integer",
+                "minimum": 120,
+                "maximum": 1200,
+                "default": 260
+              },
+              "density": {
+                "enum": [
+                  "compact",
+                  "regular",
+                  "comfortable"
+                ],
+                "default": "regular"
+              },
+              "responsive": {
+                "type": "boolean",
+                "default": true
+              },
+              "plots": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "xTitle": {
+                      "type": "string"
+                    },
+                    "yTitle": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "prefixItems": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         ]
       }
