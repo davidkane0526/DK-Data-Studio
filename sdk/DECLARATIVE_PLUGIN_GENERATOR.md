@@ -479,3 +479,10 @@ The menu's current value is projected from `ctx.commands.history({ commandId, st
 A declarative package may declare one top-level `domainAdapter` with a provider-qualified `ref` and matching plugin `dependency`. The generated manifest adds the ordinary `services` Core requirement and a dependency-scoped `pluginDependencies` entry; activation connects through `ctx.services.domain.connect(ref)`. No raw service is exposed.
 
 PRIME `choice-menu` actions support either the existing `commandId` path or a mutually exclusive `domainAction + statePath` path. Domain-bound menus read the selected value from `liveDomain.snapshot().state` and invoke only the declared adapter action. The connection subscription re-renders only affected ActionGroups when the authoritative owner publishes a change. The generator stores no duplicate preference value.
+
+
+## Read-only live snapshot bindings — SDK 1.51.61
+
+Surface nodes may bind public Status, Metric, Field/Check and Table Units to a `domainAdapter` snapshot through a dotted `statePath`. Text-like bindings may add `fallback`, `prefix` and `suffix`; Table bindings consume an array path. The generated shell creates one `liveBindings` collection and one `refreshLiveBindings()` pass, so one authoritative adapter snapshot fans out to every bound public Unit handle.
+
+The lowering uses only public update surfaces: Table `setData(columns, rows)`, Metric `value.textContent`, Field `control.value`, Check `input.checked`, and the Status element returned by the Unit. Bindings are read-only. Summary is intentionally not supported because the current public Summary handle exposes no `setItems()`-style updater; the generator will not reach into private descendants to simulate one.

@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Live Snapshot Projection**：声明式/Python 生成器新增只读 Domain Adapter snapshot 绑定：Status、Metric、Field/Check、Table 通过同一次 authoritative snapshot 刷新各自公开 Unit handle；Table 使用 `setData()`，Metric 使用公开 `value`，Field/Check 使用公开 `control/input`，不使用私有 selector，也不保存第二份领域状态。Summary 暂不绑定，因为当前公开 Unit handle 没有更新接口。SDK 升至 1.51.61；Plugin API 仍为 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
+
 > **v3.71.115 WIP — Phase F Live Domain Consumer**：声明式/Python 生成器现在可通过 `domainAdapter` 声明依赖受限的生产领域 owner；PRIME `choice-menu` 可用 `domainAction + statePath` 直接从 adapter snapshot 读取状态并调用白名单 action，不再需要任何插件局部状态镜像。原有 `commandId` + Core command history 路径继续保留。SDK 升至 1.51.60；Plugin API 仍为 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
 
 > **v3.71.115 WIP — Phase F Resonance Local Action Closure**：声明式/Python 生成器补齐共振组图 PRIME 的动态本地 ActionGroup 菜单表达。新的 `choice-menu` 仍复用既有 canonical Header action host 与 Core ActionGroup；当前选项从 Core domain-command history 投影，修改仅调用声明的 domain command 并在完成后刷新 ActionGroup，不新增插件局部偏好状态、菜单 runtime、专用 Unit、Presenter 分支或私有 CSS。SDK 升至 1.51.59；Plugin API 保持 1.19.0；Unit Templates 保持 2.5.38（41 Units / 73 Layout recipes）。
@@ -81,7 +83,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.60**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.61**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
