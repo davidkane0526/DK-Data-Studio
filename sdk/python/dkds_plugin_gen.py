@@ -2557,9 +2557,9 @@ class PluginBuilder:
                         )
                     )
                     + (
-                        (f",mount:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onOpenCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onOpenCommand'])},{{surfaceId:{_js(surface['id'])},event:'open'}});}}" if surface.get("lifecycle", {}).get("onOpenCommand") else "")
-                        + (f",onClose:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onCloseCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onCloseCommand'])},{{surfaceId:{_js(surface['id'])},event:'close'}});}}" if surface.get("lifecycle", {}).get("onCloseCommand") else "")
-                        + (f",onPlacementChanged:placement=>{{if(ctx.commands.get({_js(surface['lifecycle']['onPlacementChangedCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onPlacementChangedCommand'])},{{surfaceId:{_js(surface['id'])},event:'placement',placement:String(placement?.placement||placement||'')}});}}" if surface.get("lifecycle", {}).get("onPlacementChangedCommand") else "")
+                        (f",mount:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onOpenCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onOpenCommand'])},{{surfaceId:{_js(surface['id'])},event:'open'}});}}" if (surface.get("lifecycle") or {}).get("onOpenCommand") else "")
+                        + (f",onClose:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onCloseCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onCloseCommand'])},{{surfaceId:{_js(surface['id'])},event:'close'}});}}" if (surface.get("lifecycle") or {}).get("onCloseCommand") else "")
+                        + (f",onPlacementChanged:placement=>{{if(ctx.commands.get({_js(surface['lifecycle']['onPlacementChangedCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onPlacementChangedCommand'])},{{surfaceId:{_js(surface['id'])},event:'placement',placement:String(placement?.placement||placement||'')}});}}" if (surface.get("lifecycle") or {}).get("onPlacementChangedCommand") else "")
                     )
                     + "});"
                 )
@@ -2570,7 +2570,7 @@ class PluginBuilder:
                     + f"id:{_js(surface['id'])},label:{_js(surface['label'])},presentationRole:{_js(surface['presentationRole'])},"
                     + f"semanticKind:{_js(surface['semanticKind'])},priority:{surface['priority']},order:{surface['order']},collapsible:{str(surface['collapsible']).lower()},keepLeft:{str(surface['keepLeft']).lower()},"
                     + f"persistent:{str(surface['persistent']).lower()},existingNode:{root}"
-                    + (f",onShow:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onShowCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onShowCommand'])},{{surfaceId:{_js(surface['id'])},event:'show'}});}}" if surface.get("lifecycle", {}).get("onShowCommand") else "")
+                    + (f",onShow:()=>{{if(ctx.commands.get({_js(surface['lifecycle']['onShowCommand'])}))void ctx.commands.run({_js(surface['lifecycle']['onShowCommand'])},{{surfaceId:{_js(surface['id'])},event:'show'}});}}" if (surface.get("lifecycle") or {}).get("onShowCommand") else "")
                     + "});"
                 )
         return lines
