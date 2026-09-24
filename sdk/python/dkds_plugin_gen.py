@@ -729,6 +729,97 @@ class PluginBuilder:
                     "responsive": bool(row.get("responsive", True)),
                     "plots": plots,
                 })
+            elif kind == "parameter-form":
+                extra = sorted(set(row) - {"kind", "id", "fields", "compact", "autoFit", "layoutOwner"})
+                if extra:
+                    raise SpecError(f"unsupported parameter-form fields at {index}: {', '.join(extra)}")
+                fields = []
+                allowed_types = {"text", "textarea", "formula", "number", "integer", "boolean", "select", "multiselect", "column", "columns", "color"}
+                for f_index, field in enumerate(_expect_list(row.get("fields"), f"content[{index}].fields")):
+                    field = _expect_object(field, f"content[{index}].fields[{f_index}]")
+                    extra = sorted(set(field) - {"id", "type", "label", "required", "default", "options", "min", "max", "visibleWhen"})
+                    if extra:
+                        raise SpecError(f"unsupported parameter-form field keys at {index}:{f_index}: {', '.join(extra)}")
+                    field_type = str(field.get("type", "text"))
+                    if field_type not in allowed_types:
+                        raise SpecError(f"content[{index}].fields[{f_index}].type is unsupported")
+                    normalized_field = {
+                        "id": _ident(field.get("id"), f"content[{index}].fields[{f_index}].id"),
+                        "type": field_type,
+                        "label": _nonempty(field.get("label"), f"content[{index}].fields[{f_index}].label"),
+                    }
+                    for key in ("required", "default", "min", "max", "visibleWhen"):
+                        if key in field:
+                            normalized_field[key] = field[key]
+                    if "options" in field:
+                        options = []
+                        for o_index, option in enumerate(_expect_list(field["options"], f"content[{index}].fields[{f_index}].options")):
+                            if isinstance(option, dict):
+                                option = _expect_object(option, "parameter-form option")
+                                extra = sorted(set(option) - {"value", "label"})
+                                if extra:
+                                    raise SpecError(f"unsupported parameter-form option fields at {index}:{f_index}:{o_index}: {', '.join(extra)}")
+                                options.append({
+                                    "value": option.get("value"),
+                                    "label": _nonempty(option.get("label", option.get("value")), "parameter-form option label"),
+                                })
+                            else:
+                                options.append({"value": option, "label": str(option)})
+                        normalized_field["options"] = options
+                    fields.append(normalized_field)
+                if not fields:
+                    raise SpecError(f"content[{index}].fields must not be empty")
+                if len({field["id"] for field in fields}) != len(fields):
+                    raise SpecError(f"content[{index}].field ids must be unique")
+                layout_owner = str(row.get("layoutOwner", "core"))
+                if layout_owner not in {"core", "host"}:
+                    raise SpecError(f"content[{index}].layoutOwner must be core or host")
+                content.append({
+                    "kind": "parameter-form",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "fields": fields,
+                    "compact": bool(row.get("compact", False)),
+                    "autoFit": bool(row.get("autoFit", False)),
+                    "layoutOwner": layout_owner,
+                })
+            elif kind == "legend":
+                extra = sorted(set(row) - {"kind", "id", "variant", "items"})
+                if extra:
+                    raise SpecError(f"unsupported legend fields at {index}: {', '.join(extra)}")
+                variant = str(row.get("variant", "strip"))
+                if variant not in {"top", "bottom", "left", "right", "strip", "accepted-main"}:
+                    raise SpecError(f"content[{index}].variant is invalid")
+                items = []
+                for l_index, item in enumerate(_expect_list(row.get("items", []), f"content[{index}].items")):
+                    item = _expect_object(item, f"content[{index}].items[{l_index}]")
+                    extra = sorted(set(item) - {"label", "variant"})
+                    if extra:
+                        raise SpecError(f"unsupported legend item fields at {index}:{l_index}: {', '.join(extra)}")
+                    items.append({
+                        "label": _nonempty(item.get("label"), f"content[{index}].items[{l_index}].label"),
+                        "variant": str(item.get("variant", "quiet")),
+                    })
+                content.append({
+                    "kind": "legend",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "variant": variant,
+                    "items": items,
+                })
+            elif kind == "menu":
+                extra = sorted(set(row) - {"kind", "id", "menu", "label", "order", "actionId"})
+                if extra:
+                    raise SpecError(f"unsupported menu fields at {index}: {', '.join(extra)}")
+                action_id = _ident(row.get("actionId"), f"content[{index}].actionId")
+                if action_id not in {action["id"] for action in actions}:
+                    raise SpecError(f"content[{index}].actionId references unknown action: {action_id}")
+                content.append({
+                    "kind": "menu",
+                    "id": _ident(row.get("id"), f"content[{index}].id"),
+                    "menu": _nonempty(row.get("menu", "export"), f"content[{index}].menu"),
+                    "label": _nonempty(row.get("label"), f"content[{index}].label"),
+                    "order": int(row.get("order", 100)),
+                    "actionId": action_id,
+                })
             elif kind == "summary":
                 extra = sorted(set(row) - {"kind", "id", "variant", "items"})
                 if extra:
@@ -958,7 +1049,7 @@ class PluginBuilder:
                     "rows": rows,
                 })
             else:
-                raise SpecError(f"content[{index}].kind must be note, plot, plot-view, plot-group, summary, empty-state, list, metrics, result-split or table")
+                raise SpecError(f"content[{index}].kind must be note, plot, plot-view, plot-group, parameter-form, legend, menu, summary, empty-state, list, metrics, result-split or table")
         if not content:
             raise SpecError("content must not be empty")
 
@@ -1484,6 +1575,8 @@ class PluginBuilder:
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
         has_plot_view = any(row["kind"] == "plot-view" for row in self.spec["content"])
         has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"])
+        has_parameter_form = any(row["kind"] == "parameter-form" for row in self.spec["content"])
+        has_menu = any(row["kind"] == "menu" for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
             for task in self._portable_tasks
@@ -1518,6 +1611,10 @@ class PluginBuilder:
         if has_table:
             requires.append("ui.table")
             capabilities.append("ui.table")
+        if has_parameter_form:
+            requires.append("parameters")
+        if has_menu:
+            requires.append("ui.menus")
         if self._portable_tasks:
             requires.append("execution.tasks")
         if has_interaction:
@@ -1799,6 +1896,29 @@ class PluginBuilder:
         for row in self.spec["content"]:
             if row["kind"] == "note":
                 lines.append(f"    units.note.create(main,{{variant:{_js(row['variant'])},text:{_js(row['text'])}}});")
+                continue
+            if row["kind"] == "parameter-form":
+                base = _var(row["id"])
+                lines += [
+                    f"    const {base}_host=units.layout.create(main,{{variant:'identity'}});",
+                    f"    const {base}_form=units.parameterForm.mount({base}_host,{{fields:{_js(row['fields'])}}},{{compact:{str(row['compact']).lower()},autoFit:{str(row['autoFit']).lower()},layoutOwner:{_js(row['layoutOwner'])}}});",
+                    f"    disposables.push({{dispose(){{try{{{base}_form?.destroy?.();}}catch{{}};try{{{base}_form?.dispose?.();}}catch{{}};}}}});",
+                ]
+                continue
+            if row["kind"] == "legend":
+                base = _var(row["id"])
+                lines.append(f"    const {base}_legend=units.legend.create(main,{{variant:{_js(row['variant'])}}});")
+                for item_index, item in enumerate(row["items"]):
+                    lines.append(
+                        f"    const {base}_legend_item_{item_index}=units.chip.create({base}_legend,{{variant:{_js(item['variant'])},label:{_js(item['label'])}}});"
+                    )
+                continue
+            if row["kind"] == "menu":
+                base = _var(row["id"])
+                invoke = self._action_invoke_source(row["actionId"])
+                lines.append(
+                    f"    const {base}_menu=units.menu.contribute({{id:{_js(row['id'])},menu:{_js(row['menu'])},label:{_js(row['label'])},activity:{_js(self.spec['workspace']['activity'])},order:{row['order']},onClick:{invoke}}});"
+                )
                 continue
             if row["kind"] == "summary":
                 base = _var(row["id"])
