@@ -1277,7 +1277,7 @@ class PluginBuilder:
             if domain_adapter is None:
                 raise SpecError(f"{name} requires top-level domainAdapter")
             raw_binding = _expect_object(raw_binding, name)
-            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey"})
+            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey", "selectAction"})
             if extra:
                 raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
             def dotted(value: Any, field_name: str) -> str:
@@ -1295,6 +1295,8 @@ class PluginBuilder:
             for key in ("labelKey", "colorValueKey", "directionKey"):
                 if raw_binding.get(key) is not None:
                     normalized[key] = _ident(raw_binding.get(key), f"{name}.{key}")
+            if raw_binding.get("selectAction") is not None:
+                normalized["selectAction"] = _ident(raw_binding.get("selectAction"), f"{name}.selectAction")
             return normalized
 
         content = []
@@ -2910,6 +2912,13 @@ class PluginBuilder:
                 f"getCurves:()=>{base}_curves",
                 "getMarkers:()=>[]",
             ]
+            binding = row["binding"]
+            if binding.get("selectAction"):
+                parts.append(
+                    "onCurveSelect:({curve})=>{const id=String(curve?.id||'');"
+                    + f"if(id&&liveDomain?.available?.())void liveDomain.invoke({_js(binding['selectAction'])},{{id}}).catch(error=>ctx.status.set(String(error?.message||error||'曲线选择失败')));"
+                    + "}"
+                )
             return "{" + ",".join(parts) + "}"
 
         curve_parts = [
