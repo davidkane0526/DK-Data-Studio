@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.50): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.51): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.50
+# Unit Templates 2.5.38 — SDK 1.51.51
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.51 generated production-shaped blueprint reconstruction
+
+SDK 1.51.51 does not add or modify a Unit. Phase F now proves that a production-shaped scientific workbench spine can be generated entirely from already-published Unit contracts: `fill-rows` Layout, titleless data-control PRIME, Metric grid, ScientificPlot, Table and resizable SplitPane. Split gesture/persistence/reflow remain Core-owned; Metric/Table/Plot projection remains Unit-owned; the generator only declares composition and task-result bindings.
+
+The production Transfer Vth blueprint is acceptance evidence only and is never imported into runtime generation. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
 
 ## SDK 1.51.50 generated hosted workspace authoring
 
@@ -201,7 +207,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.50.
+`units.version` is `2.5.38` in SDK 1.51.51.
 
 
 
