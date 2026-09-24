@@ -37,7 +37,7 @@ try{
   assert(source.includes('units.parameterForm.mount'),'TER transform settings must use the existing public ParameterForm Unit.');
   assert(source.includes("columns:3,preferredColumns:3,maxColumns:7,minItemWidth:260,responsive:true,density:\"comfortable\""),'TER PlotGroup geometry must remain declarative Unit detail.');
   assert.strictEqual((source.match(/_view=g_ter_plots_group\.addPlot/g)||[]).length,7,'TER reconstruction must declare seven PlotGroup children.');
-  assert(source.includes('renderOwner:\"runtime\"'),'TER plots must preserve the single-owner runtime renderer bridge.');
+  assert(source.includes("renderOwner:'runtime'"),'TER plots must preserve the single-owner runtime renderer bridge.');
   assert(source.includes('detailGeometry:{\"contentAspectRatio\":1.0,\"contentMinHeightPx\":80,\"contentMaxHeightPx\":860}'),'TER heatmaps must preserve square bounded detail geometry.');
   assert(source.includes('detailGeometry:{\"contentMinHeightPx\":320}'),'TER R–V plot must preserve its accepted minimum height.');
   assert(source.includes('TER_Max–Vg 数据')&&source.includes('TER_Max–Vd 数据'),'TER reconstruction must keep both production result-table regions.');
