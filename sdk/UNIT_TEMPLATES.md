@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.49): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.50): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.49
+# Unit Templates 2.5.38 — SDK 1.51.50
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.50 generated hosted workspace authoring
+
+SDK 1.51.50 does not add or modify a Unit. Hosted generation only selects existing host lifecycle contracts around the same Unit composition: standalone, TOP workbench, or Tool Workspace. Activity/Page/TopWorkspace registration controls where the same Unit Workspace is hosted; it does not create a second composition path. Generated parameter PRIME remains the existing fixed-titleless data-control Unit and generated PRIMARY keeps its declared public presentation role.
+
+The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. Dedicated-window geometry belongs to the existing host/window contract, not Unit or Presenter geometry.
 
 ## SDK 1.51.49 generated scientific interaction authoring
 
@@ -195,7 +201,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.49.
+`units.version` is `2.5.38` in SDK 1.51.50.
 
 
 
