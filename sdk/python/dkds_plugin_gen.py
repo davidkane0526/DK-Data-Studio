@@ -102,7 +102,7 @@ class PluginBuilder:
         }
 
         page = _expect_object(spec.get("page"), "page")
-        extra = sorted(set(page) - {"id", "label", "title", "subtitle", "variant"})
+        extra = sorted(set(page) - {"id", "label", "title", "subtitle", "variant", "close", "actionIds"})
         if extra:
             raise SpecError(f"unsupported page fields: {', '.join(extra)}")
         page_variant = str(page.get("variant", "analysis"))
@@ -114,6 +114,8 @@ class PluginBuilder:
             "title": _nonempty(page.get("title"), "page.title"),
             "subtitle": str(page.get("subtitle", "")),
             "variant": page_variant,
+            "close": bool(page.get("close", False)),
+            "actionIds": [_ident(value, "page.actionIds[]") for value in page.get("actionIds", [])],
         }
 
         workspace = _expect_object(spec.get("workspace"), "workspace")
@@ -208,13 +210,15 @@ class PluginBuilder:
         actions = []
         for index, row in enumerate(spec.get("actions", [])):
             row = _expect_object(row, f"actions[{index}]")
-            extra = sorted(set(row) - {"id", "label", "variant", "statusMessage"})
+            extra = sorted(set(row) - {"id", "label", "variant", "statusMessage", "icon", "order"})
             if extra:
                 raise SpecError(f"unsupported action fields at {index}: {', '.join(extra)}")
             action = {
                 "id": _ident(row.get("id"), f"actions[{index}].id"),
                 "label": _nonempty(row.get("label"), f"actions[{index}].label"),
                 "statusMessage": _nonempty(row.get("statusMessage"), f"actions[{index}].statusMessage"),
+                "icon": str(row.get("icon", "")),
+                "order": int(row.get("order", (index + 1) * 10)),
             }
             if "variant" in row:
                 action_variant = str(row["variant"])
@@ -225,52 +229,144 @@ class PluginBuilder:
         if len(actions) > 8:
             raise SpecError("actions supports at most 8 entries")
 
+        action_ids = {row["id"] for row in actions}
+        if not normalized_page["actionIds"]:
+            normalized_page["actionIds"] = [row["id"] for row in actions]
+        unknown_page_actions = [action_id for action_id in normalized_page["actionIds"] if action_id not in action_ids]
+        if unknown_page_actions:
+            raise SpecError(f"page.actionIds references unknown actions: {', '.join(unknown_page_actions)}")
+
+        def normalize_parameter_field(field: Dict[str, Any], name: str) -> Dict[str, Any]:
+            field = _expect_object(field, name)
+            extra = sorted(set(field) - {"id", "type", "label", "value", "step", "options"})
+            if extra:
+                raise SpecError(f"unsupported parameter field keys in {name}: {', '.join(extra)}")
+            kind = str(field.get("type", ""))
+            if kind not in FIELD_TYPES:
+                raise SpecError(f"{name}.type is invalid")
+            normalized = {
+                "id": _ident(field.get("id"), f"{name}.id"),
+                "type": kind,
+                "label": _nonempty(field.get("label"), f"{name}.label"),
+            }
+            if "value" in field:
+                normalized["value"] = field["value"]
+            if "step" in field:
+                normalized["step"] = field["step"]
+            if kind == "select":
+                options = _expect_list(field.get("options"), f"{name}.options")
+                if not options:
+                    raise SpecError(f"{name} select fields require at least one option")
+                normalized["options"] = []
+                for option_index, option in enumerate(options):
+                    option = _expect_object(option, f"{name}.options[{option_index}]")
+                    if set(option) - {"value", "label"}:
+                        raise SpecError("select option supports only value and label")
+                    normalized["options"].append({
+                        "value": option.get("value"),
+                        "label": _nonempty(option.get("label"), f"{name}.options[{option_index}].label"),
+                    })
+            elif "options" in field:
+                raise SpecError("options are only valid for select fields")
+            return normalized
+
         parameters = None
         if spec.get("parameters") is not None:
             row = _expect_object(spec["parameters"], "parameters")
-            extra = sorted(set(row) - {"id", "label", "fields"})
+            extra = sorted(set(row) - {"id", "label", "fields", "groups"})
             if extra:
                 raise SpecError(f"unsupported parameters fields: {', '.join(extra)}")
+            raw_fields = row.get("fields")
+            raw_groups = row.get("groups")
+            if raw_fields is not None and raw_groups is not None:
+                raise SpecError("parameters must use fields or groups, not both")
+            if raw_fields is None and raw_groups is None:
+                raise SpecError("parameters requires fields or groups")
+
             fields = []
-            for index, field in enumerate(_expect_list(row.get("fields"), "parameters.fields")):
-                field = _expect_object(field, f"parameters.fields[{index}]")
-                extra = sorted(set(field) - {"id", "type", "label", "value", "step", "options"})
-                if extra:
-                    raise SpecError(f"unsupported parameter field keys at {index}: {', '.join(extra)}")
-                kind = str(field.get("type", ""))
-                if kind not in FIELD_TYPES:
-                    raise SpecError(f"parameters.fields[{index}].type is invalid")
-                normalized = {
-                    "id": _ident(field.get("id"), f"parameters.fields[{index}].id"),
-                    "type": kind,
-                    "label": _nonempty(field.get("label"), f"parameters.fields[{index}].label"),
-                }
-                if "value" in field:
-                    normalized["value"] = field["value"]
-                if "step" in field:
-                    normalized["step"] = field["step"]
-                if kind == "select":
-                    options = _expect_list(field.get("options"), f"parameters.fields[{index}].options")
-                    if not options:
-                        raise SpecError("select fields require at least one option")
-                    normalized["options"] = []
-                    for option in options:
-                        option = _expect_object(option, "select option")
-                        if set(option) - {"value", "label"}:
-                            raise SpecError("select option supports only value and label")
-                        normalized["options"].append({
-                            "value": option.get("value"),
-                            "label": _nonempty(option.get("label"), "select option label"),
-                        })
-                elif "options" in field:
-                    raise SpecError("options are only valid for select fields")
-                fields.append(normalized)
-            if not fields:
-                raise SpecError("parameters.fields must not be empty")
+            groups = []
+            if raw_fields is not None:
+                for index, field in enumerate(_expect_list(raw_fields, "parameters.fields")):
+                    fields.append(normalize_parameter_field(field, f"parameters.fields[{index}]"))
+                if not fields:
+                    raise SpecError("parameters.fields must not be empty")
+            else:
+                for group_index, group in enumerate(_expect_list(raw_groups, "parameters.groups")):
+                    group = _expect_object(group, f"parameters.groups[{group_index}]")
+                    extra = sorted(set(group) - {"id", "title", "variant", "layout", "fields", "badge", "note", "actionIds"})
+                    if extra:
+                        raise SpecError(f"unsupported parameters.groups[{group_index}] fields: {', '.join(extra)}")
+                    variant = str(group.get("variant", "headed"))
+                    if variant not in {"headed", "plain"}:
+                        raise SpecError(f"parameters.groups[{group_index}].variant must be headed or plain")
+                    layout = str(group.get("layout", "stack"))
+                    if layout not in {"stack", "form-grid-2"}:
+                        raise SpecError(f"parameters.groups[{group_index}].layout must be stack or form-grid-2")
+                    group_fields = []
+                    for field_index, field in enumerate(_expect_list(group.get("fields", []), f"parameters.groups[{group_index}].fields")):
+                        normalized_field = normalize_parameter_field(
+                            field,
+                            f"parameters.groups[{group_index}].fields[{field_index}]",
+                        )
+                        group_fields.append(normalized_field)
+                        fields.append(normalized_field)
+
+                    badge = None
+                    if group.get("badge") is not None:
+                        raw_badge = _expect_object(group["badge"], f"parameters.groups[{group_index}].badge")
+                        extra = sorted(set(raw_badge) - {"text", "variant"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].badge fields: {', '.join(extra)}")
+                        badge_variant = str(raw_badge.get("variant", "quiet"))
+                        if badge_variant not in {"quiet", "selected", "danger", "info"}:
+                            raise SpecError(f"parameters.groups[{group_index}].badge.variant is invalid")
+                        badge = {
+                            "text": str(raw_badge.get("text", "")),
+                            "variant": badge_variant,
+                        }
+
+                    note = None
+                    if group.get("note") is not None:
+                        raw_note = _expect_object(group["note"], f"parameters.groups[{group_index}].note")
+                        extra = sorted(set(raw_note) - {"text", "variant"})
+                        if extra:
+                            raise SpecError(f"unsupported parameters.groups[{group_index}].note fields: {', '.join(extra)}")
+                        note_variant = str(raw_note.get("variant", "meta"))
+                        if note_variant not in NOTE_VARIANTS:
+                            raise SpecError(f"parameters.groups[{group_index}].note.variant is invalid")
+                        note = {"text": str(raw_note.get("text", "")), "variant": note_variant}
+
+                    group_action_ids = [
+                        _ident(value, f"parameters.groups[{group_index}].actionIds[]")
+                        for value in group.get("actionIds", [])
+                    ]
+                    unknown_actions = [action_id for action_id in group_action_ids if action_id not in action_ids]
+                    if unknown_actions:
+                        raise SpecError(
+                            f"parameters.groups[{group_index}].actionIds references unknown actions: {', '.join(unknown_actions)}"
+                        )
+                    if not group_fields and note is None and not group_action_ids:
+                        raise SpecError(f"parameters.groups[{group_index}] must contain fields, note, or actions")
+                    groups.append({
+                        "id": _ident(group.get("id"), f"parameters.groups[{group_index}].id"),
+                        "title": _nonempty(group.get("title"), f"parameters.groups[{group_index}].title"),
+                        "variant": variant,
+                        "layout": layout,
+                        "fields": group_fields,
+                        "badge": badge,
+                        "note": note,
+                        "actionIds": group_action_ids,
+                    })
+                if not groups:
+                    raise SpecError("parameters.groups must not be empty")
+
+            if len({field["id"] for field in fields}) != len(fields):
+                raise SpecError("parameter field ids must be unique across the parameter PRIME")
             parameters = {
                 "id": _ident(row.get("id"), "parameters.id"),
                 "label": _nonempty(row.get("label"), "parameters.label"),
                 "fields": fields,
+                "groups": groups,
             }
 
         normalized_interaction = None
@@ -1219,10 +1315,15 @@ class PluginBuilder:
             ]
         return manifest
 
-    def _action_source(self) -> str:
+    def _action_source(self, action_ids: List[str] | None = None) -> str:
+        selected = set(action_ids) if action_ids is not None else None
         rows = []
         for action in self.spec["actions"]:
+            if selected is not None and action["id"] not in selected:
+                continue
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
+            icon = f",icon:{_js(action['icon'])}" if action.get("icon") else ""
+            order = f",order:{int(action.get('order', 0))}"
             task = self._task_for_action(action["id"])
             if task is not None:
                 if task.get("domain_command") is not None:
@@ -1232,8 +1333,8 @@ class PluginBuilder:
             else:
                 invoke = f"()=>{{ctx.status.set({_js(action['statusMessage'])});return true;}}"
             rows.append(
-                "{id:%s,label:%s%s,onInvoke:%s}"
-                % (_js(action["id"]), _js(action["label"]), variant, invoke)
+                "{id:%s,label:%s%s%s%s,onInvoke:%s}"
+                % (_js(action["id"]), _js(action["label"]), variant, icon, order, invoke)
             )
         return "[" + ",".join(rows) + "]"
 
@@ -1255,42 +1356,78 @@ class PluginBuilder:
             ]
         return lines
 
+    def _parameter_field_source(self, field: Dict[str, Any], host: str) -> List[str]:
+        name = _var(field["id"])
+        if field["type"] == "checkbox":
+            checked = bool(field.get("value", False))
+            return [
+                f"    const {name}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}}});"
+            ]
+        if field["type"] == "select":
+            value = field.get("value", field["options"][0]["value"])
+            return [
+                f"    const {name}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}}});"
+            ]
+        input_type = "number" if field["type"] == "number" else "text"
+        parts = ["variant:'input'", f"label:{_js(field['label'])}", f"inputType:{_js(input_type)}"]
+        if "value" in field:
+            parts.append(f"value:{_js(field['value'])}")
+        if field["type"] == "number":
+            parts.append(f"step:{_js(field.get('step', 'any'))}")
+        return [f"    const {name}=units.field.create({host},{{{','.join(parts)}}});"]
+
     def _parameter_source(self) -> List[str]:
         parameters = self.spec.get("parameters")
         if not parameters:
             return ["    const primes=[];"]
         lines = [
             "    const controlsHost=units.layout.create(null,{variant:'stack-comfortable'});",
-            f"    const parameterPanel=units.panel.create(controlsHost,{{variant:'headed',title:{_js(parameters['label'])},sizing:'content'}});",
-            "    const parameterGrid=units.layout.create(parameterPanel.body,{variant:'form-grid-2'});",
         ]
-        for field in parameters["fields"]:
-            name = _var(field["id"])
-            if field["type"] == "checkbox":
-                checked = bool(field.get("value", False))
-                lines.append(
-                    f"    const {name}=units.check.create(parameterGrid,{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}}});"
-                )
-            elif field["type"] == "select":
-                value = field.get("value", field["options"][0]["value"])
-                lines.append(
-                    f"    const {name}=units.field.create(parameterGrid,{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}}});"
-                )
-            else:
-                input_type = "number" if field["type"] == "number" else "text"
-                parts = ["variant:'input'", f"label:{_js(field['label'])}", f"inputType:{_js(input_type)}"]
-                if "value" in field:
-                    parts.append(f"value:{_js(field['value'])}")
-                if field["type"] == "number":
-                    parts.append(f"step:{_js(field.get('step', 'any'))}")
-                lines.append(f"    const {name}=units.field.create(parameterGrid,{{{','.join(parts)}}});")
+        if parameters.get("groups"):
+            for group in parameters["groups"]:
+                base = _var(group["id"])
+                if group["variant"] == "headed":
+                    lines.append(
+                        f"    const {base}_panel=units.panel.create(controlsHost,{{variant:'headed',title:{_js(group['title'])},sizing:'content'}});"
+                    )
+                    action_host = f"{base}_panel.header.actions"
+                else:
+                    lines += [
+                        f"    const {base}_panel=units.panel.create(controlsHost,{{variant:'plain',header:false,sizing:'content'}});",
+                        f"    const {base}_header=units.header.create({base}_panel.body,{{kind:'content',variant:'content',title:{_js(group['title'])},actions:false}});",
+                    ]
+                    action_host = f"{base}_header.actions"
+                lines.append(f"    units.layout.apply({base}_panel.body,{{variant:{_js(group['layout'])}}});")
+                if group.get("badge") is not None:
+                    badge = group["badge"]
+                    lines.append(
+                        f"    const {base}_badge=units.chip.create({action_host},{{variant:{_js(badge['variant'])},text:{_js(badge['text'])}}});"
+                    )
+                for field in group["fields"]:
+                    lines += self._parameter_field_source(field, f"{base}_panel.body")
+                if group.get("note") is not None:
+                    note = group["note"]
+                    lines.append(
+                        f"    units.note.create({base}_panel.body,{{variant:{_js(note['variant'])},text:{_js(note['text'])}}});"
+                    )
+                if group["actionIds"]:
+                    lines.append(
+                        f"    const {base}_toolbar=units.toolbar.create({base}_panel.body,{{variant:'ordinary',actions:{self._action_source(group['actionIds'])}}});"
+                    )
+        else:
+            lines += [
+                f"    const parameterPanel=units.panel.create(controlsHost,{{variant:'headed',title:{_js(parameters['label'])},sizing:'content'}});",
+                "    const parameterGrid=units.layout.create(parameterPanel.body,{variant:'form-grid-2'});",
+            ]
+            for field in parameters["fields"]:
+                lines += self._parameter_field_source(field, "parameterGrid")
         lines += [
             "    const parameterPrime=units.prime.build({"
             + f"id:{_js(parameters['id'])},label:{_js(parameters['label'])},"
             + "variant:'fixed-titleless',presentationRole:'data-control',presentationPurpose:'parameters',"
             + "semanticKind:'panel',priority:90,collapsible:true,fixed:true,header:false,"
             + "existingNode:controlsHost,sizing:'fill',autoOpen:true,defaultPlacement:'left',placements:['left'],"
-            + "stateVersion:'declarative-v1'});",
+            + "stateVersion:'declarative-v2'});",
             "    const primes=[parameterPrime];",
         ]
         return lines
@@ -1449,7 +1586,7 @@ class PluginBuilder:
             ]
         lines += [
             f"    const page=ctx.ui.pages.add({_js(page_options)});",
-            f"    const pageHeader=units.pageHeader.create(page,{{variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},actions:{self._action_source()}}});",
+            f"    const pageHeader=units.pageHeader.create(page,{{variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},actions:{self._action_source(page['actionIds'])},close:{str(page['close']).lower()},onClose:()=>ctx.workspace?.closePage?.({_js(page['id'])})}}});",
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
             "    const workspaceHost=units.layout.create(body,{variant:'identity'});",
