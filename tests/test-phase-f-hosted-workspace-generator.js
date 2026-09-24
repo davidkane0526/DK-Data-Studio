@@ -12,8 +12,11 @@ const reference=path.join(root,'examples','declarative-python-hosted-workspace',
 const generator=path.join(root,'sdk','python','dkds_plugin_gen.py');
 const validator=path.join(root,'sdk','tools','dkds-plugin.js');
 const schema=JSON.parse(fs.readFileSync(path.join(root,'sdk','declarative-plugin.schema.json'),'utf8'));
+const sdk=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
 const unitSpec=require('../src/core/ui/modules/composition/unit-template-spec');
 const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1'};
+
+function sdkAtLeast(actual,minimum){const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;}
 
 function pythonCommand(){
   const candidates=process.platform==='win32'
@@ -113,6 +116,7 @@ async function exercise(dir,expected){
 }
 
 (async()=>{
+  assert(sdkAtLeast(sdk.sdkVersion,'1.51.50'),'Phase F hosted workspace generation requires SDK 1.51.50+.');
   assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38',
     'Hosted generation must consume the frozen Unit 2.5.38 contract.');
   assert(schema.properties.host,'Declarative schema must expose a bounded host lifecycle declaration.');
