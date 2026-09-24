@@ -1273,6 +1273,30 @@ class PluginBuilder:
         if parameters is not None and any(surface["id"] == parameters["id"] for surface in surfaces):
             raise SpecError("surface ids must not collide with the canonical parameters PRIME id")
 
+        def normalize_curve_array_binding(raw_binding: Dict[str, Any], name: str) -> Dict[str, Any]:
+            if domain_adapter is None:
+                raise SpecError(f"{name} requires top-level domainAdapter")
+            raw_binding = _expect_object(raw_binding, name)
+            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey"})
+            if extra:
+                raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
+            def dotted(value: Any, field_name: str) -> str:
+                path = str(value or "").strip()
+                if not path or not all(IDENT.fullmatch(part) for part in path.split(".")):
+                    raise SpecError(f"{field_name} must be a dotted identifier path")
+                return path
+            normalized = {
+                "statePath": dotted(raw_binding.get("statePath"), f"{name}.statePath"),
+                "pointsPath": dotted(raw_binding.get("pointsPath"), f"{name}.pointsPath"),
+                "xKey": _ident(raw_binding.get("xKey"), f"{name}.xKey"),
+                "yKey": _ident(raw_binding.get("yKey"), f"{name}.yKey"),
+                "idKey": _ident(raw_binding.get("idKey", "id"), f"{name}.idKey"),
+            }
+            for key in ("labelKey", "colorValueKey", "directionKey"):
+                if raw_binding.get(key) is not None:
+                    normalized[key] = _ident(raw_binding.get(key), f"{name}.{key}")
+            return normalized
+
         content = []
         for index, row in enumerate(_expect_list(spec.get("content"), "content")):
             row = _expect_object(row, f"content[{index}]")
@@ -1286,7 +1310,7 @@ class PluginBuilder:
                     raise SpecError(f"content[{index}].variant is invalid")
                 content.append({"kind": "note", "text": str(row.get("text", "")), "variant": note_variant})
             elif kind == "plot":
-                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend"})
+                extra = sorted(set(row) - {"kind", "id", "title", "xTitle", "yTitle", "source", "points", "plotVariant", "renderOwner", "selectionTarget", "identity", "axisSemantics", "viewport", "legend", "binding"})
                 if extra:
                     raise SpecError(f"unsupported plot fields at {index}: {', '.join(extra)}")
                 points = []
@@ -1297,6 +1321,17 @@ class PluginBuilder:
                         points.append([float(pair[0]), float(pair[1])])
                     except (TypeError, ValueError) as exc:
                         raise SpecError(f"content[{index}].points[{p_index}] must be numeric") from exc
+                binding = None
+                if row.get("binding") is not None:
+                    if row.get("points"):
+                        raise SpecError(f"content[{index}].binding may not be combined with static points")
+                    binding = normalize_curve_array_binding(row["binding"], f"content[{index}].binding")
+                    if str(row.get("plotVariant", "curve")) != "curve":
+                        raise SpecError(f"content[{index}].binding currently supports curve plots only")
+                    if str(row.get("renderOwner", "unit")) != "unit":
+                        raise SpecError(f"content[{index}].binding requires renderOwner=unit")
+                    if any(row.get(key) is not None for key in ("identity", "axisSemantics", "viewport", "legend")):
+                        raise SpecError(f"content[{index}].binding does not yet combine with explicit interaction/link policy")
                 content.append({
                     "kind": "plot",
                     "id": _ident(row.get("id"), f"content[{index}].id"),
@@ -1305,6 +1340,7 @@ class PluginBuilder:
                     "yTitle": str(row.get("yTitle", "")),
                     "source": str(row.get("source") or row.get("id")),
                     "points": points,
+                    "binding": binding,
                     **normalize_plot_render(row, f"content[{index}]"),
                     **normalize_plot_interaction(row, f"content[{index}]"),
                 })
@@ -2863,6 +2899,19 @@ class PluginBuilder:
                 + "}"
             )
 
+        if row.get("binding") is not None:
+            parts = [
+                f"variant:{_js(variant)}",
+                f"source:{_js(row['source'])}",
+                f"xTitle:{_js(row['xTitle'])}",
+                f"yTitle:{_js(row['yTitle'])}",
+                "interaction:interaction",
+                f"selectionTarget:{_js(row['selectionTarget'])}",
+                f"getCurves:()=>{base}_curves",
+                "getMarkers:()=>[]",
+            ]
+            return "{" + ",".join(parts) + "}"
+
         curve_parts = [
             f"id:{_js(row['id'])}",
             f"points:{base}_points",
@@ -3025,11 +3074,28 @@ class PluginBuilder:
             lines += [
                 f"    const {base}_panel=units.panel.create(main,{{variant:'plot-card',title:{_js(row['title'])},sizing:'content'}});",
                 f"    const {base}_host=units.layout.create({base}_panel.body,{{variant:'plot-card-fill'}});",
-                f"    let {base}_points={_js(points)};",
-                f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
-                f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
-                f"    disposables.push({base}_surface);",
             ]
+            if row.get("binding") is not None:
+                binding = row["binding"]
+                state_read = f"{_js(binding['statePath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
+                points_read = f"{_js(binding['pointsPath'].split('.'))}.reduce((value,key)=>value?.[key],row)"
+                label_expr = f"String(row?.[{_js(binding['labelKey'])}]??id)" if binding.get("labelKey") else "id"
+                color_expr = f"Number(row?.[{_js(binding['colorValueKey'])}])" if binding.get("colorValueKey") else "NaN"
+                direction_expr = f"Number(row?.[{_js(binding['directionKey'])}])" if binding.get("directionKey") else "NaN"
+                lines += [
+                    f"    let {base}_curves=[];",
+                    f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
+                    f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
+                    f"    liveBindings.push(state=>{{const rows={state_read};{base}_curves=Array.isArray(rows)?rows.map((row,index)=>{{const id=String(row?.[{_js(binding['idKey'])}]??('curve-'+index));const rawPoints={points_read};const points=Array.isArray(rawPoints)?rawPoints.map(point=>({{x:Number(point?.[{_js(binding['xKey'])}]),y:Number(point?.[{_js(binding['yKey'])}])}})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)):[];const curve={{id,entityId:id,label:{label_expr},points,source:row}};const colorValue={color_expr};if(Number.isFinite(colorValue))curve.colorValue=colorValue;const direction={direction_expr};if(Number.isFinite(direction))curve.direction=direction;return curve;}}):[];{base}_surface.requestRender?.('domain-adapter');}});",
+                    f"    disposables.push({base}_surface);",
+                ]
+            else:
+                lines += [
+                    f"    let {base}_points={_js(points)};",
+                    f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
+                    f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
+                    f"    disposables.push({base}_surface);",
+                ]
         return lines
 
     def render_plugin_js(self) -> str:
