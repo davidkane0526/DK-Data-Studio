@@ -435,3 +435,14 @@ The first TER reconstruction gap is now represented without adding a Unit or a s
 The compiler lowers this directly to `units.parameterForm.mount(...)` inside the existing group Panel and keeps the outer PRIME on the canonical `fixed-titleless` data-control contract. Arbitrary JavaScript, private CSS, plugin-owned layout, and plugin-specific Unit names remain invalid.
 
 This closes the concrete composition-position gap identified by TER's transformed Vg–Vd controls. It is intentionally a compiler vocabulary change only: Plugin API remains 1.19.0, Unit Templates remain 2.5.38, and the 41-Unit / 73-recipe freeze is unchanged.
+
+
+## Generic PRIME / SUB surface composition — SDK 1.51.56
+
+The authoring IR now has an optional `surfaces` array for non-parameter PRIME and SUB surfaces. A surface owns only semantic/workbench metadata and a bounded recursive `children` tree; it does not introduce a new runtime or Unit type.
+
+Current bounded child vocabulary: `layout`, `panel`, `header`, `note`, `field`, `toolbar`, `parameter-form`, `summary`, `empty-state`, `list`, `legend`, and `table`. Every node lowers directly to the corresponding existing public Unit Template call. Arbitrary DOM, CSS, JavaScript callbacks, plugin-specific Unit names, and plugin-owned parameter PRIME surfaces remain rejected.
+
+PRIME surfaces lower through `units.prime.build(...)`; SUB surfaces lower to the existing Workbench SUB registration shape; both are passed to the same `workbench.compose({ primary, primes, subs })` call as production plugins. Hosted TOP/Tool metadata is derived from the same normalized surfaces, avoiding a second presentation description.
+
+This is the generic compiler mechanism needed by Resonance's inspector/group/detail surfaces while preserving the frozen 41-Unit / 73-recipe catalog and Plugin API 1.19.0.

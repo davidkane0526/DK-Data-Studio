@@ -78,7 +78,7 @@ class PluginBuilder:
 
     def _normalize(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         spec = _expect_object(raw, "spec")
-        allowed = {"schema", "plugin", "page", "workspace", "host", "data", "actions", "parameters", "interaction", "content"}
+        allowed = {"schema", "plugin", "page", "workspace", "host", "data", "actions", "parameters", "interaction", "content", "surfaces"}
         extra = sorted(set(spec) - allowed)
         if extra:
             raise SpecError(f"unsupported top-level fields: {', '.join(extra)}")
@@ -681,6 +681,316 @@ class PluginBuilder:
                     raise SpecError(f"{name} runtime-owned plot delegates interaction/link policy to the existing renderer")
             return {"plotVariant": variant, "renderOwner": render_owner}
 
+        def normalize_surface_parameter_form(raw_form: Dict[str, Any], name: str) -> Dict[str, Any]:
+            raw_form = _expect_object(raw_form, name)
+            extra = sorted(set(raw_form) - {"id", "fields", "compact", "autoFit", "layoutOwner"})
+            if extra:
+                raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
+            fields = []
+            allowed_types = {"text", "textarea", "formula", "number", "integer", "boolean", "select", "multiselect", "column", "columns", "color"}
+            for index, field in enumerate(_expect_list(raw_form.get("fields"), f"{name}.fields")):
+                field = _expect_object(field, f"{name}.fields[{index}]")
+                extra = sorted(set(field) - {"id", "type", "label", "required", "default", "options", "min", "max", "visibleWhen"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.fields[{index}] keys: {', '.join(extra)}")
+                field_type = str(field.get("type", "text"))
+                if field_type not in allowed_types:
+                    raise SpecError(f"{name}.fields[{index}].type is unsupported")
+                normalized_field = {
+                    "id": _ident(field.get("id"), f"{name}.fields[{index}].id"),
+                    "type": field_type,
+                    "label": _nonempty(field.get("label"), f"{name}.fields[{index}].label"),
+                    "required": bool(field.get("required", False)),
+                }
+                for key in ("default", "options", "min", "max", "visibleWhen"):
+                    if key in field:
+                        normalized_field[key] = field[key]
+                fields.append(normalized_field)
+            if not fields:
+                raise SpecError(f"{name}.fields must not be empty")
+            if len({field["id"] for field in fields}) != len(fields):
+                raise SpecError(f"{name}.field ids must be unique")
+            layout_owner = str(raw_form.get("layoutOwner", "unit"))
+            if layout_owner not in {"unit", "presenter"}:
+                raise SpecError(f"{name}.layoutOwner must be unit or presenter")
+            return {
+                "id": _ident(raw_form.get("id"), f"{name}.id"),
+                "fields": fields,
+                "compact": bool(raw_form.get("compact", True)),
+                "autoFit": bool(raw_form.get("autoFit", True)),
+                "layoutOwner": layout_owner,
+            }
+
+        def normalize_surface_node(raw_node: Dict[str, Any], name: str) -> Dict[str, Any]:
+            node = _expect_object(raw_node, name)
+            kind = str(node.get("kind", "")).strip()
+
+            if kind == "layout":
+                extra = sorted(set(node) - {"kind", "id", "variant", "children"})
+                if extra:
+                    raise SpecError(f"unsupported {name} layout fields: {', '.join(extra)}")
+                children = [
+                    normalize_surface_node(child, f"{name}.children[{index}]")
+                    for index, child in enumerate(_expect_list(node.get("children", []), f"{name}.children"))
+                ]
+                return {
+                    "kind": "layout",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "stack-comfortable"), f"{name}.variant"),
+                    "children": children,
+                }
+
+            if kind == "panel":
+                extra = sorted(set(node) - {"kind", "id", "variant", "title", "header", "sizing", "layout", "children"})
+                if extra:
+                    raise SpecError(f"unsupported {name} panel fields: {', '.join(extra)}")
+                children = [
+                    normalize_surface_node(child, f"{name}.children[{index}]")
+                    for index, child in enumerate(_expect_list(node.get("children", []), f"{name}.children"))
+                ]
+                return {
+                    "kind": "panel",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "plain"), f"{name}.variant"),
+                    "title": str(node.get("title", "")),
+                    "header": bool(node.get("header", bool(node.get("title")))),
+                    "sizing": _nonempty(node.get("sizing", "content"), f"{name}.sizing"),
+                    "layout": str(node.get("layout", "")),
+                    "children": children,
+                }
+
+            if kind == "header":
+                extra = sorted(set(node) - {"kind", "id", "headerKind", "variant", "title", "actionIds"})
+                if extra:
+                    raise SpecError(f"unsupported {name} header fields: {', '.join(extra)}")
+                action_ids_local = [_ident(value, f"{name}.actionIds[]") for value in node.get("actionIds", [])]
+                unknown = [action_id for action_id in action_ids_local if action_id not in action_ids]
+                if unknown:
+                    raise SpecError(f"{name}.actionIds references unknown actions: {', '.join(unknown)}")
+                return {
+                    "kind": "header",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "headerKind": _nonempty(node.get("headerKind", "content"), f"{name}.headerKind"),
+                    "variant": _nonempty(node.get("variant", "content"), f"{name}.variant"),
+                    "title": _nonempty(node.get("title"), f"{name}.title"),
+                    "actionIds": action_ids_local,
+                }
+
+            if kind == "note":
+                extra = sorted(set(node) - {"kind", "id", "variant", "text"})
+                if extra:
+                    raise SpecError(f"unsupported {name} note fields: {', '.join(extra)}")
+                return {
+                    "kind": "note",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "ordinary"), f"{name}.variant"),
+                    "text": str(node.get("text", "")),
+                }
+
+            if kind == "field":
+                extra = sorted(set(node) - {"kind", "id", "type", "label", "value", "step", "options"})
+                if extra:
+                    raise SpecError(f"unsupported {name} field keys: {', '.join(extra)}")
+                normalized = normalize_parameter_field({key: value for key, value in node.items() if key != "kind"}, name)
+                normalized["kind"] = "field"
+                return normalized
+
+            if kind == "toolbar":
+                extra = sorted(set(node) - {"kind", "id", "variant", "layout", "label", "actionIds"})
+                if extra:
+                    raise SpecError(f"unsupported {name} toolbar fields: {', '.join(extra)}")
+                action_ids_local = [_ident(value, f"{name}.actionIds[]") for value in node.get("actionIds", [])]
+                unknown = [action_id for action_id in action_ids_local if action_id not in action_ids]
+                if unknown:
+                    raise SpecError(f"{name}.actionIds references unknown actions: {', '.join(unknown)}")
+                return {
+                    "kind": "toolbar",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "ordinary"), f"{name}.variant"),
+                    "layout": str(node.get("layout", "")),
+                    "label": str(node.get("label", "")),
+                    "actionIds": action_ids_local,
+                }
+
+            if kind == "parameter-form":
+                normalized = normalize_surface_parameter_form(
+                    {key: value for key, value in node.items() if key != "kind"},
+                    name,
+                )
+                normalized["kind"] = "parameter-form"
+                return normalized
+
+            if kind == "summary":
+                extra = sorted(set(node) - {"kind", "id", "variant", "items"})
+                if extra:
+                    raise SpecError(f"unsupported {name} summary fields: {', '.join(extra)}")
+                items = []
+                for index, item in enumerate(_expect_list(node.get("items", []), f"{name}.items")):
+                    item = _expect_object(item, f"{name}.items[{index}]")
+                    extra = sorted(set(item) - {"text", "variant"})
+                    if extra:
+                        raise SpecError(f"unsupported {name}.items[{index}] fields: {', '.join(extra)}")
+                    items.append({"text": str(item.get("text", "")), "variant": str(item.get("variant", ""))})
+                return {
+                    "kind": "summary",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "row"), f"{name}.variant"),
+                    "items": items,
+                }
+
+            if kind == "empty-state":
+                extra = sorted(set(node) - {"kind", "id", "text"})
+                if extra:
+                    raise SpecError(f"unsupported {name} empty-state fields: {', '.join(extra)}")
+                return {
+                    "kind": "empty-state",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "text": str(node.get("text", "")),
+                }
+
+            if kind == "list":
+                extra = sorted(set(node) - {"kind", "id", "items", "emptyText"})
+                if extra:
+                    raise SpecError(f"unsupported {name} list fields: {', '.join(extra)}")
+                items = []
+                for index, item in enumerate(_expect_list(node.get("items", []), f"{name}.items")):
+                    item = _expect_object(item, f"{name}.items[{index}]")
+                    extra = sorted(set(item) - {"title", "meta", "leading", "selectable", "selected"})
+                    if extra:
+                        raise SpecError(f"unsupported {name}.items[{index}] fields: {', '.join(extra)}")
+                    items.append({
+                        "title": str(item.get("title", "")),
+                        "meta": str(item.get("meta", "")),
+                        "leading": str(item.get("leading", "")),
+                        "selectable": bool(item.get("selectable", False)),
+                        "selected": bool(item.get("selected", False)),
+                    })
+                return {
+                    "kind": "list",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "items": items,
+                    "emptyText": str(node.get("emptyText", "")),
+                }
+
+            if kind == "legend":
+                extra = sorted(set(node) - {"kind", "id", "variant", "items"})
+                if extra:
+                    raise SpecError(f"unsupported {name} legend fields: {', '.join(extra)}")
+                items = []
+                for index, item in enumerate(_expect_list(node.get("items", []), f"{name}.items")):
+                    item = _expect_object(item, f"{name}.items[{index}]")
+                    extra = sorted(set(item) - {"label", "variant"})
+                    if extra:
+                        raise SpecError(f"unsupported {name}.items[{index}] fields: {', '.join(extra)}")
+                    items.append({
+                        "label": _nonempty(item.get("label"), f"{name}.items[{index}].label"),
+                        "variant": str(item.get("variant", "quiet")),
+                    })
+                return {
+                    "kind": "legend",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "variant": _nonempty(node.get("variant", "strip"), f"{name}.variant"),
+                    "items": items,
+                }
+
+            if kind == "table":
+                extra = sorted(set(node) - {"kind", "id", "columns", "rows", "layout"})
+                if extra:
+                    raise SpecError(f"unsupported {name} table fields: {', '.join(extra)}")
+                columns = []
+                for index, column in enumerate(_expect_list(node.get("columns"), f"{name}.columns")):
+                    column = _expect_object(column, f"{name}.columns[{index}]")
+                    extra = sorted(set(column) - {"key", "label", "unit"})
+                    if extra:
+                        raise SpecError(f"unsupported {name}.columns[{index}] fields: {', '.join(extra)}")
+                    normalized_column = {
+                        "key": _ident(column.get("key"), f"{name}.columns[{index}].key"),
+                        "label": _nonempty(column.get("label"), f"{name}.columns[{index}].label"),
+                    }
+                    if "unit" in column:
+                        normalized_column["unit"] = str(column.get("unit", ""))
+                    columns.append(normalized_column)
+                if not columns:
+                    raise SpecError(f"{name}.columns must not be empty")
+                rows = []
+                for index, item in enumerate(node.get("rows", [])):
+                    item = _expect_object(item, f"{name}.rows[{index}]")
+                    rows.append({str(key): value for key, value in item.items()})
+                return {
+                    "kind": "table",
+                    "id": _ident(node.get("id"), f"{name}.id"),
+                    "columns": columns,
+                    "rows": rows,
+                    "layout": _nonempty(node.get("layout", "scroll-pane"), f"{name}.layout"),
+                }
+
+            raise SpecError(f"{name}.kind is not in the bounded public surface vocabulary")
+
+        surfaces = []
+        for surface_index, raw_surface in enumerate(spec.get("surfaces", [])):
+            surface = _expect_object(raw_surface, f"surfaces[{surface_index}]")
+            extra = sorted(set(surface) - {
+                "id", "label", "role", "presentationRole", "presentationPurpose", "semanticKind",
+                "priority", "order", "collapsible", "fixed", "embedded", "autoOpen", "defaultPlacement",
+                "placements", "sizing", "stateVersion", "keepLeft", "persistent", "layout", "children"
+            })
+            if extra:
+                raise SpecError(f"unsupported surfaces[{surface_index}] fields: {', '.join(extra)}")
+            role = str(surface.get("role", "")).lower()
+            if role not in {"prime", "sub"}:
+                raise SpecError(f"surfaces[{surface_index}].role must be prime or sub")
+            purpose = str(surface.get("presentationPurpose", ""))
+            if purpose == "parameters":
+                raise SpecError("generic surfaces may not declare presentationPurpose=parameters; use the canonical parameters block")
+            placements = [str(value) for value in surface.get("placements", ["right", "bottom", "float"])]
+            if role == "prime":
+                if not placements:
+                    raise SpecError(f"surfaces[{surface_index}].placements must not be empty for PRIME")
+                if any(value not in {"inline", "left", "right", "bottom", "float", "global"} for value in placements):
+                    raise SpecError(f"surfaces[{surface_index}].placements contains an unsupported placement")
+                fixed = bool(surface.get("fixed", False))
+                if fixed and len(set(placements)) > 1:
+                    raise SpecError(f"surfaces[{surface_index}] fixed PRIME cannot declare multiple placements")
+                default_placement = str(surface.get("defaultPlacement", placements[0]))
+                if default_placement not in placements:
+                    raise SpecError(f"surfaces[{surface_index}].defaultPlacement must be listed in placements")
+            else:
+                fixed = False
+                default_placement = ""
+                placements = []
+            children = [
+                normalize_surface_node(child, f"surfaces[{surface_index}].children[{index}]")
+                for index, child in enumerate(_expect_list(surface.get("children"), f"surfaces[{surface_index}].children"))
+            ]
+            if not children:
+                raise SpecError(f"surfaces[{surface_index}].children must not be empty")
+            surfaces.append({
+                "id": _ident(surface.get("id"), f"surfaces[{surface_index}].id"),
+                "label": _nonempty(surface.get("label"), f"surfaces[{surface_index}].label"),
+                "role": role,
+                "presentationRole": str(surface.get("presentationRole", "inspector" if role == "prime" else "detail")),
+                "presentationPurpose": purpose,
+                "semanticKind": str(surface.get("semanticKind", "panel")),
+                "priority": int(surface.get("priority", 70)),
+                "order": int(surface.get("order", 100)),
+                "collapsible": bool(surface.get("collapsible", role == "prime")),
+                "fixed": fixed,
+                "embedded": bool(surface.get("embedded", False)),
+                "autoOpen": bool(surface.get("autoOpen", False)),
+                "defaultPlacement": default_placement,
+                "placements": placements,
+                "sizing": str(surface.get("sizing", "fill")),
+                "stateVersion": str(surface.get("stateVersion", "declarative-surface-v1")),
+                "keepLeft": bool(surface.get("keepLeft", False)),
+                "persistent": bool(surface.get("persistent", True)),
+                "layout": _nonempty(surface.get("layout", "stack-comfortable"), f"surfaces[{surface_index}].layout"),
+                "children": children,
+            })
+        if len({surface["id"] for surface in surfaces}) != len(surfaces):
+            raise SpecError("surface ids must be unique")
+        if parameters is not None and any(surface["id"] == parameters["id"] for surface in surfaces):
+            raise SpecError("surface ids must not collide with the canonical parameters PRIME id")
+
         content = []
         for index, row in enumerate(_expect_list(spec.get("content"), "content")):
             row = _expect_object(row, f"content[{index}]")
@@ -1104,6 +1414,7 @@ class PluginBuilder:
             "parameters": parameters,
             "interaction": normalized_interaction,
             "content": content,
+            "surfaces": surfaces,
         }
 
     def add_portable_task(
@@ -1611,11 +1922,23 @@ class PluginBuilder:
         return lines
 
     def manifest(self) -> Dict[str, Any]:
+        def surface_nodes():
+            stack = [
+                node
+                for surface in self.spec.get("surfaces", [])
+                for node in surface.get("children", [])
+            ]
+            while stack:
+                node = stack.pop()
+                yield node
+                stack.extend(node.get("children", []))
+
+        normalized_surface_nodes = list(surface_nodes())
         has_plot = any(row["kind"] in {"plot", "plot-view", "plot-group", "result-split"} for row in self.spec["content"])
         has_plot_group = any(row["kind"] == "plot-group" for row in self.spec["content"])
         has_plot_view = any(row["kind"] == "plot-view" for row in self.spec["content"])
-        has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"])
-        has_parameter_form = any(row["kind"] == "parameter-form" for row in self.spec["content"])
+        has_table = any(row["kind"] in {"table", "result-split"} for row in self.spec["content"]) or any(node["kind"] == "table" for node in normalized_surface_nodes)
+        has_parameter_form = any(row["kind"] == "parameter-form" for row in self.spec["content"]) or any(node["kind"] == "parameter-form" for node in normalized_surface_nodes)
         has_menu = any(row["kind"] == "menu" for row in self.spec["content"])
         has_artifact_input = any(
             binding["kind"] == "artifact-column"
@@ -1888,6 +2211,151 @@ class PluginBuilder:
         ]
         return lines
 
+    def _surface_field_source(self, field: Dict[str, Any], host: str, base: str) -> List[str]:
+        if field["type"] == "checkbox":
+            checked = bool(field.get("value", False))
+            return [
+                f"    const {base}=units.check.create({host},{{variant:'checkbox',label:{_js(field['label'])},checked:{str(checked).lower()}}});"
+            ]
+        if field["type"] == "select":
+            value = field.get("value", field["options"][0]["value"])
+            return [
+                f"    const {base}=units.field.create({host},{{variant:'select',kind:'select',label:{_js(field['label'])},value:{_js(value)},options:{_js(field['options'])}}});"
+            ]
+        input_type = "number" if field["type"] == "number" else "text"
+        parts = ["variant:'input'", f"label:{_js(field['label'])}", f"inputType:{_js(input_type)}"]
+        if "value" in field:
+            parts.append(f"value:{_js(field['value'])}")
+        if field["type"] == "number":
+            parts.append(f"step:{_js(field.get('step', 'any'))}")
+        return [f"    const {base}=units.field.create({host},{{{','.join(parts)}}});"]
+
+    def _surface_node_source(self, node: Dict[str, Any], host: str, prefix: str) -> List[str]:
+        base = _var(prefix + "-" + node["id"])
+        kind = node["kind"]
+        lines: List[str] = []
+
+        if kind == "layout":
+            lines.append(f"    const {base}=units.layout.create({host},{{variant:{_js(node['variant'])}}});")
+            for child in node["children"]:
+                lines += self._surface_node_source(child, base, prefix)
+            return lines
+
+        if kind == "panel":
+            options = [
+                f"variant:{_js(node['variant'])}",
+                f"header:{str(node['header']).lower()}",
+                f"sizing:{_js(node['sizing'])}",
+            ]
+            if node["title"]:
+                options.append(f"title:{_js(node['title'])}")
+            lines.append(f"    const {base}=units.panel.create({host},{{{','.join(options)}}});")
+            if node["layout"]:
+                lines.append(f"    units.layout.apply({base}.body,{{variant:{_js(node['layout'])}}});")
+            for child in node["children"]:
+                lines += self._surface_node_source(child, f"{base}.body", prefix)
+            return lines
+
+        if kind == "header":
+            lines.append(
+                f"    const {base}=units.header.create({host},{{kind:{_js(node['headerKind'])},variant:{_js(node['variant'])},title:{_js(node['title'])},actions:{str(bool(node['actionIds'])).lower()}}});"
+            )
+            if node["actionIds"]:
+                lines.append(
+                    f"    const {base}_actions=units.toolbar.create({base}.actions,{{variant:'header',actions:{self._action_source(node['actionIds'])}}});"
+                )
+            return lines
+
+        if kind == "note":
+            lines.append(f"    const {base}=units.note.create({host},{{variant:{_js(node['variant'])},text:{_js(node['text'])}}});")
+            return lines
+
+        if kind == "field":
+            lines += self._surface_field_source(node, host, base)
+            return lines
+
+        if kind == "toolbar":
+            lines.append(
+                f"    const {base}=units.toolbar.create({host},{{variant:{_js(node['variant'])},actions:{self._action_source(node['actionIds'])}}});"
+            )
+            if node["layout"]:
+                lines.append(f"    units.layout.apply({base}.element,{{variant:{_js(node['layout'])}}});")
+            if node["label"]:
+                lines.append(f"    units.note.create({base}.element,{{variant:'ordinary',text:{_js(node['label'])}}});")
+            return lines
+
+        if kind == "parameter-form":
+            lines += [
+                f"    const {base}_host=units.layout.create({host},{{variant:'identity'}});",
+                f"    const {base}=units.parameterForm.mount({base}_host,{{fields:{_js(node['fields'])}}},{{compact:{str(node['compact']).lower()},autoFit:{str(node['autoFit']).lower()},layoutOwner:{_js(node['layoutOwner'])}}});",
+                f"    disposables.push({{dispose(){{try{{{base}?.destroy?.();}}catch{{}};try{{{base}?.dispose?.();}}catch{{}};}}}});",
+            ]
+            return lines
+
+        if kind == "summary":
+            lines.append(f"    const {base}=units.summary.create({host},{{variant:{_js(node['variant'])},items:{_js(node['items'])}}});")
+            return lines
+
+        if kind == "empty-state":
+            lines.append(f"    const {base}=units.emptyState.create({host},{{variant:'standard',text:{_js(node['text'])}}});")
+            return lines
+
+        if kind == "list":
+            lines.append(f"    const {base}=units.list.create({host},{{variant:'plain',items:{_js(node['items'])}}});")
+            if node["emptyText"]:
+                lines.append(f"    if(!{base}.items().length)units.emptyState.create({base}.element,{{variant:'standard',text:{_js(node['emptyText'])}}});")
+            return lines
+
+        if kind == "legend":
+            lines.append(f"    const {base}=units.legend.create({host},{{variant:{_js(node['variant'])}}});")
+            for index, item in enumerate(node["items"]):
+                lines.append(
+                    f"    units.chip.create({base},{{variant:{_js(item['variant'])},label:{_js(item['label'])}}});"
+                )
+            return lines
+
+        if kind == "table":
+            lines += [
+                f"    const {base}_host=units.layout.create({host},{{variant:{_js(node['layout'])}}});",
+                f"    const {base}=units.table.mount({_js(node['id'])},{base}_host,{{variant:'standard',columns:{_js(node['columns'])},rows:{_js(node['rows'])},persistKey:{_js(node['id']+'-declarative-surface-v1')}}});",
+                f"    disposables.push({base});",
+            ]
+            return lines
+
+        raise SpecError(f"unsupported normalized surface node kind: {kind}")
+
+    def _surface_source(self) -> List[str]:
+        lines = ["    const subs=[];"]
+        for surface in self.spec.get("surfaces", []):
+            base = _var("surface-" + surface["id"])
+            root = f"{base}_root"
+            lines.append(f"    const {root}=units.layout.create(null,{{variant:{_js(surface['layout'])}}});")
+            for child in surface["children"]:
+                lines += self._surface_node_source(child, root, surface["id"])
+
+            if surface["role"] == "prime":
+                prime = f"{base}_prime"
+                lines.append(
+                    f"    const {prime}=units.prime.build({{"
+                    + f"id:{_js(surface['id'])},label:{_js(surface['label'])},variant:'canonical-header',"
+                    + f"presentationRole:{_js(surface['presentationRole'])},presentationPurpose:{_js(surface['presentationPurpose'])},"
+                    + f"semanticKind:{_js(surface['semanticKind'])},priority:{surface['priority']},order:{surface['order']},"
+                    + f"collapsible:{str(surface['collapsible']).lower()},fixed:{str(surface['fixed']).lower()},embedded:{str(surface['embedded']).lower()},"
+                    + f"existingNode:{root},sizing:{_js(surface['sizing'])},autoOpen:{str(surface['autoOpen']).lower()},"
+                    + f"defaultPlacement:{_js(surface['defaultPlacement'])},placements:{_js(surface['placements'])},stateVersion:{_js(surface['stateVersion'])}"
+                    + "});"
+                )
+                lines.append(f"    primes.push({prime});")
+            else:
+                lines.append(
+                    "    subs.push({"
+                    + f"id:{_js(surface['id'])},label:{_js(surface['label'])},presentationRole:{_js(surface['presentationRole'])},"
+                    + f"semanticKind:{_js(surface['semanticKind'])},order:{surface['order']},keepLeft:{str(surface['keepLeft']).lower()},"
+                    + f"persistent:{str(surface['persistent']).lower()},existingNode:{root}"
+                    + "});"
+                )
+        return lines
+
     def _scientific_plot_spec_source(self, row: Dict[str, Any], base: str) -> str:
         variant = row.get("plotVariant", "curve")
         render_owner = row.get("renderOwner", "unit")
@@ -2131,13 +2599,14 @@ class PluginBuilder:
         lines += self._parameter_source()
         lines += self._interaction_source()
         lines += self._content_source()
+        lines += self._surface_source()
         lines += self._task_handlers_source()
         lines += self._command_registration_source()
         lines += [
             "    workbench.compose({primary:{"
             + f"id:'main',label:{_js(workspace['primaryLabel'])},presentationRole:{_js(workspace['primaryRole'])},"
             + f"scroll:{_js(workspace['primaryScroll'])},titlePolicy:'host-only',mainNode:main"
-            + "},primes,subs:[]});",
+            + "},primes,subs});",
         ]
         if hosted:
             top_primes = []
@@ -2152,6 +2621,30 @@ class PluginBuilder:
                     "priority": parameters["priority"],
                     "collapsible": True,
                 })
+            for surface in self.spec.get("surfaces", []):
+                surface_meta = {
+                    "id": surface["id"],
+                    "label": surface["label"],
+                    "semanticKind": surface["semanticKind"],
+                    "presentationPurpose": surface["presentationPurpose"],
+                    "presentationRole": surface["presentationRole"],
+                    "priority": surface["priority"],
+                    "collapsible": surface["collapsible"],
+                }
+                if surface["role"] == "prime":
+                    top_primes.append(surface_meta)
+            top_subs = [
+                {
+                    "id": surface["id"],
+                    "label": surface["label"],
+                    "semanticKind": surface["semanticKind"],
+                    "presentationRole": surface["presentationRole"],
+                    "priority": surface["priority"],
+                    "collapsible": surface["collapsible"],
+                }
+                for surface in self.spec.get("surfaces", [])
+                if surface["role"] == "sub"
+            ]
             layout = {
                 "mode": "native",
                 "root": {"selector": f"#{host['pageId']} .dkds-plugin-workspace"},
@@ -2163,7 +2656,7 @@ class PluginBuilder:
                     "collapsible": False,
                 },
                 "prime": top_primes,
-                "sub": [],
+                "sub": top_subs,
             }
             lines += [
                 "    ctx.ui.topWorkspace.register({"
