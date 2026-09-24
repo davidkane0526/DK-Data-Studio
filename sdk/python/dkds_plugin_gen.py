@@ -464,6 +464,7 @@ class PluginBuilder:
         result_plots: List[Dict[str, str]] | None = None,
         result_tables: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
+        domain_command: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
         function_name: str | None = None,
     ) -> "PluginBuilder":
@@ -475,7 +476,8 @@ class PluginBuilder:
         and publish multiple declared canonical DataTable Artifacts with lineage.
         """
         compiled = compile_portable_task(task_id, function, function_name=function_name)
-        action_ids = {row["id"] for row in self.spec["actions"]}
+        action_lookup = {row["id"]: row for row in self.spec["actions"]}
+        action_ids = set(action_lookup)
         if action_id not in action_ids:
             raise SpecError(f"portable task action_id not found: {action_id}")
         if parameter_map is not None and input_bindings is not None:
@@ -644,10 +646,67 @@ class PluginBuilder:
         if len({row["id"] for row in normalized_publish_tables}) != len(normalized_publish_tables):
             raise SpecError("portable task published Artifact ids must be unique")
 
+        normalized_domain_command = None
+        if domain_command is not None:
+            raw_command = _expect_object(domain_command, "domain_command")
+            extra = sorted(set(raw_command) - {"id", "domain", "version", "title", "description", "replayable", "destructive", "algorithm"})
+            if extra:
+                raise SpecError(f"unsupported domain_command fields: {', '.join(extra)}")
+            command_version = _nonempty(raw_command.get("version", "1.0.0"), "domain_command.version")
+            if not SEMVER.fullmatch(command_version):
+                raise SpecError("domain_command.version must be semver")
+            algorithm = _expect_object(raw_command.get("algorithm", {}), "domain_command.algorithm")
+            extra = sorted(set(algorithm) - {"category", "id", "version", "provider"})
+            if extra:
+                raise SpecError(f"unsupported domain_command.algorithm fields: {', '.join(extra)}")
+            algorithm_version = _nonempty(algorithm.get("version"), "domain_command.algorithm.version")
+            if algorithm_version.lower() in {"latest", "*", "current"}:
+                raise SpecError("domain_command.algorithm.version must be exact")
+            normalized_domain_command = {
+                "id": _ident(raw_command.get("id", compiled.task_id), "domain_command.id"),
+                "domain": _nonempty(raw_command.get("domain"), "domain_command.domain"),
+                "version": command_version,
+                "title": _nonempty(raw_command.get("title", action_lookup.get(action_id, {}).get("label", compiled.task_id)), "domain_command.title"),
+                "description": str(raw_command.get("description", "")),
+                "replayable": bool(raw_command.get("replayable", True)),
+                "destructive": bool(raw_command.get("destructive", False)),
+                "algorithm": {
+                    "category": str(algorithm.get("category", "generated.task")),
+                    "id": _nonempty(algorithm.get("id", compiled.task_id), "domain_command.algorithm.id"),
+                    "version": algorithm_version,
+                    "provider": str(algorithm.get("provider", "")),
+                },
+            }
+            if not normalized_publish_tables and normalized_domain_command["replayable"]:
+                # Replay is still valid for read-only/view-only Tasks, but an analysis
+                # command that declares produced semantic types should expose its
+                # concrete Artifact outputs to Core history.
+                if self.spec["data"].get("produces"):
+                    raise SpecError("replayable domain_command with data.produces requires publish_table(s)")
+
+        for projection in normalized_result_plots:
+            plot = plot_lookup[projection["id"]]
+            identity = plot.get("identity")
+            if identity is None:
+                continue
+            input_name = identity["input"]
+            binding = bindings.get(input_name)
+            if binding is None:
+                raise SpecError(f"plot {projection['id']} identity.input must reference a task input")
+            if binding["kind"] != "artifact-column":
+                raise SpecError(f"plot {projection['id']} identity.input must reference an artifact-column input")
+
         if any(row["compiled"].task_id == compiled.task_id for row in self._portable_tasks):
             raise SpecError(f"duplicate portable task id: {compiled.task_id}")
         if any(row["action_id"] == action_id for row in self._portable_tasks):
             raise SpecError(f"action already bound to a portable task: {action_id}")
+
+        if normalized_domain_command is not None and any(
+            row.get("domain_command", {}).get("id") == normalized_domain_command["id"]
+            for row in self._portable_tasks
+            if row.get("domain_command")
+        ):
+            raise SpecError(f"duplicate generated domain command id: {normalized_domain_command['id']}")
 
         self._portable_tasks.append({
             "compiled": compiled,
@@ -656,6 +715,7 @@ class PluginBuilder:
             "result_plots": normalized_result_plots,
             "result_tables": normalized_result_tables,
             "publish_tables": normalized_publish_tables,
+            "domain_command": normalized_domain_command,
             "success_status": str(success_status),
         })
         return self
