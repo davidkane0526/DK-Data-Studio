@@ -98,6 +98,7 @@ SPEC = {
                 "labelKey": "id",
                 "colorValueKey": "vg",
                 "directionKey": "direction",
+                "selectAction": "selectSweep",
             },
         }
     ],
