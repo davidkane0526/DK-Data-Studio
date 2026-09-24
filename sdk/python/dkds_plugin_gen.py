@@ -1586,7 +1586,11 @@ class PluginBuilder:
             ]
         lines += [
             f"    const page=ctx.ui.pages.add({_js(page_options)});",
-            f"    const pageHeader=units.pageHeader.create(page,{{variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},actions:{self._action_source(page['actionIds'])},close:{str(page['close']).lower()},onClose:()=>ctx.workspace?.closePage?.({_js(page['id'])})}}});",
+            "    const pageHeader=units.pageHeader.create(page,{"
+            + f"variant:'page-owned',activity:{_js(workspace['activity'])},title:{_js(page['title'])},subtitle:{_js(page['subtitle'])},"
+            + f"actions:{self._action_source(page['actionIds'])},close:{str(page['close']).lower()},"
+            + f"onClose:()=>ctx.workspace?.closePage?.({_js(page['id'])})"
+            + "});",
             "    units.layout.create(pageHeader.actions,{tagName:'span',variant:'identity',dataset:{dkdsSlot:'workbench-import'}});",
             f"    const body=units.page.create(page,{{variant:{_js(page['variant'])}}}).element;",
             "    const workspaceHost=units.layout.create(body,{variant:'identity'});",
