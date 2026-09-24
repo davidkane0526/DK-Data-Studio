@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.58",
+  "sdkVersion": "1.51.59",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.71.114",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.59 closes the remaining Resonance-shaped local action gap without adding a Unit or state store. Generic PRIME surfaces can declare bounded choice-menu actions that lower to the existing Workbench ActionGroup and canonical Header action host. Current selection is derived synchronously from Core command history; changes invoke the declared domain command and re-render the existing ActionGroup after completion. No plugin-local mutable preference mirror, menu runtime, plugin-id branch, private CSS, or Presenter change is introduced.",
     "SDK 1.51.58 contract correction: declarative nested/surface ParameterForm layoutOwner now uses the public Unit API vocabulary core|host (default core), matching DKDSUnitParameterFormOptions. The temporary authoring-only unit|presenter aliases introduced during Phase F are removed rather than retained as compatibility syntax.",
     "SDK 1.51.58 extends the generic Surface IR toward the accepted Resonance composition without changing Unit Templates. Non-parameter PRIME surfaces may declare bounded public detailGeometry and command-reference lifecycle adapters; recursive children now include Status, direct Action, FloatingChrome and runtime-owned ScientificPlot Units. A Resonance-shaped specimen proves two generic PRIME surfaces plus physics/spacing/gate SUB views and nested public Unit trees. Lifecycle behavior is expressed only as command IDs routed through the existing Plugin API command service; arbitrary JavaScript callbacks and plugin-specific Unit branches remain forbidden. The dynamic local group-columns menu remains intentionally outside this gate.",
     "SDK 1.51.57 closes the first TER-shaped declarative reconstruction gate without changing Plugin API 1.19.0 or Unit Templates 2.5.38. PlotGroup child declarations now carry bounded public placements/defaultPlacement/detailGeometry and lower directly to existing PlotView ownership; the TER specimen proves the canonical titleless parameter PRIME, nested ParameterForm, seven runtime-owned scientific plots with accepted heatmap/R–V geometry, and two result tables. SDK 1.51.56 added generic non-parameter PRIME/SUB Surface IR with bounded recursive public Unit children, and SDK 1.51.55 added nested ParameterForm inside grouped parameter PRIME controls. No new Unit, Layout recipe, Presenter branch, private CSS path, or plugin-id specialization was introduced.",
