@@ -307,3 +307,52 @@ Window geometry is deliberately bounded. Width/height and minima are author pref
 The executable reference is \`examples/declarative-python-hosted-workspace\`. Its gate builds both a TOP package and a Tool package, validates each with the ordinary SDK validator, executes each generated plugin in a VM host, and verifies Activity -> Page -> TopWorkspace -> Unit Workspace lifecycle plus canonical parameter PRIME projection.
 
 No private BrowserWindow code, IPC path, Presenter branch, dedicated-window fork, specialized Unit or alternate lifecycle is generated.
+
+
+## Production-shaped Unit blueprint parity — SDK 1.51.51
+
+SDK 1.51.51 moves Phase F from capability examples toward production-plugin reconstructability without introducing plugin-specific generation. The declarative schema can now select the existing \`fill-rows\` PRIMARY layout, canonical Metric grid and a bounded \`result-split\` composition backed by the public SplitPane, ScientificPlot and Table Units.
+
+A production-shaped result region is declared rather than hand-built:
+
+    "workspace": {
+        "primaryRole": "scientific-primary",
+        "primaryScroll": "contained",
+        "mainLayout": "fill-rows"
+    },
+    "content": [
+        {
+            "kind": "metrics",
+            "id": "analysis-metrics",
+            "items": [
+                {"id": "metric-value", "label": "Value", "value": "—"}
+            ]
+        },
+        {
+            "kind": "result-split",
+            "id": "analysis-results",
+            "axis": "y",
+            "resizeTarget": "second",
+            "defaultSize": 180,
+            "min": 140,
+            "reserve": 300,
+            "reflowBelow": 920,
+            "plot": {...},
+            "table": {...}
+        }
+    ]
+
+The generated runtime maps this directly onto public Unit ownership:
+
+    Layout(fill-rows)
+        -> Metric(metric-grid)
+        -> Panel(detached, fill) -> ScientificPlot
+        -> SplitPane(resizable)
+             first  = plot panel
+             second = Unit Table
+
+Portable Tasks may project scalar outputs into Metric Units through \`result_metrics=[{"id":...,"key":...}]\` in the same execution that updates generated Plot and Table outputs.
+
+The executable reference is \`examples/declarative-python-unit-blueprint-parity\`. Its release gate compares the generated public Unit vocabulary against the accepted production \`transfer-vth-lab\` Unit blueprint as independent evidence, then executes the generated plugin and task. The generator never switches on that plugin id and does not copy its private CSS, state store, threshold implementation or presentation source.
+
+This is the first production-shaped reconstruction gate, not a production-plugin replacement. Full 1:1 native-plugin reconstruction still requires the remaining generic composition vocabulary to be represented declaratively and validated under the same no-specialization rule.
