@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.53): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.54): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.53
+# Unit Templates 2.5.38 — SDK 1.51.54
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -13,6 +13,12 @@ SDK 1.51 does **not** migrate current native plugins. Their source and existing 
 
 ## Architecture
 
+
+## SDK 1.51.54 third production scientific blueprint reconstruction
+
+SDK 1.51.54 does not add or modify a Unit. The third independent Phase F production-shaped gate exposes four already-published public owners through the declarative layer: Summary, retained List, EmptyState and PlotView. PlotView continues to own portable lifecycle and bounded plot content geometry; ScientificPlot remains the renderer/interaction owner; retained List owns canonical item anatomy; Summary and EmptyState remain semantic content Units.
+
+The accepted Pulse Analysis blueprint is reconstruction evidence only. No Pulse plugin-id branch, batch state, segmentation algorithm, private DOM/CSS, Presenter behavior or execution backend is imported into generated runtime. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
 
 ## SDK 1.51.53 generated Tool-designer blueprint reconstruction
 
@@ -219,7 +225,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.53.
+`units.version` is `2.5.38` in SDK 1.51.54.
 
 
 
