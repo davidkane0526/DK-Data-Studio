@@ -1,3 +1,10 @@
+# 3.71.116 WIP — Desktop scientific chrome density + Resonance default companions
+
+- Desktop shared scientific floating navigation buttons are reduced exactly 10% from 28 × 28 px to 25.2 × 25.2 px through the Desktop Host geometry contract; the shared Core 28 × 28 baseline and Native Mobile 22.5 × 20.4 touch geometry remain unchanged.
+- Resonance Desktop now auto-opens the canonical curve-inspector and group-analysis PRIME surfaces. Native Mobile default visibility is unchanged.
+- Generic PRIME autoOpen no longer reapplies defaultPlacement after PortableView has restored a persisted user placement, so default-open companions still respect the user's saved docking choice.
+- Synchronized application/runtime/Desktop/Mobile/project-envelope identity at 3.71.116 and Android versionCode 256. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.115 WIP — Data Center Mobile filter-row acceptance
 
 - Data Center Mobile keeps the hierarchy and field filters in one two-column row across every valid Drawer width; the obsolete ultra-narrow one-column fallback is retired.
