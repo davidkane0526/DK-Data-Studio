@@ -1277,7 +1277,7 @@ class PluginBuilder:
             if domain_adapter is None:
                 raise SpecError(f"{name} requires top-level domainAdapter")
             raw_binding = _expect_object(raw_binding, name)
-            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey", "selectAction"})
+            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey", "selectAction", "selectedIdPath"})
             if extra:
                 raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
             def dotted(value: Any, field_name: str) -> str:
@@ -1297,6 +1297,8 @@ class PluginBuilder:
                     normalized[key] = _ident(raw_binding.get(key), f"{name}.{key}")
             if raw_binding.get("selectAction") is not None:
                 normalized["selectAction"] = _ident(raw_binding.get("selectAction"), f"{name}.selectAction")
+            if raw_binding.get("selectedIdPath") is not None:
+                normalized["selectedIdPath"] = dotted(raw_binding.get("selectedIdPath"), f"{name}.selectedIdPath")
             return normalized
 
         content = []
@@ -2913,6 +2915,8 @@ class PluginBuilder:
                 "getMarkers:()=>[]",
             ]
             binding = row["binding"]
+            if binding.get("selectedIdPath"):
+                parts.append(f"getSelectedCurveId:()=>{base}_selected_id")
             if binding.get("selectAction"):
                 parts.append(
                     "onCurveSelect:({curve})=>{const id=String(curve?.id||'');"
@@ -3091,11 +3095,16 @@ class PluginBuilder:
                 label_expr = f"String(row?.[{_js(binding['labelKey'])}]??id)" if binding.get("labelKey") else "id"
                 color_expr = f"Number(row?.[{_js(binding['colorValueKey'])}])" if binding.get("colorValueKey") else "NaN"
                 direction_expr = f"Number(row?.[{_js(binding['directionKey'])}])" if binding.get("directionKey") else "NaN"
+                selected_id_read = (
+                    f"{_js(binding['selectedIdPath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
+                    if binding.get("selectedIdPath") else "''"
+                )
                 lines += [
                     f"    let {base}_curves=[];",
+                    f"    let {base}_selected_id='';",
                     f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
                     f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
-                    f"    liveBindings.push(state=>{{const rows={state_read};{base}_curves=Array.isArray(rows)?rows.map((row,index)=>{{const id=String(row?.[{_js(binding['idKey'])}]??('curve-'+index));const rawPoints={points_read};const points=Array.isArray(rawPoints)?rawPoints.map(point=>({{x:Number(point?.[{_js(binding['xKey'])}]),y:Number(point?.[{_js(binding['yKey'])}])}})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)):[];const curve={{id,entityId:id,label:{label_expr},points,source:row}};const colorValue={color_expr};if(Number.isFinite(colorValue))curve.colorValue=colorValue;const direction={direction_expr};if(Number.isFinite(direction))curve.direction=direction;return curve;}}):[];{base}_surface.requestRender?.('domain-adapter');}});",
+                    f"    liveBindings.push(state=>{{const rows={state_read};{base}_curves=Array.isArray(rows)?rows.map((row,index)=>{{const id=String(row?.[{_js(binding['idKey'])}]??('curve-'+index));const rawPoints={points_read};const points=Array.isArray(rawPoints)?rawPoints.map(point=>({{x:Number(point?.[{_js(binding['xKey'])}]),y:Number(point?.[{_js(binding['yKey'])}])}})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)):[];const curve={{id,entityId:id,label:{label_expr},points,source:row}};const colorValue={color_expr};if(Number.isFinite(colorValue))curve.colorValue=colorValue;const direction={direction_expr};if(Number.isFinite(direction))curve.direction=direction;return curve;}}):[];{base}_selected_id=String({selected_id_read}??'');{base}_surface.requestRender?.('domain-adapter');}});",
                     f"    disposables.push({base}_surface);",
                 ]
             else:
