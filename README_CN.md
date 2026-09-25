@@ -1,4 +1,4 @@
-> **v3.71.116 WIP — Desktop Plot Chrome / Resonance Default Companions**：桌面端所有共享科学数据图的悬浮导航按钮从 28×28 px 等比缩小 10% 至 25.2×25.2 px，Native Mobile 的 22.5×20.4 px 触控几何保持不变。共振插件在 Desktop 默认打开“曲线检查器”和“组图”，Mobile 默认状态不变；PRIME autoOpen 同时改为尊重 PortableView 已保存的用户停靠位置，不再用 defaultPlacement 覆盖。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+> **v3.71.116 WIP — Desktop Plot Chrome / Resonance Default Companions**：桌面端所有共享科学数据图的悬浮导航按钮从 28×28 px 等比缩小 10% 至 25.2×25.2 px，Native Mobile 的 22.5×20.4 px 触控几何保持不变。共振插件在 Desktop 默认打开“曲线检查器”和“组图”，Mobile 默认状态不变；PRIME autoOpen 同时改为尊重 PortableView 已保存的用户停靠位置，不再用 defaultPlacement 覆盖。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变；CHANGELOG 当前补丁标识同步为 3.71.116。
 
 > **v3.71.115 WIP — Notebook Host Effects / SDK 1.51.76**：`DataFrame.plot()` 与 `to_clipboard()` 不再阻塞已闭合的 Table Transform compute。计算仍由纯 JavaScript Core Task 完成；Task 结束后，宿主只把所需 DataTable snapshot 投影到公共 ScientificPlot，或通过 `ctx.io.clipboard.writeText` 写入剪贴板。为 Host effect 所需的中间表只作为 Task 输出保留，不改变真正的 terminal result；Worker 内不允许 UI、剪贴板、Store、Electron、Python/Pandas 访问。`to_csv/to_excel`、未映射 plot 参数、`loc` 与 `mean/median/std` 仍保留精确 Cell/行号 blocker。
 
