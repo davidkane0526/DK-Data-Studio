@@ -1,13 +1,21 @@
 (() => {
+  const MarkerProjection=window.DKDSPluginModules.require('builtin.resonance-workbench','main-marker-projection');
   function provide(ctx,service){
     if(!service?.getState||!ctx.services?.domain)return null;
     const snapshot=()=>{
       const state=service.getState?.()||{};
-      const visibleIds=new Set((service.visibleSweepIds?.()||[]).map(String));
+      const visibleSweepIds=(service.visibleSweepIds?.()||[]).map(String);
+      const visibleIds=new Set(visibleSweepIds);
       const visibleSweeps=(Array.isArray(state.sweeps)?state.sweeps:[]).filter(sw=>visibleIds.has(String(sw?.id||'')));
+      const mainMarkers=MarkerProjection.project({
+        workspace:state.workspace||{},
+        visibleSweepIds,
+        colorForPeak:peak=>peak?.customColor||service.colorForPeakOrder?.(peak?.peakOrder||1,peak?.direction||1)||''
+      });
       return {
         ...state,
         visibleSweeps,
+        mainMarkers,
         group:{
           preference:String(service.getCurrentGroupColumnPreference?.()||state?.workspace?.groupColumns||'auto'),
           effective:String(service.getEffectiveGroupColumns?.()||1),
