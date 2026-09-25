@@ -1059,6 +1059,75 @@
                   "selectedIdPath": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+                  },
+                  "markers": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "statePath"
+                    ],
+                    "properties": {
+                      "statePath": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+                      },
+                      "idKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                        "default": "id"
+                      },
+                      "curveIdKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                        "default": "curveId"
+                      },
+                      "xKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                        "default": "x"
+                      },
+                      "yKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                        "default": "y"
+                      },
+                      "colorKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "shapeKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "lockedKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "acceptedKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "selectedIdPath": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+                      },
+                      "selectAction": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                      },
+                      "staticArgs": {
+                        "type": "object",
+                        "maxProperties": 8,
+                        "additionalProperties": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
                   }
                 }
               }

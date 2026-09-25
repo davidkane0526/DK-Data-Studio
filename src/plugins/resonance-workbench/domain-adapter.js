@@ -45,7 +45,7 @@
         setTransform:payload=>service.setTransform?.(valueOf(payload)),
         setPreset:payload=>service.setPreset?.(valueOf(payload)),
         setAllVisibility:payload=>service.setAllVisibility?.(valueOf(payload)),
-        selectPeak:payload=>service.selectPeak?.(payload?.id??valueOf(payload),{source:'resonance-domain-adapter'}),
+        selectPeak:payload=>service.selectPeak?.(payload?.id??valueOf(payload),{source:'resonance-domain-adapter',additive:payload?.additive===true,openInspector:payload?.openInspector===true}),
         selectSweep:payload=>service.selectSweep?.(payload?.id??valueOf(payload),{source:'resonance-domain-adapter'}),
         selectRange:payload=>service.selectRange?.(payload?.range??valueOf(payload),{source:'resonance-domain-adapter'}),
         clearSelection:()=>service.clearSelection?.(),

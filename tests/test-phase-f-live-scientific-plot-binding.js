@@ -27,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for live ScientificPlot binding gate.');
 }
 
-assert(sdkAtLeast(sdk.sdkVersion,'1.51.65'),'Live ScientificPlot curve-array projection requires SDK 1.51.65+.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.66'),'Live ScientificPlot curve-array projection requires SDK 1.51.66+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -40,7 +40,7 @@ const spec={
   domainAdapter:{ref:'builtin.example/live',dependency:'builtin.example'},
   content:[{
     kind:'plot',id:'main',title:'Main',xTitle:'Voltage',yTitle:'Current',source:'example:main',renderOwner:'unit',
-    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction',selectAction:'selectCurve',selectedIdPath:'selection.curveId'}
+    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction',selectAction:'selectCurve',selectedIdPath:'selection.curveId',markers:{statePath:'markers',idKey:'id',curveIdKey:'curveId',xKey:'x',yKey:'y',colorKey:'color',shapeKey:'shape',lockedKey:'locked',acceptedKey:'accepted',selectedIdPath:'selection.markerId',selectAction:'selectMarker',staticArgs:{openInspector:true}}}
   }]
 };
 
@@ -68,6 +68,13 @@ try{
   assert(source.includes('let g_main_selected_id=\'\';'),'Generated plot may keep only a presentation projection of the selected id.');
   assert(source.includes('getSelectedCurveId:()=>g_main_selected_id'),'Selected-state paint must use the public ScientificPlot focus contract.');
   assert(source.includes('["selection","curveId"].reduce((value,key)=>value?.[key],state)'),'Selected id must come from the declared authoritative snapshot path.');
+  assert(source.includes('getMarkers:()=>g_main_markers'),'ScientificPlot markers must come from the generated render projection only.');
+  assert(source.includes('getSelectedMarkerIds:()=>g_main_selected_marker_id?[g_main_selected_marker_id]:[]'),'Marker selected-state paint must use the public ScientificPlot focus contract.');
+  assert(source.includes('["markers"].reduce((value,key)=>value?.[key],state)'),'Marker rows must come from the declared adapter snapshot path.');
+  assert(source.includes('color:String(marker?.["color"]??\'\')')&&source.includes('shape:String(marker?.["shape"]??\'circle\')'),'Marker presentation fields must be bounded declarative mappings.');
+  assert(source.includes('onMarkerSelect:({marker,additive})=>{const id=String(marker?.id||\'\');if(id&&liveDomain?.available?.())void liveDomain.invoke("selectMarker",{...{"openInspector":true},id,additive:!!additive})'),'Marker selection must route id/additive through the declared Domain Adapter action.');
+  assert(source.includes('["selection","markerId"].reduce((value,key)=>value?.[key],state)'),'Selected marker id must be read from authoritative snapshot state.');
+
   assert(!/selectedCurve\s*=|selectedSweep\s*=/.test(source),'Generated live plot must not own a duplicate domain selection state.');
   assert(!/visibleSweepIds|resonance|querySelector|document\./.test(source),'Generic generated plot must not implement domain visibility logic or private DOM access.');
   assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.scientific-plot'));
