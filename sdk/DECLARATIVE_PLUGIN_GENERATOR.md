@@ -100,6 +100,17 @@ This binding is intentionally different from full Artifact hydration. Generated 
 The binding exists so Table Transform IR can target one stable JavaScript data shape instead of emulating Pandas or adding a Python runtime. Existing `artifact-column` remains preferred when only one series is needed.
 
 
+## No-function workflow packaging — SDK 1.51.74
+
+Authoring candidates are no longer limited to top-level functions. A script/notebook workflow may expose `workflow:table-transform` when both its structural IR and executable Core Task report are closed.
+
+The first packaging gate is deliberately one-source only. The single `source.table` symbol binds to one scoped `artifact-table`; terminal table snapshots are dynamically validated and published as canonical DataTable Artifacts with lineage. This requires no static knowledge of runtime column names and does not bypass the Data Model.
+
+Multiple source-table operations are not mapped by position. They report `WORKFLOW_SOURCE_BINDING_AMBIGUOUS` until a public runtime Source Picker can bind each authoring source explicitly. This prevents `read_csv("a.csv")` / `read_csv("b.csv")` from accidentally becoming “source 0 / source 1”.
+
+Compiled Python functions and compiled Table Transform Tasks share one `PluginBuilder.add_compiled_task()` registration path, so task manifests, bounded input hydration, publication, command/history integration, package validation, export and installation remain single-owner.
+
+
 ## Executable Table Transform Task — SDK 1.51.73
 
 A closed structural transform plan may now lower to one ordinary Core Task. The generated task is JavaScript and consumes only detached `artifact-table` snapshots prepared by the host-side generated action. It has no access to `ctx.data`, `ctx.io`, Electron, a Python interpreter, Pandas, or a notebook kernel.

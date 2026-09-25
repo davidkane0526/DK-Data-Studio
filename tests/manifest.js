@@ -89,6 +89,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-workflow-package.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },

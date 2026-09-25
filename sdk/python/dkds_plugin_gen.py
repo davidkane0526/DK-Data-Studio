@@ -1853,18 +1853,55 @@ class PluginBuilder:
         result_tables: List[Dict[str, str]] | None = None,
         result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_publish_tables: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
         function_name: str | None = None,
     ) -> "PluginBuilder":
-        """Bind authoring-time Python to the existing Core Task Runner.
-
-        Python is lowered immediately to JavaScript. Runtime inputs may come from
-        parameter Units or bounded columns of plugin-scoped Artifact sources.
-        One task may project multiple result arrays into Unit Plot/Table surfaces
-        and publish multiple declared canonical DataTable Artifacts with lineage.
-        """
+        """Lower Python once, then register through the shared compiled-task path."""
         compiled = compile_portable_task(task_id, function, function_name=function_name)
+        return self.add_compiled_task(
+            compiled,
+            action_id=action_id,
+            parameter_map=parameter_map,
+            input_bindings=input_bindings,
+            result_plot=result_plot,
+            result_key=result_key,
+            result_table=result_table,
+            result_rows_key=result_rows_key,
+            publish_table=publish_table,
+            result_plots=result_plots,
+            result_tables=result_tables,
+            result_metrics=result_metrics,
+            publish_tables=publish_tables,
+            dynamic_publish_tables=dynamic_publish_tables,
+            domain_command=domain_command,
+            success_status=success_status,
+        )
+
+    def add_compiled_task(
+        self,
+        compiled: CompiledPortableTask,
+        *,
+        action_id: str,
+        parameter_map: Dict[str, str] | None = None,
+        input_bindings: Dict[str, Dict[str, Any]] | None = None,
+        result_plot: str | None = None,
+        result_key: str = "points",
+        result_table: str | None = None,
+        result_rows_key: str = "rows",
+        publish_table: Dict[str, Any] | None = None,
+        result_plots: List[Dict[str, str]] | None = None,
+        result_tables: List[Dict[str, str]] | None = None,
+        result_metrics: List[Dict[str, str]] | None = None,
+        publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_publish_tables: List[Dict[str, Any]] | None = None,
+        domain_command: Dict[str, Any] | None = None,
+        success_status: str = "任务完成",
+    ) -> "PluginBuilder":
+        """Register an authoring-time compiled JavaScript Task through one production path."""
+        if not isinstance(compiled, CompiledPortableTask):
+            raise SpecError("compiled task must be a CompiledPortableTask")
         action_lookup = {row["id"]: row for row in self.spec["actions"]}
         action_ids = set(action_lookup)
         if action_id not in action_ids:
@@ -2076,6 +2113,35 @@ class PluginBuilder:
         if len({row["id"] for row in normalized_publish_tables}) != len(normalized_publish_tables):
             raise SpecError("portable task published Artifact ids must be unique")
 
+        normalized_dynamic_publish_tables: List[Dict[str, Any]] = []
+        for index, row in enumerate(dynamic_publish_tables or []):
+            row = _expect_object(row, f"dynamic_publish_tables[{index}]")
+            extra = sorted(set(row) - {"id", "name", "semanticType", "resultPath", "maxRows", "maxColumns"})
+            if extra:
+                raise SpecError(f"unsupported dynamic_publish_tables[{index}] fields: {', '.join(extra)}")
+            semantic_type = _nonempty(row.get("semanticType"), f"dynamic_publish_tables[{index}].semanticType")
+            if semantic_type not in self.spec["data"].get("produces", []):
+                raise SpecError(f"dynamic_publish_tables[{index}].semanticType must be declared in data.produces")
+            result_path = _nonempty(row.get("resultPath"), f"dynamic_publish_tables[{index}].resultPath")
+            if not all(IDENT.fullmatch(part) for part in result_path.split(".")):
+                raise SpecError(f"dynamic_publish_tables[{index}].resultPath must be a dotted identifier path")
+            max_rows = int(row.get("maxRows", 65536))
+            max_columns = int(row.get("maxColumns", 1024))
+            if max_rows < 1 or max_rows > 65536:
+                raise SpecError(f"dynamic_publish_tables[{index}].maxRows must be in 1..65536")
+            if max_columns < 1 or max_columns > 1024:
+                raise SpecError(f"dynamic_publish_tables[{index}].maxColumns must be in 1..1024")
+            normalized_dynamic_publish_tables.append({
+                "id": _ident(row.get("id"), f"dynamic_publish_tables[{index}].id"),
+                "name": _nonempty(row.get("name"), f"dynamic_publish_tables[{index}].name"),
+                "semanticType": semantic_type,
+                "resultPath": result_path,
+                "maxRows": max_rows,
+                "maxColumns": max_columns,
+            })
+        if len({row["id"] for row in normalized_dynamic_publish_tables}) != len(normalized_dynamic_publish_tables):
+            raise SpecError("dynamic published Artifact ids must be unique")
+
         normalized_domain_command = None
         if domain_command is not None:
             raw_command = _expect_object(domain_command, "domain_command")
@@ -2146,6 +2212,7 @@ class PluginBuilder:
             "result_tables": normalized_result_tables,
             "result_metrics": normalized_result_metrics,
             "publish_tables": normalized_publish_tables,
+            "dynamic_publish_tables": normalized_dynamic_publish_tables,
             "domain_command": normalized_domain_command,
             "success_status": str(success_status),
         })
@@ -2313,6 +2380,25 @@ class PluginBuilder:
                     f"        ctx.data.artifacts.publish({token});",
                     f"        __dkdsPublishedIds.push(String({token}.id));",
                 ]
+            for dynamic_index, publish in enumerate(row.get("dynamic_publish_tables", [])):
+                token = f"__dkdsDynamic_{dynamic_index}"
+                artifact = f"__dkdsDynamicArtifact_{dynamic_index}"
+                path_expr = _js(publish["resultPath"].split("."))
+                lines += [
+                    f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
+                    f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Generated dynamic table result '+publish['resultPath']+' must be a data.table snapshot')});",
+                    f"        if({token}.columns.length>{publish['maxColumns']})throw new Error({_js('Generated dynamic table exceeds maxColumns '+str(publish['maxColumns']))});",
+                    f"        const __dkdsDynamicColumns_{dynamic_index}={token}.columns.map((column,index)=>{{",
+                    f"          const values=Array.from(column?.values||[]);",
+                    f"          if(values.length>{publish['maxRows']})throw new Error({_js('Generated dynamic table exceeds maxRows '+str(publish['maxRows']))});",
+                    "          return {key:String(column?.key||('column_'+(index+1))),name:String(column?.name||column?.key||('Column '+(index+1))),unit:String(column?.unit||''),role:String(column?.role||''),values};",
+                    "        });",
+                    f"        const __dkdsDynamicLengths_{dynamic_index}=__dkdsDynamicColumns_{dynamic_index}.map(column=>column.values.length);",
+                    f"        if(new Set(__dkdsDynamicLengths_{dynamic_index}).size>1)throw new Error('Generated dynamic DataTable columns must have equal lengths.');",
+                    f"        const {artifact}=ctx.data.model.createTable({{id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},columns:__dkdsDynamicColumns_{dynamic_index},lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}}});",
+                    f"        ctx.data.artifacts.publish({artifact});",
+                    f"        __dkdsPublishedIds.push(String({artifact}.id));",
+                ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
                 "        " + ("return {taskResult:result,artifactIds:__dkdsPublishedIds.slice(),sourceIds:__dkdsSourceIds.slice()};" if row.get("domain_command") else "return true;"),
@@ -2406,11 +2492,14 @@ class PluginBuilder:
         )
         has_menu = any(row["kind"] == "menu" for row in self.spec["content"])
         has_artifact_input = any(
-            binding["kind"] == "artifact-column"
+            binding["kind"] in {"artifact-column", "artifact-table"}
             for task in self._portable_tasks
             for binding in task["input_bindings"].values()
         )
-        has_artifact_output = any(bool(task["publish_tables"]) for task in self._portable_tasks)
+        has_artifact_output = any(
+            bool(task["publish_tables"]) or bool(task.get("dynamic_publish_tables"))
+            for task in self._portable_tasks
+        )
         has_interaction = self.spec.get("interaction") is not None
         has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
         has_surface_lifecycle_commands = any(bool(surface.get("lifecycle")) for surface in self.spec.get("surfaces", []))

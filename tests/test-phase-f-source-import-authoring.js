@@ -87,6 +87,7 @@ try{
   assert.doesNotThrow(()=>new Function(authoringUi),'Plugin Manager authoring surface must remain valid JavaScript.');
   assert(!authoringUi.includes('escapeHtml('),'Authoring UI must use its owned esc() HTML-escape helper rather than an undefined alias.');
   assert(authoringUi.includes('tableExecution.executable'),'Authoring UI must expose compute-task execution closure separately from static IR closure.');
+  assert(authoringUi.includes('workflowBlueprint.candidateId')&&authoringUi.includes('Table Transform Workflow'),'Authoring UI must expose the workflow candidate in the same selector as functions.');
   assert(manager.includes('DKDSPluginAuthoringUI')&&authoringUi.includes('pluginAuthoringSelectSource')&&authoringUi.includes('pluginAuthoringBuild')&&authoringUi.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions through one Core authoring surface.');
   console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model v2 + workflow graph -> host mapping/lowering report -> blueprint -> package -> Plugin Manager transaction.');
 }finally{fs.rmSync(temp,{recursive:true,force:true});}

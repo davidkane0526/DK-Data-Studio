@@ -22,11 +22,12 @@ from dkds_plugin_gen import PluginBuilder, SpecError
 from dkds_portable_task import PortableTaskError, compile_portable_task
 from dkds_source_workflow import analyze_workflow
 from dkds_table_transform import analyze_table_transform
-from dkds_table_transform_task import analyze_table_transform_execution
+from dkds_table_transform_task import analyze_table_transform_execution, compile_table_transform_task
 
 SOURCE_MODEL_SCHEMA="dkds.python-source-model.v2"
 BLUEPRINT_SCHEMA="dkds.declarative-blueprint.v1"
 REPORT_SCHEMA="dkds.python-authoring-report.v2"
+WORKFLOW_CANDIDATE_ID="workflow:table-transform"
 _IDENT_SAFE=re.compile(r"[^A-Za-z0-9._-]+")
 _IDENT=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ERROR_LINE=re.compile(r"\(line\s+(\d+)\)")
@@ -267,6 +268,49 @@ def _blueprint(model:dict[str,Any],fn_row:dict[str,Any],fn:SourceFunction)->dict
     preview={"title":title,"source":model["name"],"function":fn.name,"parameters":fields,"artifactInputs":[name for name,binding in bindings.items() if binding["kind"]=="artifact-column"],"outputs":[*([{"kind":"plot","label":"points"}] if result_plots else []),*([{"kind":"table","label":"rows"}] if result_tables else []),*[{"kind":"metric","label":row["key"]} for row in result_metrics]],"unitFirst":True,"privateCss":False}
     return {"schema":BLUEPRINT_SCHEMA,"buildable":bool(fn_row["compatibility"]["portable"] and not diagnostics),"diagnostics":diagnostics,"spec":spec,"task":task,"preview":preview}
 
+
+def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
+    plan=workflow.get("tableTransformPlan") or {}
+    execution=plan.get("execution") or {}
+    diagnostics=[dict(row) for row in execution.get("diagnostics",[])]
+    source_inputs=list(execution.get("sourceInputs") or [])
+    result_symbols=list(execution.get("resultSymbols") or [])
+    if len(source_inputs)!=1:
+        diagnostics.append({
+            "severity":"blocker","code":"WORKFLOW_SOURCE_BINDING_AMBIGUOUS",
+            "message":"Automatic workflow packaging currently requires exactly one scoped DataTable source; multi-source workflows need an explicit runtime Source Picker instead of index guessing.",
+            "sourceInputCount":len(source_inputs),
+        })
+    stem=_slug(Path(source_name).stem)
+    title=f"{Path(source_name).stem} · Workflow"
+    spec={
+        "schema":"dkds.declarative-plugin.v1",
+        "plugin":{"id":f"generated.{stem}.workflow","name":title,"version":"1.0.0","description":f"Generated from {source_name} Table Transform workflow.","order":940},
+        "page":{"id":f"{stem}-workflow","label":"Workflow","title":title,"subtitle":"Python/Jupyter Source Workflow → Core Task","variant":"analysis","close":True},
+        "workspace":{"activity":f"{stem}-workflow","primaryRole":"scientific-primary","primaryLabel":"主界面","primaryScroll":"safe","mainLayout":"stack-comfortable"},
+        "host":{"kind":"top","label":"Workflow","contextLabel":title,"icon":"◇","window":{"title":title,"width":1280,"height":820,"minWidth":860,"minHeight":560,"reuse":True,"persistence":"project","artifactHydration":"live"}},
+        "data":{"accepts":["data.table"],"produces":["generated.table-transform"]},
+        "actions":[{"id":"run","label":"运行工作流","variant":"primary","statusMessage":"正在执行生成的 Table Transform 工作流…"}],
+        "content":[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Result DataTables are published to the canonical Artifact Store."}],
+    }
+    bindings={}
+    if len(source_inputs)==1:
+        bindings[source_inputs[0]]={"kind":"artifact-table","source":{"kind":"data.table","index":0,"includeExcluded":False},"maxRows":65536,"maxColumns":1024}
+    dynamic=[
+        {"id":"workflow-result-"+_slug(symbol).replace(".","-"),"name":f"Workflow result · {symbol}","semanticType":"generated.table-transform","resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024}
+        for symbol in result_symbols
+    ]
+    return {
+        "schema":BLUEPRINT_SCHEMA,
+        "candidateId":WORKFLOW_CANDIDATE_ID,
+        "buildable":bool(execution.get("executable") and len(source_inputs)==1 and result_symbols and not diagnostics),
+        "diagnostics":diagnostics,
+        "spec":spec,
+        "task":{"id":"run-workflow","actionId":"run","inputBindings":bindings,"dynamicPublishTables":dynamic,"successStatus":"工作流完成"},
+        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"resultSymbols":result_symbols,"unitFirst":True,"privateCss":False},
+    }
+
+
 def analyze(path:str|Path)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
     model,functions,diagnostics=_read_document(source_path)
@@ -279,6 +323,7 @@ def analyze(path:str|Path)->dict[str,Any]:
     table_plan=analyze_table_transform(source_path)
     table_plan["execution"]=analyze_table_transform_execution(table_plan)
     workflow["tableTransformPlan"]=table_plan
+    workflow["blueprint"]=_workflow_blueprint(source_path.name,workflow)
     model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:
@@ -296,6 +341,26 @@ def _selected(path:Path,function_id:str)->tuple[dict[str,Any],SourceFunction,dic
 
 def build_package(path:str|Path,function_id:str)->tuple[dict[str,Any],dict[str,Any]]:
     source_path=Path(path).expanduser().resolve()
+    if function_id==WORKFLOW_CANDIDATE_ID:
+        analysis=analyze(source_path)
+        workflow=analysis["sourceModel"]["workflow"]
+        blueprint=workflow["blueprint"]
+        if not blueprint["buildable"]:
+            messages=[str(row.get("message","")) for row in blueprint.get("diagnostics",[])]
+            raise ValueError("Selected workflow is not automatically buildable: "+"; ".join(messages))
+        compiled=compile_table_transform_task(workflow["tableTransformPlan"],blueprint["task"]["id"])
+        builder=PluginBuilder(blueprint["spec"])
+        task=blueprint["task"]
+        builder.add_compiled_task(
+            compiled,
+            action_id=task["actionId"],
+            input_bindings=task["inputBindings"],
+            dynamic_publish_tables=task["dynamicPublishTables"],
+            success_status=task["successStatus"],
+        )
+        package=builder.package()
+        report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":WORKFLOW_CANDIDATE_ID,"candidateKind":"table-transform-workflow"},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
+        return package,report
     model,fn,selected=_selected(source_path,function_id)
     blueprint=selected["blueprint"]
     if not blueprint["buildable"]:
