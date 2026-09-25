@@ -275,6 +275,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
     diagnostics=[dict(row) for row in execution.get("diagnostics",[])]
     source_inputs=list(execution.get("sourceInputs") or [])
     result_symbols=list(execution.get("resultSymbols") or [])
+    host_effects=list(execution.get("hostEffects") or [])
     source_ops={
         str(row.get("output","")):row
         for row in plan.get("operations",[])
@@ -301,6 +302,29 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
             "maxRows":65536,"maxColumns":1024,
         }
         source_bindings.append({"symbol":symbol,"field":field_id,"hint":source_hint})
+    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Source files are bound explicitly to scoped DKDS DataTables; result DataTables are published to the canonical Artifact Store."}]
+    dynamic_plots=[]
+    task_host_effects=[]
+    for effect_index,effect in enumerate(host_effects):
+        input_symbol=str(effect.get("input",""))
+        result_path="tables."+input_symbol
+        if effect.get("kind")=="scientific-plot":
+            kwargs=dict(effect.get("kwargs") or {})
+            plot_id=f"workflow-plot-{effect_index+1}"
+            content.append({
+                "kind":"plot","id":plot_id,
+                "title":str(kwargs.get("title") or f"Workflow plot · {input_symbol}"),
+                "xTitle":str(kwargs.get("xlabel") or kwargs.get("x") or "Index"),
+                "yTitle":str(kwargs.get("ylabel") or ""),
+                "source":"generated-workflow-table","points":[],
+            })
+            dynamic_plots.append({"id":plot_id,"resultPath":result_path,"x":kwargs.get("x"),"y":kwargs.get("y")})
+        elif effect.get("kind")=="clipboard-table":
+            task_host_effects.append({
+                "kind":"clipboard-table","resultPath":result_path,
+                "index":bool(effect.get("index",True)),"header":bool(effect.get("header",True)),
+                "sep":str(effect.get("sep","\t")),
+            })
     spec={
         "schema":"dkds.declarative-plugin.v1",
         "plugin":{"id":f"generated.{stem}.workflow","name":title,"version":"1.0.0","description":f"Generated from {source_name} Table Transform workflow.","order":940},
@@ -309,7 +333,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         "host":{"kind":"top","label":"Workflow","contextLabel":title,"icon":"◇","window":{"title":title,"width":1280,"height":820,"minWidth":860,"minHeight":560,"reuse":True,"persistence":"project","artifactHydration":"live"}},
         "data":{"accepts":["data.table"],"produces":["generated.table-transform"]},
         "actions":[{"id":"run","label":"运行工作流","variant":"primary","statusMessage":"正在执行生成的 Table Transform 工作流…"}],
-        "content":[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Source files are bound explicitly to scoped DKDS DataTables; result DataTables are published to the canonical Artifact Store."}],
+        "content":content,
     }
     if fields:
         spec["parameters"]={"id":"sources","label":"数据源","fields":fields,"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
@@ -323,8 +347,8 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         "buildable":bool(execution.get("executable") and source_inputs and result_symbols and not diagnostics),
         "diagnostics":diagnostics,
         "spec":spec,
-        "task":{"id":"run-workflow","actionId":"run","inputBindings":bindings,"dynamicPublishTables":dynamic,"successStatus":"工作流完成"},
-        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"sourceBindings":source_bindings,"resultSymbols":result_symbols,"unitFirst":True,"privateCss":False},
+        "task":{"id":"run-workflow","actionId":"run","inputBindings":bindings,"dynamicPublishTables":dynamic,"dynamicTablePlots":dynamic_plots,"hostEffects":task_host_effects,"successStatus":"工作流完成"},
+        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"sourceBindings":source_bindings,"resultSymbols":result_symbols,"hostEffects":host_effects,"unitFirst":True,"privateCss":False},
     }
 
 
@@ -373,6 +397,8 @@ def build_package(path:str|Path,function_id:str)->tuple[dict[str,Any],dict[str,A
             action_id=task["actionId"],
             input_bindings=task["inputBindings"],
             dynamic_publish_tables=task["dynamicPublishTables"],
+            dynamic_table_plots=task["dynamicTablePlots"],
+            host_effects=task["hostEffects"],
             success_status=task["successStatus"],
         )
         package=builder.package()
