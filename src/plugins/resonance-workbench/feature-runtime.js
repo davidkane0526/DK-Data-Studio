@@ -7,6 +7,7 @@
   const AnalysisRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-analysis-runtime');
   const PeakRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-peak-runtime');
   const SelectionRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-selection-runtime');
+  const InspectorMutationRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-inspector-mutation-runtime');
   const InspectorRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-inspector-runtime');
   const MainPlotRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-main-plot-runtime');
   const ControlsRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-controls-runtime');
@@ -17,7 +18,7 @@
   const csvCell=value=>{const text=String(value??'');return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;};
   const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
   if(!Shared)throw new Error('Resonance shared workbench layer is unavailable.');
-  if(!FeatureContext||!DataRuntime||!GroupRuntime||!TerRuntime||!AnalysisRuntime||!PeakRuntime||!SelectionRuntime||!InspectorRuntime||!MainPlotRuntime||!ControlsRuntime)throw new Error('Resonance feature sub-runtimes are unavailable.');
+  if(!FeatureContext||!DataRuntime||!GroupRuntime||!TerRuntime||!AnalysisRuntime||!PeakRuntime||!SelectionRuntime||!InspectorMutationRuntime||!InspectorRuntime||!MainPlotRuntime||!ControlsRuntime)throw new Error('Resonance feature sub-runtimes are unavailable.');
   async function mountSuper(ctx,controller,adapter={}){
     const views=window.DKDSPluginModules.get('builtin.resonance-workbench','view-components');
     if(!views?.mountUnified)throw new Error('Resonance unified View runtime is unavailable.');
@@ -62,6 +63,10 @@
       let derivedArtifactsSignature='';
       const resonantTerRuntime=TerRuntime.create({tasks,getWorkspace:()=>workspace,getSweeps:()=>sweeps,peakLabel,onResolved:()=>{groupRuntime?.invalidate?.();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}});
       function resonantTerForLabel(label,visibleIds=[]){return resonantTerRuntime.get(label,visibleIds);}
+      const inspectorMutationRuntime=InspectorMutationRuntime.create({
+        actions:{selectedPeak,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,updatePeak,deletePeak,sweepById,publishSweepSelection,commitPeakMetricEdit,scheduleSnapshot},
+        services:{setStatus}
+      });
       const featureContext=FeatureContext.create({
         live:{
           workspace:()=>workspace,project:()=>project,datasets:()=>datasets,analysisDatasets:()=>analysisDatasets(),sweeps:()=>sweeps,
@@ -79,7 +84,7 @@
           updateGroupContext,isUiBound,normalizeCategories,invalidatePhysics,physicalAnalysis,render,scheduleSnapshot,commitPeakMetricEdit,
           clearMainRangeMenu,renderMainPlot,selectedSweep,selectedPeak,assignPeakCategory,createPeakCategoryForPeak,
           renameSelectedCategory,updatePeak,deletePeak,currentTransform,peakColor,
-          assignSelectedPeakCategory,createCategoryForSelectedPeak,renameSelectedPeakCategory,toggleSelectedPeakAccepted,toggleSelectedPeakLocked,resetSelectedPeakFwhmWindow,deleteSelectedPeak,selectSelectedPeakSweep,
+          ...inspectorMutationRuntime,
           clearRangeState:()=>selectionRuntime?.clearRangeState(),
           setRangeState:range=>selectionRuntime?.setRangeState(range),clearSelectionIds:options=>selectionRuntime?.clearIds(options),
           assignDetectedOrders,commitWorkspaceEdit,setSelectedSweepId:value=>selectionRuntime?.setSelectedSweepId(value),setSelectedPeakId:value=>selectionRuntime?.setSelectedPeakId(value),rebuild,refreshData,metricWaveSettled:()=>groupRuntime?.metricWaveSettled?.()
@@ -376,33 +381,6 @@
         normalizeCategories();render();scheduleSnapshot();
       }
 
-      function assignSelectedPeakCategory(order){
-        const p=selectedPeak();if(!p)return false;assignPeakCategory(p,order);return true;
-      }
-      function createCategoryForSelectedPeak(){
-        const p=selectedPeak();if(!p)return false;return !!createPeakCategoryForPeak(p);
-      }
-      function renameSelectedPeakCategory(label){
-        const p=selectedPeak();if(!p)return false;renamePeakCategory(p,label);return true;
-      }
-      function toggleSelectedPeakAccepted(){
-        const p=selectedPeak();if(!p)return false;updatePeak(p.id,{accepted:p.accepted===false});return true;
-      }
-      function toggleSelectedPeakLocked(){
-        const p=selectedPeak();if(!p)return false;updatePeak(p.id,{locked:!p.locked});return true;
-      }
-      function resetSelectedPeakFwhmWindow(){
-        const p=selectedPeak();if(!p)return false;
-        delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;
-        commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');return true;
-      }
-      function deleteSelectedPeak(){
-        const p=selectedPeak();if(!p)return false;deletePeak(p.id);return true;
-      }
-      function selectSelectedPeakSweep(){
-        const p=selectedPeak();if(!p)return false;const sw=sweepById(p.sweepId);return sw?publishSweepSelection(sw,'resonance-inspector'):false;
-      }
-
       function sortPeakOrderByVd(){
         const rows=visibleSweeps().map(sw=>({sw,peaks:(workspace.peaks||[]).filter(p=>p.sweepId===sw.id&&p.accepted!==false).sort((a,b)=>a.v-b.v)})).filter(r=>r.peaks.length);
         if(!rows.length)return;
@@ -553,7 +531,7 @@
         serialize:()=>clone(workspace),
         selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
         directionName,peakLabel,resonantTerForLabel,colorForPeakOrder,colorForSeries,colorForPhysicsCode,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
-        assignSelectedPeakCategory,createCategoryForSelectedPeak,renameSelectedPeakCategory,toggleSelectedPeakAccepted,toggleSelectedPeakLocked,resetSelectedPeakFwhmWindow,deleteSelectedPeak,selectSelectedPeakSweep,
+        ...inspectorMutationRuntime,
         restore(data){workspace=normalizeWorkspace(data,project,S);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project,S);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';workspace.groupColumnsPortrait='auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
