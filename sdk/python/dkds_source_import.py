@@ -20,10 +20,11 @@ from typing import Any, Iterable
 
 from dkds_plugin_gen import PluginBuilder, SpecError
 from dkds_portable_task import PortableTaskError, compile_portable_task
+from dkds_source_workflow import analyze_workflow
 
-SOURCE_MODEL_SCHEMA="dkds.python-source-model.v1"
+SOURCE_MODEL_SCHEMA="dkds.python-source-model.v2"
 BLUEPRINT_SCHEMA="dkds.declarative-blueprint.v1"
-REPORT_SCHEMA="dkds.python-authoring-report.v1"
+REPORT_SCHEMA="dkds.python-authoring-report.v2"
 _IDENT_SAFE=re.compile(r"[^A-Za-z0-9._-]+")
 _IDENT=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ERROR_LINE=re.compile(r"\(line\s+(\d+)\)")
@@ -272,12 +273,13 @@ def analyze(path:str|Path)->dict[str,Any]:
         row={"id":fn.id,"name":fn.name,"line":fn.line,"endLine":fn.end_line,**({"cellIndex":fn.cell_index} if fn.cell_index is not None else {}),"async":isinstance(fn.node,ast.AsyncFunctionDef),"parameters":_parameters(fn.node),"returnAnnotation":_annotation_text(fn.node.returns),"returnShape":_return_shape(fn.node),"compatibility":_compatibility(fn)}
         row["blueprint"]=_blueprint(model,row,fn)
         rows.append(row)
-    model={**model,"functionCount":len(rows),"functions":rows}
+    workflow=analyze_workflow(source_path)
+    model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:
         all_diagnostics.extend(row["compatibility"].get("diagnostics",[]))
         all_diagnostics.extend(row["blueprint"].get("diagnostics",[]))
-    return {"schema":REPORT_SCHEMA,"sourceModel":model,"diagnostics":all_diagnostics,"portableFunctionCount":sum(1 for row in rows if row["compatibility"]["portable"]),"buildableFunctionCount":sum(1 for row in rows if row["blueprint"]["buildable"])}
+    return {"schema":REPORT_SCHEMA,"sourceModel":model,"diagnostics":all_diagnostics,"portableFunctionCount":sum(1 for row in rows if row["compatibility"]["portable"]),"buildableFunctionCount":sum(1 for row in rows if row["blueprint"]["buildable"]),"workflowCandidateCount":1 if workflow.get("candidate") else 0}
 
 def _selected(path:Path,function_id:str)->tuple[dict[str,Any],SourceFunction,dict[str,Any]]:
     model,functions,_=_read_document(path)
