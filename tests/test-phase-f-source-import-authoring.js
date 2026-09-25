@@ -65,7 +65,7 @@ try{
   assert(workflow.hostCapabilities.includes('data.import')&&workflow.hostCapabilities.includes('scientific.plot')&&workflow.hostCapabilities.includes('host.clipboard.write'),'Workflow analysis must classify DKDS host replacements.');
   assert(workflow.transformFamilies.includes('pandas.dataframe'),'Pandas notebooks must be classified for table-transform lowering instead of runtime Python fallback.');
   assert(workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&row.cellIndex===2&&row.line===2&&row.call.includes('pd.read_csv')),'Workflow compatibility must report an exact cell/line/call for unlowered scientific library semantics.');
-  assert.strictEqual(workflow.candidate.buildable,false);
+  assert.strictEqual(workflow.candidate.buildable,true);\n  assert.strictEqual(workflow.candidate.status,'buildable-table-transform');
   assert.strictEqual(workflow.sourceExecuted,false);
   const tablePlan=workflow.tableTransformPlan;
   assert.strictEqual(tablePlan.schema,'dkds.table-transform-plan.v1');
