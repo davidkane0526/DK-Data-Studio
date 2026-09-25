@@ -1277,7 +1277,7 @@ class PluginBuilder:
             if domain_adapter is None:
                 raise SpecError(f"{name} requires top-level domainAdapter")
             raw_binding = _expect_object(raw_binding, name)
-            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey", "selectAction", "selectedIdPath"})
+            extra = sorted(set(raw_binding) - {"statePath", "pointsPath", "xKey", "yKey", "idKey", "labelKey", "colorValueKey", "directionKey", "selectAction", "selectedIdPath", "markers"})
             if extra:
                 raise SpecError(f"unsupported {name} fields: {', '.join(extra)}")
             def dotted(value: Any, field_name: str) -> str:
@@ -1299,6 +1299,36 @@ class PluginBuilder:
                 normalized["selectAction"] = _ident(raw_binding.get("selectAction"), f"{name}.selectAction")
             if raw_binding.get("selectedIdPath") is not None:
                 normalized["selectedIdPath"] = dotted(raw_binding.get("selectedIdPath"), f"{name}.selectedIdPath")
+            if raw_binding.get("markers") is not None:
+                raw_markers = _expect_object(raw_binding["markers"], f"{name}.markers")
+                extra = sorted(set(raw_markers) - {"statePath", "idKey", "curveIdKey", "xKey", "yKey", "colorKey", "shapeKey", "lockedKey", "acceptedKey", "selectedIdPath", "selectAction", "staticArgs"})
+                if extra:
+                    raise SpecError(f"unsupported {name}.markers fields: {', '.join(extra)}")
+                marker_binding = {
+                    "statePath": dotted(raw_markers.get("statePath"), f"{name}.markers.statePath"),
+                    "idKey": _ident(raw_markers.get("idKey", "id"), f"{name}.markers.idKey"),
+                    "curveIdKey": _ident(raw_markers.get("curveIdKey", "curveId"), f"{name}.markers.curveIdKey"),
+                    "xKey": _ident(raw_markers.get("xKey", "x"), f"{name}.markers.xKey"),
+                    "yKey": _ident(raw_markers.get("yKey", "y"), f"{name}.markers.yKey"),
+                }
+                for key in ("colorKey", "shapeKey", "lockedKey", "acceptedKey"):
+                    if raw_markers.get(key) is not None:
+                        marker_binding[key] = _ident(raw_markers.get(key), f"{name}.markers.{key}")
+                if raw_markers.get("selectedIdPath") is not None:
+                    marker_binding["selectedIdPath"] = dotted(raw_markers.get("selectedIdPath"), f"{name}.markers.selectedIdPath")
+                if raw_markers.get("selectAction") is not None:
+                    marker_binding["selectAction"] = _ident(raw_markers.get("selectAction"), f"{name}.markers.selectAction")
+                raw_static = _expect_object(raw_markers.get("staticArgs", {}), f"{name}.markers.staticArgs")
+                if len(raw_static) > 8:
+                    raise SpecError(f"{name}.markers.staticArgs supports at most 8 entries")
+                static_args = {}
+                for key, value in raw_static.items():
+                    normalized_key = _ident(key, f"{name}.markers.staticArgs key")
+                    if value is not None and (isinstance(value, (dict, list)) or not isinstance(value, (str, int, float, bool))):
+                        raise SpecError(f"{name}.markers.staticArgs.{normalized_key} must be a scalar")
+                    static_args[normalized_key] = value
+                marker_binding["staticArgs"] = static_args
+                normalized["markers"] = marker_binding
             return normalized
 
         content = []
@@ -2917,6 +2947,18 @@ class PluginBuilder:
             binding = row["binding"]
             if binding.get("selectedIdPath"):
                 parts.append(f"getSelectedCurveId:()=>{base}_selected_id")
+            markers = binding.get("markers")
+            if markers is not None:
+                parts.append(f"getMarkers:()=>{base}_markers")
+                if markers.get("selectedIdPath"):
+                    parts.append(f"getSelectedMarkerIds:()=>{base}_selected_marker_id?[{base}_selected_marker_id]:[]")
+                if markers.get("selectAction"):
+                    static_args = _js(markers.get("staticArgs", {}))
+                    parts.append(
+                        "onMarkerSelect:({marker,additive})=>{const id=String(marker?.id||'');"
+                        + f"if(id&&liveDomain?.available?.())void liveDomain.invoke({_js(markers['selectAction'])},{{...{static_args},id,additive:!!additive}}).catch(error=>ctx.status.set(String(error?.message||error||'标记选择失败')));"
+                        + "}"
+                    )
             if binding.get("selectAction"):
                 parts.append(
                     "onCurveSelect:({curve})=>{const id=String(curve?.id||'');"
@@ -3099,12 +3141,45 @@ class PluginBuilder:
                     f"{_js(binding['selectedIdPath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
                     if binding.get("selectedIdPath") else "''"
                 )
+                markers = binding.get("markers")
+                marker_state_read = (
+                    f"{_js(markers['statePath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
+                    if markers is not None else "[]"
+                )
+                marker_selected_read = (
+                    f"{_js(markers['selectedIdPath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
+                    if markers is not None and markers.get("selectedIdPath") else "''"
+                )
+                marker_map = "[]"
+                if markers is not None:
+                    marker_parts = [
+                        f"id:String(marker?.[{_js(markers['idKey'])}]??('marker-'+index))",
+                        f"entityId:String(marker?.[{_js(markers['idKey'])}]??('marker-'+index))",
+                        f"curveId:String(marker?.[{_js(markers['curveIdKey'])}]??'')",
+                        f"x:Number(marker?.[{_js(markers['xKey'])}])",
+                        f"y:Number(marker?.[{_js(markers['yKey'])}])",
+                        "source:marker",
+                    ]
+                    if markers.get("colorKey"):
+                        marker_parts.append(f"color:String(marker?.[{_js(markers['colorKey'])}]??'')")
+                    if markers.get("shapeKey"):
+                        marker_parts.append(f"shape:String(marker?.[{_js(markers['shapeKey'])}]??'circle')")
+                    if markers.get("lockedKey"):
+                        marker_parts.append(f"locked:Boolean(marker?.[{_js(markers['lockedKey'])}])")
+                    if markers.get("acceptedKey"):
+                        marker_parts.append(f"accepted:marker?.[{_js(markers['acceptedKey'])}]!==false")
+                    marker_map = (
+                        f"Array.isArray(markerRows)?markerRows.map((marker,index)=>({{{','.join(marker_parts)}}}))"
+                        + ".filter(marker=>marker.id&&marker.curveId&&Number.isFinite(marker.x)&&Number.isFinite(marker.y)):[]"
+                    )
                 lines += [
                     f"    let {base}_curves=[];",
                     f"    let {base}_selected_id='';",
+                    f"    let {base}_markers=[];",
+                    f"    let {base}_selected_marker_id='';",
                     f"    let {base}_artifact_id='',{base}_series_id='',{base}_artifact_revision=0;",
                     f"    const {base}_surface=units.scientificPlot.create({base}_host,{self._scientific_plot_spec_source(row, base)});",
-                    f"    liveBindings.push(state=>{{const rows={state_read};{base}_curves=Array.isArray(rows)?rows.map((row,index)=>{{const id=String(row?.[{_js(binding['idKey'])}]??('curve-'+index));const rawPoints={points_read};const points=Array.isArray(rawPoints)?rawPoints.map(point=>({{x:Number(point?.[{_js(binding['xKey'])}]),y:Number(point?.[{_js(binding['yKey'])}])}})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)):[];const curve={{id,entityId:id,label:{label_expr},points,source:row}};const colorValue={color_expr};if(Number.isFinite(colorValue))curve.colorValue=colorValue;const direction={direction_expr};if(Number.isFinite(direction))curve.direction=direction;return curve;}}):[];{base}_selected_id=String({selected_id_read}??'');{base}_surface.requestRender?.('domain-adapter');}});",
+                    f"    liveBindings.push(state=>{{const rows={state_read};{base}_curves=Array.isArray(rows)?rows.map((row,index)=>{{const id=String(row?.[{_js(binding['idKey'])}]??('curve-'+index));const rawPoints={points_read};const points=Array.isArray(rawPoints)?rawPoints.map(point=>({{x:Number(point?.[{_js(binding['xKey'])}]),y:Number(point?.[{_js(binding['yKey'])}])}})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)):[];const curve={{id,entityId:id,label:{label_expr},points,source:row}};const colorValue={color_expr};if(Number.isFinite(colorValue))curve.colorValue=colorValue;const direction={direction_expr};if(Number.isFinite(direction))curve.direction=direction;return curve;}}):[];{base}_selected_id=String({selected_id_read}??'');const markerRows={marker_state_read};{base}_markers={marker_map};{base}_selected_marker_id=String({marker_selected_read}??'');{base}_surface.requestRender?.('domain-adapter');}});",
                     f"    disposables.push({base}_surface);",
                 ]
             else:
