@@ -4,7 +4,7 @@
   // one delegated click handler through ctx.ui.dom; re-rendering never multiplies listeners.
   function create(context){
     const {live,services,actions,utils}=context;
-    const {$,dom,charts,S,transforms,setStatus}=services;
+    const {$,dom,charts,S,transforms}=services;
     const {esc,fmt,finite,directionName}=utils;
     let boundHost=null;
     let disposeClick=null;
@@ -14,18 +14,16 @@
       disposeClick?.();disposeClick=null;boundHost=host;
       disposeClick=dom.on(host,'click',event=>{
         const button=event.target?.closest?.('button');if(!button||!host.contains(button))return;
-        const p=actions.selectedPeak();if(!p)return;
-        if(button.dataset.peakCategory!==undefined){actions.assignPeakCategory(p,button.dataset.peakCategory);return;}
+        if(!actions.selectedPeak())return;
+        if(button.dataset.peakCategory!==undefined){actions.assignSelectedPeakCategory(button.dataset.peakCategory);return;}
         switch(button.id){
-          case 'reswinAddPeakCategory':actions.createPeakCategoryForPeak(p);break;
-          case 'reswinApplyPeakLabel':actions.renameSelectedCategory(dom.query('#reswinPeakLabelInput',host)?.value);break;
-          case 'reswinAcceptPeak':actions.updatePeak(p.id,{accepted:p.accepted===false});break;
-          case 'reswinLockPeak':actions.updatePeak(p.id,{locked:!p.locked});break;
-          case 'reswinResetFwhmWindow':
-            delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;
-            actions.commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});actions.scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');break;
-          case 'reswinDeletePeak':actions.deletePeak(p.id);break;
-          case 'reswinSelectCurve':{const row=actions.sweepById(p.sweepId);if(row)actions.publishSweepSelection(row,'resonance-inspector');break;}
+          case 'reswinAddPeakCategory':actions.createCategoryForSelectedPeak();break;
+          case 'reswinApplyPeakLabel':actions.renameSelectedPeakCategory(dom.query('#reswinPeakLabelInput',host)?.value);break;
+          case 'reswinAcceptPeak':actions.toggleSelectedPeakAccepted();break;
+          case 'reswinLockPeak':actions.toggleSelectedPeakLocked();break;
+          case 'reswinResetFwhmWindow':actions.resetSelectedPeakFwhmWindow();break;
+          case 'reswinDeletePeak':actions.deleteSelectedPeak();break;
+          case 'reswinSelectCurve':actions.selectSelectedPeakSweep();break;
         }
       });
     }
