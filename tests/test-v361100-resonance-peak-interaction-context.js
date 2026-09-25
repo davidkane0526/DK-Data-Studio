@@ -14,7 +14,7 @@ assert(atLeast(json('package.json').version,'3.61.100'),'Host must retain the v3
 const manifest=json('src/plugins/resonance-workbench/plugin.json');
 const modules=[
   'feature-context.js','feature-ter-runtime.js','feature-group-runtime.js','feature-analysis-runtime.js','feature-peak-runtime.js',
-  'feature-selection-runtime.js','feature-inspector-runtime.js','feature-main-plot-runtime.js','feature-controls-runtime.js','feature-runtime.js'
+  'feature-selection-runtime.js','feature-inspector-runtime.js','main-marker-projection.js','feature-main-plot-runtime.js','feature-controls-runtime.js','feature-runtime.js'
 ];
 for(const [name,rows] of [['SUPER',manifest.scripts||[]],['TOP',manifest.window?.scripts||[]]]){
   const indexes=modules.map(item=>rows.indexOf(item));

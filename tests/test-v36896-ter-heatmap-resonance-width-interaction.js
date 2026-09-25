@@ -39,6 +39,7 @@ function loadResonanceMainRuntime(){
   const modules=new Map();
   global.window={DKDSPluginModules:{define:(pid,id,value)=>modules.set(`${pid}/${id}`,value),get:(pid,id)=>modules.get(`${pid}/${id}`),require:(pid,id)=>modules.get(`${pid}/${id}`)}};
   try{
+    const projection=path.join(root,'src/plugins/resonance-workbench/main-marker-projection.js');delete require.cache[require.resolve(projection)];require(projection);
     const file=path.join(root,'src/plugins/resonance-workbench/feature-main-plot-runtime.js');delete require.cache[require.resolve(file)];require(file);
     return modules.get('builtin.resonance-workbench/feature-main-plot-runtime');
   } finally {global.window=previousWindow;}

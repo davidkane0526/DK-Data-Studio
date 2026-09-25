@@ -50,6 +50,7 @@ vm.runInContext(read('src/plugins/resonance-workbench/feature-analysis-runtime.j
 vm.runInContext(read('src/plugins/resonance-workbench/feature-peak-runtime.js'),context,{filename:'feature-peak-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-selection-runtime.js'),context,{filename:'feature-selection-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-inspector-runtime.js'),context,{filename:'feature-inspector-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/main-marker-projection.js'),context,{filename:'main-marker-projection.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-main-plot-runtime.js'),context,{filename:'feature-main-plot-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-controls-runtime.js'),context,{filename:'feature-controls-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});

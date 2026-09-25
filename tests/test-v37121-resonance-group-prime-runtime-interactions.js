@@ -147,8 +147,12 @@ const delegated=scientificUnit.createScientificPlot(mainSvg,{variant:'curve',sou
 assert.strictEqual(delegated.target,mainSvg);assert.strictEqual(mainSvg.namespaceURI,'http://www.w3.org/2000/svg');
 assert(!mainSvg.classList.contains('dkds-scientific-chart-host'),'delegated Unit bridge must not mutate the accepted SVG into a generic chart host before renderer attachment');
 const legend=new FakeElement('div');legend.id='resparMainLegend';plotWrap.appendChild(legend);
-let definedMainRuntime=null;const previousModules=window.DKDSPluginModules;
-window.DKDSPluginModules={define(_plugin,name,value){if(name==='feature-main-plot-runtime')definedMainRuntime=value;}};
+let definedMainRuntime=null;const previousModules=window.DKDSPluginModules,mainModules=new Map();
+window.DKDSPluginModules={
+  define(plugin,name,value){mainModules.set(`${plugin}/${name}`,value);if(name==='feature-main-plot-runtime')definedMainRuntime=value;return value;},
+  require(plugin,name){const value=mainModules.get(`${plugin}/${name}`);if(!value)throw new Error(`missing module ${plugin}/${name}`);return value;}
+};
+vm.runInThisContext(fs.readFileSync(path.join(process.cwd(),'src/plugins/resonance-workbench/main-marker-projection.js'),'utf8'),{filename:'main-marker-projection.js'});
 vm.runInThisContext(fs.readFileSync(path.join(process.cwd(),'src/plugins/resonance-workbench/feature-main-plot-runtime.js'),'utf8'),{filename:'feature-main-plot-runtime.js'});
 window.DKDSPluginModules=previousModules;
 assert(definedMainRuntime?.create,'Resonance main plot runtime module did not load');
