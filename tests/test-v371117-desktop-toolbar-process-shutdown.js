@@ -21,7 +21,7 @@ async function main(){
   assert(
     desktopMain.includes("const { createShutdownRuntime } = require('./main-modules/shutdown-runtime');") &&
     desktopMain.includes("shutdownRuntime.requestQuit('primary-window-close')") &&
-    desktopMain.includes("app.on('before-quit', event => {\n  shutdownRuntime.beforeQuit(event);"),
+    desktopMain.includes("app.on('before-quit', event => shutdownRuntime.beforeQuit(event));"),
     'Desktop lifetime must be owned by the shared shutdown coordinator.'
   );
   assert(

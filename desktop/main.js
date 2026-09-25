@@ -103,18 +103,12 @@ const sdkExportRuntime=createSdkExportRuntime({app,appRoot:APP_ROOT,dialog,nativ
 const pluginAuthoringRuntime=createPluginAuthoringRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage});
 nativeSaveRuntime.installIntentTrace(ipcMain);
 
-const shutdownRuntime=createShutdownRuntime({
-  app,
-  setAppQuitting:value=>{appQuitting=!!value;},
-  closeAllAuxiliaryWindows,
-  prepareProjectSafety:reason=>projectFileSafety?.prepareForQuit(reason==='before-quit'?'app-before-quit':reason),
-  stopLanUpdater:()=>lanUpdater?.stop(),
-  stopLanWebServer:()=>lanWebServer?.stop(false),
-  stopMcpServer:()=>mcpServer?.stop?.(),
-  shutdownSmbSessions:()=>SmbService.shutdownSmbSessions?.(),
-  pendingRequestMaps:[pendingCapabilityInvocations,pendingMcpRequests],
-  logger:console
-});
+const shutdownRuntime=createShutdownRuntime({app,
+  setAppQuitting:v=>{appQuitting=!!v;},closeAllAuxiliaryWindows,
+  prepareProjectSafety:()=>projectFileSafety?.prepareForQuit('app-before-quit'),
+  stopLanUpdater:()=>lanUpdater?.stop(),stopLanWebServer:()=>lanWebServer?.stop(false),
+  stopMcpServer:()=>mcpServer?.stop?.(),shutdownSmbSessions:()=>SmbService.shutdownSmbSessions?.(),
+  pendingRequestMaps:[pendingCapabilityInvocations,pendingMcpRequests]});
 
 
 function dispatchMcpToRenderer(request){
@@ -150,9 +144,6 @@ function createWindow() {
   win.on('unmaximize',publishMaximizedState);
   win.on('close',event=>{
     if(primaryWindow!==win||shutdownRuntime.isReadyForQuit())return;
-    // The primary Desktop window owns application lifetime. Shutdown is a
-    // coordinated lifecycle: background services and reusable auxiliary
-    // windows drain before Electron is allowed to terminate the process.
     event.preventDefault();
     shutdownRuntime.requestQuit('primary-window-close');
   });
@@ -824,6 +815,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', event => {
-  shutdownRuntime.beforeQuit(event);
-});
+app.on('before-quit', event => shutdownRuntime.beforeQuit(event));
