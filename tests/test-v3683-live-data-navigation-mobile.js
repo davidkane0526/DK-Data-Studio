@@ -38,7 +38,7 @@ assert(/container-name:data-center-tool/.test(dc)&&/@container data-center-tool 
 
 // Readable Desktop action geometry remains slot-owned.
 const touch=read('src/styles/platform/touch.css');
-assert(touch.includes('--dkds-scientific-nav-item-width:28px;')&&touch.includes('--dkds-scientific-nav-item-height:28px;'),'Desktop ScientificPlot floating actions must be 28×28, not the former 18×11.5 pill.');
+assert(touch.includes('--dkds-scientific-nav-item-width:25.2px;')&&touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop ScientificPlot floating actions must be 25.2×25.2 after the accepted 10% reduction, not the former 18×11.5 pill.');
 const importCss=read('src/styles/structure/analysis-shell.css');
 assert(importCss.includes('.import-data-command,.import-footer-actions{--dkds-header-action-height:32px;}'),'Import primary actions must feed the canonical 32px header-action slot.');
 

@@ -29,7 +29,7 @@ assert(/dkds-selection-row:is\([^}]+\)\{[^}]*border-color:transparent;[^}]*outli
 // contract.
 const touch=read('src/styles/platform/touch.css');
 const native=read('src/styles/platform/native-client-shell.css');
-assert(touch.includes('--dkds-scientific-nav-item-width:28px;')&&touch.includes('--dkds-scientific-nav-item-height:28px;'),'Desktop scientific navigation must retain the restored 28x28 readable geometry.');
+assert(touch.includes('--dkds-scientific-nav-item-width:25.2px;')&&touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific navigation must retain the accepted 25.2x25.2 geometry.');
 assert(touch.includes('--dkds-scientific-nav-font-size:13px;'),'Desktop scientific navigation glyphs must remain readable after geometry restoration.');
 assert(native.includes('html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools')&&native.includes('--dkds-scientific-nav-item-width:')&&native.includes('--dkds-scientific-nav-item-height:'),'Native Mobile must retain independent scientific-control geometry.');
 

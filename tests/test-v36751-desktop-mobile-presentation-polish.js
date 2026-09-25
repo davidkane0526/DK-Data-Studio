@@ -22,8 +22,8 @@ const touch=read('src/styles/platform/touch.css');
 assert(chart.includes("b.className='dkds-plot-view-action dkds-plot-view-menu-trigger'"));
 assert(!chart.includes("dkds-plot-view-menu-trigger dkds-portable-placement-trigger"));
 assert(chart.includes("b.dataset.dkdsComponentVariant='quiet'"));
-assert(touch.includes('--dkds-scientific-nav-item-width:28px;'),'Desktop scientific navigation must retain the readable 28px width contract.');
-assert(touch.includes('--dkds-scientific-nav-item-height:28px;'),'Desktop scientific navigation must retain the readable 28px height contract.');
+assert(touch.includes('--dkds-scientific-nav-item-width:25.2px;'),'Desktop scientific navigation must retain the accepted 25.2px width contract.');
+assert(touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific navigation must retain the accepted 25.2px height contract.');
 assert(touch.includes('.dkds-plot-view-actions>.dkds-plot-view-menu-trigger'));
 
 // Canonical appearance owns the fixes for titlebar hover depth, list-row rims,
