@@ -72,11 +72,31 @@ c = pd.concat([a,b], ignore_index=True)
   const multiReport=path.join(temp,'multi.json');
   run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',multi,'--output',multiReport],{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.strictEqual(run.status,0,run.stderr||run.stdout);
-  const multiple=JSON.parse(fs.readFileSync(multiReport,'utf8')).sourceModel.workflow.blueprint;
-  assert.strictEqual(multiple.buildable,false,'Multi-source workflow must fail closed until a runtime Source Picker owns binding.');
-  assert(multiple.diagnostics.some(row=>row.code==='WORKFLOW_SOURCE_BINDING_AMBIGUOUS'&&row.sourceInputCount===2));
+  const multiAnalysis=JSON.parse(fs.readFileSync(multiReport,'utf8'));
+  const multiple=multiAnalysis.sourceModel.workflow.blueprint;
+  assert.strictEqual(multiple.buildable,true,'Multi-source workflow must become buildable only through explicit Unit Source Picker fields.');
+  assert.deepStrictEqual(multiple.preview.sourceInputs,['a','b']);
+  assert(multiple.preview.sourceBindings.some(row=>row.symbol==='a'&&row.hint==='a.csv')&&multiple.preview.sourceBindings.some(row=>row.symbol==='b'&&row.hint==='b.csv'),'Source hints must survive read_csv lowering for picker labeling/matching.');
+  assert.strictEqual(multiple.spec.parameters.fields.length,2);
+  assert(multiple.spec.parameters.fields.every(row=>row.type==='select'&&row.options[0].value===''),'Each source input must own a public select Field with an explicit unselected state.');
 
-  console.log('Phase F workflow package PASS: no-function script -> executable Table Transform Task -> bounded artifact-table -> dynamic canonical DataTable -> .dkplugin.');
+  const multiPackage=path.join(temp,'multi.dkplugin'),multiBuild=path.join(temp,'multi-build.json');
+  run=spawnSync(py.cmd,[...py.prefix,importer,'build',multi,'--function-id','workflow:table-transform','--package',multiPackage,'--report',multiBuild],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const multiPkg=JSON.parse(fs.readFileSync(multiPackage,'utf8'));
+  const multiJs=multiPkg.files['plugin.js'];
+  assert(multiJs.includes('setOptions(options,{value:preferred,preserve:true})'),'Generated source picker must update options only through the public Field Unit handle.');
+  assert(multiJs.includes("String(source_a.control?.value||'')")&&multiJs.includes("String(source_b.control?.value||'')"),'Each artifact-table binding must read its own explicit source Field.');
+  assert(multiJs.includes('a.csv')&&multiJs.includes('b.csv'),'Unique source filename hints may guide explicit picker defaults.');
+  assert(!multiJs.includes('document.createElement(\'option\')')&&!multiJs.includes('.innerHTML='),'Generated workflow must not bypass the Field Unit to mutate select DOM.');
+  require('../desktop/plugin-package').normalizePluginPackage(multiPkg,{allowBuiltinId:false});
+
+  const foundation=fs.readFileSync(path.join(root,'src','core','ui','modules','composition','unit-template-foundation.js'),'utf8');
+  const api=fs.readFileSync(path.join(root,'sdk','plugin-api.d.ts'),'utf8');
+  assert(foundation.includes('setOptions=(items=[]')&&foundation.includes("UNIT_FIELD_OPTIONS_REQUIRE_SELECT"),'Existing Field Unit must own dynamic select option mutation.');
+  assert(api.includes('interface DKDSUnitFieldHandle')&&api.includes('setOptions(options?:any[]'),'Public SDK types must expose the same generic Field Unit setOptions handle.');
+
+  console.log('Phase F workflow package PASS: no-function single/multi-source workflows -> explicit Unit Source Pickers -> bounded artifact-table -> Core Task -> dynamic canonical DataTable -> .dkplugin.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});
 }
