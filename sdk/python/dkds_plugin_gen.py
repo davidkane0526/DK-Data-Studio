@@ -2494,11 +2494,12 @@ class PluginBuilder:
                     f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
                     f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Clipboard source '+effect['resultPath']+' must be a data.table snapshot')});",
                     f"        {{const separator={sep},includeIndex={include_index},includeHeader={include_header},columns={token}.columns,rowCount=Number({token}.rowCount)||0,indexValues=Array.from({token}.index||Array.from({{length:rowCount}},(_,index)=>index));",
-                    "          const cell=value=>{const text=value===null||value===undefined?'':String(value);return (text.includes(separator)||text.includes('"')||text.includes('\n')||text.includes('\r'))?'"'+text.replaceAll('"','""')+'"':text;};",
+                    "          const quote=String.fromCharCode(34),lf=String.fromCharCode(10),cr=String.fromCharCode(13);",
+                    "          const cell=value=>{const text=value===null||value===undefined?'':String(value);return (text.includes(separator)||text.includes(quote)||text.includes(lf)||text.includes(cr))?quote+text.replaceAll(quote,quote+quote)+quote:text;};",
                     "          const rows=[];",
                     "          if(includeHeader)rows.push([...(includeIndex?['']:[]),...columns.map(column=>column?.name||column?.key||'')].map(cell).join(separator));",
                     "          for(let rowIndex=0;rowIndex<rowCount;rowIndex++)rows.push([...(includeIndex?[indexValues[rowIndex]??rowIndex]:[]),...columns.map(column=>Array.from(column?.values||[])[rowIndex])].map(cell).join(separator));",
-                    "          const copied=await ctx.io.clipboard.writeText(rows.join('\n'));if(copied===false)throw new Error('Clipboard write failed');}",
+                    "          const copied=await ctx.io.clipboard.writeText(rows.join(lf));if(copied===false)throw new Error('Clipboard write failed');}",
                 ]
             for projection in row["result_plots"]:
                 base = _var(projection["id"])
