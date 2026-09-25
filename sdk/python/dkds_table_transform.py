@@ -53,6 +53,14 @@ def _keyword_literals(call:ast.Call)->tuple[bool,dict[str,Any]]:
         out[row.arg]=value
     return True,out
 
+def _positional_literals(call:ast.Call)->tuple[bool,list[Any]]:
+    out=[]
+    for node in call.args:
+        ok,value=_literal(node)
+        if not ok:return False,[]
+        out.append(value)
+    return True,out
+
 def _selector(node:ast.AST)->tuple[bool,dict[str,Any]]:
     if isinstance(node,ast.Slice):
         values={}
@@ -150,9 +158,10 @@ def _expression_op(cell:int,node:ast.Expr,index:int)->tuple[dict[str,Any]|None,d
     owner,method=_call_owner(call)
     if owner and method in _HOST_METHODS:
         kind,capability=_HOST_METHODS[method]
-        ok,kwargs=_keyword_literals(call)
-        if not ok:return None,_diag(cell,node,"TABLE_IR_HOST_CALL_UNRESOLVED",f"{method} keyword arguments must be literal in IR v1.")
-        return {"id":_op_id(cell,node.lineno,index),"kind":kind,"cellIndex":cell,"line":node.lineno,"input":owner,"hostCapability":capability,"kwargs":kwargs},None
+        ok_args,args=_positional_literals(call)
+        ok_kwargs,kwargs=_keyword_literals(call)
+        if not ok_args or not ok_kwargs:return None,_diag(cell,node,"TABLE_IR_HOST_CALL_UNRESOLVED",f"{method} arguments must be literal in IR v1.")
+        return {"id":_op_id(cell,node.lineno,index),"kind":kind,"cellIndex":cell,"line":node.lineno,"input":owner,"sourceMethod":method,"hostCapability":capability,"args":args,"kwargs":kwargs},None
     return None,_diag(cell,node,"TABLE_IR_CALL_UNLOWERED","Standalone call is not yet mapped to a DKDS Table/Host operation.")
 
 def analyze_table_transform(path:str|Path)->dict[str,Any]:
