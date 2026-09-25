@@ -115,7 +115,11 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[dict
         source=_source_call(value)
         if source:
             input_format,capability=source
-            return {"id":_op_id(cell,node.lineno,index),"kind":"source.table","cellIndex":cell,"line":node.lineno,"output":output,"originalFormat":input_format,"hostCapability":capability,"replacement":"scoped DKDS DataTable input"},None
+            source_hint=""
+            if value.args:
+                ok_hint,resolved_hint=_literal(value.args[0])
+                if ok_hint and isinstance(resolved_hint,str):source_hint=resolved_hint
+            return {"id":_op_id(cell,node.lineno,index),"kind":"source.table","cellIndex":cell,"line":node.lineno,"output":output,"originalFormat":input_format,"sourceHint":source_hint,"hostCapability":capability,"replacement":"scoped DKDS DataTable input"},None
         if isinstance(value.func,ast.Attribute) and isinstance(value.func.value,ast.Name) and value.func.value.id in {"pd","pandas"} and value.func.attr=="concat":
             if not value.args or not isinstance(value.args[0],(ast.List,ast.Tuple)):
                 return None,_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat requires a literal list/tuple of table symbols in IR v1.")
