@@ -99,6 +99,7 @@ SPEC = {
                 "colorValueKey": "vg",
                 "directionKey": "direction",
                 "selectAction": "selectSweep",
+                "selectedIdPath": "selectedSweep.id",
             },
         }
     ],

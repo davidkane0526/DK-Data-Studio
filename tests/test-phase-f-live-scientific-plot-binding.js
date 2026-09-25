@@ -27,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for live ScientificPlot binding gate.');
 }
 
-assert(sdkAtLeast(sdk.sdkVersion,'1.51.64'),'Live ScientificPlot curve-array projection requires SDK 1.51.64+.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.65'),'Live ScientificPlot curve-array projection requires SDK 1.51.65+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -40,7 +40,7 @@ const spec={
   domainAdapter:{ref:'builtin.example/live',dependency:'builtin.example'},
   content:[{
     kind:'plot',id:'main',title:'Main',xTitle:'Voltage',yTitle:'Current',source:'example:main',renderOwner:'unit',
-    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction',selectAction:'selectCurve'}
+    binding:{statePath:'visibleSweeps',pointsPath:'points',xKey:'v',yKey:'i',idKey:'id',labelKey:'name',colorValueKey:'vg',directionKey:'direction',selectAction:'selectCurve',selectedIdPath:'selection.curveId'}
   }]
 };
 
@@ -65,6 +65,9 @@ try{
   assert(source.includes('if(Number.isFinite(direction))curve.direction=direction'),'Optional direction projection must remain bounded.');
   assert(source.includes("g_main_surface.requestRender?.('domain-adapter')"),'Snapshot refresh must ask the existing ScientificPlot owner to render.');
   assert(source.includes('onCurveSelect:({curve})=>{const id=String(curve?.id||\'\');if(id&&liveDomain?.available?.())void liveDomain.invoke("selectCurve",{id})'),'Curve selection must route only the projected curve id to the declared Domain Adapter action.');
+  assert(source.includes('let g_main_selected_id=\'\';'),'Generated plot may keep only a presentation projection of the selected id.');
+  assert(source.includes('getSelectedCurveId:()=>g_main_selected_id'),'Selected-state paint must use the public ScientificPlot focus contract.');
+  assert(source.includes('["selection","curveId"].reduce((value,key)=>value?.[key],state)'),'Selected id must come from the declared authoritative snapshot path.');
   assert(!/selectedCurve\s*=|selectedSweep\s*=/.test(source),'Generated live plot must not own a duplicate domain selection state.');
   assert(!/visibleSweepIds|resonance|querySelector|document\./.test(source),'Generic generated plot must not implement domain visibility logic or private DOM access.');
   assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.scientific-plot'));
