@@ -61,6 +61,7 @@ try{
   assert(runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
   assert(runtime.includes('pluginInstallPlan(raw)')&&runtime.includes("generatedBy:'python-source-import'"),'Generated packages must reuse the existing Plugin Manager validation/install transaction.');
   const manager=fs.readFileSync(path.join(root,'src','core','plugins','manager-ui.js'),'utf8');
-  assert(manager.includes('pluginAuthoringSelectSource')&&manager.includes('pluginAuthoringBuild')&&manager.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions.');
+  const authoringUi=fs.readFileSync(path.join(root,'src','core','plugins','plugin-authoring-ui.js'),'utf8');
+  assert(manager.includes('DKDSPluginAuthoringUI')&&authoringUi.includes('pluginAuthoringSelectSource')&&authoringUi.includes('pluginAuthoringBuild')&&authoringUi.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions through one Core authoring surface.');
   console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model -> line diagnostics -> blueprint -> package -> Plugin Manager transaction.');
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
