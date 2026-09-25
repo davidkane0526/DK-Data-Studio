@@ -28,7 +28,8 @@ const io=read('src/core/host/io-runtime.js');
 assert(chart.includes("require('./data-export')"),'PlotView must use the shared data-export serializer.');
 assert(chart.includes("window.DKDSCharts?.sourceData"),'PlotView must read logical Scientific Chart source data rather than renderer DOM state.');
 assert(chart.includes("window.DKDSIO?.clipboard?.writeText")&&chart.includes("window.DKDSIO?.saveText"),'PlotView copy/export must route through shared Host I/O.');
-assert(chartRuntime.includes('function sourceData(target)'),'Scientific Chart Runtime must own a logical source snapshot.');\nassert(chartRuntime.includes('window.DKDSCharts=Object.freeze')&&chartRuntime.includes('bind,toImage,saveImage,sourceData,themeLayout'),'The global Scientific Chart owner used by PlotView must expose sourceData.');
+assert(chartRuntime.includes('function sourceData(target)'),'Scientific Chart Runtime must own a logical source snapshot.');
+assert(chartRuntime.includes('window.DKDSCharts=Object.freeze')&&chartRuntime.includes('bind,toImage,saveImage,sourceData,themeLayout'),'The global Scientific Chart owner used by PlotView must expose sourceData.');
 assert(io.includes("const nativeCopy=bridge()?.copyText"),'Host I/O clipboard must use the desktop/Android bridge before plain-web clipboard fallback.');
 
 const main=read('desktop/main.js');
