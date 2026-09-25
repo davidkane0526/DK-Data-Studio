@@ -2458,6 +2458,48 @@ class PluginBuilder:
                 f"        const handle=ctx.tasks.submit({_js(compiled.task_id)},__dkdsPayload,{{key:{_js('generated-'+compiled.task_id)},latest:true}});",
                 "        const result=await handle.promise;",
             ]
+            for projection_index, projection in enumerate(row.get("dynamic_table_plots", [])):
+                base = _var(projection["id"])
+                token = f"__dkdsPlotTable_{projection_index}"
+                columns = f"__dkdsPlotColumns_{projection_index}"
+                resolver = f"__dkdsResolvePlotColumn_{projection_index}"
+                x_column = f"__dkdsPlotXColumn_{projection_index}"
+                x_values = f"__dkdsPlotXValues_{projection_index}"
+                y_selectors = f"__dkdsPlotYSelectors_{projection_index}"
+                y_columns = f"__dkdsPlotYColumns_{projection_index}"
+                path_expr = _js(projection["resultPath"].split("."))
+                x_selector = _js(projection.get("x"))
+                y_selector = _js(projection.get("y"))
+                lines += [
+                    f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
+                    f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Generated plot source '+projection['resultPath']+' must be a data.table snapshot')});",
+                    f"        const {columns}={token}.columns;",
+                    f"        const {resolver}=selector=>{{if(selector===null||selector===undefined||selector==='')return null;if(Number.isInteger(selector))return {columns}[selector]||null;const key=String(selector);return {columns}.find(column=>String(column?.key||'')===key||String(column?.name||'')===key)||null;}};",
+                    f"        const {x_column}={resolver}({x_selector});",
+                    f"        const {x_values}={x_column}?Array.from({x_column}.values||[]):Array.from({token}.index||Array.from({{length:Number({token}.rowCount)||0}},(_,index)=>index));",
+                    f"        const {y_selectors}=Array.isArray({y_selector})?{y_selector}:({y_selector}===null||{y_selector}===undefined?null:[{y_selector}]);",
+                    f"        const {y_columns}={y_selectors}===null?{columns}.filter(column=>column!=={x_column}):{y_selectors}.map({resolver}).filter(Boolean);",
+                    f"        {base}_task_curves={y_columns}.map((column,index)=>{{const values=Array.from(column?.values||[]),points=[];for(let rowIndex=0;rowIndex<Math.min(values.length,{x_values}.length);rowIndex++){{const x=Number({x_values}[rowIndex]),y=Number(values[rowIndex]);if(Number.isFinite(x)&&Number.isFinite(y))points.push({{x,y}});}}const id=String(column?.key||column?.id||('series-'+index));return {{id,entityId:id,label:String(column?.name||column?.key||id),points,source:column}};}}).filter(curve=>curve.points.length);",
+                    f"        {base}_surface.requestRender?.('task-table');",
+                ]
+            for effect_index, effect in enumerate(row.get("host_effects", [])):
+                if effect["kind"] != "clipboard-table":
+                    continue
+                token = f"__dkdsClipboardTable_{effect_index}"
+                path_expr = _js(effect["resultPath"].split("."))
+                sep = _js(effect["sep"])
+                include_index = str(effect["index"]).lower()
+                include_header = str(effect["header"]).lower()
+                lines += [
+                    f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
+                    f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Clipboard source '+effect['resultPath']+' must be a data.table snapshot')});",
+                    f"        {{const separator={sep},includeIndex={include_index},includeHeader={include_header},columns={token}.columns,rowCount=Number({token}.rowCount)||0,indexValues=Array.from({token}.index||Array.from({{length:rowCount}},(_,index)=>index));",
+                    "          const cell=value=>{const text=value===null||value===undefined?'':String(value);return (text.includes(separator)||text.includes('"')||text.includes('\n')||text.includes('\r'))?'"'+text.replaceAll('"','""')+'"':text;};",
+                    "          const rows=[];",
+                    "          if(includeHeader)rows.push([...(includeIndex?['']:[]),...columns.map(column=>column?.name||column?.key||'')].map(cell).join(separator));",
+                    "          for(let rowIndex=0;rowIndex<rowCount;rowIndex++)rows.push([...(includeIndex?[indexValues[rowIndex]??rowIndex]:[]),...columns.map(column=>Array.from(column?.values||[])[rowIndex])].map(cell).join(separator));",
+                    "          const copied=await ctx.io.clipboard.writeText(rows.join('\n'));if(copied===false)throw new Error('Clipboard write failed');}",
+                ]
             for projection in row["result_plots"]:
                 base = _var(projection["id"])
                 key = projection["key"]
