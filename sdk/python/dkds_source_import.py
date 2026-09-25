@@ -21,6 +21,7 @@ from typing import Any, Iterable
 from dkds_plugin_gen import PluginBuilder, SpecError
 from dkds_portable_task import PortableTaskError, compile_portable_task
 from dkds_source_workflow import analyze_workflow
+from dkds_table_transform import analyze_table_transform
 
 SOURCE_MODEL_SCHEMA="dkds.python-source-model.v2"
 BLUEPRINT_SCHEMA="dkds.declarative-blueprint.v1"
@@ -274,6 +275,7 @@ def analyze(path:str|Path)->dict[str,Any]:
         row["blueprint"]=_blueprint(model,row,fn)
         rows.append(row)
     workflow=analyze_workflow(source_path)
+    workflow["tableTransformPlan"]=analyze_table_transform(source_path)
     model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:

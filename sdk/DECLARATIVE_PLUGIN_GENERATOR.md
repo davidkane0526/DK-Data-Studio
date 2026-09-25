@@ -69,6 +69,21 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Table Transform IR v1 — SDK 1.51.72
+
+The Source Workflow graph now carries `dkds.table-transform-plan.v1`. This is a static, fail-closed intermediate representation for common research-notebook table operations. It does not execute the notebook and it is not a Pandas compatibility runtime.
+
+The first recognized slice is intentionally narrow:
+
+- `pd.read_csv/read_excel` becomes a scoped DKDS DataTable source request; the original filesystem path is not carried into the generated runtime.
+- Static `iloc/loc` selectors become `table.slice`.
+- `abs`, `copy`, `reset_index`, `diff`, `dropna`, `sort_index`, `mean`, `median`, and `std` become explicit table operations when arguments are statically resolvable.
+- `pd.concat([...], axis=0|1, ignore_index=...)` becomes `table.concat` only when its input table symbols and options are static.
+- `plot/scatter`, `to_clipboard`, and CSV/Excel export become DKDS view/Host operations.
+
+Loops, user-function calls, dynamic selectors/keywords, `groupby`, `apply`, and other unproven semantics remain blockers with exact notebook cell and line coordinates. A plan may report 100% IR coverage before it is executable; runtime lowering is a separate gate built on the bounded `artifact-table` input contract.
+
+
 ## Bounded artifact-table task input — SDK 1.51.71
 
 Generated Core Tasks may now bind one argument to a complete **bounded DataTable snapshot**:

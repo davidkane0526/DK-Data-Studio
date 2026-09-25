@@ -15,6 +15,7 @@ const explicit = [
   'sdk/python/dkds_plugin_gen.py',
   'sdk/python/dkds_source_import.py',
   'sdk/python/dkds_source_workflow.py',
+  'sdk/python/dkds_table_transform.py',
   'sdk/python/dkds_portable_task.py',
   'sdk/README.md',
   'sdk/DATA_ARTIFACT_ACCESS.md',

@@ -67,10 +67,17 @@ try{
   assert(workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&row.cellIndex===2&&row.line===2&&row.call.includes('pd.read_csv')),'Workflow compatibility must report an exact cell/line/call for unlowered scientific library semantics.');
   assert.strictEqual(workflow.candidate.buildable,false);
   assert.strictEqual(workflow.sourceExecuted,false);
+  const tablePlan=workflow.tableTransformPlan;
+  assert.strictEqual(tablePlan.schema,'dkds.table-transform-plan.v1');
+  assert(tablePlan.operations.some(row=>row.kind==='source.table'&&row.output==='raw'),'Table Transform IR must replace read_csv with a scoped DataTable source.');
+  assert(tablePlan.operations.some(row=>row.kind==='table.abs'&&row.output==='clean'&&row.input==='raw'),'Table Transform IR must structure common DataFrame abs().');
+  assert(tablePlan.operations.some(row=>row.kind==='view.plot'&&row.input==='clean'),'Table Transform IR must map plot() to a DKDS view operation.');
+  assert(tablePlan.operations.some(row=>row.kind==='host.clipboard'&&row.input==='clean'),'Table Transform IR must map to_clipboard() to Host I/O.');
+  assert.strictEqual(tablePlan.buildable,true,'Synthetic read_csv -> abs -> plot -> clipboard workflow should close in IR v1.');
 
   const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
   assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
-  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
+  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("dkds_table_transform.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
   assert(runtime.includes('pluginInstallPlan(raw)')&&runtime.includes("generatedBy:'python-source-import'"),'Generated packages must reuse the existing Plugin Manager validation/install transaction.');
   const manager=fs.readFileSync(path.join(root,'src','core','plugins','manager-ui.js'),'utf8');
   const authoringUi=fs.readFileSync(path.join(root,'src','core','plugins','plugin-authoring-ui.js'),'utf8');

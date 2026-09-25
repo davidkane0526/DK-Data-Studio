@@ -1,4 +1,4 @@
-> **v3.71.115 WIP — Bounded Artifact Table Input / SDK 1.51.71**：为真实 Pandas/DataFrame workflow lowering 增加通用 `artifact-table` 任务输入合同。生成任务只通过 `ctx.data.sources` 选择作用域 DataTable，先读取 `columnMetadata()`，再在显式 `maxRows/maxColumns` 边界内逐列 `readColumnRange()`，构造 detached table snapshot 交给既有 Core Task Runner；禁止通过 `artifacts.get()` 整表水合，不新增 Python/Pandas runtime、第二数据后端或插件特化路径。
+> **v3.71.115 WIP — Table Transform IR v1 / SDK 1.51.72**：真实 Notebook 的 Pandas-shaped workflow 开始进入结构化转换层。首批 IR 覆盖 `read_csv/read_excel → DKDS DataTable source`、静态 `iloc/loc`、`abs/copy/reset_index/diff/dropna/sort_index/mean/median/std`、静态 `pd.concat`，以及 `plot/to_clipboard/to_csv/to_excel` 的 Host 映射；所有未覆盖语句继续保留 Cell/行号 blocker。此阶段 IR 仍是 authoring plan，不执行 Pandas，也不新增运行时；下一步会把已闭合 IR 编译到 1.51.71 的 bounded `artifact-table` + Core Task Runner。\n\n> **v3.71.115 WIP — Bounded Artifact Table Input / SDK 1.51.71**：为真实 Pandas/DataFrame workflow lowering 增加通用 `artifact-table` 任务输入合同。生成任务只通过 `ctx.data.sources` 选择作用域 DataTable，先读取 `columnMetadata()`，再在显式 `maxRows/maxColumns` 边界内逐列 `readColumnRange()`，构造 detached table snapshot 交给既有 Core Task Runner；禁止通过 `artifacts.get()` 整表水合，不新增 Python/Pandas runtime、第二数据后端或插件特化路径。
 
 > **v3.71.115 WIP — Python/Jupyter Source Workflow / SDK 1.51.70**：真实科研 Notebook 导入从“只发现顶层函数”升级为 `dkds.python-source-model.v2`。每个 code cell 静态记录定义/读取符号、跨 Cell 依赖、imports、执行角色与调用分类；`read_csv/read_excel`、`plot`、`to_clipboard`、`to_csv/to_excel` 被识别为应由 DKDS DataTable / ScientificPlot / Host I/O 接管的宿主行为，Pandas/NumPy/SciPy 计算语义则单独列为后续 Table/Array/Scientific Transform lowering blocker。分析过程不执行用户源码，也不会因为识别出宿主行为就错误宣称整个 Notebook 已可构建；纯 Portable 函数仍沿用既有 Blueprint → JS Task → Plugin Manager 生产安装链。
 
@@ -103,7 +103,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.71**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.72**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

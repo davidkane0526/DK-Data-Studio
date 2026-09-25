@@ -8,7 +8,7 @@ const childProcess=require('child_process');
 
 const MAX_SOURCE_BYTES=4*1024*1024;
 const SESSION_TTL_MS=30*60*1000;
-const PYTHON_FILES=['dkds_source_import.py','dkds_source_workflow.py','dkds_plugin_gen.py','dkds_portable_task.py'];
+const PYTHON_FILES=['dkds_source_import.py','dkds_source_workflow.py','dkds_table_transform.py','dkds_plugin_gen.py','dkds_portable_task.py'];
 
 function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nativeDialogBroker,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage}){
   const sessions=new Map();

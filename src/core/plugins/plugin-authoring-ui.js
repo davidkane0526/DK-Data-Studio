@@ -14,13 +14,15 @@
     const diagnostics=(state.report?.diagnostics||[]).filter(row=>!row.functionId||row.functionId===fn?.id);
     const preview=fn?.blueprint?.preview||{};
     const workflow=state.report?.sourceModel?.workflow||{};
+    const tablePlan=workflow.tableTransformPlan||{};
+
     const candidate=workflow.candidate||{};
     const hostCaps=(workflow.hostCapabilities||[]).join('、')||'无';
     const transforms=(workflow.transformFamilies||[]).join('、')||'无';
     const workflowDiagnostics=(workflow.diagnostics||[]).slice(0,12);
     const workflowIssues=workflowDiagnostics.length?`<div class="plugin-manager-authoring-workflow-issues">${workflowDiagnostics.map(item=>`<span><strong>${escapeHtml(item.code||'BLOCKER')}</strong> Cell ${escapeHtml(String(Number(item.cellIndex||0)+1))} · 行 ${escapeHtml(String(item.line||'?'))} · ${escapeHtml(item.call||item.message||'')}</span>`).join('')}</div>`:'';
 
-    const workflowSummary=`<div class="plugin-manager-authoring-workflow"><strong>Source Workflow</strong><span>${escapeHtml(String(workflow.codeCellCount||0))} 个 code cell · ${escapeHtml(String(workflow.crossCellDependencyCount||0))} 条跨 Cell 依赖</span><span>Host 映射：${escapeHtml(hostCaps)}</span><span>待 lowering：${escapeHtml(transforms)}</span><span>状态：${escapeHtml(candidate.status||'—')}</span></div>${workflowIssues}`;
+    const workflowSummary=`<div class="plugin-manager-authoring-workflow"><strong>Source Workflow</strong><span>${escapeHtml(String(workflow.codeCellCount||0))} 个 code cell · ${escapeHtml(String(workflow.crossCellDependencyCount||0))} 条跨 Cell 依赖</span><span>Host 映射：${escapeHtml(hostCaps)}</span><span>待 lowering：${escapeHtml(transforms)}</span><span>状态：${escapeHtml(candidate.status||'—')}</span></div><div class="plugin-manager-authoring-ir"><strong>Table Transform IR</strong><span>${escapeHtml(String(tablePlan.lowerableStatementCount||0))} / ${escapeHtml(String(tablePlan.statementCount||0))} 条语句已结构化</span><span>覆盖率：${escapeHtml(String(Math.round(Number(tablePlan.coverage||0)*100)))}%</span><span>${tablePlan.buildable?'IR 已闭合':'仍有未 lowering 语句'}</span></div>${workflowIssues}`;
     const options=funcs.map(row=>`<option value="${esc(row.id)}" ${row.id===state.functionId?'selected':''}>${esc(row.name)} · ${esc(location(row))} · ${row.blueprint?.buildable?'可构建':'不可自动构建'}</option>`).join('');
     const args=(fn?.parameters||[]).map(row=>`${row.name}${row.annotation?`: ${row.annotation}`:''}${row.defaultSource!==undefined?` = ${row.defaultSource}`:''}`).join(', ');
     const issues=diagnostics.length?diagnostics.map(row=>`<div class="plugin-manager-authoring-diagnostic"><strong>${esc(row.code||'DIAGNOSTIC')}</strong><span>${esc(location(row))} · ${esc(row.message||'')}</span></div>`).join(''):'<div>该函数通过当前 Portable 子集与 Blueprint 自动映射检查。</div>';

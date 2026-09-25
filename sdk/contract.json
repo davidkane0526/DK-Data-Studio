@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.71",
+  "sdkVersion": "1.51.72",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.71.115",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.72 adds dkds.table-transform-plan.v1 to Python/Jupyter Source Model v2. The static planner recognizes a bounded first slice of Pandas-shaped workflow statements (scoped read_csv/read_excel source replacement, static iloc/loc slice, abs/copy/reset_index/diff/dropna/sort_index/mean/median/std, pd.concat with static inputs, plot, clipboard and export) and records exact cell/line blockers for everything else. It never executes source, does not emulate Pandas, and does not yet make the IR executable; the bounded artifact-table task input from 1.51.71 is its runtime substrate.",
     "SDK 1.51.71 adds one generic bounded artifact-table input binding for generated Core Tasks. The binding discovers a scoped DataTable through ctx.data.sources, reads structure only through columnMetadata(), enforces explicit maxRows/maxColumns, hydrates each column only through bounded readColumnRange(), and passes one detached structured-cloneable table snapshot to the existing Core Task Runner. It never uses full Artifact get(), adds no Python runtime, and is the shared substrate for upcoming Table Transform IR lowering.",
     "SDK 1.51.70 upgrades Python/Jupyter import to dkds.python-source-model.v2 with one static Source Workflow graph. Code cells now expose top-level definitions/reads, cross-cell symbol edges, imports, execution roles, DKDS host mappings (DataTable import/export, ScientificPlot, clipboard) and remaining scientific transform families such as pandas.dataframe, numpy.array and scipy.scientific. The analyzer never executes user code. This stage does not pretend Pandas/DataFrame semantics are already portable: workflow candidates fail closed with explicit transform-lowering blockers while portable pure functions continue through the existing Blueprint/Task/package/install path.",
     "SDK 1.51.69 adds one static Python/Jupyter source-import authoring pipeline: .py and .ipynb code cells normalize to dkds.python-source-model.v1; signatures/defaults/types and line/cell-scoped fail-closed compatibility diagnostics precede one dkds.declarative-blueprint.v1; Desktop Plugin Manager previews, builds, validates, exports .dkplugin and installs through the existing production install transaction. User source is never executed and generated plugins require no Python runtime.",
