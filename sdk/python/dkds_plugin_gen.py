@@ -1013,16 +1013,49 @@ class PluginBuilder:
                 }
 
             if kind == "action":
-                extra = sorted(set(node) - {"kind", "id", "actionId"})
+                extra = sorted(set(node) - {"kind", "id", "actionId", "label", "variant", "domainAction", "staticArgs", "enabledPath"})
                 if extra:
                     raise SpecError(f"unsupported {name} action fields: {', '.join(extra)}")
-                action_id = _ident(node.get("actionId"), f"{name}.actionId")
-                if action_id not in action_ids:
-                    raise SpecError(f"{name}.actionId references unknown action: {action_id}")
+                has_action_id = node.get("actionId") is not None
+                has_domain_action = node.get("domainAction") is not None
+                if has_action_id == has_domain_action:
+                    raise SpecError(f"{name} action requires exactly one of actionId or domainAction")
+                if has_action_id:
+                    if any(key in node for key in ("label", "variant", "staticArgs", "enabledPath")):
+                        raise SpecError(f"{name} actionId mode does not accept domain action fields")
+                    action_id = _ident(node.get("actionId"), f"{name}.actionId")
+                    if action_id not in action_ids:
+                        raise SpecError(f"{name}.actionId references unknown action: {action_id}")
+                    return {
+                        "kind": "action",
+                        "id": _ident(node.get("id"), f"{name}.id"),
+                        "actionId": action_id,
+                    }
+                if domain_adapter is None:
+                    raise SpecError(f"{name}.domainAction requires top-level domainAdapter")
+                variant = str(node.get("variant", "secondary"))
+                if variant not in ACTION_VARIANTS:
+                    raise SpecError(f"{name}.variant is invalid")
+                raw_static = _expect_object(node.get("staticArgs", {}), f"{name}.staticArgs")
+                if len(raw_static) > 8:
+                    raise SpecError(f"{name}.staticArgs supports at most 8 entries")
+                static_args = {}
+                for key, value in raw_static.items():
+                    normalized_key = _ident(key, f"{name}.staticArgs key")
+                    if value is not None and (isinstance(value, (dict, list)) or not isinstance(value, (str, int, float, bool))):
+                        raise SpecError(f"{name}.staticArgs.{normalized_key} must be a scalar")
+                    static_args[normalized_key] = value
+                enabled_path = str(node.get("enabledPath", "")).strip()
+                if enabled_path and not all(IDENT.fullmatch(part) for part in enabled_path.split(".")):
+                    raise SpecError(f"{name}.enabledPath must be a dotted identifier path")
                 return {
                     "kind": "action",
                     "id": _ident(node.get("id"), f"{name}.id"),
-                    "actionId": action_id,
+                    "label": _nonempty(node.get("label"), f"{name}.label"),
+                    "variant": variant,
+                    "domainAction": _ident(node.get("domainAction"), f"{name}.domainAction"),
+                    "staticArgs": static_args,
+                    "enabledPath": enabled_path,
                 }
 
             if kind == "floating-chrome":
@@ -2804,6 +2837,18 @@ class PluginBuilder:
             return lines
 
         if kind == "action":
+            if node.get("domainAction"):
+                enabled = "()=>!!liveDomain?.available?.()"
+                if node.get("enabledPath"):
+                    path = node["enabledPath"].split(".")
+                    enabled = f"()=>{{try{{if(!liveDomain?.available?.())return false;return !!{_js(path)}.reduce((value,key)=>value?.[key],liveDomain.snapshot()?.state||{{}});}}catch{{return false;}}}}"
+                lines.append(
+                    f"    const {base}=units.action.create({host},{{id:{_js(node['id'])},label:{_js(node['label'])},variant:{_js(node['variant'])},direct:true,enabled:{enabled},onInvoke:()=>{{if(!liveDomain?.available?.()){{ctx.status.set({_js(node['label']+'领域服务不可用')});return false;}}void liveDomain.invoke({_js(node['domainAction'])},{_js(node['staticArgs'])}).catch(error=>ctx.status.set(String(error?.message||error||{_js(node['label']+'失败')})));return true;}}}});"
+                )
+                if node.get("enabledPath"):
+                    raw = f"{_js(node['enabledPath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
+                    lines.append(f"    liveBindings.push(state=>{{const raw={raw};const button={base}.button||{base}.element;if(button)button.disabled=!(Boolean(raw)&&!!liveDomain?.available?.());}});")
+                return lines
             action = next(row for row in self.spec["actions"] if row["id"] == node["actionId"])
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
             lines.append(

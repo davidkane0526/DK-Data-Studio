@@ -2988,8 +2988,7 @@
           "additionalProperties": false,
           "required": [
             "kind",
-            "id",
-            "actionId"
+            "id"
           ],
           "properties": {
             "kind": {
@@ -3002,8 +3001,63 @@
             "actionId": {
               "type": "string",
               "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "variant": {
+              "enum": [
+                "primary",
+                "secondary",
+                "quiet"
+              ],
+              "default": "secondary"
+            },
+            "domainAction": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "staticArgs": {
+              "type": "object",
+              "maxProperties": 8,
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "enabledPath": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:\\.[A-Za-z0-9][A-Za-z0-9._-]*)*$"
             }
-          }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "actionId"
+              ],
+              "not": {
+                "required": [
+                  "domainAction"
+                ]
+              }
+            },
+            {
+              "required": [
+                "domainAction",
+                "label"
+              ],
+              "not": {
+                "required": [
+                  "actionId"
+                ]
+              }
+            }
+          ]
         },
         {
           "type": "object",
