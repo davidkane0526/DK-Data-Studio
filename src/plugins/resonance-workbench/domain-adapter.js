@@ -1,5 +1,6 @@
 (() => {
   const MarkerProjection=window.DKDSPluginModules.require('builtin.resonance-workbench','main-marker-projection');
+  const InspectorProjection=window.DKDSPluginModules.require('builtin.resonance-workbench','inspector-detail-projection');
   function provide(ctx,service){
     if(!service?.getState||!ctx.services?.domain)return null;
     const snapshot=()=>{
@@ -12,10 +13,18 @@
         visibleSweepIds,
         colorForPeak:peak=>peak?.customColor||service.colorForPeakOrder?.(peak?.peakOrder||1,peak?.direction||1)||''
       });
+      const inspector=InspectorProjection.project({
+        selectedSweep:state.selectedSweep||null,
+        selectedPeak:state.selectedPeak||null,
+        workspace:state.workspace||{},
+        sweepById:id=>service.sweepById?.(id)||null,
+        peakMetrics:peak=>service.metrics?.(peak)||{}
+      });
       return {
         ...state,
         visibleSweeps,
         mainMarkers,
+        inspector,
         group:{
           preference:String(service.getCurrentGroupColumnPreference?.()||state?.workspace?.groupColumns||'auto'),
           effective:String(service.getEffectiveGroupColumns?.()||1),
