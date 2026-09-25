@@ -98,6 +98,10 @@
       "path": "src/core/ui/modules/layout/state-resolver.js"
     },
     {
+      "id": "ui/plot-view/data-export",
+      "path": "src/core/ui/modules/plot-view/data-export.js"
+    },
+    {
       "id": "ui/plot-view/chart",
       "path": "src/core/ui/modules/plot-view/chart.js"
     },
