@@ -19,6 +19,7 @@ const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime
 const resonanceAnalysis=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
 const resonancePeak=read('src/plugins/resonance-workbench/feature-peak-runtime.js');
 const resonanceSelection=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
+const resonanceInspectorProjection=read('src/plugins/resonance-workbench/inspector-detail-projection.js');
 const resonanceInspector=read('src/plugins/resonance-workbench/feature-inspector-runtime.js');
 const resonanceMarkerProjection=read('src/plugins/resonance-workbench/main-marker-projection.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
@@ -78,6 +79,7 @@ vm.runInContext(resonanceGroup,context,{filename:'feature-group-runtime.js'});
 vm.runInContext(resonanceAnalysis,context,{filename:'feature-analysis-runtime.js'});
 vm.runInContext(resonancePeak,context,{filename:'feature-peak-runtime.js'});
 vm.runInContext(resonanceSelection,context,{filename:'feature-selection-runtime.js'});
+vm.runInContext(resonanceInspectorProjection,context,{filename:'inspector-detail-projection.js'});
 vm.runInContext(resonanceInspector,context,{filename:'feature-inspector-runtime.js'});
 vm.runInContext(resonanceMarkerProjection,context,{filename:'main-marker-projection.js'});
 vm.runInContext(resonanceMainPlot,context,{filename:'feature-main-plot-runtime.js'});
