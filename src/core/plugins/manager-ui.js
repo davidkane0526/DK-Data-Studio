@@ -574,6 +574,7 @@
     $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList({scroll:'top'});};
     $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList({scroll:'top'});};
     $('#pluginManagerTypeFilter').onchange=e=>{state.typeFilter=e.target.value||'all';renderList({scroll:'top'});};
+    window.DKDSPluginAuthoringUI?.configure?.({host:state.host,refresh:refreshManager});
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{
         const installed=await window.DKDSPlugins.external.install();

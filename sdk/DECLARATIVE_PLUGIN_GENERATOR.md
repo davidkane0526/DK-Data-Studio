@@ -69,6 +69,32 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Python / Jupyter Source Import — SDK 1.51.69
+
+SDK 1.51.69 adds one authoring path above the existing declarative generator; it does **not** add a Python runtime or a Jupyter kernel to DK Data Studio.
+
+    .py -------------------\
+                            -> dkds.python-source-model.v1
+    .ipynb -> code cells --/          |
+                                      -> signature/default/type analysis
+                                      -> Portable compatibility report
+                                      -> dkds.declarative-blueprint.v1
+                                      -> existing PluginBuilder / Portable Task lowering
+                                      -> production Plugin Manager validation
+                                      -> .dkplugin export or direct install
+
+The importer is static. It uses Python's standard-library AST parser and never imports or executes the user's module. Notebook markdown is ignored; code cells feed the same Source Model as ordinary Python. Jupyter magics, shell escapes and unsupported Python constructs are reported with file line or notebook cell/line coordinates rather than collapsed into a generic conversion error.
+
+Automatic Blueprint inference is deliberately conservative. Portable scalar parameters become public ParameterForm fields. A parameter explicitly annotated as `list[...]` becomes one bounded DataTable column input selected by the argument name. Ambiguous inputs such as untyped required parameters, `dict`, `Any` and `object` fail with `BLUEPRINT_INPUT_UNRESOLVED` instead of guessing domain semantics. Dictionary results named `points`, `rows`, and scalar keys may become public ScientificPlot, Table and Metric projections when their shape can be proven statically.
+
+Command-line inspection/build is available with:
+
+    python sdk/python/dkds_source_import.py analyze analysis.py --output report.json
+    python sdk/python/dkds_source_import.py analyze notebook.ipynb --output notebook-report.json
+    python sdk/python/dkds_source_import.py build analysis.py --function-id py:1:analyze --package analyze.dkplugin --report build.json
+
+Desktop Plugin Manager exposes the same pipeline through **从 Python / Jupyter 创建**. It previews the generated declarative Blueprint, runs the production package validator before enabling export/install, and installs through the existing Plugin Manager transaction. Python 3 is needed only during this authoring operation; the resulting package contains no `.py`, bytecode, notebook, Python provider, interpreter, or fallback backend.
+
 ## Portable Python task lowering — SDK 1.51.46
 
 Python is not a DK Data Studio runtime backend. It is an optional authoring language used before packaging.

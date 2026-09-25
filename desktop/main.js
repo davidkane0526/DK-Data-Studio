@@ -21,6 +21,7 @@ const { createVisualClosureRuntime } = require('./main-modules/visual-closure-ru
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
 const { createNativeSaveRuntime } = require('./main-modules/native-save-runtime');
 const { createSdkExportRuntime } = require('./main-modules/sdk-export-runtime');
+const { createPluginAuthoringRuntime } = require('./main-modules/plugin-authoring-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
@@ -98,6 +99,7 @@ const visualClosureRuntime=createVisualClosureRuntime({app,appRoot:APP_ROOT,diag
 const nativeDialogBroker=createNativeDialogBroker({BrowserWindow,logger:console});
 const nativeSaveRuntime=createNativeSaveRuntime({session,nativeDialogBroker});
 const sdkExportRuntime=createSdkExportRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker});
+const pluginAuthoringRuntime=createPluginAuthoringRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage});
 nativeSaveRuntime.installIntentTrace(ipcMain);
 
 
@@ -507,6 +509,7 @@ app.whenReady().then(() => {
     if(!result||result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
   });
   sdkExportRuntime.install(ipcMain);
+  pluginAuthoringRuntime.installIpc(ipcMain);
 
   ipcMain.handle('plugins:readBuiltinScript', async (_event, rawSrc) => {
     const src=String(rawSrc||'').replace(/\\/g,'/').replace(/^\.\//,'');

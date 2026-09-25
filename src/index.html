@@ -207,11 +207,13 @@
             </select>
           </label>
           <button id="pluginManagerInstallBtn" class="primary">安装插件</button>
+          <button id="pluginManagerAuthorPythonBtn" type="button">从 Python / Jupyter 创建</button>
           <button id="pluginManagerOpenFolderBtn">插件目录</button>
         </div>
         <div id="pluginManagerNote" class="plugin-manager-note">
           停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。
         </div>
+        <div id="pluginManagerAuthoringPanel" class="plugin-manager-authoring hidden dkds-material-role-surface" aria-live="polite"></div>
         <div id="pluginManagerList" class="plugin-manager-list"></div>
       </div>
     </section>
@@ -753,7 +755,8 @@
   <script src="core/services/connectivity-runtime.js"></script>
   <script src="core/services/mcp-runtime.js"></script>
   <script src="core/plugins/devtools.js"></script>
-  <script src="core/plugins/manager-ui.js"></script>
+  <script src="core/plugins/plugin-authoring-ui.js"></script>
+<script src="core/plugins/manager-ui.js"></script>
   <script src="generated/plugin-index.js"></script>
   <script src="generated/runtime/app.js"></script>
 </body>

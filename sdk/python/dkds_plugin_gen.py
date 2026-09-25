@@ -3398,15 +3398,20 @@ class PluginBuilder:
             "Python is authoring-time input only; generated packages contain JavaScript tasks and require no Python backend.\n"
         )
 
+    def package(self) -> Dict[str, Any]:
+        files: Dict[str, str] = {"plugin.js": self.render_plugin_js(), "README.md": self.render_readme()}
+        for row in self._portable_tasks:
+            compiled: CompiledPortableTask = row["compiled"]
+            files[compiled.entry] = compiled.source
+        return {"schema": 1, "manifest": self.manifest(), "files": files}
+
     def write(self, output: str | Path) -> Path:
         target = Path(output)
         target.mkdir(parents=True, exist_ok=True)
-        (target / "plugin.json").write_text(json.dumps(self.manifest(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        (target / "plugin.js").write_text(self.render_plugin_js(), encoding="utf-8")
-        for row in self._portable_tasks:
-            compiled: CompiledPortableTask = row["compiled"]
-            (target / compiled.entry).write_text(compiled.source, encoding="utf-8")
-        (target / "README.md").write_text(self.render_readme(), encoding="utf-8")
+        package = self.package()
+        (target / "plugin.json").write_text(json.dumps(package["manifest"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        for name, source in package["files"].items():
+            (target / name).write_text(source, encoding="utf-8")
         return target
 
 

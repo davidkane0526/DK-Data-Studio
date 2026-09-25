@@ -92,7 +92,7 @@
     "ui:ownership:audit:strict": "node tools/quality/style-ownership-gate.js --strict",
     "unit:sdk-authoring": "node tools/quality/unit-sdk-authoring-audit.js --strict",
     "unit:css-dependency": "node tools/quality/unit-production-css-dependency-audit.js --strict",
-    "sdk:generator:test": "node tests/test-phase-f-declarative-python-generator.js"
+    "sdk:generator:test": "node tests/test-phase-f-declarative-python-generator.js && node tests/test-phase-f-source-import-authoring.js"
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -115,6 +115,7 @@
       "sdk/platform-presentation-contract.js",
       "sdk/theme-contract.js",
       "sdk/contract.json",
+      "sdk/python/**/*",
       "sdk/theme-coverage-contract.js",
       "sdk/layout-contract.js",
       "sdk/source-contract.js",
