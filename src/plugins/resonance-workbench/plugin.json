@@ -121,6 +121,7 @@
       "feature-peak-runtime.js",
       "feature-selection-runtime.js",
       "feature-inspector-runtime.js",
+      "main-marker-projection.js",
       "feature-main-plot-runtime.js",
       "feature-controls-runtime.js",
       "feature-runtime.js"
@@ -138,6 +139,7 @@
     "feature-peak-runtime.js",
     "feature-selection-runtime.js",
     "feature-inspector-runtime.js",
+    "main-marker-projection.js",
     "feature-main-plot-runtime.js",
     "feature-controls-runtime.js",
     "feature-runtime.js",
