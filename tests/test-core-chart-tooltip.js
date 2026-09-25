@@ -4,6 +4,7 @@ const vm=require('vm');
 const assert=require('assert');
 const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
+const chartExportCode=fs.readFileSync(path.join(root,'src/core/scientific/chart-export-runtime.js'),'utf8');
 const code=fs.readFileSync(path.join(root,'src/core/scientific/chart-runtime.js'),'utf8');
 let captured=null;
 const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
@@ -11,7 +12,7 @@ const window={d3:{},DKDSTheme:{subscribeRevision(){return()=>{};}},DKDSD3Rendere
 const document={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
 const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
 const context={window,document,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){},DKDSStyleGate:styleGate};context.globalThis=context;context.DKDSTheme=window.DKDSTheme;window.DKDSStyleGate=styleGate;window.window=window;window.document=document;
-vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.js'});
+vm.createContext(context);vm.runInContext(chartExportCode,context,{filename:'chart-export-runtime.js'});vm.runInContext(code,context,{filename:'chart-runtime.js'});
 (async()=>{
   await window.DKDSCharts.react('plot',[],{hoverlabel:{bgcolor:'orange',namelength:-1,font:{size:18,color:'green'}}},{});
   assert(captured,'Canonical D3 renderer must be called');
