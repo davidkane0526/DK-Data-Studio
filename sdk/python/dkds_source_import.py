@@ -365,6 +365,14 @@ def analyze(path:str|Path)->dict[str,Any]:
     table_plan["execution"]=analyze_table_transform_execution(table_plan)
     workflow["tableTransformPlan"]=table_plan
     workflow["blueprint"]=_workflow_blueprint(source_path.name,workflow)
+    workflow["candidate"]={
+        **dict(workflow.get("candidate") or {}),
+        "id":WORKFLOW_CANDIDATE_ID,
+        "kind":"table-transform-workflow",
+        "buildable":bool(workflow["blueprint"]["buildable"]),
+        "status":"buildable-table-transform" if workflow["blueprint"]["buildable"] else "blocked-table-transform",
+        "blockers":[dict(row) for row in workflow["blueprint"].get("diagnostics",[])],
+    }
     model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:
