@@ -13,7 +13,6 @@ on:
       - 'preload.js'
       - 'plugin-package.js'
       - 'update-client.js'
-      - 'desktop/**'
       - 'lan-web-server.js'
       - 'windows-network-discovery.js'
       - 'package.json'
