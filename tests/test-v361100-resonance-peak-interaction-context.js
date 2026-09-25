@@ -14,7 +14,7 @@ assert(atLeast(json('package.json').version,'3.61.100'),'Host must retain the v3
 const manifest=json('src/plugins/resonance-workbench/plugin.json');
 const modules=[
   'feature-context.js','feature-ter-runtime.js','feature-group-runtime.js','feature-analysis-runtime.js','feature-peak-runtime.js',
-  'feature-selection-runtime.js','inspector-detail-projection.js','feature-inspector-runtime.js','main-marker-projection.js','feature-main-plot-runtime.js','feature-controls-runtime.js','feature-runtime.js'
+  'feature-selection-runtime.js','inspector-detail-projection.js','feature-inspector-mutation-runtime.js','feature-inspector-runtime.js','main-marker-projection.js','feature-main-plot-runtime.js','feature-controls-runtime.js','feature-runtime.js'
 ];
 for(const [name,rows] of [['SUPER',manifest.scripts||[]],['TOP',manifest.window?.scripts||[]]]){
   const indexes=modules.map(item=>rows.indexOf(item));
@@ -26,6 +26,7 @@ const rel={
   main:'src/plugins/resonance-workbench/feature-runtime.js',
   peak:'src/plugins/resonance-workbench/feature-peak-runtime.js',
   selection:'src/plugins/resonance-workbench/feature-selection-runtime.js',
+  inspectorMutation:'src/plugins/resonance-workbench/feature-inspector-mutation-runtime.js',
   inspector:'src/plugins/resonance-workbench/feature-inspector-runtime.js',
   plot:'src/plugins/resonance-workbench/feature-main-plot-runtime.js',
   controls:'src/plugins/resonance-workbench/feature-controls-runtime.js'
@@ -33,7 +34,7 @@ const rel={
 const limit=48*1024;
 for(const file of Object.values(rel))assert(bytes(file)<=limit,`${file} must remain within the 48 KiB authored-module boundary (got ${bytes(file)} B).`);
 
-const main=read(rel.main),peak=read(rel.peak),selection=read(rel.selection),inspector=read(rel.inspector),plot=read(rel.plot),controls=read(rel.controls);
+const main=read(rel.main),peak=read(rel.peak),selection=read(rel.selection),inspectorMutation=read(rel.inspectorMutation),inspector=read(rel.inspector),plot=read(rel.plot),controls=read(rel.controls);
 for(const token of [
   "let selectedSweepId=''","let selectedPeakId=''","let selectedPeakIds=new Set()","let selectedRange=null",
   'let interactionRuntime=null','let interactionSelection=null','let detectorRuntime=null','let peakMetricCache=new Map()',
@@ -47,15 +48,17 @@ for(const token of ['publishPeakSelection','publishRangeSelection','moveSelected
 
 for(const token of ['let detectorRuntime=null','let peakMetricCache=new Map(),metricEpoch=0','runDetection','detectRange','peakMetrics','commitPeakMetricEdit'])
   assert(peak.includes(token),`Peak runtime must own ${token}.`);
-for(const token of ['function render()','reswinInspectorBody','analysisLeft','analysisRight'])
-  assert(inspector.includes(token),`Inspector runtime must own ${token}.`);
+for(const token of ['function render()','reswinInspectorBody'])
+  assert(inspector.includes(token),`Inspector presentation runtime must own ${token}.`);
+for(const token of ['resetSelectedPeakFwhmWindow','analysisLeft','analysisRight','deleteSelectedPeak'])
+  assert(inspectorMutation.includes(token),`Inspector mutation runtime must own ${token}.`);
 for(const token of ['let mainSurface=null','showRangeMenu','manipulators','ensure','clearRangeMenu'])
   assert(plot.includes(token),`Main-plot runtime must own ${token}.`);
 for(const token of ['let dataSourcesRuntime=null','let datasetContextBehavior=null','datasetRowsHtml','setVisibility','setAllVisibility'])
   assert(controls.includes(token),`Controls runtime must own ${token}.`);
 
 for(const token of [
-  "PeakRuntime.create(featureContext)","SelectionRuntime.create(featureContext)","InspectorRuntime.create(featureContext)",
+  "PeakRuntime.create(featureContext)","SelectionRuntime.create(featureContext)","InspectorMutationRuntime.create(","InspectorRuntime.create(featureContext)",
   "MainPlotRuntime.create(featureContext)","ControlsRuntime.create(featureContext)",
   'selectionRuntime?.moveSelectedPeakBy(step)','peakRuntime?.runDetection?.(scope)','mainPlotRuntime?.render()','inspectorRuntime?.render()','controlsRuntime?.render()'
 ]) assert(main.includes(token),`Coordinator must delegate through the extracted owner: ${token}`);
@@ -64,4 +67,4 @@ const audit=read('docs/CODE_QUALITY_AUDIT.md');
 assert(audit.includes('feature-selection-runtime.js')&&audit.includes('feature-main-plot-runtime.js'),'Code-quality audit must document the Resonance interaction extraction.');
 assert(audit.includes('below 48 KiB')||audit.includes('48 KiB'),'Code-quality audit must record the bounded Resonance coordinator outcome.');
 
-console.log(`v3.61.100 Resonance peak-interaction context PASS: coordinator=${bytes(rel.main)} B, selection=${bytes(rel.selection)} B, peak=${bytes(rel.peak)} B, inspector=${bytes(rel.inspector)} B, plot=${bytes(rel.plot)} B, controls=${bytes(rel.controls)} B.`);
+console.log(`v3.61.100 Resonance peak-interaction context PASS: coordinator=${bytes(rel.main)} B, selection=${bytes(rel.selection)} B, peak=${bytes(rel.peak)} B, inspector=${bytes(rel.inspector)} B, plot=${bytes(rel.plot)} B, mutation=${bytes(rel.inspectorMutation)} B, controls=${bytes(rel.controls)} B.`);

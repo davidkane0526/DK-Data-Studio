@@ -19,19 +19,20 @@ const analysisFeature=read('src/plugins/resonance-workbench/feature-analysis-run
 const peakFeature=read('src/plugins/resonance-workbench/feature-peak-runtime.js');
 const selectionFeature=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
 const inspectorProjection=read('src/plugins/resonance-workbench/inspector-detail-projection.js');
+const inspectorMutation=read('src/plugins/resonance-workbench/feature-inspector-mutation-runtime.js');
 const inspectorFeature=read('src/plugins/resonance-workbench/feature-inspector-runtime.js');
 const markerProjection=read('src/plugins/resonance-workbench/main-marker-projection.js');
 const mainPlotFeature=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const controlsFeature=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
 const domainAdapter=read('src/plugins/resonance-workbench/domain-adapter.js');
-const featureLayers=[feature,featureContext,dataFeature,terFeatureRuntime,groupFeature,analysisFeature,peakFeature,selectionFeature,inspectorProjection,inspectorFeature,markerProjection,mainPlotFeature,controlsFeature].join('\n');
+const featureLayers=[feature,featureContext,dataFeature,terFeatureRuntime,groupFeature,analysisFeature,peakFeature,selectionFeature,inspectorProjection,inspectorMutation,inspectorFeature,markerProjection,mainPlotFeature,controlsFeature].join('\n');
 const superLayout=read('src/plugins/resonance-workbench/super-layout.js');
 const runtime=read('src/plugins/resonance-workbench/window-runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const generated=read('src/generated/plugin-index.js');
 
-assert((manifest.scripts||[]).join(',')==='workbench-shared.js,unit-presentation.js,view-components.js,feature-context.js,feature-data-runtime.js,feature-ter-runtime.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-peak-runtime.js,feature-selection-runtime.js,inspector-detail-projection.js,feature-inspector-runtime.js,main-marker-projection.js,feature-main-plot-runtime.js,feature-controls-runtime.js,feature-runtime.js,super-layout.js,domain-adapter.js,plugin.js','Resonance main renderer must load Controller, shared Views, dedicated data owner, feature runtimes, SUPER adapter, then thin entry.');
-assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,unit-presentation.js,view-components.js,feature-context.js,feature-data-runtime.js,feature-ter-runtime.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-peak-runtime.js,feature-selection-runtime.js,inspector-detail-projection.js,feature-inspector-runtime.js,main-marker-projection.js,feature-main-plot-runtime.js,feature-controls-runtime.js,feature-runtime.js','Resonance TOP must load the same Controller/View/data/feature layers; runtime is only a host adapter.');
+assert((manifest.scripts||[]).join(',')==='workbench-shared.js,unit-presentation.js,view-components.js,feature-context.js,feature-data-runtime.js,feature-ter-runtime.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-peak-runtime.js,feature-selection-runtime.js,inspector-detail-projection.js,feature-inspector-mutation-runtime.js,feature-inspector-runtime.js,main-marker-projection.js,feature-main-plot-runtime.js,feature-controls-runtime.js,feature-runtime.js,super-layout.js,domain-adapter.js,plugin.js','Resonance main renderer must load Controller, shared Views, dedicated data owner, feature runtimes, SUPER adapter, then thin entry.');
+assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,unit-presentation.js,view-components.js,feature-context.js,feature-data-runtime.js,feature-ter-runtime.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-peak-runtime.js,feature-selection-runtime.js,inspector-detail-projection.js,feature-inspector-mutation-runtime.js,feature-inspector-runtime.js,main-marker-projection.js,feature-main-plot-runtime.js,feature-controls-runtime.js,feature-runtime.js','Resonance TOP must load the same Controller/View/data/feature layers; runtime is only a host adapter.');
 assert(manifest.scripts.includes('domain-adapter.js')&&!(manifest.window?.scripts||[]).includes('domain-adapter.js'),'Only the production-owning main host may publish the dependency-scoped live Domain Adapter.');
 assert(domainAdapter.includes("ctx.services.domain.provide('live'")&&!/createTop|createController/.test(domainAdapter),'Resonance Domain Adapter must remain a thin projection over the single production service owner.');
 assert(mainPlotFeature.includes("require('builtin.resonance-workbench','main-marker-projection')")&&domainAdapter.includes("require('builtin.resonance-workbench','main-marker-projection')"),'Accepted main plot and Domain Adapter must share one marker projection module.');
@@ -39,8 +40,9 @@ assert(inspectorFeature.includes("require('builtin.resonance-workbench','inspect
 for(const forbidden of ['actions.updatePeak(','actions.deletePeak(','actions.assignPeakCategory(','actions.createPeakCategoryForPeak(','actions.commitPeakMetricEdit(','delete p.analysisLeft']){
   assert(!inspectorFeature.includes(forbidden),'Inspector presentation runtime must not own domain mutation logic: '+forbidden);
 }
+assert(feature.includes("require('builtin.resonance-workbench','feature-inspector-mutation-runtime')")&&feature.includes('...inspectorMutationRuntime'),'Resonance coordinator must compose the bounded Inspector mutation owner instead of reclaiming its logic.');
 for(const token of ['assignSelectedPeakCategory','createCategoryForSelectedPeak','renameSelectedPeakCategory','toggleSelectedPeakAccepted','toggleSelectedPeakLocked','resetSelectedPeakFwhmWindow','deleteSelectedPeak','selectSelectedPeakSweep']){
-  assert(feature.includes(token),'Production Resonance service must own Inspector mutation intent: '+token);
+  assert(inspectorMutation.includes(token),'Production Inspector mutation runtime must own mutation intent: '+token);
   assert(domainAdapter.includes(token),'Live Domain Adapter must delegate Inspector mutation intent to the production service: '+token);
 }
 assert(!/(querySelector|querySelectorAll|addEventListener|innerHTML\s*=|window\.DKDS)/.test(entry),'Resonance plugin entry must stay orchestration-only and consume SDK/module contracts instead of owning DOM or host globals.');
