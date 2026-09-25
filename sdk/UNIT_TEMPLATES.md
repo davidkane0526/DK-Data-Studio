@@ -11,6 +11,13 @@ The long-term acceptance target is strict:
 SDK 1.51 does **not** migrate current native plugins. Their source and existing authored styles remain frozen reference assets. The SDK is being made complete enough to reproduce them first; migration can happen later, plugin by plugin, under parity gates.
 
 
+### Dynamic Field select options — SDK 1.51.75
+
+`units.field.create(...)` returns the existing Field handle with a generic `setOptions(options, { value?, preserve? })` method. It is valid only for select Fields; other Field kinds fail closed with `UNIT_FIELD_OPTIONS_REQUIRE_SELECT`. The Unit remains the sole owner of option DOM. The method preserves the current value by default when it still exists, or accepts one explicit replacement value.
+
+This is intended for dynamic catalogs such as scoped DataSource choices. It does not create a new SourcePicker Unit and does not change Field geometry, responsive ownership, or the 41-Unit catalog.
+
+
 ## Architecture
 
 

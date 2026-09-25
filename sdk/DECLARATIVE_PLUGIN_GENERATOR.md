@@ -100,6 +100,15 @@ This binding is intentionally different from full Artifact hydration. Generated 
 The binding exists so Table Transform IR can target one stable JavaScript data shape instead of emulating Pandas or adding a Python runtime. Existing `artifact-column` remains preferred when only one series is needed.
 
 
+## Explicit workflow source binding — SDK 1.51.75
+
+Generated workflow packages no longer bind multiple `read_csv/read_excel` calls by source-list position. Every `source.table` symbol may declare a `sourceField` on its `artifact-table` / `artifact-column` binding. The field is an ordinary Unit select and the existing Field handle owns dynamic options through `setOptions(options,{value,preserve})`.
+
+At runtime the generator lists only scoped matching DataTable sources and presents their canonical `artifactId` values. A literal source filename retained by the IR is only a hint: it may preselect a source when exactly one descriptor matches `name`, `sourceName`, `path`, or `sourcePath`. A single scoped source may also auto-select. Ambiguous sets remain unselected and cannot execute until the user makes an explicit choice.
+
+This keeps source identity in the canonical Artifact/DataSource contract. Generated plugins do not create raw `<option>` elements, do not mutate private Field DOM, and do not assume that source enumeration order reproduces notebook file order.
+
+
 ## No-function workflow packaging — SDK 1.51.74
 
 Authoring candidates are no longer limited to top-level functions. A script/notebook workflow may expose `workflow:table-transform` when both its structural IR and executable Core Task report are closed.

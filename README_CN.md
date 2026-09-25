@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Explicit Multi-source Workflow Binding / SDK 1.51.75**：多 `read_csv/read_excel` 工作流不再因为数据源数量大于 1 而整体拒绝构建。现有 Field Unit 增加通用 `setOptions()` handle；每个 Workflow source symbol 自动生成普通 select Field，并通过 `artifact-table/sourceField` 绑定真实 `artifactId`。源码中的文件名只作为 hint：只有 scoped source 唯一或文件名唯一匹配时自动选择，其余情况保持“请选择数据源”，禁止按 source 0/1 顺序猜测。未新增 Unit、Presenter 分支、私有 `<option>` DOM 或 Python/Pandas runtime。
+
 > **v3.71.115 WIP — No-function Workflow Packaging / SDK 1.51.74**：没有顶层函数的单源 Python/Jupyter 工作流现在也可作为 `workflow:table-transform` 候选直接 Build。前提是 Table Transform IR 与 Core Task execution 均闭合；生成包继续复用同一个 `PluginBuilder.add_compiled_task()`、bounded `artifact-table`、Core Task Runner 和生产 Plugin Manager 验证/安装事务。运行时未知的结果列结构通过动态 DataTable 发布合同验证后进入 canonical Artifact Store 并保留 lineage。多 `read_csv/read_excel` 工作流仍 fail closed，等待动态 Source Picker 明确绑定，禁止按数据源列表顺序猜测。
 
 > **v3.71.115 WIP — Executable Table Transform Task / SDK 1.51.73**：`dkds.table-transform-plan.v1` 的第一批闭合计算语义现在可以直接 lower 为普通 `DKDSTaskDefinition`。Task 只消费 1.51.71 的 bounded `artifact-table` detached snapshot，内部不访问 Store/Host，也不携带 Python/Pandas runtime。首批可执行算子包括位置型 `iloc`、`abs`、`copy`、`reset_index`、`diff(axis=0)`、`dropna(axis=0)`、`sort_index(axis=0)`、`concat(axis=0/1)`；`loc`、`mean/median/std` 的 Series 语义以及 `plot/clipboard/export` 继续保留精确 Cell/行号 blocker，不静默丢弃。
@@ -109,7 +111,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.74**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.75**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
