@@ -21,7 +21,8 @@ _EXECUTABLE={
     "table.diff","table.dropna","table.sort-index","table.concat",
 }
 _PENDING_AGG={"table.mean","table.median","table.std"}
-_PENDING_HOST={"view.plot","host.clipboard","host.export"}
+_MAPPABLE_HOST={"view.plot","host.clipboard"}
+_PENDING_HOST={"host.export"}
 
 def _js(value:Any)->str:
     return json.dumps(value,ensure_ascii=False,separators=(",",":"))
@@ -49,10 +50,61 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
     symbols=set()
     sources=[]
     consumed=set()
+    host_effects=[]
+    host_required=set()
     for op in plan.get("operations",[]):
         kind=str(op.get("kind",""))
+        if kind in _MAPPABLE_HOST:
+            input_name=str(op.get("input",""))
+            if not input_name or input_name not in symbols:
+                diagnostics.append(_diag(op,"TABLE_TASK_HOST_INPUT_UNRESOLVED",f"{kind} input must reference a previously defined table symbol."))
+                continue
+            method=str(op.get("sourceMethod",""))
+            args=list(op.get("args") or [])
+            kwargs=dict(op.get("kwargs") or {})
+            if kind=="view.plot":
+                if method!="plot":
+                    diagnostics.append(_diag(op,"TABLE_TASK_PLOT_METHOD_PENDING",f"{method or 'plot'} is not mapped by ScientificPlot host projection v1."))
+                    continue
+                if args:
+                    diagnostics.append(_diag(op,"TABLE_TASK_PLOT_ARGS_UNSUPPORTED","DataFrame.plot positional arguments are not supported by host projection v1."))
+                    continue
+                allowed={"x","y","title","xlabel","ylabel"}
+                unknown=sorted(set(kwargs)-allowed)
+                if unknown:
+                    diagnostics.append(_diag(op,"TABLE_TASK_PLOT_KWARGS_UNSUPPORTED","Unsupported DataFrame.plot keyword(s): "+", ".join(unknown)))
+                    continue
+                for key in ("x","y"):
+                    value=kwargs.get(key)
+                    if value is not None and not isinstance(value,(str,int,list,tuple)):
+                        diagnostics.append(_diag(op,"TABLE_TASK_PLOT_SELECTOR_UNSUPPORTED",f"plot {key} must be a literal column name/index or list."))
+                host_effects.append({"kind":"scientific-plot","input":input_name,"cellIndex":int(op.get("cellIndex",0)),"line":int(op.get("line",0)),"kwargs":kwargs})
+                host_required.add(input_name)
+                continue
+            if method!="to_clipboard":
+                diagnostics.append(_diag(op,"TABLE_TASK_CLIPBOARD_METHOD_PENDING",f"{method or 'clipboard'} is not mapped by clipboard host effect v1."))
+                continue
+            if args:
+                diagnostics.append(_diag(op,"TABLE_TASK_CLIPBOARD_ARGS_UNSUPPORTED","to_clipboard positional arguments are not supported by host effect v1."))
+                continue
+            allowed={"index","header","sep","excel"}
+            unknown=sorted(set(kwargs)-allowed)
+            if unknown:
+                diagnostics.append(_diag(op,"TABLE_TASK_CLIPBOARD_KWARGS_UNSUPPORTED","Unsupported to_clipboard keyword(s): "+", ".join(unknown)))
+                continue
+            if kwargs.get("excel",True) is False:
+                diagnostics.append(_diag(op,"TABLE_TASK_CLIPBOARD_TEXT_MODE_PENDING","to_clipboard(excel=False) repr semantics are not mapped."))
+                continue
+            sep=kwargs.get("sep","\t")
+            if sep is None:sep="\t"
+            if not isinstance(sep,str) or not sep:
+                diagnostics.append(_diag(op,"TABLE_TASK_CLIPBOARD_SEPARATOR_INVALID","to_clipboard sep must be a non-empty literal string."))
+                continue
+            host_effects.append({"kind":"clipboard-table","input":input_name,"cellIndex":int(op.get("cellIndex",0)),"line":int(op.get("line",0)),"index":bool(kwargs.get("index",True)),"header":bool(kwargs.get("header",True)),"sep":sep})
+            host_required.add(input_name)
+            continue
         if kind in _PENDING_HOST:
-            diagnostics.append(_diag(op,"TABLE_TASK_HOST_OPERATION_PENDING",f"{kind} is a DKDS Host projection/effect and is not executed inside the compute Task."))
+            diagnostics.append(_diag(op,"TABLE_TASK_HOST_OPERATION_PENDING",f"{op.get('sourceMethod') or kind} requires an explicit DKDS file-export destination contract and remains fail-closed."))
             continue
         if kind in _PENDING_AGG:
             diagnostics.append(_diag(op,"TABLE_TASK_AGGREGATE_PENDING",f"{kind} requires Series/aggregate result semantics before executable lowering."))
@@ -119,17 +171,20 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
 
     results=sorted(name for name in symbols if name not in consumed and name not in sources)
     if not results:
-        # A source-only or in-place-looking workflow still exposes its last table symbol.
+        # A source-only or host-effect-only workflow still exposes the last table symbol.
         for op in reversed(plan.get("operations",[])):
             output=str(op.get("output",""))
-            if output and str(op.get("kind","")).startswith("table."):
+            if output and str(op.get("kind","")).startswith(("table.","source.")):
                 results=[output];break
+    task_outputs=sorted(set(results)|host_required)
     return {
         "schema":EXECUTION_SCHEMA,
-        "executable":bool(plan.get("operations")) and not diagnostics and bool(sources) and bool(results),
+        "executable":bool(plan.get("operations")) and not diagnostics and bool(sources) and bool(task_outputs),
         "diagnostics":diagnostics,
         "sourceInputs":sources,
         "resultSymbols":results,
+        "taskOutputSymbols":task_outputs,
+        "hostEffects":host_effects,
         "runtime":"core-task-js",
         "pythonRuntimeRequired":False,
     }
@@ -191,7 +246,7 @@ _HELPERS=r"""
       for(const t of rows){for(let r=0;r<t.rowCount;r++){index.push(ignoreIndex?offset++:t.index[r]);for(const c of columns){const src=t.columns.find(x=>x.key===c.key);c.values.push(src?src.values[r]:null);}}}
       return {kind:'data.table',artifactId:'',index,columns,rowCount:index.length};
     };
-    const exportTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
+    const exportTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),index:Array.from(t?.index||[]),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
 """
 
 def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform")->CompiledPortableTask:
@@ -243,6 +298,6 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
         elif kind=="table.concat":
             inputs="["+",".join(f"env[{_js(name)}]" for name in op.get("inputs",[]))+"]"
             lines.append(f"    env[{_js(output)}]=concatTables({inputs},{int(op.get('axis',0))},{str(bool(op.get('ignoreIndex',False))).lower()});")
-    result_expr="{" + ",".join(f"{_js(name)}:exportTable(env[{_js(name)}])" for name in report["resultSymbols"]) + "}"
+    result_expr="{" + ",".join(f"{_js(name)}:exportTable(env[{_js(name)}])" for name in report["taskOutputSymbols"]) + "}"
     lines += [f"    return {{tables:{result_expr}}};","  }","});",""]
     return CompiledPortableTask(task_id=task_id,entry="generated-table-transform-"+re.sub(r"[^A-Za-z0-9._-]","-",task_id)+".js",source="\n".join(lines),parameters=params)
