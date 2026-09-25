@@ -100,6 +100,17 @@ This binding is intentionally different from full Artifact hydration. Generated 
 The binding exists so Table Transform IR can target one stable JavaScript data shape instead of emulating Pandas or adding a Python runtime. Existing `artifact-column` remains preferred when only one series is needed.
 
 
+## Mapped notebook Host effects — SDK 1.51.76
+
+Table Transform execution now distinguishes **compute** from **Host effects**. A recognized `DataFrame.plot()` or `to_clipboard()` is not emitted into the Worker Task. Execution metadata records the source table symbol and exact source cell/line; the compiler adds that table to `taskOutputSymbols` only when the Host needs it.
+
+After `ctx.tasks.submit(...).promise` resolves, generated plugin code performs the mapped effect through existing public contracts:
+
+- `DataFrame.plot()` → a top-level Unit ScientificPlot fed by the returned DataTable snapshot. Literal `x`, `y`, `title`, `xlabel`, and `ylabel` are bounded authoring inputs.
+- `DataFrame.to_clipboard()` → tabular serialization followed by `ctx.io.clipboard.writeText`. Literal `index`, `header`, and `sep` are preserved for Excel-mode clipboard semantics.
+
+The generated Task file contains neither `ctx.io` nor ScientificPlot/clipboard calls. `to_csv/to_excel` remain blocked until an explicit save-destination contract is owned by the host rather than silently opening or writing files during compute.
+
 ## Explicit workflow source binding — SDK 1.51.75
 
 Generated workflow packages no longer bind multiple `read_csv/read_excel` calls by source-list position. Every `source.table` symbol may declare a `sourceField` on its `artifact-table` / `artifact-column` binding. The field is an ordinary Unit select and the existing Field handle owns dynamic options through `setOptions(options,{value,preserve})`.

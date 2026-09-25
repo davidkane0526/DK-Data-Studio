@@ -65,7 +65,8 @@ try{
   assert(workflow.hostCapabilities.includes('data.import')&&workflow.hostCapabilities.includes('scientific.plot')&&workflow.hostCapabilities.includes('host.clipboard.write'),'Workflow analysis must classify DKDS host replacements.');
   assert(workflow.transformFamilies.includes('pandas.dataframe'),'Pandas notebooks must be classified for table-transform lowering instead of runtime Python fallback.');
   assert(workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&row.cellIndex===2&&row.line===2&&row.call.includes('pd.read_csv')),'Workflow compatibility must report an exact cell/line/call for unlowered scientific library semantics.');
-  assert.strictEqual(workflow.candidate.buildable,true);\n  assert.strictEqual(workflow.candidate.status,'buildable-table-transform');
+  assert.strictEqual(workflow.candidate.buildable,true);
+  assert.strictEqual(workflow.candidate.status,'buildable-table-transform');
   assert.strictEqual(workflow.sourceExecuted,false);
   const tablePlan=workflow.tableTransformPlan;
   assert.strictEqual(tablePlan.schema,'dkds.table-transform-plan.v1');
@@ -92,6 +93,8 @@ try{
   assert(!hostTask.includes('ctx.io')&&!hostTask.includes('scientificPlot')&&!hostTask.includes('clipboard'),'Worker Task must remain pure compute with no Host/UI effects.');
   require('../desktop/plugin-package').normalizePluginPackage(hostPkg,{allowBuiltinId:false});
 
+  const generator=fs.readFileSync(path.join(root,'sdk','python','dkds_plugin_gen.py'),'utf8');
+  assert(generator.indexOf('raw_dynamic_table_plots =')<generator.indexOf('normalized_dynamic_table_plots:'),'Host-effect task inputs must be initialized before generator normalization.');
   const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
   assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
   assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("dkds_table_transform.py")&&runtime.includes("dkds_table_transform_task.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
