@@ -9,7 +9,7 @@ const audit=require('../tools/quality/unit-production-css-dependency-audit');
 const root=path.resolve(__dirname,'..');
 const atLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
 assert(atLeast(pkg.version,'3.71.114'),'v3.71.114+ source required.');
-assert.strictEqual(sdk.sdkVersion,'1.51.70');
+assert.strictEqual(sdk.sdkVersion,'1.51.71');
 assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38','Unit maturity freeze must not invent a 42nd Unit or advance the Unit spec.');
 const report=audit.audit();
 assert.strictEqual(report.ok,true,audit.format(report));

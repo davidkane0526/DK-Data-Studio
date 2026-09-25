@@ -69,6 +69,22 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Bounded artifact-table task input — SDK 1.51.71
+
+Generated Core Tasks may now bind one argument to a complete **bounded DataTable snapshot**:
+
+    {
+      "kind": "artifact-table",
+      "source": {"kind": "data.table", "index": 0, "includeExcluded": false},
+      "maxRows": 65536,
+      "maxColumns": 256
+    }
+
+This binding is intentionally different from full Artifact hydration. Generated host code resolves the scoped source through `ctx.data.sources`, reads only `columnMetadata()`, rejects tables that exceed the declared column/row bounds, and then reads each column with bounded `readColumnRange()`. The Task receives a detached structured-cloneable object with column identity/metadata plus copied values.
+
+The binding exists so Table Transform IR can target one stable JavaScript data shape instead of emulating Pandas or adding a Python runtime. Existing `artifact-column` remains preferred when only one series is needed.
+
+
 ## Real notebook Source Workflow — SDK 1.51.70
 
 The source importer no longer treats a Jupyter notebook as merely a bag of function definitions. `dkds.python-source-model.v2` embeds one static `dkds.source-workflow.v1` graph.

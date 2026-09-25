@@ -1906,10 +1906,15 @@ class PluginBuilder:
                     raise SpecError(f"portable task parameter {argument} references unknown field {field_id}")
                 bindings[argument] = {"kind": "parameter", "field": field_id}
                 continue
-            if kind != "artifact-column":
-                raise SpecError(f"input_bindings[{argument}].kind must be parameter or artifact-column")
+            if kind not in {"artifact-column", "artifact-table"}:
+                raise SpecError(f"input_bindings[{argument}].kind must be parameter, artifact-column or artifact-table")
 
-            extra = sorted(set(binding) - {"kind", "source", "column", "maxRows"})
+            allowed_binding_fields = {"kind", "source", "maxRows"}
+            if kind == "artifact-column":
+                allowed_binding_fields.add("column")
+            else:
+                allowed_binding_fields.add("maxColumns")
+            extra = sorted(set(binding) - allowed_binding_fields)
             if extra:
                 raise SpecError(f"unsupported artifact binding fields for {argument}: {', '.join(extra)}")
             source = _expect_object(binding.get("source", {}), f"input_bindings[{argument}].source")
@@ -1925,6 +1930,20 @@ class PluginBuilder:
                 "index": source_index,
                 "includeExcluded": bool(source.get("includeExcluded", False)),
             }
+            max_rows = int(binding.get("maxRows", 65536))
+            if max_rows < 1 or max_rows > 65536:
+                raise SpecError(f"input_bindings[{argument}].maxRows must be in 1..65536")
+            if kind == "artifact-table":
+                max_columns = int(binding.get("maxColumns", 256))
+                if max_columns < 1 or max_columns > 1024:
+                    raise SpecError(f"input_bindings[{argument}].maxColumns must be in 1..1024")
+                bindings[argument] = {
+                    "kind": "artifact-table",
+                    "source": normalized_source,
+                    "maxRows": max_rows,
+                    "maxColumns": max_columns,
+                }
+                continue
             column = _expect_object(binding.get("column"), f"input_bindings[{argument}].column")
             allowed_selectors = {"id", "key", "name", "role", "quantity", "dimension"}
             extra = sorted(set(column) - allowed_selectors)
@@ -1936,9 +1955,6 @@ class PluginBuilder:
             }
             if not normalized_column:
                 raise SpecError(f"input_bindings[{argument}].column must select at least one metadata field")
-            max_rows = int(binding.get("maxRows", 65536))
-            if max_rows < 1 or max_rows > 65536:
-                raise SpecError(f"input_bindings[{argument}].maxRows must be in 1..65536")
             bindings[argument] = {
                 "kind": "artifact-column",
                 "source": normalized_source,
@@ -2193,7 +2209,6 @@ class PluginBuilder:
                     ]
                     continue
                 source = binding["source"]
-                column = binding["column"]
                 max_rows = binding["maxRows"]
                 token = re.sub(r"[^A-Za-z0-9_]", "_", argument)
                 lines += [
@@ -2205,6 +2220,28 @@ class PluginBuilder:
                     f"        const __dkdsSource_{token}=__dkdsExplicitSource_{token}?__dkdsSources_{token}.find(row=>String(row?.artifactId||'')===__dkdsExplicitSource_{token}):__dkdsSources_{token}[{source['index']}];",
                     f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('No scoped source matches artifact binding for '+argument)});",
                     f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
+                ]
+                if binding["kind"] == "artifact-table":
+                    max_columns = binding["maxColumns"]
+                    lines += [
+                        f"        if(__dkdsColumns_{token}.length>{max_columns})throw new Error({_js('Artifact table '+argument+' exceeds declared maxColumns '+str(max_columns))});",
+                        f"        const __dkdsTableColumns_{token}=[];",
+                        f"        let __dkdsRowCount_{token}=0;",
+                        f"        for(const __dkdsColumnMeta_{token} of __dkdsColumns_{token}){{",
+                        f"          const __dkdsLength_{token}=Number(__dkdsColumnMeta_{token}.length||0);",
+                        f"          if(__dkdsLength_{token}>{max_rows})throw new Error({_js('Artifact table '+argument+' column exceeds declared maxRows '+str(max_rows))});",
+                        f"          const __dkdsRange_{token}=__dkdsLength_{token}>0?ctx.data.artifacts.readColumnRange(__dkdsSource_{token}.artifactId,__dkdsColumnMeta_{token}.id,{{start:0,limit:__dkdsLength_{token}}}):null;",
+                        f"          if(__dkdsLength_{token}>0&&!__dkdsRange_{token})throw new Error({_js('Unable to read bounded Artifact table column for '+argument)});",
+                        f"          const __dkdsValues_{token}=__dkdsRange_{token}?Array.from(__dkdsRange_{token}.values||[]):[];",
+                        f"          __dkdsRowCount_{token}=Math.max(__dkdsRowCount_{token},__dkdsValues_{token}.length);",
+                        f"          __dkdsTableColumns_{token}.push({{id:String(__dkdsColumnMeta_{token}.id||''),key:String(__dkdsColumnMeta_{token}.key||''),name:String(__dkdsColumnMeta_{token}.name||''),unit:String(__dkdsColumnMeta_{token}.unit||''),role:String(__dkdsColumnMeta_{token}.role||''),quantity:String(__dkdsColumnMeta_{token}.quantity||''),dimension:String(__dkdsColumnMeta_{token}.dimension||''),dtype:String(__dkdsColumnMeta_{token}.dtype||''),values:__dkdsValues_{token}}});",
+                        f"        }}",
+                        f"        __dkdsPayload[{_js(argument)}]={{kind:'data.table',artifactId:String(__dkdsSource_{token}.artifactId),columns:__dkdsTableColumns_{token},rowCount:__dkdsRowCount_{token}}};",
+                        f"        if(!__dkdsSourceIds.includes(String(__dkdsSource_{token}.artifactId)))__dkdsSourceIds.push(String(__dkdsSource_{token}.artifactId));",
+                    ]
+                    continue
+                column = binding["column"]
+                lines += [
                     f"        const __dkdsMatches_{token}=__dkdsColumns_{token}.filter(column=>Object.entries({_js(column)}).every(([key,value])=>String(column?.[key]??'')===String(value)));",
                     f"        if(__dkdsMatches_{token}.length!==1)throw new Error({_js('Artifact column binding for '+argument+' must resolve exactly one column')});",
                     f"        const __dkdsColumn_{token}=__dkdsMatches_{token}[0];",

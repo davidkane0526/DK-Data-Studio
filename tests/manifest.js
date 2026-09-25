@@ -81,6 +81,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-artifact-table-binding.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
