@@ -509,3 +509,10 @@ The Resonance specimen uses this path for its PRIMARY plot: production `visibleS
 A live curve-array binding may optionally declare `selectAction`. The generated public ScientificPlot receives an `onCurveSelect` callback that extracts only the projected `curve.id` and invokes `liveDomain.invoke(selectAction, { id })`. No arbitrary payload mapping, authored callback, local selected-id store or domain navigation logic is accepted. The production Domain Adapter remains responsible for what selecting that id means.
 
 The Resonance specimen declares `selectAction:"selectSweep"`; therefore PRIMARY curve clicks reach the same production selection owner while the declarative shell remains presentation-only. Marker selection, direct peak manipulation, double-click navigation and range actions remain outside this gate.
+
+
+## Selected-curve focus projection — SDK 1.51.65
+
+A live curve-array plot may add `selectedIdPath`. The path is resolved against the same Domain Adapter snapshot used for curve projection. Generated code retains only a transient string render projection and exposes `getSelectedCurveId:()=>selectedId` to the existing public ScientificCurveSurface. Core remains the visual focus owner.
+
+This is intentionally separate from `selectAction`: `selectAction` routes user intent back to the production owner, while `selectedIdPath` reads the production owner's resulting selection back into the view. Neither side creates a second selection model. Resonance uses `selectAction:"selectSweep"` plus `selectedIdPath:"selectedSweep.id"`.

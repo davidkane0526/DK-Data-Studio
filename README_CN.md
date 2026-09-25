@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Selected-Curve Focus Projection**：live curve-array ScientificPlot 新增 `selectedIdPath`。生成壳从生产 Domain Adapter snapshot 读取 authoritative 选中曲线 id，并通过 Core ScientificCurveSurface 已有 `getSelectedCurveId()` 合同绘制焦点；不创建新的 Selection bus，不持有 selectedSweep/selectedCurve 领域状态，不加插件私有 focus CSS。共振样例使用 `selectedSweep.id`，仍由生产 owner 决定真正选择语义。SDK 升至 1.51.65；Plugin API 1.19.0；Unit Templates 2.5.38（41 Units / 73 recipes）保持冻结。
+
 > **v3.71.115 WIP — Phase F Live Curve Selection**：live curve-array ScientificPlot binding 新增可选 `selectAction`。公共 ScientificPlot 的曲线点击只把 `curve.id` 作为 `{id}` 传给声明的 Domain Adapter action；生成壳不保存 selectedSweep/selectedCurve、不判断 Inspector 打开策略、不复制选择语义。共振样例将主图曲线点击直接交给生产 owner 的 `selectSweep`。SDK 升至 1.51.64；Plugin API 保持 1.19.0；Unit Templates 保持 2.5.38（41 Units / 73 recipes）。
 
 > **v3.71.115 WIP — Phase F Live ScientificPlot Projection**：声明式/Python 生成器新增 Unit-owned curve plot 的 live curve-array binding。声明只提供 Domain Adapter `statePath`、点数组路径和 x/y/id 等字段键；生成壳只构造 detached render projection 并请求公共 ScientificPlot 重绘，不自行判断可见 sweep、不计算峰/TER/物理量、不保存第二份科学状态。共振生产 adapter 仅投影现有 `visibleSweepIds()` 选中的 sweep，生产 service/算法 owner 不变。SDK 升至 1.51.63；Plugin API 保持 1.19.0；Unit Templates 仍冻结 2.5.38（41 Units / 73 recipes）。
@@ -89,7 +91,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.64**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.65**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
