@@ -1946,7 +1946,7 @@ class PluginBuilder:
             if kind not in {"artifact-column", "artifact-table"}:
                 raise SpecError(f"input_bindings[{argument}].kind must be parameter, artifact-column or artifact-table")
 
-            allowed_binding_fields = {"kind", "source", "maxRows"}
+            allowed_binding_fields = {"kind", "source", "maxRows", "sourceField", "sourceHint"}
             if kind == "artifact-column":
                 allowed_binding_fields.add("column")
             else:
@@ -1970,6 +1970,15 @@ class PluginBuilder:
             max_rows = int(binding.get("maxRows", 65536))
             if max_rows < 1 or max_rows > 65536:
                 raise SpecError(f"input_bindings[{argument}].maxRows must be in 1..65536")
+            source_field = str(binding.get("sourceField", "")).strip()
+            source_hint = str(binding.get("sourceHint", "")).strip()
+            if source_field:
+                source_field = _ident(source_field, f"input_bindings[{argument}].sourceField")
+                source_field_spec = fields.get(source_field)
+                if source_field_spec is None:
+                    raise SpecError(f"input_bindings[{argument}].sourceField references unknown field {source_field}")
+                if source_field_spec.get("type") != "select":
+                    raise SpecError(f"input_bindings[{argument}].sourceField must reference a select field")
             if kind == "artifact-table":
                 max_columns = int(binding.get("maxColumns", 256))
                 if max_columns < 1 or max_columns > 1024:
@@ -1979,6 +1988,8 @@ class PluginBuilder:
                     "source": normalized_source,
                     "maxRows": max_rows,
                     "maxColumns": max_columns,
+                    "sourceField": source_field,
+                    "sourceHint": source_hint,
                 }
                 continue
             column = _expect_object(binding.get("column"), f"input_bindings[{argument}].column")
@@ -1997,6 +2008,8 @@ class PluginBuilder:
                 "source": normalized_source,
                 "column": normalized_column,
                 "maxRows": max_rows,
+                "sourceField": source_field,
+                "sourceHint": source_hint,
             }
 
         plot_lookup: Dict[str, Dict[str, Any]] = {}
@@ -2235,6 +2248,52 @@ class PluginBuilder:
     def _task_handler_name(self, task_id: str) -> str:
         return "run_task_" + re.sub(r"[^A-Za-z0-9_]", "_", task_id)
 
+    def _source_picker_source(self) -> List[str]:
+        pickers: Dict[str, Dict[str, Any]] = {}
+        for task in self._portable_tasks:
+            for binding in task["input_bindings"].values():
+                field_id = str(binding.get("sourceField", ""))
+                if not field_id:
+                    continue
+                source = binding["source"]
+                row = {
+                    "field": field_id,
+                    "hint": str(binding.get("sourceHint", "")),
+                    "source": source,
+                }
+                previous = pickers.get(field_id)
+                if previous is not None and previous != row:
+                    raise SpecError(f"sourceField {field_id} cannot own conflicting source selectors")
+                pickers[field_id] = row
+        lines: List[str] = []
+        for field_id, row in pickers.items():
+            base = _var(field_id)
+            token = re.sub(r"[^A-Za-z0-9_]", "_", field_id)
+            source = row["source"]
+            hint = row["hint"]
+            lines += [
+                f"    const refresh_source_picker_{token}=()=>{{",
+                "      const rows=ctx.data.sources.list().filter(row=>"
+                + ("true" if source["includeExcluded"] else "!row?.excluded")
+                + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
+                + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
+                f"      const options=[{{value:'',label:'请选择数据源'}},...rows.map(row=>({{value:String(row.artifactId||''),label:String(row.name||row.sourceName||row.path||row.sourcePath||row.artifactId||'数据源')}}))];",
+                f"      let preferred=String({base}.control?.value||'');",
+                f"      if(preferred&&!rows.some(row=>String(row.artifactId||'')===preferred))preferred='';",
+            ]
+            if hint:
+                lines += [
+                    f"      if(!preferred){{const hint={_js(hint)}.replaceAll('\\\\','/').toLowerCase(),baseName=hint.split('/').pop();const matches=rows.filter(row=>[row.name,row.sourceName,row.path,row.sourcePath].some(value=>{{const text=String(value||'').replaceAll('\\\\','/').toLowerCase(),name=text.split('/').pop();return text===hint||name===baseName;}}));if(matches.length===1)preferred=String(matches[0].artifactId||'');}}",
+                ]
+            lines += [
+                "      if(!preferred&&rows.length===1)preferred=String(rows[0].artifactId||'');",
+                f"      {base}.setOptions(options,{{value:preferred,preserve:true}});",
+                "      return rows;",
+                "    };",
+                f"    refresh_source_picker_{token}();",
+            ]
+        return lines
+
     def _task_handlers_source(self) -> List[str]:
         lines: List[str] = []
         action_lookup = {row["id"]: row for row in self.spec["actions"]}
@@ -2278,13 +2337,17 @@ class PluginBuilder:
                 source = binding["source"]
                 max_rows = binding["maxRows"]
                 token = re.sub(r"[^A-Za-z0-9_]", "_", argument)
+                if binding.get("sourceField"):
+                    picker_token = re.sub(r"[^A-Za-z0-9_]", "_", binding["sourceField"])
+                    lines.append(f"        refresh_source_picker_{picker_token}();")
                 lines += [
                     f"        const __dkdsSources_{token}=ctx.data.sources.list().filter(row=>"
                     + ("true" if source["includeExcluded"] else "!row?.excluded")
                     + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
                     + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
-                    f"        const __dkdsExplicitSource_{token}=String(__dkdsCanonical?.sources?.[{_js(argument)}]||'');",
-                    f"        const __dkdsSource_{token}=__dkdsExplicitSource_{token}?__dkdsSources_{token}.find(row=>String(row?.artifactId||'')===__dkdsExplicitSource_{token}):__dkdsSources_{token}[{source['index']}];",
+                    f"        const __dkdsFieldSource_{token}=" + (f"String({_var(binding['sourceField'])}.control?.value||'');" if binding.get("sourceField") else "'';"),
+                    f"        const __dkdsExplicitSource_{token}=String(__dkdsCanonical?.sources?.[{_js(argument)}]||__dkdsFieldSource_{token}||'');",
+                    f"        const __dkdsSource_{token}=__dkdsExplicitSource_{token}?__dkdsSources_{token}.find(row=>String(row?.artifactId||'')===__dkdsExplicitSource_{token}):" + ("null;" if binding.get("sourceField") else f"__dkdsSources_{token}[{source['index']}];"),
                     f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('No scoped source matches artifact binding for '+argument)});",
                     f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
                 ]
@@ -2437,11 +2500,13 @@ class PluginBuilder:
                 token = re.sub(r"[^A-Za-z0-9_]", "_", argument)
                 lines += [
                     f"      if(!String(sources[{_js(argument)}]||'')){{",
+                    f"        const __dkdsCaptureField_{token}=" + (f"String({_var(binding['sourceField'])}.control?.value||'');" if binding.get("sourceField") else "'';"),
+                    f"        if(__dkdsCaptureField_{token})sources[{_js(argument)}]=__dkdsCaptureField_{token};",
                     f"        const __dkdsCaptureSources_{token}=ctx.data.sources.list().filter(row=>"
                     + ("true" if source["includeExcluded"] else "!row?.excluded")
                     + f"&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})"
                     + f"&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
-                    f"        const __dkdsCaptureSource_{token}=__dkdsCaptureSources_{token}[{source['index']}];",
+                    f"        const __dkdsCaptureSource_{token}=String(sources[{_js(argument)}]||'')?__dkdsCaptureSources_{token}.find(row=>String(row?.artifactId||'')===String(sources[{_js(argument)}])):" + ("null;" if binding.get("sourceField") else f"__dkdsCaptureSources_{token}[{source['index']}];"),
                     f"        if(!__dkdsCaptureSource_{token}?.artifactId)throw new Error({_js('No scoped source matches domain-command binding for '+argument)});",
                     f"        sources[{_js(argument)}]=String(__dkdsCaptureSource_{token}.artifactId);",
                     "      }",
@@ -3435,6 +3500,7 @@ class PluginBuilder:
                 "    const refreshLiveBindings=()=>{let state={};try{if(liveDomain.available())state=liveDomain.snapshot()?.state||{};}catch{}for(const bind of liveBindings){try{bind(state);}catch(error){console.warn('[DKDS declarative live binding]',error);}}};",
             ]
         lines += self._parameter_source()
+        lines += self._source_picker_source()
         lines += self._interaction_source()
         lines += self._content_source()
         lines += self._surface_source()
