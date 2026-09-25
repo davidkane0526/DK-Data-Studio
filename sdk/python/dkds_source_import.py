@@ -275,14 +275,32 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
     diagnostics=[dict(row) for row in execution.get("diagnostics",[])]
     source_inputs=list(execution.get("sourceInputs") or [])
     result_symbols=list(execution.get("resultSymbols") or [])
-    if len(source_inputs)!=1:
-        diagnostics.append({
-            "severity":"blocker","code":"WORKFLOW_SOURCE_BINDING_AMBIGUOUS",
-            "message":"Automatic workflow packaging currently requires exactly one scoped DataTable source; multi-source workflows need an explicit runtime Source Picker instead of index guessing.",
-            "sourceInputCount":len(source_inputs),
-        })
+    source_ops={
+        str(row.get("output","")):row
+        for row in plan.get("operations",[])
+        if row.get("kind")=="source.table" and row.get("output")
+    }
     stem=_slug(Path(source_name).stem)
     title=f"{Path(source_name).stem} · Workflow"
+    fields=[]
+    bindings={}
+    source_bindings=[]
+    for symbol in source_inputs:
+        source_op=source_ops.get(symbol,{})
+        source_hint=str(source_op.get("sourceHint","") or "")
+        hint_label=source_hint.replace("\\","/").split("/")[-1] if source_hint else symbol
+        field_id="source-"+_slug(symbol).replace(".","-")
+        fields.append({
+            "id":field_id,"type":"select","label":f"数据源 · {hint_label}",
+            "value":"","options":[{"value":"","label":"请选择数据源"}],
+        })
+        bindings[symbol]={
+            "kind":"artifact-table",
+            "source":{"kind":"data.table","index":0,"includeExcluded":False},
+            "sourceField":field_id,"sourceHint":source_hint,
+            "maxRows":65536,"maxColumns":1024,
+        }
+        source_bindings.append({"symbol":symbol,"field":field_id,"hint":source_hint})
     spec={
         "schema":"dkds.declarative-plugin.v1",
         "plugin":{"id":f"generated.{stem}.workflow","name":title,"version":"1.0.0","description":f"Generated from {source_name} Table Transform workflow.","order":940},
@@ -291,11 +309,10 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         "host":{"kind":"top","label":"Workflow","contextLabel":title,"icon":"◇","window":{"title":title,"width":1280,"height":820,"minWidth":860,"minHeight":560,"reuse":True,"persistence":"project","artifactHydration":"live"}},
         "data":{"accepts":["data.table"],"produces":["generated.table-transform"]},
         "actions":[{"id":"run","label":"运行工作流","variant":"primary","statusMessage":"正在执行生成的 Table Transform 工作流…"}],
-        "content":[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Result DataTables are published to the canonical Artifact Store."}],
+        "content":[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Source files are bound explicitly to scoped DKDS DataTables; result DataTables are published to the canonical Artifact Store."}],
     }
-    bindings={}
-    if len(source_inputs)==1:
-        bindings[source_inputs[0]]={"kind":"artifact-table","source":{"kind":"data.table","index":0,"includeExcluded":False},"maxRows":65536,"maxColumns":1024}
+    if fields:
+        spec["parameters"]={"id":"sources","label":"数据源","fields":fields,"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
     dynamic=[
         {"id":"workflow-result-"+_slug(symbol).replace(".","-"),"name":f"Workflow result · {symbol}","semanticType":"generated.table-transform","resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024}
         for symbol in result_symbols
@@ -303,11 +320,11 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
     return {
         "schema":BLUEPRINT_SCHEMA,
         "candidateId":WORKFLOW_CANDIDATE_ID,
-        "buildable":bool(execution.get("executable") and len(source_inputs)==1 and result_symbols and not diagnostics),
+        "buildable":bool(execution.get("executable") and source_inputs and result_symbols and not diagnostics),
         "diagnostics":diagnostics,
         "spec":spec,
         "task":{"id":"run-workflow","actionId":"run","inputBindings":bindings,"dynamicPublishTables":dynamic,"successStatus":"工作流完成"},
-        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"resultSymbols":result_symbols,"unitFirst":True,"privateCss":False},
+        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"sourceBindings":source_bindings,"resultSymbols":result_symbols,"unitFirst":True,"privateCss":False},
     }
 
 
