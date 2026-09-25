@@ -38,7 +38,7 @@ report=analyze_table_transform_execution(plan)
 task=compile_table_transform_task(plan,"table-transform-gate")
 open(sys.argv[1],"w",encoding="utf-8").write(task.source)
 open(sys.argv[2],"w",encoding="utf-8").write(json.dumps({"report":report,"parameters":list(task.parameters),"entry":task.entry},indent=2))
-host={**plan,"operations":[*plan["operations"],{"id":"op:0:5:4","kind":"view.plot","cellIndex":0,"line":5,"input":"out","hostCapability":"scientific.plot","kwargs":{}}]}
+host={**plan,"operations":[*plan["operations"],{"id":"op:0:5:4","kind":"view.plot","cellIndex":0,"line":5,"input":"out","sourceMethod":"plot","hostCapability":"scientific.plot","args":[],"kwargs":{}}]}
 open(sys.argv[3],"w",encoding="utf-8").write(json.dumps(analyze_table_transform_execution(host),indent=2))
 `,'utf8');
 
@@ -70,10 +70,11 @@ open(sys.argv[3],"w",encoding="utf-8").write(json.dumps(analyze_table_transform_
   assert.strictEqual(result.tables.out.rowCount,2);
 
   const host=JSON.parse(fs.readFileSync(hostPath,'utf8'));
-  assert.strictEqual(host.executable,false,'Host side effects must remain outside the compute Task.');
-  assert(host.diagnostics.some(row=>row.code==='TABLE_TASK_HOST_OPERATION_PENDING'&&row.line===5),'Host blocker must preserve exact source line.');
+  assert.strictEqual(host.executable,true,'Mapped presentation effects must not contaminate or block compute lowering.');
+  assert.deepStrictEqual(host.taskOutputSymbols,['out']);
+  assert(host.hostEffects.some(row=>row.kind==='scientific-plot'&&row.line===5&&row.input==='out'),'Mapped Host effect must preserve exact source cell/line/input.');
   assert.strictEqual(host.pythonRuntimeRequired,false);
-  console.log('Phase F Table Transform Task PASS: closed IR -> JavaScript Core Task semantics; host effects remain fail-closed.');
+  console.log('Phase F Table Transform Task PASS: closed IR -> JavaScript Core Task semantics + separate mapped Host-effect metadata.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});
 }
