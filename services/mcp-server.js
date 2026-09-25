@@ -55,6 +55,6 @@ class McpServer{
     });
   }
   status(){return this.info?{...this.info,running:true}:{running:false,localUrl:'',lanUrl:'',url:'',port:MCP_PORT,tokenHeader:MCP_TOKEN_HEADER,protocolVersion:MCP_PROTOCOL_VERSION};}
-  stop(){if(!this.server){this.info=null;this.token='';return Promise.resolve(this.status());}const server=this.server;this.server=null;this.info=null;this.token='';return new Promise(resolve=>server.close(()=>resolve(this.status())));}
+  stop(){if(!this.server){this.info=null;this.token='';return Promise.resolve(this.status());}const server=this.server;this.server=null;this.info=null;this.token='';return new Promise(resolve=>{let settled=false;const done=()=>{if(settled)return;settled=true;resolve(this.status());};try{server.close(done);server.closeIdleConnections?.();server.closeAllConnections?.();}catch{done();}});}
 }
 module.exports={McpServer,MCP_PORT,MCP_PATH,MCP_PROTOCOL_VERSION,MCP_PROTOCOL_VERSIONS,MCP_TOKEN_HEADER};

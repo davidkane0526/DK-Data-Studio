@@ -1,3 +1,5 @@
+> **v3.71.117 WIP — Desktop Plugin Manager Single Row / Coordinated Shutdown**：桌面端插件管理工具栏恢复为固定单行合同，搜索、状态、类型、安装插件、从 Python / Jupyter 创建、插件目录共六个槽位，不因新增操作按钮自动换到第二行；Native Mobile 的独立响应式布局保持不变。桌面主进程新增统一 shutdown coordinator：退出前先停止更新发现、等待 LAN Web / MCP HTTP 服务真正关闭、终止仍在运行的 SMB PowerShell/nbtstat 子进程、清理 pending host 请求并关闭辅助窗口，再允许 Electron quit，避免窗口关闭后任务管理器仍残留后台进程。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+
 > **v3.71.116 WIP — Desktop Plot Chrome / Resonance Default Companions**：桌面端所有共享科学数据图的悬浮导航按钮从 28×28 px 等比缩小 10% 至 25.2×25.2 px，Native Mobile 的 22.5×20.4 px 触控几何保持不变。共振插件在 Desktop 默认打开“曲线检查器”和“组图”，Mobile 默认状态不变；PRIME autoOpen 同时改为尊重 PortableView 已保存的用户停靠位置，不再用 defaultPlacement 覆盖。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变；CHANGELOG 当前补丁标识同步为 3.71.116。
 
 > **v3.71.115 WIP — Notebook Host Effects / SDK 1.51.76**：`DataFrame.plot()` 与 `to_clipboard()` 不再阻塞已闭合的 Table Transform compute。计算仍由纯 JavaScript Core Task 完成；Task 结束后，宿主只把所需 DataTable snapshot 投影到公共 ScientificPlot，或通过 `ctx.io.clipboard.writeText` 写入剪贴板。为 Host effect 所需的中间表只作为 Task 输出保留，不改变真正的 terminal result；Worker 内不允许 UI、剪贴板、Store、Electron、Python/Pandas 访问。`to_csv/to_excel`、未映射 plot 参数、`loc` 与 `mean/median/std` 仍保留精确 Cell/行号 blocker。
@@ -115,7 +117,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.116**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.117**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

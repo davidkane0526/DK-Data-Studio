@@ -490,10 +490,11 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   --dkds-plugin-manager-toolbar-action-padding-block:6px;
   --dkds-plugin-manager-toolbar-action-padding-inline:10px;
   display:grid;
-  grid-template-columns:minmax(240px,1fr) auto auto auto auto;
+  grid-template-columns:minmax(0,1fr) auto auto auto auto auto;
   align-items:center;
   gap:9px;
   padding:10px 12px;
+  min-width:0;
 }
 .plugin-manager-search-wrap{
   min-width:0;
@@ -524,6 +525,7 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   font-size:var(--plugin-font-body,12.5px);
 }
 .plugin-manager-toolbar-card>button{
+  white-space:nowrap;
   height:var(--dkds-plugin-manager-toolbar-action-height);
   min-height:var(--dkds-plugin-manager-toolbar-action-height);
   padding-block:var(--dkds-plugin-manager-toolbar-action-padding-block);

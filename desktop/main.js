@@ -22,6 +22,7 @@ const { createNativeDialogBroker } = require('./main-modules/native-dialog-broke
 const { createNativeSaveRuntime } = require('./main-modules/native-save-runtime');
 const { createSdkExportRuntime } = require('./main-modules/sdk-export-runtime');
 const { createPluginAuthoringRuntime } = require('./main-modules/plugin-authoring-runtime');
+const { createShutdownRuntime } = require('./main-modules/shutdown-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
@@ -102,6 +103,19 @@ const sdkExportRuntime=createSdkExportRuntime({app,appRoot:APP_ROOT,dialog,nativ
 const pluginAuthoringRuntime=createPluginAuthoringRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage});
 nativeSaveRuntime.installIntentTrace(ipcMain);
 
+const shutdownRuntime=createShutdownRuntime({
+  app,
+  setAppQuitting:value=>{appQuitting=!!value;},
+  closeAllAuxiliaryWindows,
+  prepareProjectSafety:reason=>projectFileSafety?.prepareForQuit(reason==='before-quit'?'app-before-quit':reason),
+  stopLanUpdater:()=>lanUpdater?.stop(),
+  stopLanWebServer:()=>lanWebServer?.stop(false),
+  stopMcpServer:()=>mcpServer?.stop?.(),
+  shutdownSmbSessions:()=>SmbService.shutdownSmbSessions?.(),
+  pendingRequestMaps:[pendingCapabilityInvocations,pendingMcpRequests],
+  logger:console
+});
+
 
 function dispatchMcpToRenderer(request){
   const win=primaryWindow&&!primaryWindow.isDestroyed()?primaryWindow:BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&!auxiliaryBootstrap.has(candidate.webContents.id));
@@ -135,14 +149,12 @@ function createWindow() {
   win.on('maximize',publishMaximizedState);
   win.on('unmaximize',publishMaximizedState);
   win.on('close',event=>{
-    if(primaryWindow!==win||appQuitting)return;
-    // The primary Desktop window owns the application lifetime. Reusable TOP
-    // windows may hide during normal use, but must never keep the process alive
-    // after the primary window is closed.
+    if(primaryWindow!==win||shutdownRuntime.isReadyForQuit())return;
+    // The primary Desktop window owns application lifetime. Shutdown is a
+    // coordinated lifecycle: background services and reusable auxiliary
+    // windows drain before Electron is allowed to terminate the process.
     event.preventDefault();
-    appQuitting=true;
-    closeAuxiliaryWindowsForOwner(win.webContents.id);
-    queueMicrotask(()=>app.quit());
+    shutdownRuntime.requestQuit('primary-window-close');
   });
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
   win.loadFile(path.join(APP_ROOT, 'src', 'index.html'),visualClosureRuntime.loadFileOptions());
@@ -812,12 +824,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => {
-  appQuitting = true;
-  try { closeAllAuxiliaryWindows(); } catch {}
-  try { projectFileSafety?.prepareForQuit('app-before-quit'); } catch (err) { console.error('[DKDS project safety:quit]',err); }
-  try { lanUpdater?.stop(); } catch {}
-  try { lanWebServer?.stop(false); } catch {}
-  try { mcpServer?.stop?.(); } catch {}
-  try { SmbService.shutdownSmbSessions?.(); } catch {}
+app.on('before-quit', event => {
+  shutdownRuntime.beforeQuit(event);
 });

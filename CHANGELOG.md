@@ -1,3 +1,10 @@
+# 3.71.117 WIP — Desktop Plugin Manager single-row + coordinated shutdown
+
+- Desktop Plugin Manager toolbar now has six explicit single-row slots for search, status, type, Install Plugin, Python/Jupyter authoring and Plugin Folder. The search cell is the only flexible column and action labels remain non-wrapping; Native Mobile keeps its separate responsive projection rules.
+- Added a Main Process shutdown coordinator that owns the full Desktop application lifetime. Primary-window close and Electron before-quit now drain background resources before the final quit instead of fire-and-forget cleanup.
+- LAN Web and MCP HTTP shutdown closes idle/active connections and is awaited. In-flight SMB PowerShell/nbtstat child processes are tracked by the SMB service and terminated during application shutdown. Pending host capability/MCP requests are rejected and timers cleared as part of the same lifecycle.
+- App/Desktop/Mobile identity advances to 3.71.117 / Android versionCode 257. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.116 WIP — Desktop scientific chrome density + Resonance default companions
 
 - Desktop shared scientific floating navigation buttons are reduced exactly 10% from 28 × 28 px to 25.2 × 25.2 px through the Desktop Host geometry contract; the shared Core 28 × 28 baseline and Native Mobile 22.5 × 20.4 touch geometry remain unchanged.
