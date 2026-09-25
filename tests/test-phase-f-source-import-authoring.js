@@ -74,14 +74,19 @@ try{
   assert(tablePlan.operations.some(row=>row.kind==='view.plot'&&row.input==='clean'),'Table Transform IR must map plot() to a DKDS view operation.');
   assert(tablePlan.operations.some(row=>row.kind==='host.clipboard'&&row.input==='clean'),'Table Transform IR must map to_clipboard() to Host I/O.');
   assert.strictEqual(tablePlan.buildable,true,'Synthetic read_csv -> abs -> plot -> clipboard workflow should close in IR v1.');
+  assert.strictEqual(tablePlan.execution.schema,'dkds.table-transform-execution.v1');
+  assert.strictEqual(tablePlan.execution.executable,false,'Closed authoring IR must remain non-executable until mapped Host effects are separated from compute.');
+  assert(tablePlan.execution.diagnostics.filter(row=>row.code==='TABLE_TASK_HOST_OPERATION_PENDING').length===2,'plot and clipboard must remain explicit Host-effect blockers.');
 
   const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
   assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
-  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("dkds_table_transform.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
+  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("dkds_table_transform.py")&&runtime.includes("dkds_table_transform_task.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
   assert(runtime.includes('pluginInstallPlan(raw)')&&runtime.includes("generatedBy:'python-source-import'"),'Generated packages must reuse the existing Plugin Manager validation/install transaction.');
   const manager=fs.readFileSync(path.join(root,'src','core','plugins','manager-ui.js'),'utf8');
   const authoringUi=fs.readFileSync(path.join(root,'src','core','plugins','plugin-authoring-ui.js'),'utf8');
   assert.doesNotThrow(()=>new Function(authoringUi),'Plugin Manager authoring surface must remain valid JavaScript.');
+  assert(!authoringUi.includes('escapeHtml('),'Authoring UI must use its owned esc() HTML-escape helper rather than an undefined alias.');
+  assert(authoringUi.includes('tableExecution.executable'),'Authoring UI must expose compute-task execution closure separately from static IR closure.');
   assert(manager.includes('DKDSPluginAuthoringUI')&&authoringUi.includes('pluginAuthoringSelectSource')&&authoringUi.includes('pluginAuthoringBuild')&&authoringUi.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions through one Core authoring surface.');
   console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model v2 + workflow graph -> host mapping/lowering report -> blueprint -> package -> Plugin Manager transaction.');
 }finally{fs.rmSync(temp,{recursive:true,force:true});}

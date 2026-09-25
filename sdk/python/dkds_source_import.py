@@ -22,6 +22,7 @@ from dkds_plugin_gen import PluginBuilder, SpecError
 from dkds_portable_task import PortableTaskError, compile_portable_task
 from dkds_source_workflow import analyze_workflow
 from dkds_table_transform import analyze_table_transform
+from dkds_table_transform_task import analyze_table_transform_execution
 
 SOURCE_MODEL_SCHEMA="dkds.python-source-model.v2"
 BLUEPRINT_SCHEMA="dkds.declarative-blueprint.v1"
@@ -275,7 +276,9 @@ def analyze(path:str|Path)->dict[str,Any]:
         row["blueprint"]=_blueprint(model,row,fn)
         rows.append(row)
     workflow=analyze_workflow(source_path)
-    workflow["tableTransformPlan"]=analyze_table_transform(source_path)
+    table_plan=analyze_table_transform(source_path)
+    table_plan["execution"]=analyze_table_transform_execution(table_plan)
+    workflow["tableTransformPlan"]=table_plan
     model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:

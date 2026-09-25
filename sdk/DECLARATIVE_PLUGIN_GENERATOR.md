@@ -100,6 +100,21 @@ This binding is intentionally different from full Artifact hydration. Generated 
 The binding exists so Table Transform IR can target one stable JavaScript data shape instead of emulating Pandas or adding a Python runtime. Existing `artifact-column` remains preferred when only one series is needed.
 
 
+## Executable Table Transform Task — SDK 1.51.73
+
+A closed structural transform plan may now lower to one ordinary Core Task. The generated task is JavaScript and consumes only detached `artifact-table` snapshots prepared by the host-side generated action. It has no access to `ctx.data`, `ctx.io`, Electron, a Python interpreter, Pandas, or a notebook kernel.
+
+Executable v1 intentionally covers a narrow table algebra: positional `iloc`, `abs`, `copy`, `reset_index`, `diff(axis=0)`, `dropna(axis=0)`, `sort_index(axis=0)`, and `concat(axis=0/1)`. Index state is carried explicitly inside the task snapshot so slicing/sorting/reset semantics remain deterministic. The task returns detached terminal table snapshots.
+
+The following remain fail-closed in 1.51.73:
+
+- `loc` label/index semantics;
+- Series/aggregate result semantics from `mean/median/std`;
+- Host effects such as `plot`, clipboard, CSV and Excel export.
+
+Those operations are not ignored. `dkds.table-transform-execution.v1` reports exact cell/line blockers so the authoring surface can distinguish “IR recognized” from “Core Task executable”.
+
+
 ## Real notebook Source Workflow — SDK 1.51.70
 
 The source importer no longer treats a Jupyter notebook as merely a bag of function definitions. `dkds.python-source-model.v2` embeds one static `dkds.source-workflow.v1` graph.

@@ -85,6 +85,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-table-transform-task.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
