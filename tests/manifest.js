@@ -13,6 +13,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-domain-surface-action.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-resonance-domain-adapter-seam.js",
       "args": []
     },
