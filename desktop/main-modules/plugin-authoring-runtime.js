@@ -158,9 +158,9 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
   }
 
   function installIpc(ipcMain){
-    ipcMain.handle('plugins:authoringStatus',async()=>({available:!!resolvePython(),python:resolvePython8),sourceExecuted:false,runtimePythonRequired:false}));
+    ipcMain.handle('plugins:authoringStatus',async()=>({available:!!resolvePython(),python:resolvePython(),sourceExecuted:false,runtimePythonRequired:false}));
     ipcMain.handle('plugins:authoringSelectSource',async()=>{
-      const python=resolvePython8);
+      const python=resolvePython();
       if(!python)return {ok:false,error:{code:'PYTHON_AUTHORING_UNAVAILABLE',message:'未找到 Python 3。请安装 Python 3 后重新导入；生成后的插件本身不依赖 Python。'}};
       const result=await dialog.showOpenDialog({
         title:'选择 Python / Jupyter 插件源码',properties:['openFile'],
