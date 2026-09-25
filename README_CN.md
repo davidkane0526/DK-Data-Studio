@@ -1,3 +1,5 @@
+> **v3.71.116 WIP — Desktop Plot Chrome / Resonance Default Companions**：桌面端所有共享科学数据图的悬浮导航按钮从 28×28 px 等比缩小 10% 至 25.2×25.2 px，Native Mobile 的 22.5×20.4 px 触控几何保持不变。共振插件在 Desktop 默认打开“曲线检查器”和“组图”，Mobile 默认状态不变；PRIME autoOpen 同时改为尊重 PortableView 已保存的用户停靠位置，不再用 defaultPlacement 覆盖。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+
 > **v3.71.115 WIP — Notebook Host Effects / SDK 1.51.76**：`DataFrame.plot()` 与 `to_clipboard()` 不再阻塞已闭合的 Table Transform compute。计算仍由纯 JavaScript Core Task 完成；Task 结束后，宿主只把所需 DataTable snapshot 投影到公共 ScientificPlot，或通过 `ctx.io.clipboard.writeText` 写入剪贴板。为 Host effect 所需的中间表只作为 Task 输出保留，不改变真正的 terminal result；Worker 内不允许 UI、剪贴板、Store、Electron、Python/Pandas 访问。`to_csv/to_excel`、未映射 plot 参数、`loc` 与 `mean/median/std` 仍保留精确 Cell/行号 blocker。
 
 > **v3.71.115 WIP — Explicit Multi-source Workflow Binding / SDK 1.51.75**：多 `read_csv/read_excel` 工作流不再因为数据源数量大于 1 而整体拒绝构建。现有 Field Unit 增加通用 `setOptions()` handle；每个 Workflow source symbol 自动生成普通 select Field，并通过 `artifact-table/sourceField` 绑定真实 `artifactId`。源码中的文件名只作为 hint：只有 scoped source 唯一或文件名唯一匹配时自动选择，其余情况保持“请选择数据源”，禁止按 source 0/1 顺序猜测。未新增 Unit、Presenter 分支、私有 `<option>` DOM 或 Python/Pandas runtime。

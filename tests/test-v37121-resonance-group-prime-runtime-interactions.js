@@ -82,10 +82,17 @@ const {PortableView}=require('../src/core/ui/modules/layout/portable-view');
 // PortableView spec.  `plot-group` describes the content Unit; the movable
 // outer PRIME remains the accepted generic panel semantic.
 const unitPresentationSource=fs.readFileSync(path.join(process.cwd(),'src/plugins/resonance-workbench/unit-presentation.js'),'utf8');
+const inspectorPrimeSource=unitPresentationSource.split('\n').find(line=>line.includes("const inspector=units.prime.build"))||'';
 const groupPrimeSource=unitPresentationSource.split('\n').find(line=>line.includes("const group=units.prime.build"))||'';
+assert(unitPresentationSource.includes("nativeMobile=!!ctx.runtime?.host?.profile?.nativeMobile"),'Resonance default PRIME visibility must derive from the canonical host profile.');
+assert(inspectorPrimeSource.includes("autoOpen:!nativeMobile"),'Desktop Resonance must default-open the curve inspector without forcing Native Mobile open.');
+assert(groupPrimeSource.includes("autoOpen:!nativeMobile"),'Desktop Resonance must default-open the group panel without forcing Native Mobile open.');
 assert(groupPrimeSource.includes("id:'group-analysis'"),'production Resonance Group PRIME spec missing');
 assert(groupPrimeSource.includes("semanticKind:'panel'"),'production outer Group PRIME must use PortableView panel semantic');
 assert(!groupPrimeSource.includes("semanticKind:'plot-group'"),'plot-group content semantic must not leak into PortableView outer PRIME');
+const workbenchSource=fs.readFileSync(path.join(process.cwd(),'src/core/ui/modules/workbench/analysis.js'),'utf8');
+assert(workbenchSource.includes("if(spec.autoOpen===true)this.openPrime(id);"),'Generic PRIME autoOpen must preserve PortableView user placement instead of reapplying defaultPlacement.');
+assert(!workbenchSource.includes("if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement)"),'Generic PRIME autoOpen must not overwrite a persisted user placement.');
 const portableSource=fs.readFileSync(path.join(process.cwd(),'src/core/ui/modules/layout/portable-view.js'),'utf8');
 assert(portableSource.includes("portableSet(wrapper,'resize','none')"),'Core PortableView must suppress browser-native resize when its handle owns resizing');
 

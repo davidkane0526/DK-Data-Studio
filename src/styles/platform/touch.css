@@ -173,8 +173,8 @@ html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
      resolution.  The renderer therefore stays compact at 100–150% Windows
      scaling while still retaining a slightly larger hit target on very wide
      workspaces. Mobile owns a separate geometry contract. */
-  --dkds-scientific-nav-item-width:28px;
-  --dkds-scientific-nav-item-height:28px;
+  --dkds-scientific-nav-item-width:25.2px;
+  --dkds-scientific-nav-item-height:25.2px;
   --dkds-scientific-nav-padding-block:1px;
   --dkds-scientific-nav-padding-inline:2px;
   --dkds-scientific-nav-font-size:13px;

@@ -28,8 +28,10 @@ assert(!/dkds-pointer-coarse\s+button:not\([^\{]+\)\s*\{[^}]*min-height/s.test(n
 assert(!nativeShell.includes('.main-plot-tools button{min-height:'),'Native touch density must not directly override canonical main-plot action geometry.');
 const nav=read('src/styles/structure/sdk-semantic-surfaces.css');
 assert(nav.includes('--dkds-scientific-nav-item-width:28px')&&nav.includes('--dkds-scientific-nav-item-height:28px'),'Shared scientific navigation must retain the frozen semantic geometry.');
-assert(touch.includes('html[data-dkds-host="desktop"] .dkds-scientific-nav-tools')&&touch.includes('--dkds-scientific-nav-item-width:')&&touch.includes('--dkds-scientific-nav-item-height:'),'Desktop host must retain a compact host-specific scientific geometry.');
-assert(nativeShell.includes('html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools')&&nativeShell.includes('--dkds-scientific-nav-item-width:')&&nativeShell.includes('--dkds-scientific-nav-item-height:'),'Native Mobile must retain its own explicitly separated scientific geometry instead of inheriting Desktop tuning.');
+const desktopNav=(touch.match(/html\[data-dkds-host="desktop"\] \.dkds-scientific-nav-tools\{[\s\S]*?\n\}/)||[])[0]||'';
+assert(desktopNav.includes('--dkds-scientific-nav-item-width:25.2px')&&desktopNav.includes('--dkds-scientific-nav-item-height:25.2px'),'Desktop scientific floating buttons must be exactly 10% smaller than the shared 28 px baseline.');
+const mobileNav=(nativeShell.match(/html\[data-dkds-host="mobile"\]\.react-native-client \.dkds-scientific-nav-tools\{[^}]+\}/)||[])[0]||'';
+assert(mobileNav.includes('--dkds-scientific-nav-item-width:22.5px')&&mobileNav.includes('--dkds-scientific-nav-item-height:20.4px'),'Native Mobile scientific floating geometry must remain unchanged by Desktop-only tuning.');
 const shellNav=read('src/styles/structure/shell-navigation.css'),schema=read('src/styles/structure/schema-and-plugin-ui.css'),appearance=read('src/styles/theme/component-appearance.css');
 assert(/\.project-tab-close\{[\s\S]*?flex:0 0 20px;[\s\S]*?width:20px;[\s\S]*?height:20px;[\s\S]*?box-sizing:border-box;/.test(shellNav),'Project tab close must be a compact 20 px integrated hit region.');
 assert(schema.includes('.project-tab-close,.dkds-panel-close-button'),'Generic button geometry must not enlarge the project close hit region.');
