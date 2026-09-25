@@ -1854,6 +1854,8 @@ class PluginBuilder:
         result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
         dynamic_publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_table_plots: List[Dict[str, Any]] | None = None,
+        host_effects: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
         function_name: str | None = None,
@@ -1875,6 +1877,8 @@ class PluginBuilder:
             result_metrics=result_metrics,
             publish_tables=publish_tables,
             dynamic_publish_tables=dynamic_publish_tables,
+            dynamic_table_plots=dynamic_table_plots,
+            host_effects=host_effects,
             domain_command=domain_command,
             success_status=success_status,
         )
@@ -1896,6 +1900,8 @@ class PluginBuilder:
         result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
         dynamic_publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_table_plots: List[Dict[str, Any]] | None = None,
+        host_effects: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
         success_status: str = "任务完成",
     ) -> "PluginBuilder":
@@ -2030,6 +2036,57 @@ class PluginBuilder:
                 for metric in content_row["items"]:
                     metric_lookup[metric["id"]] = metric
 
+        simple_plot_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "plot"}
+        normalized_dynamic_table_plots: List[Dict[str, Any]] = []
+        for index, projection in enumerate(raw_dynamic_table_plots):
+            projection = _expect_object(projection, f"dynamic_table_plots[{index}]")
+            extra = sorted(set(projection) - {"id", "resultPath", "x", "y"})
+            if extra:
+                raise SpecError(f"unsupported dynamic_table_plots[{index}] fields: {', '.join(extra)}")
+            plot_id = _ident(projection.get("id"), f"dynamic_table_plots[{index}].id")
+            if plot_id not in simple_plot_ids:
+                raise SpecError(f"dynamic_table_plots[{index}].id must target a top-level Unit plot")
+            result_path = _nonempty(projection.get("resultPath"), f"dynamic_table_plots[{index}].resultPath")
+            if not all(IDENT.fullmatch(part) for part in result_path.split(".")):
+                raise SpecError(f"dynamic_table_plots[{index}].resultPath must be a dotted identifier path")
+            def normalize_column_selector(value: Any, name: str) -> Any:
+                if value is None or isinstance(value, (str, int)):
+                    return value
+                if isinstance(value, list) and all(isinstance(item, (str, int)) for item in value):
+                    return list(value)
+                raise SpecError(f"{name} must be a column name/index or a list of column names/indices")
+            normalized_dynamic_table_plots.append({
+                "id": plot_id,
+                "resultPath": result_path,
+                "x": normalize_column_selector(projection.get("x"), f"dynamic_table_plots[{index}].x"),
+                "y": normalize_column_selector(projection.get("y"), f"dynamic_table_plots[{index}].y"),
+            })
+        if len({row["id"] for row in normalized_dynamic_table_plots}) != len(normalized_dynamic_table_plots):
+            raise SpecError("dynamic_table_plots must target unique plot ids")
+
+        normalized_host_effects: List[Dict[str, Any]] = []
+        for index, effect in enumerate(raw_host_effects):
+            effect = _expect_object(effect, f"host_effects[{index}]")
+            kind = str(effect.get("kind", ""))
+            if kind != "clipboard-table":
+                raise SpecError(f"host_effects[{index}].kind currently supports only clipboard-table")
+            extra = sorted(set(effect) - {"kind", "resultPath", "index", "header", "sep"})
+            if extra:
+                raise SpecError(f"unsupported host_effects[{index}] fields: {', '.join(extra)}")
+            result_path = _nonempty(effect.get("resultPath"), f"host_effects[{index}].resultPath")
+            if not all(IDENT.fullmatch(part) for part in result_path.split(".")):
+                raise SpecError(f"host_effects[{index}].resultPath must be a dotted identifier path")
+            sep = str(effect.get("sep", "\t"))
+            if not sep:
+                raise SpecError(f"host_effects[{index}].sep must not be empty")
+            normalized_host_effects.append({
+                "kind": kind,
+                "resultPath": result_path,
+                "index": bool(effect.get("index", True)),
+                "header": bool(effect.get("header", True)),
+                "sep": sep,
+            })
+
         normalized_result_plots: List[Dict[str, str]] = []
         if result_plot is not None:
             normalized_result_plots.append({"id": result_plot, "key": str(result_key)})
@@ -2155,6 +2212,9 @@ class PluginBuilder:
         if len({row["id"] for row in normalized_dynamic_publish_tables}) != len(normalized_dynamic_publish_tables):
             raise SpecError("dynamic published Artifact ids must be unique")
 
+        raw_dynamic_table_plots = list(dynamic_table_plots or [])
+        raw_host_effects = list(host_effects or [])
+
         normalized_domain_command = None
         if domain_command is not None:
             raw_command = _expect_object(domain_command, "domain_command")
@@ -2226,6 +2286,8 @@ class PluginBuilder:
             "result_metrics": normalized_result_metrics,
             "publish_tables": normalized_publish_tables,
             "dynamic_publish_tables": normalized_dynamic_publish_tables,
+            "dynamic_table_plots": normalized_dynamic_table_plots,
+            "host_effects": normalized_host_effects,
             "domain_command": normalized_domain_command,
             "success_status": str(success_status),
         })
@@ -2567,6 +2629,7 @@ class PluginBuilder:
         )
         has_interaction = self.spec.get("interaction") is not None
         has_domain_commands = any(task.get("domain_command") is not None for task in self._portable_tasks)
+        has_host_io = any(bool(task.get("host_effects")) for task in self._portable_tasks)
         has_surface_lifecycle_commands = any(bool(surface.get("lifecycle")) for surface in self.spec.get("surfaces", []))
         has_surface_action_commands = any(action.get("commandId") for surface in self.spec.get("surfaces", []) for action in surface.get("actions", []))
         has_domain_adapter = self.spec.get("domainAdapter") is not None
@@ -2602,6 +2665,8 @@ class PluginBuilder:
             requires.append("ui.menus")
         if self._portable_tasks:
             requires.append("execution.tasks")
+        if has_host_io:
+            requires.append("io")
         if has_interaction:
             requires.extend(["ui.selection", "ui.interaction"])
             capabilities.append("ui.interaction")
@@ -3169,6 +3234,23 @@ class PluginBuilder:
                 + "}"
             )
 
+        task_dynamic = any(
+            projection["id"] == row["id"]
+            for task in self._portable_tasks
+            for projection in task.get("dynamic_table_plots", [])
+        )
+        if task_dynamic:
+            return "{" + ",".join([
+                f"variant:{_js(variant)}",
+                f"source:{_js(row['source'])}",
+                f"xTitle:{_js(row['xTitle'])}",
+                f"yTitle:{_js(row['yTitle'])}",
+                "interaction:interaction",
+                f"selectionTarget:{_js(row['selectionTarget'])}",
+                f"getCurves:()=>{base}_task_curves",
+                "getMarkers:()=>[]",
+            ]) + "}"
+
         if row.get("binding") is not None:
             parts = [
                 f"variant:{_js(variant)}",
@@ -3362,10 +3444,17 @@ class PluginBuilder:
                 continue
             points = [{"x": pair[0], "y": pair[1]} for pair in row["points"]]
             base = _var(row["id"])
+            task_dynamic = any(
+                projection["id"] == row["id"]
+                for task in self._portable_tasks
+                for projection in task.get("dynamic_table_plots", [])
+            )
             lines += [
                 f"    const {base}_panel=units.panel.create(main,{{variant:'plot-card',title:{_js(row['title'])},sizing:'content'}});",
                 f"    const {base}_host=units.layout.create({base}_panel.body,{{variant:'plot-card-fill'}});",
             ]
+            if task_dynamic:
+                lines.append(f"    let {base}_task_curves=[];")
             if row.get("binding") is not None:
                 binding = row["binding"]
                 state_read = f"{_js(binding['statePath'].split('.'))}.reduce((value,key)=>value?.[key],state)"
