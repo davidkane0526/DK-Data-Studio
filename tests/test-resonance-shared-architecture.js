@@ -36,6 +36,13 @@ assert(manifest.scripts.includes('domain-adapter.js')&&!(manifest.window?.script
 assert(domainAdapter.includes("ctx.services.domain.provide('live'")&&!/createTop|createController/.test(domainAdapter),'Resonance Domain Adapter must remain a thin projection over the single production service owner.');
 assert(mainPlotFeature.includes("require('builtin.resonance-workbench','main-marker-projection')")&&domainAdapter.includes("require('builtin.resonance-workbench','main-marker-projection')"),'Accepted main plot and Domain Adapter must share one marker projection module.');
 assert(inspectorFeature.includes("require('builtin.resonance-workbench','inspector-detail-projection')")&&domainAdapter.includes("require('builtin.resonance-workbench','inspector-detail-projection')"),'Accepted Inspector and Domain Adapter must share one detail projection module.');
+for(const forbidden of ['actions.updatePeak(','actions.deletePeak(','actions.assignPeakCategory(','actions.createPeakCategoryForPeak(','actions.commitPeakMetricEdit(','delete p.analysisLeft']){
+  assert(!inspectorFeature.includes(forbidden),'Inspector presentation runtime must not own domain mutation logic: '+forbidden);
+}
+for(const token of ['assignSelectedPeakCategory','createCategoryForSelectedPeak','renameSelectedPeakCategory','toggleSelectedPeakAccepted','toggleSelectedPeakLocked','resetSelectedPeakFwhmWindow','deleteSelectedPeak','selectSelectedPeakSweep']){
+  assert(feature.includes(token),'Production Resonance service must own Inspector mutation intent: '+token);
+  assert(domainAdapter.includes(token),'Live Domain Adapter must delegate Inspector mutation intent to the production service: '+token);
+}
 assert(!/(querySelector|querySelectorAll|addEventListener|innerHTML\s*=|window\.DKDS)/.test(entry),'Resonance plugin entry must stay orchestration-only and consume SDK/module contracts instead of owning DOM or host globals.');
 assert(entry.includes('shared.createController')&&entry.includes('views.mountTop')&&entry.includes('layout.mount'),'Resonance entry must dispatch through shared Controller/View layers.');
 assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific markup.');
