@@ -49,10 +49,12 @@ try{
   assert(source.includes('handle:g_curve_inspector_inspector_header.element,controlsHost:g_curve_inspector_inspector_header.actions'),'Movable inspector PRIME must adopt the same public Header Unit as its single chrome owner.');
   assert(source.includes('handle:g_group_analysis_group_header.element,controlsHost:g_group_analysis_group_header.actions'),'Movable group PRIME must adopt the same public Header Unit as its single chrome owner.');
   assert(source.includes('units.status.create'),'Inspector composition must stay in the public Status Unit.');
+  assert(source.includes('units.table.mount("inspector-details"')&&source.includes('["inspector","rows"].reduce((value,key)=>value?.[key],state)'),'Inspector details must lower to the public Table Unit and read only the shared Domain Adapter row projection.');
+  assert(source.includes('["inspector","title"].reduce((value,key)=>value?.[key],state)'),'Inspector title must be projected from the same authoritative adapter snapshot.');
   assert(source.includes('units.floatingChrome.create'),'Group controls must stay in the public FloatingChrome Unit.');
   assert(source.includes('id:"group-columns",menu:true'),'Group-columns must lower to the existing Core ActionGroup menu contract.');
   assert(source.includes('liveDomain.snapshot()?.state')&&source.includes('liveDomain.invoke("setGroupColumns"'),'Domain-bound menu must project and mutate the single production owner through the generic Domain Adapter.');
-  assert(source.includes('g_curve_inspector_inspector_status.textContent=')&&source.includes('g_group_analysis_group_series_count.value.textContent=')&&source.includes('g_spacing_spacing_table?.setData?.'),'Resonance specimen must project the live owner into public Status/Metric/Table handles.');
+  assert(source.includes('g_curve_inspector_inspector_status.textContent=')&&source.includes('g_curve_inspector_inspector_details?.setData?.')&&source.includes('g_group_analysis_group_series_count.value.textContent=')&&source.includes('g_spacing_spacing_table?.setData?.'),'Resonance specimen must project the live owner into public Status/Metric/Table handles.');
   assert(source.includes('actionHost:g_group_analysis_group_header.actions'),'The dynamic menu must reuse the same canonical public Header action host.');
   assert(!/let\s+[^;]*group[_-]?columns[^;]*=/.test(source),'Generated group-columns menu must not create a second mutable state owner.');
   assert(source.includes('units.scientificPlot.create')&&source.includes("renderOwner:'runtime'"),'Derived scientific plots must preserve the runtime render-owner bridge.');

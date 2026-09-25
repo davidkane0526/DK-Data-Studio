@@ -142,7 +142,18 @@ SPEC = {
                     "title": "曲线检查器",
                     "actionIds": ["close-inspector"],
                 },
-                {"kind": "status", "id": "inspector-status", "variant": "text", "text": "尚未选择曲线。", "binding": {"statePath": "activeView", "fallback": "main", "prefix": "当前视图："}},
+                {"kind": "status", "id": "inspector-status", "variant": "text", "text": "尚未选择曲线。", "binding": {"statePath": "inspector.title", "fallback": "尚未选择曲线。"}},
+                {
+                    "kind": "table",
+                    "id": "inspector-details",
+                    "layout": "scroll-pane",
+                    "columns": [
+                        {"key": "label", "label": "项目"},
+                        {"key": "value", "label": "值"},
+                    ],
+                    "rows": [],
+                    "binding": {"statePath": "inspector.rows"},
+                },
             ],
         },
         {
