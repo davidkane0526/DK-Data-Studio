@@ -530,3 +530,9 @@ The generator deliberately has no peak acceptance, visibility, marker-shape, loc
 No new declarative primitive is required for the first Inspector cutover slice. Resonance extracts its accepted selected-sweep/selected-peak detail rows into one pure `inspector-detail-projection.js`. The production Inspector and its Domain Adapter both consume that same projector. The generated Resonance specimen reads `inspector.title` with the existing Status live binding and `inspector.rows` with the existing Table rows binding.
 
 This slice is intentionally read-only. Peak category controls, label editing, accept/lock/delete actions, FWHM analysis-window edits, and the auxiliary transformed curve remain owned by the accepted production Inspector runtime until separate parity gates are defined. The generator owns no second metric calculation, category model or selection state.
+
+## Resonance Inspector domain-bound operation buttons — SDK 1.51.68
+
+The generic Surface Action `domainAction` path is now exercised by the Resonance Inspector reconstruction. Its five fixed operation-grid buttons (accept-state toggle, lock-state toggle, FWHM automatic-window reset, peak deletion, and source-sweep selection) are ordinary public Action Units inside the existing `action-grid-2` Layout recipe. Each button uses `enabledPath: "selectedPeak.id"` and invokes only the declared dependency-scoped live Domain Adapter action.
+
+The Domain Adapter does not implement those mutations. It delegates them to the already-existing production Resonance Inspector mutation service, so generated UI owns neither peak state nor a parallel selection/mutation controller. Dynamic category-palette assignment and label editing still require dynamic collection/value authoring and therefore remain with the production Inspector runtime in this release.

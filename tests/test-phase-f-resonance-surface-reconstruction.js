@@ -27,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for the Resonance surface reconstruction gate.');
 }
 
-assert(sdkAtLeast(sdk.sdkVersion,'1.51.67'),'Resonance surface reconstruction requires SDK 1.51.67+.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.68'),'Resonance Inspector domain actions require SDK 1.51.68+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 
@@ -51,6 +51,16 @@ try{
   assert(source.includes('units.status.create'),'Inspector composition must stay in the public Status Unit.');
   assert(source.includes('units.table.mount("inspector-details"')&&source.includes('["inspector","rows"].reduce((value,key)=>value?.[key],state)'),'Inspector details must lower to the public Table Unit and read only the shared Domain Adapter row projection.');
   assert(source.includes('["inspector","title"].reduce((value,key)=>value?.[key],state)'),'Inspector title must be projected from the same authoritative adapter snapshot.');
+  const inspectorDomainActions=['toggleSelectedPeakAccepted','toggleSelectedPeakLocked','resetSelectedPeakFwhmWindow','deleteSelectedPeak','selectSelectedPeakSweep'];
+  const domainAdapter=fs.readFileSync(path.join(root,'src','plugins','resonance-workbench','domain-adapter.js'),'utf8');
+  const mutationOwner=fs.readFileSync(path.join(root,'src','plugins','resonance-workbench','feature-inspector-mutation-runtime.js'),'utf8');
+  for(const action of inspectorDomainActions){
+    assert(source.includes('liveDomain.invoke("'+action+'",{})'),'Declarative Inspector button must invoke the generic Domain Adapter action: '+action);
+    assert(domainAdapter.includes(action+':()=>service.'+action+'?.()'),'Domain Adapter must delegate directly to the existing production service owner: '+action);
+    assert(mutationOwner.includes('function '+action+'('),'Production Inspector mutation owner must remain authoritative for: '+action);
+  }
+  assert((source.match(/\["selectedPeak","id"\]\.reduce\(\(value,key\)=>value\?\.\[key\],state\)/g)||[]).length>=inspectorDomainActions.length,'Every Inspector mutation button must derive enablement from authoritative selectedPeak.id.');
+  assert(source.includes('variant:"action-grid-2"'),'Inspector mutation buttons must reuse the accepted public Unit action-grid recipe.');
   assert(source.includes('units.floatingChrome.create'),'Group controls must stay in the public FloatingChrome Unit.');
   assert(source.includes('id:"group-columns",menu:true'),'Group-columns must lower to the existing Core ActionGroup menu contract.');
   assert(source.includes('liveDomain.snapshot()?.state')&&source.includes('liveDomain.invoke("setGroupColumns"'),'Domain-bound menu must project and mutate the single production owner through the generic Domain Adapter.');

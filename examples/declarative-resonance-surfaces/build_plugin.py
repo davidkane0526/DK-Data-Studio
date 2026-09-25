@@ -154,6 +154,18 @@ SPEC = {
                     "rows": [],
                     "binding": {"statePath": "inspector.rows"},
                 },
+                {
+                    "kind": "layout",
+                    "id": "inspector-actions",
+                    "variant": "action-grid-2",
+                    "children": [
+                        {"kind": "action", "id": "toggle-peak-accepted", "label": "切换采纳状态", "variant": "secondary", "domainAction": "toggleSelectedPeakAccepted", "enabledPath": "selectedPeak.id"},
+                        {"kind": "action", "id": "toggle-peak-locked", "label": "切换锁定状态", "variant": "secondary", "domainAction": "toggleSelectedPeakLocked", "enabledPath": "selectedPeak.id"},
+                        {"kind": "action", "id": "reset-fwhm-window", "label": "FWHM 自动窗口", "variant": "secondary", "domainAction": "resetSelectedPeakFwhmWindow", "enabledPath": "selectedPeak.id"},
+                        {"kind": "action", "id": "delete-selected-peak", "label": "删除峰", "variant": "secondary", "domainAction": "deleteSelectedPeak", "enabledPath": "selectedPeak.id"},
+                        {"kind": "action", "id": "select-peak-sweep", "label": "选中所属曲线", "variant": "secondary", "domainAction": "selectSelectedPeakSweep", "enabledPath": "selectedPeak.id"},
+                    ],
+                },
             ],
         },
         {

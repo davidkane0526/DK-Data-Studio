@@ -1,3 +1,5 @@
+> **v3.71.115 WIP — Phase F Resonance Inspector Domain-bound Actions / SDK 1.51.68**：共振 declarative Inspector 的 5 个固定操作按钮已接入通用 Surface `domainAction`：采纳状态切换、锁定状态切换、FWHM 自动窗口、删除峰、选中所属曲线。所有按钮只从生产 Domain Adapter snapshot 的 `selectedPeak.id` 获取 enablement，并经 dependency-scoped `liveDomain.invoke(...)` 调用既有 production Inspector mutation owner；不新增领域状态、selection bus、Unit、Presenter 分支或 Resonance 专用 generator 路径。动态类别调色板与类别标签编辑仍由 production Inspector runtime 持有。SDK 1.51.68；Plugin API 1.19.0；Unit Templates 2.5.38（41 Units / 73 recipes）不变。
+
 > **v3.71.115 WIP — Phase F Resonance Inspector Read-only Reconstruction**：生产曲线检查器与 Domain Adapter 共享唯一 `inspector-detail-projection.js`，选中曲线/峰的只读详情不再在 declarative 壳中重复计算。生成样例直接使用现有公共 Status/Table live binding 显示 `inspector.title` 与 `inspector.rows`；类别编辑、FWHM 编辑、辅助 transform 图仍由生产 Inspector runtime 单独拥有。未新增 Unit、未新增 Presenter 分支、未复制领域 selection/metric owner。SDK 1.51.67；Plugin API 1.19.0；Unit Templates 2.5.38（41 Units / 73 recipes）不变。
 
 > **v3.71.115 WIP — Phase F Live Marker Projection**：声明式 ScientificPlot 新增 bounded marker-array binding。共振的 marker 可见性、accepted/rejected、shape 规则已经抽成唯一 `main-marker-projection.js`，旧生产主图和 Domain Adapter 共用；生成器只映射 adapter 给出的 marker 字段，并通过公共 `getSelectedMarkerIds()` 回显生产选中峰。marker 点击仅把 `id/additive` 与声明的固定标量参数交给 Domain Adapter；共振 `openInspector:true` 最终仍由生产 `selectPeak` owner 执行。SDK 1.51.66；Plugin API 1.19.0；Unit Templates 2.5.38（41 Units / 73 recipes）不变。
@@ -95,7 +97,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.67**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.115**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.68**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
