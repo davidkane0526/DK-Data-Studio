@@ -181,6 +181,10 @@ def analyze_workflow(path:str|Path)->dict[str,Any]:
         })
         for name in defines:prior_definitions[name]=cell["index"]
 
+    library_family={"pandas":"pandas.dataframe","numpy":"numpy.array","scipy":"scipy.scientific"}
+    for library in libraries:
+        family=library_family.get(library)
+        if family:transform_families.add(family)
     host_mappings=[]
     seen=set()
     for cell in rows:
