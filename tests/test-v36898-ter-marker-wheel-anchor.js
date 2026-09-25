@@ -4,6 +4,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
+const chartExportCode=fs.readFileSync(path.join(root,'src/core/scientific/chart-export-runtime.js'),'utf8');
 const chartsCode=fs.readFileSync(path.join(root,'src/core/scientific/chart-runtime.js'),'utf8');
 const d3Code=fs.readFileSync(path.join(root,'src/core/scientific/d3-chart-renderer.js'),'utf8');
 
@@ -18,7 +19,7 @@ function applyRestyle(data,update,indices){const ids=Array.isArray(indices)?indi
   const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
   const document={currentScript:{src:'file:///src/core/scientific/chart-runtime.js'},documentElement:{dataset:{dkdsTheme:'light'},classList:classList()},getElementById:id=>id==='ter-rv'?target:null,querySelector:()=>null,querySelectorAll:()=>[]};
   const context={console,structuredClone,setTimeout,clearTimeout,queueMicrotask,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},document,localStorage:{getItem:()=>null,setItem(){},removeItem(){}},matchMedia:()=>({matches:false}),requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame(){},CustomEvent:function(){},DKDSStyleGate:styleGate,DKDSTheme:{subscribeRevision(){return()=>{};}},DKDSD3Renderer:renderer,d3:{}};
-  context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(chartsCode,context,{filename:'chart-runtime.js'});
+  context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(chartExportCode,context,{filename:'chart-export-runtime.js'});vm.runInContext(chartsCode,context,{filename:'chart-runtime.js'});
   const traces=[{x:[-.5,.5],y:[1e5,2e5],mode:'lines',name:'up'},{x:[-.5,.5],y:[1.1e5,2.1e5],mode:'lines',name:'down'},{x:[],y:[],mode:'markers',showlegend:false,marker:{size:12}}];
   await context.DKDSCharts.react(target,traces,{showlegend:false,xaxis:{range:[-1,1]},yaxis:{type:'log'}},{staticPlot:true});
   await context.DKDSCharts.restyle(target,{x:[[.62]],y:[[135830]]},[2]);
