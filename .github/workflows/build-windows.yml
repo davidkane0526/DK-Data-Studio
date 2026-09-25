@@ -147,6 +147,23 @@ jobs:
         shell: pwsh
         run: npm run dist
 
+      - name: Verify Windows application identity
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $PWD 'dist\win-unpacked\DK Data Studio.exe'
+          if (-not (Test-Path -LiteralPath $runtime -PathType Leaf)) {
+            throw "Branded runtime executable missing: $runtime"
+          }
+          $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($runtime)
+          Write-Host "ProductName=$($info.ProductName)"
+          Write-Host "FileDescription=$($info.FileDescription)"
+          if ($info.ProductName -ne 'DK Data Studio') {
+            throw "Windows ProductName is not branded: $($info.ProductName)"
+          }
+          if ($info.FileDescription -ne 'DK Data Studio') {
+            throw "Windows FileDescription is not branded: $($info.FileDescription)"
+          }
+
       - name: Stage Windows artifacts
         shell: pwsh
         run: |

@@ -21,6 +21,8 @@ assert.strictEqual(mobileApp.android.adaptiveIcon.foregroundImage,'./assets/adap
 assert(fs.existsSync(path.join(root,'assets','dkds-icon-source.png')),'authored brand source icon must remain in the clean repository');
 
 assert(generator.includes('DKDS_MOBILE_ASSET_ROOT'),'brand generation must support an explicit mobile build-workspace target');
+assert(generator.includes('const canonicalIcon = encodePng(1024, renderIcon(1024))'),'desktop and Android raster assets must share one deterministic brand renderer');
+assert.strictEqual(mobileApp.android.adaptiveIcon.backgroundColor,'#F7FAFF','Android adaptive background must match the canonical icon surface');
 assert(generator.includes("path.join(mobileAssetRoot, 'assets', 'icon.png')")&&generator.includes("path.join(mobileAssetRoot, 'assets', 'adaptive-icon.png')"),'launcher assets must be written to the selected mobile target rather than hard-coded repository mobile/');
 assert(sync.includes('DKDS_MOBILE_ASSET_ROOT: mobileRoot'),'sync:web must target brand generation at the current mobile workspace before Expo prebuild');
 
@@ -38,6 +40,7 @@ try{
     const bytes=fs.readFileSync(file);
     assert(bytes.length>1024,`${name} must contain a real launcher image`);
     assert(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),`${name} must be a PNG`);
+    if(name==='adaptive-icon.png')assert(bytes.equals(fs.readFileSync(path.join(temp,'assets','icon.png'))),'Android legacy/adaptive foreground must share the canonical raster');
   }
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});

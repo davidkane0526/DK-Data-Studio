@@ -30,6 +30,7 @@ const APP_ID = 'com.dk.datastudio';
 // Keep development, installed and portable Windows identities consistent.
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
+try { process.title = APP_NAME; } catch {}
 
 let lanUpdater = null;
 let lanWebServer = null;
@@ -89,7 +90,7 @@ const auxiliaryWindowRuntime=createAuxiliaryWindowRuntime({
 });
 const {
   auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
-  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
+  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,closeAuxiliaryWindowsForOwner,closeAllAuxiliaryWindows,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
   runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
 }=auxiliaryWindowRuntime;
 
@@ -131,6 +132,16 @@ function createWindow() {
   };
   win.on('maximize',publishMaximizedState);
   win.on('unmaximize',publishMaximizedState);
+  win.on('close',event=>{
+    if(primaryWindow!==win||appQuitting)return;
+    // The primary Desktop window owns the application lifetime. Reusable TOP
+    // windows may hide during normal use, but must never keep the process alive
+    // after the primary window is closed.
+    event.preventDefault();
+    appQuitting=true;
+    closeAuxiliaryWindowsForOwner(win.webContents.id);
+    queueMicrotask(()=>app.quit());
+  });
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
   win.loadFile(path.join(APP_ROOT, 'src', 'index.html'),visualClosureRuntime.loadFileOptions());
   return win;
@@ -800,6 +811,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   appQuitting = true;
+  try { closeAllAuxiliaryWindows(); } catch {}
   try { projectFileSafety?.prepareForQuit('app-before-quit'); } catch (err) { console.error('[DKDS project safety:quit]',err); }
   try { lanUpdater?.stop(); } catch {}
   try { lanWebServer?.stop(false); } catch {}

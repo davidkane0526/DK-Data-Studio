@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-v371115-plot-export-desktop-lifecycle-brand.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-live-scientific-plot-binding.js",
       "args": []
     },

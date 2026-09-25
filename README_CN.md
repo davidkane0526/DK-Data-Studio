@@ -82,6 +82,8 @@
 
 # DK Data Studio
 
+> **v3.71.115 WIP — Export / Desktop Lifetime / Brand Closure**：数据图复制与 CSV 导出改为读取 Scientific Chart 的逻辑 source snapshot，不再依赖 renderer DOM 的 `plot.data`；空值/NaN gap 与不配对尾项不再生成空白 CSV 行。PlotView 的保存/复制统一经 Host I/O，Desktop 与 Android 共用同一入口。Desktop 主窗口成为应用 lifetime owner，关闭主窗口会进入真实 app quit 并强制回收所有可复用 TOP 窗口；Windows process title 与打包元数据加入品牌校验。Windows/Android raster icon 统一由同一 canonical renderer 生成，Android adaptive 背景与品牌底色一致。SDK 仍为 1.51.68。
+
 > **v3.71.80 WIP — TER 首开预热恢复 / 关闭隔离**：恢复 TER 已接受的 runtime-only dedicated-window 预热默认值，避免首次点击重新承担独立渲染器与科学图运行时冷启动；修正独立 TER 窗口关闭时 final snapshot 重放已实时同步 Artifact、误触发全局 `data:artifacts-changed` 与全局重绘的问题。相同 Artifact 的 final recovery delta 现在幂等，final snapshot 不再天然等价于全局视觉失效；嵌入分析页关闭也只恢复 SUPER 可见性，不重新调用 SUPER `onActivate`。
 
 

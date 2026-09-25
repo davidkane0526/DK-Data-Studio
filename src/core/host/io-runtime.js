@@ -156,8 +156,11 @@
     return readDataText({...options,maxBytes});
   }
   async function writeClipboardText(text){
-    if(typeof host?.copyTextToClipboard==='function')return host.copyTextToClipboard(String(text??''));
-    if(navigator?.clipboard?.writeText)return navigator.clipboard.writeText(String(text??''));
+    const value=String(text??'');
+    if(typeof host?.copyTextToClipboard==='function')return host.copyTextToClipboard(value);
+    const nativeCopy=bridge()?.copyText;
+    if(typeof nativeCopy==='function')return nativeCopy.call(bridge(),value);
+    if(navigator?.clipboard?.writeText)return navigator.clipboard.writeText(value);
     throw new Error('Clipboard service is unavailable.');
   }
   function svgText(node,{xmlDeclaration=true}={}){

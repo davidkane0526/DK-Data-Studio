@@ -112,6 +112,24 @@ function closeAuxiliaryWindowForReal(win) {
   win.close();
 }
 
+function closeAuxiliaryWindowsForOwner(ownerWebContentsId) {
+  const ownerId=Number(ownerWebContentsId)||0;
+  if(!ownerId)return 0;
+  const windows=[...new Set(auxiliaryWindows.values())].filter(win=>{
+    if(!win||win.isDestroyed())return false;
+    const bootstrap=auxiliaryBootstrap.get(win.webContents.id);
+    return (Number(bootstrap?.ownerWebContentsId)||0)===ownerId;
+  });
+  for(const win of windows)closeAuxiliaryWindowForReal(win);
+  return windows.length;
+}
+
+function closeAllAuxiliaryWindows() {
+  const windows=[...new Set(auxiliaryWindows.values())].filter(win=>win&&!win.isDestroyed());
+  for(const win of windows)closeAuxiliaryWindowForReal(win);
+  return windows.length;
+}
+
 function waitForAuxiliaryWindowClosed(win, timeoutMs=1800) {
   if (!win || win.isDestroyed()) return Promise.resolve(true);
   return new Promise(resolve=>{
@@ -508,7 +526,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
 
   return Object.freeze({
     auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
-    auxiliaryWindowKey,removeAuxiliaryWindowReferences,projectSnapshotDigest,makeAuxiliaryBootstrap,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,waitForAuxiliaryWindowClosed,
+    auxiliaryWindowKey,removeAuxiliaryWindowReferences,projectSnapshotDigest,makeAuxiliaryBootstrap,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,closeAuxiliaryWindowsForOwner,closeAllAuxiliaryWindows,waitForAuxiliaryWindowClosed,
     markAuxiliaryWindowReady,markAuxiliaryWindowFailed,diagnosticRendererLifecycleSnapshot,diagnosticRendererProjectSnapshot,waitForRendererLifecycleContract,waitForAuxiliaryDiagnosticOutcome,
     runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
   });

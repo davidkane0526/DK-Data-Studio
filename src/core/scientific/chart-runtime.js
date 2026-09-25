@@ -332,6 +332,16 @@
   function toggleDisplayScale(target,requestedAxis=''){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el),axis=String(requestedAxis||state.axis||'y');if(requestedAxis&&axis!==String(state.axis||'y'))return Promise.resolve(false);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';return Promise.resolve(renderDisplay(el,state)).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}return state.mode;});}
   function toggleYAxisDisplay(target){return toggleDisplayScale(target,'y');}
   function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);ensurePlotPresentationHost(el);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;state.legendBaselineVisibility=rows.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);return renderDisplay(el,state);}
+  const cloneExportArray=value=>{
+    if(Array.isArray(value))return value.map(item=>(Array.isArray(item)||(typeof ArrayBuffer!=='undefined'&&ArrayBuffer.isView?.(item)))?cloneExportArray(item):item);
+    if(typeof ArrayBuffer!=='undefined'&&ArrayBuffer.isView?.(value))return Array.from(value);
+    return [];
+  };
+  function sourceData(target){
+    const el=element(target)||target,state=el?displayScaleStates.get(el):null;
+    const rows=Array.isArray(state?.sourceData)?state.sourceData:(Array.isArray(el?.data)?el.data:[]);
+    return rows.map(trace=>({name:String(trace?.name||''),type:String(trace?.type||'scatter'),x:cloneExportArray(trace?.x),y:cloneExportArray(trace?.y),z:cloneExportArray(trace?.z)}));
+  }
   function restyle(target,update,traces,_options={}){const el=element(target)||target;if(!el)return Promise.resolve(false);chooseRenderer(el.data||[],el._context||{});const out=d3Renderer()?.restyle?.(el,update,traces)??false,state=displayScaleStates.get(el);if(state&&el.data)state.sourceData=el.data;return Promise.resolve(out);}
   function selectionOverlay(target,update,traces){const el=element(target)||target;if(!el)return Promise.resolve(false);return Promise.resolve(d3Renderer()?.selectionOverlay?.(el,update,traces)??false);}
   function themePaint(target){const el=element(target)||target;if(!el)return false;return !!d3Renderer()?.themePaint?.(el);}
@@ -377,7 +387,7 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,runtimeState,rendererFor,
-      react,restyle,selectionOverlay,themePaint,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,setLegendVisibility,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,get tooltipTheme(){return currentTooltipTheme();},
+      react,restyle,selectionOverlay,themePaint,relayout,resize,purge,toImage,saveImage,sourceData,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,setLegendVisibility,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,get tooltipTheme(){return currentTooltipTheme();},
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get d3(){return window.d3;}})
