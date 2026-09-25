@@ -27,7 +27,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for the Resonance surface reconstruction gate.');
 }
 
-assert(sdkAtLeast(sdk.sdkVersion,'1.51.58'),'Resonance surface reconstruction requires SDK 1.51.58+.');
+assert(sdkAtLeast(sdk.sdkVersion,'1.51.67'),'Resonance surface reconstruction requires SDK 1.51.67+.');
 assert.strictEqual(unitSpec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert.strictEqual(Object.keys(unitSpec.UNIT_CATALOG).length,41);
 

@@ -523,3 +523,10 @@ This is intentionally separate from `selectAction`: `selectAction` routes user i
 A live curve-array plot may include a nested `markers` binding. The adapter owns which marker rows exist; authoring declares only `statePath`, marker field keys, optional `selectedIdPath`, optional `selectAction`, and up to eight static scalar arguments. Generated code maps rows into the public ScientificMarker shape, uses `getSelectedMarkerIds()` for Core-owned focus paint, and invokes the selected adapter action with `{...staticArgs,id,additive}`.
 
 The generator deliberately has no peak acceptance, visibility, marker-shape, locking, physics, FWHM or inspector logic. Resonance extracts its existing marker rules into one pure `main-marker-projection.js`; both the accepted production ScientificCurveSurface and the Domain Adapter call that same projector. The Resonance declarative specimen reads `mainMarkers`, `selectedPeak.id`, and routes marker selection to `selectPeak` with `openInspector:true` as a fixed adapter argument.
+
+
+## Resonance Inspector read-only reconstruction — SDK 1.51.67
+
+No new declarative primitive is required for the first Inspector cutover slice. Resonance extracts its accepted selected-sweep/selected-peak detail rows into one pure `inspector-detail-projection.js`. The production Inspector and its Domain Adapter both consume that same projector. The generated Resonance specimen reads `inspector.title` with the existing Status live binding and `inspector.rows` with the existing Table rows binding.
+
+This slice is intentionally read-only. Peak category controls, label editing, accept/lock/delete actions, FWHM analysis-window edits, and the auxiliary transformed curve remain owned by the accepted production Inspector runtime until separate parity gates are defined. The generator owns no second metric calculation, category model or selection state.

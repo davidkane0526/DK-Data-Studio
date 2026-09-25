@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.51.66",
+  "sdkVersion": "1.51.67",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.71.114",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.51.67 freezes Resonance Inspector read-only reconstruction parity without adding a new Unit or authoring primitive. The accepted production Inspector and the live Domain Adapter share inspector-detail-projection.js for selected sweep/peak detail rows; the declarative reconstruction consumes inspector.title and inspector.rows through existing public Status/Table live bindings. Category editing, FWHM editing and transform-chart behavior remain with the production Inspector runtime.",
     "SDK 1.51.66 adds bounded live marker-array projection to Unit-owned declarative ScientificPlot bindings. Marker rows come only from the declared Domain Adapter snapshot and map declared id/curve/x/y plus optional color/shape/locked/accepted keys. selectedIdPath feeds the existing public getSelectedMarkerIds() focus contract; selectAction forwards only id/additive plus up to eight declared static scalar arguments. Resonance marker visibility/shape rules were extracted once into main-marker-projection.js and are shared by the legacy production main plot and the Domain Adapter; the generator does not reproduce those rules.",
     "SDK 1.51.65 adds selectedIdPath to bounded live curve-array ScientificPlot bindings. The adapter snapshot supplies the authoritative selected curve id; generated code stores only a transient render projection string and exposes it through the existing public ScientificCurveSurface getSelectedCurveId() focus contract. No local selection bus, selectedSweep/selectedCurve domain owner, plugin-specific focus CSS or Presenter branch is introduced.",
     "SDK 1.51.64 adds one bounded interaction to live curve-array ScientificPlot bindings: optional selectAction. The generated Unit ScientificPlot maps onCurveSelect only to liveDomain.invoke(selectAction,{id:curve.id}); it stores no selection mirror and does not interpret sweep/domain fields. Selection semantics, linked views and inspector behavior remain the production Domain Adapter owner's responsibility.",
