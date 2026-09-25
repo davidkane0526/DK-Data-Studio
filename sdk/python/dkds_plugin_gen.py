@@ -2036,6 +2036,9 @@ class PluginBuilder:
                 for metric in content_row["items"]:
                     metric_lookup[metric["id"]] = metric
 
+        raw_dynamic_table_plots = list(dynamic_table_plots or [])
+        raw_host_effects = list(host_effects or [])
+
         simple_plot_ids = {row["id"] for row in self.spec["content"] if row["kind"] == "plot"}
         normalized_dynamic_table_plots: List[Dict[str, Any]] = []
         for index, projection in enumerate(raw_dynamic_table_plots):
@@ -2211,9 +2214,6 @@ class PluginBuilder:
             })
         if len({row["id"] for row in normalized_dynamic_publish_tables}) != len(normalized_dynamic_publish_tables):
             raise SpecError("dynamic published Artifact ids must be unique")
-
-        raw_dynamic_table_plots = list(dynamic_table_plots or [])
-        raw_host_effects = list(host_effects or [])
 
         normalized_domain_command = None
         if domain_command is not None:
