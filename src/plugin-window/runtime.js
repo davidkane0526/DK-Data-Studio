@@ -16,6 +16,7 @@
     'heatmap-canvas-runtime':'../core/scientific/heatmap-canvas-runtime.js',
     'heatmap-selection-overlay-runtime':'../core/scientific/heatmap-selection-overlay-runtime.js',
     'd3-chart-renderer':'../core/scientific/d3-chart-renderer.js',
+    'chart-export-runtime':'../core/scientific/chart-export-runtime.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
     'science-presets':'../science/presets.js',
@@ -208,7 +209,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['scientific-unit-runtime','scientific-viewport-link-runtime','scientific-legend-link-runtime','entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','scientific-display-runtime','heatmap-canvas-runtime','heatmap-selection-overlay-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['scientific-unit-runtime','scientific-viewport-link-runtime','scientific-legend-link-runtime','entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','scientific-display-runtime','heatmap-canvas-runtime','heatmap-selection-overlay-runtime','d3-chart-renderer','chart-export-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');

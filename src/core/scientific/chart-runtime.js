@@ -1,6 +1,7 @@
 (() => {
   if(window.DKDSCharts)return;
   const VERSION='2.0.0';
+  const ChartExport=window.DKDSChartExport;if(!ChartExport)throw new Error('DKDSChartExport must initialize before chart runtime.');
   const StyleGate=globalThis.DKDSStyleGate;
   if(!StyleGate)throw new Error('DKDSStyleGate must initialize before chart runtime.');
   const STYLE_OWNER='core.chart-runtime-navigation';
@@ -328,26 +329,17 @@
     el.addEventListener?.('dblclick',state.handler,true);
   }
   function displayScaleState(target){const el=element(target)||target,state=el?displayScaleStates.get(el):null;return state?{axis:String(state.axis||'y'),type:String(state.mode||state.baseType||'linear'),baseType:String(state.baseType||'linear')}:null;}
-  function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);state.legendBaselineVisibility=state.sourceData.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});const nextAxis=displayAxisFor(state.sourceData,state.sourceLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=state.axis;el.dataset[state.axis==='z'?'dkdsZScale':'dkdsYScale']=String(state.mode||state.baseType||'linear');}return displayScaleState(el);}
+  function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);ChartExport.adopt(el,state.sourceData);state.legendBaselineVisibility=state.sourceData.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});const nextAxis=displayAxisFor(state.sourceData,state.sourceLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=state.axis;el.dataset[state.axis==='z'?'dkdsZScale':'dkdsYScale']=String(state.mode||state.baseType||'linear');}return displayScaleState(el);}
   function toggleDisplayScale(target,requestedAxis=''){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el),axis=String(requestedAxis||state.axis||'y');if(requestedAxis&&axis!==String(state.axis||'y'))return Promise.resolve(false);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';return Promise.resolve(renderDisplay(el,state)).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}return state.mode;});}
   function toggleYAxisDisplay(target){return toggleDisplayScale(target,'y');}
-  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);ensurePlotPresentationHost(el);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;state.legendBaselineVisibility=rows.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);return renderDisplay(el,state);}
-  const cloneExportArray=value=>{
-    if(Array.isArray(value))return value.map(item=>(Array.isArray(item)||(typeof ArrayBuffer!=='undefined'&&ArrayBuffer.isView?.(item)))?cloneExportArray(item):item);
-    if(typeof ArrayBuffer!=='undefined'&&ArrayBuffer.isView?.(value))return Array.from(value);
-    return [];
-  };
-  function sourceData(target){
-    const el=element(target)||target,state=el?displayScaleStates.get(el):null;
-    const rows=Array.isArray(state?.sourceData)?state.sourceData:(Array.isArray(el?.data)?el.data:[]);
-    return rows.map(trace=>({name:String(trace?.name||''),type:String(trace?.type||'scatter'),x:cloneExportArray(trace?.x),y:cloneExportArray(trace?.y),z:cloneExportArray(trace?.z)}));
-  }
-  function restyle(target,update,traces,_options={}){const el=element(target)||target;if(!el)return Promise.resolve(false);chooseRenderer(el.data||[],el._context||{});const out=d3Renderer()?.restyle?.(el,update,traces)??false,state=displayScaleStates.get(el);if(state&&el.data)state.sourceData=el.data;return Promise.resolve(out);}
+  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);ensurePlotPresentationHost(el);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;ChartExport.adopt(el,rows);state.legendBaselineVisibility=rows.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);return renderDisplay(el,state);}
+  const sourceData=target=>ChartExport.sourceData(element(target)||target);
+  function restyle(target,update,traces,_options={}){const el=element(target)||target;if(!el)return Promise.resolve(false);chooseRenderer(el.data||[],el._context||{});const out=d3Renderer()?.restyle?.(el,update,traces)??false,state=displayScaleStates.get(el);if(state&&el.data){state.sourceData=el.data;ChartExport.adopt(el,state.sourceData);}return Promise.resolve(out);}
   function selectionOverlay(target,update,traces){const el=element(target)||target;if(!el)return Promise.resolve(false);return Promise.resolve(d3Renderer()?.selectionOverlay?.(el,update,traces)??false);}
   function themePaint(target){const el=element(target)||target;if(!el)return false;return !!d3Renderer()?.themePaint?.(el);}
   function relayout(target,update){const el=element(target)||target;if(!el)return Promise.resolve(false);const out=d3Renderer()?.relayout?.(el,update)??false,state=displayScaleStates.get(el);if(state&&el.layout)state.sourceLayout=el.layout;return Promise.resolve(out);}
   function resize(target){const el=element(target);if(!el||el.offsetParent===null)return false;try{ensurePlotPresentationHost(el);const state=displayScaleStates.get(el),base=legendBaseLayouts.get(el);if(state?.sourceData?.length&&base){const previous=legendLayoutStates.get(el)||{},smart=smartLegendLayout(el,state.sourceData,base),next=themeLayout(smart),current=legendLayoutStates.get(el)||{},changed=previous.placement!==current.placement||Math.abs((previous.reserve||0)-(current.reserve||0))>2||previous.rows!==current.rows||previous.signature!==current.signature;state.sourceLayout=next;if(changed){const pending=legendResizeFrames.get(el);if(pending){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(pending);}catch{}}const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));legendResizeFrames.set(el,raf(()=>{legendResizeFrames.delete(el);if(!el.isConnected)return;void renderDisplay(el,state).catch(()=>{});}));}else{d3Renderer()?.resize?.(el);renderPlotLegend(el,state);positionPlotNavigation(el,state);}return true;}return !!d3Renderer()?.resize?.(el);}catch{return false;}}
-  function purge(target){const el=element(target);if(!el)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}removePlotNavigation(el);plotLegendStates.get(el)?.controller?.dispose?.();plotLegendStates.delete(el);uninstallPlotLegendSelection(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}rendererStates.delete(el);return !!d3Renderer()?.purge?.(el);}
+  function purge(target){const el=element(target);if(!el)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}removePlotNavigation(el);plotLegendStates.get(el)?.controller?.dispose?.();plotLegendStates.delete(el);uninstallPlotLegendSelection(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}rendererStates.delete(el);ChartExport.purge(el);return !!d3Renderer()?.purge?.(el);}
   function bind(owner,target,event,handler,{replace=false}={}){
     const el=element(target),name=String(event||'');if(!el||typeof handler!=='function')return()=>{};
     if(name.startsWith('dkds_chart_')&&el.addEventListener){
@@ -358,21 +350,8 @@
     }
     if(typeof el.on!=='function')return()=>{};if(replace){try{el.removeAllListeners?.(name);}catch{}}el.on(name,handler);return track(owner,()=>{try{el.removeListener?.(name,handler);}catch{}});
   }
-  async function toImage(target,{format='png',width,height,scale=2}={}){
-    const el=element(target);if(!el)throw new Error('Plot target not found.');
-    chooseRenderer(el.data||[],el._context||{});return d3Renderer().toImage(el,{format,width,height,scale});
-  }
-  async function saveImage(target,baseName='plot',format='png'){
-    if(typeof window.DKDSIO?.saveBase64!=='function'&&typeof window.DKDSIO?.saveText!=='function')throw new Error('Core I/O runtime unavailable.');
-    const type=String(format||'png').toLowerCase();
-    if(type==='svg'){
-      const uri=await toImage(target,{format:'svg',scale:1});
-      const content=decodeURIComponent(String(uri).split(',').slice(1).join(','));
-      return window.DKDSIO.saveText({defaultName:`${baseName}.svg`,content,filters:[{name:'SVG',extensions:['svg']}],source:'core.scientific-chart.image.svg'});
-    }
-    const uri=await toImage(target,{format:'png',scale:2});
-    return window.DKDSIO.saveBase64({defaultName:`${baseName}.png`,base64:String(uri).split(',')[1]||'',mimeType:'image/png',filters:[{name:'PNG',extensions:['png']}],source:'core.scientific-chart.image.png'});
-  }
+  const toImage=(target,options)=>ChartExport.toImage(target,options);
+  const saveImage=(target,baseName,format)=>ChartExport.saveImage(target,baseName,format);
   function d3Symbol(name='circle'){
     const d3=window.d3;if(!d3)return null;
     const map={circle:d3.symbolCircle,diamond:d3.symbolDiamond,triangle:d3.symbolTriangle,square:d3.symbolSquare,cross:d3.symbolCross,star:d3.symbolStar,'triangle-down':d3.symbolTriangle,kite:d3.symbolDiamond,hexagon:d3.symbolCircle};

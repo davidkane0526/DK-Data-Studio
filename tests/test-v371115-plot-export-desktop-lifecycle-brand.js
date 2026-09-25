@@ -24,12 +24,19 @@ assert.strictEqual(
 
 const chart=read('src/core/ui/modules/plot-view/chart.js');
 const chartRuntime=read('src/core/scientific/chart-runtime.js');
+const chartExportRuntime=read('src/core/scientific/chart-export-runtime.js');
+const mainIndex=read('src/index.html');
+const pluginWindowRuntime=read('src/plugin-window/runtime.js');
 const io=read('src/core/host/io-runtime.js');
 assert(chart.includes("require('./data-export')"),'PlotView must use the shared data-export serializer.');
 assert(chart.includes("window.DKDSCharts?.sourceData"),'PlotView must read logical Scientific Chart source data rather than renderer DOM state.');
 assert(chart.includes("window.DKDSIO?.clipboard?.writeText")&&chart.includes("window.DKDSIO?.saveText"),'PlotView copy/export must route through shared Host I/O.');
-assert(chartRuntime.includes('function sourceData(target)'),'Scientific Chart Runtime must own a logical source snapshot.');
-assert(chartRuntime.includes('window.DKDSCharts=Object.freeze')&&chartRuntime.includes('bind,toImage,saveImage,sourceData,themeLayout'),'The global Scientific Chart owner used by PlotView must expose sourceData.');
+assert(chartExportRuntime.includes('const snapshots=new WeakMap()')&&chartExportRuntime.includes('function sourceData(target)'),'Scientific Chart Export Runtime must own logical source snapshots.');
+assert(chartRuntime.includes('ChartExport.adopt(el,rows)')&&chartRuntime.includes('const sourceData=target=>ChartExport.sourceData'),'Scientific Chart Runtime must delegate export snapshots instead of growing another owner.');
+assert(chartRuntime.includes('window.DKDSCharts=Object.freeze')&&chartRuntime.includes('bind,toImage,saveImage,sourceData,themeLayout'),'The public Scientific Chart facade must retain sourceData/image export APIs.');
+assert(mainIndex.indexOf('core/scientific/chart-export-runtime.js')<mainIndex.indexOf('core/scientific/chart-runtime.js'),'Main renderer must load Chart Export Runtime before Chart Runtime.');
+assert(pluginWindowRuntime.includes("'chart-export-runtime':'../core/scientific/chart-export-runtime.js'")&&pluginWindowRuntime.indexOf("'chart-export-runtime'")<pluginWindowRuntime.indexOf("'chart-runtime'",pluginWindowRuntime.indexOf("for(const id of")),'Dedicated TOP must load the same shared Chart Export Runtime before Chart Runtime.');
+assert(Buffer.byteLength(chartRuntime,'utf8')<48*1024,'Chart Runtime must stay below the repository 48 KiB module boundary.');
 assert(io.includes("const nativeCopy=bridge()?.copyText"),'Host I/O clipboard must use the desktop/Android bridge before plain-web clipboard fallback.');
 
 const main=read('desktop/main.js');
