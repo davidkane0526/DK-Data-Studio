@@ -23,6 +23,7 @@ assert.strictEqual(
 );
 
 const chart=read('src/core/ui/modules/plot-view/chart.js');
+const appScientificExport=read('src/app/modules/scientific-panels-export.js');
 const chartRuntime=read('src/core/scientific/chart-runtime.js');
 const chartExportRuntime=read('src/core/scientific/chart-export-runtime.js');
 const mainIndex=read('src/index.html');
@@ -31,6 +32,8 @@ const io=read('src/core/host/io-runtime.js');
 assert(chart.includes("require('./data-export')"),'PlotView must use the shared data-export serializer.');
 assert(chart.includes("window.DKDSCharts?.sourceData"),'PlotView must read logical Scientific Chart source data rather than renderer DOM state.');
 assert(chart.includes("window.DKDSIO?.clipboard?.writeText")&&chart.includes("window.DKDSIO?.saveText"),'PlotView copy/export must route through shared Host I/O.');
+assert(appScientificExport.includes('window.DKDSCharts.saveImage(plotId,defaultName,format)')&&!appScientificExport.includes('window.electronAPI'),'Application scientific image export must use the shared Chart Export/Host I/O path.');
+assert(pluginWindowRuntime.includes('window.DKDSIO?.clipboard?.writeText?.(value)')&&pluginWindowRuntime.includes('window.DKDSCharts.saveImage(plotId,defaultName,format)'),'Dedicated TOP copy/image export must use the same shared Host I/O and Chart Export path.');
 assert(chartExportRuntime.includes('const snapshots=new WeakMap()')&&chartExportRuntime.includes('function sourceData(target)'),'Scientific Chart Export Runtime must own logical source snapshots.');
 assert(chartRuntime.includes('ChartExport.adopt(el,rows)')&&chartRuntime.includes('const sourceData=target=>ChartExport.sourceData'),'Scientific Chart Runtime must delegate export snapshots instead of growing another owner.');
 assert(chartRuntime.includes('window.DKDSCharts=Object.freeze')&&chartRuntime.includes('bind,toImage,saveImage,sourceData,themeLayout'),'The public Scientific Chart facade must retain sourceData/image export APIs.');

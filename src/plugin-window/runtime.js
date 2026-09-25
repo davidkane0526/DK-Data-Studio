@@ -512,32 +512,14 @@
   async function copyTextToClipboard(text, label='文本') {
     const value = String(text ?? '');
     if (!value) return false;
-    const ok = await window.electronAPI?.copyText?.(value);
-    if (ok) setStatus(`${label}已复制。`);
-    return !!ok;
+    const ok = await window.DKDSIO?.clipboard?.writeText?.(value);
+    if (ok !== false) setStatus(`${label}已复制。`);
+    return ok !== false;
   }
 
   async function saveChartImage(plotId, defaultName, format='png') {
-    const data = await window.DKDSCharts.toImage(plotId, {
-      format,
-      width:1500,
-      height:950,
-      scale:format === 'png' ? 2 : 1
-    });
-    if (format === 'svg') {
-      const content = decodeURIComponent(data.split(',')[1] || '');
-      return window.electronAPI.saveText({
-        defaultName:`${defaultName}.svg`,
-        content,
-        filters:[{name:'SVG',extensions:['svg']}]
-      });
-    }
-    const base64 = data.split(',')[1] || '';
-    return window.electronAPI.saveBase64({
-      defaultName:`${defaultName}.png`,
-      base64,
-      filters:[{name:'PNG',extensions:['png']}]
-    });
+    if(typeof window.DKDSCharts?.saveImage!=='function')throw new Error('Scientific Chart export runtime unavailable.');
+    return window.DKDSCharts.saveImage(plotId,defaultName,format);
   }
 
   function syncProjectFromWindow() {
