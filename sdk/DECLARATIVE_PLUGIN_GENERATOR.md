@@ -69,6 +69,19 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Real notebook Source Workflow — SDK 1.51.70
+
+The source importer no longer treats a Jupyter notebook as merely a bag of function definitions. `dkds.python-source-model.v2` embeds one static `dkds.source-workflow.v1` graph.
+
+For every code cell the model records top-level definitions, loaded names, imports, cross-cell producer dependencies, execution role, and classified effects. This lets authoring distinguish three different things that are often mixed in research notebooks:
+
+- **Host behavior** — `pd.read_csv/read_excel`, plotting calls, clipboard export, and CSV/Excel export are candidates for canonical DKDS DataTable / ScientificPlot / Host I/O replacement.
+- **Scientific transform semantics** — Pandas/DataFrame, NumPy-array, and SciPy operations are explicit lowering requirements. They are not silently carried into the package and do not cause a Python runtime to be embedded.
+- **Portable pure compute** — functions already proven by the existing bounded Portable compiler may still build immediately through the JavaScript Task path.
+
+Cross-cell state is represented by symbol edges such as `cell:2 --raw--> cell:3`. The workflow candidate remains fail-closed while unlowered transform families exist. The purpose of the graph is to provide a deterministic basis for the next Table/Array Transform IR stage, not to emulate a live notebook kernel.
+
+
 ## Python / Jupyter Source Import — SDK 1.51.69
 
 SDK 1.51.69 adds one authoring path above the existing declarative generator; it does **not** add a Python runtime or a Jupyter kernel to DK Data Studio.

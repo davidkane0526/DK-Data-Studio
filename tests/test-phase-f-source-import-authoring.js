@@ -21,7 +21,7 @@ try{
   let run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',source,'--output',report],{cwd:root,encoding:'utf8',env:pythonEnv});
   assert.strictEqual(run.status,0,run.stderr||run.stdout);
   const parsed=JSON.parse(fs.readFileSync(report,'utf8'));
-  assert.strictEqual(parsed.sourceModel.schema,'dkds.python-source-model.v1');
+  assert.strictEqual(parsed.sourceModel.schema,'dkds.python-source-model.v2');
   assert.strictEqual(parsed.sourceModel.kind,'python');
   assert.strictEqual(parsed.sourceModel.functions.length,2);
   const good=parsed.sourceModel.functions.find(row=>row.name==='analyze_curve');
@@ -47,7 +47,9 @@ try{
   const notebook=path.join(temp,'analysis.ipynb');
   fs.writeFileSync(notebook,JSON.stringify({nbformat:4,nbformat_minor:5,metadata:{},cells:[
     {cell_type:'markdown',metadata:{},source:['demo']},
-    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['%matplotlib inline\\n','def notebook_task(value: float=1.0) -> dict:\\n','    return {"result": value*2}\\n']}
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['%matplotlib inline\\n','def notebook_task(value: float=1.0) -> dict:\\n','    return {"result": value*2}\\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['import pandas as pd\\n','raw = pd.read_csv("demo.csv")\\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['clean = raw.abs()\\n','clean.plot()\\n','clean.to_clipboard()\\n']}
   ]},null,2));
   const notebookReport=path.join(temp,'notebook.json');
   run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',notebook,'--output',notebookReport],{cwd:root,encoding:'utf8',env:pythonEnv});
@@ -56,14 +58,22 @@ try{
   assert.strictEqual(nb.sourceModel.kind,'jupyter');
   assert(nb.sourceModel.functions.some(row=>row.name==='notebook_task'&&row.cellIndex===1),'Notebook code cells must feed the same Source Model.');
   assert(nb.diagnostics.some(row=>row.code==='NOTEBOOK_MAGIC_UNSUPPORTED'&&row.cellIndex===1&&row.line===1),'Notebook magic diagnostics must preserve cell/line coordinates.');
+  const workflow=nb.sourceModel.workflow;
+  assert.strictEqual(workflow.schema,'dkds.source-workflow.v1');
+  assert.strictEqual(workflow.codeCellCount,3);
+  assert(workflow.edges.some(row=>row.from==='cell:2'&&row.to==='cell:3'&&row.symbol==='raw'),'Workflow graph must preserve cross-cell symbol dependencies.');
+  assert(workflow.hostCapabilities.includes('data.import')&&workflow.hostCapabilities.includes('scientific.plot')&&workflow.hostCapabilities.includes('host.clipboard.write'),'Workflow analysis must classify DKDS host replacements.');
+  assert(workflow.transformFamilies.includes('pandas.dataframe'),'Pandas notebooks must be classified for table-transform lowering instead of runtime Python fallback.');
+  assert.strictEqual(workflow.candidate.buildable,false);
+  assert.strictEqual(workflow.sourceExecuted,false);
 
   const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
   assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
-  assert(runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
+  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
   assert(runtime.includes('pluginInstallPlan(raw)')&&runtime.includes("generatedBy:'python-source-import'"),'Generated packages must reuse the existing Plugin Manager validation/install transaction.');
   const manager=fs.readFileSync(path.join(root,'src','core','plugins','manager-ui.js'),'utf8');
   const authoringUi=fs.readFileSync(path.join(root,'src','core','plugins','plugin-authoring-ui.js'),'utf8');
   assert.doesNotThrow(()=>new Function(authoringUi),'Plugin Manager authoring surface must remain valid JavaScript.');
   assert(manager.includes('DKDSPluginAuthoringUI')&&authoringUi.includes('pluginAuthoringSelectSource')&&authoringUi.includes('pluginAuthoringBuild')&&authoringUi.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions through one Core authoring surface.');
-  console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model -> line diagnostics -> blueprint -> package -> Plugin Manager transaction.');
+  console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model v2 + workflow graph -> host mapping/lowering report -> blueprint -> package -> Plugin Manager transaction.');
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
