@@ -33,7 +33,10 @@ const service={
   getState:()=>state,visibleSweepIds:()=>['s1'],colorForPeakOrder:()=> '#123456',sweepById:id=>state.sweeps.find(row=>row.id===id)||null,metrics:()=>({fwhm:0.02,fwhmLeft:0.09,fwhmRight:0.11,baselineMode:'constant',analysisLeft:0.08,analysisRight:0.12,amplitude:1,area:0.01}),getCurrentGroupColumnPreference:()=>state.workspace.groupColumns,getEffectiveGroupColumns:()=>state.workspace.groupColumns==='auto'?'2':state.workspace.groupColumns,getGroupContext:()=> '2 series',getGroupDiagnostics:()=>({series:2}),
   setGroupColumns:value=>{state={...state,workspace:{...state.workspace,groupColumns:String(value)}};calls.push(['setGroupColumns',String(value)]);return String(value);},
   setPeakDisplay:(key,value)=>calls.push(['setPeakDisplay',key,value]),setTransform:value=>calls.push(['setTransform',value]),setPreset:value=>calls.push(['setPreset',value]),setAllVisibility:value=>calls.push(['setAllVisibility',value]),
-  selectPeak:(id,opt)=>calls.push(['selectPeak',id,opt.source,opt.additive,opt.openInspector]),selectSweep:(id,opt)=>calls.push(['selectSweep',id,opt.source]),selectRange:(range,opt)=>calls.push(['selectRange',range,opt.source]),clearSelection:()=>calls.push(['clearSelection']),resetMainView:()=>calls.push(['resetMainView']),reset:()=>calls.push(['reset']),refreshData:()=>calls.push(['refreshData'])
+  selectPeak:(id,opt)=>calls.push(['selectPeak',id,opt.source,opt.additive,opt.openInspector]),selectSweep:(id,opt)=>calls.push(['selectSweep',id,opt.source]),selectRange:(range,opt)=>calls.push(['selectRange',range,opt.source]),
+  assignSelectedPeakCategory:order=>calls.push(['assignSelectedPeakCategory',order]),createCategoryForSelectedPeak:()=>calls.push(['createCategoryForSelectedPeak']),renameSelectedPeakCategory:label=>calls.push(['renameSelectedPeakCategory',label]),
+  toggleSelectedPeakAccepted:()=>calls.push(['toggleSelectedPeakAccepted']),toggleSelectedPeakLocked:()=>calls.push(['toggleSelectedPeakLocked']),resetSelectedPeakFwhmWindow:()=>calls.push(['resetSelectedPeakFwhmWindow']),deleteSelectedPeak:()=>calls.push(['deleteSelectedPeak']),selectSelectedPeakSweep:()=>calls.push(['selectSelectedPeakSweep']),
+  clearSelection:()=>calls.push(['clearSelection']),resetMainView:()=>calls.push(['resetMainView']),reset:()=>calls.push(['reset']),refreshData:()=>calls.push(['refreshData'])
 };
 const ctx={services:{domain:{provide(id,spec){provided={id,spec};return {id};}}},data:{reactive:{subscribe(fn){reactiveListener=fn;return()=>{reactiveListener=null;};}}}};
 adapter.provide(ctx,service);
@@ -60,5 +63,13 @@ provided.spec.actions.selectPeak({id:'p1',additive:true,openInspector:true});
 assert.strictEqual(calls.at(-1)[2],'resonance-domain-adapter');
 assert.strictEqual(calls.at(-1)[3],true);
 assert.strictEqual(calls.at(-1)[4],true);
+provided.spec.actions.assignSelectedPeakCategory({order:3});
+assert.deepStrictEqual(calls.at(-1),['assignSelectedPeakCategory',3]);
+provided.spec.actions.renameSelectedPeakCategory({label:'主峰'});
+assert.deepStrictEqual(calls.at(-1),['renameSelectedPeakCategory','主峰']);
+for(const action of ['createCategoryForSelectedPeak','toggleSelectedPeakAccepted','toggleSelectedPeakLocked','resetSelectedPeakFwhmWindow','deleteSelectedPeak','selectSelectedPeakSweep']){
+  provided.spec.actions[action]();
+  assert.strictEqual(calls.at(-1)[0],action,'Inspector domain action must delegate directly to the production service owner: '+action);
+}
 let events=0;const off=provided.spec.subscribe(()=>events++);reactiveListener?.({type:'touch',touched:['resonance.group.settings'],meta:[{reason:'group-columns'}]});assert.strictEqual(events,1);off();assert.strictEqual(reactiveListener,null);
 console.log('Phase F Resonance live Domain Adapter seam PASS: one production service owner -> serializable snapshot + whitelisted domain actions.');
