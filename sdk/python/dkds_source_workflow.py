@@ -193,9 +193,19 @@ def analyze_workflow(path:str|Path)->dict[str,Any]:
             key=(effect["capability"],effect["call"],effect["replacement"])
             if key in seen:continue
             seen.add(key);host_mappings.append({"capability":effect["capability"],"sourceCall":effect["call"],"replacement":effect["replacement"]})
+    diagnostics=[]
+    for cell in rows:
+        for effect in cell["effects"]:
+            if effect.get("kind")!="transform":continue
+            diagnostics.append({
+                "severity":"blocker","code":"WORKFLOW_TRANSFORM_UNLOWERED",
+                "cellIndex":cell["index"],"line":effect.get("line",0),
+                "family":effect.get("family",""),"call":effect.get("call",""),
+                "message":f"{effect.get('call','scientific transform')} requires {effect.get('family','scientific')} lowering before this workflow can be built."
+            })
     blockers=[]
     if transform_families:
-        blockers.append({"code":"WORKFLOW_TRANSFORM_LOWERING_REQUIRED","message":"Notebook/script compute uses library semantics that require declarative table/array/scientific transform lowering.","families":sorted(transform_families)})
+        blockers.append({"code":"WORKFLOW_TRANSFORM_LOWERING_REQUIRED","message":"Notebook/script compute uses library semantics that require declarative table/array/scientific transform lowering.","families":sorted(transform_families),"diagnosticCount":len(diagnostics)})
     if syntax_errors:
         blockers.append({"code":"WORKFLOW_SYNTAX_ERRORS","message":"One or more code cells cannot be parsed.","count":len(syntax_errors)})
     executable=sum(1 for row in rows if row["role"] not in {"definitions","invalid"})
@@ -205,7 +215,7 @@ def analyze_workflow(path:str|Path)->dict[str,Any]:
         "crossCellDependencyCount":len(edges),"cells":rows,"edges":edges,
         "libraries":sorted(x for x in libraries if x),"hostCapabilities":sorted(capabilities),
         "transformFamilies":sorted(transform_families),"hostMappings":host_mappings,
-        "syntaxErrors":syntax_errors,
+        "syntaxErrors":syntax_errors,"diagnostics":diagnostics,
         "candidate":{
             "id":"workflow:main","kind":"notebook-workflow" if kind=="jupyter" else "script-workflow",
             "label":source_path.stem,"buildable":not blockers and executable==0,
