@@ -31,7 +31,7 @@ const service={
   getState:()=>state,visibleSweepIds:()=>['s1'],colorForPeakOrder:()=> '#123456',getCurrentGroupColumnPreference:()=>state.workspace.groupColumns,getEffectiveGroupColumns:()=>state.workspace.groupColumns==='auto'?'2':state.workspace.groupColumns,getGroupContext:()=> '2 series',getGroupDiagnostics:()=>({series:2}),
   setGroupColumns:value=>{state={...state,workspace:{...state.workspace,groupColumns:String(value)}};calls.push(['setGroupColumns',String(value)]);return String(value);},
   setPeakDisplay:(key,value)=>calls.push(['setPeakDisplay',key,value]),setTransform:value=>calls.push(['setTransform',value]),setPreset:value=>calls.push(['setPreset',value]),setAllVisibility:value=>calls.push(['setAllVisibility',value]),
-  selectPeak:(id,opt)=>calls.push(['selectPeak',id,opt.source]),selectSweep:(id,opt)=>calls.push(['selectSweep',id,opt.source]),selectRange:(range,opt)=>calls.push(['selectRange',range,opt.source]),clearSelection:()=>calls.push(['clearSelection']),resetMainView:()=>calls.push(['resetMainView']),reset:()=>calls.push(['reset']),refreshData:()=>calls.push(['refreshData'])
+  selectPeak:(id,opt)=>calls.push(['selectPeak',id,opt.source,opt.additive,opt.openInspector]),selectSweep:(id,opt)=>calls.push(['selectSweep',id,opt.source]),selectRange:(range,opt)=>calls.push(['selectRange',range,opt.source]),clearSelection:()=>calls.push(['clearSelection']),resetMainView:()=>calls.push(['resetMainView']),reset:()=>calls.push(['reset']),refreshData:()=>calls.push(['refreshData'])
 };
 const ctx={services:{domain:{provide(id,spec){provided={id,spec};return {id};}}},data:{reactive:{subscribe(fn){reactiveListener=fn;return()=>{reactiveListener=null;};}}}};
 adapter.provide(ctx,service);
@@ -49,7 +49,9 @@ assert.strictEqual(markers[0].color,'#123456','Marker color must remain sourced 
 provided.spec.actions.setGroupColumns({value:'3'});
 assert.deepStrictEqual(calls[0],['setGroupColumns','3']);
 assert.strictEqual(provided.spec.snapshot().group.preference,'3','Snapshot must project the same authoritative production service after actions.');
-provided.spec.actions.selectPeak({id:'p1'});
+provided.spec.actions.selectPeak({id:'p1',additive:true,openInspector:true});
 assert.strictEqual(calls.at(-1)[2],'resonance-domain-adapter');
+assert.strictEqual(calls.at(-1)[3],true);
+assert.strictEqual(calls.at(-1)[4],true);
 let events=0;const off=provided.spec.subscribe(()=>events++);reactiveListener?.({type:'touch',touched:['resonance.group.settings'],meta:[{reason:'group-columns'}]});assert.strictEqual(events,1);off();assert.strictEqual(reactiveListener,null);
 console.log('Phase F Resonance live Domain Adapter seam PASS: one production service owner -> serializable snapshot + whitelisted domain actions.');

@@ -516,3 +516,10 @@ The Resonance specimen declares `selectAction:"selectSweep"`; therefore PRIMARY 
 A live curve-array plot may add `selectedIdPath`. The path is resolved against the same Domain Adapter snapshot used for curve projection. Generated code retains only a transient string render projection and exposes `getSelectedCurveId:()=>selectedId` to the existing public ScientificCurveSurface. Core remains the visual focus owner.
 
 This is intentionally separate from `selectAction`: `selectAction` routes user intent back to the production owner, while `selectedIdPath` reads the production owner's resulting selection back into the view. Neither side creates a second selection model. Resonance uses `selectAction:"selectSweep"` plus `selectedIdPath:"selectedSweep.id"`.
+
+
+## Live marker-array projection — SDK 1.51.66
+
+A live curve-array plot may include a nested `markers` binding. The adapter owns which marker rows exist; authoring declares only `statePath`, marker field keys, optional `selectedIdPath`, optional `selectAction`, and up to eight static scalar arguments. Generated code maps rows into the public ScientificMarker shape, uses `getSelectedMarkerIds()` for Core-owned focus paint, and invokes the selected adapter action with `{...staticArgs,id,additive}`.
+
+The generator deliberately has no peak acceptance, visibility, marker-shape, locking, physics, FWHM or inspector logic. Resonance extracts its existing marker rules into one pure `main-marker-projection.js`; both the accepted production ScientificCurveSurface and the Domain Adapter call that same projector. The Resonance declarative specimen reads `mainMarkers`, `selectedPeak.id`, and routes marker selection to `selectPeak` with `openInspector:true` as a fixed adapter argument.

@@ -100,7 +100,7 @@ assert.strictEqual(cssDependency.ok,true,require('../tools/quality/unit-producti
 const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css','mobile.css']);
 const EXPECTED_RESONANCE_STABLE_BLOBS=Object.freeze({
   'README.md':'5f67f4b6b91643ecf69d7daf53f2b61c5c0d82d3',
-  'domain-adapter.js':'e26876e497bbcec1c438ab3c07b572a248910749',
+  'domain-adapter.js':'29e2b3701e6655aea4230687376f8139ba73ef7d',
   'feature-analysis-runtime.js':'eebd6ecab0824f55e130704ff7f26b17cbb70ae0',
   'feature-context.js':'d02ad9248ff7d0a628538048b4e1cb63a3ef9644',
   'feature-controls-runtime.js':'48c0da0227272a9a6f71ab18ccc0c2b1b4d1d95f',
