@@ -722,7 +722,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
 }
 
 .plugin-manager-authoring{display:flex;flex-direction:column;gap:10px;margin:0 0 10px;padding:10px;min-width:0;}
-.plugin-manager-authoring.hidden{display:none;}
 .plugin-manager-authoring-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
 .plugin-manager-authoring-head>div{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .plugin-manager-authoring-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0;}
