@@ -75,8 +75,22 @@ try{
   assert(tablePlan.operations.some(row=>row.kind==='host.clipboard'&&row.input==='clean'),'Table Transform IR must map to_clipboard() to Host I/O.');
   assert.strictEqual(tablePlan.buildable,true,'Synthetic read_csv -> abs -> plot -> clipboard workflow should close in IR v1.');
   assert.strictEqual(tablePlan.execution.schema,'dkds.table-transform-execution.v1');
-  assert.strictEqual(tablePlan.execution.executable,false,'Closed authoring IR must remain non-executable until mapped Host effects are separated from compute.');
-  assert(tablePlan.execution.diagnostics.filter(row=>row.code==='TABLE_TASK_HOST_OPERATION_PENDING').length===2,'plot and clipboard must remain explicit Host-effect blockers.');
+  assert.strictEqual(tablePlan.execution.executable,true,'Mapped plot/clipboard Host effects must no longer block the pure compute Task.');
+  assert.strictEqual(tablePlan.execution.hostEffects.length,2);
+  assert(tablePlan.execution.hostEffects.some(row=>row.kind==='scientific-plot'&&row.input==='clean'));
+  assert(tablePlan.execution.hostEffects.some(row=>row.kind==='clipboard-table'&&row.input==='clean'));
+  assert.strictEqual(workflow.blueprint.buildable,true,'Host-mapped notebook workflow should become directly buildable.');
+  const notebookPackage=path.join(temp,'notebook.dkplugin'),notebookBuild=path.join(temp,'notebook-build.json');
+  run=spawnSync(py.cmd,[...py.prefix,importer,'build',notebook,'--function-id','workflow:table-transform','--package',notebookPackage,'--report',notebookBuild],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const hostPkg=JSON.parse(fs.readFileSync(notebookPackage,'utf8'));
+  const hostPlugin=hostPkg.files['plugin.js'];
+  const hostTask=hostPkg.files[hostPkg.manifest.tasks[0].entry];
+  assert(hostPkg.manifest.requiresCore.includes('io')&&hostPkg.manifest.requiresCore.includes('ui.scientific-plot'),'Mapped Host effects must declare canonical IO/ScientificPlot dependencies.');
+  assert(hostPlugin.includes('ctx.io.clipboard.writeText('),'to_clipboard must lower only to public Host IO.');
+  assert(hostPlugin.includes('_task_curves')&&hostPlugin.includes("requestRender?.('task-table')"),'DataFrame.plot must lower to a Unit ScientificPlot task-table projection.');
+  assert(!hostTask.includes('ctx.io')&&!hostTask.includes('scientificPlot')&&!hostTask.includes('clipboard'),'Worker Task must remain pure compute with no Host/UI effects.');
+  require('../desktop/plugin-package').normalizePluginPackage(hostPkg,{allowBuiltinId:false});
 
   const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
   assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
