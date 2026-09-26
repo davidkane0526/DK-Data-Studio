@@ -18,12 +18,18 @@ TASK_ID=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTABLE={
     "source.table","value.bind","value.alias",
     "series.select","groupby.create","groupby.aggregate",
+    "array.literal","array.from-value","array.range","array.unary","array.binary","array.diff","array.reduce","array.slice",
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index","table.concat",
     "table.mean","table.median","table.std",
 }
 _AGGREGATES={"table.mean":"mean","table.median":"median","table.std":"std"}
 _GROUPBY_REDUCERS={"mean","median","std"}
+_ARRAY_MAX_LENGTH=65536
+_ARRAY_DTYPES={"float","float32","float64","double","int","int32","int64"}
+_ARRAY_UNARY={"abs","sqrt","log","log10","exp","neg","pos"}
+_ARRAY_BINARY={"add","sub","mul","div","pow","mod"}
+_ARRAY_REDUCERS={"mean","median","std"}
 _TABLE_UNARY={
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index",
@@ -134,6 +140,106 @@ def _groupby_agg_spec(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None
             return None,("TABLE_TASK_GROUPBY_REDUCER_UNSUPPORTED",f"Unsupported GroupBy reducer for {column}: {reducer}")
         items.append({"column":column,"method":reducer})
     return {"kind":"mapping","items":items},None
+
+def _array_kwargs(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    kwargs=dict(op.get("kwargs") or {})
+    unknown=sorted(set(kwargs)-{"dtype","copy"})
+    if unknown:return None,("TABLE_TASK_ARRAY_KWARGS_UNSUPPORTED","Unsupported array/asarray keyword(s): "+", ".join(unknown))
+    dtype=kwargs.get("dtype")
+    if dtype is not None and (not isinstance(dtype,str) or dtype not in _ARRAY_DTYPES):
+        return None,("TABLE_TASK_ARRAY_DTYPE_UNSUPPORTED","bounded Array IR dtype must be one supported numeric dtype string or omitted.")
+    copy=kwargs.get("copy")
+    if copy is not None and not isinstance(copy,bool):
+        return None,("TABLE_TASK_ARRAY_COPY_INVALID","array/asarray copy must be a literal boolean when supplied.")
+    return {"dtype":dtype or "float64","copy":copy},None
+
+def _array_literal_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    values=list(op.get("values") or [])
+    if len(values)>_ARRAY_MAX_LENGTH:
+        return None,("TABLE_TASK_ARRAY_LENGTH_EXCEEDED",f"Array length exceeds bounded maximum {_ARRAY_MAX_LENGTH}.")
+    for value in values:
+        if isinstance(value,bool) or not isinstance(value,(int,float)):
+            return None,("TABLE_TASK_ARRAY_LITERAL_NON_NUMERIC","bounded Array IR literals must contain numeric scalar values only.")
+    kwargs,error=_array_kwargs(op)
+    if error:return None,error
+    return {"values":values,**(kwargs or {})},None
+
+def _array_range_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    method=str(op.get("sourceMethod",""))
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    if method=="linspace":
+        allowed={"num","endpoint"}
+        unknown=sorted(set(kwargs)-allowed)
+        if unknown:return None,("TABLE_TASK_ARRAY_RANGE_KWARGS_UNSUPPORTED","Unsupported np.linspace keyword(s): "+", ".join(unknown))
+        if len(args)<2 or len(args)>3:return None,("TABLE_TASK_ARRAY_LINSPACE_ARGS","np.linspace requires start, stop and optional num in bounded v1.")
+        start,stop=args[0],args[1]
+        if any(isinstance(v,bool) or not isinstance(v,(int,float)) for v in (start,stop)):
+            return None,("TABLE_TASK_ARRAY_RANGE_NON_NUMERIC","np.linspace start/stop must be numeric literals.")
+        if len(args)==3 and "num" in kwargs:return None,("TABLE_TASK_ARRAY_RANGE_DUPLICATE","np.linspace num must be supplied once.")
+        num=kwargs.get("num",args[2] if len(args)==3 else 50)
+        endpoint=kwargs.get("endpoint",True)
+        if isinstance(num,bool) or not isinstance(num,int) or num<0 or num>_ARRAY_MAX_LENGTH:
+            return None,("TABLE_TASK_ARRAY_RANGE_LENGTH","np.linspace num must be an integer between 0 and 65536.")
+        if not isinstance(endpoint,bool):return None,("TABLE_TASK_ARRAY_RANGE_ENDPOINT","np.linspace endpoint must be a literal boolean.")
+        return {"method":"linspace","start":start,"stop":stop,"num":num,"endpoint":endpoint},None
+    if method=="arange":
+        allowed={"start","stop","step"}
+        unknown=sorted(set(kwargs)-allowed)
+        if unknown:return None,("TABLE_TASK_ARRAY_RANGE_KWARGS_UNSUPPORTED","Unsupported np.arange keyword(s): "+", ".join(unknown))
+        if len(args)>3:return None,("TABLE_TASK_ARRAY_ARANGE_ARGS","np.arange supports at most start, stop, step in bounded v1.")
+        if args and kwargs:return None,("TABLE_TASK_ARRAY_RANGE_DUPLICATE","Use positional or keyword np.arange range arguments, not both, in bounded v1.")
+        if args:
+            if len(args)==1:start,stop,step=0,args[0],1
+            elif len(args)==2:start,stop,step=args[0],args[1],1
+            else:start,stop,step=args
+        else:
+            if "stop" not in kwargs:return None,("TABLE_TASK_ARRAY_ARANGE_ARGS","np.arange keyword form requires stop.")
+            start,stop,step=kwargs.get("start",0),kwargs["stop"],kwargs.get("step",1)
+        if any(isinstance(v,bool) or not isinstance(v,(int,float)) for v in (start,stop,step)):
+            return None,("TABLE_TASK_ARRAY_RANGE_NON_NUMERIC","np.arange start/stop/step must be numeric literals.")
+        if step==0:return None,("TABLE_TASK_ARRAY_ARANGE_STEP","np.arange step must be non-zero.")
+        span=(stop-start)/step
+        length=max(0,int(__import__("math").ceil(span))) if span>0 else 0
+        if length>_ARRAY_MAX_LENGTH:return None,("TABLE_TASK_ARRAY_LENGTH_EXCEEDED",f"np.arange output exceeds bounded maximum {_ARRAY_MAX_LENGTH}.")
+        return {"method":"arange","start":start,"stop":stop,"step":step,"length":length},None
+    return None,("TABLE_TASK_ARRAY_RANGE_METHOD","Unknown bounded array range constructor.")
+
+def _array_unary_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    method=str(op.get("sourceMethod",""))
+    if method not in _ARRAY_UNARY:return None,("TABLE_TASK_ARRAY_UNARY_UNSUPPORTED",f"Unsupported bounded array unary operation: {method}")
+    if op.get("args") or op.get("kwargs"):return None,("TABLE_TASK_ARRAY_UNARY_ARGS",f"{method} takes no extra arguments in bounded Array IR v1.")
+    return {"method":method},None
+
+def _array_diff_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    unknown=sorted(set(kwargs)-{"n","axis"})
+    if unknown:return None,("TABLE_TASK_ARRAY_DIFF_KWARGS_UNSUPPORTED","Unsupported np.diff keyword(s): "+", ".join(unknown))
+    if len(args)>1:return None,("TABLE_TASK_ARRAY_DIFF_ARGS","np.diff supports one optional positional n argument in bounded v1.")
+    if args and "n" in kwargs:return None,("TABLE_TASK_ARRAY_DIFF_DUPLICATE","np.diff n must be supplied once.")
+    n=kwargs.get("n",args[0] if args else 1)
+    axis=kwargs.get("axis",-1)
+    if isinstance(n,bool) or not isinstance(n,int) or n<0:return None,("TABLE_TASK_ARRAY_DIFF_N","np.diff n must be a non-negative literal integer.")
+    if axis not in {-1,0}:return None,("TABLE_TASK_ARRAY_AXIS_UNSUPPORTED","bounded 1D Array IR supports axis -1 or 0 only.")
+    return {"n":n},None
+
+def _array_reduce_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    method=str(op.get("sourceMethod",""))
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    allowed={"axis"}|({"ddof"} if method=="std" else set())
+    unknown=sorted(set(kwargs)-allowed)
+    if unknown:return None,("TABLE_TASK_ARRAY_REDUCE_KWARGS_UNSUPPORTED","Unsupported NumPy reducer keyword(s): "+", ".join(unknown))
+    if len(args)>1:return None,("TABLE_TASK_ARRAY_REDUCE_ARGS","bounded NumPy reducers support at most one positional axis argument.")
+    if args and "axis" in kwargs:return None,("TABLE_TASK_ARRAY_REDUCE_DUPLICATE","NumPy reducer axis must be supplied once.")
+    axis=kwargs.get("axis",args[0] if args else None)
+    if axis not in {None,-1,0}:return None,("TABLE_TASK_ARRAY_AXIS_UNSUPPORTED","bounded 1D Array IR supports axis None, -1 or 0 only.")
+    if method not in _ARRAY_REDUCERS:return None,("TABLE_TASK_ARRAY_REDUCER_UNSUPPORTED",f"Unsupported NumPy reducer: {method}")
+    ddof=kwargs.get("ddof",0)
+    if method=="std" and (isinstance(ddof,bool) or not isinstance(ddof,(int,float))):
+        return None,("TABLE_TASK_ARRAY_STD_DDOF","np.std ddof must be a numeric literal.")
+    return {"method":method,"ddof":ddof if method=="std" else 0},None
 
 def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
     diagnostics=[]
@@ -256,15 +362,66 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
         elif kind=="series.select":
             selector=op.get("selector") or {}
             value=selector.get("value") if isinstance(selector,dict) else None
-            if input_kind not in {"table","groupby.table"}:
-                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_INPUT_UNSUPPORTED","Column selection requires a DataFrame/DataTable or DataFrameGroupBy input."))
-            if not isinstance(selector,dict) or selector.get("kind")!="literal" or isinstance(value,bool) or not isinstance(value,(str,int)):
-                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_SELECTOR_UNSUPPORTED","Column selection requires one literal string/integer column label."))
-            if input_kind=="groupby.table":
-                output_kind="groupby.series"
-                output_meta=dict(symbol_meta.get(inputs[0],{}))
+            if input_kind=="array":
+                if not isinstance(selector,dict) or selector.get("kind")!="literal" or isinstance(value,bool) or not isinstance(value,int):
+                    diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_INDEX_UNSUPPORTED","1D array scalar selection requires one literal integer index."))
+                output_kind="scalar"
             else:
-                output_kind="series"
+                if input_kind not in {"table","groupby.table"}:
+                    diagnostics.append(_diag(op,"TABLE_TASK_SERIES_INPUT_UNSUPPORTED","Column selection requires a DataFrame/DataTable or DataFrameGroupBy input."))
+                if not isinstance(selector,dict) or selector.get("kind")!="literal" or isinstance(value,bool) or not isinstance(value,(str,int)):
+                    diagnostics.append(_diag(op,"TABLE_TASK_SERIES_SELECTOR_UNSUPPORTED","Column selection requires one literal string/integer column label."))
+                if input_kind=="groupby.table":
+                    output_kind="groupby.series"
+                    output_meta=dict(symbol_meta.get(inputs[0],{}))
+                else:
+                    output_kind="series"
+        elif kind=="array.literal":
+            config,error=_array_literal_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            output_kind="array"
+        elif kind=="array.from-value":
+            config,error=_array_kwargs(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if input_kind not in {"series","array"}:
+                diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_SOURCE_UNSUPPORTED","array/asarray/to_numpy requires a Series or bounded Array input; 2D DataFrame conversion is outside v1."))
+            if op.get("args"):
+                diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_SOURCE_ARGS","to_numpy takes no positional arguments in bounded Array IR v1."))
+            output_kind="array"
+        elif kind=="array.range":
+            config,error=_array_range_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            output_kind="array"
+        elif kind=="array.unary":
+            config,error=_array_unary_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if input_kind!="array":diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_INPUT_UNSUPPORTED","Array unary operations require a bounded Array input."))
+            output_kind="array"
+        elif kind=="array.binary":
+            operator=str(op.get("operator",""))
+            if operator not in _ARRAY_BINARY:diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_BINARY_UNSUPPORTED",f"Unsupported array binary operator: {operator}"))
+            operand_kinds=[symbol_kinds.get(name,"") for name in inputs]
+            if not any(kind_name=="array" for kind_name in operand_kinds):
+                diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_BINARY_NO_ARRAY","Array binary IR requires at least one Array operand."))
+            if any(kind_name not in {"array","scalar"} for kind_name in operand_kinds):
+                diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_BINARY_INPUT_UNSUPPORTED","Array binary symbol operands must be Array or scalar values."))
+            output_kind="array"
+        elif kind=="array.diff":
+            config,error=_array_diff_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if input_kind!="array":diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_INPUT_UNSUPPORTED","np.diff requires a bounded Array input."))
+            output_kind="array"
+        elif kind=="array.reduce":
+            config,error=_array_reduce_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if input_kind!="array":diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_INPUT_UNSUPPORTED","NumPy reducers require a bounded Array input."))
+            output_kind="scalar"
+        elif kind=="array.slice":
+            selector=op.get("selector") or {}
+            if input_kind!="array":diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_INPUT_UNSUPPORTED","Array slicing requires a bounded Array input."))
+            if not isinstance(selector,dict) or selector.get("kind")!="slice":
+                diagnostics.append(_diag(op,"TABLE_TASK_ARRAY_SLICE_UNSUPPORTED","bounded Array IR supports literal one-dimensional slices only."))
+            output_kind="array"
         elif kind in _AGGREGATES:
             if input_kind in {"groupby.table","groupby.series"}:
                 config,error=_groupby_reduce_config(op)
@@ -340,7 +497,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                 results=[output];break
     result_kinds={name:symbol_kinds.get(name,"value") for name in results}
     for name,kind in result_kinds.items():
-        if kind not in {"table","series","scalar"}:
+        if kind not in {"table","series","array","scalar"}:
             diagnostics.append({
                 "severity":"blocker","code":"TABLE_TASK_RESULT_KIND_UNSUPPORTED",
                 "cellIndex":0,"line":0,"operationId":"","operationKind":"",
@@ -351,7 +508,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
     projections={
         name:{"kind":result_kinds[name],"key":f"dkdsResult{index}"}
         for index,name in enumerate(results)
-        if result_kinds[name] in {"series","scalar"}
+        if result_kinds[name] in {"series","array","scalar"}
     }
     return {
         "schema":EXECUTION_SCHEMA,
