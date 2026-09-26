@@ -61,8 +61,8 @@ def _aggregate_config(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None
         return None,("TABLE_TASK_AGGREGATE_NUMERIC_ONLY_INVALID","aggregate numeric_only must be a literal boolean.")
     ddof=kwargs.get("ddof",1)
     if method=="std":
-        if isinstance(ddof,bool) or not isinstance(ddof,int) or ddof<0:
-            return None,("TABLE_TASK_STD_DDOF_INVALID","std ddof must be a non-negative literal integer.")
+        if isinstance(ddof,bool) or not isinstance(ddof,int):
+            return None,("TABLE_TASK_STD_DDOF_INVALID","std ddof must be a literal integer.")
     else:ddof=1
     return {"axis":axis,"skipna":skipna,"numericOnly":numeric_only,"ddof":ddof},None
 
