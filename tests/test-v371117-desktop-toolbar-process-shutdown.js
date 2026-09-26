@@ -50,9 +50,35 @@ async function main(){
     'SMB child processes must be application-owned and terminated during shutdown.'
   );
 
+
+  const shutdownSource=read('desktop/main-modules/shutdown-runtime.js');
+  const auxiliarySource=read('desktop/main-modules/auxiliary-window-runtime.js');
+  const updaterSource=read('desktop/update-client.js');
+  const discoverySource=read('desktop/lan-discovery-service.js');
+  assert(
+    shutdownSource.includes("if(typeof app?.exit==='function')app.exit(0)") &&
+    !shutdownSource.includes("queueMicrotask(()=>app?.quit?.())"),
+    'After owned resources drain, Desktop shutdown must commit through app.exit(0), not re-enter the cancellable window-close chain.'
+  );
+  assert(
+    auxiliarySource.includes('async function drainAllAuxiliaryWindows') &&
+    auxiliarySource.includes('const closed=await Promise.all(waits);'),
+    'Desktop shutdown must wait for every auxiliary BrowserWindow to actually close.'
+  );
+  assert(
+    updaterSource.includes('async stop()') &&
+    updaterSource.includes('this.closeWebSocket(true);') &&
+    updaterSource.includes("socket.once('close',done);"),
+    'LAN updater shutdown must await UDP close and terminate its WebSocket transport.'
+  );
+  assert(
+    discoverySource.includes('await Promise.all([closeSocket(ssdp),closeSocket(mdns)]);'),
+    'LAN discovery shutdown must await both SSDP and mDNS sockets.'
+  );
+
   const {createShutdownRuntime}=require('../desktop/main-modules/shutdown-runtime');
   const calls=[];
-  let quitCount=0,lanResolve,mcpResolve,rejected=false;
+  let exitCount=0,lanResolve,mcpResolve,rejected=false;
   const pending=new Map([['pending',{
     timer:setTimeout(()=>{},1000),
     reject:()=>{rejected=true;}
@@ -60,9 +86,9 @@ async function main(){
   pending.get('pending').timer.unref?.();
 
   const runtime=createShutdownRuntime({
-    app:{quit(){quitCount+=1;calls.push('quit');}},
+    app:{exit(code){assert.strictEqual(code,0);exitCount+=1;calls.push('exit');}},
     setAppQuitting:value=>calls.push(`quitting:${value}`),
-    closeAllAuxiliaryWindows:()=>calls.push('aux'),
+    drainAuxiliaryWindows:async()=>{calls.push('aux-start');await Promise.resolve();calls.push('aux-done');},
     prepareProjectSafety:reason=>calls.push(`safety:${reason}`),
     stopLanUpdater:()=>calls.push('updater'),
     stopLanWebServer:()=>new Promise(resolve=>{calls.push('lan-start');lanResolve=()=>{calls.push('lan-done');resolve();};}),
@@ -77,22 +103,22 @@ async function main(){
   assert(runtime.isShuttingDown(),'Shutdown coordinator must enter one shared in-flight lifecycle.');
   assert.strictEqual(pending.size,0,'Pending host requests must be cleared during shutdown.');
   assert(rejected,'Pending host requests must be rejected during shutdown.');
-  assert.strictEqual(quitCount,0,'Electron must not quit before asynchronous services drain.');
+  assert.strictEqual(exitCount,0,'Electron must not exit before asynchronous services drain.');
 
   lanResolve();
   await Promise.resolve();
-  assert.strictEqual(quitCount,0,'Electron must still wait while another service is draining.');
+  assert.strictEqual(exitCount,0,'Electron must still wait while another service is draining.');
   mcpResolve();
   await shutdown;
   await new Promise(resolve=>setImmediate(resolve));
 
   assert(runtime.isReadyForQuit(),'Shutdown coordinator must publish a final ready state.');
-  assert.strictEqual(quitCount,1,'Electron quit must be requested exactly once after all services drain.');
-  assert(calls.indexOf('lan-done')<calls.indexOf('quit')&&calls.indexOf('mcp-done')<calls.indexOf('quit'),
-    'Service completion must happen before Electron quit.');
-  assert(calls.filter(v=>v==='aux').length>=2,'Auxiliary windows must be asserted closed before and after service drain.');
+  assert.strictEqual(exitCount,1,'Electron exit must be committed exactly once after all services drain.');
+  assert(calls.indexOf('lan-done')<calls.indexOf('exit')&&calls.indexOf('mcp-done')<calls.indexOf('exit'),
+    'Service completion must happen before Electron exit.');
+  assert(calls.filter(v=>v==='aux-done').length>=2,'Auxiliary windows must be fully drained before and after service shutdown.');
 
-  console.log('v3.71.117 Desktop plugin-manager single-row + coordinated process shutdown PASS');
+  console.log('v3.71.118 Desktop plugin-manager single-row + deterministic process shutdown PASS');
 }
 
 main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -361,8 +361,14 @@ class LanDiscoveryService extends EventEmitter {
     if(sendGoodbye)this.announceByebye();
     const ssdp=this.ssdpSocket,mdns=this.mdnsSocket;
     this.ssdpSocket=null;this.mdnsSocket=null;
-    if(ssdp)try{ssdp.close();}catch{}
-    if(mdns)try{mdns.close();}catch{}
+    const closeSocket=socket=>new Promise(resolve=>{
+      if(!socket){resolve();return;}
+      let settled=false;
+      const done=()=>{if(settled)return;settled=true;resolve();};
+      socket.once('close',done);
+      try{socket.close();}catch{done();}
+    });
+    await Promise.all([closeSocket(ssdp),closeSocket(mdns)]);
     this.status.ssdp=false;this.status.mdns=false;
   }
 

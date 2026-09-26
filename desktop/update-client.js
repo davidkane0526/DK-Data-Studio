@@ -255,13 +255,21 @@ class LanUpdateClient extends EventEmitter {
     else this.setStatus({ phase: 'discovering', networkConsent:true, networkActive:true, message: '正在自动发现局域网更新服务器…' });
   }
 
-  stop() {
+  async stop() {
     this.networkActive = false;
-    try { this.discoverySocket?.close(); } catch {}
+    const socket=this.discoverySocket;
     this.discoverySocket = null;
-    this.closeWebSocket();
+    this.closeWebSocket(true);
     if (this.periodicTimer) clearInterval(this.periodicTimer);
     this.periodicTimer = null;
+    if(socket){
+      await new Promise(resolve=>{
+        let settled=false;
+        const done=()=>{if(settled)return;settled=true;resolve();};
+        socket.once('close',done);
+        try{socket.close();}catch{done();}
+      });
+    }
   }
 
   restartNetwork() {
@@ -319,13 +327,14 @@ class LanUpdateClient extends EventEmitter {
     });
   }
 
-  closeWebSocket() {
+  closeWebSocket(force=false) {
     if (this.wsReconnectTimer) clearTimeout(this.wsReconnectTimer);
     this.wsReconnectTimer = null;
     if (this.ws) {
       try {
         this.ws.removeAllListeners();
-        this.ws.close();
+        if(force&&typeof this.ws.terminate==='function')this.ws.terminate();
+        else this.ws.close();
       } catch {}
     }
     this.ws = null;

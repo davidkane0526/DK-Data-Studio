@@ -1,3 +1,10 @@
+# 3.71.118 WIP — Deterministic Desktop process exit
+
+- Fixes the remaining Desktop shutdown gap after 3.71.117: auxiliary BrowserWindows are now drained to their real `closed` state instead of merely receiving `close()`.
+- LAN updater shutdown is asynchronous and waits for the UDP discovery socket to close; its WebSocket is terminated during final application shutdown. LAN SSDP/mDNS discovery also waits for both datagram sockets to close.
+- After project safety, auxiliary windows, LAN Web, MCP, updater transports, pending host requests and SMB-owned child processes are drained, Main Process commits termination with Electron `app.exit(0)`. This avoids re-entering the cancellable BrowserWindow close chain through `app.quit()` after cleanup is already complete.
+- App/Desktop/Mobile identity advances to 3.71.118 / Android versionCode 258. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.117 WIP — Desktop Plugin Manager single-row + coordinated shutdown
 
 - Desktop Plugin Manager toolbar now has six explicit single-row slots for search, status, type, Install Plugin, Python/Jupyter authoring and Plugin Folder. The search cell is the only flexible column and action labels remain non-wrapping; Native Mobile keeps its separate responsive projection rules.

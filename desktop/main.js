@@ -92,7 +92,7 @@ const auxiliaryWindowRuntime=createAuxiliaryWindowRuntime({
 });
 const {
   auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
-  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,closeAuxiliaryWindowsForOwner,closeAllAuxiliaryWindows,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
+  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,closeAuxiliaryWindowsForOwner,drainAllAuxiliaryWindows,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
   runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
 }=auxiliaryWindowRuntime;
 
@@ -104,7 +104,7 @@ const pluginAuthoringRuntime=createPluginAuthoringRuntime({app,appRoot:APP_ROOT,
 nativeSaveRuntime.installIntentTrace(ipcMain);
 
 const shutdownRuntime=createShutdownRuntime({app,
-  setAppQuitting:v=>{appQuitting=!!v;},closeAllAuxiliaryWindows,
+  setAppQuitting:v=>{appQuitting=!!v;},drainAuxiliaryWindows:drainAllAuxiliaryWindows,
   prepareProjectSafety:()=>projectFileSafety?.prepareForQuit('app-before-quit'),
   stopLanUpdater:()=>lanUpdater?.stop(),stopLanWebServer:()=>lanWebServer?.stop(false),
   stopMcpServer:()=>mcpServer?.stop?.(),shutdownSmbSessions:()=>SmbService.shutdownSmbSessions?.(),

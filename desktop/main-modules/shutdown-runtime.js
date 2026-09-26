@@ -3,7 +3,7 @@
 function createShutdownRuntime({
   app,
   setAppQuitting=()=>{},
-  closeAllAuxiliaryWindows=()=>{},
+  drainAuxiliaryWindows=()=>{},
   prepareProjectSafety=()=>{},
   stopLanUpdater=()=>{},
   stopLanWebServer=()=>{},
@@ -38,7 +38,7 @@ function createShutdownRuntime({
   const run=async(reason='quit')=>{
     setAppQuitting(true);
     clearPendingRequests();
-    await safeCall('auxiliary-windows',closeAllAuxiliaryWindows);
+    await safeCall('auxiliary-windows',drainAuxiliaryWindows);
     await safeCall('project-safety',()=>prepareProjectSafety(reason));
 
     // Stop sources that can schedule more network work before waiting for
@@ -54,7 +54,7 @@ function createShutdownRuntime({
     // A reusable auxiliary window may have been in the middle of a close/hide
     // transition when shutdown began. Re-assert the application-owned final
     // state after background services have drained.
-    await safeCall('auxiliary-windows-final',closeAllAuxiliaryWindows);
+    await safeCall('auxiliary-windows-final',drainAuxiliaryWindows);
     readyForQuit=true;
   };
 
@@ -64,7 +64,10 @@ function createShutdownRuntime({
         .catch(error=>logFailure('coordinator',error))
         .finally(()=>{
           readyForQuit=true;
-          queueMicrotask(()=>app?.quit?.());
+          queueMicrotask(()=>{
+            if(typeof app?.exit==='function')app.exit(0);
+            else app?.quit?.();
+          });
         });
     }
     return shutdownPromise;
