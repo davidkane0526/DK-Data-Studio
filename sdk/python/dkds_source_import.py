@@ -437,6 +437,8 @@ def build_package(path:str|Path,function_id:str)->tuple[dict[str,Any],dict[str,A
             compiled,
             action_id=task["actionId"],
             input_bindings=task["inputBindings"],
+            result_tables=task["resultTables"],
+            result_metrics=task["resultMetrics"],
             dynamic_publish_tables=task["dynamicPublishTables"],
             dynamic_table_plots=task["dynamicTablePlots"],
             host_effects=task["hostEffects"],
