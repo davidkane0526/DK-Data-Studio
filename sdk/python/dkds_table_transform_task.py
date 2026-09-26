@@ -539,6 +539,73 @@ _HELPERS=r"""
     const cloneSeries=s=>({kind:'table.series',artifactId:String(s?.artifactId||''),id:String(s?.id||''),key:String(s?.key||''),name:String(s?.name||s?.key||''),unit:String(s?.unit||''),role:String(s?.role||''),quantity:String(s?.quantity||''),dimension:String(s?.dimension||''),dtype:String(s?.dtype||''),index:Array.from(s?.index||[]),indexNames:Array.from(s?.indexNames||[]),values:Array.from(s?.values||[])});
     const nullish=v=>v===null||v===undefined||(typeof v==='number'&&!Number.isFinite(v));
     const missing=v=>v===null||v===undefined||(typeof v==='number'&&Number.isNaN(v));
+    const ARRAY_MAX_LENGTH=65536;
+    const arrayNumber=v=>{if(typeof v!=='number')throw new Error('bounded Array IR accepts numeric values only');return v;};
+    const makeArray=values=>{
+      const rows=Array.from(values||[]);
+      if(rows.length>ARRAY_MAX_LENGTH)throw new Error('bounded Array length exceeds 65536');
+      return {kind:'array.vector',dtype:'number',values:rows.map(arrayNumber)};
+    };
+    const cloneArray=value=>{if(value?.kind!=='array.vector')throw new Error('Expected bounded array.vector');return makeArray(value.values);};
+    const arrayFromValue=value=>{
+      if(value?.kind==='array.vector')return cloneArray(value);
+      if(value?.kind!=='table.series')throw new Error('Array conversion requires Series or array.vector input');
+      return makeArray(Array.from(value.values||[]).map(v=>v===null||v===undefined?NaN:arrayNumber(v)));
+    };
+    const arrayItem=(value,index)=>{
+      const row=cloneArray(value),raw=Number(index);if(!Number.isInteger(raw))throw new Error('Array index must be an integer');
+      const resolved=raw<0?row.values.length+raw:raw;
+      if(resolved<0||resolved>=row.values.length)throw new Error('Array index out of bounds');
+      return row.values[resolved];
+    };
+    const arraySlice=(value,selector,env)=>{
+      const row=cloneArray(value),indices=resolveSelector(selector,env,row.values.length);
+      return makeArray(indices.map(index=>row.values[index]));
+    };
+    const arrayRange=config=>{
+      if(config.method==='linspace'){
+        const n=Number(config.num);if(!Number.isInteger(n)||n<0||n>ARRAY_MAX_LENGTH)throw new Error('np.linspace num is outside bounded range');
+        if(n===0)return makeArray([]);
+        if(n===1)return makeArray([Number(config.start)]);
+        const start=Number(config.start),stop=Number(config.stop),denom=config.endpoint?(n-1):n,step=(stop-start)/denom;
+        return makeArray(Array.from({length:n},(_,i)=>start+step*i));
+      }
+      if(config.method==='arange'){
+        const start=Number(config.start),stop=Number(config.stop),step=Number(config.step);
+        if(!Number.isFinite(step)||step===0)throw new Error('np.arange step must be finite and non-zero');
+        const out=[];for(let value=start;(step>0?value<stop:value>stop);value+=step){out.push(value);if(out.length>ARRAY_MAX_LENGTH)throw new Error('np.arange output exceeds 65536');}
+        return makeArray(out);
+      }
+      throw new Error('Unknown bounded array range constructor');
+    };
+    const arrayUnary=(value,method)=>{
+      const row=cloneArray(value),fn=method==='abs'?Math.abs:method==='sqrt'?Math.sqrt:method==='log'?Math.log:method==='log10'?Math.log10:method==='exp'?Math.exp:method==='neg'?(v=>-v):method==='pos'?(v=>+v):null;
+      if(!fn)throw new Error('Unsupported bounded array unary operation: '+method);
+      return makeArray(row.values.map(fn));
+    };
+    const arrayBinary=(left,right,operator)=>{
+      const leftArray=left?.kind==='array.vector',rightArray=right?.kind==='array.vector';
+      if(!leftArray&&!rightArray)throw new Error('Array binary operation requires at least one array');
+      const a=leftArray?cloneArray(left).values:null,b=rightArray?cloneArray(right).values:null;
+      const length=a?a.length:b.length;if(a&&b&&a.length!==b.length)throw new Error('Array binary operands must have equal lengths; only scalar broadcasting is supported');
+      const scalar=value=>{if(typeof value!=='number')throw new Error('Array scalar broadcast value must be numeric');return value;};
+      const apply=(x,y)=>operator==='add'?x+y:operator==='sub'?x-y:operator==='mul'?x*y:operator==='div'?x/y:operator==='pow'?x**y:operator==='mod'?x%y:NaN;
+      if(!['add','sub','mul','div','pow','mod'].includes(operator))throw new Error('Unsupported bounded array binary operator: '+operator);
+      return makeArray(Array.from({length},(_,i)=>apply(a?a[i]:scalar(left),b?b[i]:scalar(right))));
+    };
+    const arrayDiff=(value,n)=>{
+      let rows=cloneArray(value).values.slice(),count=Number(n);if(!Number.isInteger(count)||count<0)throw new Error('np.diff n must be a non-negative integer');
+      for(let round=0;round<count;round++){const next=[];for(let i=1;i<rows.length;i++)next.push(rows[i]-rows[i-1]);rows=next;}
+      return makeArray(rows);
+    };
+    const arrayReduce=(value,method,ddof=0)=>{
+      const rows=cloneArray(value).values;if(!rows.length)return NaN;
+      if(rows.some(Number.isNaN))return NaN;
+      if(method==='mean')return rows.reduce((sum,v)=>sum+v,0)/rows.length;
+      if(method==='median'){const sorted=rows.slice().sort((a,b)=>a-b),mid=Math.floor(sorted.length/2);return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;}
+      if(method==='std'){const denominator=rows.length-Number(ddof);if(!(denominator>0))return NaN;const mean=rows.reduce((sum,v)=>sum+v,0)/rows.length;return Math.sqrt(rows.reduce((sum,v)=>sum+(v-mean)*(v-mean),0)/denominator);}
+      throw new Error('Unsupported bounded array reducer: '+method);
+    };
     const resolveSelector=(selector,env,length)=>{
       if(!selector)return Array.from({length},(_,i)=>i);
       if(selector.kind==='symbol')return resolveSelector({kind:'literal',value:env[selector.name]},env,length);
@@ -767,8 +834,43 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
             lines.append(f"    env[{_js(output)}]=createGroupBy(env[{_js(op['input'])}],{_js(config)});")
         elif kind=="series.select":
             input_kind=report["symbolKinds"].get(str(op.get("input","")),"")
-            helper="selectGroupBy" if input_kind=="groupby.table" else "selectSeries"
-            lines.append(f"    env[{_js(output)}]={helper}(env[{_js(op['input'])}],{_js(op.get('selector'))});")
+            if input_kind=="groupby.table":
+                helper="selectGroupBy"
+                lines.append(f"    env[{_js(output)}]={helper}(env[{_js(op['input'])}],{_js(op.get('selector'))});")
+            elif input_kind=="array":
+                lines.append(f"    env[{_js(output)}]=arrayItem(env[{_js(op['input'])}],{_js((op.get('selector') or {}).get('value'))});")
+            else:
+                lines.append(f"    env[{_js(output)}]=selectSeries(env[{_js(op['input'])}],{_js(op.get('selector'))});")
+        elif kind=="array.literal":
+            config,error=_array_literal_config(op)
+            if error or config is None:raise ValueError("Array literal was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=makeArray({_js(config['values'])});")
+        elif kind=="array.from-value":
+            config,error=_array_kwargs(op)
+            if error or config is None:raise ValueError("Array conversion was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=arrayFromValue(env[{_js(op['input'])}]);")
+        elif kind=="array.range":
+            config,error=_array_range_config(op)
+            if error or config is None:raise ValueError("Array range was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=arrayRange({_js(config)});")
+        elif kind=="array.unary":
+            config,error=_array_unary_config(op)
+            if error or config is None:raise ValueError("Array unary operation was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=arrayUnary(env[{_js(op['input'])}],{_js(config['method'])});")
+        elif kind=="array.binary":
+            def operand_expr(row:dict[str,Any])->str:
+                return f"env[{_js(row['name'])}]" if row.get("kind")=="symbol" else _js(row.get("value"))
+            lines.append(f"    env[{_js(output)}]=arrayBinary({operand_expr(op['left'])},{operand_expr(op['right'])},{_js(op.get('operator'))});")
+        elif kind=="array.diff":
+            config,error=_array_diff_config(op)
+            if error or config is None:raise ValueError("Array diff operation was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=arrayDiff(env[{_js(op['input'])}],{_js(config['n'])});")
+        elif kind=="array.reduce":
+            config,error=_array_reduce_config(op)
+            if error or config is None:raise ValueError("Array reducer was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=arrayReduce(env[{_js(op['input'])}],{_js(config['method'])},{_js(config['ddof'])});")
+        elif kind=="array.slice":
+            lines.append(f"    env[{_js(output)}]=arraySlice(env[{_js(op['input'])}],{_js(op.get('selector'))},env);")
         elif kind=="table.slice":
             lines.append(f"    env[{_js(output)}]=sliceTable(env[{_js(op['input'])}],{_js(op.get('selector'))},env);")
         elif kind=="table.abs":
@@ -809,9 +911,11 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
             lines.append(f"    env[{_js(output)}]=aggregateGroupBy(env[{_js(op['input'])}],{_js(spec)},{{}});")
     table_outputs=[name for name in report["taskOutputSymbols"] if report["taskOutputKinds"].get(name)=="table"]
     series_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="series"]
+    array_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="array"]
     scalar_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="scalar"]
     tables_expr="{" + ",".join(f"{_js(name)}:exportTable(env[{_js(name)}])" for name in table_outputs) + "}"
     series_expr="{" + ",".join(f"{_js(name)}:exportSeries(env[{_js(name)}])" for name in series_outputs) + "}"
+    arrays_expr="{" + ",".join(f"{_js(name)}:cloneArray(env[{_js(name)}])" for name in array_outputs) + "}"
     values_expr="{" + ",".join(f"{_js(name)}:env[{_js(name)}]" for name in scalar_outputs) + "}"
     projected=[]
     for name in report["resultSymbols"]:
@@ -819,8 +923,10 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
         if not projection:continue
         if projection["kind"]=="series":
             projected.append(f"{_js(projection['key'])}:seriesRows(env[{_js(name)}])")
+        elif projection["kind"]=="array":
+            projected.append(f"{_js(projection['key'])}:cloneArray(env[{_js(name)}]).values.map((value,index)=>({{index,value}}))")
         elif projection["kind"]=="scalar":
             projected.append(f"{_js(projection['key'])}:env[{_js(name)}]")
     suffix=(","+",".join(projected)) if projected else ""
-    lines += [f"    return {{tables:{tables_expr},series:{series_expr},values:{values_expr}{suffix}}};","  }","});",""]
+    lines += [f"    return {{tables:{tables_expr},series:{series_expr},arrays:{arrays_expr},values:{values_expr}{suffix}}};","  }","});",""]
     return CompiledPortableTask(task_id=task_id,entry="generated-table-transform-"+re.sub(r"[^A-Za-z0-9._-]","-",task_id)+".js",source="\n".join(lines),parameters=params)
