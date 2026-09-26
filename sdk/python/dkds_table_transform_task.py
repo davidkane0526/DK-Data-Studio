@@ -71,8 +71,11 @@ def _curve_fit_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]
     source=str(model.get("source","") or "");name=str(model.get("name","") or "")
     if not source or not name:
         return None,("TABLE_TASK_CURVE_FIT_MODEL_INVALID","curve_fit model source/name is missing.")
+    roots=model.get("scalarMathRoots") or ["math"]
+    if not isinstance(roots,list) or any(not isinstance(value,str) for value in roots):
+        return None,("TABLE_TASK_CURVE_FIT_MODEL_INVALID","curve_fit scalar math roots are invalid.")
     try:
-        compiled=compile_portable_scalar_callback(source,function_name=name)
+        compiled=compile_portable_scalar_callback(source,function_name=name,scalar_math_roots=tuple(roots))
     except PortableTaskError as exc:
         return None,("TABLE_TASK_CURVE_FIT_MODEL_UNSUPPORTED",str(exc))
     parameter_count=len(compiled.parameters)-1
