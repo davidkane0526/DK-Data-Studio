@@ -1,3 +1,9 @@
+# SDK 1.51.79 — NumPy bounded Array IR (App 3.71.124)
+
+- Adds an internal one-dimensional numeric `array.vector` capped at 65,536 items, lowered from bounded NumPy-shaped authoring without a NumPy runtime.
+- Covers literal `np.array/asarray`, Series-to-Array conversion, `linspace/arange`, 1D item/slice access, unary/basic elementwise math with scalar broadcasting or equal-length arrays, `np.diff`, and NumPy `mean/median/std`.
+- Terminal Arrays reuse the existing Table Unit Index/Value projection and scalar outputs reuse Metric. 2D/general broadcasting/masks/arbitrary ufuncs/SciPy/export remain fail-closed; no Unit or Presenter/UI contract changes are introduced.
+
 # SDK 1.51.78 — GroupBy + aggregate (App 3.71.124)
 
 - Adds internal bounded DataFrameGroupBy/SeriesGroupBy values to the existing Python/Jupyter Table Transform IR, including literal single/multi-column keys and literal `sort/dropna/as_index` options.
