@@ -1,3 +1,9 @@
+# SDK 1.51.81 — bounded Series.apply() (App 3.71.124)
+
+- Adds expression-only pure scalar callbacks for numeric `Series.apply()`, using the shared portable Python expression lowerer and emitting JavaScript directly into the ordinary Core Task.
+- Supports unique top-level synchronous functions and closure-free inline lambdas, scalar literal defaults, approved pure builtin/math calls, and bounded literal `args=(...)`; Series index/metadata remain stable.
+- DataFrame/GroupBy apply, closures/free names, multi-statement callbacks, arbitrary Python callables and runtime Python remain fail-closed. No Unit, Presenter/UI contract or second execution runtime is introduced.
+
 # SDK 1.51.80 — to_csv() Host Export (App 3.71.124)
 
 - Maps bounded `DataFrame.to_csv(path,...)` to a Task-external Host effect. Source directories never become write authority; only the basename survives as a save-dialog suggestion and generated runtime writes through `ctx.io.saveText()` under an explicit native export intent.
