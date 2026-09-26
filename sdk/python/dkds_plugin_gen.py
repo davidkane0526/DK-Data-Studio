@@ -2071,23 +2071,62 @@ class PluginBuilder:
         for index, effect in enumerate(raw_host_effects):
             effect = _expect_object(effect, f"host_effects[{index}]")
             kind = str(effect.get("kind", ""))
-            if kind != "clipboard-table":
-                raise SpecError(f"host_effects[{index}].kind currently supports only clipboard-table")
-            extra = sorted(set(effect) - {"kind", "resultPath", "index", "header", "sep"})
-            if extra:
-                raise SpecError(f"unsupported host_effects[{index}] fields: {', '.join(extra)}")
+            if kind not in {"clipboard-table", "csv-export-table"}:
+                raise SpecError(f"host_effects[{index}].kind must be clipboard-table or csv-export-table")
             result_path = _nonempty(effect.get("resultPath"), f"host_effects[{index}].resultPath")
             if not all(IDENT.fullmatch(part) for part in result_path.split(".")):
                 raise SpecError(f"host_effects[{index}].resultPath must be a dotted identifier path")
-            sep = str(effect.get("sep", "\t"))
-            if not sep:
-                raise SpecError(f"host_effects[{index}].sep must not be empty")
+            if kind == "clipboard-table":
+                extra = sorted(set(effect) - {"kind", "resultPath", "index", "header", "sep"})
+                if extra:
+                    raise SpecError(f"unsupported host_effects[{index}] fields: {', '.join(extra)}")
+                sep = str(effect.get("sep", "\t"))
+                if not sep:
+                    raise SpecError(f"host_effects[{index}].sep must not be empty")
+                normalized_host_effects.append({
+                    "kind": kind,
+                    "resultPath": result_path,
+                    "index": bool(effect.get("index", True)),
+                    "header": bool(effect.get("header", True)),
+                    "sep": sep,
+                })
+                continue
+            extra = sorted(set(effect) - {
+                "kind", "resultPath", "defaultName", "sep", "naRep", "header", "index",
+                "columns", "encoding", "lineTerminator"
+            })
+            if extra:
+                raise SpecError(f"unsupported host_effects[{index}] fields: {', '.join(extra)}")
+            default_name = _nonempty(effect.get("defaultName", "export.csv"), f"host_effects[{index}].defaultName")
+            if "/" in default_name or "\\" in default_name:
+                raise SpecError(f"host_effects[{index}].defaultName must be a basename, not a path")
+            sep = str(effect.get("sep", ","))
+            if len(sep) != 1:
+                raise SpecError(f"host_effects[{index}].sep must be exactly one character")
+            columns = effect.get("columns")
+            if columns is not None:
+                if not isinstance(columns, list) or not columns or any(isinstance(value, bool) or not isinstance(value, (str, int)) for value in columns):
+                    raise SpecError(f"host_effects[{index}].columns must be a non-empty list of string/integer labels")
+                columns = list(columns)
+            encoding = str(effect.get("encoding", "utf-8")).lower().replace("_", "-")
+            if encoding == "utf8":
+                encoding = "utf-8"
+            if encoding not in {"utf-8", "utf-8-sig"}:
+                raise SpecError(f"host_effects[{index}].encoding must be utf-8 or utf-8-sig")
+            line_terminator = str(effect.get("lineTerminator", "\n"))
+            if line_terminator not in {"\n", "\r\n"}:
+                raise SpecError(f"host_effects[{index}].lineTerminator must be LF or CRLF")
             normalized_host_effects.append({
                 "kind": kind,
                 "resultPath": result_path,
-                "index": bool(effect.get("index", True)),
-                "header": bool(effect.get("header", True)),
+                "defaultName": default_name,
                 "sep": sep,
+                "naRep": str(effect.get("naRep", "")),
+                "header": bool(effect.get("header", True)),
+                "index": bool(effect.get("index", True)),
+                "columns": columns,
+                "encoding": encoding,
+                "lineTerminator": line_terminator,
             })
 
         normalized_result_plots: List[Dict[str, str]] = []
@@ -2296,6 +2335,17 @@ class PluginBuilder:
     def _task_for_action(self, action_id: str) -> dict[str, Any] | None:
         return next((row for row in self._portable_tasks if row["action_id"] == action_id), None)
 
+    def _task_native_effect_source(self, action_id: str) -> str:
+        task = self._task_for_action(action_id)
+        if task is None:
+            return ""
+        effects = task.get("host_effects") or []
+        if any(effect.get("kind") == "csv-export-table" for effect in effects):
+            return ",nativeSave:'export'"
+        if any(effect.get("kind") == "clipboard-table" for effect in effects):
+            return ",nativeCopy:'clipboard'"
+        return ""
+
     def _field_read_expr(self, field_id: str) -> str:
         parameters = self.spec.get("parameters") or {}
         field = next(row for row in parameters.get("fields", []) if row["id"] == field_id)
@@ -2483,24 +2533,48 @@ class PluginBuilder:
                     f"        {base}_surface.requestRender?.('task-table');",
                 ]
             for effect_index, effect in enumerate(row.get("host_effects", [])):
-                if effect["kind"] != "clipboard-table":
-                    continue
-                token = f"__dkdsClipboardTable_{effect_index}"
+                token = f"__dkdsHostTable_{effect_index}"
                 path_expr = _js(effect["resultPath"].split("."))
                 sep = _js(effect["sep"])
                 include_index = str(effect["index"]).lower()
                 include_header = str(effect["header"]).lower()
-                lines += [
-                    f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
-                    f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Clipboard source '+effect['resultPath']+' must be a data.table snapshot')});",
-                    f"        {{const separator={sep},includeIndex={include_index},includeHeader={include_header},columns={token}.columns,rowCount=Number({token}.rowCount)||0,indexValues=Array.from({token}.index||Array.from({{length:rowCount}},(_,index)=>index));",
-                    "          const quote=String.fromCharCode(34),lf=String.fromCharCode(10),cr=String.fromCharCode(13);",
-                    "          const cell=value=>{const text=value===null||value===undefined?'':String(value);return (text.includes(separator)||text.includes(quote)||text.includes(lf)||text.includes(cr))?quote+text.replaceAll(quote,quote+quote)+quote:text;};",
-                    "          const rows=[];",
-                    "          if(includeHeader)rows.push([...(includeIndex?['']:[]),...columns.map(column=>column?.name||column?.key||'')].map(cell).join(separator));",
-                    "          for(let rowIndex=0;rowIndex<rowCount;rowIndex++)rows.push([...(includeIndex?[indexValues[rowIndex]??rowIndex]:[]),...columns.map(column=>Array.from(column?.values||[])[rowIndex])].map(cell).join(separator));",
-                    "          const copied=await ctx.io.clipboard.writeText(rows.join(lf));if(copied===false)throw new Error('Clipboard write failed');}",
-                ]
+                if effect["kind"] == "clipboard-table":
+                    lines += [
+                        f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
+                        f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('Clipboard source '+effect['resultPath']+' must be a data.table snapshot')});",
+                        f"        {{const separator={sep},includeIndex={include_index},includeHeader={include_header},columns={token}.columns,rowCount=Number({token}.rowCount)||0,indexValues=Array.from({token}.index||Array.from({{length:rowCount}},(_,index)=>index));",
+                        "          const quote=String.fromCharCode(34),lf=String.fromCharCode(10),cr=String.fromCharCode(13);",
+                        "          const cell=value=>{const text=value===null||value===undefined?'':String(value);return (text.includes(separator)||text.includes(quote)||text.includes(lf)||text.includes(cr))?quote+text.replaceAll(quote,quote+quote)+quote:text;};",
+                        "          const rows=[];",
+                        "          if(includeHeader)rows.push([...(includeIndex?['']:[]),...columns.map(column=>column?.name||column?.key||'')].map(cell).join(separator));",
+                        "          for(let rowIndex=0;rowIndex<rowCount;rowIndex++)rows.push([...(includeIndex?[indexValues[rowIndex]??rowIndex]:[]),...columns.map(column=>Array.from(column?.values||[])[rowIndex])].map(cell).join(separator));",
+                        "          const copied=await ctx.io.clipboard.writeText(rows.join(lf));if(copied===false)throw new Error('Clipboard write failed');}",
+                    ]
+                    continue
+                if effect["kind"] == "csv-export-table":
+                    default_name = _js(effect["defaultName"])
+                    na_rep = _js(effect["naRep"])
+                    columns = _js(effect["columns"])
+                    encoding = _js(effect["encoding"])
+                    line_terminator = _js(effect["lineTerminator"])
+                    lines += [
+                        f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);",
+                        f"        if(!{token}||{token}.kind!=='data.table'||!Array.isArray({token}.columns))throw new Error({_js('CSV export source '+effect['resultPath']+' must be a data.table snapshot')});",
+                        f"        {{const separator={sep},naRep={na_rep},includeIndex={include_index},includeHeader={include_header},requestedColumns={columns},encoding={encoding},lineTerminator={line_terminator},table={token};",
+                        "          const allColumns=Array.from(table.columns||[]),resolveColumn=label=>{const text=String(label),matches=allColumns.filter(column=>[column?.key,column?.name,column?.id].some(value=>String(value)===text));if(matches.length!==1)throw new Error(matches.length?'CSV export column label is ambiguous: '+text:'CSV export column not found: '+text);return matches[0];};",
+                        "          const columns=requestedColumns===null?allColumns:requestedColumns.map(resolveColumn),rowCount=Number(table.rowCount)||Math.max(0,...columns.map(column=>Array.from(column?.values||[]).length));",
+                        "          const indexValues=Array.from(table.index||Array.from({length:rowCount},(_,index)=>index)),indexNames=Array.from(table.indexNames||[]),indexWidth=includeIndex?Math.max(1,indexNames.length):0;",
+                        "          const quote=String.fromCharCode(34),lf=String.fromCharCode(10),cr=String.fromCharCode(13);",
+                        "          const scalar=value=>{if(value===null||value===undefined||(typeof value==='number'&&Number.isNaN(value)))return naRep;if(value===Infinity)return 'inf';if(value===-Infinity)return '-inf';return String(value);};",
+                        "          const cell=value=>{const text=scalar(value);return (text.includes(separator)||text.includes(quote)||text.includes(lf)||text.includes(cr))?quote+text.replaceAll(quote,quote+quote)+quote:text;};",
+                        "          const indexCells=rowIndex=>{if(!includeIndex)return [];const value=indexValues[rowIndex]??rowIndex;if(indexWidth===1)return [value];return Array.isArray(value)?Array.from({length:indexWidth},(_,level)=>value[level]):[value,...Array(indexWidth-1).fill(null)];};",
+                        "          const rows=[];",
+                        "          if(includeHeader)rows.push([...(includeIndex?(indexNames.length?indexNames:Array(indexWidth).fill('')):[]),...columns.map(column=>column?.name||column?.key||'')].map(cell).join(separator));",
+                        "          for(let rowIndex=0;rowIndex<rowCount;rowIndex++)rows.push([...indexCells(rowIndex),...columns.map(column=>Array.from(column?.values||[])[rowIndex])].map(cell).join(separator));",
+                        f"          const csv=(encoding==='utf-8-sig'?'\\uFEFF':'')+rows.join(lineTerminator);const saved=await ctx.io.saveText({{defaultName:{default_name},content:csv,filters:[{{name:'CSV',extensions:['csv']}}],source:'plugin:'+manifest.id+':python-to-csv'}});if(saved===false)throw new Error('CSV export cancelled or failed');}}",
+                    ]
+                    continue
+                raise SpecError(f"unsupported normalized host effect: {effect['kind']}")
             for projection in row["result_plots"]:
                 base = _var(projection["id"])
                 key = projection["key"]
@@ -2789,6 +2863,7 @@ class PluginBuilder:
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
             icon = f",icon:{_js(action['icon'])}" if action.get("icon") else ""
             order = f",order:{int(action.get('order', 0))}"
+            native_effect = self._task_native_effect_source(action["id"])
             task = self._task_for_action(action["id"])
             if task is not None:
                 if task.get("domain_command") is not None:
@@ -2798,8 +2873,8 @@ class PluginBuilder:
             else:
                 invoke = f"()=>{{ctx.status.set({_js(action['statusMessage'])});return true;}}"
             rows.append(
-                "{id:%s,label:%s%s%s%s,onInvoke:%s}"
-                % (_js(action["id"]), _js(action["label"]), variant, icon, order, invoke)
+                "{id:%s,label:%s%s%s%s%s,onInvoke:%s}"
+                % (_js(action["id"]), _js(action["label"]), variant, icon, order, native_effect, invoke)
             )
         return "[" + ",".join(rows) + "]"
 
@@ -2931,7 +3006,7 @@ class PluginBuilder:
                         action = next(row for row in self.spec["actions"] if row["id"] == action_id)
                         variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
                         lines.append(
-                            f"    units.action.create({base}_action_grid,{{id:{_js(action_id)},label:{_js(action['label'])}{variant},direct:true,onInvoke:{self._action_invoke_source(action_id)}}});"
+                            f"    units.action.create({base}_action_grid,{{id:{_js(action_id)},label:{_js(action['label'])}{variant}{self._task_native_effect_source(action_id)},direct:true,onInvoke:{self._action_invoke_source(action_id)}}});"
                         )
                 if group.get("toolbar") is not None:
                     toolbar = group["toolbar"]
@@ -3151,7 +3226,7 @@ class PluginBuilder:
             action = next(row for row in self.spec["actions"] if row["id"] == node["actionId"])
             variant = f",variant:{_js(action['variant'])}" if action.get("variant") else ""
             lines.append(
-                f"    const {base}=units.action.create({host},{{id:{_js(node['actionId'])},label:{_js(action['label'])}{variant},direct:true,onInvoke:{self._action_invoke_source(node['actionId'])}}});"
+                f"    const {base}=units.action.create({host},{{id:{_js(node['actionId'])},label:{_js(action['label'])}{variant}{self._task_native_effect_source(node['actionId'])},direct:true,onInvoke:{self._action_invoke_source(node['actionId'])}}});"
             )
             return lines
 
