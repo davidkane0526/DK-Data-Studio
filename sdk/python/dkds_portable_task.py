@@ -128,7 +128,7 @@ class _Lowerer:
             _annotation_root(fn.returns)
 
         assigned = _assigned_names(fn)
-        allowed_names = assigned | _ALLOWED_CALLS | _SUPPORTED_ANNOTATION_ROOTS | {"range", "math", "True", "False", "None"}
+        allowed_names = assigned | _ALLOWED_CALLS | _SUPPORTED_ANNOTATION_ROOTS | {"range", "math", "np", "numpy", "True", "False", "None"}
         free = sorted(_loaded_names(fn) - allowed_names)
         if free:
             raise self._fail(fn, "Portable task has free/global names: " + ", ".join(free))
@@ -289,12 +289,13 @@ class _Lowerer:
                 self._arity(node, args, 1)
                 return f"String({args[0]})"
         if isinstance(node.func, ast.Attribute):
-            if isinstance(node.func.value, ast.Name) and node.func.value.id == "math":
+            if isinstance(node.func.value, ast.Name) and node.func.value.id in {"math","np","numpy"}:
+                root=node.func.value.id
                 name = _MATH_CALLS.get(node.func.attr)
                 if not name:
-                    raise self._fail(node, f"Unsupported math function: math.{node.func.attr}")
+                    raise self._fail(node, f"Unsupported scalar math function: {root}.{node.func.attr}")
                 return f"Math.{name}({','.join(args)})"
-        raise self._fail(node, "Only approved pure builtins and math.* calls are portable")
+        raise self._fail(node, "Only approved pure builtins and math/np scalar calls are portable")
 
     def _arity(self, node: ast.AST, args: list[str], expected: int) -> None:
         if len(args) != expected:
