@@ -39,9 +39,16 @@ function Stop-Tree([int]$RootPid) {
 $root = $null
 try {
   Write-Host "Launching packaged Desktop runtime: $exe"
-  $arguments = @()
-  if ($CommandCloseSmoke) { $arguments += '--dkds-window-command-close-smoke' }
-  $root = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+  $hadSmokeEnv = Test-Path Env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE
+  $previousSmokeEnv = $env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE
+  try {
+    if ($CommandCloseSmoke) { $env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE = '1' }
+    else { Remove-Item Env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE -ErrorAction SilentlyContinue }
+    $root = Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+  } finally {
+    if ($hadSmokeEnv) { $env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE = $previousSmokeEnv }
+    else { Remove-Item Env:DKDS_WINDOW_COMMAND_CLOSE_SMOKE -ErrorAction SilentlyContinue }
+  }
   [void]$knownIds.Add([int]$root.Id)
   Write-Host "Root PID=$($root.Id)"
 
