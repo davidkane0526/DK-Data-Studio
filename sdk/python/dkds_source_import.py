@@ -327,6 +327,15 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
                 "index":bool(effect.get("index",True)),"header":bool(effect.get("header",True)),
                 "sep":str(effect.get("sep","\t")),
             })
+        elif effect.get("kind")=="csv-export-table":
+            task_host_effects.append({
+                "kind":"csv-export-table","resultPath":"rawTables."+input_symbol,
+                "defaultName":str(effect.get("defaultName","export.csv")),
+                "sep":str(effect.get("sep",",")),"naRep":str(effect.get("naRep","")),
+                "header":bool(effect.get("header",True)),"index":bool(effect.get("index",True)),
+                "columns":effect.get("columns"),"encoding":str(effect.get("encoding","utf-8")),
+                "lineTerminator":str(effect.get("lineTerminator","\n")),
+            })
 
     result_tables=[]
     result_metrics=[]
@@ -368,7 +377,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
     return {
         "schema":BLUEPRINT_SCHEMA,
         "candidateId":WORKFLOW_CANDIDATE_ID,
-        "buildable":bool(execution.get("executable") and source_inputs and result_symbols and not diagnostics),
+        "buildable":bool(execution.get("executable") and source_inputs and (result_symbols or host_effects) and not diagnostics),
         "diagnostics":diagnostics,
         "spec":spec,
         "task":{
