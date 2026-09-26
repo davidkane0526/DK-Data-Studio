@@ -17,7 +17,7 @@ EXECUTION_SCHEMA="dkds.table-transform-execution.v1"
 TASK_ID=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTABLE={
     "source.table","value.bind","value.alias",
-    "series.select","series.apply","groupby.create","groupby.aggregate",
+    "series.select","series.apply","fit.curve","groupby.create","groupby.aggregate",
     "array.literal","array.from-value","array.range","array.unary","array.binary","array.diff","array.reduce","array.slice",
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index","table.concat",
@@ -63,6 +63,42 @@ def _series_apply_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,s
         if value is not None and not isinstance(value,(str,int,float,bool)):
             return None,("TABLE_TASK_APPLY_ARGS_LITERAL","Series.apply extra args must be scalar literals.")
     return {"callbackSource":compiled.source,"parameters":list(compiled.parameters),"required":compiled.required_parameters,"args":args},None
+
+def _curve_fit_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    model=op.get("model")
+    if not isinstance(model,dict):
+        return None,("TABLE_TASK_CURVE_FIT_MODEL_INVALID","curve_fit requires one bounded model descriptor.")
+    source=str(model.get("source","") or "");name=str(model.get("name","") or "")
+    if not source or not name:
+        return None,("TABLE_TASK_CURVE_FIT_MODEL_INVALID","curve_fit model source/name is missing.")
+    try:
+        compiled=compile_portable_scalar_callback(source,function_name=name)
+    except PortableTaskError as exc:
+        return None,("TABLE_TASK_CURVE_FIT_MODEL_UNSUPPORTED",str(exc))
+    parameter_count=len(compiled.parameters)-1
+    if parameter_count<1 or parameter_count>6:
+        return None,("TABLE_TASK_CURVE_FIT_MODEL_ARITY","bounded curve_fit requires x plus 1..6 fit parameters.")
+    p0=op.get("p0")
+    if p0 is None:
+        initial=[1.0]*parameter_count
+    else:
+        if not isinstance(p0,list) or len(p0)!=parameter_count:
+            return None,("TABLE_TASK_CURVE_FIT_P0_ARITY",f"curve_fit p0 must contain exactly {parameter_count} value(s).")
+        initial=[]
+        for value in p0:
+            if isinstance(value,bool) or not isinstance(value,(int,float)):
+                return None,("TABLE_TASK_CURVE_FIT_P0_INVALID","curve_fit p0 values must be numeric literals.")
+            value=float(value)
+            if not __import__("math").isfinite(value):
+                return None,("TABLE_TASK_CURVE_FIT_P0_INVALID","curve_fit p0 values must be finite.")
+            initial.append(value)
+    return {
+        "modelSource":compiled.source,
+        "parameterNames":list(compiled.parameters[1:]),
+        "parameterCount":parameter_count,
+        "p0":initial,
+        "maxIterations":200,
+    },None
 
 def _aggregate_config(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None,tuple[str,str]|None]:
     kind=str(op.get("kind",""))
@@ -463,6 +499,17 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
             if input_kind!="series":
                 diagnostics.append(_diag(op,"TABLE_TASK_APPLY_INPUT_UNSUPPORTED","SDK 1.51.81 supports Series.apply only; DataFrame.apply and GroupBy.apply remain fail-closed."))
             output_kind="series"
+        elif kind=="fit.curve":
+            config,error=_curve_fit_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if len(inputs)!=2:
+                diagnostics.append(_diag(op,"TABLE_TASK_CURVE_FIT_INPUT_COUNT","curve_fit requires exactly xdata and ydata inputs."))
+            else:
+                for position,input_name in enumerate(inputs):
+                    input_type=symbol_kinds.get(input_name,"")
+                    if input_type not in {"series","array"}:
+                        diagnostics.append(_diag(op,"TABLE_TASK_CURVE_FIT_INPUT_UNSUPPORTED",f"curve_fit {'xdata' if position==0 else 'ydata'} must be a Series or bounded Array."))
+            output_kind="array"
         elif kind=="array.literal":
             config,error=_array_literal_config(op)
             if error:diagnostics.append(_diag(op,error[0],error[1]))
@@ -748,6 +795,83 @@ _HELPERS=r"""
       });
       row.dtype='number';row.role=row.role||'derived';return row;
     };
+    const fitVector=(value,label)=>{
+      let rows;
+      if(value?.kind==='array.vector')rows=cloneArray(value).values;
+      else if(value?.kind==='table.series')rows=cloneSeries(value).values;
+      else throw new Error('curve_fit '+label+' must be Series or array.vector');
+      if(!rows.length)throw new Error('curve_fit '+label+' must not be empty');
+      if(rows.length>65536)throw new Error('curve_fit '+label+' exceeds bounded maximum 65536');
+      return rows.map((cell,index)=>{
+        if(typeof cell!=='number'||!Number.isFinite(cell))throw new Error('curve_fit '+label+' requires finite numeric values at row '+index);
+        return cell;
+      });
+    };
+    const solveLinear=(matrix,vector)=>{
+      const n=vector.length,a=matrix.map((row,index)=>[...row,vector[index]]);
+      for(let col=0;col<n;col++){
+        let pivot=col,best=Math.abs(a[col][col]);
+        for(let row=col+1;row<n;row++){const score=Math.abs(a[row][col]);if(score>best){best=score;pivot=row;}}
+        if(!(best>1e-18)||!Number.isFinite(best))return null;
+        if(pivot!==col){const swap=a[col];a[col]=a[pivot];a[pivot]=swap;}
+        const divisor=a[col][col];
+        for(let k=col;k<=n;k++)a[col][k]/=divisor;
+        for(let row=0;row<n;row++){
+          if(row===col)continue;
+          const factor=a[row][col];if(factor===0)continue;
+          for(let k=col;k<=n;k++)a[row][k]-=factor*a[col][k];
+        }
+      }
+      const out=a.map(row=>row[n]);
+      return out.every(Number.isFinite)?out:null;
+    };
+    const curveFit=(xValue,yValue,model,p0,maxIterations)=>{
+      const x=fitVector(xValue,'xdata'),y=fitVector(yValue,'ydata');
+      if(x.length!==y.length)throw new Error('curve_fit xdata/ydata lengths must match');
+      if(typeof model!=='function')throw new Error('curve_fit model is unavailable');
+      let params=Array.from(p0||[]).map(Number);
+      if(!params.length||params.length>6||params.some(value=>!Number.isFinite(value)))throw new Error('curve_fit initial parameter vector is invalid');
+      if(x.length<params.length)throw new Error('curve_fit requires at least as many observations as fit parameters');
+      const predict=vector=>x.map((xv,index)=>{
+        let value;
+        try{value=Number(model(xv,...vector));}catch(error){throw new Error('curve_fit model failed at row '+index+': '+String(error?.message||error||'model error'));}
+        if(!Number.isFinite(value))throw new Error('curve_fit model produced non-finite output at row '+index);
+        return value;
+      });
+      const cost=prediction=>prediction.reduce((sum,value,index)=>{const residual=y[index]-value;return sum+residual*residual;},0);
+      let prediction=predict(params),score=cost(prediction),lambda=1e-3,accepted=0,converged=false;
+      const iterations=Math.max(1,Math.min(200,Number(maxIterations)||200));
+      for(let iteration=0;iteration<iterations;iteration++){
+        const m=x.length,n=params.length,jacobian=Array.from({length:m},()=>Array(n).fill(0));
+        for(let column=0;column<n;column++){
+          const step=Math.sqrt(Number.EPSILON)*(Math.abs(params[column])+1);
+          const plus=params.slice(),minus=params.slice();plus[column]+=step;minus[column]-=step;
+          const pPlus=predict(plus),pMinus=predict(minus);
+          for(let row=0;row<m;row++)jacobian[row][column]=(pPlus[row]-pMinus[row])/(2*step);
+        }
+        const normal=Array.from({length:n},()=>Array(n).fill(0)),gradient=Array(n).fill(0);
+        for(let row=0;row<m;row++){
+          const residual=y[row]-prediction[row];
+          for(let a=0;a<n;a++){
+            const ja=jacobian[row][a];gradient[a]+=ja*residual;
+            for(let b=0;b<n;b++)normal[a][b]+=ja*jacobian[row][b];
+          }
+        }
+        for(let j=0;j<n;j++)normal[j][j]+=lambda*(Math.abs(normal[j][j])+1e-12);
+        const delta=solveLinear(normal,gradient);
+        if(!delta){lambda=Math.min(1e12,lambda*10);continue;}
+        const candidate=params.map((value,index)=>value+delta[index]);
+        if(candidate.some(value=>!Number.isFinite(value))){lambda=Math.min(1e12,lambda*10);continue;}
+        const candidatePrediction=predict(candidate),candidateScore=cost(candidatePrediction);
+        if(candidateScore<score){
+          const improvement=score-candidateScore,normDelta=Math.sqrt(delta.reduce((sum,value)=>sum+value*value,0)),normParams=Math.sqrt(candidate.reduce((sum,value)=>sum+value*value,0));
+          params=candidate;prediction=candidatePrediction;score=candidateScore;accepted++;lambda=Math.max(1e-12,lambda*0.3);
+          if(normDelta<=1e-9*(normParams+1)||improvement<=1e-12*(score+1)){converged=true;break;}
+        }else lambda=Math.min(1e12,lambda*10);
+      }
+      if(!converged&&accepted===0)throw new Error('curve_fit bounded LM solver could not improve the initial parameters');
+      return makeArray(params);
+    };
     const columnByLabel=(table,label)=>{
       const text=String(label);
       const matches=(table?.columns||[]).filter(c=>[c.key,c.name,c.id].some(value=>String(value)===text));
@@ -951,6 +1075,11 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
             config,error=_series_apply_config(op)
             if error or config is None:raise ValueError("Series.apply callback was not validated before compilation")
             lines.append(f"    env[{_js(output)}]=applySeries(env[{_js(op['input'])}],{config['callbackSource']},{_js(config['args'])});")
+        elif kind=="fit.curve":
+            config,error=_curve_fit_config(op)
+            if error or config is None:raise ValueError("curve_fit model was not validated before compilation")
+            x_name=str(op.get("x",""));y_name=str(op.get("y",""))
+            lines.append(f"    env[{_js(output)}]=curveFit(env[{_js(x_name)}],env[{_js(y_name)}],{config['modelSource']},{_js(config['p0'])},{int(config['maxIterations'])});")
         elif kind=="array.literal":
             config,error=_array_literal_config(op)
             if error or config is None:raise ValueError("Array literal was not validated before compilation")
