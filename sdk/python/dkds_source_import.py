@@ -304,7 +304,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
             "maxRows":65536,"maxColumns":1024,
         }
         source_bindings.append({"symbol":symbol,"field":field_id,"hint":source_hint})
-    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Sources bind to scoped DKDS DataTables; terminal DataFrames publish to the Artifact Store while Series/scalars use existing Unit result projections."}]
+    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas/NumPy are authoring-time only. Sources bind to scoped DKDS DataTables; terminal DataFrames publish to the Artifact Store while Series/Array/scalar values reuse existing Unit result projections."}]
     dynamic_plots=[]
     task_host_effects=[]
     for effect_index,effect in enumerate(host_effects):
@@ -335,10 +335,10 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         kind=result_kinds.get(symbol,"")
         projection=result_projections.get(symbol) or {}
         projection_key=str(projection.get("key",""))
-        if kind=="series":
-            table_id=f"workflow-series-{index+1}"
+        if kind in {"series","array"}:
+            table_id=f"workflow-{kind}-{index+1}"
             content.append({
-                "kind":"table","id":table_id,"title":f"Series · {symbol}",
+                "kind":"table","id":table_id,"title":f"{'Series' if kind=='series' else 'Array'} · {symbol}",
                 "columns":[{"key":"index","label":"Index"},{"key":"value","label":"Value"}],"rows":[],
             })
             result_tables.append({"id":table_id,"key":projection_key})
