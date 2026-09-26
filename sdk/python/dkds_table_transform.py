@@ -128,6 +128,93 @@ def _call_literals(cell:int,node:ast.AST,call:ast.Call,method:str)->tuple[list[A
         return [],{},_diag(cell,node,"TABLE_IR_KEYWORD_UNRESOLVED",f"{method} keyword arguments must be literal in IR v1.")
     return args,kwargs,None
 
+def _callback_sources(cells:list[dict[str,Any]])->tuple[dict[str,dict[str,Any]],set[str]]:
+    callbacks={}
+    duplicates=set()
+    for cell in cells:
+        try:tree=ast.parse(_sanitize(cell["source"]),mode="exec")
+        except SyntaxError:continue
+        for node in tree.body:
+            if not isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)):continue
+            if node.name in callbacks:
+                duplicates.add(node.name)
+                continue
+            callbacks[node.name]={
+                "name":node.name,
+                "source":_unparse(node),
+                "async":isinstance(node,ast.AsyncFunctionDef),
+                "cellIndex":int(cell["index"]),
+                "line":int(getattr(node,"lineno",0) or 0),
+            }
+    return callbacks,duplicates
+
+def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
+    if isinstance(expr,ast.Name):
+        if expr.id in duplicates:
+            return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_AMBIGUOUS",f"Series.apply callback {expr.id} has multiple top-level definitions.")
+        callback=callbacks.get(expr.id)
+        if callback is None:
+            return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNRESOLVED",f"Series.apply callback {expr.id} must be one top-level function in the imported source.")
+        if callback.get("async"):
+            return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_ASYNC","Series.apply callbacks must be synchronous.")
+        return {"name":callback["name"],"source":callback["source"],"kind":"named"},None
+    if isinstance(expr,ast.Lambda):
+        args=expr.args
+        if args.posonlyargs or args.kwonlyargs or args.vararg or args.kwarg:
+            return None,_diag(cell,node,"TABLE_IR_APPLY_LAMBDA_SIGNATURE","Inline Series.apply lambda supports positional parameters only.")
+        params=list(args.args)
+        if not 1<=len(params)<=8:
+            return None,_diag(cell,node,"TABLE_IR_APPLY_LAMBDA_SIGNATURE","Inline Series.apply lambda requires between 1 and 8 positional parameters.")
+        first_default=len(params)-len(args.defaults)
+        parts=[]
+        for index,arg in enumerate(params):
+            if index>=first_default:
+                ok,default=_literal(args.defaults[index-first_default])
+                if not ok or (default is not None and not isinstance(default,(str,int,float,bool))):
+                    return None,_diag(cell,node,"TABLE_IR_APPLY_LAMBDA_DEFAULT","Inline Series.apply lambda defaults must be scalar literals.")
+                parts.append(arg.arg+"="+repr(default))
+            else:parts.append(arg.arg)
+        name="__dkds_inline_apply"
+        source="def "+name+"("+",".join(parts)+"):\n    return "+_unparse(expr.body)
+        return {"name":name,"source":source,"kind":"lambda"},None
+    return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNSUPPORTED","Series.apply callback must be a top-level function name or an inline lambda.")
+
+def _series_apply_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+    if not isinstance(call.func,ast.Attribute) or call.func.attr!="apply":
+        return [],_diag(cell,node,"TABLE_IR_APPLY_CALL_INVALID","Expected Series.apply call.")
+    if len(call.args)!=1:
+        return [],_diag(cell,node,"TABLE_IR_APPLY_ARGS","Series.apply bounded v1 requires exactly one callback positional argument.")
+    callback,error=_apply_callback(cell,node,call.args[0],callbacks,duplicates)
+    if error:return [],error
+    kwargs={}
+    for keyword in call.keywords:
+        if keyword.arg!="args":
+            return [],_diag(cell,node,"TABLE_IR_APPLY_KWARGS_UNSUPPORTED",f"Series.apply keyword {keyword.arg or '**kwargs'} is outside bounded v1; only literal args= is supported.")
+        ok,value=_literal(keyword.value)
+        if not ok or not isinstance(value,(list,tuple)):
+            return [],_diag(cell,node,"TABLE_IR_APPLY_ARGS_LITERAL","Series.apply args= must be a literal list/tuple.")
+        values=list(value)
+        if any(item is not None and not isinstance(item,(str,int,float,bool)) for item in values):
+            return [],_diag(cell,node,"TABLE_IR_APPLY_ARGS_LITERAL","Series.apply args= values must be scalar literals.")
+        kwargs["args"]=values
+    owner_expr=call.func.value
+    emitted=[]
+    selected=_series_selection(owner_expr)
+    if selected:
+        source,selector=selected
+        input_name=f"__dkds_apply_series_{cell}_{int(getattr(node,'lineno',0) or 0)}_{index}"
+        emitted.append({"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"series.select","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":input_name,"input":source,"selector":selector})
+    elif isinstance(owner_expr,ast.Name):
+        input_name=owner_expr.id
+    else:
+        return [],_diag(cell,node,"TABLE_IR_APPLY_INPUT_UNRESOLVED","Series.apply input must be one Series symbol or literal single-column DataFrame selection.")
+    emitted.append({
+        "id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index+len(emitted)),
+        "kind":"series.apply","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),
+        "output":output,"input":input_name,"callback":callback,"args":kwargs.get("args",[]),
+    })
+    return emitted,None
+
 def _groupby_call(node:ast.AST)->ast.Call|None:
     if not isinstance(node,ast.Call) or not isinstance(node.func,ast.Attribute):return None
     if node.func.attr!="groupby" or not isinstance(node.func.value,ast.Name):return None
@@ -213,7 +300,7 @@ def _numpy_call_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)->tu
         return emitted,None
     return [],_diag(cell,node,"TABLE_IR_NUMPY_CALL_UNSUPPORTED",f"np.{method or 'unknown'} is outside bounded Array IR v1.")
 
-def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
     output=_assign_target(node)
     if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
     value=node.value
@@ -249,6 +336,8 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list
             return [{"id":_op_id(cell,node.lineno,index),"kind":"table.slice","cellIndex":cell,"line":node.lineno,"output":output,"input":source,"mode":value.value.attr,"selector":selector}],None
         return [],_diag(cell,node,"TABLE_IR_SLICE_UNRESOLVED","iloc/loc selectors must be static literals/slices or simple symbols.")
     if isinstance(value,ast.Call):
+        if isinstance(value.func,ast.Attribute) and value.func.attr=="apply":
+            return _series_apply_op(cell,node,index,output,value,callbacks,duplicates)
         if isinstance(value.func,ast.Attribute) and value.func.attr=="to_numpy":
             emitted,input_name,error=_array_input(cell,node,index,value.func.value)
             if error:return [],error
@@ -347,6 +436,7 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
     diagnostics=[]
     statement_count=0
     lowered_statement_count=0
+    callbacks,duplicate_callbacks=_callback_sources(cells)
     for cell in cells:
         try:tree=ast.parse(_sanitize(cell["source"]),filename=f"{source_path.name}#cell-{cell['index']}",mode="exec")
         except SyntaxError:continue
@@ -357,7 +447,7 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
             emitted=[]
             diagnostic=None
             if isinstance(node,(ast.Assign,ast.AnnAssign)):
-                emitted,diagnostic=_assignment_op(cell["index"],node,op_index)
+                emitted,diagnostic=_assignment_op(cell["index"],node,op_index,callbacks,duplicate_callbacks)
             elif isinstance(node,ast.Expr):
                 operation,diagnostic=_expression_op(cell["index"],node,op_index)
                 if operation:emitted=[operation]
