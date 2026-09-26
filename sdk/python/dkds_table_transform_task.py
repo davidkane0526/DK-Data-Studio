@@ -17,12 +17,13 @@ EXECUTION_SCHEMA="dkds.table-transform-execution.v1"
 TASK_ID=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTABLE={
     "source.table","value.bind","value.alias",
-    "series.select",
+    "series.select","groupby.create","groupby.aggregate",
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index","table.concat",
     "table.mean","table.median","table.std",
 }
 _AGGREGATES={"table.mean":"mean","table.median":"median","table.std":"std"}
+_GROUPBY_REDUCERS={"mean","median","std"}
 _TABLE_UNARY={
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index",
@@ -66,6 +67,74 @@ def _aggregate_config(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None
     else:ddof=1
     return {"axis":axis,"skipna":skipna,"numericOnly":numeric_only,"ddof":ddof},None
 
+def _groupby_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    allowed={"by","sort","dropna","as_index"}
+    unknown=sorted(set(kwargs)-allowed)
+    if unknown:return None,("TABLE_TASK_GROUPBY_KWARGS_UNSUPPORTED","Unsupported groupby keyword(s): "+", ".join(unknown))
+    if len(args)>1:return None,("TABLE_TASK_GROUPBY_ARGS_UNSUPPORTED","groupby() supports one positional by argument in SDK 1.51.78.")
+    if args and "by" in kwargs:return None,("TABLE_TASK_GROUPBY_BY_DUPLICATE","groupby by must be supplied once.")
+    by=args[0] if args else kwargs.get("by")
+    if isinstance(by,(list,tuple)):
+        keys=list(by)
+    else:
+        keys=[by]
+    if not keys or any(isinstance(value,bool) or not isinstance(value,(str,int)) for value in keys):
+        return None,("TABLE_TASK_GROUPBY_BY_UNSUPPORTED","groupby by must be one literal column label or a non-empty literal list/tuple of labels.")
+    if len({str(value) for value in keys})!=len(keys):
+        return None,("TABLE_TASK_GROUPBY_BY_DUPLICATE_LABEL","groupby keys must be unique in bounded GroupBy v1.")
+    sort=kwargs.get("sort",True);dropna=kwargs.get("dropna",True);as_index=kwargs.get("as_index",True)
+    if not isinstance(sort,bool):return None,("TABLE_TASK_GROUPBY_SORT_INVALID","groupby sort must be a literal boolean.")
+    if not isinstance(dropna,bool):return None,("TABLE_TASK_GROUPBY_DROPNA_INVALID","groupby dropna must be a literal boolean.")
+    if not isinstance(as_index,bool):return None,("TABLE_TASK_GROUPBY_AS_INDEX_INVALID","groupby as_index must be a literal boolean.")
+    return {"keys":keys,"sort":sort,"dropna":dropna,"asIndex":as_index},None
+
+def _groupby_reduce_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    method=_AGGREGATES.get(str(op.get("kind","")),"")
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    allowed={"numeric_only"}|({"ddof"} if method=="std" else set())
+    unknown=sorted(set(kwargs)-allowed)
+    if unknown:return None,("TABLE_TASK_GROUPBY_REDUCER_KWARGS_UNSUPPORTED","Unsupported GroupBy reducer keyword(s): "+", ".join(unknown))
+    if method=="std":
+        if len(args)>1:return None,("TABLE_TASK_GROUPBY_REDUCER_ARGS_UNSUPPORTED","GroupBy.std supports at most one positional ddof argument.")
+        ddof=kwargs.get("ddof",args[0] if args else 1)
+        if isinstance(ddof,bool) or not isinstance(ddof,int):
+            return None,("TABLE_TASK_GROUPBY_STD_DDOF_INVALID","GroupBy.std ddof must be a literal integer.")
+    else:
+        if args:return None,("TABLE_TASK_GROUPBY_REDUCER_ARGS_UNSUPPORTED",f"GroupBy.{method} does not accept positional arguments in bounded v1.")
+        ddof=1
+    numeric_only=kwargs.get("numeric_only",False)
+    if not isinstance(numeric_only,bool):
+        return None,("TABLE_TASK_GROUPBY_NUMERIC_ONLY_INVALID","GroupBy numeric_only must be a literal boolean.")
+    return {"method":method,"numericOnly":numeric_only,"ddof":ddof},None
+
+def _groupby_agg_spec(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    if kwargs:
+        return None,("TABLE_TASK_GROUPBY_NAMED_AGG_PENDING","Named aggregation/keyword aggregate syntax is outside SDK 1.51.78.")
+    if len(args)!=1:
+        return None,("TABLE_TASK_GROUPBY_AGG_ARGS_UNSUPPORTED","GroupBy agg/aggregate requires exactly one literal reducer string or column->reducer mapping.")
+    spec=args[0]
+    if isinstance(spec,str):
+        if spec not in _GROUPBY_REDUCERS:
+            return None,("TABLE_TASK_GROUPBY_REDUCER_UNSUPPORTED",f"Unsupported GroupBy reducer: {spec}")
+        return {"kind":"single","method":spec},None
+    if input_kind=="groupby.series":
+        return None,("TABLE_TASK_GROUPBY_SERIES_AGG_UNSUPPORTED","SeriesGroupBy agg/aggregate accepts one reducer string in SDK 1.51.78.")
+    if not isinstance(spec,dict) or not spec:
+        return None,("TABLE_TASK_GROUPBY_AGG_SPEC_UNSUPPORTED","DataFrameGroupBy agg/aggregate requires a non-empty literal column->reducer mapping.")
+    items=[]
+    for column,reducer in spec.items():
+        if isinstance(column,bool) or not isinstance(column,(str,int)):
+            return None,("TABLE_TASK_GROUPBY_AGG_COLUMN_UNSUPPORTED","GroupBy aggregate mapping keys must be literal column labels.")
+        if not isinstance(reducer,str) or reducer not in _GROUPBY_REDUCERS:
+            return None,("TABLE_TASK_GROUPBY_REDUCER_UNSUPPORTED",f"Unsupported GroupBy reducer for {column}: {reducer}")
+        items.append({"column":column,"method":reducer})
+    return {"kind":"mapping","items":items},None
+
 def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
     diagnostics=[]
     if not isinstance(plan,dict) or plan.get("schema")!="dkds.table-transform-plan.v1":
@@ -80,6 +149,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
             })
     symbols=set()
     symbol_kinds={}
+    symbol_meta={}
     sources=[]
     consumed=set()
     host_effects=[]
@@ -154,7 +224,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
             elif output in symbols:
                 diagnostics.append(_diag(op,"TABLE_TASK_SYMBOL_REDEFINED",f"Symbol {output} is defined more than once."))
             else:
-                symbols.add(output);sources.append(output);symbol_kinds[output]="table"
+                symbols.add(output);sources.append(output);symbol_kinds[output]="table";symbol_meta[output]={}
             continue
 
         inputs=[]
@@ -170,22 +240,48 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
 
         output_kind="value"
         input_kind=symbol_kinds.get(inputs[0],"") if inputs else ""
+        output_meta={}
         if kind=="value.bind":
             output_kind=_literal_kind(op.get("value"))
         elif kind=="value.alias":
             output_kind=input_kind or "value"
+            output_meta=dict(symbol_meta.get(inputs[0],{})) if inputs else {}
+        elif kind=="groupby.create":
+            config,error=_groupby_config(op)
+            if input_kind!="table":
+                diagnostics.append(_diag(op,"TABLE_TASK_GROUPBY_INPUT_UNSUPPORTED","groupby() requires a DataFrame/DataTable input."))
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            output_kind="groupby.table"
+            if config:output_meta=dict(config)
         elif kind=="series.select":
             selector=op.get("selector") or {}
             value=selector.get("value") if isinstance(selector,dict) else None
-            if input_kind!="table":
-                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_INPUT_UNSUPPORTED","Series selection requires a DataFrame/DataTable input."))
+            if input_kind not in {"table","groupby.table"}:
+                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_INPUT_UNSUPPORTED","Column selection requires a DataFrame/DataTable or DataFrameGroupBy input."))
             if not isinstance(selector,dict) or selector.get("kind")!="literal" or isinstance(value,bool) or not isinstance(value,(str,int)):
-                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_SELECTOR_UNSUPPORTED","Series selection requires one literal string/integer column label."))
-            output_kind="series"
+                diagnostics.append(_diag(op,"TABLE_TASK_SERIES_SELECTOR_UNSUPPORTED","Column selection requires one literal string/integer column label."))
+            if input_kind=="groupby.table":
+                output_kind="groupby.series"
+                output_meta=dict(symbol_meta.get(inputs[0],{}))
+            else:
+                output_kind="series"
         elif kind in _AGGREGATES:
-            config,error=_aggregate_config(op,input_kind)
+            if input_kind in {"groupby.table","groupby.series"}:
+                config,error=_groupby_reduce_config(op)
+                if error:diagnostics.append(_diag(op,error[0],error[1]))
+                group_meta=dict(symbol_meta.get(inputs[0],{}))
+                output_kind="table" if input_kind=="groupby.table" or not group_meta.get("asIndex",True) else "series"
+            else:
+                config,error=_aggregate_config(op,input_kind)
+                if error:diagnostics.append(_diag(op,error[0],error[1]))
+                output_kind="series" if input_kind=="table" else "scalar"
+        elif kind=="groupby.aggregate":
+            spec,error=_groupby_agg_spec(op,input_kind)
+            if input_kind not in {"groupby.table","groupby.series"}:
+                diagnostics.append(_diag(op,"TABLE_TASK_GROUPBY_AGG_INPUT_UNSUPPORTED","agg/aggregate requires a DataFrameGroupBy or SeriesGroupBy input."))
             if error:diagnostics.append(_diag(op,error[0],error[1]))
-            output_kind="series" if input_kind=="table" else "scalar"
+            group_meta=dict(symbol_meta.get(inputs[0],{}))
+            output_kind="table" if input_kind=="groupby.table" or not group_meta.get("asIndex",True) else "series"
         elif kind=="table.concat":
             if any(symbol_kinds.get(name)!="table" for name in inputs):
                 diagnostics.append(_diag(op,"TABLE_TASK_CONCAT_INPUT_UNSUPPORTED","table.concat inputs must all be DataFrame/DataTable values."))
@@ -234,6 +330,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
         if output and not duplicate:
             symbols.add(output)
             symbol_kinds[output]=output_kind
+            symbol_meta[output]=output_meta
 
     results=sorted(name for name in symbols if name not in consumed and name not in sources)
     if not results:
@@ -243,11 +340,11 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                 results=[output];break
     result_kinds={name:symbol_kinds.get(name,"value") for name in results}
     for name,kind in result_kinds.items():
-        if kind=="value":
+        if kind not in {"table","series","scalar"}:
             diagnostics.append({
                 "severity":"blocker","code":"TABLE_TASK_RESULT_KIND_UNSUPPORTED",
                 "cellIndex":0,"line":0,"operationId":"","operationKind":"",
-                "message":f"Terminal result {name} is not a DataFrame, Series or scalar value.",
+                "message":f"Terminal result {name} is an internal {kind} value; GroupBy objects must be reduced before leaving the Task.",
             })
     task_outputs=sorted(set(results)|host_required)
     task_output_kinds={name:symbol_kinds.get(name,"value") for name in task_outputs}
@@ -267,6 +364,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
         "taskOutputSymbols":task_outputs,
         "taskOutputKinds":task_output_kinds,
         "symbolKinds":symbol_kinds,
+        "symbolMeta":symbol_meta,
         "hostEffects":host_effects,
         "runtime":"core-task-js",
         "pythonRuntimeRequired":False,
