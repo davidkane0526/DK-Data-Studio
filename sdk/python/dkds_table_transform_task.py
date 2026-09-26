@@ -11,13 +11,13 @@ import json
 import re
 from typing import Any
 
-from dkds_portable_task import CompiledPortableTask
+from dkds_portable_task import CompiledPortableTask, PortableTaskError, compile_portable_scalar_callback
 
 EXECUTION_SCHEMA="dkds.table-transform-execution.v1"
 TASK_ID=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTABLE={
     "source.table","value.bind","value.alias",
-    "series.select","groupby.create","groupby.aggregate",
+    "series.select","series.apply","groupby.create","groupby.aggregate",
     "array.literal","array.from-value","array.range","array.unary","array.binary","array.diff","array.reduce","array.slice",
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index","table.concat",
@@ -39,6 +39,30 @@ _PENDING_HOST=set()
 
 def _literal_kind(value:Any)->str:
     return "scalar" if value is None or isinstance(value,(bool,int,float,str)) else "value"
+
+def _series_apply_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    callback=op.get("callback")
+    if not isinstance(callback,dict):
+        return None,("TABLE_TASK_APPLY_CALLBACK_INVALID","Series.apply requires one bounded callback descriptor.")
+    source=str(callback.get("source","") or "")
+    name=str(callback.get("name","") or "")
+    if not source or not name:
+        return None,("TABLE_TASK_APPLY_CALLBACK_INVALID","Series.apply callback source/name is missing.")
+    try:
+        compiled=compile_portable_scalar_callback(source,function_name=name)
+    except PortableTaskError as exc:
+        return None,("TABLE_TASK_APPLY_CALLBACK_UNSUPPORTED",str(exc))
+    args=list(op.get("args") or [])
+    if len(args)>7:
+        return None,("TABLE_TASK_APPLY_ARGS_EXCEEDED","Series.apply bounded v1 supports at most seven extra scalar args.")
+    supplied=1+len(args)
+    total=len(compiled.parameters)
+    if supplied<compiled.required_parameters or supplied>total:
+        return None,("TABLE_TASK_APPLY_ARITY",f"Series.apply callback {name} expects {compiled.required_parameters}..{total} argument(s), but value + args= supplies {supplied}.")
+    for value in args:
+        if value is not None and not isinstance(value,(str,int,float,bool)):
+            return None,("TABLE_TASK_APPLY_ARGS_LITERAL","Series.apply extra args must be scalar literals.")
+    return {"callbackSource":compiled.source,"parameters":list(compiled.parameters),"required":compiled.required_parameters,"args":args},None
 
 def _aggregate_config(op:dict[str,Any],input_kind:str)->tuple[dict[str,Any]|None,tuple[str,str]|None]:
     kind=str(op.get("kind",""))
@@ -433,6 +457,12 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                     output_meta=dict(symbol_meta.get(inputs[0],{}))
                 else:
                     output_kind="series"
+        elif kind=="series.apply":
+            config,error=_series_apply_config(op)
+            if error:diagnostics.append(_diag(op,error[0],error[1]))
+            if input_kind!="series":
+                diagnostics.append(_diag(op,"TABLE_TASK_APPLY_INPUT_UNSUPPORTED","SDK 1.51.81 supports Series.apply only; DataFrame.apply and GroupBy.apply remain fail-closed."))
+            output_kind="series"
         elif kind=="array.literal":
             config,error=_array_literal_config(op)
             if error:diagnostics.append(_diag(op,error[0],error[1]))
@@ -699,6 +729,25 @@ _HELPERS=r"""
       const c=cloneColumn(matches[0]);
       return {kind:'table.series',artifactId:t.artifactId,id:c.id,key:c.key,name:c.name,unit:c.unit,role:c.role,quantity:c.quantity,dimension:c.dimension,dtype:c.dtype,index:Array.from(t.index),values:Array.from(c.values)};
     };
+    const applySeries=(value,callback,args)=>{
+      const row=cloneSeries(value),extra=Array.from(args||[]);
+      if(typeof callback!=='function')throw new Error('Series.apply callback is unavailable');
+      if(row.values.length>65536)throw new Error('Series.apply input exceeds bounded maximum 65536');
+      row.values=row.values.map((cell,index)=>{
+        const wasMissing=missing(cell);
+        if(!wasMissing&&typeof cell!=='number')throw new Error('SDK 1.51.81 Series.apply accepts numeric Series values only');
+        let result;
+        try{result=callback(wasMissing?NaN:cell,...extra);}catch(error){throw new Error('Series.apply callback failed at row '+index+': '+String(error?.message||error||'callback error'));}
+        if(typeof result!=='number')throw new Error('Series.apply callback must return one numeric scalar at row '+index);
+        if(Number.isNaN(result)){
+          if(wasMissing)return null;
+          throw new Error('Series.apply callback produced NaN for a finite input at row '+index);
+        }
+        if(!Number.isFinite(result))throw new Error('Series.apply callback produced a non-finite result at row '+index);
+        return result;
+      });
+      row.dtype='number';row.role=row.role||'derived';return row;
+    };
     const columnByLabel=(table,label)=>{
       const text=String(label);
       const matches=(table?.columns||[]).filter(c=>[c.key,c.name,c.id].some(value=>String(value)===text));
@@ -898,6 +947,10 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
                 lines.append(f"    env[{_js(output)}]=arrayItem(env[{_js(op['input'])}],{_js((op.get('selector') or {}).get('value'))});")
             else:
                 lines.append(f"    env[{_js(output)}]=selectSeries(env[{_js(op['input'])}],{_js(op.get('selector'))});")
+        elif kind=="series.apply":
+            config,error=_series_apply_config(op)
+            if error or config is None:raise ValueError("Series.apply callback was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=applySeries(env[{_js(op['input'])}],{config['callbackSource']},{_js(config['args'])});")
         elif kind=="array.literal":
             config,error=_array_literal_config(op)
             if error or config is None:raise ValueError("Array literal was not validated before compilation")
