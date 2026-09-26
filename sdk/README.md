@@ -482,27 +482,17 @@ Persistent plugin state must be registered through `ctx.project.registerSlice(..
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
 
-For a windowed activity that must reflect the **exact live project Artifact Store** at open/reuse time, Core supports the generic live-hydration contract. Declare it in the machine-readable window manifest and, when the activity is registered dynamically, mirror it on the Activity spec:
+For dedicated analysis workbenches, Core derives Artifact hydration from the machine contract. A `pluginType:"workbench"` with a non-empty `data.accepts` list defaults to **live hydration**: the owner renderer sends the current canonical Artifact snapshot/revision when the window opens or is reused, and the dedicated host applies the normal consumer assignment scope before plugin runtime creation.
 
 ```json
 {
-  "window": {
-    "activity": "data-inspector",
-    "artifactHydration": "live"
-  }
+  "pluginType": "workbench",
+  "data": { "accepts": ["science.transport.iv"] },
+  "window": { "activity": "data-inspector" }
 }
 ```
 
-```js
-ctx.ui.activities.add({
-  id: 'data-inspector',
-  label: '数据检查',
-  openMode: 'window',
-  artifactHydration: 'live'
-});
-```
-
-`artifactHydration: 'live'` is intentionally opt-in because it transfers the exact canonical live Artifact snapshot into that activity renderer. Historical projects have already passed through the Project Compatibility Gateway before this point, so activity renderers never reconcile or parse a second `project.datasets` source. Reused live-hydration windows refresh when only the Artifact digest changes, without remounting the plugin. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot.
+No plugin-specific `artifactHydration:"live"` declaration is required for this normal data-consuming workbench case. An explicit window value still wins; use `"artifactHydration":"project"` only when the dedicated workbench intentionally does **not** need the current Artifact Store. Historical projects have already passed through the Project Compatibility Gateway before this point, so activity renderers never reconcile or parse a second `project.datasets` source. Reused live-hydration windows refresh when the Artifact digest changes without remounting the plugin.
 
 ## Core-owned workbench import action (Plugin API 1.19)
 
