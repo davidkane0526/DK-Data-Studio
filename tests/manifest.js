@@ -105,6 +105,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-series-apply.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-workflow-package.js",
       "args": []
     },
