@@ -92,7 +92,7 @@
     "ui:ownership:audit:strict": "node tools/quality/style-ownership-gate.js --strict",
     "unit:sdk-authoring": "node tools/quality/unit-sdk-authoring-audit.js --strict",
     "unit:css-dependency": "node tools/quality/unit-production-css-dependency-audit.js --strict",
-    "sdk:generator:test": "node tests/test-phase-f-declarative-python-generator.js && node tests/test-phase-f-source-import-authoring.js && node tests/test-phase-f-artifact-table-binding.js && node tests/test-phase-f-table-transform-task.js && node tests/test-phase-f-series-aggregates.js && node tests/test-phase-f-groupby-aggregate.js && node tests/test-phase-f-numpy-array-ir.js && node tests/test-phase-f-workflow-package.js"
+    "sdk:generator:test": "node tests/test-phase-f-declarative-python-generator.js && node tests/test-phase-f-source-import-authoring.js && node tests/test-phase-f-artifact-table-binding.js && node tests/test-phase-f-table-transform-task.js && node tests/test-phase-f-series-aggregates.js && node tests/test-phase-f-groupby-aggregate.js && node tests/test-phase-f-numpy-array-ir.js && node tests/test-phase-f-to-csv-host-export.js && node tests/test-phase-f-workflow-package.js"
   },
   "dependencies": {
     "d3": "^7.9.0",
