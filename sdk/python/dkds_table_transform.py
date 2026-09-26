@@ -215,6 +215,116 @@ def _series_apply_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,ca
     })
     return emitted,None
 
+def _curve_fit_call(node:ast.AST)->ast.Call|None:
+    if not isinstance(node,ast.Call):return None
+    func=node.func
+    if isinstance(func,ast.Name) and func.id=="curve_fit":return node
+    if isinstance(func,ast.Attribute) and func.attr=="curve_fit":
+        owner=func.value
+        if isinstance(owner,ast.Name) and owner.id in {"optimize","scipy"}:return node
+        if isinstance(owner,ast.Attribute) and owner.attr=="optimize" and isinstance(owner.value,ast.Name) and owner.value.id=="scipy":return node
+    return None
+
+def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
+    if isinstance(expr,ast.Name):
+        if expr.id in duplicates:
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_AMBIGUOUS",f"curve_fit model {expr.id} has multiple top-level definitions.")
+        callback=callbacks.get(expr.id)
+        if callback is None:
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_UNRESOLVED",f"curve_fit model {expr.id} must be one top-level function in the imported source.")
+        if callback.get("async"):
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_ASYNC","curve_fit model must be synchronous.")
+        return {"name":callback["name"],"source":callback["source"],"kind":"named"},None
+    if isinstance(expr,ast.Lambda):
+        args=expr.args
+        if args.posonlyargs or args.kwonlyargs or args.vararg or args.kwarg:
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_SIGNATURE","Inline curve_fit lambda supports positional parameters only.")
+        params=list(args.args)
+        if not 2<=len(params)<=7:
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_SIGNATURE","Inline curve_fit lambda requires x plus 1..6 fit parameters.")
+        if args.defaults:
+            return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_DEFAULTS","Inline curve_fit lambda defaults are not supported in bounded fitting v1.")
+        name="__dkds_inline_curve_fit"
+        source="def "+name+"("+",".join(arg.arg for arg in params)+"):\n    return "+_unparse(expr.body)
+        return {"name":name,"source":source,"kind":"lambda"},None
+    return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_UNSUPPORTED","curve_fit model must be a top-level function name or inline lambda.")
+
+def _curve_fit_data_input(cell:int,node:ast.AST,index:int,expr:ast.AST,label:str)->tuple[list[dict[str,Any]],str|None,dict[str,Any]|None]:
+    if isinstance(expr,ast.Name):return [],expr.id,None
+    selected=_series_selection(expr)
+    if selected:
+        source,selector=selected
+        temporary=f"__dkds_fit_{label}_series_{cell}_{int(getattr(node,'lineno',0) or 0)}_{index}"
+        return [{"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"series.select","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":temporary,"input":source,"selector":selector}],temporary,None
+    ok,literal=_literal(expr)
+    if ok and isinstance(literal,(list,tuple)):
+        values=list(literal)
+        if any(isinstance(value,bool) or not isinstance(value,(int,float)) for value in values):
+            return [],None,_diag(cell,node,"TABLE_IR_CURVE_FIT_DATA_NON_NUMERIC",f"curve_fit {label} literal data must be numeric.")
+        temporary=f"__dkds_fit_{label}_array_{cell}_{int(getattr(node,'lineno',0) or 0)}_{index}"
+        return [{"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"array.literal","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":temporary,"sourceMethod":"fit-literal","values":values,"kwargs":{}}],temporary,None
+    return [],None,_diag(cell,node,"TABLE_IR_CURVE_FIT_DATA_UNRESOLVED",f"curve_fit {label} must be a Series/Array symbol, literal single-column selection, or numeric literal list.")
+
+def _curve_fit_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+    if len(call.args)<3 or len(call.args)>4:
+        return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_ARGS","bounded curve_fit requires model, xdata, ydata and optional positional p0.")
+    model,error=_curve_fit_model(cell,node,call.args[0],callbacks,duplicates)
+    if error:return [],error
+    kwargs={}
+    for keyword in call.keywords:
+        if keyword.arg!="p0":
+            return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_KWARGS_UNSUPPORTED",f"curve_fit keyword {keyword.arg or '**kwargs'} is outside bounded fitting v1; only literal p0 is supported.")
+        ok,value=_literal(keyword.value)
+        if not ok:
+            return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_P0_LITERAL","curve_fit p0 must be a literal numeric list/tuple or None.")
+        kwargs["p0"]=value
+    if len(call.args)==4 and "p0" in kwargs:
+        return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_P0_DUPLICATE","curve_fit p0 must be supplied once.")
+    if len(call.args)==4:
+        ok,p0=_literal(call.args[3])
+        if not ok:
+            return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_P0_LITERAL","curve_fit p0 must be a literal numeric list/tuple or None.")
+    else:p0=kwargs.get("p0")
+    if p0 is not None:
+        if not isinstance(p0,(list,tuple)) or not p0:
+            return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_P0_LITERAL","curve_fit p0 must be a non-empty literal numeric list/tuple or None.")
+        p0=list(p0)
+        if any(isinstance(value,bool) or not isinstance(value,(int,float)) for value in p0):
+            return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_P0_LITERAL","curve_fit p0 values must be numeric literals.")
+    emitted=[]
+    x_ops,x_name,error=_curve_fit_data_input(cell,node,index,call.args[1],"x")
+    if error:return [],error
+    emitted.extend(x_ops)
+    y_ops,y_name,error=_curve_fit_data_input(cell,node,index+len(emitted),call.args[2],"y")
+    if error:return [],error
+    emitted.extend(y_ops)
+    emitted.append({
+        "id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index+len(emitted)),
+        "kind":"fit.curve","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),
+        "output":output,"inputs":[x_name,y_name],"x":x_name,"y":y_name,
+        "model":model,"p0":p0,
+    })
+    return emitted,None
+
+def _curve_fit_assignment(node:ast.Assign|ast.AnnAssign)->tuple[str,ast.Call|None,str|None]:
+    target=node.targets[0] if isinstance(node,ast.Assign) and len(node.targets)==1 else node.target if isinstance(node,ast.AnnAssign) else None
+    value=node.value
+    if isinstance(target,ast.Name) and isinstance(value,ast.Subscript):
+        call=_curve_fit_call(value.value)
+        ok,index=_literal(value.slice)
+        if call and ok and index==0:return target.id,call,None
+        if call:return "",call,"curve_fit tuple extraction supports only [0] (optimal parameters) in bounded fitting v1."
+    if isinstance(node,ast.Assign) and len(node.targets)==1 and isinstance(target,(ast.Tuple,ast.List)):
+        call=_curve_fit_call(value)
+        names=[_name(item) for item in target.elts]
+        if call and len(names)==2 and names[0] and names[1]=="_":
+            return names[0],call,None
+        if call:
+            return "",call,"curve_fit covariance output pcov is 2D and remains outside bounded fitting v1; use popt, _ = curve_fit(...) or curve_fit(...)[0]."
+    if _curve_fit_call(value):
+        return "",value,"curve_fit returns (popt, pcov); bounded fitting v1 requires explicit popt extraction with [0] or popt, _ unpacking."
+    return "",None,None
+
 def _groupby_call(node:ast.AST)->ast.Call|None:
     if not isinstance(node,ast.Call) or not isinstance(node.func,ast.Attribute):return None
     if node.func.attr!="groupby" or not isinstance(node.func.value,ast.Name):return None
@@ -301,6 +411,10 @@ def _numpy_call_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)->tu
     return [],_diag(cell,node,"TABLE_IR_NUMPY_CALL_UNSUPPORTED",f"np.{method or 'unknown'} is outside bounded Array IR v1.")
 
 def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+    fit_output,fit_call,fit_error=_curve_fit_assignment(node)
+    if fit_call is not None:
+        if fit_error:return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_OUTPUT_UNSUPPORTED",fit_error)
+        return _curve_fit_op(cell,node,index,fit_output,fit_call,callbacks,duplicates)
     output=_assign_target(node)
     if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
     value=node.value
