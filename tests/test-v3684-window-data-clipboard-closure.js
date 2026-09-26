@@ -11,8 +11,8 @@ const json=rel=>JSON.parse(read(rel));
 assert.ok(Number(json('package.json').version.split('.').slice(0,3).join(''))>=3684,'The v3.68.4 closure capability must remain available.');
 
 // 1) Dedicated TOP activities: the machine window contract must remain in
-// function scope. TER/Pulse do not declare live hydration, so the old
-// block-scoped `const contract` was evaluated and threw before openActivityWindow.
+// function scope, and a live-hydrated analysis workbench must actually receive
+// the current Artifact snapshot in its openActivityWindow payload.
 const dedicated=read('src/app/modules/dedicated-plugin-windows.js');
 assert(/let contract=null;\s*if\(window\.electronAPI\?\.listPluginWindows\)/.test(dedicated),'Dedicated activity preflight must keep the resolved machine contract in function scope.');
 assert(!/if\(window\.electronAPI\?\.listPluginWindows\)\{\s*const configured=[\s\S]{0,200}?const contract=/.test(dedicated),'The machine contract must not regress to block scope.');
@@ -21,16 +21,17 @@ execFileSync(process.execPath,['-e',String.raw`
   global.document={querySelector:()=>null};global.localStorage={getItem:()=>null,setItem:()=>{}};global.d3={select:()=>({})};
   globalThis.DKDSStyleGate={KINDS:{RUNTIME_INLINE:'runtime-inline',CONFIG_TOKEN:'config-token'},set(){},remove(){},setToken(){}};
   const calls=[];
+  const assigned={id:'pulse-table',kind:'data.table',semanticType:'data.table',rowCount:2,metadata:{dataAssignments:['builtin.pulse-analysis']},columns:[{key:'x',values:[0,1]},{key:'y',values:[2,3]}]};
   global.window={
     DKDSData:{createStore:()=>({list:()=>[]}),hashString:()=> '1'},
     DKDSCapabilities:{snapshot:()=>({revision:1,providers:[]})},
     DKDSPlugins:{activities:{list:()=>[{id:'ter',openMode:'window'},{id:'pulse',openMode:'window'}]},manager:{list:()=>[{id:'builtin.ter-analysis',window:{activity:'ter'}},{id:'builtin.pulse-analysis',window:{activity:'pulse'}}]}},
-    electronAPI:{listPluginWindows:async()=>[{activity:'ter',artifactHydration:'project'},{activity:'pulse',artifactHydration:'project'}],openActivityWindow:async payload=>{calls.push(payload.activityId);return true;}}
+    electronAPI:{listPluginWindows:async()=>[{activity:'ter',artifactHydration:'project'},{activity:'pulse',artifactHydration:'live'}],openActivityWindow:async payload=>{calls.push(payload);return true;}}
   };
-  const context=require('./src/app/modules/context');context.state.artifactStore={list:()=>[]};context.state.projectPath=null;
+  const context=require('./src/app/modules/context');context.state.artifactStore={list:()=>[assigned],revision:()=>7};context.state.projectPath=null;
   const mod=require('./src/app/modules/dedicated-plugin-windows');const tab={id:'t1',title:'T'};
   mod.configure({projectTabs:{activeProjectTab:()=>tab,captureActiveProjectTab:()=>{}},imports:{dataConsumerTargets:()=>[]},artifacts:{dataSourceHostApi:()=>({list:()=>[]})},workspace:{},scientific:{},projects:{makeProject:()=>({projectName:'T'})},docks:{}});
-  (async()=>{assert.strictEqual(await mod.openPluginActivityWindow('ter'),true);assert.strictEqual(await mod.openPluginActivityWindow('pulse'),true);assert.deepStrictEqual(calls,['ter','pulse']);})().catch(err=>{console.error(err);process.exit(1)});
+  (async()=>{assert.strictEqual(await mod.openPluginActivityWindow('ter'),true);assert.strictEqual(await mod.openPluginActivityWindow('pulse'),true);assert.deepStrictEqual(calls.map(row=>row.activityId),['ter','pulse']);assert.strictEqual(calls[0].artifactSnapshot,null);assert.strictEqual(calls[1].artifactSnapshot?.length,1);assert.strictEqual(calls[1].artifactSnapshot?.[0]?.id,'pulse-table');assert.strictEqual(calls[1].artifactRevision,7);})().catch(err=>{console.error(err);process.exit(1)});
 `],{cwd:root,stdio:'pipe'});
 
 // 2) data.artifacts is a semantic Core requirement and must project to the

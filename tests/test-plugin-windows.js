@@ -116,6 +116,7 @@ for(const [folder,spec] of Object.entries(expected)){
 }
 
 const resolved=readBuiltinPluginWindows(root);
+assert(resolved.get('pulse')?.artifactHydration==='live','Pulse declares data.accepts, so its dedicated window must receive a live Artifact snapshot instead of booting with an empty store.');
 for(const spec of Object.values(expected)){
   const row=resolved.get(spec.activity);
   assert(!!row,`manager failed to resolve ${spec.activity}`);
@@ -143,7 +144,18 @@ try{
   fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify(manifest,null,2));
   let row=readBuiltinPluginWindows(fixture).get('fft');
   assert(row?.prewarm===true&&row?.reuse===true&&row?.persistence==='project','new independent plugins must inherit safe lifecycle defaults.');
+  assert(row?.artifactHydration==='project','A dedicated workbench with no declared data inputs must keep lightweight project hydration by default.');
   assert(JSON.stringify(row?.scripts||[])===JSON.stringify(['engine.js']),'new independent plugins must load plugin-local support scripts.');
+
+  manifest.data={accepts:['data.table']};
+  fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify(manifest,null,2));
+  row=readBuiltinPluginWindows(fixture).get('fft');
+  assert(row?.artifactHydration==='live','A dedicated workbench that declares data.accepts must receive live Artifact hydration by default.');
+
+  manifest.window.artifactHydration='project';
+  fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify(manifest,null,2));
+  row=readBuiltinPluginWindows(fixture).get('fft');
+  assert(row?.artifactHydration==='project','An explicit window.artifactHydration policy must override the data-consumer default.');
 
   manifest.window.prewarm=false;
   manifest.window.reuse=false;

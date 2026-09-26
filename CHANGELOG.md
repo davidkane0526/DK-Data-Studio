@@ -1,3 +1,11 @@
+# 3.71.123 WIP — Dedicated Workbench live Artifact default
+
+- Fixes the actual cause of Pulse dedicated windows opening with zero files: a dedicated Workbench that declares non-empty `data.accepts` now defaults to `artifactHydration: live` unless the manifest explicitly selects another supported mode.
+- The owner renderer therefore sends the current Artifact snapshot/revision when opening such a window. Dedicated runtime then applies the existing generic assignment scope and manifest-declared data adapter before the frozen plugin window runtime is created.
+- Added regression coverage for both sides of the contract: real plugin-window resolution must mark Pulse live, and `openPluginActivityWindow()` must include the current Artifact snapshot in the IPC payload for a live consumer.
+- Desktop ScientificPlot floating width remains at the v3.71.122 22.176 px contract; Native Mobile geometry remains unchanged.
+- App/Desktop/Mobile identity advances to 3.71.123 / Android versionCode 263. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.122 WIP — Dedicated Pulse data routing + Desktop plot chrome width
 
 - Dedicated Plugin Host now builds the same Workbench `dataAssignments`-scoped read-only Artifact view used by the owner renderer before creating a plugin window runtime.
