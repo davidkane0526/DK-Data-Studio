@@ -19,8 +19,8 @@ assert(pluginWindow.includes("Object.defineProperty(window,'__DKDS_HOST_KIND__',
 
 const touch=read('src/styles/platform/touch.css');
 assert(touch.includes('--dkds-scientific-nav-item-width:20.16px;'),'Desktop scientific action width must retain the accepted 20.16 px width contract.');
-assert(touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific action height must retain the accepted 20.16 px width contract.');
-assert(touch.includes('--dkds-scientific-nav-padding-inline:2px;'),'Desktop floating navigation must keep bounded inner padding with the restored target size.');
+assert(touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific action height must retain the accepted 25.2 px height contract.');
+assert(touch.includes('--dkds-scientific-nav-padding-inline:1.6px;'),'Desktop floating navigation horizontal padding must shrink 20% with the complete UI width contract.');
 {const native=read('src/styles/platform/native-client-shell.css');assert(native.includes('html[data-dkds-host="mobile"].react-native-client .dkds-scientific-nav-tools')&&native.includes('--dkds-scientific-nav-item-width:')&&native.includes('--dkds-scientific-nav-item-height:'),'Mobile must retain its independently owned scientific-control geometry.');}
 for(const rel of ['src/plugins/resonance-workbench/plugin.css']){
   const text=read(rel);assert(!text.includes('--dkds-scientific-nav-item-width')&&!text.includes('--dkds-scientific-nav-item-height'),`${rel} must not specialize shared scientific floating-tool geometry.`);
