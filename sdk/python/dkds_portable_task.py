@@ -53,6 +53,13 @@ class CompiledPortableTask:
     parameters: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class CompiledScalarCallback:
+    source: str
+    parameters: tuple[str, ...]
+    required_parameters: int
+
+
 def _js(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
@@ -415,6 +422,61 @@ def _source_and_name(function: Callable[..., Any] | str, function_name: str | No
         return source, function.__name__
     return textwrap.dedent(str(function)), function_name
 
+
+def compile_portable_scalar_callback(
+    function: str,
+    *,
+    function_name: str | None = None,
+) -> CompiledScalarCallback:
+    """Compile one expression-only pure Python callback into a JS function expression."""
+    source=textwrap.dedent(str(function))
+    try:
+        tree=ast.parse(source,mode="exec")
+    except SyntaxError as exc:
+        raise PortableTaskError(f"Portable scalar callback syntax error: {exc.msg} (line {exc.lineno})") from exc
+    functions=[node for node in tree.body if isinstance(node,ast.FunctionDef)]
+    other=[
+        node for node in tree.body
+        if not isinstance(node,ast.FunctionDef)
+        and not (isinstance(node,ast.Expr) and isinstance(node.value,ast.Constant) and isinstance(node.value.value,str))
+    ]
+    if other:
+        node=other[0]
+        raise PortableTaskError(f"Portable scalar callback source may contain only a function definition (line {getattr(node,'lineno','?')})")
+    if function_name:
+        functions=[node for node in functions if node.name==function_name]
+    if len(functions)!=1:
+        raise PortableTaskError("Portable scalar callback source must contain exactly one selected synchronous function")
+    fn=functions[0]
+    lowerer=_Lowerer(fn,"scalar-callback")
+    if fn.args.kwonlyargs or fn.args.vararg or fn.args.kwarg or fn.args.posonlyargs:
+        raise PortableTaskError("Portable scalar callbacks support positional parameters only")
+    parameters=list(fn.args.args)
+    if not 1<=len(parameters)<=8:
+        raise PortableTaskError("Portable scalar callbacks require between 1 and 8 positional parameters")
+    body=list(fn.body)
+    if body and isinstance(body[0],ast.Expr) and isinstance(body[0].value,ast.Constant) and isinstance(body[0].value.value,str):
+        body=body[1:]
+    if len(body)!=1 or not isinstance(body[0],ast.Return) or body[0].value is None:
+        raise PortableTaskError("Portable scalar callbacks must contain exactly one return expression")
+    defaults=list(fn.args.defaults)
+    for default in defaults:
+        if not isinstance(default,ast.Constant) or (default.value is not None and not isinstance(default.value,(str,int,float,bool))):
+            raise PortableTaskError("Portable scalar callback defaults must be scalar literal constants")
+    required=len(parameters)-len(defaults)
+    parts=[]
+    first_default=len(parameters)-len(defaults)
+    for index,arg in enumerate(parameters):
+        if index>=first_default:
+            parts.append(f"{arg.arg}={lowerer.expr(defaults[index-first_default])}")
+        else:
+            parts.append(arg.arg)
+    expression=lowerer.expr(body[0].value)
+    return CompiledScalarCallback(
+        source="("+",".join(parts)+")=>("+expression+")",
+        parameters=tuple(arg.arg for arg in parameters),
+        required_parameters=required,
+    )
 
 def compile_portable_task(
     task_id: str,
