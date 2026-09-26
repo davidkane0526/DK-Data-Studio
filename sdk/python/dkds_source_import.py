@@ -275,6 +275,8 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
     diagnostics=[dict(row) for row in execution.get("diagnostics",[])]
     source_inputs=list(execution.get("sourceInputs") or [])
     result_symbols=list(execution.get("resultSymbols") or [])
+    result_kinds=dict(execution.get("resultKinds") or {})
+    result_projections=dict(execution.get("resultProjections") or {})
     host_effects=list(execution.get("hostEffects") or [])
     source_ops={
         str(row.get("output","")):row
@@ -302,7 +304,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
             "maxRows":65536,"maxColumns":1024,
         }
         source_bindings.append({"symbol":symbol,"field":field_id,"hint":source_hint})
-    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Source files are bound explicitly to scoped DKDS DataTables; result DataTables are published to the canonical Artifact Store."}]
+    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas are authoring-time only. Sources bind to scoped DKDS DataTables; terminal DataFrames publish to the Artifact Store while Series/scalars use existing Unit result projections."}]
     dynamic_plots=[]
     task_host_effects=[]
     for effect_index,effect in enumerate(host_effects):
@@ -325,6 +327,28 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
                 "index":bool(effect.get("index",True)),"header":bool(effect.get("header",True)),
                 "sep":str(effect.get("sep","\t")),
             })
+
+    result_tables=[]
+    result_metrics=[]
+    metric_items=[]
+    for index,symbol in enumerate(result_symbols):
+        kind=result_kinds.get(symbol,"")
+        projection=result_projections.get(symbol) or {}
+        projection_key=str(projection.get("key",""))
+        if kind=="series":
+            table_id=f"workflow-series-{index+1}"
+            content.append({
+                "kind":"table","id":table_id,"title":f"Series · {symbol}",
+                "columns":[{"key":"index","label":"Index"},{"key":"value","label":"Value"}],"rows":[],
+            })
+            result_tables.append({"id":table_id,"key":projection_key})
+        elif kind=="scalar":
+            metric_id=f"workflow-metric-{index+1}"
+            metric_items.append({"id":metric_id,"label":symbol,"value":"—"})
+            result_metrics.append({"id":metric_id,"key":projection_key})
+    if metric_items:
+        content.append({"kind":"metrics","id":"workflow-scalars","items":metric_items})
+
     spec={
         "schema":"dkds.declarative-plugin.v1",
         "plugin":{"id":f"generated.{stem}.workflow","name":title,"version":"1.0.0","description":f"Generated from {source_name} Table Transform workflow.","order":940},
@@ -339,7 +363,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         spec["parameters"]={"id":"sources","label":"数据源","fields":fields,"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
     dynamic=[
         {"id":"workflow-result-"+_slug(symbol).replace(".","-"),"name":f"Workflow result · {symbol}","semanticType":"generated.table-transform","resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024}
-        for symbol in result_symbols
+        for symbol in result_symbols if result_kinds.get(symbol)=="table"
     ]
     return {
         "schema":BLUEPRINT_SCHEMA,
@@ -347,10 +371,19 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         "buildable":bool(execution.get("executable") and source_inputs and result_symbols and not diagnostics),
         "diagnostics":diagnostics,
         "spec":spec,
-        "task":{"id":"run-workflow","actionId":"run","inputBindings":bindings,"dynamicPublishTables":dynamic,"dynamicTablePlots":dynamic_plots,"hostEffects":task_host_effects,"successStatus":"工作流完成"},
-        "preview":{"title":title,"source":source_name,"kind":"workflow","sourceInputs":source_inputs,"sourceBindings":source_bindings,"resultSymbols":result_symbols,"hostEffects":host_effects,"unitFirst":True,"privateCss":False},
+        "task":{
+            "id":"run-workflow","actionId":"run","inputBindings":bindings,
+            "resultTables":result_tables,"resultMetrics":result_metrics,
+            "dynamicPublishTables":dynamic,"dynamicTablePlots":dynamic_plots,
+            "hostEffects":task_host_effects,"successStatus":"工作流完成",
+        },
+        "preview":{
+            "title":title,"source":source_name,"kind":"workflow",
+            "sourceInputs":source_inputs,"sourceBindings":source_bindings,
+            "resultSymbols":result_symbols,"resultKinds":result_kinds,
+            "hostEffects":host_effects,"unitFirst":True,"privateCss":False,
+        },
     }
-
 
 def analyze(path:str|Path)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
