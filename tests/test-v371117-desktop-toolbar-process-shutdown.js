@@ -62,8 +62,6 @@ async function main(){
   const discoverySource=read('desktop/lan-discovery-service.js');
   const workflowSource=read('.github/workflows/build-windows.yml');
   const packagedShutdownScript=read('tools/windows/test-packaged-shutdown.ps1');
-  const preloadSource=read('desktop/preload.js');
-  const chromeSource=read('src/app/modules/window-chrome.js');
   assert(
     shutdownSource.includes("if(typeof app?.exit==='function')app.exit(0)") &&
     !shutdownSource.includes("queueMicrotask(()=>app?.quit?.())"),
@@ -106,9 +104,9 @@ async function main(){
   );
 
   assert(
-    preloadSource.includes("shutdownSmokeMode: process.argv.includes('--dkds-window-command-close-smoke')") &&
-    chromeSource.includes("if(api.shutdownSmokeMode)setTimeout(()=>void api.closeCurrentWindow(),1500);"),
-    'Windows CI must be able to drive the exact renderer closeCurrentWindow titlebar path.'
+    desktopMain.includes("process.argv.includes('--dkds-window-command-close-smoke')") &&
+    desktopMain.includes("window.electronAPI.closeCurrentWindow()"),
+    'Windows CI must drive the exact renderer closeCurrentWindow titlebar path after the packaged main window finishes loading.'
   );
   assert(
     workflowSource.includes('Verify packaged Desktop process tree exits') &&

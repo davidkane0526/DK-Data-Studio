@@ -148,6 +148,7 @@ function createWindow() {
     shutdownRuntime.requestQuit('primary-window-close');
   });
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
+  if(process.argv.includes('--dkds-window-command-close-smoke'))win.webContents.once('did-finish-load',()=>setTimeout(()=>void win.webContents.executeJavaScript('window.electronAPI.closeCurrentWindow()'),1500));
   win.loadFile(path.join(APP_ROOT, 'src', 'index.html'),visualClosureRuntime.loadFileOptions());
   return win;
 }

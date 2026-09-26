@@ -72,7 +72,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed', payload || {}),
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
-  shutdownSmokeMode: process.argv.includes('--dkds-window-command-close-smoke'),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
   releaseActivityWindow: payload => ipcRenderer.invoke('windows:releaseActivity', payload || {}),
   minimizeCurrentWindow: () => ipcRenderer.invoke('windows:minimizeCurrent'),
