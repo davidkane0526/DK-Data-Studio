@@ -34,6 +34,7 @@ _HOST_METHODS={
 }
 _DECLARATIONS=(ast.Import,ast.ImportFrom,ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef,ast.Pass)
 _AGGREGATE_METHODS={"mean","median","std"}
+_GROUPBY_AGG_METHODS={"agg","aggregate"}
 
 def _unparse(node:ast.AST|None)->str:
     if node is None:return ""
@@ -123,6 +124,31 @@ def _call_literals(cell:int,node:ast.AST,call:ast.Call,method:str)->tuple[list[A
         return [],{},_diag(cell,node,"TABLE_IR_KEYWORD_UNRESOLVED",f"{method} keyword arguments must be literal in IR v1.")
     return args,kwargs,None
 
+def _groupby_call(node:ast.AST)->ast.Call|None:
+    if not isinstance(node,ast.Call) or not isinstance(node.func,ast.Attribute):return None
+    if node.func.attr!="groupby" or not isinstance(node.func.value,ast.Name):return None
+    return node
+
+def _groupby_chain(node:ast.AST)->tuple[ast.Call,dict[str,Any]|None]|None:
+    call=_groupby_call(node)
+    if call:return call,None
+    if isinstance(node,ast.Subscript):
+        call=_groupby_call(node.value)
+        if not call:return None
+        ok,selector=_selector(node.slice)
+        if not ok or selector.get("kind")!="literal":return None
+        value=selector.get("value")
+        if isinstance(value,bool) or not isinstance(value,(str,int)):return None
+        return call,selector
+    return None
+
+def _groupby_create_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)->tuple[dict[str,Any]|None,dict[str,Any]|None]:
+    args,kwargs,error=_call_literals(cell,node,call,"groupby")
+    if error:return None,error
+    source=_name(call.func.value)
+    if not source:return None,_diag(cell,node,"TABLE_IR_GROUPBY_SOURCE_UNRESOLVED","groupby() must target a simple DataFrame symbol in IR v1.")
+    return {"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"groupby.create","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":output,"input":source,"args":args,"kwargs":kwargs},None
+
 def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list[dict[str,Any]],dict[str,Any]|None]:
     output=_assign_target(node)
     if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
@@ -150,6 +176,10 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list
                 ok_hint,resolved_hint=_literal(value.args[0])
                 if ok_hint and isinstance(resolved_hint,str):source_hint=resolved_hint
             return [{"id":_op_id(cell,node.lineno,index),"kind":"source.table","cellIndex":cell,"line":node.lineno,"output":output,"originalFormat":input_format,"sourceHint":source_hint,"hostCapability":capability,"replacement":"scoped DKDS DataTable input"}],None
+        groupby_call=_groupby_call(value)
+        if groupby_call:
+            operation,error=_groupby_create_op(cell,node,index,output,groupby_call)
+            return ([operation] if operation else []),error
         if isinstance(value.func,ast.Attribute) and isinstance(value.func.value,ast.Name) and value.func.value.id in {"pd","pandas"} and value.func.attr=="concat":
             if not value.args or not isinstance(value.args[0],(ast.List,ast.Tuple)):
                 return [],_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat requires a literal list/tuple of table symbols in IR v1.")
@@ -170,11 +200,40 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list
                     {"id":_op_id(cell,node.lineno,index),"kind":"series.select","cellIndex":cell,"line":node.lineno,"output":temporary,"input":source_name,"selector":selector},
                     {"id":_op_id(cell,node.lineno,index+1),"kind":_SUPPORTED_METHODS[value.func.attr],"cellIndex":cell,"line":node.lineno,"output":output,"input":temporary,"args":args,"kwargs":kwargs},
                 ],None
+        if isinstance(value.func,ast.Attribute) and value.func.attr in (_AGGREGATE_METHODS|_GROUPBY_AGG_METHODS):
+            chained=_groupby_chain(value.func.value)
+            if chained:
+                group_call,selector=chained
+                group_args,group_kwargs,error=_call_literals(cell,node,group_call,"groupby")
+                if error:return [],error
+                source_name=_name(group_call.func.value)
+                aggregate_args,aggregate_kwargs,error=_call_literals(cell,node,value,value.func.attr)
+                if error:return [],error
+                group_temp=f"__dkds_groupby_{cell}_{node.lineno}_{index}"
+                emitted=[
+                    {"id":_op_id(cell,node.lineno,index),"kind":"groupby.create","cellIndex":cell,"line":node.lineno,"output":group_temp,"input":source_name,"args":group_args,"kwargs":group_kwargs},
+                ]
+                aggregate_input=group_temp
+                next_index=index+1
+                if selector is not None:
+                    series_temp=f"__dkds_groupby_series_{cell}_{node.lineno}_{index}"
+                    emitted.append({"id":_op_id(cell,node.lineno,next_index),"kind":"series.select","cellIndex":cell,"line":node.lineno,"output":series_temp,"input":group_temp,"selector":selector})
+                    aggregate_input=series_temp
+                    next_index+=1
+                if value.func.attr in _GROUPBY_AGG_METHODS:
+                    emitted.append({"id":_op_id(cell,node.lineno,next_index),"kind":"groupby.aggregate","cellIndex":cell,"line":node.lineno,"output":output,"input":aggregate_input,"sourceMethod":value.func.attr,"args":aggregate_args,"kwargs":aggregate_kwargs})
+                else:
+                    emitted.append({"id":_op_id(cell,node.lineno,next_index),"kind":_SUPPORTED_METHODS[value.func.attr],"cellIndex":cell,"line":node.lineno,"output":output,"input":aggregate_input,"args":aggregate_args,"kwargs":aggregate_kwargs})
+                return emitted,None
         owner,method=_call_owner(value)
         if owner and method in _SUPPORTED_METHODS:
             args,kwargs,error=_call_literals(cell,node,value,method)
             if error:return [],error
             return [{"id":_op_id(cell,node.lineno,index),"kind":_SUPPORTED_METHODS[method],"cellIndex":cell,"line":node.lineno,"output":output,"input":owner,"args":args,"kwargs":kwargs}],None
+        if owner and method in _GROUPBY_AGG_METHODS:
+            args,kwargs,error=_call_literals(cell,node,value,method)
+            if error:return [],error
+            return [{"id":_op_id(cell,node.lineno,index),"kind":"groupby.aggregate","cellIndex":cell,"line":node.lineno,"output":output,"input":owner,"sourceMethod":method,"args":args,"kwargs":kwargs}],None
     return [],_diag(cell,node,"TABLE_IR_ASSIGNMENT_UNLOWERED","Assignment is outside the current bounded Table Transform IR.")
 
 def _expression_op(cell:int,node:ast.Expr,index:int)->tuple[dict[str,Any]|None,dict[str,Any]|None]:
