@@ -1,3 +1,11 @@
+# 3.71.124 WIP — Pulse project-level Data Center visibility
+
+- Fixes the remaining Pulse zero-file case for existing project data that is intentionally stored as Data Center-only (`metadata.dataAssignments: []`). Assignment-scoped Workbenches correctly filtered those Artifacts before the Pulse adapter could see them.
+- Pulse Analysis 2.12.16 now opts into the existing generic manifest contract `data.visibility: "project"`. Both owner and dedicated hosts therefore expose project DataTables to Pulse before the read-only `data-adapter` performs compatibility projection.
+- Canonical Artifacts, Data Center assignment metadata, and the byte-frozen Pulse `analysis-service.js` / `window-runtime.js` remain unchanged. Existing Data Center-only data requires no re-import or manual reassignment.
+- Desktop ScientificPlot floating width remains 22.176 px (10% above the v3.71.121 compact baseline); Native Mobile geometry remains unchanged.
+- App/Desktop/Mobile identity advances to 3.71.124 / Android versionCode 264. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.123 WIP — Dedicated Workbench live Artifact default
 
 - Fixes the actual cause of Pulse dedicated windows opening with zero files: a dedicated Workbench that declares non-empty `data.accepts` now defaults to `artifactHydration: live` unless the manifest explicitly selects another supported mode.

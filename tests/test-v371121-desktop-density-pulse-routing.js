@@ -71,6 +71,7 @@ async function main(){
     pluginWindowIndex.includes('<script src="./artifact-input-runtime.js"></script>') &&
     pluginWindowRuntime.includes('DKDSPluginWindowArtifactInputs?.resolve?.') &&
     pluginWindowArtifactInputs.includes("const adapterId=String(manifest?.data?.adapter||'').trim();") &&
+    pluginWindowArtifactInputs.includes("visibility==='project'") &&
     pluginWindowArtifactInputs.includes("rows.includes('*')||rows.includes(String(pluginId||''))"),
     'Dedicated plugin windows must apply generic assignment scoping before the manifest-declared data adapter without bloating the lifecycle runtime.'
   );

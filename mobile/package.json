@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio-mobile",
-  "version": "3.71.123",
+  "version": "3.71.124",
   "private": true,
   "main": "index.ts",
   "scripts": {

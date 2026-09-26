@@ -1,3 +1,5 @@
+> **v3.71.124 WIP — Pulse Project-Level Data Center Visibility**：继续修复 Pulse 参数面板仍显示 0 个文件的问题。根因不是 dedicated window 同步，而是现有 Data Center 数据可合法处于“仅数据中心”状态（`metadata.dataAssignments: []`）；此前 Pulse 作为普通 Workbench 会在进入 data.adapter 前被 Core assignment scope 正确过滤。Pulse 2.12.16 现在使用既有通用 manifest 合同 `data.visibility="project"`：主工作台与独立窗口都可读取当前项目 Data Center 中的 DataTable，再由只读 `data-adapter` 筛选/投影可分析数值表；canonical Artifact、Data Center 的数据用途和冻结的 Pulse analysis-service/window-runtime 均不修改。这样现有项目里的“仅数据中心”数据无需重新导入或重新分配即可出现在 Pulse 参数面板。Desktop ScientificPlot 悬浮按钮宽度继续保持 22.176 px（v3.71.121 基线 +10%），Mobile 不变。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+
 > **v3.71.123 WIP — Dedicated Workbench Live Artifact Default**：修复 Pulse 独立窗口仍显示 0 个文件的真正根因。Dedicated Workbench 只要声明了 `data.accepts`，且没有显式覆盖 `window.artifactHydration`，Main Process 现在默认解析为 `live` Artifact hydration；因此主窗口打开 Pulse 时会真实携带当前 Artifact snapshot 和 revision，而不是以空 Artifact Store 启动。独立窗口随后继续走统一的 dataAssignments scope → manifest data.adapter → 冻结 window-runtime / analysis-service 链路。新增运行级门禁验证 Pulse 解析为 live，并验证 openActivityWindow payload 中实际包含数据对象。Desktop ScientificPlot 悬浮按钮仍保持 v3.71.122 的 22.176 px 宽度（比 v3.71.121 增加 10%），Mobile 不变。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
 
 > **v3.71.122 WIP — Dedicated Pulse Data Routing / Desktop Plot Chrome Width**：修复 Pulse 独立窗口仍显示 0 个文件的问题。Dedicated Plugin Host 现在对所有 Workbench 统一建立与主宿主一致的 dataAssignments 只读 Artifact 视图，并在进入插件 window runtime 前应用 manifest 声明的 `data.adapter`；Pulse 2.12.15 仅声明 `data.adapter="data-adapter"`，冻结的 pulse `window-runtime.js` 与 `analysis-service.js` 不变。这样 Data Center 分配给 Pulse 的普通数值 DataTable 在主工作台和独立窗口都走同一只读投影并显示在参数面板。Desktop ScientificPlot 悬浮按钮组在 v3.71.121 紧凑基线基础上横向增加 10%：按钮宽 20.16→22.176 px、横向 padding 1.6→1.76 px，高度保持 25.2 px；Mobile 不变。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
@@ -129,7 +131,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.123**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.124**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
