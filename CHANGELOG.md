@@ -1,3 +1,9 @@
+# SDK 1.51.82 — bounded scipy.optimize.curve_fit (App 3.71.124)
+
+- Proves SciPy `curve_fit` ownership from source imports/aliases and lowers only explicit `popt` extraction, using existing Series/Array IR for 1D numeric x/y inputs.
+- Pure fit models are compiled authoring-time into JavaScript scalar callbacks; proven NumPy aliases may use the bounded scalar-math subset such as `np.exp -> Math.exp`. Runtime fitting stays inside the ordinary Core Task through a bounded numerical-Jacobian LM-style solver and returns `popt` as the existing `array.vector` projection.
+- Supports 1–6 fit parameters and optional literal finite `p0`. Covariance/`pcov`, bounds, sigma, jac, method, nan-policy, free-name models and arbitrary SciPy remain fail-closed. No Python/NumPy/SciPy runtime, new Unit, Presenter or Host privilege is added.
+
 # SDK 1.51.81 — bounded Series.apply() (App 3.71.124)
 
 - Adds expression-only pure scalar callbacks for numeric `Series.apply()`, using the shared portable Python expression lowerer and emitting JavaScript directly into the ordinary Core Task.
