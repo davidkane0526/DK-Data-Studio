@@ -89,6 +89,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-series-aggregates.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-workflow-package.js",
       "args": []
     },
