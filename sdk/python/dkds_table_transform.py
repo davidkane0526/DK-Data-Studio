@@ -33,6 +33,7 @@ _HOST_METHODS={
     "to_excel":("host.export","data.export"),
 }
 _DECLARATIONS=(ast.Import,ast.ImportFrom,ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef,ast.Pass)
+_AGGREGATE_METHODS={"mean","median","std"}
 
 def _unparse(node:ast.AST|None)->str:
     if node is None:return ""
@@ -105,20 +106,41 @@ def _source_call(call:ast.Call)->tuple[str,str]|None:
     if call.func.attr=="read_excel":return "excel","data.import"
     return None
 
-def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[dict[str,Any]|None,dict[str,Any]|None]:
+def _series_selection(node:ast.AST)->tuple[str,dict[str,Any]]|None:
+    if not isinstance(node,ast.Subscript) or not isinstance(node.value,ast.Name):return None
+    ok,selector=_selector(node.slice)
+    if not ok or selector.get("kind")!="literal":return None
+    value=selector.get("value")
+    if isinstance(value,bool) or not isinstance(value,(str,int)):return None
+    return node.value.id,selector
+
+def _call_literals(cell:int,node:ast.AST,call:ast.Call,method:str)->tuple[list[Any],dict[str,Any],dict[str,Any]|None]:
+    ok_args,args=_positional_literals(call)
+    if not ok_args:
+        return [],{},_diag(cell,node,"TABLE_IR_ARGUMENT_UNRESOLVED",f"{method} positional arguments must be literal in IR v1.")
+    ok_kwargs,kwargs=_keyword_literals(call)
+    if not ok_kwargs:
+        return [],{},_diag(cell,node,"TABLE_IR_KEYWORD_UNRESOLVED",f"{method} keyword arguments must be literal in IR v1.")
+    return args,kwargs,None
+
+def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list[dict[str,Any]],dict[str,Any]|None]:
     output=_assign_target(node)
-    if not output:return None,_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
+    if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
     value=node.value
     if isinstance(value,(ast.Constant,ast.List,ast.Tuple,ast.Dict,ast.Name)):
         ok,literal=_literal(value)
-        if ok:return {"id":_op_id(cell,node.lineno,index),"kind":"value.bind","cellIndex":cell,"line":node.lineno,"output":output,"value":literal},None
-        if isinstance(value,ast.Name):return {"id":_op_id(cell,node.lineno,index),"kind":"value.alias","cellIndex":cell,"line":node.lineno,"output":output,"input":value.id},None
+        if ok:return [{"id":_op_id(cell,node.lineno,index),"kind":"value.bind","cellIndex":cell,"line":node.lineno,"output":output,"value":literal}],None
+        if isinstance(value,ast.Name):return [{"id":_op_id(cell,node.lineno,index),"kind":"value.alias","cellIndex":cell,"line":node.lineno,"output":output,"input":value.id}],None
+    series_selection=_series_selection(value)
+    if series_selection:
+        source,selector=series_selection
+        return [{"id":_op_id(cell,node.lineno,index),"kind":"series.select","cellIndex":cell,"line":node.lineno,"output":output,"input":source,"selector":selector}],None
     if isinstance(value,ast.Subscript) and isinstance(value.value,ast.Attribute) and value.value.attr in {"iloc","loc"}:
         source=_name(value.value.value)
         ok,selector=_selector(value.slice)
         if source and ok:
-            return {"id":_op_id(cell,node.lineno,index),"kind":"table.slice","cellIndex":cell,"line":node.lineno,"output":output,"input":source,"mode":value.value.attr,"selector":selector},None
-        return None,_diag(cell,node,"TABLE_IR_SLICE_UNRESOLVED","iloc/loc selectors must be static literals/slices or simple symbols.")
+            return [{"id":_op_id(cell,node.lineno,index),"kind":"table.slice","cellIndex":cell,"line":node.lineno,"output":output,"input":source,"mode":value.value.attr,"selector":selector}],None
+        return [],_diag(cell,node,"TABLE_IR_SLICE_UNRESOLVED","iloc/loc selectors must be static literals/slices or simple symbols.")
     if isinstance(value,ast.Call):
         source=_source_call(value)
         if source:
@@ -127,29 +149,33 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[dict
             if value.args:
                 ok_hint,resolved_hint=_literal(value.args[0])
                 if ok_hint and isinstance(resolved_hint,str):source_hint=resolved_hint
-            return {"id":_op_id(cell,node.lineno,index),"kind":"source.table","cellIndex":cell,"line":node.lineno,"output":output,"originalFormat":input_format,"sourceHint":source_hint,"hostCapability":capability,"replacement":"scoped DKDS DataTable input"},None
+            return [{"id":_op_id(cell,node.lineno,index),"kind":"source.table","cellIndex":cell,"line":node.lineno,"output":output,"originalFormat":input_format,"sourceHint":source_hint,"hostCapability":capability,"replacement":"scoped DKDS DataTable input"}],None
         if isinstance(value.func,ast.Attribute) and isinstance(value.func.value,ast.Name) and value.func.value.id in {"pd","pandas"} and value.func.attr=="concat":
             if not value.args or not isinstance(value.args[0],(ast.List,ast.Tuple)):
-                return None,_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat requires a literal list/tuple of table symbols in IR v1.")
+                return [],_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat requires a literal list/tuple of table symbols in IR v1.")
             inputs=[_name(item) for item in value.args[0].elts]
             ok,kwargs=_keyword_literals(value)
-            if not all(inputs) or not ok:return None,_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat inputs/keywords must be statically resolvable.")
+            if not all(inputs) or not ok:return [],_diag(cell,node,"TABLE_IR_CONCAT_UNRESOLVED","pd.concat inputs/keywords must be statically resolvable.")
             axis=kwargs.get("axis",0)
-            if axis not in {0,1}:return None,_diag(cell,node,"TABLE_IR_CONCAT_AXIS_UNSUPPORTED","pd.concat axis must be 0 or 1.")
-            return {"id":_op_id(cell,node.lineno,index),"kind":"table.concat","cellIndex":cell,"line":node.lineno,"output":output,"inputs":inputs,"axis":axis,"ignoreIndex":bool(kwargs.get("ignore_index",False))},None
+            if axis not in {0,1}:return [],_diag(cell,node,"TABLE_IR_CONCAT_AXIS_UNSUPPORTED","pd.concat axis must be 0 or 1.")
+            return [{"id":_op_id(cell,node.lineno,index),"kind":"table.concat","cellIndex":cell,"line":node.lineno,"output":output,"inputs":inputs,"axis":axis,"ignoreIndex":bool(kwargs.get("ignore_index",False))}],None
+        if isinstance(value.func,ast.Attribute) and value.func.attr in _AGGREGATE_METHODS:
+            selected=_series_selection(value.func.value)
+            if selected:
+                source_name,selector=selected
+                args,kwargs,error=_call_literals(cell,node,value,value.func.attr)
+                if error:return [],error
+                temporary=f"__dkds_series_{cell}_{node.lineno}_{index}"
+                return [
+                    {"id":_op_id(cell,node.lineno,index),"kind":"series.select","cellIndex":cell,"line":node.lineno,"output":temporary,"input":source_name,"selector":selector},
+                    {"id":_op_id(cell,node.lineno,index+1),"kind":_SUPPORTED_METHODS[value.func.attr],"cellIndex":cell,"line":node.lineno,"output":output,"input":temporary,"args":args,"kwargs":kwargs},
+                ],None
         owner,method=_call_owner(value)
         if owner and method in _SUPPORTED_METHODS:
-            ok,kwargs=_keyword_literals(value)
-            if not ok:return None,_diag(cell,node,"TABLE_IR_KEYWORD_UNRESOLVED",f"{method} keyword arguments must be literal in IR v1.")
-            if value.args:
-                args=[]
-                for arg in value.args:
-                    ok_arg,resolved=_literal(arg)
-                    if not ok_arg:return None,_diag(cell,node,"TABLE_IR_ARGUMENT_UNRESOLVED",f"{method} positional arguments must be literal in IR v1.")
-                    args.append(resolved)
-            else:args=[]
-            return {"id":_op_id(cell,node.lineno,index),"kind":_SUPPORTED_METHODS[method],"cellIndex":cell,"line":node.lineno,"output":output,"input":owner,"args":args,"kwargs":kwargs},None
-    return None,_diag(cell,node,"TABLE_IR_ASSIGNMENT_UNLOWERED","Assignment is outside the current bounded Table Transform IR.")
+            args,kwargs,error=_call_literals(cell,node,value,method)
+            if error:return [],error
+            return [{"id":_op_id(cell,node.lineno,index),"kind":_SUPPORTED_METHODS[method],"cellIndex":cell,"line":node.lineno,"output":output,"input":owner,"args":args,"kwargs":kwargs}],None
+    return [],_diag(cell,node,"TABLE_IR_ASSIGNMENT_UNLOWERED","Assignment is outside the current bounded Table Transform IR.")
 
 def _expression_op(cell:int,node:ast.Expr,index:int)->tuple[dict[str,Any]|None,dict[str,Any]|None]:
     call=node.value
@@ -170,6 +196,7 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
     operations=[]
     diagnostics=[]
     statement_count=0
+    lowered_statement_count=0
     for cell in cells:
         try:tree=ast.parse(_sanitize(cell["source"]),filename=f"{source_path.name}#cell-{cell['index']}",mode="exec")
         except SyntaxError:continue
@@ -177,23 +204,25 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
         for node in tree.body:
             if isinstance(node,_DECLARATIONS):continue
             statement_count+=1
-            operation=None
+            emitted=[]
             diagnostic=None
             if isinstance(node,(ast.Assign,ast.AnnAssign)):
-                operation,diagnostic=_assignment_op(cell["index"],node,op_index)
+                emitted,diagnostic=_assignment_op(cell["index"],node,op_index)
             elif isinstance(node,ast.Expr):
                 operation,diagnostic=_expression_op(cell["index"],node,op_index)
+                if operation:emitted=[operation]
             else:
                 diagnostic=_diag(cell["index"],node,"TABLE_IR_STATEMENT_UNLOWERED",f"{type(node).__name__} is not part of Table Transform IR v1.")
-            if operation:
-                operations.append(operation);op_index+=1
+            if emitted:
+                operations.extend(emitted)
+                op_index+=len(emitted)
+                lowered_statement_count+=1
             elif diagnostic:diagnostics.append(diagnostic)
-    lowerable=len(operations)
-    ratio=1.0 if statement_count==0 else lowerable/statement_count
+    ratio=1.0 if statement_count==0 else lowered_statement_count/statement_count
     return {
         "schema":PLAN_SCHEMA,"source":source_path.name,"sourceKind":kind,
         "operations":operations,"diagnostics":diagnostics,
-        "statementCount":statement_count,"lowerableStatementCount":lowerable,
-        "coverage":ratio,"buildable":statement_count>0 and not diagnostics and lowerable==statement_count,
+        "statementCount":statement_count,"lowerableStatementCount":lowered_statement_count,
+        "coverage":ratio,"buildable":statement_count>0 and not diagnostics and lowered_statement_count==statement_count,
         "sourceExecuted":False,
     }
