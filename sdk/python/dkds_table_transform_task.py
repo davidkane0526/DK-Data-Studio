@@ -376,10 +376,10 @@ _HELPERS=r"""
       if(!value||value.kind!=='data.table'||!Array.isArray(value.columns))throw new Error('Table Transform input must be a data.table snapshot');
       const columns=value.columns.map(cloneColumn);
       const rowCount=Math.max(Number(value.rowCount)||0,...columns.map(c=>c.values.length),0);
-      return {kind:'data.table',artifactId:String(value.artifactId||''),index:Array.from({length:rowCount},(_,i)=>i),columns,rowCount};
+      return {kind:'data.table',artifactId:String(value.artifactId||''),index:Array.from({length:rowCount},(_,i)=>i),indexNames:[],columns,rowCount};
     };
-    const cloneTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),index:Array.from(t?.index||[]),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
-    const cloneSeries=s=>({kind:'table.series',artifactId:String(s?.artifactId||''),id:String(s?.id||''),key:String(s?.key||''),name:String(s?.name||s?.key||''),unit:String(s?.unit||''),role:String(s?.role||''),quantity:String(s?.quantity||''),dimension:String(s?.dimension||''),dtype:String(s?.dtype||''),index:Array.from(s?.index||[]),values:Array.from(s?.values||[])});
+    const cloneTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),index:Array.from(t?.index||[]),indexNames:Array.from(t?.indexNames||[]),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
+    const cloneSeries=s=>({kind:'table.series',artifactId:String(s?.artifactId||''),id:String(s?.id||''),key:String(s?.key||''),name:String(s?.name||s?.key||''),unit:String(s?.unit||''),role:String(s?.role||''),quantity:String(s?.quantity||''),dimension:String(s?.dimension||''),dtype:String(s?.dtype||''),index:Array.from(s?.index||[]),indexNames:Array.from(s?.indexNames||[]),values:Array.from(s?.values||[])});
     const nullish=v=>v===null||v===undefined||(typeof v==='number'&&!Number.isFinite(v));
     const missing=v=>v===null||v===undefined||(typeof v==='number'&&Number.isNaN(v));
     const resolveSelector=(selector,env,length)=>{
@@ -407,7 +407,7 @@ _HELPERS=r"""
       const rows=resolveSelector(rowSel,env,t.rowCount);
       const cols=resolveSelector(colSel,env,t.columns.length);
       const columns=cols.map(i=>{const c=cloneColumn(t.columns[i]);c.values=rows.map(r=>c.values[r]);return c;});
-      return {kind:'data.table',artifactId:t.artifactId,index:rows.map(r=>t.index[r]),columns,rowCount:rows.length};
+      return {kind:'data.table',artifactId:t.artifactId,index:rows.map(r=>t.index[r]),indexNames:Array.from(t.indexNames||[]),columns,rowCount:rows.length};
     };
     const selectSeries=(table,selector)=>{
       const t=cloneTable(table);
@@ -418,11 +418,64 @@ _HELPERS=r"""
       const c=cloneColumn(matches[0]);
       return {kind:'table.series',artifactId:t.artifactId,id:c.id,key:c.key,name:c.name,unit:c.unit,role:c.role,quantity:c.quantity,dimension:c.dimension,dtype:c.dtype,index:Array.from(t.index),values:Array.from(c.values)};
     };
+    const columnByLabel=(table,label)=>{
+      const text=String(label);
+      const matches=(table?.columns||[]).filter(c=>[c.key,c.name,c.id].some(value=>String(value)===text));
+      if(matches.length!==1)throw new Error(matches.length?'Column label is ambiguous: '+text:'Column not found: '+text);
+      return matches[0];
+    };
+    const createGroupBy=(table,options)=>{
+      const t=cloneTable(table);
+      const keyColumns=Array.from(options?.keys||[]).map(label=>cloneColumn(columnByLabel(t,label)));
+      return {kind:'table.groupby',table:t,keyColumns,keyNames:keyColumns.map(c=>String(c.key||c.name||c.id||'')),sort:options?.sort!==false,dropna:options?.dropna!==false,asIndex:options?.asIndex!==false};
+    };
+    const selectGroupBy=(group,selector)=>{
+      if(group?.kind!=='table.groupby')throw new Error('SeriesGroupBy selection requires a DataFrameGroupBy value');
+      if(selector?.kind!=='literal'||(typeof selector.value!=='string'&&typeof selector.value!=='number'))throw new Error('SeriesGroupBy selector must be one literal column label');
+      const c=cloneColumn(columnByLabel(group.table,selector.value));
+      return {kind:'series.groupby',group,column:c};
+    };
+    const keyToken=value=>missing(value)?'missing':typeof value+':'+JSON.stringify(value);
+    const compareScalar=(a,b)=>{
+      const am=missing(a),bm=missing(b);if(am||bm)return am===bm?0:(am?1:-1);
+      if(typeof a==='number'&&typeof b==='number')return a-b;
+      const sa=String(a),sb=String(b);return sa>sb?1:sa<sb?-1:0;
+    };
+    const compareKeys=(a,b)=>{for(let i=0;i<Math.max(a.length,b.length);i++){const cmp=compareScalar(a[i],b[i]);if(cmp)return cmp;}return 0;};
+    const groupPartitions=group=>{
+      const buckets=new Map(),order=[];
+      for(let row=0;row<group.table.rowCount;row++){
+        const keys=group.keyColumns.map(c=>c.values[row]);
+        if(group.dropna&&keys.some(missing))continue;
+        const token=keys.map(keyToken).join('|');
+        let bucket=buckets.get(token);
+        if(!bucket){bucket={keys,rows:[]};buckets.set(token,bucket);order.push(bucket);}
+        bucket.rows.push(row);
+      }
+      if(group.sort)order.sort((a,b)=>compareKeys(a.keys,b.keys));
+      return order;
+    };
+    const groupIndexValue=keys=>keys.length===1?keys[0]:Array.from(keys);
+    const groupKeyColumns=(group,groups)=>group.keyColumns.map((source,keyIndex)=>{
+      const c=cloneColumn(source);c.values=groups.map(row=>row.keys[keyIndex]);c.role=c.role||'group';return c;
+    });
     const absTable=table=>{const t=cloneTable(table);for(const c of t.columns)c.values=c.values.map(v=>{if(nullish(v))return v;if(typeof v!=='number')throw new Error('table.abs requires numeric/null cells');return Math.abs(v);});return t;};
     const diffTable=(table,periods)=>{const t=cloneTable(table),p=Number(periods);for(const c of t.columns)c.values=c.values.map((v,i)=>{const j=i-p;if(j<0||j>=c.values.length||nullish(v)||nullish(c.values[j]))return null;if(typeof v!=='number'||typeof c.values[j]!=='number')throw new Error('table.diff requires numeric/null cells');return v-c.values[j];});return t;};
     const dropnaTable=(table,how)=>{const t=cloneTable(table),keep=[];for(let r=0;r<t.rowCount;r++){const flags=t.columns.map(c=>nullish(c.values[r]));const drop=how==='all'?flags.every(Boolean):flags.some(Boolean);if(!drop)keep.push(r);}for(const c of t.columns)c.values=keep.map(r=>c.values[r]);t.index=keep.map(r=>t.index[r]);t.rowCount=keep.length;return t;};
     const sortIndexTable=(table,ascending)=>{const t=cloneTable(table),order=t.index.map((v,i)=>({v,i})).sort((a,b)=>ascending?(a.v>b.v?1:a.v<b.v?-1:0):(a.v>b.v?-1:a.v<b.v?1:0)).map(x=>x.i);for(const c of t.columns)c.values=order.map(i=>c.values[i]);t.index=order.map(i=>t.index[i]);return t;};
-    const resetIndexTable=(table,drop)=>{const t=cloneTable(table);if(!drop)t.columns.unshift({id:'index',key:'index',name:'index',unit:'',role:'index',quantity:'',dimension:'',dtype:'number',values:Array.from(t.index)});t.index=Array.from({length:t.rowCount},(_,i)=>i);return t;};
+    const resetIndexTable=(table,drop)=>{
+      const t=cloneTable(table);
+      if(!drop){
+        const names=Array.from(t.indexNames||[]);
+        if(names.length){
+          const columns=names.map((name,keyIndex)=>({id:String(name||('index_'+keyIndex)),key:String(name||('index_'+keyIndex)),name:String(name||('index_'+keyIndex)),unit:'',role:'index',quantity:'',dimension:'',dtype:'',values:t.index.map(value=>names.length===1?value:(Array.isArray(value)?value[keyIndex]:null))}));
+          t.columns.unshift(...columns);
+        }else{
+          t.columns.unshift({id:'index',key:'index',name:'index',unit:'',role:'index',quantity:'',dimension:'',dtype:'number',values:Array.from(t.index)});
+        }
+      }
+      t.index=Array.from({length:t.rowCount},(_,i)=>i);t.indexNames=[];return t;
+    };
     const concatTables=(tables,axis,ignoreIndex)=>{
       if(!tables.length)throw new Error('table.concat requires inputs');
       const rows=tables.map(cloneTable);
@@ -476,7 +529,50 @@ _HELPERS=r"""
         index:Array.from(t.index),
         values:Array.from({length:t.rowCount},(_,row)=>aggregateNumbers(columns.map(c=>c.values[row]),method,options))};
     };
-    const exportTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),index:Array.from(t?.index||[]),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
+    const aggregateGroupBy=(value,spec,options={})=>{
+      const group=value?.kind==='series.groupby'?value.group:value;
+      if(group?.kind!=='table.groupby')throw new Error('GroupBy aggregate requires a GroupBy value');
+      const groups=groupPartitions(group);
+      if(value?.kind==='series.groupby'){
+        if(spec?.kind!=='single')throw new Error('SeriesGroupBy requires one reducer');
+        const method=String(spec.method||'');
+        const column=cloneColumn(value.column);
+        const values=groups.map(bucket=>aggregateNumbers(bucket.rows.map(row=>column.values[row]),method,{skipna:true,ddof:method==='std'?Number(options.ddof??1):1}));
+        if(group.asIndex){
+          return {kind:'table.series',artifactId:group.table.artifactId,id:column.id,key:column.key,name:column.name,unit:column.unit,role:'aggregate',quantity:column.quantity,dimension:column.dimension,dtype:'number',index:groups.map(bucket=>groupIndexValue(bucket.keys)),indexNames:Array.from(group.keyNames),values};
+        }
+        const keyColumns=groupKeyColumns(group,groups);
+        column.values=values;column.role='aggregate';column.dtype='number';
+        return {kind:'data.table',artifactId:group.table.artifactId,index:Array.from({length:groups.length},(_,i)=>i),indexNames:[],columns:[...keyColumns,column],rowCount:groups.length};
+      }
+      const keyIds=new Set(group.keyColumns.map(c=>String(c.id||c.key||c.name||'')));
+      let targets=[];
+      if(spec?.kind==='mapping'){
+        targets=Array.from(spec.items||[]).map(item=>{
+          const column=cloneColumn(columnByLabel(group.table,item.column));
+          if(keyIds.has(String(column.id||column.key||column.name||'')))throw new Error('Grouping keys cannot also be aggregate targets in bounded GroupBy v1');
+          return {column,method:String(item.method||'')};
+        });
+      }else{
+        const method=String(spec?.method||'');
+        let columns=group.table.columns.filter(c=>!keyIds.has(String(c.id||c.key||c.name||'')));
+        if(options.numericOnly)columns=columns.filter(numericColumn);
+        targets=columns.map(column=>({column:cloneColumn(column),method}));
+      }
+      const aggregateColumns=targets.map(target=>{
+        const c=cloneColumn(target.column);
+        c.values=groups.map(bucket=>aggregateNumbers(bucket.rows.map(row=>target.column.values[row]),target.method,{skipna:true,ddof:target.method==='std'?Number(options.ddof??1):1}));
+        c.role='aggregate';c.dtype='number';return c;
+      });
+      if(group.asIndex){
+        return {kind:'data.table',artifactId:group.table.artifactId,index:groups.map(bucket=>groupIndexValue(bucket.keys)),indexNames:Array.from(group.keyNames),columns:aggregateColumns,rowCount:groups.length};
+      }
+      return {kind:'data.table',artifactId:group.table.artifactId,index:Array.from({length:groups.length},(_,i)=>i),indexNames:[],columns:[...groupKeyColumns(group,groups),...aggregateColumns],rowCount:groups.length};
+    };
+    const exportTable=t=>{
+      const row=(t?.indexNames?.length)?resetIndexTable(t,false):cloneTable(t);
+      return {kind:'data.table',artifactId:String(row?.artifactId||''),index:Array.from(row?.index||[]),columns:(row?.columns||[]).map(cloneColumn),rowCount:Number(row?.rowCount)||0};
+    };
     const exportSeries=s=>cloneSeries(s);
     const seriesRows=s=>{const row=cloneSeries(s);return row.values.map((value,index)=>({index:row.index[index]??index,value}));};
 """
@@ -508,8 +604,14 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
             lines.append(f"    env[{_js(output)}]={_js(op.get('value'))};")
         elif kind=="value.alias":
             lines.append(f"    env[{_js(output)}]=env[{_js(op['input'])}];")
+        elif kind=="groupby.create":
+            config,error=_groupby_config(op)
+            if error or config is None:raise ValueError("GroupBy operation was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=createGroupBy(env[{_js(op['input'])}],{_js(config)});")
         elif kind=="series.select":
-            lines.append(f"    env[{_js(output)}]=selectSeries(env[{_js(op['input'])}],{_js(op.get('selector'))});")
+            input_kind=report["symbolKinds"].get(str(op.get("input","")),"")
+            helper="selectGroupBy" if input_kind=="groupby.table" else "selectSeries"
+            lines.append(f"    env[{_js(output)}]={helper}(env[{_js(op['input'])}],{_js(op.get('selector'))});")
         elif kind=="table.slice":
             lines.append(f"    env[{_js(output)}]=sliceTable(env[{_js(op['input'])}],{_js(op.get('selector'))},env);")
         elif kind=="table.abs":
@@ -534,9 +636,20 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
             lines.append(f"    env[{_js(output)}]=concatTables({inputs},{int(op.get('axis',0))},{str(bool(op.get('ignoreIndex',False))).lower()});")
         elif kind in _AGGREGATES:
             input_kind=report["symbolKinds"].get(str(op.get("input","")),"")
-            config,error=_aggregate_config(op,input_kind)
-            if error or config is None:raise ValueError("Aggregate operation was not validated before compilation")
-            lines.append(f"    env[{_js(output)}]=aggregateValue(env[{_js(op['input'])}],{_js(_AGGREGATES[kind])},{_js(config)});")
+            if input_kind in {"groupby.table","groupby.series"}:
+                config,error=_groupby_reduce_config(op)
+                if error or config is None:raise ValueError("GroupBy reducer was not validated before compilation")
+                spec={"kind":"single","method":_AGGREGATES[kind]}
+                lines.append(f"    env[{_js(output)}]=aggregateGroupBy(env[{_js(op['input'])}],{_js(spec)},{_js(config)});")
+            else:
+                config,error=_aggregate_config(op,input_kind)
+                if error or config is None:raise ValueError("Aggregate operation was not validated before compilation")
+                lines.append(f"    env[{_js(output)}]=aggregateValue(env[{_js(op['input'])}],{_js(_AGGREGATES[kind])},{_js(config)});")
+        elif kind=="groupby.aggregate":
+            input_kind=report["symbolKinds"].get(str(op.get("input","")),"")
+            spec,error=_groupby_agg_spec(op,input_kind)
+            if error or spec is None:raise ValueError("GroupBy aggregate specification was not validated before compilation")
+            lines.append(f"    env[{_js(output)}]=aggregateGroupBy(env[{_js(op['input'])}],{_js(spec)},{{}});")
     table_outputs=[name for name in report["taskOutputSymbols"] if report["taskOutputKinds"].get(name)=="table"]
     series_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="series"]
     scalar_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="scalar"]
