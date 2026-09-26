@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   statuses: write
 
 concurrency:
@@ -46,6 +46,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          test -n "$VERSION"
+          echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Release version: $VERSION"
 
       - name: Publish Android build locator
         shell: bash
@@ -179,6 +187,41 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -d "{\"state\":\"success\",\"context\":\"dkds/android-artifact\",\"description\":\"run=$GITHUB_RUN_ID; artifact=$ARTIFACT_ID\",\"target_url\":\"https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
+
+      - name: Publish APK to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="v${DKDS_RELEASE_VERSION}"
+          TITLE="DK Data Studio $TAG"
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            if ! gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --prerelease \
+              --notes "Automated dev build for $TAG from commit $GITHUB_SHA."; then
+              sleep 2
+              gh release view "$TAG" >/dev/null
+            fi
+          fi
+
+          RELEASE_APK="$RUNNER_TEMP/DK-Data-Studio-Android-arm64.apk"
+          cp mobile-dist/DK-Data-Studio-arm64-v8a-release.apk "$RELEASE_APK"
+          gh release upload "$TAG" "$RELEASE_APK" --clobber
+
+          while IFS= read -r ASSET; do
+            case "$ASSET" in
+              DK-Data-Studio-Windows-Portable.exe|DK-Data-Studio-Android-arm64.apk)
+                ;;
+              *)
+                gh release delete-asset "$TAG" "$ASSET" --yes
+                ;;
+            esac
+          done < <(gh release view "$TAG" --json assets --jq '.assets[].name')
 
       - name: Publish Android build result
         if: always()

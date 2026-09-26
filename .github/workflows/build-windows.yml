@@ -49,7 +49,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   statuses: write
 
 concurrency:
@@ -67,6 +67,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Resolve release version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if (-not $version) { throw 'Unable to resolve source release version.' }
+          "DKDS_RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release version: $version"
 
       - name: Ensure main baseline ref
         shell: pwsh
@@ -330,6 +338,48 @@ jobs:
             Remove-Item -LiteralPath (Join-Path $serverDir 'server.log') -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath (Join-Path $serverDir 'server.log.1') -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath (Join-Path $serverDir 'storage') -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Publish Portable EXE to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:DKDS_RELEASE_VERSION"
+          $title = "DK Data Studio $tag"
+          $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)portable' } |
+            Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found for GitHub Release.' }
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --target $env:GITHUB_SHA --title $title --prerelease --notes "Automated dev build for $tag from commit $env:GITHUB_SHA."
+            if ($LASTEXITCODE -ne 0) {
+              Start-Sleep -Seconds 2
+              gh release view $tag *> $null
+              if ($LASTEXITCODE -ne 0) { throw "Unable to create or resolve GitHub Release $tag." }
+            }
+          }
+
+          $releaseDir = Join-Path $env:RUNNER_TEMP 'dkds-release'
+          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
+          $releaseExe = Join-Path $releaseDir 'DK-Data-Studio-Windows-Portable.exe'
+          Copy-Item -LiteralPath $portable.FullName -Destination $releaseExe -Force
+          gh release upload $tag $releaseExe --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to upload Portable EXE to GitHub Release.' }
+
+          $allowed = @(
+            'DK-Data-Studio-Windows-Portable.exe',
+            'DK-Data-Studio-Android-arm64.apk'
+          )
+          $release = gh release view $tag --json assets | ConvertFrom-Json
+          foreach ($asset in @($release.assets)) {
+            if ($allowed -notcontains [string]$asset.name) {
+              gh release delete-asset $tag ([string]$asset.name) --yes
+              if ($LASTEXITCODE -ne 0) { throw "Failed to remove unexpected Release asset: $($asset.name)" }
+            }
           }
 
       - name: Upload Windows artifacts
