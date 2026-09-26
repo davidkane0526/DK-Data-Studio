@@ -29,7 +29,7 @@ assert(!nativeShell.includes('.main-plot-tools button{min-height:'),'Native touc
 const nav=read('src/styles/structure/sdk-semantic-surfaces.css');
 assert(nav.includes('--dkds-scientific-nav-item-width:28px')&&nav.includes('--dkds-scientific-nav-item-height:28px'),'Shared scientific navigation must retain the frozen semantic geometry.');
 const desktopNav=(touch.match(/html\[data-dkds-host="desktop"\] \.dkds-scientific-nav-tools\{[\s\S]*?\n\}/)||[])[0]||'';
-assert(desktopNav.includes('--dkds-scientific-nav-item-width:25.2px')&&desktopNav.includes('--dkds-scientific-nav-item-height:25.2px'),'Desktop scientific floating buttons must be exactly 10% smaller than the shared 28 px baseline.');
+assert(desktopNav.includes('--dkds-scientific-nav-item-width:20.16px')&&desktopNav.includes('--dkds-scientific-nav-item-height:25.2px'),'Desktop scientific floating buttons must be 20% narrower than the accepted 25.2 px Desktop width while retaining the accepted Desktop height.');
 const mobileNav=(nativeShell.match(/html\[data-dkds-host="mobile"\]\.react-native-client \.dkds-scientific-nav-tools\{[^}]+\}/)||[])[0]||'';
 assert(mobileNav.includes('--dkds-scientific-nav-item-width:22.5px')&&mobileNav.includes('--dkds-scientific-nav-item-height:20.4px'),'Native Mobile scientific floating geometry must remain unchanged by Desktop-only tuning.');
 const shellNav=read('src/styles/structure/shell-navigation.css'),schema=read('src/styles/structure/schema-and-plugin-ui.css'),appearance=read('src/styles/theme/component-appearance.css');

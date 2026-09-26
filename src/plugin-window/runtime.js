@@ -584,7 +584,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.71.120',
+      appVersion:'3.71.121',
       isAuxiliaryWindow:true,
       isWebClient:false,
       renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),

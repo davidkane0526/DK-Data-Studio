@@ -50,7 +50,7 @@ assert(nativeWorkspace.includes('--dkds-mobile-right-seam:var(--dkds-canvas-resi
 assert(nativeShell.includes('--dkds-scientific-nav-item-height:20.4px;--dkds-scientific-nav-group-height:23.4px'),'Native scientific floating item/group height contract must be 20.4 / 23.4 px.');
 assert(nativeShell.includes('height:var(--dkds-scientific-nav-group-height);min-height:var(--dkds-scientific-nav-group-height);max-height:var(--dkds-scientific-nav-group-height)'),'Floating chrome must lock the outer silhouette, not only shrink its buttons.');
 assert(nativeShell.includes('.dkds-surface-header .dkds-integrated-action-group{--dkds-header-action-height:26px;overflow-y:hidden}'),'Native integrated chart toolbar must use shared 26px action geometry and forbid vertical scroll.');
-assert(desktopTouch.includes('--dkds-scientific-nav-item-width:25.2px;')&&desktopTouch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific floating geometry must remain at the accepted 10% reduced 25.2 × 25.2 px contract.');
+assert(desktopTouch.includes('--dkds-scientific-nav-item-width:20.16px;')&&desktopTouch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific floating geometry must remain at the accepted 20% width-reduced 20.16 × 25.2 px contract.');
 
 // Native touch minimum architecture: no catch-all raw min-height owner on every
 // control. Generic and workbench controls consume bounded slots; compact semantic

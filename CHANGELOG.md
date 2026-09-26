@@ -1,3 +1,11 @@
+# 3.71.121 WIP — Desktop shell density + Pulse Data Center routing/batch
+
+- Desktop project-tab shell density is reduced by exactly 20% through the Desktop Host owner: strip 40→32 px, tab 34→27.2 px, close action 20→16 px and new-project action height 33→26.4 px. Desktop shell-top occupancy follows from 92→84 px; shared and Native Mobile contracts are unchanged.
+- Desktop shared ScientificPlot floating navigation keeps its accepted 25.2 px height while its horizontal item width is reduced 20% from 25.2→20.16 px; horizontal chrome padding is reduced proportionally. Shared Core and Native Mobile geometry remain independent.
+- Pulse Analysis 2.12.14 accepts generic `data.table` routing in addition to `science.pulse.trace`. Core `dataAssignments` remains the only visibility boundary; once Data Center assigns an imported numeric table to Pulse, Pulse accepts it without a second Pulse-only semantic filter.
+- Pulse parameter PRIME restores explicit `分析当前` and `批量分析勾选` controls. Batch execution continues through the existing `analyzeChecked()` Task Runner path and supports applying one file's extraction settings to all checked files.
+- App/Desktop/Mobile identity advances to 3.71.121 / Android versionCode 261. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.120 WIP — Primary titlebar close direct shutdown
 
 - The primary Desktop window's renderer `windows:closeCurrent` command now enters the shared shutdown coordinator directly. It no longer calls `BrowserWindow.close()` first and depends on the native close event to infer application shutdown.

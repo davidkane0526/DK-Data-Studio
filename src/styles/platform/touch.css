@@ -169,15 +169,43 @@
 /* Desktop scientific floating chrome is intentionally compact. Native Mobile
    re-establishes its larger touch geometry in native-client-shell.css. */
 html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
-  /* Desktop scientific chrome scales with the CSS viewport, not physical panel
-     resolution.  The renderer therefore stays compact at 100–150% Windows
-     scaling while still retaining a slightly larger hit target on very wide
-     workspaces. Mobile owns a separate geometry contract. */
-  --dkds-scientific-nav-item-width:25.2px;
+  /* Desktop scientific chrome keeps its accepted height while the complete
+     horizontal footprint is reduced by 20%. Mobile owns a separate geometry
+     contract and is intentionally unaffected. */
+  --dkds-scientific-nav-item-width:20.16px;
   --dkds-scientific-nav-item-height:25.2px;
   --dkds-scientific-nav-padding-block:1px;
-  --dkds-scientific-nav-padding-inline:2px;
+  --dkds-scientific-nav-padding-inline:1.6px;
   --dkds-scientific-nav-font-size:13px;
+}
+
+
+/* Desktop project-tab strip is a host-owned shell density adjustment. The
+   shared 40/34/20 px contract remains the cross-platform baseline; Desktop
+   consumes exactly 80% of its vertical geometry. */
+html[data-dkds-host="desktop"]{
+  --dkds-shell-top-height:84px;
+}
+html[data-dkds-host="desktop"] .project-tabs-bar{
+  --dkds-project-tabs-height:32px;
+  padding-top:4px;
+}
+html[data-dkds-host="desktop"] .project-tab{
+  --dkds-project-tab-height:27.2px;
+}
+html[data-dkds-host="desktop"] .project-tab-close{
+  flex-basis:16px;
+  width:16px;
+  height:16px;
+  min-width:16px;
+  min-height:16px;
+}
+html[data-dkds-host="desktop"] .new-project-tab{
+  min-width:27.2px;
+  height:26.4px;
+  min-height:26.4px;
+  padding-inline:7.2px;
+  margin-bottom:.8px;
 }
 
 /* Desktop wheel policy: workspace/document scroll regions chain vertically.

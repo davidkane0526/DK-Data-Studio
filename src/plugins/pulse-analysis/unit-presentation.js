@@ -48,6 +48,9 @@
     const fileList=units.list.create(filePanel.element,{tagName:'div',variant:'plain',className:'pulse-file-list'}).element;setId(fileList,'pulseFileList');
     textNode(dom,fileList,{className:'pulse-file-empty',text:'尚未添加脉冲数据文件'});
     const fileSummary=units.note.create(filePanel.element,{tagName:'div',variant:'meta',className:'pulse-file-summary',text:'0 个文件'});setId(fileSummary,'pulseBatchFileSummary');
+    const analysisToolbar=units.layout.create(filePanel.element,{variant:'file-toolbar',className:'pulse-file-toolbar pulse-analysis-toolbar dkds-toolbar'});
+    directAction(units,analysisToolbar,{id:'pulseAnalyzeCurrentBtn',label:'分析当前'});
+    directAction(units,analysisToolbar,{id:'pulseAnalyzeCheckedBtn',label:'批量分析勾选',className:'primary',variant:'primary'});
 
     const configPanel=units.panel.create(controls,{tagName:'section',variant:'plain',header:false,className:'pulse-card pulse-config-card dkds-surface'});
     units.header.create(configPanel.element,{tagName:'div',kind:'panel',variant:'panel',className:'pulse-card-heading',stacked:true,titleTag:'h3',titleClassName:false,titleWrapperClassName:'dkds-surface-heading-stack',title:'当前文件与提取设置',subtitle:'“自动”会优先使用明确的时间协议；无协议但有电压时使用等点数分段。仅电流数据请填写写入/读取宽度。',actionsTagName:'div',actionsClassName:'pulse-current-file-actions',integratedActions:false});
