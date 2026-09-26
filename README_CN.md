@@ -1,3 +1,5 @@
+> **v3.71.122 WIP — Dedicated Pulse Data Routing / Desktop Plot Chrome Width**：修复 Pulse 独立窗口仍显示 0 个文件的问题。Dedicated Plugin Host 现在对所有 Workbench 统一建立与主宿主一致的 dataAssignments 只读 Artifact 视图，并在进入插件 window runtime 前应用 manifest 声明的 `data.adapter`；Pulse 2.12.15 仅声明 `data.adapter="data-adapter"`，冻结的 pulse `window-runtime.js` 与 `analysis-service.js` 不变。这样 Data Center 分配给 Pulse 的普通数值 DataTable 在主工作台和独立窗口都走同一只读投影并显示在参数面板。Desktop ScientificPlot 悬浮按钮组在 v3.71.121 紧凑基线基础上横向增加 10%：按钮宽 20.16→22.176 px、横向 padding 1.6→1.76 px，高度保持 25.2 px；Mobile 不变。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+
 > **v3.71.121 WIP — Desktop Shell Density / Pulse Data Center Routing & Batch**：Desktop 项目标签栏按 Host 合同整体压缩 20%：层高 40→32 px、标签高度 34→27.2 px、关闭按钮 20→16 px、新建按钮高度 33→26.4 px，并同步将 Desktop shell top 占用从 92→84 px；Shared/Core 与 Native Mobile 基线不变。Desktop 所有共享 ScientificPlot 悬浮导航按钮保持 25.2 px 高度，但横向尺寸从 25.2 px 再缩小 20% 至 20.16 px，整组横向 padding 同步缩小。Pulse Analysis 2.12.14 保持冻结的 analysis-service 不变，在插件数据边界新增只读 DataTable→Pulse 输入投影：Core 仍先按 dataAssignments 完成可见性隔离，Data Center 通过“数据用途”分配给 Pulse 的普通数值表再由插件领域适配器投影为 Pulse 可读输入，canonical Artifact 不被改写；参数面板只负责显示和配置数据；顶部既有主操作“分析勾选”本身即对所有勾选文件调用 analyzeChecked 批处理链，不在参数面板复制第二套主操作。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
 
 > **v3.71.120 WIP — Primary Titlebar Close Direct Shutdown**：针对真实用户通过桌面端自绘标题栏 × 关闭应用的路径，主窗口 `windows:closeCurrent` 不再先调用 `BrowserWindow.close()` 再依赖 `close` 事件间接触发退出，而是直接进入 Main Process 的 shutdown coordinator；插件/独立窗口仍保持原有 close/hide 语义。Windows CI 新增 renderer/preload 驱动的 `closeCurrentWindow()` 打包退出门禁，验证与用户点击 × 相同的 IPC 路径后完整进程树必须归零。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
@@ -125,7 +127,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.121**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.122**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

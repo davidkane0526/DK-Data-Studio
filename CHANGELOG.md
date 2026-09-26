@@ -1,3 +1,10 @@
+# 3.71.122 WIP — Dedicated Pulse data routing + Desktop plot chrome width
+
+- Dedicated Plugin Host now builds the same Workbench `dataAssignments`-scoped read-only Artifact view used by the owner renderer before creating a plugin window runtime.
+- A Workbench may declare `data.adapter` in its manifest; the dedicated host applies that module after assignment scoping and before injecting Artifacts into the frozen window runtime. Pulse Analysis 2.12.15 declares `data-adapter`, so assigned generic numeric DataTables appear in both main and dedicated Pulse hosts without mutating canonical Artifacts or changing frozen Pulse domain/runtime files.
+- Desktop ScientificPlot floating controls widen 10% from the v3.71.121 compact baseline: item width 20.16→22.176 px and horizontal padding 1.6→1.76 px. Height remains 25.2 px; Native Mobile geometry is unchanged.
+- App/Desktop/Mobile identity advances to 3.71.122 / Android versionCode 262. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.121 WIP — Desktop shell density + Pulse Data Center routing/batch
 
 - Desktop project-tab shell density is reduced by exactly 20% through the Desktop Host owner: strip 40→32 px, tab 34→27.2 px, close action 20→16 px and new-project action height 33→26.4 px. Desktop shell-top occupancy follows from 92→84 px; shared and Native Mobile contracts are unchanged.

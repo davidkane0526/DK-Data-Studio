@@ -170,12 +170,12 @@
    re-establishes its larger touch geometry in native-client-shell.css. */
 html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
   /* Desktop scientific chrome keeps its accepted height while the complete
-     horizontal footprint is reduced by 20%. Mobile owns a separate geometry
+     horizontal footprint is increased by 10% from the v3.71.121 compact baseline. Mobile owns a separate geometry
      contract and is intentionally unaffected. */
-  --dkds-scientific-nav-item-width:20.16px;
+  --dkds-scientific-nav-item-width:22.176px;
   --dkds-scientific-nav-item-height:25.2px;
   --dkds-scientific-nav-padding-block:1px;
-  --dkds-scientific-nav-padding-inline:1.6px;
+  --dkds-scientific-nav-padding-inline:1.76px;
   --dkds-scientific-nav-font-size:13px;
 }
 

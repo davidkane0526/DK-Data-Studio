@@ -22,7 +22,7 @@ const touch=read('src/styles/platform/touch.css');
 assert(chart.includes("b.className='dkds-plot-view-action dkds-plot-view-menu-trigger'"));
 assert(!chart.includes("dkds-plot-view-menu-trigger dkds-portable-placement-trigger"));
 assert(chart.includes("b.dataset.dkdsComponentVariant='quiet'"));
-assert(touch.includes('--dkds-scientific-nav-item-width:20.16px;'),'Desktop scientific navigation must retain the accepted 20.16px width contract.');
+assert(touch.includes('--dkds-scientific-nav-item-width:22.176px;'),'Desktop scientific navigation must retain the accepted 22.176px width contract.');
 assert(touch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific navigation must retain the accepted 25.2px height contract.');
 assert(touch.includes('.dkds-plot-view-actions>.dkds-plot-view-menu-trigger'));
 

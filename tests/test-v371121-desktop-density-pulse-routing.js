@@ -36,10 +36,10 @@ async function main(){
   );
 
   assert(
-    touch.includes('--dkds-scientific-nav-item-width:20.16px;') &&
+    touch.includes('--dkds-scientific-nav-item-width:22.176px;') &&
     touch.includes('--dkds-scientific-nav-item-height:25.2px;') &&
-    touch.includes('--dkds-scientific-nav-padding-inline:1.6px;'),
-    'Desktop scientific floating controls must reduce their complete horizontal footprint by 20% without changing accepted height.'
+    touch.includes('--dkds-scientific-nav-padding-inline:1.76px;'),
+    'Desktop scientific floating controls must increase their complete horizontal footprint by 10% from the v3.71.121 compact baseline without changing accepted height.'
   );
   assert(
     semantic.includes('--dkds-scientific-nav-item-width:28px;') &&
@@ -54,10 +54,22 @@ async function main(){
   const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
   const pulseAdapterSource=read('src/plugins/pulse-analysis/data-adapter.js');
   const pulseServiceSource=read('src/plugins/pulse-analysis/analysis-service.js');
+  const pluginWindowRuntime=read('src/plugin-window/runtime.js');
   assert.deepStrictEqual(
     pulseJson.data?.accepts,
     ['science.pulse.trace','data.table'],
     'Pulse must advertise both semantic pulse traces and generic DataTables as routable inputs.'
+  );
+  assert.strictEqual(
+    pulseJson.data?.adapter,
+    'data-adapter',
+    'Pulse must declare one host-consumable data adapter so main and dedicated hosts share the same input projection.'
+  );
+  assert(
+    pluginWindowRuntime.includes("const adapterId=String(dataContract.adapter||'').trim();") &&
+    pluginWindowRuntime.includes("dataAdapter?.create?.(scopedArtifacts)||scopedArtifacts") &&
+    pluginWindowRuntime.includes("rows.includes('*')||rows.includes(pluginId)"),
+    'Dedicated plugin windows must apply generic assignment scoping before the manifest-declared data adapter.'
   );
   assert(
     pulseUnit.includes("label:'分析勾选',className:'primary',variant:'primary'") &&
@@ -137,7 +149,7 @@ async function main(){
   assert.strictEqual(state.files[0].artifactId,'generic-pulse-table');
   assert.deepStrictEqual(Array.from(state.files[0].inspection?.headers||[]),['Time','Current','Voltage'],'Pulse DataTable projection must omit index columns and preserve user data fields.');
 
-  console.log('v3.71.121 Desktop density + Pulse Data Center routing/batch contract PASS');
+  console.log('v3.71.122 Desktop scientific width + Pulse dedicated data routing contract PASS');
 }
 
 main().catch(error=>{console.error(error);process.exitCode=1;});

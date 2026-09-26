@@ -63,6 +63,6 @@ for(const [name,source] of [['analysis',analysis],['plugin canvas',workbench]]){
 assert(nativeShell.includes('--dkds-scientific-nav-item-width:22.5px;'),'Native scientific floating action width must remain 22.5 px.');
 assert(nativeShell.includes('--dkds-scientific-nav-item-height:'),'Native scientific floating actions must publish a dedicated item-height slot.');
 const desktopTouch=read('src/styles/platform/touch.css');
-assert(desktopTouch.includes('--dkds-scientific-nav-item-width:20.16px;')&&desktopTouch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific chrome must retain the accepted 20.16 × 25.2 px geometry.');
+assert(desktopTouch.includes('--dkds-scientific-nav-item-width:22.176px;')&&desktopTouch.includes('--dkds-scientific-nav-item-height:25.2px;'),'Desktop scientific chrome must retain the accepted 22.176 × 25.2 px geometry.');
 
 console.log('v3.68.11 Mobile statusbar geometry + Material drawer + dock resync + compact scientific chrome closure PASS');
