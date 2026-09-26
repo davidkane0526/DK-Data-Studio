@@ -66,6 +66,7 @@ button.wide{ width:100%;
 }
 .project-tabs-bar{
   --dkds-project-tabs-height:40px;
+  --dkds-project-tabs-padding-top:5px;
   --dkds-project-tabs-padding-left:10px;
   --dkds-project-tabs-padding-right:10px;
   position:relative;
@@ -75,7 +76,7 @@ button.wide{ width:100%;
   height:var(--dkds-project-tabs-height);
   min-height:var(--dkds-project-tabs-height);
   gap:5px;
-  padding:5px var(--dkds-project-tabs-padding-right) 0 var(--dkds-project-tabs-padding-left);
+  padding:var(--dkds-project-tabs-padding-top) var(--dkds-project-tabs-padding-right) 0 var(--dkds-project-tabs-padding-left);
   overflow:hidden;
 }
 .project-tab{
@@ -93,9 +94,33 @@ button.wide{ width:100%;
   padding:0 var(--dkds-project-tab-padding-right) 0 var(--dkds-project-tab-padding-left);
 }
 .new-project-tab{
-  min-width:34px;
-  padding:0 9px;
+  --dkds-new-project-tab-min-width:34px;
+  --dkds-new-project-tab-height:33px;
+  --dkds-new-project-tab-padding-inline:9px;
+  --dkds-new-project-tab-margin-bottom:1px;
+  min-width:var(--dkds-new-project-tab-min-width);
+  height:var(--dkds-new-project-tab-height);
+  min-height:var(--dkds-new-project-tab-height);
+  padding:0 var(--dkds-new-project-tab-padding-inline);
+  margin-bottom:var(--dkds-new-project-tab-margin-bottom);
 }
+
+/* Desktop shell density is expressed only through the canonical Project Tab
+   slots. Structure remains the sole owner of rendered geometry. */
+html[data-dkds-host="desktop"] .project-tabs-bar{
+  --dkds-project-tabs-height:32px;
+  --dkds-project-tabs-padding-top:4px;
+}
+html[data-dkds-host="desktop"] .project-tab{
+  --dkds-project-tab-height:27.2px;
+}
+html[data-dkds-host="desktop"] .new-project-tab{
+  --dkds-new-project-tab-min-width:27.2px;
+  --dkds-new-project-tab-height:26.4px;
+  --dkds-new-project-tab-padding-inline:7.2px;
+  --dkds-new-project-tab-margin-bottom:.8px;
+}
+
 .schema-parameter-panel{min-width:0;}
 .schema-parameter-panel:not(.layout-host-owned){
   display:grid;
@@ -361,7 +386,6 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   text-align:left;min-height:34px;font-size:11.5px;}
 
 .project-tab{user-select:none;cursor:pointer;font-size:12px;}
-.new-project-tab{height:33px;min-height:33px;margin-bottom:1px;}
 .main-plot-tools::-webkit-scrollbar{display:none;}
 .plugin-main-tools{gap:4px;overflow:visible;}
 .plugin-main-tool-btn{

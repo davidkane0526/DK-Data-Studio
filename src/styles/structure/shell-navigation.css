@@ -52,17 +52,24 @@
   overflow:hidden;
   text-overflow:ellipsis}
 .project-tab-close{
-  flex:0 0 20px;
-  width:20px;
-  height:20px;
-  min-width:20px;
-  min-height:20px;
+  --dkds-project-tab-close-size:20px;
+  flex:0 0 var(--dkds-project-tab-close-size);
+  width:var(--dkds-project-tab-close-size);
+  height:var(--dkds-project-tab-close-size);
+  min-width:var(--dkds-project-tab-close-size);
+  min-height:var(--dkds-project-tab-close-size);
   padding:0;
   box-sizing:border-box;
   display:inline-grid;
   place-items:center;
   line-height:1;
   transform:none}
+html[data-dkds-host="desktop"]{
+  --dkds-shell-top-height:84px;
+}
+html[data-dkds-host="desktop"] .project-tab-close{
+  --dkds-project-tab-close-size:16px;
+}
 @media (max-width:1450px){
   .toolbar-btn{--dkds-command-padding-block:4px;--dkds-command-padding-inline:6px;font-size:11px}}
 @media (max-width:1100px){

@@ -15,18 +15,20 @@ async function main(){
   const semantic=read('src/styles/structure/sdk-semantic-surfaces.css');
 
   assert(
-    touch.includes('html[data-dkds-host="desktop"]{\n  --dkds-shell-top-height:84px;') &&
-    touch.includes('--dkds-project-tabs-height:32px;') &&
-    touch.includes('--dkds-project-tab-height:27.2px;') &&
-    /html\[data-dkds-host="desktop"\] \.project-tab-close\{[\s\S]*?width:16px;[\s\S]*?height:16px;/.test(touch) &&
-    /html\[data-dkds-host="desktop"\] \.new-project-tab\{[\s\S]*?height:26\.4px;/.test(touch),
-    'Desktop project-tab strip, tabs and integrated buttons must consume exactly 80% of the accepted vertical geometry.'
+    shell.includes('html[data-dkds-host="desktop"]{\n  --dkds-shell-top-height:84px;') &&
+    schema.includes('html[data-dkds-host="desktop"] .project-tabs-bar{') &&
+    schema.includes('--dkds-project-tabs-height:32px;') &&
+    schema.includes('--dkds-project-tab-height:27.2px;') &&
+    schema.includes('--dkds-new-project-tab-height:26.4px;') &&
+    shell.includes('--dkds-project-tab-close-size:16px;'),
+    'Desktop project-tab strip, tabs and integrated buttons must consume exactly 80% of the accepted vertical geometry through Structure-owned slots.'
   );
   assert(
     schema.includes('--dkds-project-tabs-height:40px;') &&
     schema.includes('--dkds-project-tab-height:34px;') &&
-    /\.project-tab-close\{[\s\S]*?width:20px;[\s\S]*?height:20px;/.test(shell),
-    'Shared project-tab geometry must remain unchanged; the density change belongs to the Desktop host.'
+    schema.includes('--dkds-new-project-tab-height:33px;') &&
+    shell.includes('--dkds-project-tab-close-size:20px;'),
+    'Shared project-tab geometry must remain unchanged while Desktop only overrides bounded geometry slots.'
   );
   assert(
     nativeShell.includes('html[data-dkds-host="mobile"].react-native-client .project-tabs-bar{display:none}'),
