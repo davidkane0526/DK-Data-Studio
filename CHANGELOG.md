@@ -1,3 +1,9 @@
+# SDK 1.51.78 — GroupBy + aggregate (App 3.71.124)
+
+- Adds internal bounded DataFrameGroupBy/SeriesGroupBy values to the existing Python/Jupyter Table Transform IR, including literal single/multi-column keys and literal `sort/dropna/as_index` options.
+- Executes GroupBy `mean/median/std` plus bounded `agg()/aggregate()` reducer mappings in the existing JavaScript Core Task runtime. Grouped indexes are materialized into canonical DKDS key columns only at the Task output boundary.
+- Terminal GroupBy objects, multiple reducers/MultiIndex columns, named aggregation, lambdas/custom callables, NumPy IR and file export remain fail-closed. No new Unit, Presenter/UI contract or Python/Pandas runtime is introduced.
+
 # SDK 1.51.77 — Series / mean / median / std (App 3.71.124)
 
 - Adds an internal bounded `table.series` value to the existing Python/Jupyter Table Transform IR; literal single-column selectors and direct chained selectors share the same lowering path.
