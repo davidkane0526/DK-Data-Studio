@@ -1,3 +1,9 @@
+# SDK 1.51.77 — Series / mean / median / std (App 3.71.124)
+
+- Adds an internal bounded `table.series` value to the existing Python/Jupyter Table Transform IR; literal single-column selectors and direct chained selectors share the same lowering path.
+- Executes `mean / median / std` in the existing JavaScript Core Task runtime: Series aggregates return scalars, DataFrame aggregates return Series for bounded axis 0/1 semantics with literal `skipna`, `numeric_only`, and integer `ddof` validation.
+- Terminal Series and scalar results reuse the existing generated Table/Metric Unit projections; DataFrame outputs keep canonical DataTable publication. No new Unit, Presenter, UI contract, Python/Pandas runtime, GroupBy, NumPy IR, or export path is introduced.
+
 # 3.71.124 WIP — Pulse project-level Data Center visibility
 
 - Fixes the remaining Pulse zero-file case for existing project data that is intentionally stored as Data Center-only (`metadata.dataAssignments: []`). Assignment-scoped Workbenches correctly filtered those Artifacts before the Pulse adapter could see them.
