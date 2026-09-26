@@ -27,7 +27,7 @@
     // semantics/action geometry while Pulse keeps the accepted text and detail CSS.
     const header=units.pageHeader.create(page,{tagName:'div',variant:'page-owned',activity:'pulse',className:'pulse-page-header',title:'脉冲 / 读取电流分析',close:true,onClose:()=>ctx.workspace.closePage?.('pulseAnalysisPage'),actions:[
       {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
-      {id:'checked',icon:'▶▶',label:'批量分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
+      {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
     ]});
     if(header.close)header.close.dataset.analysisTarget='pulseAnalysisPage';
     const pageUnit=units.page.create(page,{tagName:'div',variant:'analysis',className:'pulse-analysis-body'}),body=pageUnit.element;

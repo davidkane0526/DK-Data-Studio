@@ -60,14 +60,14 @@ async function main(){
     'Pulse must advertise both semantic pulse traces and generic DataTables as routable inputs.'
   );
   assert(
-    pulseUnit.includes("label:'批量分析勾选'") &&
+    pulseUnit.includes("label:'分析勾选',className:'primary',variant:'primary'") &&
     pulseUnit.includes("onInvoke:()=>P.analyzeChecked()") &&
     !pulseUnit.includes('pulseAnalyzeCurrentBtn') &&
     !pulseUnit.includes('pulseAnalyzeCheckedBtn') &&
     !pulseFeature.includes('pulseAnalyzeCurrentBtn') &&
     !pulseFeature.includes('pulseAnalyzeCheckedBtn') &&
     pulseServiceSource.includes('async function analyzeChecked()'),
-    'Pulse batch analysis must remain one Header-owned primary action backed by the existing analyzeChecked Task path, without a duplicate parameter-panel action surface.'
+    'Pulse checked-file batch analysis must remain the existing single Header-owned primary action backed by analyzeChecked(), without a duplicate parameter-panel action surface.'
   );
   assert(
     pulseAdapterSource.includes("semanticType:'science.pulse.trace'") &&
