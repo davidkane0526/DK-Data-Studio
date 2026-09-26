@@ -2340,11 +2340,12 @@ class PluginBuilder:
         if task is None:
             return ""
         effects = task.get("host_effects") or []
+        parts = []
         if any(effect.get("kind") == "csv-export-table" for effect in effects):
-            return ",nativeSave:'export'"
+            parts.append("nativeSave:'export'")
         if any(effect.get("kind") == "clipboard-table" for effect in effects):
-            return ",nativeCopy:'clipboard'"
-        return ""
+            parts.append("nativeCopy:'clipboard'")
+        return ("," + ",".join(parts)) if parts else ""
 
     def _field_read_expr(self, field_id: str) -> str:
         parameters = self.spec.get("parameters") or {}
