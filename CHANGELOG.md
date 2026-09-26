@@ -1,3 +1,10 @@
+# 3.71.120 WIP — Primary titlebar close direct shutdown
+
+- The primary Desktop window's renderer `windows:closeCurrent` command now enters the shared shutdown coordinator directly. It no longer calls `BrowserWindow.close()` first and depends on the native close event to infer application shutdown.
+- Dedicated/reusable plugin windows keep their existing close/hide behavior; this change only clarifies Main Window ownership.
+- Windows CI now exercises the exact preload/renderer `closeCurrentWindow()` route used by the custom titlebar close button, in addition to the existing native WM_CLOSE and Portable process-tree tests.
+- App/Desktop/Mobile identity advances to 3.71.120 / Android versionCode 260. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.119 WIP — Packaged Windows process-tree exit gate
 
 - Adds a bounded Main Process shutdown drain deadline. A stuck auxiliary window, network socket or service promise can no longer keep the Desktop process alive indefinitely; cleanup owners run concurrently and the final auxiliary assertion has its own shorter bound.

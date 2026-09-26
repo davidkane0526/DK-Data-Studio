@@ -30,6 +30,11 @@ async function main(){
     'before-quit must not fire-and-forget asynchronous server shutdown.'
   );
 
+  assert(
+    desktopMain.includes("if(win===primaryWindow){shutdownRuntime.requestQuit('primary-window-command');return true;}"),
+    'The renderer titlebar close command for the primary window must enter the application shutdown coordinator directly instead of round-tripping through BrowserWindow.close().'
+  );
+
   const lan=read('desktop/lan-web-server.js');
   const mcp=read('services/mcp-server.js');
   assert(
@@ -57,6 +62,8 @@ async function main(){
   const discoverySource=read('desktop/lan-discovery-service.js');
   const workflowSource=read('.github/workflows/build-windows.yml');
   const packagedShutdownScript=read('tools/windows/test-packaged-shutdown.ps1');
+  const preloadSource=read('desktop/preload.js');
+  const chromeSource=read('src/app/modules/window-chrome.js');
   assert(
     shutdownSource.includes("if(typeof app?.exit==='function')app.exit(0)") &&
     !shutdownSource.includes("queueMicrotask(()=>app?.quit?.())"),
@@ -97,10 +104,18 @@ async function main(){
     discoverySource.includes('this.lifecycleEpoch+=1;'),
     'LAN discovery must invalidate in-flight restart generations during shutdown.'
   );
+
+  assert(
+    preloadSource.includes("shutdownSmokeMode: process.argv.includes('--dkds-window-command-close-smoke')") &&
+    chromeSource.includes("if(api.shutdownSmokeMode)setTimeout(()=>void api.closeCurrentWindow(),1500);"),
+    'Windows CI must be able to drive the exact renderer closeCurrentWindow titlebar path.'
+  );
   assert(
     workflowSource.includes('Verify packaged Desktop process tree exits') &&
     workflowSource.includes('test-packaged-shutdown.ps1') &&
+    workflowSource.includes('-CommandCloseSmoke') &&
     packagedShutdownScript.includes('CloseMainWindow()') &&
+    packagedShutdownScript.includes('CommandCloseSmoke') &&
     packagedShutdownScript.includes('Residual process tree after normal main-window close:'),
     'Windows CI must exercise the packaged EXE normal-close path and fail on any residual process tree.'
   );
@@ -163,7 +178,7 @@ async function main(){
   assert.strictEqual(deadlineExitCount,1,'A permanently stuck shutdown resource must not prevent the final Electron exit.');
   assert(Date.now()-started<250,'Bounded shutdown must not inherit the lifetime of a never-resolving resource.');
 
-  console.log('v3.71.119 Desktop packaged process-tree + bounded deterministic shutdown PASS');
+  console.log('v3.71.120 Desktop renderer-titlebar + packaged process-tree shutdown PASS');
 }
 
 main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -180,6 +180,9 @@ jobs:
           if (-not $portable) { throw 'Portable EXE not found for shutdown lifecycle verification.' }
           & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $portable.FullName -StartupTimeoutSeconds 45 -ExitTimeoutSeconds 15
 
+          Write-Host 'Verifying renderer titlebar closeCurrentWindow path...'
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $runtime -StartupTimeoutSeconds 25 -ExitTimeoutSeconds 12 -CommandCloseSmoke
+
       - name: Stage Windows artifacts
         shell: pwsh
         run: |

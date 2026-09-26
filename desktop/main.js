@@ -317,6 +317,7 @@ app.whenReady().then(() => {
   ipcMain.handle('windows:closeCurrent', async event => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
+    if(win===primaryWindow){shutdownRuntime.requestQuit('primary-window-command');return true;}
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
     if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
     win.close();

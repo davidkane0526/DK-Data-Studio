@@ -1,7 +1,8 @@
 param(
   [Parameter(Mandatory=$true)][string]$ExecutablePath,
   [int]$StartupTimeoutSeconds = 25,
-  [int]$ExitTimeoutSeconds = 12
+  [int]$ExitTimeoutSeconds = 12,
+  [switch]$CommandCloseSmoke
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,7 +39,9 @@ function Stop-Tree([int]$RootPid) {
 $root = $null
 try {
   Write-Host "Launching packaged Desktop runtime: $exe"
-  $root = Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe) -PassThru
+  $arguments = @()
+  if ($CommandCloseSmoke) { $arguments += '--dkds-window-command-close-smoke' }
+  $root = Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory (Split-Path -Parent $exe) -PassThru
   [void]$knownIds.Add([int]$root.Id)
   Write-Host "Root PID=$($root.Id)"
 
@@ -67,9 +70,13 @@ try {
   # processes remain part of the known process lineage even after they exit.
   [void](Get-TreeRows $root.Id)
 
-  Write-Host "Closing main window PID=$($windowProcess.Id) HWND=$($windowProcess.MainWindowHandle)"
-  if (-not $windowProcess.CloseMainWindow()) {
-    throw 'Windows CloseMainWindow returned false for the packaged Desktop main window.'
+  if ($CommandCloseSmoke) {
+    Write-Host "Waiting for renderer titlebar close command PID=$($windowProcess.Id) HWND=$($windowProcess.MainWindowHandle)"
+  } else {
+    Write-Host "Closing main window PID=$($windowProcess.Id) HWND=$($windowProcess.MainWindowHandle)"
+    if (-not $windowProcess.CloseMainWindow()) {
+      throw 'Windows CloseMainWindow returned false for the packaged Desktop main window.'
+    }
   }
 
   $exitDeadline = (Get-Date).AddSeconds($ExitTimeoutSeconds)
@@ -86,7 +93,11 @@ try {
     throw "Packaged Desktop process tree did not fully exit within $ExitTimeoutSeconds seconds."
   }
 
-  Write-Host 'Packaged Desktop normal-close process tree reached zero.'
+  if ($CommandCloseSmoke) {
+    Write-Host 'Packaged Desktop renderer titlebar-close process tree reached zero.'
+  } else {
+    Write-Host 'Packaged Desktop normal-close process tree reached zero.'
+  }
 }
 finally {
   if ($root) { Stop-Tree $root.Id }
