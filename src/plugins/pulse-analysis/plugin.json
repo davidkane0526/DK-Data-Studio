@@ -80,6 +80,7 @@
       "unit-presentation.js",
       "shared-views.js",
       "feature-runtime.js",
+      "data-adapter.js",
       "analysis-service.js",
       "super-layout.js"
     ]
@@ -94,6 +95,7 @@
     "controller.js",
     "unit-presentation.js",
     "shared-views.js",
+    "data-adapter.js",
     "analysis-service.js",
     "feature-runtime.js",
     "super-layout.js",

@@ -121,24 +121,11 @@
       const label = item => String(item?.label || item?.name || 'Pulse data').trim() || 'Pulse data';
       const resultMode = result => result?.segmentationMode || 'equal-count';
 
-      function artifactDataColumns(artifact){
-        return (Array.isArray(artifact?.columns)?artifact.columns:[]).filter(c=>c?.key!=='sourceLine'&&String(c?.role||'')!=='index');
-      }
-      function numericTableCandidate(artifact){
-        if(artifact?.kind!=='data.table'||artifact?.metadata?.excluded===true)return false;
-        if(String(artifact?.semanticType||'')==='science.pulse.trace'||String(artifact?.metadata?.sourceFormat||'')==='pulse-text')return true;
-        for(const column of artifactDataColumns(artifact)){
-          const values=column?.values;if(!values||typeof values.length!=='number')continue;
-          const limit=Math.min(Number(values.length)||0,128);
-          for(let index=0;index<limit;index++)if(finiteValue(values[index]))return true;
-        }
-        return false;
-      }
       function artifactSourceText(artifact){
         const raw=String(artifact?.source?.text||'');if(raw)return raw;
-        if(artifact?.kind!=='data.table')return '';
-        const columns=artifactDataColumns(artifact);if(!columns.length)return '';
-        const headers=columns.map(c=>String(c.name||c.key||''));
+        if(artifact?.kind!=='data.table'||!Array.isArray(artifact.columns)||!artifact.columns.length)return '';
+        const headers=artifact.columns.filter(c=>c?.key!=='sourceLine').map(c=>String(c.name||c.key||''));
+        const columns=artifact.columns.filter(c=>c?.key!=='sourceLine');
         const rows=[headers.join('\t')];
         for(let r=0;r<Number(artifact.rowCount||0);r++)rows.push(columns.map(c=>Number.isFinite(Number(c.values?.[r]))?String(c.values[r]):'').join('\t'));
         return rows.join('\n');
@@ -156,12 +143,8 @@
       }
 
       function pulseArtifacts(){
-        // ctx.data.artifacts is already scoped by Core dataAssignments for this
-        // workbench. Accept any assigned numeric DataTable here so Data Center
-        // routing is the single ownership boundary; Pulse-specific semantic tags
-        // remain a fast-path, not an additional visibility gate.
         const rows=artifacts?.list?.({kind:'data.table',includeTransient:true})||[];
-        return rows.filter(numericTableCandidate);
+        return rows.filter(a=>(String(a?.semanticType||'')==='science.pulse.trace'||String(a?.metadata?.sourceFormat||'')==='pulse-text')&&a?.metadata?.excluded!==true);
       }
 
       function refreshSources(){

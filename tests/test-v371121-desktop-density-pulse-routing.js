@@ -52,6 +52,7 @@ async function main(){
   const pulseJson=JSON.parse(read('src/plugins/pulse-analysis/plugin.json'));
   const pulseUnit=read('src/plugins/pulse-analysis/unit-presentation.js');
   const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+  const pulseAdapterSource=read('src/plugins/pulse-analysis/data-adapter.js');
   const pulseServiceSource=read('src/plugins/pulse-analysis/analysis-service.js');
   assert.deepStrictEqual(
     pulseJson.data?.accepts,
@@ -67,9 +68,15 @@ async function main(){
     'Pulse parameter PRIME must expose the existing current and checked-file batch analysis capabilities.'
   );
   assert(
-    pulseServiceSource.includes('return rows.filter(numericTableCandidate);') &&
-    pulseServiceSource.includes('ctx.data.artifacts is already scoped by Core dataAssignments'),
-    'Pulse must trust the Core assignment boundary and must not re-filter assigned numeric DataTables by Pulse-only semantic tags.'
+    pulseAdapterSource.includes("semanticType:'science.pulse.trace'") &&
+    pulseAdapterSource.includes("kind:'assigned-data-table'") &&
+    pulseAdapterSource.includes('return rows.map(projectArtifact).filter(Boolean);'),
+    'Pulse must adapt Core-scoped assigned numeric DataTables through a read-only domain projection instead of mutating canonical Artifacts or changing the frozen analysis service.'
+  );
+  assert(
+    pulseServiceSource.includes("String(a?.semanticType||'')==='science.pulse.trace'") &&
+    !pulseServiceSource.includes('numericTableCandidate'),
+    'The frozen Pulse analysis service must retain its original semantic contract; generic DataTable compatibility belongs to the plugin data adapter.'
   );
 
   const Analysis=require(path.join(root,'src','science','index.js'));
@@ -86,7 +93,9 @@ async function main(){
   context.self=context.window;
   vm.createContext(context);
   vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
+  vm.runInContext(pulseAdapterSource,context,{filename:'pulse-data-adapter.js'});
   vm.runInContext(pulseServiceSource,context,{filename:'pulse-analysis-service.js'});
+  const adapterModule=context.window.DKDSPluginModules.require('builtin.pulse-analysis','data-adapter');
   const serviceModule=context.window.DKDSPluginModules.require('builtin.pulse-analysis','analysis-service');
   const assignedGeneric={
     id:'generic-pulse-table',
@@ -103,13 +112,22 @@ async function main(){
       {key:'sourceLine',name:'Source line',role:'index',values:[1,2,3,4,5,6]}
     ]
   };
+  const canonicalArtifacts={
+    list:()=>[assignedGeneric],
+    get:id=>String(id)===assignedGeneric.id?assignedGeneric:null
+  };
+  const pulseArtifacts=adapterModule.create(canonicalArtifacts);
+  const projected=pulseArtifacts.list({kind:'data.table',includeTransient:true});
+  assert.strictEqual(projected.length,1);
+  assert.strictEqual(projected[0].semanticType,'science.pulse.trace');
+  assert.strictEqual(assignedGeneric.semanticType,'data.table','Pulse projection must never mutate the canonical Artifact.');
   const runtime=await serviceModule.create({
     science:Analysis,
     setStatus:()=>{},
     copyTextToClipboard:()=>true,
     saveChartImage:()=>true,
     scheduleSnapshot:()=>{},
-    artifacts:{list:()=>[assignedGeneric]}
+    artifacts:pulseArtifacts
   });
   runtime.service.refreshSources();
   const state=runtime.service.getState();
