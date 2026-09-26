@@ -95,9 +95,10 @@ def _loaded_names(fn: ast.FunctionDef) -> set[str]:
 
 
 class _Lowerer:
-    def __init__(self, fn: ast.FunctionDef, task_id: str):
+    def __init__(self, fn: ast.FunctionDef, task_id: str, scalar_math_roots: set[str] | None = None):
         self.fn = fn
         self.task_id = task_id
+        self.scalar_math_roots = set(scalar_math_roots or {"math"})
         self.parameters = [arg.arg for arg in [*fn.args.posonlyargs, *fn.args.args, *fn.args.kwonlyargs]]
         self._validate_function()
 
@@ -128,7 +129,7 @@ class _Lowerer:
             _annotation_root(fn.returns)
 
         assigned = _assigned_names(fn)
-        allowed_names = assigned | _ALLOWED_CALLS | _SUPPORTED_ANNOTATION_ROOTS | {"range", "math", "np", "numpy", "True", "False", "None"}
+        allowed_names = assigned | _ALLOWED_CALLS | _SUPPORTED_ANNOTATION_ROOTS | {"range", "True", "False", "None"} | self.scalar_math_roots
         free = sorted(_loaded_names(fn) - allowed_names)
         if free:
             raise self._fail(fn, "Portable task has free/global names: " + ", ".join(free))
@@ -289,13 +290,13 @@ class _Lowerer:
                 self._arity(node, args, 1)
                 return f"String({args[0]})"
         if isinstance(node.func, ast.Attribute):
-            if isinstance(node.func.value, ast.Name) and node.func.value.id in {"math","np","numpy"}:
+            if isinstance(node.func.value, ast.Name) and node.func.value.id in self.scalar_math_roots:
                 root=node.func.value.id
                 name = _MATH_CALLS.get(node.func.attr)
                 if not name:
                     raise self._fail(node, f"Unsupported scalar math function: {root}.{node.func.attr}")
                 return f"Math.{name}({','.join(args)})"
-        raise self._fail(node, "Only approved pure builtins and math/np scalar calls are portable")
+        raise self._fail(node, "Only approved pure builtins and declared scalar-math roots are portable")
 
     def _arity(self, node: ast.AST, args: list[str], expected: int) -> None:
         if len(args) != expected:
@@ -428,6 +429,7 @@ def compile_portable_scalar_callback(
     function: str,
     *,
     function_name: str | None = None,
+    scalar_math_roots: tuple[str, ...] = ("math",),
 ) -> CompiledScalarCallback:
     """Compile one expression-only pure Python callback into a JS function expression."""
     source=textwrap.dedent(str(function))
@@ -449,7 +451,9 @@ def compile_portable_scalar_callback(
     if len(functions)!=1:
         raise PortableTaskError("Portable scalar callback source must contain exactly one selected synchronous function")
     fn=functions[0]
-    lowerer=_Lowerer(fn,"scalar-callback")
+    roots={str(value) for value in scalar_math_roots if IDENT.fullmatch(str(value))}
+    if not roots:roots={"math"}
+    lowerer=_Lowerer(fn,"scalar-callback",roots)
     if fn.args.kwonlyargs or fn.args.vararg or fn.args.kwarg or fn.args.posonlyargs:
         raise PortableTaskError("Portable scalar callbacks support positional parameters only")
     parameters=list(fn.args.args)
