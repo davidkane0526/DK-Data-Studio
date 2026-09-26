@@ -93,6 +93,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-groupby-aggregate.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-workflow-package.js",
       "args": []
     },
