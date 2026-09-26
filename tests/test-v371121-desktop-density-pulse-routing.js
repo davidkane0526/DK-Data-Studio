@@ -55,6 +55,8 @@ async function main(){
   const pulseAdapterSource=read('src/plugins/pulse-analysis/data-adapter.js');
   const pulseServiceSource=read('src/plugins/pulse-analysis/analysis-service.js');
   const pluginWindowRuntime=read('src/plugin-window/runtime.js');
+  const pluginWindowArtifactInputs=read('src/plugin-window/artifact-input-runtime.js');
+  const pluginWindowIndex=read('src/plugin-window/index.html');
   assert.deepStrictEqual(
     pulseJson.data?.accepts,
     ['science.pulse.trace','data.table'],
@@ -66,10 +68,11 @@ async function main(){
     'Pulse must declare one host-consumable data adapter so main and dedicated hosts share the same input projection.'
   );
   assert(
-    pluginWindowRuntime.includes("const adapterId=String(dataContract.adapter||'').trim();") &&
-    pluginWindowRuntime.includes("dataAdapter?.create?.(scopedArtifacts)||scopedArtifacts") &&
-    pluginWindowRuntime.includes("rows.includes('*')||rows.includes(pluginId)"),
-    'Dedicated plugin windows must apply generic assignment scoping before the manifest-declared data adapter.'
+    pluginWindowIndex.includes('<script src="./artifact-input-runtime.js"></script>') &&
+    pluginWindowRuntime.includes('DKDSPluginWindowArtifactInputs?.resolve?.') &&
+    pluginWindowArtifactInputs.includes("const adapterId=String(manifest?.data?.adapter||'').trim();") &&
+    pluginWindowArtifactInputs.includes("rows.includes('*')||rows.includes(String(pluginId||''))"),
+    'Dedicated plugin windows must apply generic assignment scoping before the manifest-declared data adapter without bloating the lifecycle runtime.'
   );
   assert(
     pulseUnit.includes("label:'分析勾选',className:'primary',variant:'primary'") &&

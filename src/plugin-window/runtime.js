@@ -696,31 +696,12 @@
 
     const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
     if (windowRuntime?.create) {
-      const pluginId=String(spec.pluginId||'');
-      const manifest=spec?.packageManifest||{};
-      const dataContract=manifest?.data&&typeof manifest.data==='object'?manifest.data:{};
-      const scopedArtifacts=(()=>{
-        const pluginType=String(manifest?.pluginType||'').trim().toLowerCase();
-        const projectVisibility=pluginType==='workbench'&&String(dataContract.visibility||'').trim().toLowerCase()==='project';
-        if(pluginType!=='workbench'||projectVisibility)return artifactsApi;
-        const visible=artifact=>{
-          if(!artifact)return false;
-          const raw=artifact?.metadata?.dataAssignments;
-          if(!Array.isArray(raw))return true;
-          const rows=raw.map(String);
-          return rows.includes('*')||rows.includes(pluginId);
-        };
-        return new Proxy(artifactsApi,{get(target,prop,receiver){
-          if(prop==='list')return options=>(target.list?.(options)||[]).filter(visible);
-          if(prop==='listMetadata')return options=>(target.listMetadata?.(options)||[]).filter(visible);
-          if(prop==='get')return id=>{const row=target.get?.(id)||null;return visible(row)?row:null;};
-          const value=Reflect.get(target,prop,receiver);
-          return typeof value==='function'?value.bind(target):value;
-        }});
-      })();
-      const adapterId=String(dataContract.adapter||'').trim();
-      const dataAdapter=adapterId?window.DKDSPluginModules?.get?.(pluginId,adapterId):null;
-      const runtimeArtifacts=dataAdapter?.create?.(scopedArtifacts)||scopedArtifacts;
+      const runtimeArtifacts=window.DKDSPluginWindowArtifactInputs?.resolve?.({
+        artifacts:artifactsApi,
+        manifest:spec?.packageManifest||{},
+        pluginId:String(spec.pluginId||''),
+        modules:window.DKDSPluginModules
+      })||artifactsApi;
       pluginRuntime = await measure('window-runtime-create',()=>windowRuntime.create({
         project,
         bootstrap:clone(bootstrap),
