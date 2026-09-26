@@ -34,8 +34,8 @@ _TABLE_UNARY={
     "table.slice","table.abs","table.copy","table.reset-index",
     "table.diff","table.dropna","table.sort-index",
 }
-_MAPPABLE_HOST={"view.plot","host.clipboard"}
-_PENDING_HOST={"host.export"}
+_MAPPABLE_HOST={"view.plot","host.clipboard","host.export"}
+_PENDING_HOST=set()
 
 def _literal_kind(value:Any)->str:
     return "scalar" if value is None or isinstance(value,(bool,int,float,str)) else "value"
@@ -241,6 +241,49 @@ def _array_reduce_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,s
         return None,("TABLE_TASK_ARRAY_STD_DDOF","np.std ddof must be a numeric literal.")
     return {"method":method,"ddof":ddof if method=="std" else 0},None
 
+def _csv_export_config(op:dict[str,Any])->tuple[dict[str,Any]|None,tuple[str,str]|None]:
+    method=str(op.get("sourceMethod",""))
+    if method!="to_csv":
+        return None,("TABLE_TASK_EXPORT_METHOD_PENDING",f"{method or 'export'} is outside SDK 1.51.80; only DataFrame.to_csv is mapped.")
+    args=list(op.get("args") or [])
+    kwargs=dict(op.get("kwargs") or {})
+    if len(args)>1:return None,("TABLE_TASK_CSV_EXPORT_ARGS","to_csv supports exactly one optional path_or_buf positional argument in bounded Host Export v1.")
+    if args and "path_or_buf" in kwargs:return None,("TABLE_TASK_CSV_EXPORT_PATH_DUPLICATE","to_csv path_or_buf must be supplied once.")
+    path=args[0] if args else kwargs.pop("path_or_buf",None)
+    if not isinstance(path,str) or not path.strip():
+        return None,("TABLE_TASK_CSV_EXPORT_PATH_REQUIRED","to_csv Host Export requires one non-empty literal filename/path string; DKDS uses only its basename as the save-dialog suggestion.")
+    default_name=path.replace("\\","/").split("/")[-1].strip()
+    if not default_name:return None,("TABLE_TASK_CSV_EXPORT_PATH_REQUIRED","to_csv literal path must include a filename.")
+    allowed={"sep","na_rep","header","index","columns","encoding","lineterminator"}
+    unknown=sorted(set(kwargs)-allowed)
+    if unknown:return None,("TABLE_TASK_CSV_EXPORT_KWARGS_UNSUPPORTED","Unsupported to_csv keyword(s): "+", ".join(unknown))
+    sep=kwargs.get("sep",",")
+    if not isinstance(sep,str) or len(sep)!=1:return None,("TABLE_TASK_CSV_EXPORT_SEPARATOR","to_csv sep must be one literal character in Host Export v1.")
+    na_rep=kwargs.get("na_rep","")
+    if not isinstance(na_rep,str):return None,("TABLE_TASK_CSV_EXPORT_NA_REP","to_csv na_rep must be a literal string.")
+    header=kwargs.get("header",True);index=kwargs.get("index",True)
+    if not isinstance(header,bool):return None,("TABLE_TASK_CSV_EXPORT_HEADER","to_csv header must be a literal boolean in Host Export v1.")
+    if not isinstance(index,bool):return None,("TABLE_TASK_CSV_EXPORT_INDEX","to_csv index must be a literal boolean in Host Export v1.")
+    columns=kwargs.get("columns")
+    if columns is not None:
+        if not isinstance(columns,(list,tuple)) or not columns or any(isinstance(value,bool) or not isinstance(value,(str,int)) for value in columns):
+            return None,("TABLE_TASK_CSV_EXPORT_COLUMNS","to_csv columns must be a non-empty literal list/tuple of column labels.")
+        columns=list(columns)
+    encoding=kwargs.get("encoding","utf-8")
+    if encoding is None:encoding="utf-8"
+    if not isinstance(encoding,str):return None,("TABLE_TASK_CSV_EXPORT_ENCODING","to_csv encoding must be utf-8/utf8/utf-8-sig in Host Export v1.")
+    normalized_encoding=encoding.strip().lower().replace("_","-")
+    if normalized_encoding=="utf8":normalized_encoding="utf-8"
+    if normalized_encoding not in {"utf-8","utf-8-sig"}:
+        return None,("TABLE_TASK_CSV_EXPORT_ENCODING","to_csv Host Export currently supports utf-8 and utf-8-sig only.")
+    line_terminator=kwargs.get("lineterminator","\n")
+    if line_terminator not in {"\n","\r\n"}:
+        return None,("TABLE_TASK_CSV_EXPORT_LINE_TERMINATOR","to_csv lineterminator must be \\n or \\r\\n in Host Export v1.")
+    return {
+        "defaultName":default_name,"sep":sep,"naRep":na_rep,"header":header,"index":index,
+        "columns":columns,"encoding":normalized_encoding,"lineTerminator":line_terminator,
+    },None
+
 def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
     diagnostics=[]
     if not isinstance(plan,dict) or plan.get("schema")!="dkds.table-transform-plan.v1":
@@ -293,6 +336,20 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                         invalid_selector=True
                 if invalid_selector:continue
                 host_effects.append({"kind":"scientific-plot","input":input_name,"cellIndex":int(op.get("cellIndex",0)),"line":int(op.get("line",0)),"kwargs":kwargs})
+                host_required.add(input_name)
+                continue
+            if kind=="host.export":
+                config,error=_csv_export_config(op)
+                if error:
+                    diagnostics.append(_diag(op,error[0],error[1]))
+                    continue
+                if any(effect.get("kind")=="csv-export-table" for effect in host_effects):
+                    diagnostics.append(_diag(op,"TABLE_TASK_CSV_EXPORT_MULTIPLE","SDK 1.51.80 permits one to_csv Host Export per generated workflow action so one explicit user save intent owns one native save dialog."))
+                    continue
+                host_effects.append({
+                    "kind":"csv-export-table","input":input_name,
+                    "cellIndex":int(op.get("cellIndex",0)),"line":int(op.get("line",0)),**config,
+                })
                 host_required.add(input_name)
                 continue
             if method!="to_clipboard":
@@ -914,6 +971,7 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
     array_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="array"]
     scalar_outputs=[name for name in report["resultSymbols"] if report["resultKinds"].get(name)=="scalar"]
     tables_expr="{" + ",".join(f"{_js(name)}:exportTable(env[{_js(name)}])" for name in table_outputs) + "}"
+    raw_tables_expr="{" + ",".join(f"{_js(name)}:cloneTable(env[{_js(name)}])" for name in table_outputs) + "}"
     series_expr="{" + ",".join(f"{_js(name)}:exportSeries(env[{_js(name)}])" for name in series_outputs) + "}"
     arrays_expr="{" + ",".join(f"{_js(name)}:cloneArray(env[{_js(name)}])" for name in array_outputs) + "}"
     values_expr="{" + ",".join(f"{_js(name)}:env[{_js(name)}]" for name in scalar_outputs) + "}"
@@ -928,5 +986,5 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
         elif projection["kind"]=="scalar":
             projected.append(f"{_js(projection['key'])}:env[{_js(name)}]")
     suffix=(","+",".join(projected)) if projected else ""
-    lines += [f"    return {{tables:{tables_expr},series:{series_expr},arrays:{arrays_expr},values:{values_expr}{suffix}}};","  }","});",""]
+    lines += [f"    return {{tables:{tables_expr},rawTables:{raw_tables_expr},series:{series_expr},arrays:{arrays_expr},values:{values_expr}{suffix}}};","  }","});",""]
     return CompiledPortableTask(task_id=task_id,entry="generated-table-transform-"+re.sub(r"[^A-Za-z0-9._-]","-",task_id)+".js",source="\n".join(lines),parameters=params)
