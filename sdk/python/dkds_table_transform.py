@@ -35,6 +35,10 @@ _HOST_METHODS={
 _DECLARATIONS=(ast.Import,ast.ImportFrom,ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef,ast.Pass)
 _AGGREGATE_METHODS={"mean","median","std"}
 _GROUPBY_AGG_METHODS={"agg","aggregate"}
+_NUMPY_NAMES={"np","numpy"}
+_NUMPY_UNARY={"abs","sqrt","log","log10","exp"}
+_NUMPY_REDUCE={"mean","median","std"}
+_ARRAY_BINOPS={ast.Add:"add",ast.Sub:"sub",ast.Mult:"mul",ast.Div:"div",ast.Pow:"pow",ast.Mod:"mod"}
 
 def _unparse(node:ast.AST|None)->str:
     if node is None:return ""
@@ -149,6 +153,66 @@ def _groupby_create_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)
     if not source:return None,_diag(cell,node,"TABLE_IR_GROUPBY_SOURCE_UNRESOLVED","groupby() must target a simple DataFrame symbol in IR v1.")
     return {"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"groupby.create","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":output,"input":source,"args":args,"kwargs":kwargs},None
 
+def _numpy_method(call:ast.Call)->str:
+    if not isinstance(call.func,ast.Attribute):return ""
+    if not isinstance(call.func.value,ast.Name) or call.func.value.id not in _NUMPY_NAMES:return ""
+    return call.func.attr
+
+def _numeric_scalar(node:ast.AST)->tuple[bool,int|float|None]:
+    ok,value=_literal(node)
+    if not ok or isinstance(value,bool) or not isinstance(value,(int,float)):return False,None
+    return True,value
+
+def _array_operand(node:ast.AST)->tuple[dict[str,Any]|None,str|None]:
+    if isinstance(node,ast.Name):return {"kind":"symbol","name":node.id},node.id
+    ok,value=_numeric_scalar(node)
+    if ok:return {"kind":"scalar","value":value},None
+    return None,None
+
+def _array_input(cell:int,node:ast.AST,index:int,expr:ast.AST)->tuple[list[dict[str,Any]],str|None,dict[str,Any]|None]:
+    if isinstance(expr,ast.Name):return [],expr.id,None
+    selected=_series_selection(expr)
+    if selected:
+        source,selector=selected
+        temporary=f"__dkds_array_series_{cell}_{int(getattr(node,'lineno',0) or 0)}_{index}"
+        return [{"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"series.select","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":temporary,"input":source,"selector":selector}],temporary,None
+    return [],None,_diag(cell,node,"TABLE_IR_ARRAY_INPUT_UNRESOLVED","NumPy Array IR input must be a simple symbol or a literal single-column DataFrame selection.")
+
+def _numpy_call_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+    method=_numpy_method(call)
+    line=int(getattr(node,"lineno",0) or 0)
+    if method in {"array","asarray"}:
+        if not call.args:return [],_diag(cell,node,"TABLE_IR_ARRAY_CONSTRUCTOR_ARGS","np.array/asarray requires one one-dimensional input.")
+        if len(call.args)!=1:return [],_diag(cell,node,"TABLE_IR_ARRAY_CONSTRUCTOR_ARGS","np.array/asarray supports exactly one data argument in bounded Array IR v1.")
+        ok,value=_literal(call.args[0])
+        ok_kwargs,kwargs=_keyword_literals(call)
+        if not ok_kwargs:return [],_diag(cell,node,"TABLE_IR_ARRAY_CONSTRUCTOR_KWARGS","np.array/asarray keyword arguments must be literal.")
+        if ok and isinstance(value,(list,tuple)):
+            return [{"id":_op_id(cell,line,index),"kind":"array.literal","cellIndex":cell,"line":line,"output":output,"sourceMethod":method,"values":list(value),"kwargs":kwargs}],None
+        emitted,input_name,error=_array_input(cell,node,index,call.args[0])
+        if error:return [],error
+        emitted.append({"id":_op_id(cell,line,index+len(emitted)),"kind":"array.from-value","cellIndex":cell,"line":line,"output":output,"input":input_name,"sourceMethod":method,"kwargs":kwargs})
+        return emitted,None
+    if method in {"linspace","arange"}:
+        args,kwargs,error=_call_literals(cell,node,call,method)
+        if error:return [],error
+        return [{"id":_op_id(cell,line,index),"kind":"array.range","cellIndex":cell,"line":line,"output":output,"sourceMethod":method,"args":args,"kwargs":kwargs}],None
+    if method in (_NUMPY_UNARY|_NUMPY_REDUCE|{"diff"}):
+        if not call.args:return [],_diag(cell,node,"TABLE_IR_ARRAY_CALL_INPUT","NumPy array operation requires an input array symbol.")
+        emitted,input_name,error=_array_input(cell,node,index,call.args[0])
+        if error:return [],error
+        rest=[]
+        for arg in call.args[1:]:
+            ok,value=_literal(arg)
+            if not ok:return [],_diag(cell,node,"TABLE_IR_ARRAY_ARGUMENT_UNRESOLVED",f"np.{method} additional positional arguments must be literal.")
+            rest.append(value)
+        ok_kwargs,kwargs=_keyword_literals(call)
+        if not ok_kwargs:return [],_diag(cell,node,"TABLE_IR_ARRAY_KEYWORD_UNRESOLVED",f"np.{method} keyword arguments must be literal.")
+        kind="array.unary" if method in _NUMPY_UNARY else "array.reduce" if method in _NUMPY_REDUCE else "array.diff"
+        emitted.append({"id":_op_id(cell,line,index+len(emitted)),"kind":kind,"cellIndex":cell,"line":line,"output":output,"input":input_name,"sourceMethod":method,"args":rest,"kwargs":kwargs})
+        return emitted,None
+    return [],_diag(cell,node,"TABLE_IR_NUMPY_CALL_UNSUPPORTED",f"np.{method or 'unknown'} is outside bounded Array IR v1.")
+
 def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list[dict[str,Any]],dict[str,Any]|None]:
     output=_assign_target(node)
     if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
@@ -157,6 +221,23 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list
         ok,literal=_literal(value)
         if ok:return [{"id":_op_id(cell,node.lineno,index),"kind":"value.bind","cellIndex":cell,"line":node.lineno,"output":output,"value":literal}],None
         if isinstance(value,ast.Name):return [{"id":_op_id(cell,node.lineno,index),"kind":"value.alias","cellIndex":cell,"line":node.lineno,"output":output,"input":value.id}],None
+    if isinstance(value,ast.Attribute) and value.attr=="values":
+        emitted,input_name,error=_array_input(cell,node,index,value.value)
+        if error:return [],error
+        emitted.append({"id":_op_id(cell,node.lineno,index+len(emitted)),"kind":"array.from-value","cellIndex":cell,"line":node.lineno,"output":output,"input":input_name,"sourceMethod":"values","kwargs":{}})
+        return emitted,None
+    if isinstance(value,ast.Subscript) and isinstance(value.value,ast.Name):
+        ok,selector=_selector(value.slice)
+        if ok and selector.get("kind")=="slice":
+            return [{"id":_op_id(cell,node.lineno,index),"kind":"array.slice","cellIndex":cell,"line":node.lineno,"output":output,"input":value.value.id,"selector":selector}],None
+    if isinstance(value,ast.BinOp) and type(value.op) in _ARRAY_BINOPS:
+        left,left_symbol=_array_operand(value.left);right,right_symbol=_array_operand(value.right)
+        if left is None or right is None:
+            return [],_diag(cell,node,"TABLE_IR_ARRAY_BINARY_UNRESOLVED","Bounded Array IR binary operands must be simple symbols or numeric scalar literals.")
+        inputs=[name for name in (left_symbol,right_symbol) if name]
+        return [{"id":_op_id(cell,node.lineno,index),"kind":"array.binary","cellIndex":cell,"line":node.lineno,"output":output,"operator":_ARRAY_BINOPS[type(value.op)],"left":left,"right":right,"inputs":inputs}],None
+    if isinstance(value,ast.UnaryOp) and isinstance(value.op,(ast.UAdd,ast.USub)) and isinstance(value.operand,ast.Name):
+        return [{"id":_op_id(cell,node.lineno,index),"kind":"array.unary","cellIndex":cell,"line":node.lineno,"output":output,"input":value.operand.id,"sourceMethod":"pos" if isinstance(value.op,ast.UAdd) else "neg","args":[],"kwargs":{}}],None
     series_selection=_series_selection(value)
     if series_selection:
         source,selector=series_selection
@@ -168,6 +249,16 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int)->tuple[list
             return [{"id":_op_id(cell,node.lineno,index),"kind":"table.slice","cellIndex":cell,"line":node.lineno,"output":output,"input":source,"mode":value.value.attr,"selector":selector}],None
         return [],_diag(cell,node,"TABLE_IR_SLICE_UNRESOLVED","iloc/loc selectors must be static literals/slices or simple symbols.")
     if isinstance(value,ast.Call):
+        if isinstance(value.func,ast.Attribute) and value.func.attr=="to_numpy":
+            emitted,input_name,error=_array_input(cell,node,index,value.func.value)
+            if error:return [],error
+            args,kwargs,error=_call_literals(cell,node,value,"to_numpy")
+            if error:return [],error
+            emitted.append({"id":_op_id(cell,node.lineno,index+len(emitted)),"kind":"array.from-value","cellIndex":cell,"line":node.lineno,"output":output,"input":input_name,"sourceMethod":"to_numpy","args":args,"kwargs":kwargs})
+            return emitted,None
+        numpy_method=_numpy_method(value)
+        if numpy_method:
+            return _numpy_call_op(cell,node,index,output,value)
         source=_source_call(value)
         if source:
             input_format,capability=source
