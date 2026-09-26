@@ -1,3 +1,9 @@
+# SDK 1.51.80 — to_csv() Host Export (App 3.71.124)
+
+- Maps bounded `DataFrame.to_csv(path,...)` to a Task-external Host effect. Source directories never become write authority; only the basename survives as a save-dialog suggestion and generated runtime writes through `ctx.io.saveText()` under an explicit native export intent.
+- Supports bounded separator, NA representation, header/index toggles, explicit column ordering, UTF-8/UTF-8-SIG, and LF/CRLF. Detached `rawTables` preserve internal GroupBy indexes for CSV serialization while canonical DataTable publication stays unchanged.
+- Pathless `to_csv()`, `to_excel()`, multiple exports per action, compression/append/custom formatting and direct filesystem access remain fail-closed. No new Unit, Presenter/UI contract or compute-Task I/O capability is introduced.
+
 # SDK 1.51.79 — NumPy bounded Array IR (App 3.71.124)
 
 - Adds an internal one-dimensional numeric `array.vector` capped at 65,536 items, lowered from bounded NumPy-shaped authoring without a NumPy runtime.
