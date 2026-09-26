@@ -1,3 +1,5 @@
+> **SDK 1.51.80 — `to_csv()` Host Export**：Python/Jupyter 工作流现在可将有界 `DataFrame.to_csv(path, ...)` 映射到 Task 外的宿主导出。源码路径仅保留 basename 作为保存文件名建议，实际写盘始终由显式导出按钮授权并通过 `ctx.io.saveText()` 完成；Core Task 继续保持纯计算、无文件系统权限。支持 `sep / na_rep / header / index / columns`、UTF-8/UTF-8-SIG 与 LF/CRLF；无路径 `to_csv()`、`to_excel()`、压缩/追加/自定义 formatter 继续 fail-closed。不新增 UI、Unit、Presenter 或第二套 I/O 路径。
+
 > **SDK 1.51.79 — NumPy bounded Array IR**：Python/Jupyter 主线新增一维数值 `array.vector`，上限 65,536 项。支持 Series→Array、`np.array/asarray`、`linspace/arange`、基础逐元素运算、`diff` 和 NumPy `mean/median/std`；只允许标量广播或等长 1D Array。Array 终值继续复用既有 Table Unit 的 Index/Value 投影，不新增 UI、Unit、Presenter、Python/NumPy runtime。2D、高级 broadcasting/mask/ufunc 与 SciPy 留待后续。
 
 > **SDK 1.51.78 — GroupBy + aggregate**：Python/Jupyter Table Transform 主线新增有界 DataFrameGroupBy / SeriesGroupBy。支持字面量单列/多列分组键与 `sort / dropna / as_index`，支持 `mean / median / std` 以及 `agg()/aggregate()` 的单 reducer 或“列 → reducer”映射。GroupBy 仍只存在于 Core Task 内部；终端 DataFrame/Series 继续走既有 canonical DataTable / Table Unit 投影。复杂 MultiIndex 聚合列、named aggregation、自定义函数仍 fail-closed；不新增 UI、Unit、Presenter 或 Python runtime。
@@ -137,7 +139,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.124**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.79**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.124**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.80**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
