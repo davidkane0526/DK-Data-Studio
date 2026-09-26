@@ -149,7 +149,7 @@ def _callback_sources(cells:list[dict[str,Any]])->tuple[dict[str,dict[str,Any]],
     return callbacks,duplicates
 
 def _scipy_curve_fit_symbols(cells:list[dict[str,Any]])->dict[str,set[str]]:
-    direct=set();scipy_roots=set();optimize_roots=set()
+    direct=set();scipy_roots=set();optimize_roots=set();numpy_roots=set()
     for cell in cells:
         try:tree=ast.parse(_sanitize(cell["source"]),mode="exec")
         except SyntaxError:continue
@@ -161,6 +161,8 @@ def _scipy_curve_fit_symbols(cells:list[dict[str,Any]])->dict[str,set[str]]:
                     elif alias.name=="scipy.optimize":
                         if alias.asname:optimize_roots.add(alias.asname)
                         else:scipy_roots.add("scipy")
+                    elif alias.name=="numpy":
+                        numpy_roots.add(alias.asname or "numpy")
             elif isinstance(node,ast.ImportFrom):
                 module=node.module or ""
                 if module=="scipy.optimize":
@@ -169,7 +171,7 @@ def _scipy_curve_fit_symbols(cells:list[dict[str,Any]])->dict[str,set[str]]:
                 elif module=="scipy":
                     for alias in node.names:
                         if alias.name=="optimize":optimize_roots.add(alias.asname or alias.name)
-    return {"direct":direct,"scipy":scipy_roots,"optimize":optimize_roots}
+    return {"direct":direct,"scipy":scipy_roots,"optimize":optimize_roots,"numpy":numpy_roots}
 
 def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
     if isinstance(expr,ast.Name):
@@ -180,7 +182,7 @@ def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[s
             return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNRESOLVED",f"Series.apply callback {expr.id} must be one top-level function in the imported source.")
         if callback.get("async"):
             return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_ASYNC","Series.apply callbacks must be synchronous.")
-        return {"name":callback["name"],"source":callback["source"],"kind":"named"},None
+        return {"name":callback["name"],"source":callback["source"],"kind":"named","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
     if isinstance(expr,ast.Lambda):
         args=expr.args
         if args.posonlyargs or args.kwonlyargs or args.vararg or args.kwarg:
@@ -199,7 +201,7 @@ def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[s
             else:parts.append(arg.arg)
         name="__dkds_inline_apply"
         source="def "+name+"("+",".join(parts)+"):\n    return "+_unparse(expr.body)
-        return {"name":name,"source":source,"kind":"lambda"},None
+        return {"name":name,"source":source,"kind":"lambda","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
     return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNSUPPORTED","Series.apply callback must be a top-level function name or an inline lambda.")
 
 def _series_apply_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
@@ -248,7 +250,7 @@ def _curve_fit_call(node:ast.AST,symbols:dict[str,set[str]])->ast.Call|None:
         if isinstance(owner,ast.Attribute) and owner.attr=="optimize" and isinstance(owner.value,ast.Name) and owner.value.id in symbols.get("scipy",set()):return node
     return None
 
-def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
+def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str],symbols:dict[str,set[str]])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
     if isinstance(expr,ast.Name):
         if expr.id in duplicates:
             return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_AMBIGUOUS",f"curve_fit model {expr.id} has multiple top-level definitions.")
@@ -288,10 +290,10 @@ def _curve_fit_data_input(cell:int,node:ast.AST,index:int,expr:ast.AST,label:str
         return [{"id":_op_id(cell,int(getattr(node,"lineno",0) or 0),index),"kind":"array.literal","cellIndex":cell,"line":int(getattr(node,"lineno",0) or 0),"output":temporary,"sourceMethod":"fit-literal","values":values,"kwargs":{}}],temporary,None
     return [],None,_diag(cell,node,"TABLE_IR_CURVE_FIT_DATA_UNRESOLVED",f"curve_fit {label} must be a Series/Array symbol, literal single-column selection, or numeric literal list.")
 
-def _curve_fit_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+def _curve_fit_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str],symbols:dict[str,set[str]])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
     if len(call.args)<3 or len(call.args)>4:
         return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_ARGS","bounded curve_fit requires model, xdata, ydata and optional positional p0.")
-    model,error=_curve_fit_model(cell,node,call.args[0],callbacks,duplicates)
+    model,error=_curve_fit_model(cell,node,call.args[0],callbacks,duplicates,symbols)
     if error:return [],error
     kwargs={}
     for keyword in call.keywords:
@@ -437,7 +439,7 @@ def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int,callbacks:di
     fit_output,fit_call,fit_error=_curve_fit_assignment(node,curve_fit_symbols)
     if fit_call is not None:
         if fit_error:return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_OUTPUT_UNSUPPORTED",fit_error)
-        return _curve_fit_op(cell,node,index,fit_output,fit_call,callbacks,duplicates)
+        return _curve_fit_op(cell,node,index,fit_output,fit_call,callbacks,duplicates,curve_fit_symbols)
     output=_assign_target(node)
     if not output:return [],_diag(cell,node,"TABLE_IR_TARGET_UNSUPPORTED","Table Transform IR v1 requires a simple assignment target.")
     value=node.value
