@@ -158,6 +158,7 @@ class LanDiscoveryService extends EventEmitter {
     this.networkTimer=null;
     this.running=false;
     this.restarting=false;
+    this.lifecycleEpoch=0;
     this.status={running:false,ssdp:false,mdns:false,interfaces:[],hostname:'',friendlyName:'',errors:[]};
   }
 
@@ -221,16 +222,19 @@ class LanDiscoveryService extends EventEmitter {
 
   async start(){
     if(this.running)return this.getStatus();
+    const epoch=++this.lifecycleEpoch;
     this.running=true;
     this.interfaces=lanInterfaces();
     this.status={running:true,ssdp:false,mdns:false,interfaces:this.interfaces,friendlyName:this.friendlyName(),hostname:this.hostname(),errors:[]};
-    await Promise.allSettled([this.startSsdp(),this.startMdns()]);
+    await Promise.allSettled([this.startSsdp(epoch),this.startMdns(epoch)]);
+    if(!this.running||epoch!==this.lifecycleEpoch)return this.getStatus();
     this.startTimers();
     this.emitStatus();
     return this.getStatus();
   }
 
   startTimers(){
+    if(!this.running)return;
     if(this.announceTimer)clearInterval(this.announceTimer);
     if(this.mdnsTimer)clearInterval(this.mdnsTimer);
     if(this.networkTimer)clearInterval(this.networkTimer);
@@ -241,16 +245,18 @@ class LanDiscoveryService extends EventEmitter {
 
   async checkNetworkChange(){
     if(!this.running||this.restarting)return;
+    const epoch=this.lifecycleEpoch;
     const next=lanInterfaces();
     if(this.interfaceFingerprint(next)===this.interfaceFingerprint(this.interfaces))return;
     this.restarting=true;
     try{
       await this.stopTransports(true);
+      if(!this.running||epoch!==this.lifecycleEpoch)return;
       this.interfaces=next;
       this.status.interfaces=next;
       this.status.errors=[];
-      await Promise.allSettled([this.startSsdp(),this.startMdns()]);
-      this.emitStatus();
+      await Promise.allSettled([this.startSsdp(epoch),this.startMdns(epoch)]);
+      if(this.running&&epoch===this.lifecycleEpoch)this.emitStatus();
     }finally{this.restarting=false;}
   }
 
@@ -262,18 +268,28 @@ class LanDiscoveryService extends EventEmitter {
     });
   }
 
-  async startSsdp(){
+  async startSsdp(epoch=this.lifecycleEpoch){
+    if(!this.running||epoch!==this.lifecycleEpoch)return;
+    const socket=dgram.createSocket({type:'udp4',reuseAddr:true});
     try{
-      const socket=dgram.createSocket({type:'udp4',reuseAddr:true});
       this.ssdpSocket=socket;
       socket.on('error',err=>this.addError('SSDP',err));
       socket.on('message',(msg,rinfo)=>this.onSsdpMessage(msg,rinfo));
       await this.bindSocket(socket,SSDP_PORT);
+      if(!this.running||epoch!==this.lifecycleEpoch||this.ssdpSocket!==socket){
+        try{socket.close();}catch{}
+        return;
+      }
       for(const row of this.interfaces){try{socket.addMembership(SSDP_GROUP,row.address);}catch(err){this.addError(`SSDP join ${row.address}`,err);}}
       try{socket.setMulticastTTL(2);socket.setMulticastLoopback(true);}catch{}
       this.status.ssdp=true;
       this.announceAlive();
-    }catch(err){this.status.ssdp=false;this.addError('SSDP start',err);try{this.ssdpSocket?.close();}catch{}this.ssdpSocket=null;}
+    }catch(err){
+      if(this.running&&epoch===this.lifecycleEpoch)this.addError('SSDP start',err);
+      try{socket.close();}catch{}
+      if(this.ssdpSocket===socket)this.ssdpSocket=null;
+      this.status.ssdp=false;
+    }
   }
 
   announceAlive(){
@@ -322,18 +338,28 @@ class LanDiscoveryService extends EventEmitter {
     return buildMdnsPacket({hostname,instance,port:this.port(),addresses:this.interfaces.map(x=>x.address),ttl:120});
   }
 
-  async startMdns(){
+  async startMdns(epoch=this.lifecycleEpoch){
+    if(!this.running||epoch!==this.lifecycleEpoch)return;
+    const socket=dgram.createSocket({type:'udp4',reuseAddr:true});
     try{
-      const socket=dgram.createSocket({type:'udp4',reuseAddr:true});
       this.mdnsSocket=socket;
       socket.on('error',err=>this.addError('mDNS',err));
       socket.on('message',(msg,rinfo)=>this.onMdnsMessage(msg,rinfo));
       await this.bindSocket(socket,MDNS_PORT);
+      if(!this.running||epoch!==this.lifecycleEpoch||this.mdnsSocket!==socket){
+        try{socket.close();}catch{}
+        return;
+      }
       for(const row of this.interfaces){try{socket.addMembership(MDNS_GROUP,row.address);}catch(err){this.addError(`mDNS join ${row.address}`,err);}}
       try{socket.setMulticastTTL(255);socket.setMulticastLoopback(true);}catch{}
       this.status.mdns=true;
       this.announceMdns();
-    }catch(err){this.status.mdns=false;this.addError('mDNS start',err);try{this.mdnsSocket?.close();}catch{}this.mdnsSocket=null;}
+    }catch(err){
+      if(this.running&&epoch===this.lifecycleEpoch)this.addError('mDNS start',err);
+      try{socket.close();}catch{}
+      if(this.mdnsSocket===socket)this.mdnsSocket=null;
+      this.status.mdns=false;
+    }
   }
 
   announceMdns(){
@@ -373,8 +399,8 @@ class LanDiscoveryService extends EventEmitter {
   }
 
   async stop(){
-    if(!this.running)return this.getStatus();
     this.running=false;
+    this.lifecycleEpoch+=1;
     if(this.announceTimer)clearInterval(this.announceTimer);
     if(this.mdnsTimer)clearInterval(this.mdnsTimer);
     if(this.networkTimer)clearInterval(this.networkTimer);

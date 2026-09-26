@@ -55,6 +55,8 @@ async function main(){
   const auxiliarySource=read('desktop/main-modules/auxiliary-window-runtime.js');
   const updaterSource=read('desktop/update-client.js');
   const discoverySource=read('desktop/lan-discovery-service.js');
+  const workflowSource=read('.github/workflows/build-windows.yml');
+  const packagedShutdownScript=read('tools/windows/test-packaged-shutdown.ps1');
   assert(
     shutdownSource.includes("if(typeof app?.exit==='function')app.exit(0)") &&
     !shutdownSource.includes("queueMicrotask(()=>app?.quit?.())"),
@@ -74,6 +76,33 @@ async function main(){
   assert(
     discoverySource.includes('await Promise.all([closeSocket(ssdp),closeSocket(mdns)]);'),
     'LAN discovery shutdown must await both SSDP and mDNS sockets.'
+  );
+
+  assert(
+    shutdownSource.includes('drainTimeoutMs=1800') &&
+    shutdownSource.includes('Shutdown drain deadline exceeded') &&
+    shutdownSource.includes("safeCall('auxiliary-windows-final',drainAuxiliaryWindows,Math.min(750,drainTimeoutMs))"),
+    'Desktop shutdown must have a bounded drain deadline so one stuck resource can never keep the process alive forever.'
+  );
+  assert(
+    updaterSource.includes('this.shuttingDown = true;') &&
+    updaterSource.includes('if(this.shuttingDown||!this.networkActive)return;') &&
+    updaterSource.includes('if(this.shuttingDown||!this.networkActive)return false;'),
+    'LAN updater must not resurrect network transports after shutdown begins.'
+  );
+  assert(
+    discoverySource.includes('this.lifecycleEpoch=0;') &&
+    discoverySource.includes('async startSsdp(epoch=this.lifecycleEpoch)') &&
+    discoverySource.includes('async startMdns(epoch=this.lifecycleEpoch)') &&
+    discoverySource.includes('this.lifecycleEpoch+=1;'),
+    'LAN discovery must invalidate in-flight restart generations during shutdown.'
+  );
+  assert(
+    workflowSource.includes('Verify packaged Desktop process tree exits') &&
+    workflowSource.includes('test-packaged-shutdown.ps1') &&
+    packagedShutdownScript.includes('CloseMainWindow()') &&
+    packagedShutdownScript.includes('Residual process tree after normal main-window close:'),
+    'Windows CI must exercise the packaged EXE normal-close path and fail on any residual process tree.'
   );
 
   const {createShutdownRuntime}=require('../desktop/main-modules/shutdown-runtime');
@@ -118,7 +147,23 @@ async function main(){
     'Service completion must happen before Electron exit.');
   assert(calls.filter(v=>v==='aux-done').length>=2,'Auxiliary windows must be fully drained before and after service shutdown.');
 
-  console.log('v3.71.118 Desktop plugin-manager single-row + deterministic process shutdown PASS');
+  let deadlineExitCount=0;
+  const deadlineRuntime=createShutdownRuntime({
+    app:{exit(){deadlineExitCount+=1;}},
+    drainAuxiliaryWindows:()=>new Promise(()=>{}),
+    stopLanUpdater:()=>new Promise(()=>{}),
+    stopLanWebServer:()=>new Promise(()=>{}),
+    stopMcpServer:()=>new Promise(()=>{}),
+    drainTimeoutMs:20,
+    logger:{error(){}}
+  });
+  const started=Date.now();
+  await deadlineRuntime.requestQuit('deadline-regression');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.strictEqual(deadlineExitCount,1,'A permanently stuck shutdown resource must not prevent the final Electron exit.');
+  assert(Date.now()-started<250,'Bounded shutdown must not inherit the lifetime of a never-resolving resource.');
+
+  console.log('v3.71.119 Desktop packaged process-tree + bounded deterministic shutdown PASS');
 }
 
 main().catch(error=>{console.error(error);process.exitCode=1;});

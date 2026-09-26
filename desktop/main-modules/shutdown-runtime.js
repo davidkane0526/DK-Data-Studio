@@ -10,6 +10,7 @@ function createShutdownRuntime({
   stopMcpServer=()=>{},
   shutdownSmbSessions=()=>{},
   pendingRequestMaps=[],
+  drainTimeoutMs=1800,
   logger=console
 }={}){
   let shutdownPromise=null;
@@ -30,31 +31,42 @@ function createShutdownRuntime({
     }
   };
 
-  const safeCall=async(label,fn)=>{
-    try{return await Promise.resolve(fn?.());}
-    catch(error){logFailure(label,error);return undefined;}
+  const safeCall=async(label,fn,timeoutMs=drainTimeoutMs)=>{
+    try{
+      const work=Promise.resolve().then(()=>fn?.());
+      if(!(Number(timeoutMs)>0))return await work;
+      return await new Promise(resolve=>{
+        let settled=false;
+        const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);resolve(value);};
+        const timer=setTimeout(()=>{
+          logFailure(label,new Error(`Shutdown drain deadline exceeded after ${timeoutMs} ms.`));
+          finish(undefined);
+        },timeoutMs);
+        timer.unref?.();
+        work.then(finish,error=>{logFailure(label,error);finish(undefined);});
+      });
+    }catch(error){logFailure(label,error);return undefined;}
   };
 
   const run=async(reason='quit')=>{
     setAppQuitting(true);
     clearPendingRequests();
-    await safeCall('auxiliary-windows',drainAuxiliaryWindows);
-    await safeCall('project-safety',()=>prepareProjectSafety(reason));
 
-    // Stop sources that can schedule more network work before waiting for
-    // socket/server ownership to drain.
-    await safeCall('lan-updater',stopLanUpdater);
-
+    // Start every application-owned drain immediately. No single resource is
+    // allowed to indefinitely block the process lifetime; each owner gets the
+    // same bounded shutdown contract.
     await Promise.all([
+      safeCall('auxiliary-windows',drainAuxiliaryWindows),
+      safeCall('project-safety',()=>prepareProjectSafety(reason)),
+      safeCall('lan-updater',stopLanUpdater),
       safeCall('lan-web-server',stopLanWebServer),
       safeCall('mcp-server',stopMcpServer),
       safeCall('smb-runtime',shutdownSmbSessions)
     ]);
 
-    // A reusable auxiliary window may have been in the middle of a close/hide
-    // transition when shutdown began. Re-assert the application-owned final
-    // state after background services have drained.
-    await safeCall('auxiliary-windows-final',drainAuxiliaryWindows);
+    // Catch a window that entered a close transition while the first drain was
+    // running, but keep this final assertion shorter than the primary budget.
+    await safeCall('auxiliary-windows-final',drainAuxiliaryWindows,Math.min(750,drainTimeoutMs));
     readyForQuit=true;
   };
 

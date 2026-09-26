@@ -168,6 +168,18 @@ jobs:
             throw "Windows FileDescription is not branded: $($info.FileDescription)"
           }
 
+      - name: Verify packaged Desktop process tree exits
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $PWD 'dist\win-unpacked\DK Data Studio.exe'
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $runtime -StartupTimeoutSeconds 25 -ExitTimeoutSeconds 12
+
+          $portable = Get-ChildItem -Path (Join-Path $PWD 'dist') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)portable' } |
+            Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found for shutdown lifecycle verification.' }
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $portable.FullName -StartupTimeoutSeconds 45 -ExitTimeoutSeconds 15
+
       - name: Stage Windows artifacts
         shell: pwsh
         run: |

@@ -1,3 +1,5 @@
+> **v3.71.119 WIP — Packaged Windows Process-Tree Exit Gate**：针对 3.71.118 在真实机器上仍可能残留进程的问题，Desktop shutdown 增加统一有界 drain deadline，任何单一窗口/socket/服务 Promise 都不能无限阻塞最终退出；LAN updater 与 SSDP/mDNS discovery 增加 shutdown epoch/状态门禁，禁止 stop 之后由异步探测或网络变化任务重新创建 WebSocket/UDP socket。Windows Action 新增真实打包程序退出门禁：分别启动 win-unpacked 与 Portable EXE，发送正常主窗口关闭请求，并检查整个进程树是否在限定时间内归零；若失败，CI 输出残留 PID、父 PID、路径与命令行。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
+
 > **v3.71.118 WIP — Deterministic Desktop Process Exit**：修正 3.71.117 仍可能出现“窗口已关闭但任务管理器仍有进程”的退出缺口。Desktop shutdown 现在等待所有辅助 BrowserWindow 真正触发 closed、等待 LAN Web/MCP/SSDP/mDNS/更新发现 socket 完整释放，并终止仍在运行的 SMB 子进程；所有应用资源排空后由 Main Process 通过 app.exit(0) 提交最终退出，不再重新进入可被隐藏窗口/renderer 生命周期拦截的 app.quit() 关闭链。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
 
 > **v3.71.117 WIP — Desktop Plugin Manager Single Row / Coordinated Shutdown**：桌面端插件管理工具栏恢复为固定单行合同，搜索、状态、类型、安装插件、从 Python / Jupyter 创建、插件目录共六个槽位，不因新增操作按钮自动换到第二行；Native Mobile 的独立响应式布局保持不变。桌面主进程新增统一 shutdown coordinator：退出前先停止更新发现、等待 LAN Web / MCP HTTP 服务真正关闭、终止仍在运行的 SMB PowerShell/nbtstat 子进程、清理 pending host 请求并关闭辅助窗口，再允许 Electron quit，避免窗口关闭后任务管理器仍残留后台进程。SDK 仍为 1.51.76，Unit Templates 2.5.38 不变。
@@ -119,7 +121,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.118**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.119**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.76**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

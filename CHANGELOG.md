@@ -1,3 +1,11 @@
+# 3.71.119 WIP — Packaged Windows process-tree exit gate
+
+- Adds a bounded Main Process shutdown drain deadline. A stuck auxiliary window, network socket or service promise can no longer keep the Desktop process alive indefinitely; cleanup owners run concurrently and the final auxiliary assertion has its own shorter bound.
+- LAN Update Client now has a shutdown state gate so in-flight probes, WebSocket reconnects, UDP discovery callbacks and periodic checks cannot recreate transports after stop begins.
+- LAN SSDP/mDNS discovery now uses a lifecycle epoch. Network-change work that started before shutdown cannot publish or recreate sockets after the epoch is invalidated.
+- Windows CI now launches the actual packaged win-unpacked runtime and Portable EXE, sends the normal main-window close request, tracks the complete descendant process lineage, and fails with PID/parent/path/command-line diagnostics if any process remains after the exit deadline.
+- App/Desktop/Mobile identity advances to 3.71.119 / Android versionCode 259. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.118 WIP — Deterministic Desktop process exit
 
 - Fixes the remaining Desktop shutdown gap after 3.71.117: auxiliary BrowserWindows are now drained to their real `closed` state instead of merely receiving `close()`.

@@ -81,6 +81,7 @@ class LanUpdateClient extends EventEmitter {
 
     this.discoverySocket = null;
     this.networkActive = false;
+    this.shuttingDown = false;
     this.ws = null;
     this.wsReconnectTimer = null;
     this.wsReconnectMs = 1500;
@@ -226,6 +227,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   ensureNetworkActive(reason='user-network') {
+    if (this.shuttingDown) return false;
     if (this.networkActive) return false;
     this.networkActive = true;
     if (!this.settings.networkConsent) {
@@ -239,6 +241,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   start() {
+    this.shuttingDown = false;
     if (!this.settings.enabled) {
       this.setStatus({ phase: 'disabled', message: '局域网更新已禁用。', networkActive:false });
       return;
@@ -256,6 +259,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   async stop() {
+    this.shuttingDown = true;
     this.networkActive = false;
     const socket=this.discoverySocket;
     this.discoverySocket = null;
@@ -273,6 +277,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   restartNetwork() {
+    if(this.shuttingDown)return;
     try { this.discoverySocket?.close(); } catch {}
     this.discoverySocket = null;
     this.closeWebSocket();
@@ -282,6 +287,7 @@ class LanUpdateClient extends EventEmitter {
 
   restartPeriodicCheck() {
     if (this.periodicTimer) clearInterval(this.periodicTimer);
+    if(this.shuttingDown||!this.networkActive){this.periodicTimer=null;return;}
     const minutes = Math.max(5, Number(this.settings.checkIntervalMinutes) || 30);
     this.periodicTimer = setInterval(() => {
       this.checkNow({ silent: true }).catch(() => {});
@@ -290,6 +296,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   startDiscovery() {
+    if(this.shuttingDown||!this.networkActive)return;
     const group = this.settings.multicastGroup || this.defaults.multicastGroup;
     const port = Number(this.settings.multicastPort || this.defaults.multicastPort || 45881);
 
@@ -318,6 +325,10 @@ class LanUpdateClient extends EventEmitter {
     });
 
     socket.bind(port, '0.0.0.0', () => {
+      if(this.shuttingDown||!this.networkActive||this.discoverySocket!==socket){
+        try{socket.close();}catch{}
+        return;
+      }
       try {
         socket.addMembership(group);
         socket.setMulticastLoopback(true);
@@ -341,6 +352,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   connectWebSocket(baseUrl) {
+    if(this.shuttingDown||!this.networkActive)return;
     const normalized = normalizeBaseUrl(baseUrl);
     if (!normalized) return;
     if (this.ws && this.status.serverUrl === normalized &&
@@ -391,7 +403,7 @@ class LanUpdateClient extends EventEmitter {
     });
 
     const reconnect = () => {
-      if (this.ws !== ws) return;
+      if (this.ws !== ws || this.shuttingDown || !this.networkActive) return;
       this.ws = null;
       const activeBase = normalizeBaseUrl(this.status.serverUrl || this.settings.serverUrl);
       if (!activeBase) return;
@@ -405,6 +417,7 @@ class LanUpdateClient extends EventEmitter {
   }
 
   async probeAndConnect(baseUrl, opts = {}) {
+    if(this.shuttingDown||!this.networkActive)return false;
     const base = normalizeBaseUrl(baseUrl);
     if (!base) return false;
 
@@ -415,6 +428,7 @@ class LanUpdateClient extends EventEmitter {
 
     try {
       const health = await fetchJson(`${base}/health`, 3500);
+      if(this.shuttingDown||!this.networkActive)return false;
       if (!health?.ok) throw new Error('invalid health response');
 
       this.setStatus({
