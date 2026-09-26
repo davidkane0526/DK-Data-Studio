@@ -182,7 +182,7 @@ def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[s
             return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNRESOLVED",f"Series.apply callback {expr.id} must be one top-level function in the imported source.")
         if callback.get("async"):
             return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_ASYNC","Series.apply callbacks must be synchronous.")
-        return {"name":callback["name"],"source":callback["source"],"kind":"named","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
+        return {"name":callback["name"],"source":callback["source"],"kind":"named"},None
     if isinstance(expr,ast.Lambda):
         args=expr.args
         if args.posonlyargs or args.kwonlyargs or args.vararg or args.kwarg:
@@ -201,7 +201,7 @@ def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[s
             else:parts.append(arg.arg)
         name="__dkds_inline_apply"
         source="def "+name+"("+",".join(parts)+"):\n    return "+_unparse(expr.body)
-        return {"name":name,"source":source,"kind":"lambda","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
+        return {"name":name,"source":source,"kind":"lambda"},None
     return None,_diag(cell,node,"TABLE_IR_APPLY_CALLBACK_UNSUPPORTED","Series.apply callback must be a top-level function name or an inline lambda.")
 
 def _series_apply_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
@@ -259,7 +259,7 @@ def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[
             return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_UNRESOLVED",f"curve_fit model {expr.id} must be one top-level function in the imported source.")
         if callback.get("async"):
             return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_ASYNC","curve_fit model must be synchronous.")
-        return {"name":callback["name"],"source":callback["source"],"kind":"named"},None
+        return {"name":callback["name"],"source":callback["source"],"kind":"named","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
     if isinstance(expr,ast.Lambda):
         args=expr.args
         if args.posonlyargs or args.kwonlyargs or args.vararg or args.kwarg:
@@ -271,7 +271,7 @@ def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[
             return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_DEFAULTS","Inline curve_fit lambda defaults are not supported in bounded fitting v1.")
         name="__dkds_inline_curve_fit"
         source="def "+name+"("+",".join(arg.arg for arg in params)+"):\n    return "+_unparse(expr.body)
-        return {"name":name,"source":source,"kind":"lambda"},None
+        return {"name":name,"source":source,"kind":"lambda","scalarMathRoots":["math",*sorted(symbols.get("numpy",set()))]},None
     return None,_diag(cell,node,"TABLE_IR_CURVE_FIT_MODEL_UNSUPPORTED","curve_fit model must be a top-level function name or inline lambda.")
 
 def _curve_fit_data_input(cell:int,node:ast.AST,index:int,expr:ast.AST,label:str)->tuple[list[dict[str,Any]],str|None,dict[str,Any]|None]:
