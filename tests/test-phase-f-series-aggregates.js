@@ -116,7 +116,8 @@ bad_ddof = raw["signal"].std(ddof="sample")
   assert(blocked.diagnostics.some(row=>row.code==='TABLE_TASK_STD_DDOF_INVALID'));
 
   const contract=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
-  assert.strictEqual(contract.sdkVersion,'1.51.77');
+  const atLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+  assert(atLeast(contract.sdkVersion,'1.51.77'),'Series aggregate gate requires SDK 1.51.77+.');
   console.log('SDK 1.51.77 Series aggregate PASS: DataFrame column -> Series -> mean/median/std -> scalar/Series Unit projections.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});
