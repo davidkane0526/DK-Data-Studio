@@ -148,6 +148,29 @@ def _callback_sources(cells:list[dict[str,Any]])->tuple[dict[str,dict[str,Any]],
             }
     return callbacks,duplicates
 
+def _scipy_curve_fit_symbols(cells:list[dict[str,Any]])->dict[str,set[str]]:
+    direct=set();scipy_roots=set();optimize_roots=set()
+    for cell in cells:
+        try:tree=ast.parse(_sanitize(cell["source"]),mode="exec")
+        except SyntaxError:continue
+        for node in tree.body:
+            if isinstance(node,ast.Import):
+                for alias in node.names:
+                    if alias.name=="scipy":
+                        scipy_roots.add(alias.asname or "scipy")
+                    elif alias.name=="scipy.optimize":
+                        if alias.asname:optimize_roots.add(alias.asname)
+                        else:scipy_roots.add("scipy")
+            elif isinstance(node,ast.ImportFrom):
+                module=node.module or ""
+                if module=="scipy.optimize":
+                    for alias in node.names:
+                        if alias.name=="curve_fit":direct.add(alias.asname or alias.name)
+                elif module=="scipy":
+                    for alias in node.names:
+                        if alias.name=="optimize":optimize_roots.add(alias.asname or alias.name)
+    return {"direct":direct,"scipy":scipy_roots,"optimize":optimize_roots}
+
 def _apply_callback(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
     if isinstance(expr,ast.Name):
         if expr.id in duplicates:
@@ -215,14 +238,14 @@ def _series_apply_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,ca
     })
     return emitted,None
 
-def _curve_fit_call(node:ast.AST)->ast.Call|None:
+def _curve_fit_call(node:ast.AST,symbols:dict[str,set[str]])->ast.Call|None:
     if not isinstance(node,ast.Call):return None
     func=node.func
-    if isinstance(func,ast.Name) and func.id=="curve_fit":return node
+    if isinstance(func,ast.Name) and func.id in symbols.get("direct",set()):return node
     if isinstance(func,ast.Attribute) and func.attr=="curve_fit":
         owner=func.value
-        if isinstance(owner,ast.Name) and owner.id in {"optimize","scipy"}:return node
-        if isinstance(owner,ast.Attribute) and owner.attr=="optimize" and isinstance(owner.value,ast.Name) and owner.value.id=="scipy":return node
+        if isinstance(owner,ast.Name) and owner.id in symbols.get("optimize",set()):return node
+        if isinstance(owner,ast.Attribute) and owner.attr=="optimize" and isinstance(owner.value,ast.Name) and owner.value.id in symbols.get("scipy",set()):return node
     return None
 
 def _curve_fit_model(cell:int,node:ast.AST,expr:ast.AST,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[dict[str,Any]|None,dict[str,Any]|None]:
@@ -306,22 +329,22 @@ def _curve_fit_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call,callb
     })
     return emitted,None
 
-def _curve_fit_assignment(node:ast.Assign|ast.AnnAssign)->tuple[str,ast.Call|None,str|None]:
+def _curve_fit_assignment(node:ast.Assign|ast.AnnAssign,symbols:dict[str,set[str]])->tuple[str,ast.Call|None,str|None]:
     target=node.targets[0] if isinstance(node,ast.Assign) and len(node.targets)==1 else node.target if isinstance(node,ast.AnnAssign) else None
     value=node.value
     if isinstance(target,ast.Name) and isinstance(value,ast.Subscript):
-        call=_curve_fit_call(value.value)
+        call=_curve_fit_call(value.value,symbols)
         ok,index=_literal(value.slice)
         if call and ok and index==0:return target.id,call,None
         if call:return "",call,"curve_fit tuple extraction supports only [0] (optimal parameters) in bounded fitting v1."
     if isinstance(node,ast.Assign) and len(node.targets)==1 and isinstance(target,(ast.Tuple,ast.List)):
-        call=_curve_fit_call(value)
+        call=_curve_fit_call(value,symbols)
         names=[_name(item) for item in target.elts]
         if call and len(names)==2 and names[0] and names[1]=="_":
             return names[0],call,None
         if call:
             return "",call,"curve_fit covariance output pcov is 2D and remains outside bounded fitting v1; use popt, _ = curve_fit(...) or curve_fit(...)[0]."
-    if _curve_fit_call(value):
+    if _curve_fit_call(value,symbols):
         return "",value,"curve_fit returns (popt, pcov); bounded fitting v1 requires explicit popt extraction with [0] or popt, _ unpacking."
     return "",None,None
 
@@ -410,8 +433,8 @@ def _numpy_call_op(cell:int,node:ast.AST,index:int,output:str,call:ast.Call)->tu
         return emitted,None
     return [],_diag(cell,node,"TABLE_IR_NUMPY_CALL_UNSUPPORTED",f"np.{method or 'unknown'} is outside bounded Array IR v1.")
 
-def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int,callbacks:dict[str,dict[str,Any]],duplicates:set[str])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
-    fit_output,fit_call,fit_error=_curve_fit_assignment(node)
+def _assignment_op(cell:int,node:ast.Assign|ast.AnnAssign,index:int,callbacks:dict[str,dict[str,Any]],duplicates:set[str],curve_fit_symbols:dict[str,set[str]])->tuple[list[dict[str,Any]],dict[str,Any]|None]:
+    fit_output,fit_call,fit_error=_curve_fit_assignment(node,curve_fit_symbols)
     if fit_call is not None:
         if fit_error:return [],_diag(cell,node,"TABLE_IR_CURVE_FIT_OUTPUT_UNSUPPORTED",fit_error)
         return _curve_fit_op(cell,node,index,fit_output,fit_call,callbacks,duplicates)
@@ -551,6 +574,7 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
     statement_count=0
     lowered_statement_count=0
     callbacks,duplicate_callbacks=_callback_sources(cells)
+    curve_fit_symbols=_scipy_curve_fit_symbols(cells)
     for cell in cells:
         try:tree=ast.parse(_sanitize(cell["source"]),filename=f"{source_path.name}#cell-{cell['index']}",mode="exec")
         except SyntaxError:continue
@@ -561,7 +585,7 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
             emitted=[]
             diagnostic=None
             if isinstance(node,(ast.Assign,ast.AnnAssign)):
-                emitted,diagnostic=_assignment_op(cell["index"],node,op_index,callbacks,duplicate_callbacks)
+                emitted,diagnostic=_assignment_op(cell["index"],node,op_index,callbacks,duplicate_callbacks,curve_fit_symbols)
             elif isinstance(node,ast.Expr):
                 operation,diagnostic=_expression_op(cell["index"],node,op_index)
                 if operation:emitted=[operation]
