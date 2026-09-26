@@ -39,8 +39,6 @@
     dom.on(dom.query('#pulseCheckAllBtn',page),'click',()=>P.setAllChecked(true));
     dom.on(dom.query('#pulseUncheckAllBtn',page),'click',()=>P.setAllChecked(false));
     dom.on(dom.query('#pulseRemoveFilesBtn',page),'click',()=>P.removeChecked());
-    dom.on(dom.query('#pulseAnalyzeCurrentBtn',page),'click',()=>P.analyzeCurrent());
-    dom.on(dom.query('#pulseAnalyzeCheckedBtn',page),'click',()=>P.analyzeChecked());
     dom.on(dom.query('#pulseApplySettingsBtn',page),'click',()=>P.applySettingsToChecked());
 
     dom.on(dom.query('#pulseSeriesLabel',page),'change',()=>{const item=P.syncEditor();if(item)P.refreshFileAndComparison();});

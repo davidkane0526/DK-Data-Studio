@@ -27,7 +27,7 @@
     // semantics/action geometry while Pulse keeps the accepted text and detail CSS.
     const header=units.pageHeader.create(page,{tagName:'div',variant:'page-owned',activity:'pulse',className:'pulse-page-header',title:'脉冲 / 读取电流分析',close:true,onClose:()=>ctx.workspace.closePage?.('pulseAnalysisPage'),actions:[
       {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
-      {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
+      {id:'checked',icon:'▶▶',label:'批量分析勾选',className:'primary',variant:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
     ]});
     if(header.close)header.close.dataset.analysisTarget='pulseAnalysisPage';
     const pageUnit=units.page.create(page,{tagName:'div',variant:'analysis',className:'pulse-analysis-body'}),body=pageUnit.element;
@@ -45,8 +45,6 @@
     directAction(units,fileToolbar,{id:'pulseCheckAllBtn',label:'全选'});
     directAction(units,fileToolbar,{id:'pulseUncheckAllBtn',label:'全不选'});
     directAction(units,fileToolbar,{id:'pulseRemoveFilesBtn',label:'从脉冲分析移除'});
-    directAction(units,fileToolbar,{id:'pulseAnalyzeCurrentBtn',label:'分析当前'});
-    directAction(units,fileToolbar,{id:'pulseAnalyzeCheckedBtn',label:'批量分析勾选',className:'primary',variant:'primary'});
     const fileList=units.list.create(filePanel.element,{tagName:'div',variant:'plain',className:'pulse-file-list'}).element;setId(fileList,'pulseFileList');
     textNode(dom,fileList,{className:'pulse-file-empty',text:'尚未添加脉冲数据文件'});
     const fileSummary=units.note.create(filePanel.element,{tagName:'div',variant:'meta',className:'pulse-file-summary',text:'0 个文件'});setId(fileSummary,'pulseBatchFileSummary');
