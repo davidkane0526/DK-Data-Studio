@@ -260,6 +260,22 @@ jobs:
           Write-Host 'Staged files:'
           Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
 
+      - name: Upload standalone Portable executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Portable-${{ github.sha }}
+          path: artifact-windows/*Portable*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload standalone Setup executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Setup-${{ github.sha }}
+          path: artifact-windows/*Setup*.exe
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Smoke-test bundled LAN update server
         shell: pwsh
         run: |
