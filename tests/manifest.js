@@ -97,6 +97,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-numpy-array-ir.js",
+      "args": []
+    },
+    {
       "file": "tests/test-phase-f-workflow-package.js",
       "args": []
     },
