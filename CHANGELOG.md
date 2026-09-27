@@ -1,3 +1,9 @@
+# SDK 1.51.83 — Table Transform helper regression hotfix (App 3.71.124)
+
+- Restores the shared `_diag` structured blocker helper used throughout Table Transform execution analysis, including cell/line/operation metadata.
+- Restores the shared `_js` compact JSON serializer used by JavaScript Core Task generation. This fixes the source-import crash path without changing scientific semantics or adding any runtime/Host/UI capability.
+- Adds the complete `sdk:generator:test` suite to the ordinary project `check` command so subsequent source-import/IR/task-lowering regressions are exercised by Windows release CI.
+
 # SDK 1.51.82 — bounded scipy.optimize.curve_fit (App 3.71.124)
 
 - Proves SciPy `curve_fit` ownership from source imports/aliases and lowers only explicit `popt` extraction, using existing Series/Array IR for 1D numeric x/y inputs.
