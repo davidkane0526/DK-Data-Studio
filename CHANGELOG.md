@@ -1,3 +1,9 @@
+# 3.71.125 Release — clean SDK 1.51.83 baseline
+
+- Reissues the application/Desktop/Mobile release identity from the current SDK 1.51.83 baseline so the Git tag, source commit, Windows Portable binary, and Android APK are produced from the same release commit.
+- Advances Android versionCode from 264 to 265 so v3.71.125 can replace the v3.71.124 APK through the normal Android upgrade path.
+- No SDK scientific semantics, Unit Templates, Plugin API, plugin algorithms, Presenter ownership, or native-analysis behavior are changed by this release-only alignment.
+
 # SDK 1.51.83 — Table Transform helper regression hotfix (App 3.71.124)
 
 - Restores the shared `_diag` structured blocker helper used throughout Table Transform execution analysis, including cell/line/operation metadata.
