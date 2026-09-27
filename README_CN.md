@@ -1,4 +1,4 @@
-> **SDK 1.51.83 — Table Transform 热修复 / CI 门禁补齐**：恢复 `dkds_table_transform_task.py` 中被误删的公共 `_diag` 与 `_js` helper。前者统一生成带 cell/line/operation 元数据的 fail-closed blocker，后者统一负责生成 JavaScript 时的紧凑 JSON 序列化；不改变任何 Pandas/NumPy/SciPy 语义，也不新增 runtime、Unit、Presenter、Host 权限或插件特化。`npm run check` 现在显式包含完整 `sdk:generator:test`，避免后续 SDK lowering 测试因未进入 release gate 而被漏检。
+> **SDK 1.51.83 — Table Transform 热修复 / CI 门禁补齐**：恢复 `dkds_table_transform_task.py` 中被误删的公共 `_diag` 与 `_js` helper。前者统一生成带 cell/line/operation 元数据的 fail-closed blocker，后者统一负责生成 JavaScript 时的紧凑 JSON 序列化；同时修正纯 Host-effect 工作流的终端结果兜底，`to_csv()` 等只依赖 Host 输出的流程不再伪造源 DataFrame 为 terminal result。`npm run check` 现在显式包含完整 `sdk:generator:test`，避免后续 SDK lowering 测试因未进入 release gate 而被漏检。不新增 runtime、Unit、Presenter、Host 权限或插件特化。
 
 > **SDK 1.51.82 — bounded `scipy.optimize.curve_fit`**：Python/Jupyter 工作流现在可静态识别真实 SciPy import/alias，并将一维数值 Series/Array 上的 `curve_fit` 拟合编译进既有 JavaScript Core Task。首版只暴露最优参数 `popt`，支持 `curve_fit(...)[0]` 与 `popt, _ = curve_fit(...)`，模型必须是可证明的纯表达式函数/inline lambda，可使用已真实导入的 `np.exp` 等有界标量数学调用；支持 1–6 个参数与字面量有限 `p0`。运行时使用有界数值 Jacobian + LM 风格求解器，不引入 Python/NumPy/SciPy runtime。二维 `pcov`、`bounds/sigma/jac/method/nan_policy` 等复杂语义继续 fail-closed，不新增 UI、Unit 或 Presenter。
 
@@ -145,7 +145,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.124**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.82**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.124**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.83**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
