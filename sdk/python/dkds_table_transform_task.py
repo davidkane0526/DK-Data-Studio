@@ -638,7 +638,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
             symbol_meta[output]=output_meta
 
     results=sorted(name for name in symbols if name not in consumed and name not in sources)
-    if not results:
+    if not results and not host_effects:
         for op in reversed(plan.get("operations",[])):
             output=str(op.get("output",""))
             if output and output in symbol_kinds:
