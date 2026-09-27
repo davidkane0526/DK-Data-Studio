@@ -47,9 +47,9 @@ try{
   const notebook=path.join(temp,'analysis.ipynb');
   fs.writeFileSync(notebook,JSON.stringify({nbformat:4,nbformat_minor:5,metadata:{},cells:[
     {cell_type:'markdown',metadata:{},source:['demo']},
-    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['%matplotlib inline\\n','def notebook_task(value: float=1.0) -> dict:\\n','    return {"result": value*2}\\n']},
-    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['import pandas as pd\\n','raw = pd.read_csv("demo.csv")\\n']},
-    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['clean = raw.abs()\\n','clean.plot()\\n','clean.to_clipboard()\\n']}
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['%matplotlib inline\n','def notebook_task(value: float=1.0) -> dict:\n','    return {"result": value*2}\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['import pandas as pd\n','raw = pd.read_csv("demo.csv")\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['clean = raw.abs()\n','clean.plot()\n','clean.to_clipboard()\n']}
   ]},null,2));
   const notebookReport=path.join(temp,'notebook.json');
   run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',notebook,'--output',notebookReport],{cwd:root,encoding:'utf8',env:pythonEnv});
