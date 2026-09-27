@@ -64,7 +64,8 @@ try{
   assert(workflow.edges.some(row=>row.from==='cell:2'&&row.to==='cell:3'&&row.symbol==='raw'),'Workflow graph must preserve cross-cell symbol dependencies.');
   assert(workflow.hostCapabilities.includes('data.import')&&workflow.hostCapabilities.includes('scientific.plot')&&workflow.hostCapabilities.includes('host.clipboard.write'),'Workflow analysis must classify DKDS host replacements.');
   assert(workflow.transformFamilies.includes('pandas.dataframe'),'Pandas notebooks must be classified for table-transform lowering instead of runtime Python fallback.');
-  assert(workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&row.cellIndex===2&&row.line===2&&row.call.includes('pd.read_csv')),'Workflow compatibility must report an exact cell/line/call for unlowered scientific library semantics.');
+  assert(workflow.hostMappings.some(row=>row.capability==='data.import'&&row.sourceCall.includes('pd.read_csv')),'read_csv must be classified as a DKDS DataTable host replacement before Table Transform lowering.');
+  assert(!workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&String(row.call||'').includes('pd.read_csv')),'Mapped read_csv must not remain mislabeled as an unlowered compute transform.');
   assert.strictEqual(workflow.candidate.buildable,true);
   assert.strictEqual(workflow.candidate.status,'buildable-table-transform');
   assert.strictEqual(workflow.sourceExecuted,false);
