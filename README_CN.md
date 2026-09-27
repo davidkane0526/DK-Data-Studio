@@ -1,3 +1,5 @@
+> **v3.71.125 Release — clean SDK 1.51.83 baseline**：应用、桌面端与移动端版本身份统一到 3.71.125；Git tag、Windows Portable 与 Android APK 均由当前 SDK 1.51.83 基线重新发布。Android versionCode 提升到 265，以保证可正常覆盖安装 3.71.124。此发布仅做版本与发布链对齐，不改变 SDK 科学语义、Unit Templates、Plugin API、插件算法或 Presenter 所有权。
+
 > **SDK 1.51.83 — Table Transform 热修复 / CI 门禁补齐**：恢复 `dkds_table_transform_task.py` 中被误删的公共 `_diag` 与 `_js` helper。前者统一生成带 cell/line/operation 元数据的 fail-closed blocker，后者统一负责生成 JavaScript 时的紧凑 JSON 序列化；同时修正纯 Host-effect 工作流的终端结果兜底，`to_csv()` 等只依赖 Host 输出的流程不再伪造源 DataFrame 为 terminal result。`npm run check` 现在显式包含完整 `sdk:generator:test`，避免后续 SDK lowering 测试因未进入 release gate 而被漏检。不新增 runtime、Unit、Presenter、Host 权限或插件特化。
 
 > **SDK 1.51.82 — bounded `scipy.optimize.curve_fit`**：Python/Jupyter 工作流现在可静态识别真实 SciPy import/alias，并将一维数值 Series/Array 上的 `curve_fit` 拟合编译进既有 JavaScript Core Task。首版只暴露最优参数 `popt`，支持 `curve_fit(...)[0]` 与 `popt, _ = curve_fit(...)`，模型必须是可证明的纯表达式函数/inline lambda，可使用已真实导入的 `np.exp` 等有界标量数学调用；支持 1–6 个参数与字面量有限 `p0`。运行时使用有界数值 Jacobian + LM 风格求解器，不引入 Python/NumPy/SciPy runtime。二维 `pcov`、`bounds/sigma/jac/method/nan_policy` 等复杂语义继续 fail-closed，不新增 UI、Unit 或 Presenter。
