@@ -15,7 +15,7 @@ const changelog = readText('CHANGELOG.md');
 const readme = readText('README_CN.md');
 
 const version = String(pkg.version || '');
-if (!/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
   throw new Error('Invalid package.json version: ' + (version || '<empty>'));
 }
 if (String(mobilePkg.version || '') !== version) {
