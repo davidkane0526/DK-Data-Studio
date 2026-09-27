@@ -18,7 +18,7 @@
     "version:patch": "node scripts/set-version.js",
     "start": "electron .",
     "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
-    "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
+    "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && npm run sdk:generator:test && node tests/run.js check",
     "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js --windows-package && node scripts/verify-dist.js",
     "update-server": "node services/update-server/server.js",
     "publish:update": "node services/update-server/publish-release.js dist",
