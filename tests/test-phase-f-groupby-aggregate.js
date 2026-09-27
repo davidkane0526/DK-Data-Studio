@@ -100,13 +100,13 @@ dropna_table = raw.groupby("group", dropna=False, as_index=False).agg({"signal":
   assert.deepStrictEqual(plain(result.series.signal_std.values),[1,1]);
 
   const numeric=result.tables.numeric;
-  assert.deepStrictEqual(numeric.columns.map(c=>c.key),['group','signal','offset']);
+  assert.deepStrictEqual(plain(numeric.columns.map(c=>c.key)),['group','signal','offset']);
   assert.deepStrictEqual(plain(numeric.columns[0].values),['A','B']);
   assert.deepStrictEqual(plain(numeric.columns[1].values),[2,3]);
   assert.deepStrictEqual(plain(numeric.columns[2].values),[20,30]);
 
   const summary=result.tables.summary;
-  assert.deepStrictEqual(summary.columns.map(c=>c.key),['group','phase','signal','offset']);
+  assert.deepStrictEqual(plain(summary.columns.map(c=>c.key)),['group','phase','signal','offset']);
   assert.deepStrictEqual(plain(summary.columns[0].values),['A','A','B']);
   assert.deepStrictEqual(plain(summary.columns[1].values),['x','y','x']);
   assert.deepStrictEqual(plain(summary.columns[2].values),[1,3,3]);
@@ -115,12 +115,12 @@ dropna_table = raw.groupby("group", dropna=False, as_index=False).agg({"signal":
   near(summary.columns[3].values[2],Math.sqrt(200));
 
   const median=result.tables.median_table;
-  assert.deepStrictEqual(median.columns.map(c=>c.key),['group','signal'],'Default as_index=True must be materialized into canonical DKDS index columns only at the Task output boundary.');
+  assert.deepStrictEqual(plain(median.columns.map(c=>c.key)),['group','signal'],'Default as_index=True must be materialized into canonical DKDS index columns only at the Task output boundary.');
   assert.deepStrictEqual(plain(median.columns[0].values),['A','B']);
   assert.deepStrictEqual(plain(median.columns[1].values),[2,3]);
 
   const dropna=result.tables.dropna_table;
-  assert.deepStrictEqual(dropna.columns.map(c=>c.key),['group','signal']);
+  assert.deepStrictEqual(plain(dropna.columns.map(c=>c.key)),['group','signal']);
   assert.deepStrictEqual(plain(dropna.columns[0].values),['A','B',null]);
   assert.deepStrictEqual(plain(dropna.columns[1].values),[2,3,100]);
 
