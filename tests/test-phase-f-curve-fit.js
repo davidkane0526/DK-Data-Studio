@@ -141,7 +141,7 @@ params = curve_fit(model, raw["x"], raw["y"])[0]
 
   const contract=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
   assert.strictEqual(contract.sdkVersion,'1.51.83');
-  console.log('SDK 1.51.82 bounded curve_fit PASS: proven SciPy import -> pure scalar model -> bounded JS LM solver -> Array popt; covariance/advanced kwargs/free-name models remain fail-closed.');
+  console.log('SDK 1.51.83 bounded curve_fit PASS: proven SciPy import -> pure scalar model -> bounded JS LM solver -> Array popt; covariance/advanced kwargs/free-name models remain fail-closed.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});
 }
