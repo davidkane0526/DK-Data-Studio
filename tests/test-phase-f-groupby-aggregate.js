@@ -77,7 +77,7 @@ dropna_table = raw.groupby("group", dropna=False, as_index=False).agg({"signal":
   const taskEntry=pkg.manifest.tasks[0].entry;
   const taskJs=pkg.files[taskEntry];
   assert(taskJs.includes("kind:'table.groupby'")&&taskJs.includes("kind:'series.groupby'")&&taskJs.includes('aggregateGroupBy'),'Generated Core Task must own bounded GroupBy values and reductions.');
-  assert(!/numpy|scipy|python runtime/i.test(taskJs),'GroupBy runtime must remain JavaScript-only and must not pull later roadmap stages forward.');
+  assert(!/python runtime|pandas runtime|numpy runtime|scipy runtime|pyodide|child_process|new Function|eval\(/i.test(taskJs),'GroupBy Task must remain self-contained JavaScript without an embedded scientific-language runtime or dynamic evaluation path.');
   require('../desktop/plugin-package').normalizePluginPackage(pkg,{allowBuiltinId:false});
 
   const context={self:{}};
