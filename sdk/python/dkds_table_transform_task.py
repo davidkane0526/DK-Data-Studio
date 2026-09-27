@@ -37,6 +37,17 @@ _TABLE_UNARY={
 _MAPPABLE_HOST={"view.plot","host.clipboard","host.export"}
 _PENDING_HOST=set()
 
+def _js(value:Any)->str:
+    return json.dumps(value,ensure_ascii=False,separators=(",",":"))
+
+def _diag(op:dict[str,Any],code:str,message:str)->dict[str,Any]:
+    return {
+        "severity":"blocker","code":code,
+        "cellIndex":int(op.get("cellIndex",0)),"line":int(op.get("line",0)),
+        "operationId":str(op.get("id","")),"operationKind":str(op.get("kind","")),
+        "message":message,
+    }
+
 def _literal_kind(value:Any)->str:
     return "scalar" if value is None or isinstance(value,(bool,int,float,str)) else "value"
 
