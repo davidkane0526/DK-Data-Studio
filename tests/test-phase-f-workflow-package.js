@@ -86,7 +86,7 @@ c = pd.concat([a,b], ignore_index=True)
   const multiPkg=JSON.parse(fs.readFileSync(multiPackage,'utf8'));
   const multiJs=multiPkg.files['plugin.js'];
   assert(multiJs.includes('setOptions(options,{value:preferred,preserve:true})'),'Generated source picker must update options only through the public Field Unit handle.');
-  assert(multiJs.includes("String(source_a.control?.value||'')")&&multiJs.includes("String(source_b.control?.value||'')"),'Each artifact-table binding must read its own explicit source Field.');
+  assert(/__dkdsFieldSource_a=String\([^;\n]*source_a\.control\?\.value\|\|''\);/.test(multiJs)&&/__dkdsFieldSource_b=String\([^;\n]*source_b\.control\?\.value\|\|''\);/.test(multiJs),'Each artifact-table binding must read its own explicit source Field through the generated Unit handle.');
   assert(multiJs.includes('a.csv')&&multiJs.includes('b.csv'),'Unique source filename hints may guide explicit picker defaults.');
   assert(!multiJs.includes('document.createElement(\'option\')')&&!multiJs.includes('.innerHTML='),'Generated workflow must not bypass the Field Unit to mutate select DOM.');
   require('../desktop/plugin-package').normalizePluginPackage(multiPkg,{allowBuiltinId:false});
