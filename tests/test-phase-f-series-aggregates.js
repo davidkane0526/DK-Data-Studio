@@ -72,7 +72,7 @@ row_means = raw.mean(axis=1, numeric_only=True)
   const taskJs=pkg.files[taskEntry];
   const pluginJs=pkg.files['plugin.js'];
   assert(taskJs.includes("kind:'table.series'")&&taskJs.includes('aggregateValue')&&taskJs.includes('seriesRows'),'Generated Core Task must carry bounded Series/statistics semantics.');
-  assert(!/pandas|python runtime|groupby|numpy/i.test(taskJs),'Runtime Task must stay JavaScript-only and must not pull later roadmap stages forward.');
+  assert(!/python runtime|pandas runtime|numpy runtime|scipy runtime|pyodide|child_process|new Function|eval\(/i.test(taskJs),'Runtime Task must stay self-contained JavaScript without an embedded scientific-language runtime or dynamic evaluation path.');
   assert(pluginJs.includes('dkdsResult0')&&pluginJs.includes('dkdsResult1'),'Generated host must project scalar/Series results through existing Metric/Table Units.');
   require('../desktop/plugin-package').normalizePluginPackage(pkg,{allowBuiltinId:false});
 
