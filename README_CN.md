@@ -1,3 +1,5 @@
+> **v3.71.126 Release — project-tab shell silhouette closure**：修复桌面端普通项目标签仍继承通用四角圆角的问题。普通 `.project-tab` 现在由 Component Appearance 统一使用 `7px 7px 0 0`，与项目工作区下边缘连续；通用 Tab、Unit Tabs、移动端和既有标签栏高度合同不变。同步将应用、桌面端与移动端版本推进到 3.71.126，Android versionCode 提升到 266。SDK 仍为 1.51.83，Plugin API 与 Unit Templates 不变。
+
 > **v3.71.125 Release — clean SDK 1.51.83 baseline**：应用、桌面端与移动端版本身份统一到 3.71.125；Git tag、Windows Portable 与 Android APK 均由当前 SDK 1.51.83 基线重新发布。Android versionCode 提升到 265，以保证可正常覆盖安装 3.71.124。此发布仅做版本与发布链对齐，不改变 SDK 科学语义、Unit Templates、Plugin API、插件算法或 Presenter 所有权。
 
 > **SDK 1.51.83 — Table Transform 热修复 / CI 门禁补齐**：恢复 `dkds_table_transform_task.py` 中被误删的公共 `_diag` 与 `_js` helper。前者统一生成带 cell/line/operation 元数据的 fail-closed blocker，后者统一负责生成 JavaScript 时的紧凑 JSON 序列化；同时修正纯 Host-effect 工作流的终端结果兜底，`to_csv()` 等只依赖 Host 输出的流程不再伪造源 DataFrame 为 terminal result。`npm run check` 现在显式包含完整 `sdk:generator:test`，避免后续 SDK lowering 测试因未进入 release gate 而被漏检。不新增 runtime、Unit、Presenter、Host 权限或插件特化。
@@ -147,7 +149,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.125**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.83**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.126**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.83**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

@@ -1,3 +1,10 @@
+# 3.71.126 Release — project-tab shell silhouette closure
+
+- Ordinary Desktop project tabs now use the shell-integrated top-corner silhouette `7px 7px 0 0` through Component Appearance instead of inheriting the generic fully-rounded Tab radius.
+- Keeps Structure as the sole owner of project-tab strip height/density; generic Tabs, compact Unit Tabs, Native Mobile and existing project-tab dimensions remain unchanged.
+- Adds a regression assertion that forbids project-tab radius ownership from returning to Presentation CSS.
+- Advances Android versionCode from 265 to 266. SDK remains 1.51.83; Plugin API and Unit Templates are unchanged.
+
 # 3.71.125 Release — clean SDK 1.51.83 baseline
 
 - Reissues the application/Desktop/Mobile release identity from the current SDK 1.51.83 baseline so the Git tag, source commit, Windows Portable binary, and Android APK are produced from the same release commit.
