@@ -28,6 +28,8 @@ SOURCE_MODEL_SCHEMA="dkds.python-source-model.v2"
 BLUEPRINT_SCHEMA="dkds.declarative-blueprint.v1"
 REPORT_SCHEMA="dkds.python-authoring-report.v2"
 WORKFLOW_CANDIDATE_ID="workflow:table-transform"
+MULTI_ACTION_CANDIDATE_ID="workflow:multi-action"
+WORKFLOW_COMPOSITION_SCHEMA="dkds.workflow-composition.v1"
 _IDENT_SAFE=re.compile(r"[^A-Za-z0-9._-]+")
 _IDENT=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ERROR_LINE=re.compile(r"\(line\s+(\d+)\)")
@@ -269,7 +271,7 @@ def _blueprint(model:dict[str,Any],fn_row:dict[str,Any],fn:SourceFunction)->dict
     return {"schema":BLUEPRINT_SCHEMA,"buildable":bool(fn_row["compatibility"]["portable"] and not diagnostics),"diagnostics":diagnostics,"spec":spec,"task":task,"preview":preview}
 
 
-def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
+def _workflow_blueprint(source_name:str,workflow:dict[str,Any],*,candidate_id:str=WORKFLOW_CANDIDATE_ID,id_prefix:str="workflow",action_id:str="run",action_label:str="运行工作流",task_id:str="run-workflow")->dict[str,Any]:
     plan=workflow.get("tableTransformPlan") or {}
     execution=plan.get("execution") or {}
     diagnostics=[dict(row) for row in execution.get("diagnostics",[])]
@@ -312,7 +314,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         result_path="tables."+input_symbol
         if effect.get("kind")=="scientific-plot":
             kwargs=dict(effect.get("kwargs") or {})
-            plot_id=f"workflow-plot-{effect_index+1}"
+            plot_id=f"{id_prefix}-plot-{effect_index+1}"
             content.append({
                 "kind":"plot","id":plot_id,
                 "title":str(kwargs.get("title") or f"Workflow plot · {input_symbol}"),
@@ -345,18 +347,18 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         projection=result_projections.get(symbol) or {}
         projection_key=str(projection.get("key",""))
         if kind in {"series","array"}:
-            table_id=f"workflow-{kind}-{index+1}"
+            table_id=f"{id_prefix}-{kind}-{index+1}"
             content.append({
                 "kind":"table","id":table_id,"title":f"{'Series' if kind=='series' else 'Array'} · {symbol}",
                 "columns":[{"key":"index","label":"Index"},{"key":"value","label":"Value"}],"rows":[],
             })
             result_tables.append({"id":table_id,"key":projection_key})
         elif kind=="scalar":
-            metric_id=f"workflow-metric-{index+1}"
+            metric_id=f"{id_prefix}-metric-{index+1}"
             metric_items.append({"id":metric_id,"label":symbol,"value":"—"})
             result_metrics.append({"id":metric_id,"key":projection_key})
     if metric_items:
-        content.append({"kind":"metrics","id":"workflow-scalars","items":metric_items})
+        content.append({"kind":"metrics","id":f"{id_prefix}-scalars","items":metric_items})
 
     spec={
         "schema":"dkds.declarative-plugin.v1",
@@ -365,26 +367,26 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         "workspace":{"activity":f"{stem}-workflow","primaryRole":"scientific-primary","primaryLabel":"主界面","primaryScroll":"safe","mainLayout":"stack-comfortable"},
         "host":{"kind":"top","label":"Workflow","contextLabel":title,"icon":"◇","window":{"title":title,"width":1280,"height":820,"minWidth":860,"minHeight":560,"reuse":True,"persistence":"project","artifactHydration":"live"}},
         "data":{"accepts":["data.table"],"produces":["generated.table-transform"]},
-        "actions":[{"id":"run","label":"运行工作流","variant":"primary","statusMessage":"正在执行生成的 Table Transform 工作流…"}],
+        "actions":[{"id":action_id,"label":action_label,"variant":"primary","statusMessage":f"正在执行 {action_label}…"}],
         "content":content,
     }
     if fields:
         spec["parameters"]={"id":"sources","label":"数据源","fields":fields,"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
     dynamic=[
-        {"id":"workflow-result-"+_slug(symbol).replace(".","-"),"name":f"Workflow result · {symbol}","semanticType":"generated.table-transform","resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024}
+        {"id":f"{id_prefix}-result-"+_slug(symbol).replace(".","-"),"name":f"Workflow result · {symbol}","semanticType":"generated.table-transform","resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024}
         for symbol in result_symbols if result_kinds.get(symbol)=="table"
     ]
     return {
         "schema":BLUEPRINT_SCHEMA,
-        "candidateId":WORKFLOW_CANDIDATE_ID,
+        "candidateId":candidate_id,
         "buildable":bool(execution.get("executable") and source_inputs and (result_symbols or host_effects) and not diagnostics),
         "diagnostics":diagnostics,
         "spec":spec,
         "task":{
-            "id":"run-workflow","actionId":"run","inputBindings":bindings,
+            "id":task_id,"actionId":action_id,"inputBindings":bindings,
             "resultTables":result_tables,"resultMetrics":result_metrics,
             "dynamicPublishTables":dynamic,"dynamicTablePlots":dynamic_plots,
-            "hostEffects":task_host_effects,"successStatus":"工作流完成",
+            "hostEffects":task_host_effects,"successStatus":f"{action_label}完成",
         },
         "preview":{
             "title":title,"source":source_name,"kind":"workflow",
@@ -393,6 +395,64 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
             "hostEffects":host_effects,"workflowSlice":dict(plan.get("workflowSlice") or {}),"unitFirst":True,"privateCss":False,
         },
     }
+
+
+def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:dict[str,Any])->dict[str,Any]:
+    current_plan=workflow.get("tableTransformPlan") or {}
+    current_slice=current_plan.get("workflowSlice") or {}
+    selected_root_ids=list(current_slice.get("selectedRootIds") or [])
+    root_candidates=list(current_slice.get("rootCandidates") or [])
+    root_lookup={str(row.get("id","")):row for row in root_candidates if row.get("id")}
+    diagnostics=[]
+    if len(selected_root_ids)<2:
+        diagnostics.append({"severity":"blocker","code":"WORKFLOW_COMPOSITION_REQUIRES_MULTIPLE_ROOTS","cellIndex":0,"line":0,"message":"Multi-action composition requires at least two selected workflow roots."})
+    if len(selected_root_ids)>8:
+        diagnostics.append({"severity":"blocker","code":"WORKFLOW_COMPOSITION_ACTION_LIMIT","cellIndex":0,"line":0,"message":"Multi-action composition supports at most 8 selected roots because the public declarative action contract is bounded to 8 actions."})
+    if diagnostics:
+        return {"schema":WORKFLOW_COMPOSITION_SCHEMA,"candidateId":MULTI_ACTION_CANDIDATE_ID,"buildable":False,"diagnostics":diagnostics,"spec":{},"stages":[],
+                "preview":{"title":f"{Path(source_name).stem} · Multi-action Workflow","source":source_name,"kind":"workflow-composition","stageCount":len(selected_root_ids),"sourceInputs":[],"sourceBindings":[],"selectedRootIds":selected_root_ids,"stages":[],"unitFirst":True,"privateCss":False}}
+
+    stages=[];action_rows=[];content=[];field_by_id={};source_binding_by_symbol={};source_inputs=[]
+    for index,root_id in enumerate(selected_root_ids[:8]):
+        root_row=root_lookup.get(root_id) or {"id":root_id,"symbol":root_id.split(":",1)[-1],"valueKind":"value","reasons":[]}
+        symbol=str(root_row.get("symbol") or root_id.split(":",1)[-1])
+        stage_slug=_slug(symbol).replace(".","-") or f"stage-{index+1}"
+        prefix=f"stage-{index+1}-{stage_slug}"
+        action_id=f"run-{prefix}";task_id=f"task-{prefix}";action_label=f"运行 · {symbol}"
+        stage_plan=analyze_table_transform(source_path,[root_id])
+        stage_plan["execution"]=analyze_table_transform_execution(stage_plan)
+        stage_bp=_workflow_blueprint(source_name,{"tableTransformPlan":stage_plan},candidate_id=MULTI_ACTION_CANDIDATE_ID,id_prefix=prefix,action_id=action_id,action_label=action_label,task_id=task_id)
+        for row in stage_bp.get("diagnostics",[]):diagnostics.append({**dict(row),"stageRootId":root_id,"stageRootSymbol":symbol})
+        stage_spec=stage_bp["spec"]
+        action=dict(stage_spec["actions"][0]);action["variant"]="primary" if index==0 else "secondary";action["order"]=(index+1)*10;action_rows.append(action)
+        content.extend(dict(row) for row in stage_spec.get("content",[]) if row.get("kind")!="note")
+        for field in (stage_spec.get("parameters") or {}).get("fields",[]):
+            field_id=str(field.get("id",""));prior=field_by_id.get(field_id)
+            if prior is not None and prior!=field:diagnostics.append({"severity":"blocker","code":"WORKFLOW_COMPOSITION_SOURCE_FIELD_CONFLICT","cellIndex":0,"line":0,"fieldId":field_id,"message":f"Shared source field {field_id} resolved to incompatible stage definitions."})
+            else:field_by_id[field_id]=dict(field)
+        for binding in stage_bp.get("preview",{}).get("sourceBindings",[]):
+            symbol_name=str(binding.get("symbol",""));prior=source_binding_by_symbol.get(symbol_name)
+            if prior is not None and prior!=binding:diagnostics.append({"severity":"blocker","code":"WORKFLOW_COMPOSITION_SOURCE_BINDING_CONFLICT","cellIndex":0,"line":0,"symbol":symbol_name,"message":f"Shared source {symbol_name} resolved to incompatible stage bindings."})
+            else:source_binding_by_symbol[symbol_name]=dict(binding)
+        for symbol_name in stage_bp.get("preview",{}).get("sourceInputs",[]):
+            if symbol_name not in source_inputs:source_inputs.append(symbol_name)
+        stages.append({"id":prefix,"rootId":root_id,"rootSymbol":symbol,"valueKind":str(root_row.get("valueKind","value")),"actionId":action_id,"taskId":task_id,
+                       "includedCells":list((stage_plan.get("workflowSlice") or {}).get("includedCells") or []),"resultSymbols":list((stage_plan.get("execution") or {}).get("resultSymbols") or []),
+                       "hostEffects":list((stage_plan.get("execution") or {}).get("hostEffects") or []),"task":stage_bp["task"],"buildable":bool(stage_bp.get("buildable"))})
+
+    source_bindings=[source_binding_by_symbol[name] for name in source_inputs if name in source_binding_by_symbol]
+    stem=_slug(Path(source_name).stem);title=f"{Path(source_name).stem} · Multi-action Workflow"
+    merged_content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; each selected workflow root is compiled as one isolated Core Task action. Shared sources use one canonical Unit Source Picker set."},*content]
+    spec={"schema":"dkds.declarative-plugin.v1","plugin":{"id":f"generated.{stem}.workflow-composition","name":title,"version":"1.0.0","description":f"Generated from {source_name} multi-action workflow composition.","order":940},
+          "page":{"id":f"{stem}-workflow-composition","label":"Workflow","title":title,"subtitle":"Python/Jupyter Roots → Multiple Core Task Actions","variant":"analysis","close":True},
+          "workspace":{"activity":f"{stem}-workflow-composition","primaryRole":"scientific-primary","primaryLabel":"主界面","primaryScroll":"safe","mainLayout":"stack-comfortable"},
+          "host":{"kind":"top","label":"Workflow","contextLabel":title,"icon":"◇","window":{"title":title,"width":1280,"height":820,"minWidth":860,"minHeight":560,"reuse":True,"persistence":"project","artifactHydration":"live"}},
+          "data":{"accepts":["data.table"],"produces":["generated.table-transform"]},"actions":action_rows,"content":merged_content}
+    if field_by_id:spec["parameters"]={"id":"sources","label":"数据源","fields":list(field_by_id.values()),"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
+    buildable=bool(2<=len(stages)<=8 and all(stage.get("buildable") for stage in stages) and source_inputs and not diagnostics)
+    return {"schema":WORKFLOW_COMPOSITION_SCHEMA,"candidateId":MULTI_ACTION_CANDIDATE_ID,"buildable":buildable,"diagnostics":diagnostics,"spec":spec,"stages":stages,
+            "preview":{"title":title,"source":source_name,"kind":"workflow-composition","stageCount":len(stages),"sourceInputs":source_inputs,"sourceBindings":source_bindings,"selectedRootIds":selected_root_ids,
+                       "stages":[{"id":row["id"],"rootId":row["rootId"],"rootSymbol":row["rootSymbol"],"valueKind":row["valueKind"],"actionId":row["actionId"],"includedCells":row["includedCells"],"resultSymbols":row["resultSymbols"],"hostEffects":row["hostEffects"]} for row in stages],"unitFirst":True,"privateCss":False}}
 
 def analyze(path:str|Path,selected_root_ids:list[str]|None=None)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
@@ -407,6 +467,7 @@ def analyze(path:str|Path,selected_root_ids:list[str]|None=None)->dict[str,Any]:
     table_plan["execution"]=analyze_table_transform_execution(table_plan)
     workflow["tableTransformPlan"]=table_plan
     workflow["blueprint"]=_workflow_blueprint(source_path.name,workflow)
+    workflow["composition"]=_workflow_composition_blueprint(source_path,source_path.name,workflow)
     workflow["candidate"]={
         **dict(workflow.get("candidate") or {}),
         "id":WORKFLOW_CANDIDATE_ID,
@@ -415,12 +476,13 @@ def analyze(path:str|Path,selected_root_ids:list[str]|None=None)->dict[str,Any]:
         "status":"buildable-table-transform" if workflow["blueprint"]["buildable"] else "blocked-table-transform",
         "blockers":[dict(row) for row in workflow["blueprint"].get("diagnostics",[])],
     }
+    workflow["compositionCandidate"]={"id":MULTI_ACTION_CANDIDATE_ID,"kind":"multi-action-workflow","buildable":bool(workflow["composition"]["buildable"]),"status":"buildable-multi-action" if workflow["composition"]["buildable"] else "blocked-multi-action","blockers":[dict(row) for row in workflow["composition"].get("diagnostics",[])]}
     model={**model,"functionCount":len(rows),"functions":rows,"workflow":workflow}
     all_diagnostics=[*diagnostics]
     for row in rows:
         all_diagnostics.extend(row["compatibility"].get("diagnostics",[]))
         all_diagnostics.extend(row["blueprint"].get("diagnostics",[]))
-    return {"schema":REPORT_SCHEMA,"sourceModel":model,"diagnostics":all_diagnostics,"portableFunctionCount":sum(1 for row in rows if row["compatibility"]["portable"]),"buildableFunctionCount":sum(1 for row in rows if row["blueprint"]["buildable"]),"workflowCandidateCount":1 if workflow.get("candidate") else 0}
+    return {"schema":REPORT_SCHEMA,"sourceModel":model,"diagnostics":all_diagnostics,"portableFunctionCount":sum(1 for row in rows if row["compatibility"]["portable"]),"buildableFunctionCount":sum(1 for row in rows if row["blueprint"]["buildable"]),"workflowCandidateCount":sum(1 for row in (workflow.get("candidate"),workflow.get("compositionCandidate")) if row)}
 
 def _selected(path:Path,function_id:str)->tuple[dict[str,Any],SourceFunction,dict[str,Any]]:
     model,functions,_=_read_document(path)
@@ -432,9 +494,24 @@ def _selected(path:Path,function_id:str)->tuple[dict[str,Any],SourceFunction,dic
 
 def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None=None)->tuple[dict[str,Any],dict[str,Any]]:
     source_path=Path(path).expanduser().resolve()
-    if function_id==WORKFLOW_CANDIDATE_ID:
+    if function_id in {WORKFLOW_CANDIDATE_ID,MULTI_ACTION_CANDIDATE_ID}:
         analysis=analyze(source_path,selected_root_ids)
         workflow=analysis["sourceModel"]["workflow"]
+        if function_id==MULTI_ACTION_CANDIDATE_ID:
+            blueprint=workflow["composition"]
+            if not blueprint["buildable"]:
+                messages=[str(row.get("message","")) for row in blueprint.get("diagnostics",[])]
+                raise ValueError("Selected multi-action workflow is not automatically buildable: "+"; ".join(messages))
+            builder=PluginBuilder(blueprint["spec"])
+            for stage in blueprint.get("stages",[]):
+                task=stage["task"]
+                stage_plan=analyze_table_transform(source_path,[stage["rootId"]])
+                stage_plan["execution"]=analyze_table_transform_execution(stage_plan)
+                compiled=compile_table_transform_task(stage_plan,task["id"])
+                builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
+            package=builder.package()
+            report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":MULTI_ACTION_CANDIDATE_ID,"candidateKind":"multi-action-workflow","selectedRootIds":list(blueprint.get("preview",{}).get("selectedRootIds") or []),"stageCount":len(blueprint.get("stages",[]))},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
+            return package,report
         blueprint=workflow["blueprint"]
         if not blueprint["buildable"]:
             messages=[str(row.get("message","")) for row in blueprint.get("diagnostics",[])]
@@ -442,17 +519,7 @@ def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None
         compiled=compile_table_transform_task(workflow["tableTransformPlan"],blueprint["task"]["id"])
         builder=PluginBuilder(blueprint["spec"])
         task=blueprint["task"]
-        builder.add_compiled_task(
-            compiled,
-            action_id=task["actionId"],
-            input_bindings=task["inputBindings"],
-            result_tables=task["resultTables"],
-            result_metrics=task["resultMetrics"],
-            dynamic_publish_tables=task["dynamicPublishTables"],
-            dynamic_table_plots=task["dynamicTablePlots"],
-            host_effects=task["hostEffects"],
-            success_status=task["successStatus"],
-        )
+        builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
         package=builder.package()
         workflow_slice=workflow.get("tableTransformPlan",{}).get("workflowSlice",{})
         report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":WORKFLOW_CANDIDATE_ID,"candidateKind":"table-transform-workflow","selectionMode":workflow_slice.get("selectionMode","all-observable"),"selectedRootIds":list(workflow_slice.get("selectedRootIds") or [])},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}

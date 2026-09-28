@@ -1,3 +1,5 @@
+> **v3.71.130 Release — Phase F Multi-stage / Multi-action Composition / SDK 1.51.87**：在现有 Root Candidate、`dkds.workflow-slice.v1` 与 Core Task 编译链上新增 `dkds.workflow-composition.v1`。当选中 2–8 个 Root 时，每个 Root 独立复用同一显式 Root 切片并生成一个 Stage / Action / Core Task；多个 Stage 共用相同数据源时只生成一组 canonical Unit Source Picker，Stage 的结果控件、Plot、Artifact id 与 Task/Action id 使用独立前缀，互不泄漏。组合直接继承 declarative plugin 现有最多 8 个 Action 的公共合同，9 个 Root 在 Stage 分析前 fail-closed。Action 之间不共享隐藏 Notebook 内存；真正的跨 Stage 持久依赖后续必须通过 Artifact 合同表达。没有新增 Core Task Runtime、Plugin API、Unit、Presenter、Host 权限、第二套 DAG/type/slice 系统。
+
 > **v3.71.129 Release — Phase F Explicit Root Selection / SDK 1.51.86**：Python/Jupyter 插件生成器在现有 `dkds.workflow-slice.v1` 上加入显式 Root 选择。默认仍为 `all-observable`，因此旧工作流行为不变；当作者在 Plugin Manager 中选择一个或多个 `rootCandidates` 后，宿主会重新静态分析并用同一反向依赖闭包生成新的预览，Build 再携带完全相同的 `selectedRootIds`，保证预览与 `.dkplugin` 一致。未选 Root 对应的终端结果、ScientificPlot/剪贴板/导出分支会被真正裁掉，共享依赖保留；未知 Root、空显式选择以及所选依赖链上的 blocker 都严格 fail-closed。Root ID 在 Desktop authoring IPC 与 Python CLI 两侧均有有界校验。未新增第二套 slicing/type/runtime、Unit、Presenter 或 Host 权限。
 
 > **v3.71.128 Release — Phase F dependency-sliced workflow composition / SDK 1.51.85**：多 Cell DAG 之后新增 `dkds.workflow-slice.v1`。生成器仍先静态分析完整 Notebook，但 value kind 不另建第二套推断器，而是复用现有 Table Transform Execution analyzer 统一给出 `table / series / array / scalar`；随后从可发布终端结果与映射 Host effect 识别 observable roots，沿 Cell DAG 反向求依赖闭包，只让该闭包进入最终 IR coverage 与 Core Task 编译。与任何选中 root 无关的探索/废弃 Cell 可以被裁剪，其错误不再阻断插件；但一旦坏 Cell 位于结果、绘图、剪贴板或导出依赖链上，仍严格 fail-closed。Plugin Manager 作者界面同步显示 Root、保留 Cell 与裁剪 Cell。当前选择模式为 `all-observable`，为下一步显式 root 选择保留元数据；不新增 Python/Jupyter runtime、第二套类型系统、Unit、Presenter 或 workflow backend。
@@ -155,7 +157,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.129**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.86**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.130**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.87**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

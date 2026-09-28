@@ -154,7 +154,8 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
   function build(row,functionId,rootValue){
     const selected=String(functionId||'').trim();
     if(!selected)throw new Error('请选择一个可转换函数。');
-    const rootIds=selected==='workflow:table-transform'?normalizeRootIds(rootValue===undefined?row.rootIds:rootValue):null;
+    const workflowCandidate=selected==='workflow:table-transform'||selected==='workflow:multi-action';
+    const rootIds=workflowCandidate?normalizeRootIds(rootValue===undefined?row.rootIds:rootValue):null;
     const packagePath=path.join(row.workDir,'generated.dkplugin');
     const reportPath=path.join(row.workDir,'build.json');
     runPython(['build',row.sourcePath,'--function-id',selected,'--package',packagePath,'--report',reportPath,...rootArgs(rootIds)],{timeout:45000});
@@ -162,7 +163,7 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
     const plan=pluginInstallPlan(raw);
     const buildReport=JSON.parse(fs.readFileSync(reportPath,'utf8'));
     row.package=plan.pkg;
-    if(selected==='workflow:table-transform')row.rootIds=rootIds;
+    if(workflowCandidate)row.rootIds=rootIds;
     row.build={functionId:selected,rootIds:rootIds,report:buildReport,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};
     return {
       ok:true,

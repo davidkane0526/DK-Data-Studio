@@ -1,3 +1,13 @@
+# 3.71.130 Release — Phase F Multi-stage / Multi-action Composition / SDK 1.51.87
+
+- Adds `dkds.workflow-composition.v1`: two through eight selected workflow roots become isolated stages, each reusing the existing explicit-root dependency slice and compiling to one existing Core Task/action.
+- Reuses `PluginBuilder`'s existing multi-task/action contract without changing Core Task Runner or Plugin API. Duplicate task ids/action bindings remain rejected by the shared builder.
+- Merges shared source inputs into one canonical Unit Source Picker set; stage-specific result tables, metrics, plots, dynamic Artifact ids, Action ids and Task ids are prefix-isolated.
+- Keeps each Action independent: unselected/other-stage outputs and Host effects do not leak across actions, and no hidden notebook memory is shared between Tasks. Persistent stage chaining is reserved for canonical Artifact contracts.
+- Inherits the existing declarative maximum of eight actions; over-limit compositions fail closed before per-root stage analysis. Any selected stage blocker fails the complete composition closed.
+- Adds a dedicated multi-action regression covering two independent roots, shared Source Picker deduplication, isolated plots/results, two manifest Tasks, production package validation, single-root rejection and the eight-action bound.
+- App/Desktop/Mobile identity advances to 3.71.130 / Android versionCode 270. SDK advances to 1.51.87; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.129 Release — Phase F Explicit Root Selection / SDK 1.51.86
 
 - Adds explicit selection of one or more `rootCandidates` on top of the existing `dkds.workflow-slice.v1`; the default remains `all-observable` for backward compatibility.

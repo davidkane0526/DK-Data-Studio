@@ -69,6 +69,14 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Multi-action workflow composition — SDK 1.51.87
+
+Selected workflow roots can now be composed into one `dkds.workflow-composition.v1` plugin. Composition does not introduce a new execution model: every stage is exactly one existing explicit-root `dkds.workflow-slice.v1`, analyzed independently through the canonical Table Transform planner and compiled as one ordinary Core Task bound to one declarative action. The existing `PluginBuilder` multi-task path is reused unchanged.
+
+The bounded composition accepts two through eight selected roots, inheriting the declarative action contract's existing eight-action limit. Source Picker fields are merged by canonical field id so stages that depend on the same imported DataTable share one public Unit control. Stage content/result ids are prefixed to prevent collisions, and each action receives only that stage's result projections and mapped Host effects. A blocker in any selected stage fails the composition closed.
+
+Actions share source contracts, not mutable notebook state. One stage cannot depend on another stage's transient Task memory. If a later stage must consume a prior stage result, that dependency must be promoted through the canonical Artifact contract in a later composition phase. This preserves task isolation, replayability, and project history rather than emulating a Jupyter kernel. No new Core Task Runner, Plugin API, Unit, Presenter, Host privilege, DAG, value-kind owner, or slicing algorithm is added.
+
 ## Explicit workflow root selection — SDK 1.51.86
 
 The authoring layer can now select one or more advertised `rootCandidates` instead of always compiling every observable root. Absence of an explicit selection preserves the historical `all-observable` behavior. An explicit selection changes only the input root set; `dkds.workflow-slice.v1` still computes the same reverse cell-dependency closure and Table Transform still performs the only final execution/type validation.
