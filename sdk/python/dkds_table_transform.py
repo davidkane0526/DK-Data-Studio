@@ -11,7 +11,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
-from dkds_source_workflow import _read_cells, _sanitize
+from dkds_source_workflow import _read_cells, _sanitize, analyze_workflow
 
 PLAN_SCHEMA="dkds.table-transform-plan.v1"
 _SUPPORTED_METHODS={
@@ -571,6 +571,14 @@ def _expression_op(cell:int,node:ast.Expr,index:int)->tuple[dict[str,Any]|None,d
 def analyze_table_transform(path:str|Path)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
     kind,cells,_=_read_cells(source_path)
+    workflow=analyze_workflow(source_path)
+    dependency_graph=dict(workflow.get("dependencyGraph") or {})
+    source_cell_order=[int(cell["index"]) for cell in cells]
+    cell_by_index={int(cell["index"]):cell for cell in cells}
+    requested_order=[int(value) for value in dependency_graph.get("topologicalOrder",[]) if int(value) in cell_by_index]
+    seen=set(requested_order)
+    cell_order=[*requested_order,*[value for value in source_cell_order if value not in seen]]
+    cells=[cell_by_index[value] for value in cell_order]
     operations=[]
     diagnostics=[]
     statement_count=0
@@ -601,8 +609,9 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
     ratio=1.0 if statement_count==0 else lowered_statement_count/statement_count
     return {
         "schema":PLAN_SCHEMA,"source":source_path.name,"sourceKind":kind,
-        "operations":operations,"diagnostics":diagnostics,
+        "operations":operations,"diagnostics":diagnostics,"dependencyGraph":dependency_graph,
+        "sourceCellOrder":source_cell_order,"cellOrder":cell_order,"reorderedCells":cell_order!=source_cell_order,
         "statementCount":statement_count,"lowerableStatementCount":lowered_statement_count,
-        "coverage":ratio,"buildable":statement_count>0 and not diagnostics and lowered_statement_count==statement_count,
+        "coverage":ratio,"buildable":statement_count>0 and bool(dependency_graph.get("buildable",False)) and not diagnostics and lowered_statement_count==statement_count,
         "sourceExecuted":False,
     }

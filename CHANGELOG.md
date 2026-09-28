@@ -1,3 +1,11 @@
+# 3.71.127 Release — Phase F multi-cell dependency DAG / SDK 1.51.84
+
+- Upgrades Source Workflow cell analysis from prior-cell edge recording to `dkds.cell-dependency-graph.v1`, with immediate top-level read semantics, deterministic producer resolution (latest prior producer, otherwise one unique forward producer) and stable topological ordering.
+- Table Transform lowering now consumes the dependency graph order, so an out-of-order Notebook cell can safely depend on a uniquely owned later producer without relying on mutable Jupyter execution history.
+- Fails closed on ambiguous producers, unresolved symbols, same-cell forward references and cross-cell cycles; notebook `execution_count` remains descriptive only.
+- Adds a dedicated multi-cell DAG regression that builds a reordered Notebook through the existing workflow package path and checks ambiguous/cyclic/unresolved blockers. No Python/Jupyter runtime, new Unit, Presenter branch, Host privilege or second workflow engine is added.
+- App/Desktop/Mobile identity advances to 3.71.127 / Android versionCode 267. SDK advances to 1.51.84; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.126 Release — project-tab shell silhouette closure
 
 - Ordinary Desktop project tabs now use the shell-integrated top-corner silhouette `7px 7px 0 0` through Component Appearance instead of inheriting the generic fully-rounded Tab radius.

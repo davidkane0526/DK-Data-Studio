@@ -370,6 +370,14 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                 "cellIndex":int(row.get("cellIndex",0)),"line":int(row.get("line",0)),
                 "message":str(row.get("message","Table Transform plan is not closed.")),
             })
+    graph=plan.get("dependencyGraph") or {}
+    if isinstance(graph,dict) and graph.get("diagnostics"):
+        for row in graph["diagnostics"]:
+            diagnostics.append({
+                "severity":"blocker","code":str(row.get("code") or "TABLE_TASK_DEPENDENCY_GRAPH_BLOCKED"),
+                "cellIndex":int(row.get("cellIndex",0)),"line":int(row.get("line",0)),
+                "message":str(row.get("message","Cell dependency graph is not statically deterministic.")),
+            })
     symbols=set()
     symbol_kinds={}
     symbol_meta={}

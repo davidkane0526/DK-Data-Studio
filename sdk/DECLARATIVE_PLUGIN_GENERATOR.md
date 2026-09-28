@@ -69,6 +69,12 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Multi-cell dependency DAG — SDK 1.51.84
+
+Python/Jupyter Source Workflow now owns a real bounded cell DAG rather than only recording dependencies on earlier notebook cells. The analyzer computes immediate top-level reads with source-order semantics, excludes deferred function/lambda bodies from false execution dependencies, indexes all candidate producers, and derives one stable topological schedule. A consumer may therefore appear before its unique producer in notebook display order while Table Transform lowering still emits the producer first.
+
+The graph remains fail-closed. Ambiguous multiple forward producers for one required symbol, unresolved external symbols, same-cell forward references, and cross-cell cycles produce explicit blocker diagnostics. Notebook `execution_count` is descriptive only and is never trusted as hidden mutable kernel state. The graph schedule feeds the existing `dkds.table-transform-plan.v1` lowering path; generated packages still contain only JavaScript Core Tasks plus mapped Host effects and carry no Python source, bytecode, Jupyter kernel, alternate workflow runtime, new Unit, or Presenter rule.
+
 ## Table Transform IR v1 — SDK 1.51.72
 
 The Source Workflow graph now carries `dkds.table-transform-plan.v1`. This is a static, fail-closed intermediate representation for common research-notebook table operations. It does not execute the notebook and it is not a Pandas compatibility runtime.
