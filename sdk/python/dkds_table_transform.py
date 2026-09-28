@@ -592,7 +592,17 @@ def _slice_dependency_graph(graph:dict[str,Any],selected_cells:set[int],symbol_k
         "diagnostics":diagnostics,"buildable":not diagnostics,
     }
 
-def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution:dict[str,Any])->dict[str,Any]:
+def _normalize_selected_root_ids(value:list[str]|None)->list[str]|None:
+    if value is None:return None
+    if len(value)>64:raise ValueError("Explicit workflow root selection exceeds 64 roots.")
+    out=[]
+    for raw in value:
+        root_id=str(raw).strip()
+        if not root_id or len(root_id)>256:raise ValueError("Workflow root id must be a non-empty string no longer than 256 characters.")
+        if root_id not in out:out.append(root_id)
+    return out
+
+def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution:dict[str,Any],selected_root_ids:list[str]|None=None)->dict[str,Any]:
     symbol_kinds={str(key):str(value) for key,value in (execution.get("symbolKinds") or {}).items()}
     producers={}
     for op in operations:
@@ -618,9 +628,14 @@ def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution
         row=root_by_symbol[name]
         row["id"]="root:"+name
         roots.append(row)
-    selected_root_ids=[row["id"] for row in roots]
-    selected_cells={int(row["producerCellIndex"]) for row in roots}
-    for row in roots:
+    candidate_ids=[row["id"] for row in roots]
+    selection_mode="all-observable" if selected_root_ids is None else "explicit"
+    requested=[] if selected_root_ids is None else list(dict.fromkeys(str(value) for value in selected_root_ids if str(value)))
+    unknown=sorted(set(requested)-set(candidate_ids))
+    selected_ids=candidate_ids if selected_root_ids is None else [value for value in candidate_ids if value in set(requested)]
+    selected_roots=[row for row in roots if row["id"] in set(selected_ids)]
+    selected_cells={int(row["producerCellIndex"]) for row in selected_roots}
+    for row in selected_roots:
         selected_cells.update(int(effect["cellIndex"]) for effect in row.get("hostEffects",[]))
 
     predecessors={}
@@ -645,19 +660,24 @@ def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution
         if not output or cell not in selected_cells:continue
         cell_value_kinds.setdefault(str(cell),{})[output]=symbol_kinds.get(output,"value")
     diagnostics=[]
+    if unknown:
+        diagnostics.append({"severity":"blocker","code":"WORKFLOW_SLICE_ROOT_UNKNOWN","cellIndex":0,"line":0,"rootIds":unknown,"message":"Requested workflow root is not available in the current source analysis: "+", ".join(unknown)})
     if not roots:
         diagnostics.append({"severity":"blocker","code":"WORKFLOW_SLICE_NO_ROOTS","cellIndex":0,"line":0,"message":"No publishable terminal result or mapped Host effect could be selected as a workflow root."})
+    elif not selected_roots:
+        diagnostics.append({"severity":"blocker","code":"WORKFLOW_SLICE_NO_ROOTS_SELECTED","cellIndex":0,"line":0,"message":"Explicit workflow root selection must contain at least one available root."})
     diagnostics.extend(dict(row) for row in sliced_graph.get("diagnostics",[]))
     return {
-        "schema":"dkds.workflow-slice.v1","selectionMode":"all-observable",
-        "rootCandidates":roots,"selectedRootIds":selected_root_ids,
+        "schema":"dkds.workflow-slice.v1","selectionMode":selection_mode,
+        "rootCandidates":roots,"selectedRootIds":selected_ids,
         "includedCells":included,"prunedCells":pruned,
         "symbolKinds":symbol_kinds,"cellValueKinds":cell_value_kinds,
         "dependencyGraph":sliced_graph,"diagnostics":diagnostics,
-        "buildable":bool(roots) and not diagnostics,
+        "buildable":bool(selected_roots) and not diagnostics,
     }
 
-def analyze_table_transform(path:str|Path)->dict[str,Any]:
+def analyze_table_transform(path:str|Path,selected_root_ids:list[str]|None=None)->dict[str,Any]:
+    selected_root_ids=_normalize_selected_root_ids(selected_root_ids)
     source_path=Path(path).expanduser().resolve()
     kind,cells,_=_read_cells(source_path)
     workflow=analyze_workflow(source_path)
@@ -705,11 +725,11 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
         "buildable":False,"sourceExecuted":False,
     }
     provisional_execution=analyze_table_transform_execution(provisional)
-    workflow_slice=_workflow_slice(dependency_graph,all_operations,provisional_execution)
+    workflow_slice=_workflow_slice(dependency_graph,all_operations,provisional_execution,selected_root_ids)
     selected_cells=set(workflow_slice.get("includedCells") or [])
     operations=[op for op in all_operations if int(op.get("cellIndex",0)) in selected_cells]
     diagnostics=[row for row in all_diagnostics if int(row.get("cellIndex",0)) in selected_cells]
-    diagnostics.extend(dict(row) for row in workflow_slice.get("diagnostics",[]) if row.get("code")=="WORKFLOW_SLICE_NO_ROOTS")
+    diagnostics.extend(dict(row) for row in workflow_slice.get("diagnostics",[]) if row.get("code") in {"WORKFLOW_SLICE_NO_ROOTS","WORKFLOW_SLICE_NO_ROOTS_SELECTED","WORKFLOW_SLICE_ROOT_UNKNOWN"})
     cell_order=[value for value in full_cell_order if value in selected_cells]
     selected_source_order=[value for value in source_cell_order if value in selected_cells]
     statement_count=sum(statement_counts.get(value,0) for value in selected_cells)

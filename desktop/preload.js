@@ -150,6 +150,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginInstallGeneratedPackage: payload => ipcRenderer.invoke('plugins:installGeneratedPackage', payload || {}),
   pluginAuthoringStatus: () => ipcRenderer.invoke('plugins:authoringStatus'),
   pluginAuthoringSelectSource: () => ipcRenderer.invoke('plugins:authoringSelectSource'),
+  pluginAuthoringSelectRoots: payload => ipcRenderer.invoke('plugins:authoringSelectRoots', payload || {}),
   pluginAuthoringBuild: payload => ipcRenderer.invoke('plugins:authoringBuild', payload || {}),
   pluginAuthoringInstall: payload => ipcRenderer.invoke('plugins:authoringInstall', payload || {}),
   pluginAuthoringExport: payload => { const next=withSaveIntent('export',{...(payload||{}),source:'core.plugin-manager.python-authoring'}); return next?ipcRenderer.invoke('plugins:authoringExport',next):Promise.resolve(null); },

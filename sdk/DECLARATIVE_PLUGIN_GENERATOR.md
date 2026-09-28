@@ -69,6 +69,14 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Explicit workflow root selection — SDK 1.51.86
+
+The authoring layer can now select one or more advertised `rootCandidates` instead of always compiling every observable root. Absence of an explicit selection preserves the historical `all-observable` behavior. An explicit selection changes only the input root set; `dkds.workflow-slice.v1` still computes the same reverse cell-dependency closure and Table Transform still performs the only final execution/type validation.
+
+`selectedRootIds` are bounded to 64 entries in Desktop authoring, each id is bounded in length, and the Python analyzer validates every id against the current source-derived root candidates. Unknown roots and empty explicit selections fail closed. Plugin Manager re-runs static analysis after applying a root subset and Build transmits the same root ids, so preview and generated package cannot silently diverge. The `rootCandidates` list remains complete even under explicit selection, which keeps later multi-stage/action composition possible without adding a second graph or slice owner.
+
+Selecting one root removes unrelated terminal results and Host effects from the final plan. Shared dependencies remain because the same reverse closure is used. Restoring automatic mode simply omits explicit root ids and returns to `all-observable`. No Python runtime, notebook execution state, alternate workflow backend, new Unit, Presenter branch or plugin-specific path is introduced.
+
 ## Dependency-sliced workflow composition — SDK 1.51.85
 
 After the multi-cell DAG is scheduled, Table Transform now derives one `dkds.workflow-slice.v1` before final Core Task compilation. It lowers the notebook statically once, asks the existing Table Transform execution analyzer for authoritative `table / series / array / scalar` value kinds, identifies observable roots from publishable terminal values and mapped Host effects, and walks the cell DAG backward from those roots. Only that reverse dependency closure enters final IR coverage and execution validation.

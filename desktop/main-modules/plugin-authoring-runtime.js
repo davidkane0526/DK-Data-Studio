@@ -87,6 +87,25 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
     return {stdout:String(result.stdout||''),stderr:String(result.stderr||'')};
   }
 
+
+  function normalizeRootIds(value){
+    if(value===null||value===undefined)return null;
+    if(!Array.isArray(value))throw new Error('Workflow rootIds must be an array.');
+    if(value.length>64)throw new Error('Workflow root selection exceeds 64 roots.');
+    const out=[];
+    for(const raw of value){
+      const id=String(raw||'').trim();
+      if(!id||id.length>256)throw new Error('Workflow root id is invalid.');
+      if(!out.includes(id))out.push(id);
+    }
+    if(!out.length)throw new Error('请至少选择一个 Workflow Root。');
+    return out;
+  }
+
+  function rootArgs(rootIds){
+    return rootIds===null?[]:rootIds.flatMap(id=>['--root-id',id]);
+  }
+
   function session(token){
     sweep();
     const row=sessions.get(String(token||''));
@@ -105,7 +124,7 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
     const reportPath=path.join(workDir,'analysis.json');
     runPython(['analyze',sourcePath,'--output',reportPath]);
     const report=JSON.parse(fs.readFileSync(reportPath,'utf8'));
-    const row={token,sourcePath,name:path.basename(sourcePath),workDir,createdAt:Date.now(),report,package:null,build:null};
+    const row={token,sourcePath,name:path.basename(sourcePath),workDir,createdAt:Date.now(),report,rootIds:null,package:null,build:null};
     sessions.set(token,row);
     return row;
   }
@@ -116,22 +135,35 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
       name:row.name,
       python:resolvePython(),
       report:row.report,
+      rootIds:row.rootIds,
       sourceExecuted:false,
       runtimePythonRequired:false
     };
   }
 
-  function build(row,functionId){
+  function selectRoots(row,value){
+    const rootIds=normalizeRootIds(value);
+    const reportPath=path.join(row.workDir,'analysis-roots.json');
+    runPython(['analyze',row.sourcePath,'--output',reportPath,...rootArgs(rootIds)]);
+    row.report=JSON.parse(fs.readFileSync(reportPath,'utf8'));
+    row.rootIds=rootIds;
+    row.package=null;row.build=null;
+    return publicAnalysis(row);
+  }
+
+  function build(row,functionId,rootValue){
     const selected=String(functionId||'').trim();
     if(!selected)throw new Error('请选择一个可转换函数。');
+    const rootIds=selected==='workflow:table-transform'?normalizeRootIds(rootValue===undefined?row.rootIds:rootValue):null;
     const packagePath=path.join(row.workDir,'generated.dkplugin');
     const reportPath=path.join(row.workDir,'build.json');
-    runPython(['build',row.sourcePath,'--function-id',selected,'--package',packagePath,'--report',reportPath],{timeout:45000});
+    runPython(['build',row.sourcePath,'--function-id',selected,'--package',packagePath,'--report',reportPath,...rootArgs(rootIds)],{timeout:45000});
     const raw=JSON.parse(fs.readFileSync(packagePath,'utf8'));
     const plan=pluginInstallPlan(raw);
     const buildReport=JSON.parse(fs.readFileSync(reportPath,'utf8'));
     row.package=plan.pkg;
-    row.build={functionId:selected,report:buildReport,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};
+    if(selected==='workflow:table-transform')row.rootIds=rootIds;
+    row.build={functionId:selected,rootIds:rootIds,report:buildReport,installationKind:plan.installationKind,requiresRestart:plan.requiresRestart,previousVersion:plan.previousVersion,bundledVersion:plan.bundledVersion};
     return {
       ok:true,
       package:plan.pkg,
@@ -170,8 +202,12 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
       try{return {ok:true,canceled:false,...publicAnalysis(analyzeSource(result.filePaths[0]))};}
       catch(err){return {ok:false,error:{code:String(err.code||'PLUGIN_AUTHORING_ANALYZE_FAILED'),message:String(err.message||err)}};}
     });
+    ipcMain.handle('plugins:authoringSelectRoots',async(_event,payload={})=>{
+      try{return {ok:true,...selectRoots(session(payload.token),payload.rootIds)};}
+      catch(err){return {ok:false,error:{code:String(err.code||'PLUGIN_AUTHORING_ROOT_SELECTION_FAILED'),message:String(err.message||err)}};}
+    });
     ipcMain.handle('plugins:authoringBuild',async(_event,payload={})=>{
-      try{return build(session(payload.token),payload.functionId);}
+      try{return build(session(payload.token),payload.functionId,payload.rootIds);}
       catch(err){return {ok:false,error:{code:String(err.code||'PLUGIN_AUTHORING_BUILD_FAILED'),message:String(err.message||err)}};}
     });
     ipcMain.handle('plugins:authoringInstall',async(_event,payload={})=>{
@@ -199,7 +235,7 @@ function createPluginAuthoringRuntime({app,appRoot,dialog,nativeSaveRuntime,nati
     });
   }
 
-  return Object.freeze({installIpc,resolvePython,analyzeSource,build,install,sessions});
+  return Object.freeze({installIpc,resolvePython,analyzeSource,selectRoots,build,install,sessions});
 }
 
 module.exports={createPluginAuthoringRuntime};

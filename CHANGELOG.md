@@ -1,3 +1,13 @@
+# 3.71.129 Release — Phase F Explicit Root Selection / SDK 1.51.86
+
+- Adds explicit selection of one or more `rootCandidates` on top of the existing `dkds.workflow-slice.v1`; the default remains `all-observable` for backward compatibility.
+- Threads selected roots through Plugin Manager UI → preload/IPC → Python analyze/build → the existing dependency-slice implementation. Preview and final package therefore use the same `selectedRootIds`.
+- Unselected result/Host-effect branches are removed from the final Table Transform plan and package while shared upstream dependencies remain. Unknown roots and empty explicit selections fail closed.
+- Bounds root selection in Desktop authoring (maximum 64 ids, bounded id length) and validates every root against the source-derived candidates in Python.
+- Adds explicit-root regression coverage for independent branches, scalar/table output isolation, Host-effect pruning, preview/build parity, unknown-root rejection and production package validation.
+- Adds compact Root controls to the existing Plugin Manager authoring surface only; no new Unit/Presenter/runtime path is introduced.
+- App/Desktop/Mobile identity advances to 3.71.129 / Android versionCode 269. SDK advances to 1.51.86; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.128 Release — Phase F dependency-sliced workflow composition / SDK 1.51.85
 
 - Adds `dkds.workflow-slice.v1` after multi-cell DAG scheduling. The planner reuses the existing Table Transform execution analyzer as the single owner of `table / series / array / scalar` value kinds, identifies observable terminal result/Host-effect roots, and computes their reverse cell-dependency closure.

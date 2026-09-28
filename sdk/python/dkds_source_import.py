@@ -394,7 +394,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
         },
     }
 
-def analyze(path:str|Path)->dict[str,Any]:
+def analyze(path:str|Path,selected_root_ids:list[str]|None=None)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
     model,functions,diagnostics=_read_document(source_path)
     rows=[]
@@ -403,7 +403,7 @@ def analyze(path:str|Path)->dict[str,Any]:
         row["blueprint"]=_blueprint(model,row,fn)
         rows.append(row)
     workflow=analyze_workflow(source_path)
-    table_plan=analyze_table_transform(source_path)
+    table_plan=analyze_table_transform(source_path,selected_root_ids)
     table_plan["execution"]=analyze_table_transform_execution(table_plan)
     workflow["tableTransformPlan"]=table_plan
     workflow["blueprint"]=_workflow_blueprint(source_path.name,workflow)
@@ -430,10 +430,10 @@ def _selected(path:Path,function_id:str)->tuple[dict[str,Any],SourceFunction,dic
     if selected is None or fn is None:raise ValueError(f"Selected function no longer exists in source: {function_id}")
     return model,fn,selected
 
-def build_package(path:str|Path,function_id:str)->tuple[dict[str,Any],dict[str,Any]]:
+def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None=None)->tuple[dict[str,Any],dict[str,Any]]:
     source_path=Path(path).expanduser().resolve()
     if function_id==WORKFLOW_CANDIDATE_ID:
-        analysis=analyze(source_path)
+        analysis=analyze(source_path,selected_root_ids)
         workflow=analysis["sourceModel"]["workflow"]
         blueprint=workflow["blueprint"]
         if not blueprint["buildable"]:
@@ -454,7 +454,8 @@ def build_package(path:str|Path,function_id:str)->tuple[dict[str,Any],dict[str,A
             success_status=task["successStatus"],
         )
         package=builder.package()
-        report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":WORKFLOW_CANDIDATE_ID,"candidateKind":"table-transform-workflow"},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
+        workflow_slice=workflow.get("tableTransformPlan",{}).get("workflowSlice",{})
+        report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":WORKFLOW_CANDIDATE_ID,"candidateKind":"table-transform-workflow","selectionMode":workflow_slice.get("selectionMode","all-observable"),"selectedRootIds":list(workflow_slice.get("selectedRootIds") or [])},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
         return package,report
     model,fn,selected=_selected(source_path,function_id)
     blueprint=selected["blueprint"]
@@ -472,14 +473,14 @@ def main(argv:Iterable[str]|None=None)->int:
     parser=argparse.ArgumentParser(description="Static Python/Jupyter source import for DK Data Studio")
     sub=parser.add_subparsers(dest="command",required=True)
     analyze_cmd=sub.add_parser("analyze",help="produce Source Model, signatures, compatibility and blueprints")
-    analyze_cmd.add_argument("source",type=Path);analyze_cmd.add_argument("--output",type=Path,required=True)
+    analyze_cmd.add_argument("source",type=Path);analyze_cmd.add_argument("--output",type=Path,required=True);analyze_cmd.add_argument("--root-id",action="append",default=None)
     build_cmd=sub.add_parser("build",help="build one selected portable function into a .dkplugin JSON package")
-    build_cmd.add_argument("source",type=Path);build_cmd.add_argument("--function-id",required=True);build_cmd.add_argument("--package",type=Path,required=True);build_cmd.add_argument("--report",type=Path,required=True)
+    build_cmd.add_argument("source",type=Path);build_cmd.add_argument("--function-id",required=True);build_cmd.add_argument("--package",type=Path,required=True);build_cmd.add_argument("--report",type=Path,required=True);build_cmd.add_argument("--root-id",action="append",default=None)
     args=parser.parse_args(list(argv) if argv is not None else None)
     try:
         if args.command=="analyze":
-            _json_write(args.output,analyze(args.source));print(f"DKDS source import analyzed: {args.source} -> {args.output}");return 0
-        package,report=build_package(args.source,args.function_id)
+            _json_write(args.output,analyze(args.source,args.root_id));print(f"DKDS source import analyzed: {args.source} -> {args.output}");return 0
+        package,report=build_package(args.source,args.function_id,args.root_id)
         _json_write(args.package,package);_json_write(args.report,report)
         print(f"DKDS source import built: {report['package']['id']}@{report['package']['version']} -> {args.package}");return 0
     except (OSError,ValueError,json.JSONDecodeError,SpecError,PortableTaskError) as exc:
