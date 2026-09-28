@@ -21,14 +21,21 @@
     const workflow=state.report?.sourceModel?.workflow||{};
     const tablePlan=workflow.tableTransformPlan||{};
     const tableExecution=tablePlan.execution||{};
+    const workflowSlice=tablePlan.workflowSlice||{};
+    const sliceGraph=workflowSlice.dependencyGraph||{};
 
     const candidate=workflow.candidate||{};
     const hostCaps=(workflow.hostCapabilities||[]).join('、')||'无';
     const transforms=(workflow.transformFamilies||[]).join('、')||'无';
-    const workflowDiagnostics=(workflow.diagnostics||[]).slice(0,12);
-    const workflowIssues=workflowDiagnostics.length?`<div class="plugin-manager-authoring-workflow-issues">${workflowDiagnostics.map(item=>`<span><strong>${esc(item.code||'BLOCKER')}</strong> Cell ${esc(String(Number(item.cellIndex||0)+1))} · 行 ${esc(String(item.line||'?'))} · ${esc(item.call||item.message||'')}</span>`).join('')}</div>`:'';
+    const workflowDiagnostics=(workflow.diagnostics||[]);
+    const sliceDiagnostics=(workflowSlice.diagnostics||[]).slice(0,12);
+    const workflowIssues=sliceDiagnostics.length?`<div class="plugin-manager-authoring-workflow-issues">${sliceDiagnostics.map(item=>`<span><strong>${esc(item.code||'BLOCKER')}</strong> Cell ${esc(String(Number(item.cellIndex||0)+1))} · 行 ${esc(String(item.line||'?'))} · ${esc(item.call||item.message||'')}</span>`).join('')}</div>`:'';
+    const rootLabels=(workflowSlice.rootCandidates||[]).map(row=>`${row.symbol||'?'} (${row.valueKind||'value'})`).join('、')||'无';
+    const prunedCellSet=new Set((workflowSlice.prunedCells||[]).map(Number));
+    const prunedDiagnostics=workflowDiagnostics.filter(row=>prunedCellSet.has(Number(row.cellIndex))).length;
+    const sliceSummary=workflowSlice.schema?`<div class="plugin-manager-authoring-ir"><strong>Dependency Slice</strong><span>Root：${esc(rootLabels)}</span><span>保留 Cell：${esc(String((workflowSlice.includedCells||[]).length))} · 裁剪 Cell：${esc(String((workflowSlice.prunedCells||[]).length))}</span><span>${sliceGraph.buildable?'选中依赖图已闭合':'选中依赖图有 blocker'}${prunedDiagnostics?` · ${esc(String(prunedDiagnostics))} 条完整 Notebook 诊断位于已裁剪 Cell`:''}</span></div>`:'';
 
-    const workflowSummary=`<div class="plugin-manager-authoring-workflow"><strong>Source Workflow</strong><span>${esc(String(workflow.codeCellCount||0))} 个 code cell · ${esc(String(workflow.crossCellDependencyCount||0))} 条跨 Cell 依赖</span><span>Host 映射：${esc(hostCaps)}</span><span>待 lowering：${esc(transforms)}</span><span>状态：${esc(candidate.status||'—')}</span></div><div class="plugin-manager-authoring-ir"><strong>Table Transform IR</strong><span>${esc(String(tablePlan.lowerableStatementCount||0))} / ${esc(String(tablePlan.statementCount||0))} 条语句已结构化</span><span>覆盖率：${esc(String(Math.round(Number(tablePlan.coverage||0)*100)))}%</span><span>${tablePlan.buildable?'IR 已闭合':'仍有未 lowering 语句'}</span><span>${tableExecution.executable?'Core Task 可执行':'Core Task 尚有 blocker'}</span></div>${workflowIssues}`;
+    const workflowSummary=`<div class="plugin-manager-authoring-workflow"><strong>Source Workflow</strong><span>${esc(String(workflow.codeCellCount||0))} 个 code cell · ${esc(String(workflow.crossCellDependencyCount||0))} 条跨 Cell 依赖</span><span>Host 映射：${esc(hostCaps)}</span><span>待 lowering：${esc(transforms)}</span><span>状态：${esc(candidate.status||'—')}</span></div><div class="plugin-manager-authoring-ir"><strong>Table Transform IR</strong><span>${esc(String(tablePlan.lowerableStatementCount||0))} / ${esc(String(tablePlan.statementCount||0))} 条选中语句已结构化</span><span>覆盖率：${esc(String(Math.round(Number(tablePlan.coverage||0)*100)))}%</span><span>${tablePlan.buildable?'IR 已闭合':'仍有未 lowering 语句'}</span><span>${tableExecution.executable?'Core Task 可执行':'Core Task 尚有 blocker'}</span></div>${sliceSummary}${workflowIssues}`;
     const functionOptions=funcs.map(row=>`<option value="${esc(row.id)}" ${row.id===state.functionId?'selected':''}>${esc(row.name)} · ${esc(location(row))} · ${row.blueprint?.buildable?'可构建':'不可自动构建'}</option>`).join('');
     const workflowBlueprint=workflow.blueprint||null;
     const workflowOption=workflowBlueprint?`<option value="${esc(workflowBlueprint.candidateId)}" ${workflowBlueprint.candidateId===state.functionId?'selected':''}>Table Transform Workflow · 跨 Cell · ${workflowBlueprint.buildable?'可构建':'不可自动构建'}</option>`:'';

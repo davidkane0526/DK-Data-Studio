@@ -370,7 +370,8 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
                 "cellIndex":int(row.get("cellIndex",0)),"line":int(row.get("line",0)),
                 "message":str(row.get("message","Table Transform plan is not closed.")),
             })
-    graph=plan.get("dependencyGraph") or {}
+    workflow_slice=plan.get("workflowSlice") or {}
+    graph=(workflow_slice.get("dependencyGraph") if isinstance(workflow_slice,dict) else None) or plan.get("dependencyGraph") or {}
     if isinstance(graph,dict) and graph.get("diagnostics"):
         for row in graph["diagnostics"]:
             diagnostics.append({

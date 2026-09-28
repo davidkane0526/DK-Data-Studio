@@ -18,6 +18,7 @@ function pythonCommand(){
   throw new Error('Python 3 is required for bounded curve_fit gate.');
 }
 const plain=value=>JSON.parse(JSON.stringify(value));
+const atLeast=(value,min)=>{const a=String(value).split('.').map(Number),b=String(min).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)!==(b[i]||0))return (a[i]||0)>(b[i]||0);}return true;};
 const near=(actual,expected,eps=1e-6)=>assert(Math.abs(actual-expected)<=eps,`expected ${actual} ≈ ${expected}`);
 const py=pythonCommand();
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-curve-fit-'));
@@ -140,7 +141,7 @@ params = curve_fit(model, raw["x"], raw["y"])[0]
   assert.strictEqual(fakePlan.buildable,false);
 
   const contract=JSON.parse(fs.readFileSync(path.join(root,'sdk','contract.json'),'utf8'));
-  assert.strictEqual(contract.sdkVersion,'1.51.84');
+  assert(atLeast(contract.sdkVersion,'1.51.82'),'bounded curve_fit gate requires SDK 1.51.82+.');
   console.log('Phase F bounded curve_fit PASS: proven SciPy import -> pure scalar model -> bounded JS LM solver -> Array popt; covariance/advanced kwargs/free-name models remain fail-closed.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});

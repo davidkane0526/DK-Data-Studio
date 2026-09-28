@@ -390,7 +390,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any])->dict[str,Any]:
             "title":title,"source":source_name,"kind":"workflow",
             "sourceInputs":source_inputs,"sourceBindings":source_bindings,
             "resultSymbols":result_symbols,"resultKinds":result_kinds,
-            "hostEffects":host_effects,"unitFirst":True,"privateCss":False,
+            "hostEffects":host_effects,"workflowSlice":dict(plan.get("workflowSlice") or {}),"unitFirst":True,"privateCss":False,
         },
     }
 

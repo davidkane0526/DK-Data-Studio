@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from dkds_source_workflow import _read_cells, _sanitize, analyze_workflow
+from dkds_table_transform_task import analyze_table_transform_execution
 
 PLAN_SCHEMA="dkds.table-transform-plan.v1"
 _SUPPORTED_METHODS={
@@ -568,6 +569,94 @@ def _expression_op(cell:int,node:ast.Expr,index:int)->tuple[dict[str,Any]|None,d
         return {"id":_op_id(cell,node.lineno,index),"kind":kind,"cellIndex":cell,"line":node.lineno,"input":owner,"sourceMethod":method,"hostCapability":capability,"args":args,"kwargs":kwargs},None
     return None,_diag(cell,node,"TABLE_IR_CALL_UNLOWERED","Standalone call is not yet mapped to a DKDS Table/Host operation.")
 
+def _slice_dependency_graph(graph:dict[str,Any],selected_cells:set[int],symbol_kinds:dict[str,str])->dict[str,Any]:
+    full_edges=list(graph.get("edges") or [])
+    selected_edges=[]
+    for edge in full_edges:
+        source=int(edge.get("producerCellIndex",-1));target=int(edge.get("consumerCellIndex",-1))
+        if source not in selected_cells or target not in selected_cells:continue
+        row=dict(edge);row["valueKind"]=str(symbol_kinds.get(str(edge.get("symbol","")),"value"))
+        selected_edges.append(row)
+    diagnostics=[]
+    for row in graph.get("diagnostics") or []:
+        cell=int(row.get("cellIndex",-1))
+        cells={int(value) for value in row.get("cellIndexes",[]) if isinstance(value,int)}
+        if cell in selected_cells or cells&selected_cells:diagnostics.append(dict(row))
+    source_order=[int(value) for value in graph.get("sourceOrder",[]) if int(value) in selected_cells]
+    topological=[int(value) for value in graph.get("topologicalOrder",[]) if int(value) in selected_cells]
+    return {
+        "schema":str(graph.get("schema") or "dkds.cell-dependency-graph.v1"),
+        "sourceOrder":source_order,"topologicalOrder":topological,
+        "reordered":topological!=source_order,"acyclic":not any(row.get("code")=="WORKFLOW_DEPENDENCY_CYCLE" for row in diagnostics),
+        "nodeCount":len(selected_cells),"edgeCount":len(selected_edges),"edges":selected_edges,
+        "diagnostics":diagnostics,"buildable":not diagnostics,
+    }
+
+def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution:dict[str,Any])->dict[str,Any]:
+    symbol_kinds={str(key):str(value) for key,value in (execution.get("symbolKinds") or {}).items()}
+    producers={}
+    for op in operations:
+        output=str(op.get("output","") or "")
+        if output:producers[output]=int(op.get("cellIndex",0))
+    root_by_symbol={}
+    for symbol in execution.get("resultSymbols") or []:
+        name=str(symbol);cell=producers.get(name)
+        if cell is None:continue
+        root_by_symbol.setdefault(name,{"symbol":name,"valueKind":symbol_kinds.get(name,"value"),"producerCellIndex":cell,"reasons":[],"hostEffects":[]})["reasons"].append("terminal-result")
+    for effect in execution.get("hostEffects") or []:
+        name=str(effect.get("input","") or "")
+        if not name:continue
+        cell=producers.get(name)
+        if cell is None:continue
+        root=root_by_symbol.setdefault(name,{"symbol":name,"valueKind":symbol_kinds.get(name,"value"),"producerCellIndex":cell,"reasons":[],"hostEffects":[]})
+        reason="host-effect:"+str(effect.get("kind","mapped"))
+        if reason not in root["reasons"]:root["reasons"].append(reason)
+        root["hostEffects"].append({"kind":str(effect.get("kind","")),"cellIndex":int(effect.get("cellIndex",0)),"line":int(effect.get("line",0))})
+
+    roots=[]
+    for name in sorted(root_by_symbol):
+        row=root_by_symbol[name]
+        row["id"]="root:"+name
+        roots.append(row)
+    selected_root_ids=[row["id"] for row in roots]
+    selected_cells={int(row["producerCellIndex"]) for row in roots}
+    for row in roots:
+        selected_cells.update(int(effect["cellIndex"]) for effect in row.get("hostEffects",[]))
+
+    predecessors={}
+    for edge in graph.get("edges") or []:
+        source=int(edge.get("producerCellIndex",-1));target=int(edge.get("consumerCellIndex",-1))
+        predecessors.setdefault(target,set()).add(source)
+    pending=list(selected_cells)
+    while pending:
+        target=pending.pop()
+        for source in predecessors.get(target,set()):
+            if source in selected_cells:continue
+            selected_cells.add(source);pending.append(source)
+
+    sliced_graph=_slice_dependency_graph(graph,selected_cells,symbol_kinds)
+    all_cells=[int(value) for value in graph.get("sourceOrder",[])]
+    included=[int(value) for value in graph.get("topologicalOrder",[]) if int(value) in selected_cells]
+    included.extend(value for value in all_cells if value in selected_cells and value not in included)
+    pruned=[value for value in all_cells if value not in selected_cells]
+    cell_value_kinds={}
+    for op in operations:
+        cell=int(op.get("cellIndex",0));output=str(op.get("output","") or "")
+        if not output or cell not in selected_cells:continue
+        cell_value_kinds.setdefault(str(cell),{})[output]=symbol_kinds.get(output,"value")
+    diagnostics=[]
+    if not roots:
+        diagnostics.append({"severity":"blocker","code":"WORKFLOW_SLICE_NO_ROOTS","cellIndex":0,"line":0,"message":"No publishable terminal result or mapped Host effect could be selected as a workflow root."})
+    diagnostics.extend(dict(row) for row in sliced_graph.get("diagnostics",[]))
+    return {
+        "schema":"dkds.workflow-slice.v1","selectionMode":"all-observable",
+        "rootCandidates":roots,"selectedRootIds":selected_root_ids,
+        "includedCells":included,"prunedCells":pruned,
+        "symbolKinds":symbol_kinds,"cellValueKinds":cell_value_kinds,
+        "dependencyGraph":sliced_graph,"diagnostics":diagnostics,
+        "buildable":bool(roots) and not diagnostics,
+    }
+
 def analyze_table_transform(path:str|Path)->dict[str,Any]:
     source_path=Path(path).expanduser().resolve()
     kind,cells,_=_read_cells(source_path)
@@ -577,41 +666,61 @@ def analyze_table_transform(path:str|Path)->dict[str,Any]:
     cell_by_index={int(cell["index"]):cell for cell in cells}
     requested_order=[int(value) for value in dependency_graph.get("topologicalOrder",[]) if int(value) in cell_by_index]
     seen=set(requested_order)
-    cell_order=[*requested_order,*[value for value in source_cell_order if value not in seen]]
-    cells=[cell_by_index[value] for value in cell_order]
-    operations=[]
-    diagnostics=[]
-    statement_count=0
-    lowered_statement_count=0
-    callbacks,duplicate_callbacks=_callback_sources(cells)
-    curve_fit_symbols=_scipy_curve_fit_symbols(cells)
-    for cell in cells:
-        try:tree=ast.parse(_sanitize(cell["source"]),filename=f"{source_path.name}#cell-{cell['index']}",mode="exec")
+    full_cell_order=[*requested_order,*[value for value in source_cell_order if value not in seen]]
+    ordered_cells=[cell_by_index[value] for value in full_cell_order]
+    all_operations=[]
+    all_diagnostics=[]
+    statement_counts={}
+    lowered_counts={}
+    callbacks,duplicate_callbacks=_callback_sources(ordered_cells)
+    curve_fit_symbols=_scipy_curve_fit_symbols(ordered_cells)
+    for cell in ordered_cells:
+        cell_index=int(cell["index"]);statement_counts[cell_index]=0;lowered_counts[cell_index]=0
+        try:tree=ast.parse(_sanitize(cell["source"]),filename=f"{source_path.name}#cell-{cell_index}",mode="exec")
         except SyntaxError:continue
         op_index=0
         for node in tree.body:
             if isinstance(node,_DECLARATIONS):continue
-            statement_count+=1
-            emitted=[]
-            diagnostic=None
+            statement_counts[cell_index]+=1
+            emitted=[];diagnostic=None
             if isinstance(node,(ast.Assign,ast.AnnAssign)):
-                emitted,diagnostic=_assignment_op(cell["index"],node,op_index,callbacks,duplicate_callbacks,curve_fit_symbols)
+                emitted,diagnostic=_assignment_op(cell_index,node,op_index,callbacks,duplicate_callbacks,curve_fit_symbols)
             elif isinstance(node,ast.Expr):
-                operation,diagnostic=_expression_op(cell["index"],node,op_index)
+                operation,diagnostic=_expression_op(cell_index,node,op_index)
                 if operation:emitted=[operation]
             else:
-                diagnostic=_diag(cell["index"],node,"TABLE_IR_STATEMENT_UNLOWERED",f"{type(node).__name__} is not part of Table Transform IR v1.")
+                diagnostic=_diag(cell_index,node,"TABLE_IR_STATEMENT_UNLOWERED",f"{type(node).__name__} is not part of Table Transform IR v1.")
             if emitted:
-                operations.extend(emitted)
-                op_index+=len(emitted)
-                lowered_statement_count+=1
-            elif diagnostic:diagnostics.append(diagnostic)
+                all_operations.extend(emitted);op_index+=len(emitted);lowered_counts[cell_index]+=1
+            elif diagnostic:all_diagnostics.append(diagnostic)
+
+    source_statement_count=sum(statement_counts.values())
+    source_lowered_count=sum(lowered_counts.values())
+    provisional={
+        "schema":PLAN_SCHEMA,"source":source_path.name,"sourceKind":kind,
+        "operations":all_operations,"diagnostics":all_diagnostics,"dependencyGraph":dependency_graph,
+        "sourceCellOrder":source_cell_order,"cellOrder":full_cell_order,"reorderedCells":full_cell_order!=source_cell_order,
+        "statementCount":source_statement_count,"lowerableStatementCount":source_lowered_count,
+        "coverage":1.0 if source_statement_count==0 else source_lowered_count/source_statement_count,
+        "buildable":False,"sourceExecuted":False,
+    }
+    provisional_execution=analyze_table_transform_execution(provisional)
+    workflow_slice=_workflow_slice(dependency_graph,all_operations,provisional_execution)
+    selected_cells=set(workflow_slice.get("includedCells") or [])
+    operations=[op for op in all_operations if int(op.get("cellIndex",0)) in selected_cells]
+    diagnostics=[row for row in all_diagnostics if int(row.get("cellIndex",0)) in selected_cells]
+    diagnostics.extend(dict(row) for row in workflow_slice.get("diagnostics",[]) if row.get("code")=="WORKFLOW_SLICE_NO_ROOTS")
+    cell_order=[value for value in full_cell_order if value in selected_cells]
+    selected_source_order=[value for value in source_cell_order if value in selected_cells]
+    statement_count=sum(statement_counts.get(value,0) for value in selected_cells)
+    lowered_statement_count=sum(lowered_counts.get(value,0) for value in selected_cells)
     ratio=1.0 if statement_count==0 else lowered_statement_count/statement_count
     return {
         "schema":PLAN_SCHEMA,"source":source_path.name,"sourceKind":kind,
-        "operations":operations,"diagnostics":diagnostics,"dependencyGraph":dependency_graph,
-        "sourceCellOrder":source_cell_order,"cellOrder":cell_order,"reorderedCells":cell_order!=source_cell_order,
+        "operations":operations,"diagnostics":diagnostics,"dependencyGraph":dependency_graph,"workflowSlice":workflow_slice,
+        "sourceCellOrder":source_cell_order,"selectedSourceCellOrder":selected_source_order,"fullCellOrder":full_cell_order,"cellOrder":cell_order,"reorderedCells":cell_order!=selected_source_order,
+        "sourceStatementCount":source_statement_count,"sourceLowerableStatementCount":source_lowered_count,
         "statementCount":statement_count,"lowerableStatementCount":lowered_statement_count,
-        "coverage":ratio,"buildable":statement_count>0 and bool(dependency_graph.get("buildable",False)) and not diagnostics and lowered_statement_count==statement_count,
+        "coverage":ratio,"buildable":statement_count>0 and bool(workflow_slice.get("buildable",False)) and not diagnostics and lowered_statement_count==statement_count,
         "sourceExecuted":False,
     }

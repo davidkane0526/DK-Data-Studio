@@ -69,6 +69,14 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Dependency-sliced workflow composition — SDK 1.51.85
+
+After the multi-cell DAG is scheduled, Table Transform now derives one `dkds.workflow-slice.v1` before final Core Task compilation. It lowers the notebook statically once, asks the existing Table Transform execution analyzer for authoritative `table / series / array / scalar` value kinds, identifies observable roots from publishable terminal values and mapped Host effects, and walks the cell DAG backward from those roots. Only that reverse dependency closure enters final IR coverage and execution validation.
+
+This lets exploratory or abandoned notebook cells stay outside a generated plugin when they are unrelated to every selected observable root. The rule is deliberately strict: a malformed or unsupported cell is pruned only when it lies outside the selected closure. If the same cell produces or feeds a result, ScientificPlot, clipboard action, or export, its diagnostics remain blockers. The current bounded selection mode is `all-observable`; `rootCandidates`, `selectedRootIds`, `includedCells`, `prunedCells`, propagated `symbolKinds`, and the sliced dependency graph are exposed in authoring metadata for later explicit root selection without changing runtime ownership.
+
+The Source Workflow remains the graph owner, Table Transform remains the IR owner, and the existing execution analyzer remains the value-kind owner. No second type inference engine, notebook executor, Python runtime, Unit, Presenter branch, or alternate Task backend is introduced.
+
 ## Multi-cell dependency DAG — SDK 1.51.84
 
 Python/Jupyter Source Workflow now owns a real bounded cell DAG rather than only recording dependencies on earlier notebook cells. The analyzer computes immediate top-level reads with source-order semantics, excludes deferred function/lambda bodies from false execution dependencies, indexes all candidate producers, and derives one stable topological schedule. A consumer may therefore appear before its unique producer in notebook display order while Table Transform lowering still emits the producer first.

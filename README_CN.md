@@ -1,3 +1,5 @@
+> **v3.71.128 Release — Phase F dependency-sliced workflow composition / SDK 1.51.85**：多 Cell DAG 之后新增 `dkds.workflow-slice.v1`。生成器仍先静态分析完整 Notebook，但 value kind 不另建第二套推断器，而是复用现有 Table Transform Execution analyzer 统一给出 `table / series / array / scalar`；随后从可发布终端结果与映射 Host effect 识别 observable roots，沿 Cell DAG 反向求依赖闭包，只让该闭包进入最终 IR coverage 与 Core Task 编译。与任何选中 root 无关的探索/废弃 Cell 可以被裁剪，其错误不再阻断插件；但一旦坏 Cell 位于结果、绘图、剪贴板或导出依赖链上，仍严格 fail-closed。Plugin Manager 作者界面同步显示 Root、保留 Cell 与裁剪 Cell。当前选择模式为 `all-observable`，为下一步显式 root 选择保留元数据；不新增 Python/Jupyter runtime、第二套类型系统、Unit、Presenter 或 workflow backend。
+
 > **v3.71.127 Release — Phase F 多 Cell dependency DAG / SDK 1.51.84**：Python/Jupyter Source Workflow 从“仅记录前序 Cell 边”推进为真实的静态依赖 DAG。分析器区分立即执行的顶层读取与函数/lambda 延迟读取，按源码顺序绑定最近的前序 producer；仅在没有前序定义时解析唯一的后续 producer，并生成稳定拓扑顺序；Table Transform 按该拓扑顺序 lowering，因此 Notebook 展示顺序可以与真实依赖顺序不同。多 producer、未解析符号、同 Cell 前向引用和循环依赖全部 fail-closed，不猜测 Jupyter 内核历史状态。生成插件仍只进入现有 JavaScript Core Task + Host effect + Unit 路径，不新增 Python/Jupyter runtime、Unit、Presenter 或第二套 workflow engine。
 
 > **v3.71.126 Release — project-tab shell silhouette closure**：修复桌面端普通项目标签仍继承通用四角圆角的问题。普通 `.project-tab` 现在由 Component Appearance 统一使用 `7px 7px 0 0`，与项目工作区下边缘连续；通用 Tab、Unit Tabs、移动端和既有标签栏高度合同不变。同步将应用、桌面端与移动端版本推进到 3.71.126，Android versionCode 提升到 266。SDK 仍为 1.51.83，Plugin API 与 Unit Templates 不变。
@@ -151,7 +153,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.127**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.84**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.128**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.85**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

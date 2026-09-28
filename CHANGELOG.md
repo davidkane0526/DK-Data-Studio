@@ -1,3 +1,12 @@
+# 3.71.128 Release — Phase F dependency-sliced workflow composition / SDK 1.51.85
+
+- Adds `dkds.workflow-slice.v1` after multi-cell DAG scheduling. The planner reuses the existing Table Transform execution analyzer as the single owner of `table / series / array / scalar` value kinds, identifies observable terminal result/Host-effect roots, and computes their reverse cell-dependency closure.
+- Final Table Transform coverage, blockers and Core Task lowering now operate only on the selected dependency slice. Unrelated exploratory cells may be pruned, while any diagnostic on a selected result/plot/clipboard/export path remains fail-closed.
+- Exposes root candidates, selected root ids, kept/pruned cells, propagated symbol kinds and value-kind annotated sliced edges for future explicit root selection. Current bounded selection mode is `all-observable`.
+- Plugin Manager authoring UI distinguishes selected-slice blockers from diagnostics that live only in pruned notebook cells and shows Root / kept Cell / pruned Cell counts.
+- Adds a dedicated workflow-slicing regression covering dead-cell pruning, package generation, `table -> series -> array -> scalar` kind propagation, and preservation of blockers on selected paths.
+- App/Desktop/Mobile identity advances to 3.71.128 / Android versionCode 268. SDK advances to 1.51.85; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.127 Release — Phase F multi-cell dependency DAG / SDK 1.51.84
 
 - Upgrades Source Workflow cell analysis from prior-cell edge recording to `dkds.cell-dependency-graph.v1`, with immediate top-level read semantics, deterministic producer resolution (latest prior producer, otherwise one unique forward producer) and stable topological ordering.
