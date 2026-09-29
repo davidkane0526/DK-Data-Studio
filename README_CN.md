@@ -1,3 +1,5 @@
+> **v3.71.132 Release — Phase F Typed non-table Artifact Boundaries / SDK 1.51.89**：Artifact-backed Stage chaining 从 DataTable 推广到现有执行类型系统已经支持的 `table / series / array / scalar` 四类值。默认 `all-observable` Root 行为保持不变；跨 Cell 的中间值单独以可选 `stageBoundaryCandidates` 暴露，只有作者显式选择时才成为 Stage。下游仍复用同一个最近边界切片算法，并以通用 `source.value + valueKind` 接入原 Core Task 编译器。Series 持久化为 canonical `data.series`；bounded Array / scalar 持久化为 `result.analysis`，payload 分别使用 `dkds.generated-array.v1` / `dkds.generated-scalar.v1`；通用 `artifact-value` binding 通过精确 Artifact ID 读取并做 kind / semanticType / payload / 长度校验。DataTable 原有 bounded column 路径不变，typed fan-in 与 lineage 继续使用同一 Stage DAG/ArtifactStore。没有新增 Core Task Runtime、Plugin API、Unit、Presenter、第二套 DAG/type system 或隐藏 Notebook 内存。
+
 > **v3.71.131 Release — Phase F Artifact-backed Stage Chaining / SDK 1.51.88**：Multi-action composition 现在能把选中 table Root 之间的真实依赖提升为 canonical Artifact 链，而不是让下游 Action 重复计算上游 Cell。Composer 继续使用同一个 explicit-root planner；当 Stage B 依赖 Stage A 的 table Root 时，在最近的选中 table 边界处截断 B 的 IR，把该符号替换成精确的 ArtifactStore 输入，并将上游 Notebook Cell 标记为 delegated。PluginBuilder 的通用 `artifact-table` binding 新增 `source.scope="artifacts" + artifactId`，通过 `listMetadata / columnMetadata / readColumnRange` 读取；默认 `sources` + Unit Source Picker 合同保持不变。Producer Stage 发布稳定 ID、Stage 专属 semanticType 的 DataTable Artifact，后续 Artifact lineage 会把真实上游 Artifact 记录为 parent。支持 fan-in，多级链始终选择最近的选中 Artifact 边界；不伪装 importedSource，不共享隐藏 Task/Notebook 内存，也未新增 Core Task Runtime、Plugin API、Unit、Presenter、DAG 或第二套类型系统。
 
 > **v3.71.130 Release — Phase F Multi-stage / Multi-action Composition / SDK 1.51.87**：在现有 Root Candidate、`dkds.workflow-slice.v1` 与 Core Task 编译链上新增 `dkds.workflow-composition.v1`。当选中 2–8 个 Root 时，每个 Root 独立复用同一显式 Root 切片并生成一个 Stage / Action / Core Task；多个 Stage 共用相同数据源时只生成一组 canonical Unit Source Picker，Stage 的结果控件、Plot、Artifact id 与 Task/Action id 使用独立前缀，互不泄漏。组合直接继承 declarative plugin 现有最多 8 个 Action 的公共合同，9 个 Root 在 Stage 分析前 fail-closed。Action 之间不共享隐藏 Notebook 内存；真正的跨 Stage 持久依赖后续必须通过 Artifact 合同表达。没有新增 Core Task Runtime、Plugin API、Unit、Presenter、Host 权限、第二套 DAG/type/slice 系统。
@@ -159,7 +161,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.131**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.88**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.132**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.89**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

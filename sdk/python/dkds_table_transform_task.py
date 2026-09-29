@@ -16,7 +16,7 @@ from dkds_portable_task import CompiledPortableTask, PortableTaskError, compile_
 EXECUTION_SCHEMA="dkds.table-transform-execution.v1"
 TASK_ID=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTABLE={
-    "source.table","value.bind","value.alias",
+    "source.table","source.value","value.bind","value.alias",
     "series.select","series.apply","fit.curve","groupby.create","groupby.aggregate",
     "array.literal","array.from-value","array.range","array.unary","array.binary","array.diff","array.reduce","array.slice",
     "table.slice","table.abs","table.copy","table.reset-index",
@@ -463,14 +463,17 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
         if kind not in _EXECUTABLE:
             diagnostics.append(_diag(op,"TABLE_TASK_OPERATION_UNSUPPORTED",f"{kind or 'unknown operation'} is not executable in Table Transform Task v1."))
             continue
-        if kind=="source.table":
+        if kind in {"source.table","source.value"}:
             output=str(op.get("output",""))
+            value_kind="table" if kind=="source.table" else str(op.get("valueKind","") or "")
             if not output:
-                diagnostics.append(_diag(op,"TABLE_TASK_SOURCE_INVALID","source.table requires an output symbol."))
+                diagnostics.append(_diag(op,"TABLE_TASK_SOURCE_INVALID",f"{kind} requires an output symbol."))
             elif output in symbols:
                 diagnostics.append(_diag(op,"TABLE_TASK_SYMBOL_REDEFINED",f"Symbol {output} is defined more than once."))
+            elif value_kind not in {"table","series","array","scalar"}:
+                diagnostics.append(_diag(op,"TABLE_TASK_SOURCE_KIND_INVALID",f"{kind} valueKind must be table, series, array or scalar."))
             else:
-                symbols.add(output);sources.append(output);symbol_kinds[output]="table";symbol_meta[output]={}
+                symbols.add(output);sources.append(output);symbol_kinds[output]=value_kind;symbol_meta[output]={}
             continue
 
         inputs=[]
@@ -672,6 +675,7 @@ def analyze_table_transform_execution(plan:dict[str,Any])->dict[str,Any]:
         "executable":bool(plan.get("operations")) and not diagnostics and bool(sources) and bool(task_outputs),
         "diagnostics":diagnostics,
         "sourceInputs":sources,
+        "sourceKinds":{name:symbol_kinds.get(name,"value") for name in sources},
         "resultSymbols":results,
         "resultKinds":result_kinds,
         "resultProjections":projections,
@@ -694,6 +698,7 @@ _HELPERS=r"""
     };
     const cloneTable=t=>({kind:'data.table',artifactId:String(t?.artifactId||''),index:Array.from(t?.index||[]),indexNames:Array.from(t?.indexNames||[]),columns:(t?.columns||[]).map(cloneColumn),rowCount:Number(t?.rowCount)||0});
     const cloneSeries=s=>({kind:'table.series',artifactId:String(s?.artifactId||''),id:String(s?.id||''),key:String(s?.key||''),name:String(s?.name||s?.key||''),unit:String(s?.unit||''),role:String(s?.role||''),quantity:String(s?.quantity||''),dimension:String(s?.dimension||''),dtype:String(s?.dtype||''),index:Array.from(s?.index||[]),indexNames:Array.from(s?.indexNames||[]),values:Array.from(s?.values||[])});
+    const normalizeSeries=value=>{if(!value||value.kind!=='table.series'||!Array.isArray(value.values))throw new Error('Table Transform input must be a table.series snapshot');return cloneSeries(value);};
     const nullish=v=>v===null||v===undefined||(typeof v==='number'&&!Number.isFinite(v));
     const missing=v=>v===null||v===undefined||(typeof v==='number'&&Number.isNaN(v));
     const ARRAY_MAX_LENGTH=65536;
@@ -704,6 +709,7 @@ _HELPERS=r"""
       return {kind:'array.vector',dtype:'number',values:rows.map(arrayNumber)};
     };
     const cloneArray=value=>{if(value?.kind!=='array.vector')throw new Error('Expected bounded array.vector');return makeArray(value.values);};
+    const normalizeScalar=value=>{if(value===null||['string','boolean','number'].includes(typeof value))return value;throw new Error('Table Transform scalar input must be null/string/boolean/number');};
     const arrayFromValue=value=>{
       if(value?.kind==='array.vector')return cloneArray(value);
       if(value?.kind!=='table.series')throw new Error('Array conversion requires Series or array.vector input');
@@ -1071,11 +1077,15 @@ def compile_table_transform_task(plan:dict[str,Any],task_id:str="table-transform
         "    const env=Object.create(null);",
         _HELPERS.rstrip(),
     ]
+    source_kinds=dict(report.get("sourceKinds") or {})
+    normalizers={"table":"normalizeTable","series":"normalizeSeries","array":"cloneArray","scalar":"normalizeScalar"}
     for name in params:
-        lines.append(f"    env[{_js(name)}]=normalizeTable(input?.[{_js(name)}]);")
+        normalizer=normalizers.get(source_kinds.get(name,"table"))
+        if not normalizer:raise ValueError(f"Unsupported source value kind for {name}: {source_kinds.get(name)}")
+        lines.append(f"    env[{_js(name)}]={normalizer}(input?.[{_js(name)}]);")
     for op in operations:
         kind=op["kind"];output=str(op.get("output",""))
-        if kind=="source.table":
+        if kind in {"source.table","source.value"}:
             continue
         if kind=="value.bind":
             lines.append(f"    env[{_js(output)}]={_js(op.get('value'))};")

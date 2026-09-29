@@ -2,11 +2,11 @@
   "expo": {
     "name": "DK Data Studio",
     "slug": "dk-data-studio",
-    "version": "3.71.131",
+    "version": "3.71.132",
     "orientation": "default",
     "android": {
       "package": "com.dk.datastudio",
-      "versionCode": 271,
+      "versionCode": 272,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

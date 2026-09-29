@@ -285,7 +285,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any],*,candidate_id:st
     source_ops={
         str(row.get("output","")):row
         for row in plan.get("operations",[])
-        if row.get("kind")=="source.table" and row.get("output")
+        if row.get("kind") in {"source.table","source.value"} and row.get("output")
     }
     stem=_slug(Path(source_name).stem)
     title=f"{Path(source_name).stem} · Workflow"
@@ -314,7 +314,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any],*,candidate_id:st
             "maxRows":65536,"maxColumns":1024,
         }
         source_bindings.append({"symbol":symbol,"field":field_id,"hint":source_hint,"scope":"sources","artifactId":"","semanticType":""})
-    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas/NumPy are authoring-time only. Sources bind to scoped DKDS DataTables; terminal DataFrames publish to the Artifact Store while Series/Array/scalar values reuse existing Unit result projections."}]
+    content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; Python/Pandas/NumPy are authoring-time only. External sources use scoped DKDS DataTables; selected Stage boundaries may bind exact canonical table/Series/Array/scalar Artifacts while Unit result projections remain unchanged."}]
     dynamic_plots=[]
     task_host_effects=[]
     for effect_index,effect in enumerate(host_effects):
@@ -381,16 +381,27 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any],*,candidate_id:st
     if fields:
         spec["parameters"]={"id":"sources","label":"数据源","fields":fields,"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
     dynamic=[]
+    dynamic_artifacts=[]
     for symbol in result_symbols:
-        if result_kinds.get(symbol)!="table":continue
+        value_kind=result_kinds.get(symbol)
         override=publish_overrides.get(symbol) or {}
-        dynamic.append({
-            "id":str(override.get("id") or (f"{id_prefix}-result-"+_slug(symbol).replace(".","-"))),
-            "name":str(override.get("name") or f"Workflow result · {symbol}"),
-            "semanticType":str(override.get("semanticType") or "generated.table-transform"),
-            "resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024,
-        })
-    produced_types=list(dict.fromkeys([row["semanticType"] for row in dynamic])) or ["generated.table-transform"]
+        if value_kind=="table":
+            dynamic.append({
+                "id":str(override.get("id") or (f"{id_prefix}-result-"+_slug(symbol).replace(".","-"))),
+                "name":str(override.get("name") or f"Workflow result · {symbol}"),
+                "semanticType":str(override.get("semanticType") or "generated.table-transform"),
+                "resultPath":"tables."+symbol,"maxRows":65536,"maxColumns":1024,
+            })
+        elif override and value_kind in {"series","array","scalar"}:
+            result_bucket={"series":"series","array":"arrays","scalar":"values"}[value_kind]
+            dynamic_artifacts.append({
+                "id":str(override.get("id")),
+                "name":str(override.get("name") or f"Workflow result · {symbol}"),
+                "semanticType":str(override.get("semanticType")),
+                "resultPath":result_bucket+"."+symbol,"valueKind":value_kind,
+                "maxRows":65536 if value_kind!="scalar" else 1,
+            })
+    produced_types=list(dict.fromkeys([row["semanticType"] for row in [*dynamic,*dynamic_artifacts]])) or ["generated.table-transform"]
     spec["data"]["produces"]=produced_types
     return {
         "schema":BLUEPRINT_SCHEMA,
@@ -401,7 +412,7 @@ def _workflow_blueprint(source_name:str,workflow:dict[str,Any],*,candidate_id:st
         "task":{
             "id":task_id,"actionId":action_id,"inputBindings":bindings,
             "resultTables":result_tables,"resultMetrics":result_metrics,
-            "dynamicPublishTables":dynamic,"dynamicTablePlots":dynamic_plots,
+            "dynamicPublishTables":dynamic,"dynamicPublishArtifacts":dynamic_artifacts,"dynamicTablePlots":dynamic_plots,
             "hostEffects":task_host_effects,"successStatus":f"{action_label}完成",
         },
         "preview":{
@@ -418,6 +429,11 @@ def _operation_inputs(op:dict[str,Any])->list[str]:
     out=[]
     if op.get("input"):out.append(str(op["input"]))
     out.extend(str(value) for value in op.get("inputs",[]) if value)
+    for key in ("x","y"):
+        if op.get(key):out.append(str(op[key]))
+    for key in ("left","right"):
+        value=op.get(key)
+        if isinstance(value,dict) and value.get("kind")=="symbol" and value.get("name"):out.append(str(value["name"]))
     return list(dict.fromkeys(out))
 
 
@@ -447,7 +463,7 @@ def _artifact_chained_plan(plan:dict[str,Any],boundaries:list[dict[str,Any]])->d
     used_boundaries=[boundary_by_symbol[name] for name in boundary_by_symbol if name in used]
     synthetic=[]
     for row in used_boundaries:
-        symbol=str(row["symbol"]);synthetic.append({"id":f"artifact-source:{symbol}","kind":"source.table","cellIndex":int(row.get("consumerCellIndex",0)),"line":0,"output":symbol,"originalFormat":"artifact","sourceHint":str(row.get("artifactId","")),"hostCapability":"data.artifacts","replacement":"canonical DKDS Artifact input","artifactBoundary":{"producerStageId":str(row.get("producerStageId","")),"producerRootId":str(row.get("producerRootId","")),"artifactId":str(row.get("artifactId","")),"semanticType":str(row.get("semanticType",""))}})
+        symbol=str(row["symbol"]);synthetic.append({"id":f"artifact-source:{symbol}","kind":"source.value","valueKind":str(row.get("valueKind","value")),"cellIndex":int(row.get("consumerCellIndex",0)),"line":0,"output":symbol,"originalFormat":"artifact","sourceHint":str(row.get("artifactId","")),"hostCapability":"data.artifacts","replacement":"canonical DKDS Artifact input","artifactBoundary":{"producerStageId":str(row.get("producerStageId","")),"producerRootId":str(row.get("producerRootId","")),"artifactId":str(row.get("artifactId","")),"semanticType":str(row.get("semanticType","")),"valueKind":str(row.get("valueKind","value"))}})
     kept=[operations[index] for index in range(len(operations)) if index in required and str(operations[index].get("output","")) not in used]
     chained={**plan,"operations":[*synthetic,*kept]}
     old_slice=dict(plan.get("workflowSlice") or {})
@@ -474,7 +490,7 @@ def _stage_dependency_order(stages:list[dict[str,Any]])->tuple[list[dict[str,Any
                 raw_edges.append({"from":str(parent["id"]),"to":str(child["id"]),"symbol":str(parent["rootSymbol"]),"valueKind":str(parent.get("valueKind","value"))})
     incoming={stage_id:set() for stage_id in by_id};outgoing={stage_id:set() for stage_id in by_id}
     for edge in raw_edges:
-        if edge.get("valueKind")!="table":continue
+        if edge.get("valueKind") not in {"table","series","array","scalar"}:continue
         incoming[edge["to"]].add(edge["from"]);outgoing[edge["from"]].add(edge["to"])
     ready=sorted([stage_id for stage_id,parents in incoming.items() if not parents],key=lambda stage_id:selected_index[stage_id]);ordered=[]
     while ready:
@@ -490,7 +506,7 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
     current_plan=workflow.get("tableTransformPlan") or {}
     current_slice=current_plan.get("workflowSlice") or {}
     selected_root_ids=list(current_slice.get("selectedRootIds") or [])
-    root_candidates=list(current_slice.get("rootCandidates") or [])
+    root_candidates=[*(current_slice.get("rootCandidates") or []),*(current_slice.get("stageBoundaryCandidates") or [])]
     root_lookup={str(row.get("id","")):row for row in root_candidates if row.get("id")}
     diagnostics=[]
     if len(selected_root_ids)<2:
@@ -518,15 +534,17 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
         prefix=f"stage-{order_index+1}-{stage_slug}"
         stage={**row,"id":prefix,"order":order_index+1,"actionId":f"run-{prefix}","taskId":f"task-{prefix}","actionLabel":f"运行 · {symbol}"}
         stage_by_root[str(row["rootId"])]=stage
-        if row.get("valueKind")=="table":
-            artifact_by_root[str(row["rootId"])]={"symbol":symbol,"artifactId":f"{prefix}-artifact-{stage_slug}","semanticType":f"generated.workflow-stage.{prefix}","producerStageId":prefix,"producerRootId":str(row["rootId"]),"producerCellIndex":int(row.get("producerCellIndex",0))}
+        value_kind=str(row.get("valueKind","value"))
+        if value_kind in {"table","series","array","scalar"}:
+            artifact_kind="data.table" if value_kind=="table" else "data.series" if value_kind=="series" else "result.analysis"
+            artifact_by_root[str(row["rootId"])]={"symbol":symbol,"valueKind":value_kind,"artifactKind":artifact_kind,"artifactId":f"{prefix}-artifact-{stage_slug}","semanticType":f"generated.workflow-stage.{value_kind}.{prefix}","producerStageId":prefix,"producerRootId":str(row["rootId"]),"producerCellIndex":int(row.get("producerCellIndex",0))}
 
     stages=[];action_rows=[];content=[];field_by_id={};source_binding_by_symbol={};external_source_inputs=[];produced_types=[]
     for row in ordered:
         stage=stage_by_root[str(row["rootId"])]
         boundary_candidates=[]
         for edge in raw_edges:
-            if edge.get("to")!=row["rootId"] or edge.get("valueKind")!="table":continue
+            if edge.get("to")!=row["rootId"] or edge.get("valueKind") not in {"table","series","array","scalar"}:continue
             artifact=artifact_by_root.get(str(edge.get("from")))
             if artifact is not None:boundary_candidates.append({**artifact,"consumerStageId":stage["id"],"consumerRootId":str(row["rootId"]),"consumerCellIndex":int(row.get("producerCellIndex",0))})
         chained_plan=_artifact_chained_plan(row["plan"],boundary_candidates)
@@ -534,7 +552,10 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
         binding_overrides={}
         for dep in artifact_dependencies:
             symbol=str(dep["symbol"])
-            binding_overrides[symbol]={"kind":"artifact-table","source":{"scope":"artifacts","artifactId":str(dep["artifactId"]),"semanticType":str(dep["semanticType"]),"kind":"data.table","index":0,"includeExcluded":False},"sourceHint":str(dep["artifactId"]),"maxRows":65536,"maxColumns":1024}
+            value_kind=str(dep.get("valueKind","value"))
+            source={"scope":"artifacts","artifactId":str(dep["artifactId"]),"semanticType":str(dep["semanticType"]),"kind":str(dep.get("artifactKind") or ("data.table" if value_kind=="table" else "data.series" if value_kind=="series" else "result.analysis")),"index":0,"includeExcluded":False}
+            if value_kind=="table":binding_overrides[symbol]={"kind":"artifact-table","source":source,"sourceHint":str(dep["artifactId"]),"maxRows":65536,"maxColumns":1024}
+            else:binding_overrides[symbol]={"kind":"artifact-value","valueKind":value_kind,"source":source,"sourceHint":str(dep["artifactId"]),"maxRows":65536 if value_kind!="scalar" else 1}
         publish_overrides={}
         own_artifact=artifact_by_root.get(str(row["rootId"]))
         if own_artifact is not None:
@@ -557,6 +578,9 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
         for publish in stage_bp.get("task",{}).get("dynamicPublishTables",[]):
             semantic=str(publish.get("semanticType","") or "")
             if semantic and semantic not in produced_types:produced_types.append(semantic)
+        for publish in stage_bp.get("task",{}).get("dynamicPublishArtifacts",[]):
+            semantic=str(publish.get("semanticType","") or "")
+            if semantic and semantic not in produced_types:produced_types.append(semantic)
         execution=chained_plan.get("execution") or {}
         stages.append({"id":stage["id"],"rootId":str(row["rootId"]),"rootSymbol":str(row["rootSymbol"]),"valueKind":str(row.get("valueKind","value")),"order":stage["order"],"actionId":stage["actionId"],"taskId":stage["taskId"],
                        "includedCells":list((chained_plan.get("workflowSlice") or {}).get("includedCells") or []),"delegatedCells":list((chained_plan.get("workflowSlice") or {}).get("delegatedCells") or []),"resultSymbols":list(execution.get("resultSymbols") or []),
@@ -565,10 +589,10 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
     dependency_rows=[]
     for stage in stages:
         for dep in stage.get("artifactDependencies",[]):
-            dependency_rows.append({"fromStageId":str(dep.get("producerStageId","")),"toStageId":str(stage.get("id","")),"fromRootId":str(dep.get("producerRootId","")),"toRootId":str(stage.get("rootId","")),"symbol":str(dep.get("symbol","")),"valueKind":"table","mode":"artifact"})
+            dependency_rows.append({"fromStageId":str(dep.get("producerStageId","")),"toStageId":str(stage.get("id","")),"fromRootId":str(dep.get("producerRootId","")),"toRootId":str(stage.get("rootId","")),"symbol":str(dep.get("symbol","")),"valueKind":str(dep.get("valueKind","value")),"mode":"artifact"})
     source_bindings=[source_binding_by_symbol[name] for name in external_source_inputs if name in source_binding_by_symbol]
     stem=_slug(Path(source_name).stem);title=f"{Path(source_name).stem} · Multi-action Workflow"
-    merged_content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; selected table-root dependencies cross Stage boundaries through canonical DKDS Artifacts. Independent inputs remain canonical Unit Source Pickers."},*content]
+    merged_content=[{"kind":"note","variant":"meta","text":f"Generated from {source_name}; selected table/Series/Array/scalar dependencies cross Stage boundaries through canonical DKDS Artifacts. Independent imported inputs remain canonical Unit Source Pickers."},*content]
     spec={"schema":"dkds.declarative-plugin.v1","plugin":{"id":f"generated.{stem}.workflow-composition","name":title,"version":"1.0.0","description":f"Generated from {source_name} multi-action workflow composition.","order":940},
           "page":{"id":f"{stem}-workflow-composition","label":"Workflow","title":title,"subtitle":"Python/Jupyter Roots → Artifact-backed Core Task Actions","variant":"analysis","close":True},
           "workspace":{"activity":f"{stem}-workflow-composition","primaryRole":"scientific-primary","primaryLabel":"主界面","primaryScroll":"safe","mainLayout":"stack-comfortable"},
@@ -635,7 +659,7 @@ def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None
                 stage_plan["execution"]=analyze_table_transform_execution(stage_plan)
                 stage_plan=_artifact_chained_plan(stage_plan,list(stage.get("artifactDependencies") or []))
                 compiled=compile_table_transform_task(stage_plan,task["id"])
-                builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
+                builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_publish_artifacts=task["dynamicPublishArtifacts"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
             package=builder.package()
             report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":MULTI_ACTION_CANDIDATE_ID,"candidateKind":"multi-action-workflow","selectedRootIds":list(blueprint.get("preview",{}).get("selectedRootIds") or []),"stageCount":len(blueprint.get("stages",[]))},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
             return package,report
@@ -646,7 +670,7 @@ def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None
         compiled=compile_table_transform_task(workflow["tableTransformPlan"],blueprint["task"]["id"])
         builder=PluginBuilder(blueprint["spec"])
         task=blueprint["task"]
-        builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
+        builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_publish_artifacts=task["dynamicPublishArtifacts"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
         package=builder.package()
         workflow_slice=workflow.get("tableTransformPlan",{}).get("workflowSlice",{})
         report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":WORKFLOW_CANDIDATE_ID,"candidateKind":"table-transform-workflow","selectionMode":workflow_slice.get("selectionMode","all-observable"),"selectedRootIds":list(workflow_slice.get("selectedRootIds") or [])},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}

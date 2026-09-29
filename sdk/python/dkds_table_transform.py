@@ -628,12 +628,34 @@ def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution
         row=root_by_symbol[name]
         row["id"]="root:"+name
         roots.append(row)
-    candidate_ids=[row["id"] for row in roots]
+    supported_boundaries={"table","series","array","scalar"}
+    producer_ops={
+        str(op.get("output","")):op
+        for op in operations
+        if op.get("output")
+    }
+    boundary_by_symbol={}
+    for edge in graph.get("edges") or []:
+        name=str(edge.get("symbol","") or "")
+        if not name or name in root_by_symbol:continue
+        source=int(edge.get("producerCellIndex",-1));target=int(edge.get("consumerCellIndex",-1))
+        if source<0 or target<0 or source==target:continue
+        value_kind=symbol_kinds.get(name,"value")
+        producer_op=producer_ops.get(name) or {}
+        if value_kind not in supported_boundaries or str(producer_op.get("kind","")).startswith("source."):continue
+        boundary_by_symbol.setdefault(name,{"symbol":name,"valueKind":value_kind,"producerCellIndex":source,"reasons":["cell-boundary"],"hostEffects":[],"boundaryOnly":True})
+    boundary_candidates=[]
+    for name in sorted(boundary_by_symbol):
+        row=boundary_by_symbol[name]
+        row["id"]="root:"+name
+        boundary_candidates.append(row)
+    candidates=[*roots,*boundary_candidates]
+    candidate_ids=[row["id"] for row in candidates]
     selection_mode="all-observable" if selected_root_ids is None else "explicit"
     requested=[] if selected_root_ids is None else list(dict.fromkeys(str(value) for value in selected_root_ids if str(value)))
     unknown=sorted(set(requested)-set(candidate_ids))
-    selected_ids=candidate_ids if selected_root_ids is None else [value for value in candidate_ids if value in set(requested)]
-    selected_roots=[row for row in roots if row["id"] in set(selected_ids)]
+    selected_ids=[row["id"] for row in roots] if selected_root_ids is None else [value for value in candidate_ids if value in set(requested)]
+    selected_roots=[row for row in candidates if row["id"] in set(selected_ids)]
     selected_cells={int(row["producerCellIndex"]) for row in selected_roots}
     for row in selected_roots:
         selected_cells.update(int(effect["cellIndex"]) for effect in row.get("hostEffects",[]))
@@ -669,7 +691,7 @@ def _workflow_slice(graph:dict[str,Any],operations:list[dict[str,Any]],execution
     diagnostics.extend(dict(row) for row in sliced_graph.get("diagnostics",[]))
     return {
         "schema":"dkds.workflow-slice.v1","selectionMode":selection_mode,
-        "rootCandidates":roots,"selectedRootIds":selected_ids,
+        "rootCandidates":roots,"stageBoundaryCandidates":boundary_candidates,"selectedRootIds":selected_ids,
         "includedCells":included,"prunedCells":pruned,
         "symbolKinds":symbol_kinds,"cellValueKinds":cell_value_kinds,
         "dependencyGraph":sliced_graph,"diagnostics":diagnostics,

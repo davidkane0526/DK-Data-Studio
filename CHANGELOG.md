@@ -1,3 +1,14 @@
+# 3.71.132 Release — Phase F Typed non-table Artifact Boundaries / SDK 1.51.89
+
+- Extends Artifact-backed Stage boundaries from DataTable to the existing `table / series / array / scalar` value kinds without creating per-kind runtimes.
+- Keeps default `all-observable` root selection backward compatible. Cross-cell intermediate supported values are exposed separately as optional `stageBoundaryCandidates` and only join composition when explicitly selected.
+- Generalizes synthetic Stage inputs to `source.value + valueKind`; the existing Table Transform execution analyzer remains the single value-kind owner and the existing Core Task compiler normalizes typed inputs.
+- Adds the generic exact `artifact-value` binding for Series / Array / scalar. Series use canonical `data.series`; bounded Arrays and scalars use `result.analysis` payload schemas `dkds.generated-array.v1` and `dkds.generated-scalar.v1`.
+- Validates exact typed Artifact id, kind, semantic type, payload schema and bounded sequence length before submitting a Core Task. DataTable retains its existing bounded column metadata/range-read path.
+- Supports mixed typed fan-in and nearest-boundary transitive chains while preserving canonical Artifact lineage and avoiding hidden Notebook/Task memory.
+- Adds typed-boundary regression coverage for backward-compatible root discovery, explicit Series → Array → Scalar chains, mixed fan-in, delegated cells, package normalization, Task parameter isolation, typed Artifact read/publish code and Python-source exclusion.
+- App/Desktop/Mobile identity advances to 3.71.132 / Android versionCode 272. SDK advances to 1.51.89; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.131 Release — Phase F Artifact-backed Stage Chaining / SDK 1.51.88
 
 - Adds Artifact-backed Stage dependency composition on top of `dkds.workflow-composition.v1`: selected table-root dependencies become exact canonical Artifact edges instead of repeated upstream computation.

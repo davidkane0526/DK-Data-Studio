@@ -104,6 +104,7 @@ export interface DKDSDataModelRuntime {
   createTransform(spec:{id?:string;name?:string;x:DKDSNumericSequence;y:DKDSNumericSequence;[key:string]:any}):any;
   createTable(spec:{id?:string;name?:string;columns:Array<{key:string;values:readonly any[]|ArrayLike<number>;[key:string]:any}>;[key:string]:any}):any;
   createMatrix(spec:{id?:string;name?:string;x:DKDSNumericSequence;y:DKDSNumericSequence;z:ArrayLike<DKDSNumericSequence>;[key:string]:any}):any;
+  createAnalysisResult(spec:{id?:string;name?:string;summary?:Record<string,unknown>;tables?:any[];payload?:any;[key:string]:any}):any;
   validateArtifact(value:any):{ok:boolean;errors:string[]};
   isArtifact(value:any):boolean; column(table:any,ref:any):any; columnValues(table:any,ref:any):any[]; seriesId(table:any,ref:any):string; rowId(table:any,index:number):string; rows(table:any,options?:{start?:number;limit?:number;includeRowId?:boolean}):Record<string,any>[]; summarize?(artifact:any):any; deepClone?<T=any>(value:T):T;
   normalizeAcquisition?(value:any,options?:{provenance?:DKDSAcquisitionProvenance}):DKDSAcquisitionMetadata; acquisitionMetadata?(artifact:any):DKDSAcquisitionMetadata;

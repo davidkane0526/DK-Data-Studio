@@ -69,6 +69,14 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Typed non-table Artifact boundaries — SDK 1.51.89
+
+Artifact-backed composition now supports the four value kinds already owned by Table Transform execution analysis: `table`, `series`, `array` and `scalar`. Default `all-observable` behavior remains unchanged. Cross-cell intermediate values that are valid Stage boundaries are advertised separately as `stageBoundaryCandidates`; they do not silently become Actions unless the author explicitly selects them.
+
+A downstream Stage is still cut by the same nearest-boundary dependency algorithm. The synthetic boundary operation is generalized to `source.value` with one explicit `valueKind`; the existing Core Task compiler normalizes that input into the same internal table / Series / bounded Array / scalar representations used inside an ordinary single Task. No per-kind Stage runtime is introduced.
+
+Canonical persistence is type-preserving: tables remain `data.table`, Series publish as `data.series`, and bounded Arrays/scalars publish as `result.analysis` with payload schemas `dkds.generated-array.v1` / `dkds.generated-scalar.v1`. Exact non-table inputs use the generic `artifact-value` binding and `ArtifactStore.get()` with strict Artifact kind, semantic type, payload schema and bounded-length validation. Table inputs keep the metadata + bounded column range contract. Fan-in may mix supported value kinds, and lineage continues to record the actual consumed Artifact ids.
+
 ## Artifact-backed Stage chaining — SDK 1.51.88
 
 Multi-action composition can now turn selected table-root dependencies into persisted Stage edges instead of repeated computation. The composer analyzes every selected root through the same explicit-root planner, builds a Stage dependency graph, and for each downstream Stage cuts its operation closure at the nearest selected table root. That boundary is replaced by a synthetic `source.table` whose binding points to one exact canonical Artifact id. Upstream operations delegated to the producer Stage disappear from the downstream Core Task.

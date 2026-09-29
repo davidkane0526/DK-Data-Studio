@@ -1854,6 +1854,7 @@ class PluginBuilder:
         result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
         dynamic_publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_publish_artifacts: List[Dict[str, Any]] | None = None,
         dynamic_table_plots: List[Dict[str, Any]] | None = None,
         host_effects: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
@@ -1877,6 +1878,7 @@ class PluginBuilder:
             result_metrics=result_metrics,
             publish_tables=publish_tables,
             dynamic_publish_tables=dynamic_publish_tables,
+            dynamic_publish_artifacts=dynamic_publish_artifacts,
             dynamic_table_plots=dynamic_table_plots,
             host_effects=host_effects,
             domain_command=domain_command,
@@ -1900,6 +1902,7 @@ class PluginBuilder:
         result_metrics: List[Dict[str, str]] | None = None,
         publish_tables: List[Dict[str, Any]] | None = None,
         dynamic_publish_tables: List[Dict[str, Any]] | None = None,
+        dynamic_publish_artifacts: List[Dict[str, Any]] | None = None,
         dynamic_table_plots: List[Dict[str, Any]] | None = None,
         host_effects: List[Dict[str, Any]] | None = None,
         domain_command: Dict[str, Any] | None = None,
@@ -1949,14 +1952,16 @@ class PluginBuilder:
                     raise SpecError(f"portable task parameter {argument} references unknown field {field_id}")
                 bindings[argument] = {"kind": "parameter", "field": field_id}
                 continue
-            if kind not in {"artifact-column", "artifact-table"}:
-                raise SpecError(f"input_bindings[{argument}].kind must be parameter, artifact-column or artifact-table")
+            if kind not in {"artifact-column", "artifact-table", "artifact-value"}:
+                raise SpecError(f"input_bindings[{argument}].kind must be parameter, artifact-column, artifact-table or artifact-value")
 
             allowed_binding_fields = {"kind", "source", "maxRows", "sourceField", "sourceHint"}
             if kind == "artifact-column":
                 allowed_binding_fields.add("column")
-            else:
+            elif kind == "artifact-table":
                 allowed_binding_fields.add("maxColumns")
+            else:
+                allowed_binding_fields.add("valueKind")
             extra = sorted(set(binding) - allowed_binding_fields)
             if extra:
                 raise SpecError(f"unsupported artifact binding fields for {argument}: {', '.join(extra)}")
@@ -2009,6 +2014,24 @@ class PluginBuilder:
                     "maxRows": max_rows,
                     "maxColumns": max_columns,
                     "sourceField": source_field,
+                    "sourceHint": source_hint,
+                }
+                continue
+            if kind == "artifact-value":
+                if normalized_source["scope"] != "artifacts":
+                    raise SpecError(f"input_bindings[{argument}] artifact-value requires source.scope=artifacts")
+                value_kind = str(binding.get("valueKind", "")).strip().lower()
+                if value_kind not in {"series", "array", "scalar"}:
+                    raise SpecError(f"input_bindings[{argument}].valueKind must be series, array or scalar")
+                expected_kind = "data.series" if value_kind == "series" else "result.analysis"
+                if normalized_source["kind"] != expected_kind:
+                    raise SpecError(f"input_bindings[{argument}].source.kind must be {expected_kind} for {value_kind} values")
+                bindings[argument] = {
+                    "kind": "artifact-value",
+                    "valueKind": value_kind,
+                    "source": normalized_source,
+                    "maxRows": max_rows,
+                    "sourceField": "",
                     "sourceHint": source_hint,
                 }
                 continue
@@ -2268,6 +2291,36 @@ class PluginBuilder:
         if len({row["id"] for row in normalized_dynamic_publish_tables}) != len(normalized_dynamic_publish_tables):
             raise SpecError("dynamic published Artifact ids must be unique")
 
+        normalized_dynamic_publish_artifacts: List[Dict[str, Any]] = []
+        for index, row in enumerate(dynamic_publish_artifacts or []):
+            row = _expect_object(row, f"dynamic_publish_artifacts[{index}]")
+            extra = sorted(set(row) - {"id", "name", "semanticType", "resultPath", "valueKind", "maxRows"})
+            if extra:
+                raise SpecError(f"unsupported dynamic_publish_artifacts[{index}] fields: {', '.join(extra)}")
+            semantic_type = _nonempty(row.get("semanticType"), f"dynamic_publish_artifacts[{index}].semanticType")
+            if semantic_type not in self.spec["data"].get("produces", []):
+                raise SpecError(f"dynamic_publish_artifacts[{index}].semanticType must be declared in data.produces")
+            result_path = _nonempty(row.get("resultPath"), f"dynamic_publish_artifacts[{index}].resultPath")
+            if not all(IDENT.fullmatch(part) for part in result_path.split(".")):
+                raise SpecError(f"dynamic_publish_artifacts[{index}].resultPath must be a dotted identifier path")
+            value_kind = str(row.get("valueKind", "")).strip().lower()
+            if value_kind not in {"series", "array", "scalar"}:
+                raise SpecError(f"dynamic_publish_artifacts[{index}].valueKind must be series, array or scalar")
+            max_rows = int(row.get("maxRows", 65536 if value_kind != "scalar" else 1))
+            if max_rows < 1 or max_rows > 65536:
+                raise SpecError(f"dynamic_publish_artifacts[{index}].maxRows must be in 1..65536")
+            normalized_dynamic_publish_artifacts.append({
+                "id": _ident(row.get("id"), f"dynamic_publish_artifacts[{index}].id"),
+                "name": _nonempty(row.get("name"), f"dynamic_publish_artifacts[{index}].name"),
+                "semanticType": semantic_type,
+                "resultPath": result_path,
+                "valueKind": value_kind,
+                "maxRows": max_rows,
+            })
+        published_ids=[row["id"] for row in [*normalized_publish_tables,*normalized_dynamic_publish_tables,*normalized_dynamic_publish_artifacts]]
+        if len(set(published_ids)) != len(published_ids):
+            raise SpecError("portable task published Artifact ids must be unique across table and typed outputs")
+
         normalized_domain_command = None
         if domain_command is not None:
             raw_command = _expect_object(domain_command, "domain_command")
@@ -2339,6 +2392,7 @@ class PluginBuilder:
             "result_metrics": normalized_result_metrics,
             "publish_tables": normalized_publish_tables,
             "dynamic_publish_tables": normalized_dynamic_publish_tables,
+            "dynamic_publish_artifacts": normalized_dynamic_publish_artifacts,
             "dynamic_table_plots": normalized_dynamic_table_plots,
             "host_effects": normalized_host_effects,
             "domain_command": normalized_domain_command,
@@ -2476,7 +2530,6 @@ class PluginBuilder:
                         f"        const __dkdsArtifactMeta_{token}=__dkdsArtifactRows_{token}.find(row=>String(row?.id||'')===__dkdsRequestedArtifact_{token}&&(!{_js(source['semanticType'])}||String(row?.semanticType||'')==={_js(source['semanticType'])})&&(!{_js(source['kind'])}||String(row?.kind||'')==={_js(source['kind'])}));",
                         f"        const __dkdsSource_{token}=__dkdsArtifactMeta_{token}?{{artifactId:String(__dkdsArtifactMeta_{token}.id||''),semanticType:String(__dkdsArtifactMeta_{token}.semanticType||''),kind:String(__dkdsArtifactMeta_{token}.kind||'')}}:null;",
                         f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('Required canonical Artifact is unavailable for '+argument)});",
-                        f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
                     ]
                 else:
                     lines += [
@@ -2490,6 +2543,41 @@ class PluginBuilder:
                         f"        if(!__dkdsSource_{token}?.artifactId)throw new Error({_js('No scoped source matches artifact binding for '+argument)});",
                         f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];",
                     ]
+                if binding["kind"] == "artifact-value":
+                    value_kind = binding["valueKind"]
+                    lines += [
+                        f"        const __dkdsValueArtifact_{token}=ctx.data.artifacts.get(__dkdsSource_{token}.artifactId);",
+                        f"        if(!__dkdsValueArtifact_{token}||String(__dkdsValueArtifact_{token}.id||'')!==String(__dkdsSource_{token}.artifactId))throw new Error({_js('Unable to read canonical typed Artifact for '+argument)});",
+                    ]
+                    if value_kind == "series":
+                        lines += [
+                            f"        if(String(__dkdsValueArtifact_{token}.kind||'')!=='data.series')throw new Error({_js('Typed Artifact '+argument+' must be data.series')});",
+                            f"        const __dkdsSeriesX_{token}=Array.from(__dkdsValueArtifact_{token}.x||[]),__dkdsSeriesY_{token}=Array.from(__dkdsValueArtifact_{token}.y||[]);",
+                            f"        if(__dkdsSeriesX_{token}.length!==__dkdsSeriesY_{token}.length)throw new Error({_js('Typed Series Artifact '+argument+' must have equal x/y lengths')});",
+                            f"        if(__dkdsSeriesY_{token}.length>{max_rows})throw new Error({_js('Typed Series Artifact '+argument+' exceeds declared maxRows '+str(max_rows))});",
+                            f"        __dkdsPayload[{_js(argument)}]={{kind:'table.series',artifactId:String(__dkdsSource_{token}.artifactId),id:'',key:String(__dkdsValueArtifact_{token}.yName||'value'),name:String(__dkdsValueArtifact_{token}.name||__dkdsValueArtifact_{token}.yName||'value'),unit:String(__dkdsValueArtifact_{token}.yUnit||''),role:'',quantity:String(__dkdsValueArtifact_{token}.yQuantity||''),dimension:String(__dkdsValueArtifact_{token}.yDimension||''),dtype:'number',index:__dkdsSeriesX_{token},indexNames:[],values:__dkdsSeriesY_{token}}};",
+                        ]
+                    elif value_kind == "array":
+                        lines += [
+                            f"        const __dkdsTypedPayload_{token}=__dkdsValueArtifact_{token}.payload;",
+                            f"        if(String(__dkdsValueArtifact_{token}.kind||'')!=='result.analysis'||__dkdsTypedPayload_{token}?.schema!=='dkds.generated-array.v1'||__dkdsTypedPayload_{token}?.kind!=='array.vector'||!Array.isArray(__dkdsTypedPayload_{token}.values))throw new Error({_js('Typed Artifact '+argument+' must be a generated bounded Array')});",
+                            f"        if(__dkdsTypedPayload_{token}.values.length>{max_rows})throw new Error({_js('Typed Array Artifact '+argument+' exceeds declared maxRows '+str(max_rows))});",
+                            f"        __dkdsPayload[{_js(argument)}]={{kind:'array.vector',dtype:String(__dkdsTypedPayload_{token}.dtype||'number'),values:Array.from(__dkdsTypedPayload_{token}.values)}};",
+                        ]
+                    else:
+                        lines += [
+                            f"        const __dkdsTypedPayload_{token}=__dkdsValueArtifact_{token}.payload;",
+                            f"        if(String(__dkdsValueArtifact_{token}.kind||'')!=='result.analysis'||__dkdsTypedPayload_{token}?.schema!=='dkds.generated-scalar.v1'||!Object.prototype.hasOwnProperty.call(__dkdsTypedPayload_{token},'value'))throw new Error({_js('Typed Artifact '+argument+' must be a generated scalar')});",
+                            f"        const __dkdsScalar_{token}=__dkdsTypedPayload_{token}.value;",
+                            f"        if(__dkdsScalar_{token}!==null&&!['string','boolean','number'].includes(typeof __dkdsScalar_{token}))throw new Error({_js('Typed scalar Artifact '+argument+' contains an unsupported value')});",
+                            f"        __dkdsPayload[{_js(argument)}]=__dkdsScalar_{token};",
+                        ]
+                    lines += [
+                        f"        if(!__dkdsSourceIds.includes(String(__dkdsSource_{token}.artifactId)))__dkdsSourceIds.push(String(__dkdsSource_{token}.artifactId));",
+                    ]
+                    continue
+                if source.get("scope") == "artifacts":
+                    lines.append(f"        const __dkdsColumns_{token}=ctx.data.artifacts.columnMetadata(__dkdsSource_{token}.artifactId)||[];")
                 if binding["kind"] == "artifact-table":
                     max_columns = binding["maxColumns"]
                     lines += [
@@ -2668,6 +2756,36 @@ class PluginBuilder:
                     f"        ctx.data.artifacts.publish({artifact});",
                     f"        __dkdsPublishedIds.push(String({artifact}.id));",
                 ]
+            for typed_index, publish in enumerate(row.get("dynamic_publish_artifacts", [])):
+                token = f"__dkdsTyped_{typed_index}"
+                artifact = f"__dkdsTypedArtifact_{typed_index}"
+                path_expr = _js(publish["resultPath"].split("."))
+                value_kind = publish["valueKind"]
+                lines.append(f"        const {token}={path_expr}.reduce((value,key)=>value?.[key],result);")
+                if value_kind == "series":
+                    lines += [
+                        f"        if(!{token}||{token}.kind!=='table.series'||!Array.isArray({token}.values))throw new Error({_js('Generated typed result '+publish['resultPath']+' must be a table.series snapshot')});",
+                        f"        const __dkdsTypedSeriesValues_{typed_index}=Array.from({token}.values||[]),__dkdsTypedSeriesIndex_{typed_index}=Array.from({token}.index||Array.from({{length:__dkdsTypedSeriesValues_{typed_index}.length}},(_,index)=>index));",
+                        f"        if(__dkdsTypedSeriesValues_{typed_index}.length>{publish['maxRows']})throw new Error({_js('Generated typed Series exceeds maxRows '+str(publish['maxRows']))});",
+                        f"        if(__dkdsTypedSeriesIndex_{typed_index}.length!==__dkdsTypedSeriesValues_{typed_index}.length)throw new Error('Generated typed Series index/value lengths must match.');",
+                        f"        const {artifact}=ctx.data.model.createSeries({{id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},x:__dkdsTypedSeriesIndex_{typed_index},y:__dkdsTypedSeriesValues_{typed_index},xName:'index',yName:String({token}.name||{token}.key||'value'),yUnit:String({token}.unit||''),yDimension:String({token}.dimension||''),yQuantity:String({token}.quantity||''),lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}}});",
+                    ]
+                elif value_kind == "array":
+                    lines += [
+                        f"        if(!{token}||{token}.kind!=='array.vector'||!Array.isArray({token}.values))throw new Error({_js('Generated typed result '+publish['resultPath']+' must be a bounded array.vector')});",
+                        f"        const __dkdsTypedArrayValues_{typed_index}=Array.from({token}.values||[]);",
+                        f"        if(__dkdsTypedArrayValues_{typed_index}.length>{publish['maxRows']})throw new Error({_js('Generated typed Array exceeds maxRows '+str(publish['maxRows']))});",
+                        f"        const {artifact}=ctx.data.model.createAnalysisResult({{id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},summary:{{valueKind:'array',length:__dkdsTypedArrayValues_{typed_index}.length}},payload:{{schema:'dkds.generated-array.v1',kind:'array.vector',dtype:String({token}.dtype||'number'),values:__dkdsTypedArrayValues_{typed_index}}},lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}}});",
+                    ]
+                else:
+                    lines += [
+                        f"        if({token}!==null&&!['string','boolean','number'].includes(typeof {token}))throw new Error({_js('Generated typed scalar '+publish['resultPath']+' must be null/string/boolean/number')});",
+                        f"        const {artifact}=ctx.data.model.createAnalysisResult({{id:{_js(publish['id'])},name:{_js(publish['name'])},semanticType:{_js(publish['semanticType'])},summary:{{valueKind:'scalar',value:{token}}},payload:{{schema:'dkds.generated-scalar.v1',valueKind:'scalar',value:{token}}},lineage:{{parents:__dkdsSourceIds,role:'analysis',producer:manifest.id,operation:{_js(compiled.task_id)},parameters:__dkdsParameters}}}});",
+                    ]
+                lines += [
+                    f"        ctx.data.artifacts.publish({artifact});",
+                    f"        __dkdsPublishedIds.push(String({artifact}.id));",
+                ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
                 "        " + ("return {taskResult:result,artifactIds:__dkdsPublishedIds.slice(),sourceIds:__dkdsSourceIds.slice()};" if row.get("domain_command") else "return true;"),
@@ -2773,17 +2891,17 @@ class PluginBuilder:
         )
         has_menu = any(row["kind"] == "menu" for row in self.spec["content"])
         has_artifact_input = any(
-            binding["kind"] in {"artifact-column", "artifact-table"}
+            binding["kind"] in {"artifact-column", "artifact-table", "artifact-value"}
             for task in self._portable_tasks
             for binding in task["input_bindings"].values()
         )
         has_scoped_source_input = any(
-            binding["kind"] in {"artifact-column", "artifact-table"} and binding.get("source", {}).get("scope", "sources") == "sources"
+            binding["kind"] in {"artifact-column", "artifact-table", "artifact-value"} and binding.get("source", {}).get("scope", "sources") == "sources"
             for task in self._portable_tasks
             for binding in task["input_bindings"].values()
         )
         has_artifact_output = any(
-            bool(task["publish_tables"]) or bool(task.get("dynamic_publish_tables"))
+            bool(task["publish_tables"]) or bool(task.get("dynamic_publish_tables")) or bool(task.get("dynamic_publish_artifacts"))
             for task in self._portable_tasks
         )
         has_interaction = self.spec.get("interaction") is not None
