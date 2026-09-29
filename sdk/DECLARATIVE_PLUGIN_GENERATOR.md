@@ -69,6 +69,14 @@ Generated output must pass the normal SDK plugin validator. It must contain no p
 
 The checked-in Python reference under examples/declarative-python-reference is the executable Phase F proof.
 
+## Artifact-backed Stage chaining — SDK 1.51.88
+
+Multi-action composition can now turn selected table-root dependencies into persisted Stage edges instead of repeated computation. The composer analyzes every selected root through the same explicit-root planner, builds a Stage dependency graph, and for each downstream Stage cuts its operation closure at the nearest selected table root. That boundary is replaced by a synthetic `source.table` whose binding points to one exact canonical Artifact id. Upstream operations delegated to the producer Stage disappear from the downstream Core Task.
+
+The generic generated-task input contract now supports two source scopes. `sources` remains the default and continues to use the existing scoped imported-source catalog plus Unit Source Picker. `artifacts` requires one exact `artifactId` and resolves it through the canonical Artifact Store (`listMetadata` / `columnMetadata` / bounded `readColumnRange`); it never marks generated results as imported sources and never creates a fake picker. Stage producer DataFrames publish deterministic DataTable Artifacts with stage-specific semantic types. Downstream publication keeps the consumed Artifact id in canonical lineage parents.
+
+Fan-in accepts multiple selected table boundaries. In transitive chains the nearest selected boundary wins, so `A -> B -> C` makes C consume B rather than directly duplicating A. Non-table selected roots remain ordinary isolated actions until canonical Series/Array/scalar Artifact contracts are introduced. There is still no shared mutable Notebook kernel or inter-Task memory channel.
+
 ## Multi-action workflow composition — SDK 1.51.87
 
 Selected workflow roots can now be composed into one `dkds.workflow-composition.v1` plugin. Composition does not introduce a new execution model: every stage is exactly one existing explicit-root `dkds.workflow-slice.v1`, analyzed independently through the canonical Table Transform planner and compiled as one ordinary Core Task bound to one declarative action. The existing `PluginBuilder` multi-task path is reused unchanged.

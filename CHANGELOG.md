@@ -1,3 +1,13 @@
+# 3.71.131 Release — Phase F Artifact-backed Stage Chaining / SDK 1.51.88
+
+- Adds Artifact-backed Stage dependency composition on top of `dkds.workflow-composition.v1`: selected table-root dependencies become exact canonical Artifact edges instead of repeated upstream computation.
+- Cuts each downstream Table Transform plan at the nearest selected table boundary, replaces that boundary with one synthetic `source.table`, and marks upstream Notebook cells/operations as delegated to the producer Stage.
+- Extends the generic generated `artifact-table` input binding with `source.scope=artifacts` plus an exact `artifactId`; the existing `sources` scope and Unit Source Picker behavior remain the default. Exact Artifact inputs use `ArtifactStore.listMetadata`, `columnMetadata`, and bounded `readColumnRange`.
+- Producer table Stages publish deterministic stage-specific DataTable Artifact ids/semantic types. Downstream Artifact publication reuses the existing lineage contract, so consumed Stage Artifacts become real lineage parents.
+- Supports fan-in from multiple selected table roots and nearest-boundary transitive chaining (`A -> B -> C` makes C consume B, not duplicate A). Generated results are never marked as imported sources.
+- Adds a dedicated regression covering exact Artifact binding, delegated cells, isolated downstream Task parameters, package validation, lineage, two-parent fan-in, and transitive nearest-boundary selection.
+- App/Desktop/Mobile identity advances to 3.71.131 / Android versionCode 271. SDK advances to 1.51.88; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
 # 3.71.130 Release — Phase F Multi-stage / Multi-action Composition / SDK 1.51.87
 
 - Adds `dkds.workflow-composition.v1`: two through eight selected workflow roots become isolated stages, each reusing the existing explicit-root dependency slice and compiling to one existing Core Task/action.
