@@ -121,6 +121,18 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-multi-action-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-artifact-stage-chaining.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-typed-artifact-boundaries.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
