@@ -1,4 +1,4 @@
-> **v3.71.133 WIP — Phase F DAG-aware Stage Execution / SDK 1.51.90**：生成插件的下游 Stage Action 自动执行前置 Stage，复用 Core Task Runner、ArtifactStore 和 canonical Stage DAG。未完成双端 CI 前不视为正式验收。
+> **v3.71.133 Release Candidate (WIP) — Phase F DAG-aware Stage Execution / SDK 1.51.90**：生成插件的下游 Stage Action 自动执行前置 Stage，复用 Core Task Runner、ArtifactStore 和 canonical Stage DAG。未完成双端 CI 前不视为正式验收。
 
 > **v3.71.132 Release — Phase F Typed non-table Artifact Boundaries / SDK 1.51.89**：Artifact-backed Stage chaining 从 DataTable 推广到现有执行类型系统已经支持的 `table / series / array / scalar` 四类值。默认 `all-observable` Root 行为保持不变；跨 Cell 的中间值单独以可选 `stageBoundaryCandidates` 暴露，只有作者显式选择时才成为 Stage。下游仍复用同一个最近边界切片算法，并以通用 `source.value + valueKind` 接入原 Core Task 编译器。Series 持久化为 canonical `data.series`；bounded Array / scalar 持久化为 `result.analysis`，payload 分别使用 `dkds.generated-array.v1` / `dkds.generated-scalar.v1`；通用 `artifact-value` binding 通过精确 Artifact ID 读取并做 kind / semanticType / payload / 长度校验。DataTable 原有 bounded column 路径不变，typed fan-in 与 lineage 继续使用同一 Stage DAG/ArtifactStore。没有新增 Core Task Runtime、Plugin API、Unit、Presenter、第二套 DAG/type system 或隐藏 Notebook 内存。
 
