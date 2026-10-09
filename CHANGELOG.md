@@ -1,3 +1,13 @@
+# 3.71.133 Release — Phase F DAG-aware Stage Execution / SDK 1.51.90
+
+- Adds a canonical `dkds.stage-execution-plan.v1` from selected Stage Artifact dependencies, with Stage/Action/Task IDs, ordered prerequisites and expected typed Artifact outputs.
+- Generated multi-action Stage Actions share one prerequisite scheduler. Clicking a downstream Stage schedules its transitive prerequisites through the existing Core Task Runner and ArtifactStore, with in-flight and per-execution deduplication.
+- Validates exact published Artifact IDs, kinds and semantic types; failures or missing outputs block downstream actions. Earlier outputs are conservatively recalculated on every new execution rather than trusting potentially stale cached Artifacts.
+- Prerequisite Tasks publish canonical Artifacts and lineage but suppress non-target clipboard/CSV export effects; explicitly invoked Stages retain their visible effects.
+- Preserves single-workflow and ordinary Python-function generation without a second Task/Workflow runtime, new Unit variants, plugin-name branches or private CSS. No extra Run All Action is introduced beyond the public eight-action bound.
+- Adds Phase F prerequisite scheduler regression and registers previously written multi-action, chaining and typed-boundary regressions in the check suite.
+- Updates App/Desktop/Mobile to 3.71.133 / Android versionCode 273 and SDK to 1.51.90. Plugin API stays 1.19.0; Unit Templates stay 2.5.38.
+
 # 3.71.132 Release — Phase F Typed non-table Artifact Boundaries / SDK 1.51.89
 
 - Extends Artifact-backed Stage boundaries from DataTable to the existing `table / series / array / scalar` value kinds without creating per-kind runtimes.
