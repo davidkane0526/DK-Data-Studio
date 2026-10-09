@@ -34,7 +34,7 @@ function makeProject(){
   return {
     format:'dk-data-studio-project',
     schemaVersion:3,
-    version:unchanged?tab.savedProject.version:'3.71.132',
+    version:unchanged?tab.savedProject.version:'3.71.133',
     dataModel:dataModel,
     plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
     host:{}
