@@ -70,6 +70,7 @@ class PluginBuilder:
 
     def __init__(self, spec: Dict[str, Any]):
         self._portable_tasks: list[dict[str, Any]] = []
+        self._stage_execution_plan: dict[str, Any] | None = None
         self.spec = self._normalize(spec)
 
     @classmethod
@@ -2400,6 +2401,93 @@ class PluginBuilder:
         })
         return self
 
+
+    def configure_stage_execution_plan(self, plan: Dict[str, Any]) -> "PluginBuilder":
+        """Attach the canonical Stage DAG to generated Action invocation, not Core Task execution."""
+        if self._stage_execution_plan is not None:
+            raise SpecError("stage execution plan has already been configured")
+        if not isinstance(plan, dict) or plan.get("schema") != "dkds.stage-execution-plan.v1":
+            raise SpecError("unsupported stage execution plan schema")
+        raw_stages=plan.get("stages")
+        if not isinstance(raw_stages, list) or not 2<=len(raw_stages)<=8:
+            raise SpecError("stage execution plan requires 2..8 stages")
+        task_lookup={row["action_id"]:row["compiled"].task_id for row in self._portable_tasks}
+        ids=set();actions=set();stages=[]
+        for index, raw in enumerate(raw_stages):
+            if not isinstance(raw, dict):
+                raise SpecError("stage execution plan rows must be objects")
+            stage_id=_ident(raw.get("stageId"),"stageId")
+            action_id=_ident(raw.get("actionId"),"stage.actionId")
+            task_id=_ident(raw.get("taskId"),"stage.taskId")
+            if stage_id in ids or action_id in actions:
+                raise SpecError("duplicate Stage or Action in execution plan")
+            if task_lookup.get(action_id)!=task_id:
+                raise SpecError("stage execution plan does not match registered Core Task")
+            parents=raw.get("prerequisiteStageIds",[])
+            parent_tasks=raw.get("prerequisiteTaskIds",[])
+            outputs=raw.get("expectedArtifacts",[])
+            if not isinstance(parents,list) or len(parents)!=len(set(parents)) or not all(p in ids for p in parents):
+                raise SpecError("Stage dependencies must reference earlier canonical DAG nodes")
+            if parent_tasks!=[next(stage["taskId"] for stage in stages if stage["stageId"]==p) for p in parents]:
+                raise SpecError("prerequisite Task IDs differ from canonical Stage edges")
+            if not isinstance(outputs,list):
+                raise SpecError("expectedArtifacts must be a list")
+            clean_outputs=[]
+            for artifact in outputs:
+                if not isinstance(artifact,dict):
+                    raise SpecError("expected Artifact rows must be objects")
+                clean_outputs.append({"artifactId":_ident(artifact.get("artifactId"),"expected.artifactId"),
+                                      "kind":_nonempty(artifact.get("kind"),"expected.kind"),
+                                      "semanticType":_nonempty(artifact.get("semanticType"),"expected.semanticType")})
+            ids.add(stage_id);actions.add(action_id)
+            stages.append({"stageId":stage_id,"actionId":action_id,"taskId":task_id,
+                           "prerequisiteStageIds":list(parents),"prerequisiteTaskIds":list(parent_tasks),
+                           "expectedArtifacts":clean_outputs})
+        if len(stages)!=len(self._portable_tasks):
+            raise SpecError("stage execution plan must cover every multi-action Task")
+        self._stage_execution_plan={"schema":"dkds.stage-execution-plan.v1","stages":stages}
+        return self
+
+    def _stage_scheduler_source(self) -> List[str]:
+        if self._stage_execution_plan is None:
+            return []
+        dispatch=[]
+        for stage in self._stage_execution_plan["stages"]:
+            handler=self._task_handler_name(stage["taskId"])
+            dispatch.append(f"{_js(stage['stageId'])}:wantsEffects=>{handler}(null,wantsEffects)")
+        return [
+            "    /* DKDS stage scheduler begin */",
+            f"    const __dkdsStageExecutionPlan={_js(self._stage_execution_plan)};",
+            "    const __dkdsStageById=new Map(__dkdsStageExecutionPlan.stages.map(stage=>[stage.stageId,stage]));",
+            "    const __dkdsStageHandlers={" + ",".join(dispatch) + "};",
+            "    const __dkdsStageInFlight=new Map();",
+            "    let __dkdsStageActive=true;",
+            "    disposables.push({dispose(){__dkdsStageActive=false;}});",
+            "    function run_stage(stageId,asTarget=true,execution=null){",
+            "      const scope=execution||{completed:new Map()};",
+            "      if(!__dkdsStageActive)return Promise.reject(new Error('Stage workspace is inactive'));",
+            "      let entry=scope.completed.get(stageId)||__dkdsStageInFlight.get(stageId);",
+            "      if(entry){if(asTarget)entry.targetRequested=true;scope.completed.set(stageId,entry);return entry.promise;}",
+            "      const stage=__dkdsStageById.get(stageId);",
+            "      if(!stage)return Promise.reject(new Error('Unknown canonical Stage: '+stageId));",
+            "      entry={targetRequested:!!asTarget,promise:null};",
+            "      scope.completed.set(stageId,entry);__dkdsStageInFlight.set(stageId,entry);",
+            "      entry.promise=(async()=>{",
+            "        for(const parentId of stage.prerequisiteStageIds)await run_stage(parentId,false,scope);",
+            "        if(!__dkdsStageActive)throw new Error('Stage workspace was deactivated');",
+            "        const output=await __dkdsStageHandlers[stageId](()=>entry.targetRequested);",
+            "        for(const expected of stage.expectedArtifacts){",
+            "          if(!Array.isArray(output?.artifactIds)||!output.artifactIds.includes(expected.artifactId))throw new Error('Stage failed to publish required Artifact: '+expected.artifactId);",
+            "          const metadata=ctx.data.artifacts.listMetadata({id:expected.artifactId,includeTransient:true})||[];",
+            "          if(!metadata.some(row=>String(row?.id||'')===expected.artifactId&&String(row?.kind||'')===expected.kind&&String(row?.semanticType||'')===expected.semanticType))throw new Error('Stage Artifact contract mismatch: '+expected.artifactId);",
+            "        }",
+            "        return output;",
+            "      })().finally(()=>{if(__dkdsStageInFlight.get(stageId)===entry)__dkdsStageInFlight.delete(stageId);});",
+            "      return entry.promise;",
+            "    }",
+            "    /* DKDS stage scheduler end */",
+        ]
+
     def _task_for_action(self, action_id: str) -> dict[str, Any] | None:
         return next((row for row in self._portable_tasks if row["action_id"] == action_id), None)
 
@@ -2497,7 +2585,7 @@ class PluginBuilder:
             handler = self._task_handler_name(compiled.task_id)
             action = action_lookup[row["action_id"]]
             lines += [
-                f"    async function {handler}(__dkdsCommandArgs=null){{",
+                f"    async function {handler}(__dkdsCommandArgs=null,__dkdsWantsHostEffects=null){{",
                 f"      ctx.status.set({_js(action['statusMessage'])});",
                 "      try{",
                 "        const __dkdsCanonical=(__dkdsCommandArgs&&typeof __dkdsCommandArgs==='object')?__dkdsCommandArgs:null;",
@@ -2647,6 +2735,8 @@ class PluginBuilder:
                     f"        {base}_task_curves={y_columns}.map((column,index)=>{{const values=Array.from(column?.values||[]),points=[];for(let rowIndex=0;rowIndex<Math.min(values.length,{x_values}.length);rowIndex++){{const x=Number({x_values}[rowIndex]),y=Number(values[rowIndex]);if(Number.isFinite(x)&&Number.isFinite(y))points.push({{x,y}});}}const id=String(column?.key||column?.id||('series-'+index));return {{id,entityId:id,label:String(column?.name||column?.key||id),points,source:column}};}}).filter(curve=>curve.points.length);",
                     f"        {base}_surface.requestRender?.('task-table');",
                 ]
+            if row.get("host_effects"):
+                lines.append("        if(!__dkdsWantsHostEffects||__dkdsWantsHostEffects()){")
             for effect_index, effect in enumerate(row.get("host_effects", [])):
                 token = f"__dkdsHostTable_{effect_index}"
                 path_expr = _js(effect["resultPath"].split("."))
@@ -2690,6 +2780,8 @@ class PluginBuilder:
                     ]
                     continue
                 raise SpecError(f"unsupported normalized host effect: {effect['kind']}")
+            if row.get("host_effects"):
+                lines.append("        }")
             for projection in row["result_plots"]:
                 base = _var(projection["id"])
                 key = projection["key"]
@@ -2788,7 +2880,7 @@ class PluginBuilder:
                 ]
             lines += [
                 f"        ctx.status.set({_js(row['success_status'])});",
-                "        " + ("return {taskResult:result,artifactIds:__dkdsPublishedIds.slice(),sourceIds:__dkdsSourceIds.slice()};" if row.get("domain_command") else "return true;"),
+                "        " + ("return {taskResult:result,artifactIds:__dkdsPublishedIds.slice(),sourceIds:__dkdsSourceIds.slice()};" if row.get("domain_command") or (self._stage_execution_plan is not None and any(stage["actionId"]==row["action_id"] for stage in self._stage_execution_plan["stages"])) else "return true;"),
                 "      }catch(error){",
                 "        ctx.status.set(String(error?.message||error||'任务失败'));",
                 "        throw error;",
@@ -3011,6 +3103,9 @@ class PluginBuilder:
             raise SpecError(f"unknown action id: {action_id}")
         task = self._task_for_action(action_id)
         if task is not None:
+            stage = next((row for row in (self._stage_execution_plan or {}).get("stages",[]) if row["actionId"]==action_id),None)
+            if stage is not None:
+                return f"()=>run_stage({_js(stage['stageId'])},true)"
             if task.get("domain_command") is not None:
                 return f"()=>ctx.commands.run({_js(task['domain_command']['id'])},{{}})"
             return f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
@@ -3028,7 +3123,10 @@ class PluginBuilder:
             native_effect = self._task_native_effect_source(action["id"])
             task = self._task_for_action(action["id"])
             if task is not None:
-                if task.get("domain_command") is not None:
+                stage = next((row for row in (self._stage_execution_plan or {}).get("stages",[]) if row["actionId"]==action["id"]),None)
+                if stage is not None:
+                    invoke = f"()=>run_stage({_js(stage['stageId'])},true)"
+                elif task.get("domain_command") is not None:
                     invoke = f"()=>ctx.commands.run({_js(task['domain_command']['id'])},{{}})"
                 else:
                     invoke = f"()=>{self._task_handler_name(task['compiled'].task_id)}()"
@@ -3874,6 +3972,7 @@ class PluginBuilder:
         lines += self._content_source()
         lines += self._surface_source()
         lines += self._task_handlers_source()
+        lines += self._stage_scheduler_source()
         lines += self._command_registration_source()
         lines += [
             "    workbench.compose({primary:{"

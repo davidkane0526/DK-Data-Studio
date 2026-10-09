@@ -600,7 +600,19 @@ def _workflow_composition_blueprint(source_path:Path,source_name:str,workflow:di
           "data":{"accepts":["data.table"],**({"produces":produced_types} if produced_types else {})},"actions":action_rows,"content":merged_content}
     if field_by_id:spec["parameters"]={"id":"sources","label":"数据源","fields":list(field_by_id.values()),"priority":10,"embedded":False,"autoOpen":True,"stateVersion":"1"}
     buildable=bool(2<=len(stages)<=8 and all(stage.get("buildable") for stage in stages) and external_source_inputs and not diagnostics)
-    return {"schema":WORKFLOW_COMPOSITION_SCHEMA,"candidateId":MULTI_ACTION_CANDIDATE_ID,"buildable":buildable,"diagnostics":diagnostics,"spec":spec,"stages":stages,"stageDependencies":dependency_rows,
+    # The generator's execution plan reuses the canonical, artifact-backed Stage DAG.
+    # No dependency is inferred from action order or plugin identifiers.
+    stage_by_id={stage["id"]:stage for stage in stages}
+    execution_stages=[]
+    for stage in stages:
+        parents=list(dict.fromkeys(str(dep["producerStageId"]) for dep in stage["artifactDependencies"]))
+        published=stage.get("publishedArtifact")
+        outputs=[{"artifactId":published["artifactId"],"kind":published["artifactKind"],"semanticType":published["semanticType"]}] if published else []
+        execution_stages.append({"stageId":stage["id"],"actionId":stage["actionId"],"taskId":stage["taskId"],
+                                 "prerequisiteStageIds":parents,"prerequisiteTaskIds":[stage_by_id[parent]["taskId"] for parent in parents],
+                                 "expectedArtifacts":outputs})
+    stage_execution_plan={"schema":"dkds.stage-execution-plan.v1","stages":execution_stages}
+    return {"schema":WORKFLOW_COMPOSITION_SCHEMA,"candidateId":MULTI_ACTION_CANDIDATE_ID,"buildable":buildable,"diagnostics":diagnostics,"spec":spec,"stages":stages,"stageDependencies":dependency_rows,"stageExecutionPlan":stage_execution_plan,
             "preview":{"title":title,"source":source_name,"kind":"workflow-composition","stageCount":len(stages),"sourceInputs":external_source_inputs,"sourceBindings":source_bindings,"selectedRootIds":selected_root_ids,"stageDependencies":dependency_rows,
                        "stages":[{"id":row["id"],"rootId":row["rootId"],"rootSymbol":row["rootSymbol"],"valueKind":row["valueKind"],"order":row["order"],"actionId":row["actionId"],"includedCells":row["includedCells"],"delegatedCells":row["delegatedCells"],"resultSymbols":row["resultSymbols"],"hostEffects":row["hostEffects"],"artifactDependencies":row["artifactDependencies"],"publishedArtifact":row["publishedArtifact"]} for row in stages],"unitFirst":True,"privateCss":False}}
 
@@ -660,6 +672,7 @@ def build_package(path:str|Path,function_id:str,selected_root_ids:list[str]|None
                 stage_plan=_artifact_chained_plan(stage_plan,list(stage.get("artifactDependencies") or []))
                 compiled=compile_table_transform_task(stage_plan,task["id"])
                 builder.add_compiled_task(compiled,action_id=task["actionId"],input_bindings=task["inputBindings"],result_tables=task["resultTables"],result_metrics=task["resultMetrics"],dynamic_publish_tables=task["dynamicPublishTables"],dynamic_publish_artifacts=task["dynamicPublishArtifacts"],dynamic_table_plots=task["dynamicTablePlots"],host_effects=task["hostEffects"],success_status=task["successStatus"])
+            builder.configure_stage_execution_plan(blueprint["stageExecutionPlan"])
             package=builder.package()
             report={"schema":REPORT_SCHEMA,"source":{"name":source_path.name,"kind":analysis["sourceModel"]["kind"],"candidateId":MULTI_ACTION_CANDIDATE_ID,"candidateKind":"multi-action-workflow","selectedRootIds":list(blueprint.get("preview",{}).get("selectedRootIds") or []),"stageCount":len(blueprint.get("stages",[]))},"blueprint":blueprint,"package":{"id":package["manifest"]["id"],"name":package["manifest"]["name"],"version":package["manifest"]["version"],"files":sorted(package["files"])},"sourceExecuted":False,"pythonRuntimeRequiredByPlugin":False}
             return package,report
