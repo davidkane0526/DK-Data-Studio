@@ -117,6 +117,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-phase-f-prerequisite-scheduling.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
