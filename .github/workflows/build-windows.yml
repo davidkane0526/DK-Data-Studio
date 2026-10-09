@@ -348,6 +348,10 @@ jobs:
         run: |
           $tag = "v$env:DKDS_RELEASE_VERSION"
           $title = "DK Data Studio $tag"
+          $latestDevSha = gh api "repos/$env:GITHUB_REPOSITORY/branches/dev" --jq '.commit.sha'
+          if ($LASTEXITCODE -ne 0 -or $latestDevSha.Trim() -ne $env:GITHUB_SHA) {
+            throw "Superseded dev build must not publish a Release: $env:GITHUB_SHA"
+          }
           $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
             Where-Object { $_.Name -match '(?i)portable' } |
             Select-Object -First 1
@@ -362,6 +366,15 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "Unable to create or resolve GitHub Release $tag." }
             }
           }
+
+          $tagSha = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha'
+          if ($LASTEXITCODE -ne 0) { throw "Unable to inspect tag $tag" }
+          if ($tagSha.Trim() -ne $env:GITHUB_SHA) {
+            gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/git/refs/tags/$tag" -f "sha=$env:GITHUB_SHA" -F force=true | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Unable to align tag $tag to current SHA" }
+          }
+          gh release edit $tag --target $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw "Unable to align Release $tag target" }
 
           $releaseDir = Join-Path $env:RUNNER_TEMP 'dkds-release'
           New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
