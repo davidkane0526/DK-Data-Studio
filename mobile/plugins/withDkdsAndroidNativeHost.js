@@ -362,8 +362,8 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         if(target.isBlank())throw IllegalArgumentException("TCP host is required.")
         val wanted=interfaceName.trim()
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network=if(wanted.isBlank()) null else cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
-          ?: throw IllegalStateException("Android network interface is unavailable: "+wanted)
+        val network=if(wanted.isBlank()) null else (cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
+          ?: throw IllegalStateException("Android network interface is unavailable: "+wanted))
         val socket=network?.socketFactory?.createSocket() ?: Socket()
         try {
           socket.tcpNoDelay=true
@@ -727,6 +727,9 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     manifest.application[0].$['android:usesCleartextTraffic'] = 'true';
     if (!manifest['uses-permission'].some(row => row?.$?.['android:name'] === 'android.permission.INTERNET')) {
       manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.INTERNET' } });
+    }
+    if (!manifest['uses-permission'].some(row => row?.$?.['android:name'] === 'android.permission.ACCESS_NETWORK_STATE')) {
+      manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.ACCESS_NETWORK_STATE' } });
     }
     const intents = [
       { action: [{ $: { 'android:name': 'android.intent.action.OPEN_DOCUMENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
