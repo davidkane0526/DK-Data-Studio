@@ -1,0 +1,116 @@
+// Separate native owner for browser-origin instrument sessions.
+// This module deliberately permits only the verified KXCI "*IDN?\0" query.
+// Do not expand this allowlist without validated instrument safety and control leasing.
+private object DkdsLanKxci {
+  private data class Session(val id:String,val owner:String,val socket:Socket,@Volatile var lastUsed:Long=System.currentTimeMillis())
+  private var current:Session?=null
+  private const val TTL_MS=120000L
+
+  @Synchronized fun closeAll(){
+    try { current?.socket?.close() } catch (_:Throwable) {}
+    current=null
+  }
+  private fun cleanExpired(){
+    val row=current ?: return
+    if(System.currentTimeMillis()-row.lastUsed>TTL_MS)closeAll()
+  }
+  private fun requireOwned(id:String, owner:String):Session {
+    cleanExpired()
+    val row=current ?: throw IllegalStateException("No remote instrument session. Connect again.")
+    if(row.id!=id || row.owner!=owner)throw IllegalStateException("Remote session does not belong to this paired browser.")
+    row.lastUsed=System.currentTimeMillis()
+    return row
+  }
+  private fun bounded(value:Int,min:Int,max:Int,label:String):Int{
+    if(value<min||value>max)throw IllegalArgumentException(label+" is outside allowed bounds.")
+    return value
+  }
+  @Synchronized fun execute(context:Context,owner:String,req:JSONObject):JSONObject{
+    val payload=req.optJSONObject("payload") ?: JSONObject()
+    return when(req.optString("op","")){
+      "open"->open(context,owner,payload)
+      "exchange"->exchange(owner,payload)
+      "close"->{
+        val id=payload.optString("sessionId","")
+        requireOwned(id,owner)
+        closeAll()
+        JSONObject().put("closed",true)
+      }
+      else->throw IllegalArgumentException("Unsupported read-only LAN KXCI operation.")
+    }
+  }
+  private fun open(context:Context,owner:String,p:JSONObject):JSONObject{
+    cleanExpired()
+    if(current!=null && current?.owner!=owner)throw IllegalStateException("Another paired browser owns the instrument. Disconnect it first.")
+    // A new Connect is an explicit user action. No automatic retry or output replay.
+    closeAll()
+    val host=p.optString("host","").trim()
+    if(host.isEmpty()||host.length>253||host.any{it.isWhitespace()||it=='/'||it=='\\'})throw IllegalArgumentException("Invalid instrument host.")
+    val port=bounded(p.optInt("port",0),1,65535,"port")
+    val timeout=bounded(p.optInt("connectTimeoutMs",5000),250,10000,"connect timeout")
+    val mode=p.optString("networkMode","auto").ifBlank{"auto"}
+    if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported network mode.")
+    val wanted=p.optString("interfaceName","").trim()
+    if(mode=="interface" && (wanted.isEmpty()||wanted.length>32))throw IllegalArgumentException("Interface name is required.")
+    val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network=when(mode){
+      "auto"->if(host.startsWith("169.254."))cm.allNetworks.firstOrNull{
+        cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
+      }else null
+      "wifi"->cm.allNetworks.firstOrNull{cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true}
+      "ethernet"->cm.allNetworks.firstOrNull{cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true}
+      else->cm.allNetworks.firstOrNull{cm.getLinkProperties(it)?.interfaceName==wanted}
+    }
+    if(mode!="auto"&&network==null)throw IllegalStateException("Requested Android network is not available.")
+    val socket=network?.socketFactory?.createSocket() ?: Socket()
+    try{
+      socket.tcpNoDelay=true
+      socket.connect(InetSocketAddress(host,port),timeout)
+      val id=UUID.randomUUID().toString()
+      current=Session(id,owner,socket)
+      return JSONObject()
+        .put("sessionId",id)
+        .put("localAddress",socket.localAddress?.hostAddress ?: "")
+        .put("localPort",socket.localPort)
+        .put("remoteAddress",socket.inetAddress?.hostAddress ?: host)
+        .put("remotePort",socket.port)
+        .put("interfaceName",network?.let{cm.getLinkProperties(it)?.interfaceName} ?: wanted)
+        .put("networkMode",mode)
+    }catch(error:Throwable){
+      try{socket.close()}catch(_:Throwable){}
+      throw error
+    }
+  }
+  private fun exchange(owner:String,p:JSONObject):JSONObject{
+    val row=requireOwned(p.optString("sessionId",""),owner)
+    val bytes=try{Base64.decode(p.optString("base64",""),Base64.DEFAULT)}catch(_:Throwable){throw IllegalArgumentException("Invalid base64 request.")}
+    if(!bytes.contentEquals(byteArrayOf(42,73,68,78,63,0)))throw SecurityException("Only NUL-terminated *IDN? is allowed over the remote read-only gateway.")
+    val readTimeout=bounded(p.optInt("readTimeoutMs",5000),250,10000,"read timeout")
+    val idleTimeout=bounded(p.optInt("idleTimeoutMs",120),20,1500,"idle timeout")
+    val maxBytes=bounded(p.optInt("maxBytes",8192),1,8192,"response size")
+    try{
+      row.socket.getOutputStream().apply{write(bytes);flush()}
+      val output=ByteArrayOutputStream()
+      val input=row.socket.getInputStream()
+      val buffer=ByteArray(1024)
+      row.socket.soTimeout=readTimeout
+      while(output.size()<maxBytes){
+        try{
+          val count=input.read(buffer,0,minOf(buffer.size,maxBytes-output.size()))
+          if(count<0)break
+          if(count==0)continue
+          output.write(buffer,0,count)
+          row.socket.soTimeout=idleTimeout
+        }catch(error:SocketTimeoutException){
+          if(output.size()==0)throw IllegalStateException("No KXCI response; closing the session to prevent stale replies.",error)
+          break
+        }
+      }
+      if(output.size()>=maxBytes)throw IllegalStateException("KXCI reply exceeded safe size. Session closed.")
+      if(output.size()==0)throw IllegalStateException("KXCI sent an empty response. Session closed.")
+      val response=output.toByteArray()
+      row.lastUsed=System.currentTimeMillis()
+      return JSONObject().put("base64",Base64.encodeToString(response,Base64.NO_WRAP)).put("bytesRead",response.size)
+    }catch(error:Throwable){closeAll();throw error}
+  }
+}
