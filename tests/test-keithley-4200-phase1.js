@@ -34,6 +34,6 @@ assert(host.includes('tcp:Object.freeze'),'Core host must publish a generic tcp 
 for(const token of ["nativeCall('tcpOpen'","nativeCall('tcpExchange'","nativeCall('tcpClose'"])assert(web.includes(token),'Web/mobile bridge missing '+token);
 for(const token of ['tcpOpen?:','tcpExchange?:','tcpClose?:'])assert(protocol.includes(token),'Native facade missing '+token);
 for(const token of ["req.type === 'tcpOpen'","req.type === 'tcpExchange'","req.type === 'tcpClose'"])assert(router.includes(token),'Native request router missing '+token);
-for(const token of ['ConnectivityManager','socketFactory.createSocket()','interfaceName','@ReactMethod fun tcpOpen','@ReactMethod fun tcpExchange','@ReactMethod fun tcpClose'])assert(native.includes(token),'Android TCP Host missing '+token);
+for(const token of ['ConnectivityManager','socketFactory?.createSocket()','interfaceName','android.permission.ACCESS_NETWORK_STATE','@ReactMethod fun tcpOpen','@ReactMethod fun tcpExchange','@ReactMethod fun tcpClose','val requestBytes=Base64.decode','write(requestBytes)'])assert(native.includes(token),'Android TCP Host missing '+token);
 
 console.log('Keithley 4200 Phase 1 architecture/safety contract PASS');
