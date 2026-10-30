@@ -396,13 +396,13 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         row.busy=true
       }
       try {
-        val write=Base64.decode(base64,Base64.DEFAULT)
-        if(write.size>1024*1024)throw IllegalArgumentException("TCP write exceeds the 1 MiB safety limit.")
+        val requestBytes=Base64.decode(base64,Base64.DEFAULT)
+        if(requestBytes.size>1024*1024)throw IllegalArgumentException("TCP write exceeds the 1 MiB safety limit.")
         val readTimeout=boundedTcpInt(readTimeoutMs,5000,250,120000)
         val idleTimeout=boundedTcpInt(idleTimeoutMs,120,20,10000)
         val limit=boundedTcpInt(maxBytes,65536,1,8*1024*1024)
         val socket=row.socket
-        socket.getOutputStream().apply { write(write);flush() }
+        socket.getOutputStream().apply { write(requestBytes);flush() }
         val input=socket.getInputStream()
         val output=ByteArrayOutputStream()
         val buffer=ByteArray(4096)
