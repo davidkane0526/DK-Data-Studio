@@ -441,6 +441,27 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     return true
   }
 
+  // An ADB/root shell may see eth0 with an IPv4 address even when the
+  // ConnectivityManager omits that link-local, DHCP-less USB Ethernet interface.
+  // Select a local source address explicitly instead of silently using Wi-Fi.
+  private fun tcpLocalSource(wanted:String, linkLocal:Boolean):java.net.Inet4Address? {
+    val ni=try { java.net.NetworkInterface.getByName(wanted) }catch(_:Throwable){null} ?: return null
+    if(!ni.isUp) return null
+    val ipv4=java.util.Collections.list(ni.inetAddresses)
+      .filterIsInstance<java.net.Inet4Address>().filter{!it.isLoopbackAddress}
+    return if(linkLocal)ipv4.firstOrNull{it.hostAddress.startsWith("169.254.")}
+      else ipv4.firstOrNull()
+  }
+  private fun tcpFallbackSource(mode:String,wanted:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>? {
+    val allowed=mode=="ethernet"||mode=="interface"||mode=="auto"&&linkLocal
+    if(!allowed)return null
+    val names=if(mode=="interface")listOf(wanted) else {
+      val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
+      (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
+    }
+    return names.firstNotNullOfOrNull{name->tcpLocalSource(name,linkLocal)?.let{Pair(name,it)}}
+  }
+
   @ReactMethod fun tcpOpen(host:String,port:Double,connectTimeoutMs:Double,interfaceName:String,networkMode:String,promise:Promise) {
     thread(name="dkds-tcp-open",isDaemon=true) {
       try {
@@ -462,10 +483,16 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
           "wifi"->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true }
           else->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true }
         }
-        if(mode!="auto"&&network==null)throw IllegalStateException("Requested Android network is unavailable: "+mode+(if(mode=="interface")" / "+wanted else ""))
+        val linkLocal=target.startsWith("169.254.")
+        val fallback=if(network==null)tcpFallbackSource(mode,wanted,linkLocal) else null
+        if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
+          "Android did not expose a usable "+mode+" network or IPv4 on "+
+          (if(mode=="interface")wanted else "eth0")+
+          ". ADB/root eth0 connectivity does not imply app-visible networking.")
         val socket=network?.socketFactory?.createSocket() ?: Socket()
         try {
           socket.tcpNoDelay=true
+          if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))
           socket.connect(InetSocketAddress(target,portInt),timeout)
           val id=UUID.randomUUID().toString()
           tcpSessions[id]=TcpSession(id,socket)
@@ -475,12 +502,15 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
             putInt("localPort",socket.localPort)
             putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
             putInt("remotePort",socket.port)
-            putString("interfaceName",network?.let { cm.getLinkProperties(it)?.interfaceName } ?: wanted)
+            putString("interfaceName",network?.let { cm.getLinkProperties(it)?.interfaceName } ?: fallback?.first ?: wanted)
+            putString("routeStrategy",if(network!=null)"android-network" else if(fallback!=null)"local-source-bind" else "system-default")
             putString("networkMode",mode)
           })
         } catch(error:Throwable) {
           try{socket.close()}catch(_:Throwable){}
-          throw error
+          throw IllegalStateException("TCP connect failed via "+
+            (network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: "system-default")+
+            " to "+target+":"+portInt+": "+(error.message ?: error.javaClass.simpleName),error)
         }
       } catch(error:Throwable) { promise.reject("E_TCP_OPEN",error.message ?: "TCP open failed.",error) }
     }
