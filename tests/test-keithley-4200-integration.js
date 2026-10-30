@@ -7,7 +7,7 @@ const vm=require('vm');
 const {TextEncoder,TextDecoder}=require('util');
 const root=path.resolve(__dirname,'..');
 const source=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-let createPlugin=null,callbacks=null,slice=null,capability=null;
+let createPlugin=null,callbacks=null,slice=null,capability=null,topWorkspace=null,activity=null;
 const registry=new Map(),messages=[],saved=[],requests=[];
 const controls={
   host:'169.254.111.118',port:'1225',networkMode:'ethernet',interfaceName:'eth0',
@@ -47,13 +47,40 @@ const ctx={
   workspace:{openPage:()=>{}},
   project:{registerSlice:(id,value)=>{assert.equal(id,'keithley-4200');slice=value;},capture:()=>{}},
   io:{saveText:async info=>{saved.push(info);return true;}},
-  ui:{activities:{add:()=>{}},pages:{add:()=>({})}},
+  ui:{activities:{add:row=>{activity=row;}},topWorkspace:{register:row=>{topWorkspace=row;}},pages:{add:()=>({})}},
   capabilities:{register:(id,provider)=>{assert.equal(id,'instrument.keithley-4200');capability=provider;}}
 };
 async function main(){
   assert(createPlugin);
   const lifecycle=await createPlugin(ctx);
-  assert(callbacks&&capability&&slice);
+  assert(callbacks&&capability&&slice&&activity&&topWorkspace);
+  assert.equal(topWorkspace.activity,'keithley-4200');
+  assert.equal(topWorkspace.layout.primary.presentationRole,'utility-primary');
+  assert.equal(topWorkspace.layout.root.selector,'#keithley4200Page .dkds-plugin-workspace');
+  assert.equal(activity.label,'4200A');
+  // Execute the REAL Android presentation filter instead of checking only
+  // the presence of an activity; absent topWorkspace previously hid 4200A.
+  const {PresentationModel}=require(path.join(root,'src/core/ui/modules/presentation/model.js'));
+  const originalWindow=global.window;
+  try {
+    global.window={
+      DKDSPlugins:{
+        activities:{list:()=>[{...activity,pluginId:'com.dkds.keithley-4200',pluginType:'developer'}]},
+        workspace:{top:()=>[{...topWorkspace,pluginId:'com.dkds.keithley-4200'}]},
+        statusBar:{list:()=>[]}
+      },
+      DKDSUI:{workspaces:{actions:()=>[]},actions:{list:()=>[]}}
+    };
+    const model=new PresentationModel();
+    const workspaces=model.workspaces();
+    assert.equal(workspaces.length,1,'Android must show registered instrument TOP workspace.');
+    assert.equal(workspaces[0].activityId,'keithley-4200');
+    assert.equal(workspaces[0].label,'4200A');
+    assert.equal(workspaces[0].presentationComplete,true,'4200A must declare primary presentation role.');
+  } finally {
+    if(originalWindow===undefined)delete global.window;
+    else global.window=originalWindow;
+  }
   assert.equal(capability.methods.status().connected,false);
   const connected=await capability.methods.connect();
   assert.equal(connected.sessionId,'session-1');

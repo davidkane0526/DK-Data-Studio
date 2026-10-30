@@ -7,6 +7,7 @@ This plugin implements a **read-only live connection** and a **simulation-only m
 - Android app: tap **分析** at the top, choose **4200A** in **分析工作区**.
 - Desktop / LAN browser: find the **4200A** activity in the workspace navigation (or **更多工作区** if it is in overflow).
 - The entry is registered as the activity `keithley-4200` by the built-in plugin `com.dkds.keithley-4200`.
+- Android analysis navigation requires BOTH the plugin activity and the native `ui.topWorkspaces` contract. Earlier APK 3.71.135 declared the activity but omitted `workspace.role=top` / `ctx.ui.topWorkspace.register(...)`, so the Android PresentationModel intentionally filtered the entry. Both are now declared, and the real `PresentationModel.workspaces()` projection is covered by the integration test.
 - If the entry is missing, open **插件** and inspect the status of **Keithley 4200A KXCI**; activation errors may suppress its activity. A page-header mounting bug that could cause activation failure was fixed after release `3.71.134` and covered by `test-keithley-4200-presentation.js`.
 
 ## Connection

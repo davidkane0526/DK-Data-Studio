@@ -4,9 +4,9 @@
     id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.2.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['measurement-model.js','unit-presentation.js','plugin.js'],enabled:true,order:82,
     description:"Configurable KXCI connection, simulation-only GUI plan editor, live scientific plots and CSV/JSON/SVG export.",
-    pluginType:'developer',
-    requiresCore:['runtime','status','services','modules','project','io','workspace','capabilities','ui.dom','ui.activities','ui.pages','ui.unit-templates','ui.scientific-plot','ui.table'],
-    capabilities:['instrument.keithley-4200','network.tcp-client','ui.page','ui.scientific-plot','ui.table'],
+    pluginType:'developer',workspace:{role:'top',activity:'keithley-4200',icon:'K',title:'Keithley 4200A'},window:{activity:'keithley-4200',title:'Keithley 4200A KXCI',width:1280,height:850,minWidth:880,minHeight:620,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project'},
+    requiresCore:['runtime','status','services','modules','project','io','workspace','capabilities','ui.dom','ui.activities','ui.top-workspace','ui.pages','ui.unit-templates','ui.scientific-plot','ui.table'],
+    capabilities:['instrument.keithley-4200','network.tcp-client','ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table'],
     platformPresentation:{desktop:{mode:'shared'},mobile:{mode:'adaptive'}}
   };
   DKDSPlugins.define(manifest,async ctx=>{
@@ -199,7 +199,7 @@
       ctx.project.capture();
     }
     function safe(fn){return (...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;});}catch(e){ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;}};}
-    ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>ctx.workspace.openPage('keithley4200Page')});
+    ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,openMode:'window',description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>ctx.workspace.openPage('keithley4200Page')});
     const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:''});
     ui=Presentation.mount(ctx,page,{
       onEdit,
@@ -207,6 +207,15 @@
       saveProfile:safe(saveProfile),loadProfile:safe(loadProfile),
       preview:safe(preview),simulate:safe(simulate),stop:safe(stop),
       exportCsv:safe(exportCsv),exportJson:safe(exportJson),exportSvg:safe(exportSvg)
+    });
+    // Android's analysis drawer projects only fully registered TOP workspaces.
+    ctx.ui.topWorkspace.register({
+      id:'keithley-4200',activity:'keithley-4200',label:'4200A',icon:'K',
+      layout:{
+        mode:'native',root:{selector:'#keithley4200Page .dkds-plugin-workspace'},
+        primary:{id:'main',label:'4200A',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},
+        prime:[],sub:[]
+      }
     });
     ctx.project.registerSlice('keithley-4200',{
       serialize:()=>({profiles:profiles.map(p=>({name:p.name,endpoint:{...p.endpoint}})),connection:form(connectionKeys),plan:form(planKeys)}),

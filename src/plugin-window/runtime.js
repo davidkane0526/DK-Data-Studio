@@ -584,7 +584,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.71.135',
+      appVersion:'3.71.136',
       isAuxiliaryWindow:true,
       isWebClient:false,
       renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
@@ -609,7 +609,11 @@
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
-      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})})}
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})}),tcp:Object.freeze({
+        open:payload=>{const fn=window.electronAPI?.tcpOpen;return typeof fn==='function'?fn(payload||{}):Promise.reject(new Error('TCP Host service unavailable.'));},
+        exchange:payload=>{const fn=window.electronAPI?.tcpExchange;return typeof fn==='function'?fn(payload||{}):Promise.reject(new Error('TCP Host service unavailable.'));},
+        close:payload=>{const fn=window.electronAPI?.tcpClose;return typeof fn==='function'?fn(payload||{}):Promise.resolve(false);}
+      })}
     };
   }
 

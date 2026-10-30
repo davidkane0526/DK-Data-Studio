@@ -22,6 +22,15 @@ const native=read('mobile/plugins/withDkdsAndroidNativeHost.js');
 
 assert.equal(manifest.id,'com.dkds.keithley-4200');
 assert.equal(manifest.apiVersion,'1.19.0');
+assert.equal(manifest.workspace?.role,'top','Android analysis navigation requires TOP role.');
+assert.equal(manifest.workspace?.activity,'keithley-4200');
+assert.equal(manifest.window?.activity,'keithley-4200','Independent Electron TOP launch requires a window contract.');
+assert(manifest.requiresCore.includes('ui.top-workspace'),'The instrument must declare TOP workspace API usage.');
+assert(plugin.includes("ctx.ui.topWorkspace.register("),'4200A must publish its TOP contract for Android workspace projection.');
+assert(plugin.includes("presentationRole:'utility-primary'"),'Mobile primary presentation role must be declared.');
+const presentationSource=read('src/core/ui/modules/presentation/model.js');
+assert(presentationSource.includes("this.contractFor(row)||text(row.navigation)==='system'"),
+  'Navigation regression guard: without TOP registration the native analysis menu filters 4200A.');
 assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.unit-templates'));
 assert(plugin.includes("ctx.services.require('tcp')"),'4200 plugin must consume the generic TCP service.');
 assert(plugin.includes("encodeBase64('*IDN?\\0')"),'Phase 1 must send the verified NUL-terminated ID query.');

@@ -19,6 +19,7 @@
     "capabilities",
     "ui.dom",
     "ui.activities",
+    "ui.top-workspace",
     "ui.pages",
     "ui.unit-templates",
     "ui.scientific-plot",
@@ -28,6 +29,8 @@
     "instrument.keithley-4200",
     "network.tcp-client",
     "ui.page",
+    "ui.top-workspace",
+    "ui.plugin-workspace",
     "ui.scientific-plot",
     "ui.table"
   ],
@@ -43,5 +46,25 @@
     "measurement-model.js",
     "unit-presentation.js",
     "plugin.js"
-  ]
+  ],
+  "workspace": {
+    "role": "top",
+    "activity": "keithley-4200",
+    "icon": "K",
+    "title": "Keithley 4200A"
+  },
+  "window": {
+    "activity": "keithley-4200",
+    "title": "Keithley 4200A KXCI",
+    "width": 1280,
+    "height": 850,
+    "minWidth": 880,
+    "minHeight": 620,
+    "dependencies": [
+      "scientific-renderer"
+    ],
+    "prewarm": false,
+    "reuse": true,
+    "persistence": "project"
+  }
 }
