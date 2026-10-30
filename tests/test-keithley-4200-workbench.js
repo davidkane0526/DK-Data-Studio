@@ -55,4 +55,10 @@ assert(plugin.includes("encodeBase64('*IDN?\\0')"),'Only verified identity comma
 assert(plugin.includes('Model.createDataset(p,null)'),'Simulated dataset must not carry live identity');
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'No SMU command path may be added in simulation phase');
 assert(ui.includes('units.scientificPlot.create')&&ui.includes('units.table.mount'));
+assert(ui.includes('仪器原生数据与图片归档'),'Native instrument artifacts must have a distinct archive area');
+assert(ui.includes('原生文件获取尚未实现'),'Unimplemented instrument-file retrieval must be explicitly disclosed');
+assert(ui.includes('软件生成 SVG'),'DKDS-generated SVG must be labeled as software-generated');
+assert(ui.includes('仿真 CSV')&&ui.includes('仿真 JSON'),'Simulation exports must never be labeled raw device data');
+assert(!/action\(exportActions,'(?:exportOriginal|saveOriginal)/.test(ui),'Do not expose nonfunctional native-file export commands');
+
 console.log('Keithley 4200 workbench model, safety and export contract PASS');
