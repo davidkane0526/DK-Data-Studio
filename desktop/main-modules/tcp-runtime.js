@@ -2,11 +2,38 @@
 
 const net=require('net');
 const crypto=require('crypto');
+const os=require('os');
 
 function boundedInt(value,fallback,min,max){
   const n=Number(value);
   if(!Number.isFinite(n))return fallback;
   return Math.max(min,Math.min(max,Math.trunc(n)));
+}
+
+function resolveLocalAddress(payload={}){
+  const explicitAddress=String(payload.localAddress||'').trim();
+  if(explicitAddress)return {address:explicitAddress,interfaceName:'',networkMode:'address'};
+  const mode=String(payload.networkMode||'auto').trim().toLowerCase();
+  if(!['auto','wifi','ethernet','interface'].includes(mode))throw new Error('Unsupported TCP network mode: '+mode);
+  if(mode==='auto')return {address:'',interfaceName:'',networkMode:mode};
+  const named=String(payload.interfaceName||'').trim();
+  if(mode==='interface'&&!named)throw new Error('TCP interfaceName is required in interface mode.');
+  const match=name=>{
+    if(mode==='interface')return name.toLowerCase()===named.toLowerCase();
+    if(mode==='wifi')return /(wi-?fi|wireless|wlan|wlp[0-9]|airport|802\\.11|^en0$)/i.test(name);
+    return /(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(name);
+  };
+  const rows=[];
+  for(const [name,addresses] of Object.entries(os.networkInterfaces())){
+    if(!match(name))continue;
+    for(const row of addresses||[]){
+      if((row.family==='IPv4'||row.family===4)&&!row.internal&&row.address)rows.push({address:row.address,interfaceName:name,networkMode:mode});
+    }
+  }
+  if(!rows.length)throw new Error('No IPv4 address found for TCP '+mode+(named?' interface '+named:'')+'. Choose Auto or a valid interface.');
+  const remote=String(payload.host||'').trim();
+  const preferred=remote.startsWith('169.254.')?rows.find(r=>r.address.startsWith('169.254.')):rows.find(r=>!r.address.startsWith('169.254.'));
+  return preferred||rows[0];
 }
 
 function createTcpRuntime(){
@@ -32,7 +59,8 @@ function createTcpRuntime(){
     const host=String(payload.host||'').trim();
     const port=boundedInt(payload.port,0,1,65535);
     const connectTimeoutMs=boundedInt(payload.connectTimeoutMs,5000,250,120000);
-    const localAddress=String(payload.localAddress||'').trim();
+    const binding=resolveLocalAddress(payload);
+    const localAddress=binding.address;
     if(!host)throw new Error('TCP host is required.');
     if(!port)throw new Error('TCP port must be between 1 and 65535.');
 
@@ -64,7 +92,9 @@ function createTcpRuntime(){
           localAddress:socket.localAddress||'',
           localPort:Number(socket.localPort)||0,
           remoteAddress:socket.remoteAddress||host,
-          remotePort:Number(socket.remotePort)||port
+          remotePort:Number(socket.remotePort)||port,
+          interfaceName:binding.interfaceName,
+          networkMode:binding.networkMode
         });
       });
       socket.connect({host,port,...(localAddress?{localAddress}:{})});
@@ -140,4 +170,4 @@ function createTcpRuntime(){
   return Object.freeze({open,exchange,close,closeAll});
 }
 
-module.exports={createTcpRuntime};
+module.exports={createTcpRuntime,resolveLocalAddress};
