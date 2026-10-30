@@ -48,6 +48,22 @@ export function useNativeRequestRouter(
       if (req.type === 'smbListShares') { resolveWeb(req.id, true, await nativeHost?.smbListShares?.(req.payload?.connection || {}) || []); return; }
       if (req.type === 'smbList') { resolveWeb(req.id, true, await nativeHost?.smbList?.(req.payload?.connection || {}, String(req.payload?.path || '')) || []); return; }
       if (req.type === 'smbRead') { resolveWeb(req.id, true, await nativeHost?.smbRead?.(req.payload?.connection || {}, Array.isArray(req.payload?.paths) ? req.payload.paths : []) || []); return; }
+      if (req.type === 'tcpOpen') {
+        if (!nativeHost?.tcpOpen) throw new Error('Android TCP Host 不可用。');
+        const payload=req.payload||{};
+        resolveWeb(req.id,true,await nativeHost.tcpOpen(String(payload.host||''),Number(payload.port)||0,Number(payload.connectTimeoutMs)||5000,String(payload.interfaceName||'')));
+        return;
+      }
+      if (req.type === 'tcpExchange') {
+        if (!nativeHost?.tcpExchange) throw new Error('Android TCP Host 不可用。');
+        const payload=req.payload||{};
+        resolveWeb(req.id,true,await nativeHost.tcpExchange(String(payload.sessionId||''),String(payload.base64||''),Number(payload.readTimeoutMs)||5000,Number(payload.idleTimeoutMs)||120,Number(payload.maxBytes)||65536));
+        return;
+      }
+      if (req.type === 'tcpClose') {
+        resolveWeb(req.id,true,await nativeHost?.tcpClose?.(String(req.payload?.sessionId||''))||false);
+        return;
+      }
       if (req.type === 'agentGetSecret') { resolveWeb(req.id, true, await nativeHost?.agentGetSecret?.(String(req.payload?.key || 'default')) || ''); return; }
       if (req.type === 'agentSetSecret') { resolveWeb(req.id, true, await nativeHost?.agentSetSecret?.(String(req.payload?.key || 'default'), String(req.payload?.value || '')) || false); return; }
       if (req.type === 'agentHttpJson') {
