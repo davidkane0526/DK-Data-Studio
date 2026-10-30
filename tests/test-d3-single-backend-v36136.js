@@ -10,6 +10,7 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const mobile=json('mobile/package.json');
 const index=read('src/index.html');
+const chartExport=read('src/core/scientific/chart-export-runtime.js');
 const charts=read('src/core/scientific/chart-runtime.js');
 const d3Renderer=read('src/core/scientific/d3-chart-renderer.js');
 const dedicated=read('src/plugin-window/runtime.js');
@@ -50,7 +51,7 @@ const context={console,structuredClone,setTimeout,clearTimeout,queueMicrotask,pe
  document:{currentScript:{src:'file:///src/core/scientific/chart-runtime.js'},documentElement:{dataset:{dkdsTheme:'light'}},getElementById:id=>id==='d3-only'?target:null,querySelector:()=>null,querySelectorAll:()=>[]},
  matchMedia:()=>({matches:false}),addEventListener(){},requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame(){},localStorage:{getItem:()=>null,setItem(){},removeItem(){}}};
 context.DKDSStyleGate={set(_el,_prop,value){return value;},remove(){return true;}};
-context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(charts,context,{filename:'chart-runtime.js'});
+context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(chartExport,context,{filename:'chart-export-runtime.js'});vm.runInContext(charts,context,{filename:'chart-runtime.js'});
 (async()=>{
   const state=context.DKDSCharts.configureRuntime({preferredRenderer:'d3',host:'d3-single-backend-test'});
   assert.equal(state.singleBackend,true);assert.equal(state.renderer,'d3');

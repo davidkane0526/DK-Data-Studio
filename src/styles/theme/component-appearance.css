@@ -53,6 +53,13 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover:not(:disabled){ba
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-tab-surface-active);color:var(--dkds-ca-tab-text-active);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-active)}
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-tab-surface-selected);color:var(--dkds-ca-tab-text-selected);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-selected)}
 
+/* Project tabs visually merge into the project workspace below. Keep the
+   generic Tab component fully rounded elsewhere, but give this shell-level Tab
+   identity top corners only so its lower edge reads as part of the workspace. */
+body.dkds-modern-ui [data-dkds-component-identity="tab"].project-tab{
+  border-radius:7px 7px 0 0;
+}
+
 /* Compact Unit tabs retain the accepted toolbar-action silhouette while keeping
    tab semantics/state ownership in Core. */
 body.dkds-modern-ui [data-dkds-unit-template="tabs-v2"][data-dkds-unit-variant="compact"] [data-dkds-component-identity="tab"]{

@@ -106,7 +106,7 @@ const table = ctx.data.artifacts.get(sources[0].artifactId);
 
 `ctx.data.sources.list()` and `targets()` are synchronous read contracts in both the main shell and dedicated TOP renderers. Mutations such as assignment changes remain asynchronous host operations. Physical source deletion belongs to Data Center/host infrastructure.
 
-Use `window.artifactHydration: "live"` only when the dedicated renderer must receive the exact live Artifact snapshot at open/reuse time. The manifest value is part of the machine-readable Window Spec and does not rely on plugin activation timing.
+A dedicated `pluginType:"workbench"` that declares a non-empty `data.accepts` list automatically receives **live Artifact hydration** at open/reuse time. This keeps the dedicated renderer on the same assigned project data as the owner renderer without requiring every analysis plugin to repeat `window.artifactHydration:"live"`. Use an explicit `window.artifactHydration:"project"` only when a data-consuming workbench intentionally wants the lightweight project envelope instead of the current Artifact snapshot.
 
 ## 3. Advanced low-level bounded scientific layout
 

@@ -1,6 +1,7 @@
 'use strict';
 const {hostState, esc, resolveElement, resolveScopedElement, cleanupCall}=require('../foundation/shortcuts');
 const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
+const PlotDataExport=require('./data-export');
 const StyleGate=require('ui/style-ownership-gate');
 const PLOT_GEOMETRY_OWNER='core.plot-view-content-geometry';
 const STYLE_SOURCE='src/core/ui/modules/plot-view/chart.js';
@@ -196,22 +197,23 @@ const plotRemove=(el,property)=>StyleGate.remove(el,property,{owner:PLOT_GEOMETR
     }
     plotNode(){return this.spec.getPlot?.()||this.plot;}
     fileStem(){return String(typeof this.spec.fileStem==='function'?this.spec.fileStem(this):this.spec.fileStem||this.title?.textContent||this.id).trim().replace(/[\\/:*?\"<>|]+/g,'_')||this.id;}
+    traceData(){
+      const plot=this.plotNode();
+      if(typeof window.DKDSCharts?.sourceData==='function')return window.DKDSCharts.sourceData(plot);
+      return Array.from(plot?.data||[]);
+    }
     traceCsv(){
       if(typeof this.spec.csv==='function')return String(this.spec.csv(this)||'');
-      const plot=this.plotNode(),traces=Array.from(plot?.data||[]),lines=[];
-      const quote=v=>{const s=String(v??'');return /[\",\r\n]/.test(s)?`\"${s.replace(/\"/g,'\"\"')}\"`:s;};
-      let hasHeatmap=false;
-      for(const tr of traces){if(Array.isArray(tr?.z)&&Array.isArray(tr.z[0])){hasHeatmap=true;break;}}
-      if(hasHeatmap){lines.push('series,x,y,z');for(const tr of traces){if(!Array.isArray(tr?.z)||!Array.isArray(tr.z[0]))continue;const xs=Array.isArray(tr.x)?tr.x:tr.z[0].map((_,i)=>i),ys=Array.isArray(tr.y)?tr.y:tr.z.map((_,i)=>i);for(let r=0;r<tr.z.length;r++)for(let c=0;c<(tr.z[r]||[]).length;c++)lines.push([tr.name||this.title?.textContent||this.id,xs[c],ys[r],tr.z[r][c]].map(quote).join(','));}return lines.join('\n');}
-      lines.push('series,x,y');for(const tr of traces){const xs=Array.from(tr?.x||[]),ys=Array.from(tr?.y||[]),n=Math.max(xs.length,ys.length);for(let i=0;i<n;i++)lines.push([tr?.name||this.title?.textContent||this.id,xs[i]??i,ys[i]??''].map(quote).join(','));}return lines.join('\n');
+      return PlotDataExport.traceCsv(this.traceData(),{fallbackSeries:this.title?.textContent||this.id});
     }
     async saveText(text,name,ext='csv'){
       if(typeof this.spec.saveText==='function')return this.spec.saveText({content:text,defaultName:name,extension:ext,view:this});
+      if(window.DKDSIO?.saveText)return window.DKDSIO.saveText({defaultName:name,content:text,filters:[{name:ext.toUpperCase(),extensions:[ext]}],source:`core.plot-view.${this.id}.${ext}`});
       if(window.electronAPI?.saveText)return window.electronAPI.saveText({defaultName:name,content:text,filters:[{name:ext.toUpperCase(),extensions:[ext]}],source:`core.plot-view.${this.id}.${ext}`});
       const blob=new Blob([text],{type:ext==='csv'?'text/csv;charset=utf-8':'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return true;
     }
     async exportCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可导出的数据。');return this.saveText(csv,`${this.fileStem()}.csv`,'csv');}
-    async copyCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可复制的数据。');if(typeof this.spec.copyText==='function')return this.spec.copyText(csv,`${this.title?.textContent||this.id} 数据`);if(window.electronAPI?.copyText)return window.electronAPI.copyText(csv);if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(csv);throw new Error('当前环境不支持复制。');}
+    async copyCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可复制的数据。');if(typeof this.spec.copyText==='function')return this.spec.copyText(csv,`${this.title?.textContent||this.id} 数据`);if(window.DKDSIO?.clipboard?.writeText)return window.DKDSIO.clipboard.writeText(csv);if(window.electronAPI?.copyText)return window.electronAPI.copyText(csv);if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(csv);throw new Error('当前环境不支持复制。');}
     async exportImage(format){
       const plot=this.plotNode();if(!plot)throw new Error('图表尚未渲染。');
       if(typeof this.spec.exportImage==='function')return this.spec.exportImage({format,plot,fileStem:this.fileStem(),view:this});

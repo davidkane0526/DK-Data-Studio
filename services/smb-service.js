@@ -6,6 +6,16 @@ const dns = require("node:dns").promises;
 const { spawn, spawnSync } = require("node:child_process");
 const path = require("node:path");
 
+const activeSmbChildren = new Set();
+function spawnSmbChild(command, args, options = {}) {
+  const child = spawn(command, args, options);
+  activeSmbChildren.add(child);
+  const release = () => activeSmbChildren.delete(child);
+  child.once("exit", release);
+  child.once("error", release);
+  return child;
+}
+
 const SMB_FILE_PATTERN = /\.(csv|tsv|txt|dat|json|png|jpe?g)$/i;
 
 function probeSmbHost(address, timeout = 380) {
@@ -21,7 +31,7 @@ function probeSmbHost(address, timeout = 380) {
 async function netViewListHosts() {
   // Windows 原生 `net view` 列出局域网 SMB 主机（含主机名），作为设备发现的权威来源。
   return new Promise((resolve) => {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); net view`], { windowsHide: true });
+    const child = spawnSmbChild("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); net view`], { windowsHide: true });
     const chunks = [];
     let settled = false;
     const finish = (hosts = []) => { if (settled) return; settled = true; clearTimeout(timer); resolve(hosts); };
@@ -49,7 +59,7 @@ function netbiosName(address) {
   // 因此用 latin1 保留原始字节，在字节层面匹配 ASCII "UNIQUE" 或 GBK“唯一”(CE A8 D2 BB)。
   if (!/^[0-9.]+$/.test(String(address || ""))) return Promise.resolve("");
   return new Promise((resolve) => {
-    const child = spawn("nbtstat.exe", ["-A", address], { windowsHide: true });
+    const child = spawnSmbChild("nbtstat.exe", ["-A", address], { windowsHide: true });
     const chunks = [];
     let settled = false;
     const finish = (name = "") => { if (settled) return; settled = true; clearTimeout(timer); resolve(name); };
@@ -391,7 +401,7 @@ function enqueueSmb(task) {
 
 function runPowerShell(script, timeoutMs = 20000, extraEnv = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, env: { ...process.env, ...extraEnv } });
+    const child = spawnSmbChild("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, env: { ...process.env, ...extraEnv } });
     const chunks = [];
     let settled = false;
     const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); if (error) reject(error); else resolve(value); };
@@ -591,6 +601,14 @@ async function scanDesktopSmbShares(connection) {
 }
 
 function shutdownSmbSessions() {
+  // SMB discovery/read commands are application-owned child processes. Closing
+  // the Desktop app must terminate any command that is still in flight instead
+  // of allowing PowerShell/nbtstat to outlive the Electron owner.
+  for (const child of [...activeSmbChildren]) {
+    try { if (!child.killed) child.kill(); } catch { /* Ignore cleanup failures. */ }
+  }
+  activeSmbChildren.clear();
+
   if (establishedSmbUncs.size === 0) return;
   for (const unc of establishedSmbUncs) {
     try { spawnSync("net", ["use", unc, "/delete", "/y"], { windowsHide: true }); } catch { /* Ignore cleanup failures. */ }

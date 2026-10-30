@@ -96,6 +96,18 @@ for (const [relative, keyPath] of [
   fs.writeFileSync(target,JSON.stringify(data,null,2)+'\n','utf8');
 }
 
+const mobileAppPath = path.join(root, 'mobile', 'app.json');
+if (version !== current && fs.existsSync(mobileAppPath)) {
+  const mobileApp = JSON.parse(fs.readFileSync(mobileAppPath, 'utf8'));
+  const currentVersionCode = Number(mobileApp?.expo?.android?.versionCode);
+  if (!Number.isInteger(currentVersionCode) || currentVersionCode < 1) {
+    console.error('mobile/app.json expo.android.versionCode must be a positive integer.');
+    process.exit(4);
+  }
+  mobileApp.expo.android.versionCode = currentVersionCode + 1;
+  fs.writeFileSync(mobileAppPath, JSON.stringify(mobileApp, null, 2) + '\n', 'utf8');
+}
+
 const indexPath = path.join(root, 'src', 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 html = html.replace(

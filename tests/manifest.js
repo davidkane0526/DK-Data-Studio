@@ -17,6 +17,139 @@ module.exports = {
       "args": []
     },
     {
+    {
+      "file": "tests/test-v371115-plot-export-desktop-lifecycle-brand.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-live-scientific-plot-binding.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-writable-parameter-domain-bindings.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-domain-snapshot-bindings.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-domain-surface-action.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-resonance-domain-adapter-seam.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-generic-surface-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-nested-parameter-form-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-tool-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-unit-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-hosted-workspace-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-interaction-command-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-scientific-workbench-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-artifact-pipeline-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-portable-python-task-lowering.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-declarative-python-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-source-import-authoring.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-artifact-table-binding.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-table-transform-task.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-series-aggregates.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-groupby-aggregate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-numpy-array-ir.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-to-csv-host-export.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-series-apply.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-curve-fit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-workflow-package.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-prerequisite-scheduling.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-multi-action-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-artifact-stage-chaining.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-typed-artifact-boundaries.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
@@ -2042,6 +2175,70 @@ module.exports = {
     }
   ],
   "check": [
+    {
+      "file": "tests/test-phase-f-live-scientific-plot-binding.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-writable-parameter-domain-bindings.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-domain-snapshot-bindings.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-resonance-surface-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-ter-declarative-reconstruction.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-generic-surface-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-nested-parameter-form-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-third-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-tool-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-unit-blueprint-parity-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-hosted-workspace-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-interaction-command-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-scientific-workbench-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-artifact-pipeline-generator.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-portable-python-task-lowering.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-phase-f-declarative-python-generator.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371112-production-unit-cutover-closure.js",
       "args": []

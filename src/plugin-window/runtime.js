@@ -16,6 +16,7 @@
     'heatmap-canvas-runtime':'../core/scientific/heatmap-canvas-runtime.js',
     'heatmap-selection-overlay-runtime':'../core/scientific/heatmap-selection-overlay-runtime.js',
     'd3-chart-renderer':'../core/scientific/d3-chart-renderer.js',
+    'chart-export-runtime':'../core/scientific/chart-export-runtime.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
     'science-presets':'../science/presets.js',
@@ -208,7 +209,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['scientific-unit-runtime','scientific-viewport-link-runtime','scientific-legend-link-runtime','entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','scientific-display-runtime','heatmap-canvas-runtime','heatmap-selection-overlay-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['scientific-unit-runtime','scientific-viewport-link-runtime','scientific-legend-link-runtime','entity-runtime','io-runtime','plot-presentation-runtime','native-touch-drag','scientific-display-runtime','heatmap-canvas-runtime','heatmap-selection-overlay-runtime','d3-chart-renderer','chart-export-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
@@ -511,32 +512,14 @@
   async function copyTextToClipboard(text, label='文本') {
     const value = String(text ?? '');
     if (!value) return false;
-    const ok = await window.electronAPI?.copyText?.(value);
-    if (ok) setStatus(`${label}已复制。`);
-    return !!ok;
+    const ok = await window.DKDSIO?.clipboard?.writeText?.(value);
+    if (ok !== false) setStatus(`${label}已复制。`);
+    return ok !== false;
   }
 
   async function saveChartImage(plotId, defaultName, format='png') {
-    const data = await window.DKDSCharts.toImage(plotId, {
-      format,
-      width:1500,
-      height:950,
-      scale:format === 'png' ? 2 : 1
-    });
-    if (format === 'svg') {
-      const content = decodeURIComponent(data.split(',')[1] || '');
-      return window.electronAPI.saveText({
-        defaultName:`${defaultName}.svg`,
-        content,
-        filters:[{name:'SVG',extensions:['svg']}]
-      });
-    }
-    const base64 = data.split(',')[1] || '';
-    return window.electronAPI.saveBase64({
-      defaultName:`${defaultName}.png`,
-      base64,
-      filters:[{name:'PNG',extensions:['png']}]
-    });
+    if(typeof window.DKDSCharts?.saveImage!=='function')throw new Error('Scientific Chart export runtime unavailable.');
+    return window.DKDSCharts.saveImage(plotId,defaultName,format);
   }
 
   function syncProjectFromWindow() {
@@ -601,7 +584,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.71.115',
+      appVersion:'3.71.134',
       isAuxiliaryWindow:true,
       isWebClient:false,
       renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
@@ -713,6 +696,12 @@
 
     const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
     if (windowRuntime?.create) {
+      const runtimeArtifacts=window.DKDSPluginWindowArtifactInputs?.resolve?.({
+        artifacts:artifactsApi,
+        manifest:spec?.packageManifest||{},
+        pluginId:String(spec.pluginId||''),
+        modules:window.DKDSPluginModules
+      })||artifactsApi;
       pluginRuntime = await measure('window-runtime-create',()=>windowRuntime.create({
         project,
         bootstrap:clone(bootstrap),
@@ -720,7 +709,7 @@
         scheduleSnapshot,
         copyTextToClipboard,
         saveChartImage,
-        artifacts:artifactsApi
+        artifacts:runtimeArtifacts
       }));
       if (pluginRuntime?.serviceName && pluginRuntime?.service) {
         window.DKDSServices?.register?.(String(spec.pluginId||'plugin-window'),pluginRuntime.serviceName,pluginRuntime.service,{replace:true,metadata:{scope:'dedicated-window'}});

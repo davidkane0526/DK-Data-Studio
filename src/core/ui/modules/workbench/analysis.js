@@ -171,7 +171,7 @@ const {GridController,GroupAreaController}=require('../grid/controller');
       const contentInset=['none','compact','standard','comfortable'].includes(String(spec.contentInset||''))?String(spec.contentInset):'';
       const row={role:'prime',placements,defaultPlacement:placements[0]||'inline',...spec,id,placements,placementControl,contentInset,container:null,portable:null,mounted:false,cleanup:null,actionGroup:null,headerActionGroup:null};
       const owned=existing;if(owned?.dataset){owned.dataset.dkdsPrimeOwned='1';if(contentInset)owned.dataset.dkdsPrimeContentInset=contentInset;this.markSurfaceNode(owned,row,'prime');}
-      this.primes.set(id,row);this.renderNav();if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);return row;
+      this.primes.set(id,row);this.renderNav();if(spec.autoOpen===true)this.openPrime(id);return row;
     }
     registerSub(spec={}){
       const id=String(spec.id||'').trim();if(!id)throw new Error('SUB id required.');

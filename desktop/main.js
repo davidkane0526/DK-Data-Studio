@@ -22,6 +22,8 @@ const { createVisualClosureRuntime } = require('./main-modules/visual-closure-ru
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
 const { createNativeSaveRuntime } = require('./main-modules/native-save-runtime');
 const { createSdkExportRuntime } = require('./main-modules/sdk-export-runtime');
+const { createPluginAuthoringRuntime } = require('./main-modules/plugin-authoring-runtime');
+const { createShutdownRuntime } = require('./main-modules/shutdown-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
@@ -31,6 +33,7 @@ const APP_ID = 'com.dk.datastudio';
 // Keep development, installed and portable Windows identities consistent.
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
+try { process.title = APP_NAME; } catch {}
 
 let lanUpdater = null;
 let lanWebServer = null;
@@ -91,7 +94,7 @@ const auxiliaryWindowRuntime=createAuxiliaryWindowRuntime({
 });
 const {
   auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
-  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
+  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,closeAuxiliaryWindowsForOwner,drainAllAuxiliaryWindows,waitForAuxiliaryWindowClosed,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
   runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,routeArtifactDelta,createOrFocusAuxiliaryWindow
 }=auxiliaryWindowRuntime;
 
@@ -99,7 +102,15 @@ const visualClosureRuntime=createVisualClosureRuntime({app,appRoot:APP_ROOT,diag
 const nativeDialogBroker=createNativeDialogBroker({BrowserWindow,logger:console});
 const nativeSaveRuntime=createNativeSaveRuntime({session,nativeDialogBroker});
 const sdkExportRuntime=createSdkExportRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker});
+const pluginAuthoringRuntime=createPluginAuthoringRuntime({app,appRoot:APP_ROOT,dialog,nativeSaveRuntime,nativeDialogBroker,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage});
 nativeSaveRuntime.installIntentTrace(ipcMain);
+
+const shutdownRuntime=createShutdownRuntime({app,
+  setAppQuitting:v=>{appQuitting=!!v;},drainAuxiliaryWindows:drainAllAuxiliaryWindows,
+  prepareProjectSafety:()=>projectFileSafety?.prepareForQuit('app-before-quit'),
+  stopLanUpdater:()=>lanUpdater?.stop(),stopLanWebServer:()=>lanWebServer?.stop(false),
+  stopMcpServer:()=>mcpServer?.stop?.(),shutdownSmbSessions:()=>SmbService.shutdownSmbSessions?.(),
+  pendingRequestMaps:[pendingCapabilityInvocations,pendingMcpRequests]});
 
 
 function dispatchMcpToRenderer(request){
@@ -133,6 +144,11 @@ function createWindow() {
   };
   win.on('maximize',publishMaximizedState);
   win.on('unmaximize',publishMaximizedState);
+  win.on('close',event=>{
+    if(primaryWindow!==win||shutdownRuntime.isReadyForQuit())return;
+    event.preventDefault();
+    shutdownRuntime.requestQuit('primary-window-close');
+  });
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
   win.loadFile(path.join(APP_ROOT, 'src', 'index.html'),visualClosureRuntime.loadFileOptions());
   return win;
@@ -303,6 +319,7 @@ app.whenReady().then(() => {
   ipcMain.handle('windows:closeCurrent', async event => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
+    if(win===primaryWindow){shutdownRuntime.requestQuit('primary-window-command');return true;}
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
     if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
     win.close();
@@ -498,6 +515,7 @@ app.whenReady().then(() => {
     if(!result||result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
   });
   sdkExportRuntime.install(ipcMain);
+  pluginAuthoringRuntime.installIpc(ipcMain);
 
   ipcMain.handle('plugins:readBuiltinScript', async (_event, rawSrc) => {
     const src=String(rawSrc||'').replace(/\\/g,'/').replace(/^\.\//,'');
@@ -804,11 +822,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => {
-  appQuitting = true;
-  try { projectFileSafety?.prepareForQuit('app-before-quit'); } catch (err) { console.error('[DKDS project safety:quit]',err); }
-  try { lanUpdater?.stop(); } catch {}
-  try { lanWebServer?.stop(false); } catch {}
-  try { mcpServer?.stop?.(); } catch {}
-  try { SmbService.shutdownSmbSessions?.(); } catch {}
-});
+app.on('before-quit', event => shutdownRuntime.beforeQuit(event));

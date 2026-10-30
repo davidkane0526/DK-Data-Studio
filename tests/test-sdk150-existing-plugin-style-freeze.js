@@ -100,15 +100,19 @@ assert.strictEqual(cssDependency.ok,true,require('../tools/quality/unit-producti
 const resonanceWiring=new Set(['plugin.js','plugin.json','view-components.js','unit-presentation.js','feature-group-runtime.js','feature-main-plot-runtime.js','plugin.css','mobile.css']);
 const EXPECTED_RESONANCE_STABLE_BLOBS=Object.freeze({
   'README.md':'5f67f4b6b91643ecf69d7daf53f2b61c5c0d82d3',
+  'domain-adapter.js':'c97cd008d488b0f8b1e0d143c045d9a6022f905e',
   'feature-analysis-runtime.js':'eebd6ecab0824f55e130704ff7f26b17cbb70ae0',
   'feature-context.js':'d02ad9248ff7d0a628538048b4e1cb63a3ef9644',
   'feature-controls-runtime.js':'48c0da0227272a9a6f71ab18ccc0c2b1b4d1d95f',
   'feature-data-runtime.js':'f7c13abe007ac02cf84d068505c2d465b4d3649b',
-  'feature-inspector-runtime.js':'08391561814fb42d1d4ca1d6046050c27e8ba1a2',
+  'feature-inspector-runtime.js':'5016659c9df8051149054f155b543bd568d00875',
+  'feature-inspector-mutation-runtime.js':'d0bdaced3ceff7654aab048ed0d46202b3583c70',
   'feature-peak-runtime.js':'2452b08fb29c2cd84ecfcfe1893aea7b99f7f42e',
-  'feature-runtime.js':'5249e996b4125fdc81c52100f4e6e95292314513',
+  'feature-runtime.js':'ab0e36e4b40021254a53227ffe33efee22d8a0a4',
   'feature-selection-runtime.js':'bff05c01614dd7ca937f816c4a82bb91e9ebd5da',
   'feature-ter-runtime.js':'dc63f4d91ecea4205d97d1e4e03c2aa88fa11c2c',
+  'inspector-detail-projection.js':'a3b288b3daea59b910ea2d057fa87d8c8347f39a',
+  'main-marker-projection.js':'cdb04bbccb011de667b95e988bdfc29d88f861cc',
   'resonant-ter-task.js':'e83335ab6205a6bbcaeddc83fb15d028222605a3',
   'super-layout.js':'2d22d8df429844be0dd3e4b28f6c6d8562bfa29a',
   'task-core.js':'a0f5fc92d47cc896414f3497439a64f500eef36b',
@@ -119,6 +123,11 @@ const resonanceDir='src/plugins/resonance-workbench';
 const resonanceStableFiles=fs.readdirSync(resonanceDir).filter(name=>fs.statSync(path.join(resonanceDir,name)).isFile()&&!resonanceWiring.has(name)).sort();
 assert.deepStrictEqual(resonanceStableFiles,Object.keys(EXPECTED_RESONANCE_STABLE_BLOBS).sort(),'Resonance stable orchestration/domain/task inventory changed; presentation/mobile wiring is intentionally excluded and protected semantically.');
 for(const [rel,expected] of Object.entries(EXPECTED_RESONANCE_STABLE_BLOBS))assert.strictEqual(blobSha(path.join(resonanceDir,rel)),expected,`Resonance stable orchestration/domain/task file changed unexpectedly: ${rel}`);
+const resonanceDomainAdapter=fs.readFileSync('src/plugins/resonance-workbench/domain-adapter.js','utf8');
+assert(resonanceDomainAdapter.includes("ctx.services.domain.provide('live'")&&!/createTop|createController/.test(resonanceDomainAdapter),'Resonance domain adapter must remain a projection seam over the single production owner.');
+assert(resonanceDomainAdapter.includes('service.visibleSweepIds?.()')&&resonanceDomainAdapter.includes('visibleSweeps'),'Resonance adapter may expose visible sweeps only as a projection of the authoritative production visibility owner.');
+assert(resonanceDomainAdapter.includes("require('builtin.resonance-workbench','main-marker-projection')")&&resonanceDomainAdapter.includes('mainMarkers'),'Resonance adapter must consume the shared marker projection owner rather than duplicate marker visibility rules.');
+for(const token of ['toggleSelectedPeakAccepted','toggleSelectedPeakLocked','resetSelectedPeakFwhmWindow','deleteSelectedPeak','selectSelectedPeakSweep'])assert(resonanceDomainAdapter.includes(token),'Resonance adapter must expose bounded Inspector mutation seam: '+token);
 const resonanceCss=fs.readFileSync('src/plugins/resonance-workbench/plugin.css','utf8'),resonanceMobile=fs.readFileSync('src/plugins/resonance-workbench/mobile.css','utf8');
 assert(!/\.respar-(?:scan-global|detect-actions)[^{]*\{[^}]*grid-template-columns/s.test(resonanceCss),'Resonance plugin CSS must not reclaim Unit-owned parameter ActionGrid density.');
 assert(!/resonance-display-grid[^{]*\{[^}]*grid-template-columns/s.test(resonanceMobile),'Resonance Mobile CSS must not reclaim Unit-owned display FormGrid density.');

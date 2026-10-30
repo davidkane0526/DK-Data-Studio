@@ -1,0 +1,111 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const os=require('os');
+const path=require('path');
+const {spawnSync}=require('child_process');
+const root=path.resolve(__dirname,'..');
+const importer=path.join(root,'sdk','python','dkds_source_import.py');
+const pythonEnv={...process.env,PYTHONDONTWRITEBYTECODE:'1',PYTHONIOENCODING:'utf-8'};
+function pythonCommand(){
+  const rows=process.platform==='win32'?[['python',[]],['py',['-3']],['python3',[]]]:[['python3',[]],['python',[]]];
+  for(const [cmd,prefix] of rows){const probe=spawnSync(cmd,[...prefix,'--version'],{encoding:'utf8',env:pythonEnv});if(!probe.error&&probe.status===0)return {cmd,prefix};}
+  throw new Error('Python 3 is required for source-import authoring gate.');
+}
+const py=pythonCommand();
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-source-import-'));
+try{
+  const source=path.join(temp,'analysis.py');
+  fs.writeFileSync(source,`def analyze_curve(sample_count: int=5, gain: float=2.0, normalize: bool=False) -> dict:\n    points=[]\n    for i in range(sample_count):\n        x=i\n        y=x*gain\n        if normalize:\n            y=y/(1+abs(y))\n        points.append({"x":x,"y":y})\n    return {"points":points,"count":len(points)}\n\ndef unsupported(values: list) -> dict:\n    return {"points": [x*x for x in values]}\n`,'utf8');
+  const report=path.join(temp,'analysis.json');
+  let run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',source,'--output',report],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const parsed=JSON.parse(fs.readFileSync(report,'utf8'));
+  assert.strictEqual(parsed.sourceModel.schema,'dkds.python-source-model.v2');
+  assert.strictEqual(parsed.sourceModel.kind,'python');
+  assert.strictEqual(parsed.sourceModel.functions.length,2);
+  const good=parsed.sourceModel.functions.find(row=>row.name==='analyze_curve');
+  const bad=parsed.sourceModel.functions.find(row=>row.name==='unsupported');
+  assert(good.compatibility.portable&&good.blueprint.buildable,'Portable function must produce a buildable declarative blueprint.');
+  assert(good.parameters.some(row=>row.name==='gain'&&row.default===2),'Signature analysis must preserve scalar defaults.');
+  assert(good.blueprint.preview.outputs.some(row=>row.kind==='plot'),'points result must infer a Unit ScientificPlot preview.');
+  assert(good.blueprint.preview.outputs.some(row=>row.kind==='metric'&&row.label==='count'),'scalar dict result must infer a Unit metric preview.');
+  assert(!bad.compatibility.portable,'List comprehension must remain fail-closed.');
+  assert(bad.compatibility.diagnostics[0].line>=bad.line,'Compatibility diagnostic must identify a concrete source line.');
+
+  const pkgPath=path.join(temp,'generated.dkplugin'),buildReport=path.join(temp,'build.json');
+  run=spawnSync(py.cmd,[...py.prefix,importer,'build',source,'--function-id',good.id,'--package',pkgPath,'--report',buildReport],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+  assert.strictEqual(pkg.schema,1);
+  assert.strictEqual(pkg.manifest.apiVersion,'1.19.0');
+  assert(pkg.manifest.tasks?.length===1&&pkg.manifest.requiresCore.includes('execution.tasks'));
+  assert(!Object.keys(pkg.files).some(name=>/\.py(?:c|o)?$/i.test(name)),'Generated package must contain no Python source/bytecode.');
+  assert(Object.values(pkg.files).every(value=>!String(value).includes('def analyze_curve')),'Generated package must not carry user Python source.');
+  require('../desktop/plugin-package').normalizePluginPackage(pkg,{allowBuiltinId:false});
+
+  const notebook=path.join(temp,'analysis.ipynb');
+  fs.writeFileSync(notebook,JSON.stringify({nbformat:4,nbformat_minor:5,metadata:{},cells:[
+    {cell_type:'markdown',metadata:{},source:['demo']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['%matplotlib inline\n','def notebook_task(value: float=1.0) -> dict:\n','    return {"result": value*2}\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['import pandas as pd\n','raw = pd.read_csv("demo.csv")\n']},
+    {cell_type:'code',metadata:{},execution_count:null,outputs:[],source:['clean = raw.abs()\n','clean.plot()\n','clean.to_clipboard()\n']}
+  ]},null,2));
+  const notebookReport=path.join(temp,'notebook.json');
+  run=spawnSync(py.cmd,[...py.prefix,importer,'analyze',notebook,'--output',notebookReport],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const nb=JSON.parse(fs.readFileSync(notebookReport,'utf8'));
+  assert.strictEqual(nb.sourceModel.kind,'jupyter');
+  assert(nb.sourceModel.functions.some(row=>row.name==='notebook_task'&&row.cellIndex===1),'Notebook code cells must feed the same Source Model.');
+  assert(nb.diagnostics.some(row=>row.code==='NOTEBOOK_MAGIC_UNSUPPORTED'&&row.cellIndex===1&&row.line===1),'Notebook magic diagnostics must preserve cell/line coordinates.');
+  const workflow=nb.sourceModel.workflow;
+  assert.strictEqual(workflow.schema,'dkds.source-workflow.v1');
+  assert.strictEqual(workflow.codeCellCount,3);
+  assert(workflow.edges.some(row=>row.from==='cell:2'&&row.to==='cell:3'&&row.symbol==='raw'),'Workflow graph must preserve cross-cell symbol dependencies.');
+  assert(workflow.hostCapabilities.includes('data.import')&&workflow.hostCapabilities.includes('scientific.plot')&&workflow.hostCapabilities.includes('host.clipboard.write'),'Workflow analysis must classify DKDS host replacements.');
+  assert(workflow.transformFamilies.includes('pandas.dataframe'),'Pandas notebooks must be classified for table-transform lowering instead of runtime Python fallback.');
+  assert(workflow.hostMappings.some(row=>row.capability==='data.import'&&row.sourceCall.includes('pd.read_csv')),'read_csv must be classified as a DKDS DataTable host replacement before Table Transform lowering.');
+  assert(!workflow.diagnostics.some(row=>row.code==='WORKFLOW_TRANSFORM_UNLOWERED'&&String(row.call||'').includes('pd.read_csv')),'Mapped read_csv must not remain mislabeled as an unlowered compute transform.');
+  assert.strictEqual(workflow.candidate.buildable,true);
+  assert.strictEqual(workflow.candidate.status,'buildable-table-transform');
+  assert.strictEqual(workflow.sourceExecuted,false);
+  const tablePlan=workflow.tableTransformPlan;
+  assert.strictEqual(tablePlan.schema,'dkds.table-transform-plan.v1');
+  assert(tablePlan.operations.some(row=>row.kind==='source.table'&&row.output==='raw'),'Table Transform IR must replace read_csv with a scoped DataTable source.');
+  assert(tablePlan.operations.some(row=>row.kind==='table.abs'&&row.output==='clean'&&row.input==='raw'),'Table Transform IR must structure common DataFrame abs().');
+  assert(tablePlan.operations.some(row=>row.kind==='view.plot'&&row.input==='clean'),'Table Transform IR must map plot() to a DKDS view operation.');
+  assert(tablePlan.operations.some(row=>row.kind==='host.clipboard'&&row.input==='clean'),'Table Transform IR must map to_clipboard() to Host I/O.');
+  assert.strictEqual(tablePlan.buildable,true,'Synthetic read_csv -> abs -> plot -> clipboard workflow should close in IR v1.');
+  assert.strictEqual(tablePlan.execution.schema,'dkds.table-transform-execution.v1');
+  assert.strictEqual(tablePlan.execution.executable,true,'Mapped plot/clipboard Host effects must no longer block the pure compute Task.');
+  assert.strictEqual(tablePlan.execution.hostEffects.length,2);
+  assert(tablePlan.execution.hostEffects.some(row=>row.kind==='scientific-plot'&&row.input==='clean'));
+  assert(tablePlan.execution.hostEffects.some(row=>row.kind==='clipboard-table'&&row.input==='clean'));
+  assert.strictEqual(workflow.blueprint.buildable,true,'Host-mapped notebook workflow should become directly buildable.');
+  const notebookPackage=path.join(temp,'notebook.dkplugin'),notebookBuild=path.join(temp,'notebook-build.json');
+  run=spawnSync(py.cmd,[...py.prefix,importer,'build',notebook,'--function-id','workflow:table-transform','--package',notebookPackage,'--report',notebookBuild],{cwd:root,encoding:'utf8',env:pythonEnv});
+  assert.strictEqual(run.status,0,run.stderr||run.stdout);
+  const hostPkg=JSON.parse(fs.readFileSync(notebookPackage,'utf8'));
+  const hostPlugin=hostPkg.files['plugin.js'];
+  const hostTask=hostPkg.files[hostPkg.manifest.tasks[0].entry];
+  assert(hostPkg.manifest.requiresCore.includes('io')&&hostPkg.manifest.requiresCore.includes('ui.scientific-plot'),'Mapped Host effects must declare canonical IO/ScientificPlot dependencies.');
+  assert(hostPlugin.includes('ctx.io.clipboard.writeText('),'to_clipboard must lower only to public Host IO.');
+  assert(hostPlugin.includes('_task_curves')&&hostPlugin.includes("requestRender?.('task-table')"),'DataFrame.plot must lower to a Unit ScientificPlot task-table projection.');
+  assert(!hostTask.includes('ctx.io')&&!hostTask.includes('scientificPlot')&&!hostTask.includes('clipboard'),'Worker Task must remain pure compute with no Host/UI effects.');
+  require('../desktop/plugin-package').normalizePluginPackage(hostPkg,{allowBuiltinId:false});
+
+  const generator=fs.readFileSync(path.join(root,'sdk','python','dkds_plugin_gen.py'),'utf8');
+  assert(generator.indexOf('raw_dynamic_table_plots =')<generator.indexOf('normalized_dynamic_table_plots:'),'Host-effect task inputs must be initialized before generator normalization.');
+  const runtime=fs.readFileSync(path.join(root,'desktop','main-modules','plugin-authoring-runtime.js'),'utf8');
+  assert.doesNotThrow(()=>new Function(runtime),'Desktop authoring host must remain valid JavaScript.');
+  assert(runtime.includes("dkds_source_workflow.py")&&runtime.includes("dkds_table_transform.py")&&runtime.includes("dkds_table_transform_task.py")&&runtime.includes("sourceExecuted:false")&&runtime.includes("runtimePythonRequired:false"),'Desktop authoring host must explicitly preserve authoring-only Python semantics.');
+  assert(runtime.includes('pluginInstallPlan(raw)')&&runtime.includes("generatedBy:'python-source-import'"),'Generated packages must reuse the existing Plugin Manager validation/install transaction.');
+  const manager=fs.readFileSync(path.join(root,'src','core','plugins','manager-ui.js'),'utf8');
+  const authoringUi=fs.readFileSync(path.join(root,'src','core','plugins','plugin-authoring-ui.js'),'utf8');
+  assert.doesNotThrow(()=>new Function(authoringUi),'Plugin Manager authoring surface must remain valid JavaScript.');
+  assert(!authoringUi.includes('escapeHtml('),'Authoring UI must use its owned esc() HTML-escape helper rather than an undefined alias.');
+  assert(authoringUi.includes('tableExecution.executable'),'Authoring UI must expose compute-task execution closure separately from static IR closure.');
+  assert(authoringUi.includes('workflowBlueprint.candidateId')&&authoringUi.includes('Table Transform Workflow'),'Authoring UI must expose the workflow candidate in the same selector as functions.');
+  assert(manager.includes('DKDSPluginAuthoringUI')&&authoringUi.includes('pluginAuthoringSelectSource')&&authoringUi.includes('pluginAuthoringBuild')&&authoringUi.includes('pluginAuthoringInstall'),'Plugin Manager must expose source import, build/validate and direct install actions through one Core authoring surface.');
+  console.log('Phase F source import authoring PASS: .py/.ipynb -> Source Model v2 + workflow graph -> host mapping/lowering report -> blueprint -> package -> Plugin Manager transaction.');
+}finally{fs.rmSync(temp,{recursive:true,force:true});}

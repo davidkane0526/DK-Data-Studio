@@ -143,8 +143,7 @@ function renderIcon(size) {
     [{x:q(291),y:q(176)},{x:q(318),y:q(176)},{x:q(331),y:q(245)},{x:q(348),y:q(288)}],
     [{x:q(348),y:q(288)},{x:q(376),y:q(358)},{x:q(410),y:q(374)},{x:q(424),y:q(374)}]
   ];
-  for (const points of segments) strokeBezier(pixels, size, points, Math.max(1.5, q(19)), COLORS.border);
-  for (const points of segments) strokeBezier(pixels, size, points, Math.max(1.1, q(12)), COLORS.blue);
+  for (const points of segments) strokeBezier(pixels, size, points, Math.max(1.1, q(14)), COLORS.blue);
 
   return pixels;
 }
@@ -209,7 +208,10 @@ function writeIfChanged(filePath, data) {
 
 const sourceIconPath = path.join(root, 'assets', 'dkds-icon-source.png');
 if (!fs.existsSync(sourceIconPath)) throw new Error(`Brand source icon is missing: ${sourceIconPath}`);
-const sourceIcon = fs.readFileSync(sourceIconPath);
+// One deterministic renderer now owns every shipped raster. This removes the
+// previous Windows-ICO vs Android-source divergence while retaining the authored
+// source PNG as the repository brand reference.
+const canonicalIcon = encodePng(1024, renderIcon(1024));
 const icoEntries = [16,32,48,64,128,256].map(size => ({
   size,
   png:encodePng(size, renderIcon(size))
@@ -217,10 +219,10 @@ const icoEntries = [16,32,48,64,128,256].map(size => ({
 const ico = encodeIco(icoEntries);
 
 const outputs = [
-  [path.join(root, 'assets', 'dkds-icon.png'), sourceIcon],
+  [path.join(root, 'assets', 'dkds-icon.png'), canonicalIcon],
   [path.join(root, 'assets', 'dkds-icon.ico'), ico],
-  [path.join(mobileAssetRoot, 'assets', 'icon.png'), sourceIcon],
-  [path.join(mobileAssetRoot, 'assets', 'adaptive-icon.png'), sourceIcon]
+  [path.join(mobileAssetRoot, 'assets', 'icon.png'), canonicalIcon],
+  [path.join(mobileAssetRoot, 'assets', 'adaptive-icon.png'), canonicalIcon]
 ];
 
 let changed = 0;

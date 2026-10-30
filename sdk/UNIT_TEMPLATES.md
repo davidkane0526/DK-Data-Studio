@@ -1,6 +1,6 @@
-Mobile geometry note (2.5.38 / SDK 1.51.45): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
+Mobile geometry note (2.5.38 / SDK 1.51.54): Unit geometry is internal to its allocated Surface. Mobile right/bottom companion outer tracks are owned exclusively by the Workspace SplitController, which resolves preference and bounds from the actual Workspace geometry; shared Mobile CSS only consumes the final track token, and Unit content does not negotiate parent tracks. Parameter Drawer intrinsic-width fitting remains a separate overlay contract.
 
-# Unit Templates 2.5.38 — SDK 1.51.45
+# Unit Templates 2.5.38 — SDK 1.51.54
 
 SDK 1.51 promotes Unit Templates from a small scientific-composition helper into the canonical **unit-level UI composition contract** for future DK Data Studio plugin authoring.
 
@@ -11,8 +11,69 @@ The long-term acceptance target is strict:
 SDK 1.51 does **not** migrate current native plugins. Their source and existing authored styles remain frozen reference assets. The SDK is being made complete enough to reproduce them first; migration can happen later, plugin by plugin, under parity gates.
 
 
+### Dynamic Field select options — SDK 1.51.75
+
+`units.field.create(...)` returns the existing Field handle with a generic `setOptions(options, { value?, preserve? })` method. It is valid only for select Fields; other Field kinds fail closed with `UNIT_FIELD_OPTIONS_REQUIRE_SELECT`. The Unit remains the sole owner of option DOM. The method preserves the current value by default when it still exists, or accepts one explicit replacement value.
+
+This is intended for dynamic catalogs such as scoped DataSource choices. It does not create a new SourcePicker Unit and does not change Field geometry, responsive ownership, or the 41-Unit catalog.
+
+
 ## Architecture
 
+
+## SDK 1.51.54 third production scientific blueprint reconstruction
+
+SDK 1.51.54 does not add or modify a Unit. The third independent Phase F production-shaped gate exposes four already-published public owners through the declarative layer: Summary, retained List, EmptyState and PlotView. PlotView continues to own portable lifecycle and bounded plot content geometry; ScientificPlot remains the renderer/interaction owner; retained List owns canonical item anatomy; Summary and EmptyState remain semantic content Units.
+
+The accepted Pulse Analysis blueprint is reconstruction evidence only. No Pulse plugin-id branch, batch state, segmentation algorithm, private DOM/CSS, Presenter behavior or execution backend is imported into generated runtime. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
+
+## SDK 1.51.53 generated Tool-designer blueprint reconstruction
+
+SDK 1.51.53 does not add or modify a Unit. The second production-shaped Phase F gate proves that the existing Workspace, Tabs, Layout, Action, Toolbar, Table and PRIME contracts can reproduce a Tool-designer spine independently of the first Vth-style workbench proof. Authors may declare the already-public bounded Workspace left width/minimum/reserve and content end inset, explicit parameter PRIME priority/embedded/auto-open state, compact Tabs, field-layout recipes, Action Grid, segment Toolbar and parameter-owned Table.
+
+The accepted Pulse Sampler presentation is reconstruction evidence only. Its plugin id, live-domain/state, waveform algorithm, Task implementation, private DOM hooks and historical presentation details are not imported into generated runtime. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
+
+## SDK 1.51.52 generated grouped control-surface authoring
+
+SDK 1.51.52 does not add or modify a Unit. Phase F can now reconstruct a multi-section data-control PRIME by declaring groups that compose the existing Panel, Header, Chip, Field, Check, Note and Toolbar Units. Headed/plain group choice, stack/form-grid layout and action placement are authoring declarations only; Core continues to own Unit anatomy, geometry, accessibility, paint and interaction plumbing.
+
+PageHeader actions and group Toolbars project from one shared action catalog. Hosted TOP/Tool pages may declare close behavior through the already-published workspace lifecycle; standalone generated plugins do not acquire workspace-only close code. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
+
+## SDK 1.51.51 generated production-shaped blueprint reconstruction
+
+SDK 1.51.51 does not add or modify a Unit. Phase F now proves that a production-shaped scientific workbench spine can be generated entirely from already-published Unit contracts: `fill-rows` Layout, titleless data-control PRIME, Metric grid, ScientificPlot, Table and resizable SplitPane. Split gesture/persistence/reflow remain Core-owned; Metric/Table/Plot projection remains Unit-owned; the generator only declares composition and task-result bindings.
+
+The production Transfer Vth blueprint is acceptance evidence only and is never imported into runtime generation. The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
+
+## SDK 1.51.50 generated hosted workspace authoring
+
+SDK 1.51.50 does not add or modify a Unit. Hosted generation only selects existing host lifecycle contracts around the same Unit composition: standalone, TOP workbench, or Tool Workspace. Activity/Page/TopWorkspace registration controls where the same Unit Workspace is hosted; it does not create a second composition path. Generated parameter PRIME remains the existing fixed-titleless data-control Unit and generated PRIMARY keeps its declared public presentation role.
+
+The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. Dedicated-window geometry belongs to the existing host/window contract, not Unit or Presenter geometry.
+
+## SDK 1.51.49 generated scientific interaction authoring
+
+SDK 1.51.49 does not add or modify a Unit. Generated plots only declare interaction metadata consumed by the existing ScientificPlot/Interaction contracts: stable reference identity, selection target, scientific axis semantics, viewport-link policy and bounded legend-link policy. Command registration remains a Core execution concern and does not become a Unit responsibility.
+
+The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. Presenter, Unit geometry and production plugin presentation ownership are unchanged.
+
+## SDK 1.51.48 generated scientific workbench composition
+
+SDK 1.51.48 does not add or modify a Unit. Phase F generation may now select the already-published PlotGroup, PlotView, ScientificPlot and Table composition paths to build multi-result scientific workbenches. Multiple scoped DataTable inputs and multiple result projections are authoring/compiler concerns only; Core remains the sole Task/Artifact owner, Unit remains the sole scientific composition owner, and Presenter remains platform-only.
+
+The public catalog remains **41 Units / 73 Layout recipes** and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**. Generated workbenches receive Mobile/Desktop behavior from those existing contracts rather than generated CSS or plugin-specific Presenter rules.
+
+## SDK 1.51.47 generated Artifact pipeline authoring
+
+SDK 1.51.47 does not change Unit Templates. Phase F generation can now bind lowered JavaScript Tasks to bounded canonical DataTable inputs and project results into the existing Table and ScientificPlot Units. Source discovery remains `ctx.data.sources`; column enumeration/range reads remain Artifact Store contracts; derived publication remains `ctx.data.model` + `ctx.data.artifacts`. The generator adds no UI renderer, data store, Presenter behavior, Python runtime, or alternate worker path.
+
+The public catalog therefore remains **41 Units / 73 Layout recipes**, and `UNIT_TEMPLATE_SPEC_VERSION` remains **2.5.38**.
+
+## SDK 1.51.46 authoring-only portable Task lowering
+
+SDK 1.51.46 does not change the Unit catalog. Phase F adds an authoring compiler outside the application runtime: Python source may be used to describe a bounded pure function, but generation must lower it completely to a JavaScript `DKDSTaskDefinition` before packaging. Runtime plugins continue to use the existing Plugin API 1.19 + Core Task Runner path and do not load Python, Pyodide, Python providers, or a second execution backend.
+
+Unsupported or semantically unproven Python constructs fail closed during generation. This authoring capability therefore does not alter Unit/Presenter ownership, Mobile behavior, or production UI.
 
 ## SDK 1.51.45 maturity freeze
 
@@ -171,7 +232,7 @@ Declare:
 "requiresCore": ["ui.unit-templates"]
 ```
 
-`units.version` is `2.5.38` in SDK 1.51.45.
+`units.version` is `2.5.38` in SDK 1.51.54.
 
 
 

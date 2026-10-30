@@ -1,3 +1,194 @@
+# 3.71.133 Release — Phase F DAG-aware Stage Execution / SDK 1.51.90
+
+- Adds a canonical `dkds.stage-execution-plan.v1` from selected Stage Artifact dependencies, with Stage/Action/Task IDs, ordered prerequisites and expected typed Artifact outputs.
+- Generated multi-action Stage Actions share one prerequisite scheduler. Clicking a downstream Stage schedules its transitive prerequisites through the existing Core Task Runner and ArtifactStore, with in-flight and per-execution deduplication.
+- Validates exact published Artifact IDs, kinds and semantic types; failures or missing outputs block downstream actions. Earlier outputs are conservatively recalculated on every new execution rather than trusting potentially stale cached Artifacts.
+- Prerequisite Tasks publish canonical Artifacts and lineage but suppress non-target clipboard/CSV export effects; explicitly invoked Stages retain their visible effects.
+- Preserves single-workflow and ordinary Python-function generation without a second Task/Workflow runtime, new Unit variants, plugin-name branches or private CSS. No extra Run All Action is introduced beyond the public eight-action bound.
+- Adds Phase F prerequisite scheduler regression and registers previously written multi-action, chaining and typed-boundary regressions in the check suite.
+- Updates App/Desktop/Mobile to 3.71.133 / Android versionCode 273 and SDK to 1.51.90. Plugin API stays 1.19.0; Unit Templates stay 2.5.38.
+
+# 3.71.132 Release — Phase F Typed non-table Artifact Boundaries / SDK 1.51.89
+
+- Extends Artifact-backed Stage boundaries from DataTable to the existing `table / series / array / scalar` value kinds without creating per-kind runtimes.
+- Keeps default `all-observable` root selection backward compatible. Cross-cell intermediate supported values are exposed separately as optional `stageBoundaryCandidates` and only join composition when explicitly selected.
+- Generalizes synthetic Stage inputs to `source.value + valueKind`; the existing Table Transform execution analyzer remains the single value-kind owner and the existing Core Task compiler normalizes typed inputs.
+- Adds the generic exact `artifact-value` binding for Series / Array / scalar. Series use canonical `data.series`; bounded Arrays and scalars use `result.analysis` payload schemas `dkds.generated-array.v1` and `dkds.generated-scalar.v1`.
+- Validates exact typed Artifact id, kind, semantic type, payload schema and bounded sequence length before submitting a Core Task. DataTable retains its existing bounded column metadata/range-read path.
+- Supports mixed typed fan-in and nearest-boundary transitive chains while preserving canonical Artifact lineage and avoiding hidden Notebook/Task memory.
+- Adds typed-boundary regression coverage for backward-compatible root discovery, explicit Series → Array → Scalar chains, mixed fan-in, delegated cells, package normalization, Task parameter isolation, typed Artifact read/publish code and Python-source exclusion.
+- App/Desktop/Mobile identity advances to 3.71.132 / Android versionCode 272. SDK advances to 1.51.89; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.131 Release — Phase F Artifact-backed Stage Chaining / SDK 1.51.88
+
+- Adds Artifact-backed Stage dependency composition on top of `dkds.workflow-composition.v1`: selected table-root dependencies become exact canonical Artifact edges instead of repeated upstream computation.
+- Cuts each downstream Table Transform plan at the nearest selected table boundary, replaces that boundary with one synthetic `source.table`, and marks upstream Notebook cells/operations as delegated to the producer Stage.
+- Extends the generic generated `artifact-table` input binding with `source.scope=artifacts` plus an exact `artifactId`; the existing `sources` scope and Unit Source Picker behavior remain the default. Exact Artifact inputs use `ArtifactStore.listMetadata`, `columnMetadata`, and bounded `readColumnRange`.
+- Producer table Stages publish deterministic stage-specific DataTable Artifact ids/semantic types. Downstream Artifact publication reuses the existing lineage contract, so consumed Stage Artifacts become real lineage parents.
+- Supports fan-in from multiple selected table roots and nearest-boundary transitive chaining (`A -> B -> C` makes C consume B, not duplicate A). Generated results are never marked as imported sources.
+- Adds a dedicated regression covering exact Artifact binding, delegated cells, isolated downstream Task parameters, package validation, lineage, two-parent fan-in, and transitive nearest-boundary selection.
+- App/Desktop/Mobile identity advances to 3.71.131 / Android versionCode 271. SDK advances to 1.51.88; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.130 Release — Phase F Multi-stage / Multi-action Composition / SDK 1.51.87
+
+- Adds `dkds.workflow-composition.v1`: two through eight selected workflow roots become isolated stages, each reusing the existing explicit-root dependency slice and compiling to one existing Core Task/action.
+- Reuses `PluginBuilder`'s existing multi-task/action contract without changing Core Task Runner or Plugin API. Duplicate task ids/action bindings remain rejected by the shared builder.
+- Merges shared source inputs into one canonical Unit Source Picker set; stage-specific result tables, metrics, plots, dynamic Artifact ids, Action ids and Task ids are prefix-isolated.
+- Keeps each Action independent: unselected/other-stage outputs and Host effects do not leak across actions, and no hidden notebook memory is shared between Tasks. Persistent stage chaining is reserved for canonical Artifact contracts.
+- Inherits the existing declarative maximum of eight actions; over-limit compositions fail closed before per-root stage analysis. Any selected stage blocker fails the complete composition closed.
+- Adds a dedicated multi-action regression covering two independent roots, shared Source Picker deduplication, isolated plots/results, two manifest Tasks, production package validation, single-root rejection and the eight-action bound.
+- App/Desktop/Mobile identity advances to 3.71.130 / Android versionCode 270. SDK advances to 1.51.87; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.129 Release — Phase F Explicit Root Selection / SDK 1.51.86
+
+- Adds explicit selection of one or more `rootCandidates` on top of the existing `dkds.workflow-slice.v1`; the default remains `all-observable` for backward compatibility.
+- Threads selected roots through Plugin Manager UI → preload/IPC → Python analyze/build → the existing dependency-slice implementation. Preview and final package therefore use the same `selectedRootIds`.
+- Unselected result/Host-effect branches are removed from the final Table Transform plan and package while shared upstream dependencies remain. Unknown roots and empty explicit selections fail closed.
+- Bounds root selection in Desktop authoring (maximum 64 ids, bounded id length) and validates every root against the source-derived candidates in Python.
+- Adds explicit-root regression coverage for independent branches, scalar/table output isolation, Host-effect pruning, preview/build parity, unknown-root rejection and production package validation.
+- Adds compact Root controls to the existing Plugin Manager authoring surface only; no new Unit/Presenter/runtime path is introduced.
+- App/Desktop/Mobile identity advances to 3.71.129 / Android versionCode 269. SDK advances to 1.51.86; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.128 Release — Phase F dependency-sliced workflow composition / SDK 1.51.85
+
+- Adds `dkds.workflow-slice.v1` after multi-cell DAG scheduling. The planner reuses the existing Table Transform execution analyzer as the single owner of `table / series / array / scalar` value kinds, identifies observable terminal result/Host-effect roots, and computes their reverse cell-dependency closure.
+- Final Table Transform coverage, blockers and Core Task lowering now operate only on the selected dependency slice. Unrelated exploratory cells may be pruned, while any diagnostic on a selected result/plot/clipboard/export path remains fail-closed.
+- Exposes root candidates, selected root ids, kept/pruned cells, propagated symbol kinds and value-kind annotated sliced edges for future explicit root selection. Current bounded selection mode is `all-observable`.
+- Plugin Manager authoring UI distinguishes selected-slice blockers from diagnostics that live only in pruned notebook cells and shows Root / kept Cell / pruned Cell counts.
+- Adds a dedicated workflow-slicing regression covering dead-cell pruning, package generation, `table -> series -> array -> scalar` kind propagation, and preservation of blockers on selected paths.
+- App/Desktop/Mobile identity advances to 3.71.128 / Android versionCode 268. SDK advances to 1.51.85; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.127 Release — Phase F multi-cell dependency DAG / SDK 1.51.84
+
+- Upgrades Source Workflow cell analysis from prior-cell edge recording to `dkds.cell-dependency-graph.v1`, with immediate top-level read semantics, deterministic producer resolution (latest prior producer, otherwise one unique forward producer) and stable topological ordering.
+- Table Transform lowering now consumes the dependency graph order, so an out-of-order Notebook cell can safely depend on a uniquely owned later producer without relying on mutable Jupyter execution history.
+- Fails closed on ambiguous producers, unresolved symbols, same-cell forward references and cross-cell cycles; notebook `execution_count` remains descriptive only.
+- Adds a dedicated multi-cell DAG regression that builds a reordered Notebook through the existing workflow package path and checks ambiguous/cyclic/unresolved blockers. No Python/Jupyter runtime, new Unit, Presenter branch, Host privilege or second workflow engine is added.
+- App/Desktop/Mobile identity advances to 3.71.127 / Android versionCode 267. SDK advances to 1.51.84; Plugin API remains 1.19.0 and Unit Templates remain 2.5.38.
+
+# 3.71.126 Release — project-tab shell silhouette closure
+
+- Ordinary Desktop project tabs now use the shell-integrated top-corner silhouette `7px 7px 0 0` through Component Appearance instead of inheriting the generic fully-rounded Tab radius.
+- Keeps Structure as the sole owner of project-tab strip height/density; generic Tabs, compact Unit Tabs, Native Mobile and existing project-tab dimensions remain unchanged.
+- Adds a regression assertion that forbids project-tab radius ownership from returning to Presentation CSS.
+- Advances Android versionCode from 265 to 266. SDK remains 1.51.83; Plugin API and Unit Templates are unchanged.
+
+# 3.71.125 Release — clean SDK 1.51.83 baseline
+
+- Reissues the application/Desktop/Mobile release identity from the current SDK 1.51.83 baseline so the Git tag, source commit, Windows Portable binary, and Android APK are produced from the same release commit.
+- Advances Android versionCode from 264 to 265 so v3.71.125 can replace the v3.71.124 APK through the normal Android upgrade path.
+- No SDK scientific semantics, Unit Templates, Plugin API, plugin algorithms, Presenter ownership, or native-analysis behavior are changed by this release-only alignment.
+
+# SDK 1.51.83 — Table Transform helper regression hotfix (App 3.71.124)
+
+- Restores the shared `_diag` structured blocker helper used throughout Table Transform execution analysis, including cell/line/operation metadata.
+- Restores the shared `_js` compact JSON serializer used by JavaScript Core Task generation. This fixes the source-import crash path without changing scientific semantics or adding any runtime/Host/UI capability.
+- Keeps Host-only Table Transform workflows free of artificial terminal results: Host-required tables remain in `taskOutputSymbols`, while `resultSymbols` may stay empty for `to_csv()`-only actions.
+- Adds the complete `sdk:generator:test` suite to the ordinary project `check` command so subsequent source-import/IR/task-lowering regressions are exercised by Windows release CI.
+
+# SDK 1.51.82 — bounded scipy.optimize.curve_fit (App 3.71.124)
+
+- Proves SciPy `curve_fit` ownership from source imports/aliases and lowers only explicit `popt` extraction, using existing Series/Array IR for 1D numeric x/y inputs.
+- Pure fit models are compiled authoring-time into JavaScript scalar callbacks; proven NumPy aliases may use the bounded scalar-math subset such as `np.exp -> Math.exp`. Runtime fitting stays inside the ordinary Core Task through a bounded numerical-Jacobian LM-style solver and returns `popt` as the existing `array.vector` projection.
+- Supports 1–6 fit parameters and optional literal finite `p0`. Covariance/`pcov`, bounds, sigma, jac, method, nan-policy, free-name models and arbitrary SciPy remain fail-closed. No Python/NumPy/SciPy runtime, new Unit, Presenter or Host privilege is added.
+
+# SDK 1.51.81 — bounded Series.apply() (App 3.71.124)
+
+- Adds expression-only pure scalar callbacks for numeric `Series.apply()`, using the shared portable Python expression lowerer and emitting JavaScript directly into the ordinary Core Task.
+- Supports unique top-level synchronous functions and closure-free inline lambdas, scalar literal defaults, approved pure builtin/math calls, and bounded literal `args=(...)`; Series index/metadata remain stable.
+- DataFrame/GroupBy apply, closures/free names, multi-statement callbacks, arbitrary Python callables and runtime Python remain fail-closed. No Unit, Presenter/UI contract or second execution runtime is introduced.
+
+# SDK 1.51.80 — to_csv() Host Export (App 3.71.124)
+
+- Maps bounded `DataFrame.to_csv(path,...)` to a Task-external Host effect. Source directories never become write authority; only the basename survives as a save-dialog suggestion and generated runtime writes through `ctx.io.saveText()` under an explicit native export intent.
+- Supports bounded separator, NA representation, header/index toggles, explicit column ordering, UTF-8/UTF-8-SIG, and LF/CRLF. Detached `rawTables` preserve internal GroupBy indexes for CSV serialization while canonical DataTable publication stays unchanged.
+- Pathless `to_csv()`, `to_excel()`, multiple exports per action, compression/append/custom formatting and direct filesystem access remain fail-closed. No new Unit, Presenter/UI contract or compute-Task I/O capability is introduced.
+
+# SDK 1.51.79 — NumPy bounded Array IR (App 3.71.124)
+
+- Adds an internal one-dimensional numeric `array.vector` capped at 65,536 items, lowered from bounded NumPy-shaped authoring without a NumPy runtime.
+- Covers literal `np.array/asarray`, Series-to-Array conversion, `linspace/arange`, 1D item/slice access, unary/basic elementwise math with scalar broadcasting or equal-length arrays, `np.diff`, and NumPy `mean/median/std`.
+- Terminal Arrays reuse the existing Table Unit Index/Value projection and scalar outputs reuse Metric. 2D/general broadcasting/masks/arbitrary ufuncs/SciPy/export remain fail-closed; no Unit or Presenter/UI contract changes are introduced.
+
+# SDK 1.51.78 — GroupBy + aggregate (App 3.71.124)
+
+- Adds internal bounded DataFrameGroupBy/SeriesGroupBy values to the existing Python/Jupyter Table Transform IR, including literal single/multi-column keys and literal `sort/dropna/as_index` options.
+- Executes GroupBy `mean/median/std` plus bounded `agg()/aggregate()` reducer mappings in the existing JavaScript Core Task runtime. Grouped indexes are materialized into canonical DKDS key columns only at the Task output boundary.
+- Terminal GroupBy objects, multiple reducers/MultiIndex columns, named aggregation, lambdas/custom callables, NumPy IR and file export remain fail-closed. No new Unit, Presenter/UI contract or Python/Pandas runtime is introduced.
+
+# SDK 1.51.77 — Series / mean / median / std (App 3.71.124)
+
+- Adds an internal bounded `table.series` value to the existing Python/Jupyter Table Transform IR; literal single-column selectors and direct chained selectors share the same lowering path.
+- Executes `mean / median / std` in the existing JavaScript Core Task runtime: Series aggregates return scalars, DataFrame aggregates return Series for bounded axis 0/1 semantics with literal `skipna`, `numeric_only`, and integer `ddof` validation.
+- Terminal Series and scalar results reuse the existing generated Table/Metric Unit projections; DataFrame outputs keep canonical DataTable publication. No new Unit, Presenter, UI contract, Python/Pandas runtime, GroupBy, NumPy IR, or export path is introduced.
+
+# 3.71.124 WIP — Pulse project-level Data Center visibility
+
+- Fixes the remaining Pulse zero-file case for existing project data that is intentionally stored as Data Center-only (`metadata.dataAssignments: []`). Assignment-scoped Workbenches correctly filtered those Artifacts before the Pulse adapter could see them.
+- Pulse Analysis 2.12.16 now opts into the existing generic manifest contract `data.visibility: "project"`. Both owner and dedicated hosts therefore expose project DataTables to Pulse before the read-only `data-adapter` performs compatibility projection.
+- Canonical Artifacts, Data Center assignment metadata, and the byte-frozen Pulse `analysis-service.js` / `window-runtime.js` remain unchanged. Existing Data Center-only data requires no re-import or manual reassignment.
+- Desktop ScientificPlot floating width remains 22.176 px (10% above the v3.71.121 compact baseline); Native Mobile geometry remains unchanged.
+- App/Desktop/Mobile identity advances to 3.71.124 / Android versionCode 264. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.123 WIP — Dedicated Workbench live Artifact default
+
+- Fixes the actual cause of Pulse dedicated windows opening with zero files: a dedicated Workbench that declares non-empty `data.accepts` now defaults to `artifactHydration: live` unless the manifest explicitly selects another supported mode.
+- The owner renderer therefore sends the current Artifact snapshot/revision when opening such a window. Dedicated runtime then applies the existing generic assignment scope and manifest-declared data adapter before the frozen plugin window runtime is created.
+- Added regression coverage for both sides of the contract: real plugin-window resolution must mark Pulse live, and `openPluginActivityWindow()` must include the current Artifact snapshot in the IPC payload for a live consumer.
+- Desktop ScientificPlot floating width remains at the v3.71.122 22.176 px contract; Native Mobile geometry remains unchanged.
+- App/Desktop/Mobile identity advances to 3.71.123 / Android versionCode 263. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.122 WIP — Dedicated Pulse data routing + Desktop plot chrome width
+
+- Dedicated Plugin Host now builds the same Workbench `dataAssignments`-scoped read-only Artifact view used by the owner renderer before creating a plugin window runtime.
+- A Workbench may declare `data.adapter` in its manifest; the dedicated host applies that module after assignment scoping and before injecting Artifacts into the frozen window runtime. Pulse Analysis 2.12.15 declares `data-adapter`, so assigned generic numeric DataTables appear in both main and dedicated Pulse hosts without mutating canonical Artifacts or changing frozen Pulse domain/runtime files.
+- Desktop ScientificPlot floating controls widen 10% from the v3.71.121 compact baseline: item width 20.16→22.176 px and horizontal padding 1.6→1.76 px. Height remains 25.2 px; Native Mobile geometry is unchanged.
+- App/Desktop/Mobile identity advances to 3.71.122 / Android versionCode 262. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.121 WIP — Desktop shell density + Pulse Data Center routing/batch
+
+- Desktop project-tab shell density is reduced by exactly 20% through the Desktop Host owner: strip 40→32 px, tab 34→27.2 px, close action 20→16 px and new-project action height 33→26.4 px. Desktop shell-top occupancy follows from 92→84 px; shared and Native Mobile contracts are unchanged.
+- Desktop shared ScientificPlot floating navigation keeps its accepted 25.2 px height while its horizontal item width is reduced 20% from 25.2→20.16 px; horizontal chrome padding is reduced proportionally. Shared Core and Native Mobile geometry remain independent.
+- Pulse Analysis 2.12.14 accepts generic `data.table` routing in addition to `science.pulse.trace`. Core `dataAssignments` remains the visibility boundary; a plugin-local read-only data adapter projects assigned numeric DataTables into Pulse-readable inputs without mutating canonical Artifacts or changing the byte-frozen analysis service.
+- Pulse keeps batch execution as the existing single Header-owned `分析勾选` primary action, which runs the checked-file `analyzeChecked()` Task Runner path. The parameter PRIME remains data/configuration-only and does not duplicate primary actions.
+- App/Desktop/Mobile identity advances to 3.71.121 / Android versionCode 261. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.120 WIP — Primary titlebar close direct shutdown
+
+- The primary Desktop window's renderer `windows:closeCurrent` command now enters the shared shutdown coordinator directly. It no longer calls `BrowserWindow.close()` first and depends on the native close event to infer application shutdown.
+- Dedicated/reusable plugin windows keep their existing close/hide behavior; this change only clarifies Main Window ownership.
+- Windows CI now exercises the exact preload/renderer `closeCurrentWindow()` route used by the custom titlebar close button, in addition to the existing native WM_CLOSE and Portable process-tree tests.
+- App/Desktop/Mobile identity advances to 3.71.120 / Android versionCode 260. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.119 WIP — Packaged Windows process-tree exit gate
+
+- Adds a bounded Main Process shutdown drain deadline. A stuck auxiliary window, network socket or service promise can no longer keep the Desktop process alive indefinitely; cleanup owners run concurrently and the final auxiliary assertion has its own shorter bound.
+- LAN Update Client now has a shutdown state gate so in-flight probes, WebSocket reconnects, UDP discovery callbacks and periodic checks cannot recreate transports after stop begins.
+- LAN SSDP/mDNS discovery now uses a lifecycle epoch. Network-change work that started before shutdown cannot publish or recreate sockets after the epoch is invalidated.
+- Windows CI now launches the actual packaged win-unpacked runtime and Portable EXE, sends the normal main-window close request, tracks the complete descendant process lineage, and fails with PID/parent/path/command-line diagnostics if any process remains after the exit deadline.
+- App/Desktop/Mobile identity advances to 3.71.119 / Android versionCode 259. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.118 WIP — Deterministic Desktop process exit
+
+- Fixes the remaining Desktop shutdown gap after 3.71.117: auxiliary BrowserWindows are now drained to their real `closed` state instead of merely receiving `close()`.
+- LAN updater shutdown is asynchronous and waits for the UDP discovery socket to close; its WebSocket is terminated during final application shutdown. LAN SSDP/mDNS discovery also waits for both datagram sockets to close.
+- After project safety, auxiliary windows, LAN Web, MCP, updater transports, pending host requests and SMB-owned child processes are drained, Main Process commits termination with Electron `app.exit(0)`. This avoids re-entering the cancellable BrowserWindow close chain through `app.quit()` after cleanup is already complete.
+- App/Desktop/Mobile identity advances to 3.71.118 / Android versionCode 258. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.117 WIP — Desktop Plugin Manager single-row + coordinated shutdown
+
+- Desktop Plugin Manager toolbar now has six explicit single-row slots for search, status, type, Install Plugin, Python/Jupyter authoring and Plugin Folder. The search cell is the only flexible column and action labels remain non-wrapping; Native Mobile keeps its separate responsive projection rules.
+- Added a Main Process shutdown coordinator that owns the full Desktop application lifetime. Primary-window close and Electron before-quit now drain background resources before the final quit instead of fire-and-forget cleanup.
+- LAN Web and MCP HTTP shutdown closes idle/active connections and is awaited. In-flight SMB PowerShell/nbtstat child processes are tracked by the SMB service and terminated during application shutdown. Pending host capability/MCP requests are rejected and timers cleared as part of the same lifecycle.
+- App/Desktop/Mobile identity advances to 3.71.117 / Android versionCode 257. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
+# 3.71.116 WIP — Desktop scientific chrome density + Resonance default companions
+
+- Desktop shared scientific floating navigation buttons are reduced exactly 10% from 28 × 28 px to 25.2 × 25.2 px through the Desktop Host geometry contract; the shared Core 28 × 28 baseline and Native Mobile 22.5 × 20.4 touch geometry remain unchanged.
+- Resonance Desktop now auto-opens the canonical curve-inspector and group-analysis PRIME surfaces. Native Mobile default visibility is unchanged.
+- Generic PRIME autoOpen no longer reapplies defaultPlacement after PortableView has restored a persisted user placement, so default-open companions still respect the user's saved docking choice.
+- Synchronized application/runtime/Desktop/Mobile/project-envelope identity at 3.71.116 and Android versionCode 256. SDK remains 1.51.76; Plugin API remains 1.19.0; Unit Templates remain 2.5.38.
+
 # 3.71.115 WIP — Data Center Mobile filter-row acceptance
 
 - Data Center Mobile keeps the hierarchy and field filters in one two-column row across every valid Drawer width; the obsolete ultra-narrow one-column fallback is retired.

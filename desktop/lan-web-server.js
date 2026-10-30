@@ -233,7 +233,17 @@ class LanWebServer extends EventEmitter {
     try { await this.discovery.stop(); } catch (err) { console.warn('LAN web discovery stop:', err.message); }
 
     if (server) {
-      await new Promise(resolve => server.close(() => resolve()));
+      await new Promise(resolve => {
+        let settled=false;
+        const done=()=>{if(settled)return;settled=true;resolve();};
+        try{
+          server.close(done);
+          // Shutdown owns the complete HTTP lifetime. Do not leave keep-alive
+          // or active LAN clients holding the Electron main process open.
+          server.closeIdleConnections?.();
+          server.closeAllConnections?.();
+        }catch{done();}
+      });
     }
     this.broadcast();
     return this.getStatus();

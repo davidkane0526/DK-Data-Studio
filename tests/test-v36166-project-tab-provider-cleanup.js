@@ -12,8 +12,12 @@ const appearance=fs.readFileSync(path.join(root,'src','styles','theme','componen
 const tabsRuntime=fs.readFileSync(path.join(root,'src','app','modules','project-tabs-history.js'),'utf8');
 assert(structure.includes('.project-tab-close{'),'Project tab close geometry must have an explicit Structure owner.');
 assert(schema.includes('.project-tab-close,.dkds-panel-close-button'),'Project tab close must be excluded from the generic 30px button fallback because it owns its compact hit box.');
-for(const needle of ['width:20px','height:20px','min-width:20px','min-height:20px']) assert(structure.includes(needle),`Project tab close geometry missing: ${needle}`);
+assert(structure.includes('--dkds-project-tab-close-size:20px'),'Shared project-tab close must retain the accepted 20 px canonical size slot.');
+for(const needle of ['width:var(--dkds-project-tab-close-size)','height:var(--dkds-project-tab-close-size)','min-width:var(--dkds-project-tab-close-size)','min-height:var(--dkds-project-tab-close-size)']) assert(structure.includes(needle),`Project tab close slot consumption missing: ${needle}`);
+assert(structure.includes('html[data-dkds-host="desktop"] .project-tab-close{')&&structure.includes('--dkds-project-tab-close-size:16px;'),'Desktop host must consume the 20% reduced 16 px project-tab close slot without creating a second rendered-geometry owner.');
 assert(appearance.includes('[data-dkds-component-identity="toolbarAction"].project-tab-close{border-radius:5px}'),'Project tab close compact integrated identity must be owned by Component Appearance, not Structure.');
+assert(appearance.includes('[data-dkds-component-identity="tab"].project-tab{')&&appearance.includes('border-radius:7px 7px 0 0;'),'Ordinary project tabs must use the shell-integrated top-corner silhouette through Component Appearance.');
+assert(!/(?:^|\n)\.project-tab\{[^}]*border-radius\s*:/s.test(modern),'Ordinary project-tab radius must not return to Presentation; Component Appearance is the single paint owner.');
 assert(!modern.includes('body.dkds-modern-ui .project-tab-close{')&&!modern.includes('.project-tab-close:hover:not(:disabled)'),'Project tab close paint/state must not return to Presentation.');
 assert(tabsRuntime.includes('class="project-tab-close quiet"'),'Project tab close must declare the canonical quiet ToolbarAction variant.');
 assert(appearance.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]')&&appearance.includes('color-mix(in srgb,var(--dkui-control-hover) 62%,transparent)'),'Project tab close hover must resolve through the neutral semantic quiet ToolbarAction appearance.');

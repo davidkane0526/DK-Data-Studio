@@ -1,7 +1,7 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.63.11",
+  "version": "3.63.12",
   "apiVersion": "1.19.0",
   "requiresCore": [
     "runtime",
@@ -120,7 +120,10 @@
       "feature-analysis-runtime.js",
       "feature-peak-runtime.js",
       "feature-selection-runtime.js",
+      "inspector-detail-projection.js",
+      "feature-inspector-mutation-runtime.js",
       "feature-inspector-runtime.js",
+      "main-marker-projection.js",
       "feature-main-plot-runtime.js",
       "feature-controls-runtime.js",
       "feature-runtime.js"
@@ -137,11 +140,15 @@
     "feature-analysis-runtime.js",
     "feature-peak-runtime.js",
     "feature-selection-runtime.js",
+    "inspector-detail-projection.js",
+    "feature-inspector-mutation-runtime.js",
     "feature-inspector-runtime.js",
+    "main-marker-projection.js",
     "feature-main-plot-runtime.js",
     "feature-controls-runtime.js",
     "feature-runtime.js",
     "super-layout.js",
+    "domain-adapter.js",
     "plugin.js"
   ],
   "algorithmCategories": [

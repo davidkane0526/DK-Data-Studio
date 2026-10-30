@@ -22,6 +22,7 @@ async function initializeWindowChrome(){
     renderMaximizedState(state?.maximized);
   };
   $('#windowCloseBtn').onclick=()=>void api.closeCurrentWindow();
+  if(api.shutdownSmokeMode)setTimeout(()=>void api.closeCurrentWindow(),1500);
   try{renderMaximizedState((await api.getCurrentWindowState?.())?.maximized);}catch{renderMaximizedState(false);}
   api.onCurrentWindowMaximizedChanged?.(renderMaximizedState);
   return true;

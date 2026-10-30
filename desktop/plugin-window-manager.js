@@ -52,6 +52,13 @@ function normalizeArtifactHydration(value) {
   if(!WINDOW_ARTIFACT_HYDRATION_MODES.has(mode))throw new Error(`Unsupported plugin window artifact hydration mode: ${mode||'(empty)'}`);
   return mode;
 }
+function resolveArtifactHydration(manifest={},windowSpec={}){
+  const explicit=String(windowSpec?.artifactHydration||'').trim();
+  if(explicit)return normalizeArtifactHydration(explicit);
+  const pluginType=String(manifest?.pluginType||'').trim().toLowerCase();
+  const accepts=Array.isArray(manifest?.data?.accepts)?manifest.data.accepts.map(String).filter(Boolean):[];
+  return pluginType==='workbench'&&accepts.length?'live':'project';
+}
 function normalizePersistence(value) {
   const mode = String(value || 'project').trim().toLowerCase();
   if (!WINDOW_PERSISTENCE_MODES.has(mode)) {
@@ -312,7 +319,7 @@ function readBuiltinPluginWindows(appPath) {
           prewarm:windowSpec.prewarm !== false,
           reuse:windowSpec.reuse !== false,
           persistence:normalizePersistence(windowSpec.persistence),
-          artifactHydration:normalizeArtifactHydration(windowSpec.artifactHydration),
+          artifactHydration:resolveArtifactHydration(manifest,windowSpec),
           width:finiteDimension(windowSpec.width,1480),
           height:finiteDimension(windowSpec.height,940),
           minWidth:finiteDimension(windowSpec.minWidth,920),
@@ -398,7 +405,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     prewarm:windowSpec.prewarm!==false,
     reuse:windowSpec.reuse!==false,
     persistence:normalizePersistence(windowSpec.persistence),
-    artifactHydration:normalizeArtifactHydration(windowSpec.artifactHydration),
+    artifactHydration:resolveArtifactHydration(manifest,windowSpec),
     width:finiteDimension(windowSpec.width,1480),
     height:finiteDimension(windowSpec.height,940),
     minWidth:finiteDimension(windowSpec.minWidth,920),
@@ -491,6 +498,7 @@ module.exports = {
   normalizeDependencies,
   normalizePersistence,
   normalizeArtifactHydration,
+  resolveArtifactHydration,
   normalizePackagedPluginWindow,
   normalizeExternalPluginWindow,
   normalizeOverridePluginWindow,

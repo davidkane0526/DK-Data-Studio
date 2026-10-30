@@ -29,3 +29,7 @@ src/generated/dkds-sdk-export.zip
 assets/dkds-icon.png
 mobile/assets/icon.png
 mobile/assets/adaptive-icon.png
+
+# Python authoring/generator caches.
+__pycache__/
+*.py[cod]

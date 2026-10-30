@@ -1,4 +1,5 @@
 (() => {
+  const MarkerProjection=window.DKDSPluginModules.require('builtin.resonance-workbench','main-marker-projection');
   // Owns the Resonance primary ScientificCurveSurface adapter: legend, range
   // selection menu, marker/manipulator projection and direct-edit mapping.
   // Scientific gesture geometry remains Core-owned; this module only maps the
@@ -54,15 +55,13 @@
         dom.html(chip,`<i class="respar-legend-line dkds-series-swatch-line${reverse?' reverse':''}"></i><span>${compactLegendNumber(ds.vg)} V</span>`);dom.token(dom.query('.respar-legend-line',chip),{'--dkds-series-color':color});chip.dataset.dkdsTooltip=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;dom.append(host,chip);
       }
     }
-    function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
     function sweepVoltageBounds(sw){
       if(!sw)return null;const cached=sweepVoltageBoundsCache.get(sw);if(cached)return cached;let lo=Infinity,hi=-Infinity;
       for(const q of (sw.points||[])){const v=Number(q?.v);if(!Number.isFinite(v))continue;if(v<lo)lo=v;if(v>hi)hi=v;}
       const row=Number.isFinite(lo)&&Number.isFinite(hi)?{lo,hi}:null;if(row)sweepVoltageBoundsCache.set(sw,row);return row;
     }
     function markers(){
-      const display=live.workspace.peakDisplay||{},visibleIds=new Set(actions.visibleSweepIds());if(display.showPoints===false)return [];
-      return (live.workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),entityId:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
+      return MarkerProjection.project({workspace:live.workspace,visibleSweepIds:actions.visibleSweepIds(),colorForPeak:peakColor});
     }
     function markerWidthSpec(marker){
       const p=marker?.source,sw=p?actions.sweepById(p.sweepId):null;if(!p||!sw)return null;const m=actions.peakMetrics(p)||{};

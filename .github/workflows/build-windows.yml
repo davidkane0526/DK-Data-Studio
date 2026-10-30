@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
+      - 'desktop/**'
       - 'plugin-window-manager.js'
       - 'preload.js'
       - 'plugin-package.js'
@@ -15,6 +16,7 @@ on:
       - 'lan-web-server.js'
       - 'windows-network-discovery.js'
       - 'package.json'
+      - 'README_CN.md'
       - 'src/**'
       - 'assets/**'
       - 'config/**'
@@ -33,9 +35,11 @@ on:
       - 'preload.js'
       - 'plugin-package.js'
       - 'update-client.js'
+      - 'desktop/**'
       - 'lan-web-server.js'
       - 'windows-network-discovery.js'
       - 'package.json'
+      - 'README_CN.md'
       - 'src/**'
       - 'assets/**'
       - 'config/**'
@@ -45,7 +49,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   statuses: write
 
 concurrency:
@@ -63,6 +67,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Resolve release version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if (-not $version) { throw 'Unable to resolve source release version.' }
+          "DKDS_RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release version: $version"
 
       - name: Ensure main baseline ref
         shell: pwsh
@@ -147,6 +159,38 @@ jobs:
         shell: pwsh
         run: npm run dist
 
+      - name: Verify Windows application identity
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $PWD 'dist\win-unpacked\DK Data Studio.exe'
+          if (-not (Test-Path -LiteralPath $runtime -PathType Leaf)) {
+            throw "Branded runtime executable missing: $runtime"
+          }
+          $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($runtime)
+          Write-Host "ProductName=$($info.ProductName)"
+          Write-Host "FileDescription=$($info.FileDescription)"
+          if ($info.ProductName -ne 'DK Data Studio') {
+            throw "Windows ProductName is not branded: $($info.ProductName)"
+          }
+          if ($info.FileDescription -ne 'DK Data Studio') {
+            throw "Windows FileDescription is not branded: $($info.FileDescription)"
+          }
+
+      - name: Verify packaged Desktop process tree exits
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $PWD 'dist\win-unpacked\DK Data Studio.exe'
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $runtime -StartupTimeoutSeconds 25 -ExitTimeoutSeconds 12
+
+          $portable = Get-ChildItem -Path (Join-Path $PWD 'dist') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)portable' } |
+            Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found for shutdown lifecycle verification.' }
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $portable.FullName -StartupTimeoutSeconds 45 -ExitTimeoutSeconds 15
+
+          Write-Host 'Verifying renderer titlebar closeCurrentWindow path...'
+          & '.\tools\windows\test-packaged-shutdown.ps1' -ExecutablePath $runtime -StartupTimeoutSeconds 25 -ExitTimeoutSeconds 12 -CommandCloseSmoke
+
       - name: Stage Windows artifacts
         shell: pwsh
         run: |
@@ -227,6 +271,22 @@ jobs:
           Write-Host 'Staged files:'
           Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
 
+      - name: Upload standalone Portable executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Portable-${{ github.sha }}
+          path: artifact-windows/*Portable*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload standalone Setup executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Setup-${{ github.sha }}
+          path: artifact-windows/*Setup*.exe
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Smoke-test bundled LAN update server
         shell: pwsh
         run: |
@@ -278,6 +338,61 @@ jobs:
             Remove-Item -LiteralPath (Join-Path $serverDir 'server.log') -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath (Join-Path $serverDir 'server.log.1') -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath (Join-Path $serverDir 'storage') -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Publish Portable EXE to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:DKDS_RELEASE_VERSION"
+          $title = "DK Data Studio $tag"
+          $latestDevSha = gh api "repos/$env:GITHUB_REPOSITORY/branches/dev" --jq '.commit.sha'
+          if ($LASTEXITCODE -ne 0 -or $latestDevSha.Trim() -ne $env:GITHUB_SHA) {
+            throw "Superseded dev build must not publish a Release: $env:GITHUB_SHA"
+          }
+          $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)portable' } |
+            Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found for GitHub Release.' }
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --target $env:GITHUB_SHA --title $title --prerelease --notes "Automated dev build for $tag from commit $env:GITHUB_SHA."
+            if ($LASTEXITCODE -ne 0) {
+              Start-Sleep -Seconds 2
+              gh release view $tag *> $null
+              if ($LASTEXITCODE -ne 0) { throw "Unable to create or resolve GitHub Release $tag." }
+            }
+          }
+
+          $tagSha = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha'
+          if ($LASTEXITCODE -ne 0) { throw "Unable to inspect tag $tag" }
+          if ($tagSha.Trim() -ne $env:GITHUB_SHA) {
+            gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/git/refs/tags/$tag" -f "sha=$env:GITHUB_SHA" -F force=true | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Unable to align tag $tag to current SHA" }
+          }
+          gh release edit $tag --target $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw "Unable to align Release $tag target" }
+
+          $releaseDir = Join-Path $env:RUNNER_TEMP 'dkds-release'
+          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
+          $releaseExe = Join-Path $releaseDir 'DK-Data-Studio-Windows-Portable.exe'
+          Copy-Item -LiteralPath $portable.FullName -Destination $releaseExe -Force
+          gh release upload $tag $releaseExe --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to upload Portable EXE to GitHub Release.' }
+
+          $allowed = @(
+            'DK-Data-Studio-Windows-Portable.exe',
+            'DK-Data-Studio-Android-arm64.apk'
+          )
+          $release = gh release view $tag --json assets | ConvertFrom-Json
+          foreach ($asset in @($release.assets)) {
+            if ($allowed -notcontains [string]$asset.name) {
+              gh release delete-asset $tag ([string]$asset.name) --yes
+              if ($LASTEXITCODE -ne 0) { throw "Failed to remove unexpected Release asset: $($asset.name)" }
+            }
           }
 
       - name: Upload Windows artifacts

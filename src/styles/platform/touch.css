@@ -169,16 +169,16 @@
 /* Desktop scientific floating chrome is intentionally compact. Native Mobile
    re-establishes its larger touch geometry in native-client-shell.css. */
 html[data-dkds-host="desktop"] .dkds-scientific-nav-tools{
-  /* Desktop scientific chrome scales with the CSS viewport, not physical panel
-     resolution.  The renderer therefore stays compact at 100–150% Windows
-     scaling while still retaining a slightly larger hit target on very wide
-     workspaces. Mobile owns a separate geometry contract. */
-  --dkds-scientific-nav-item-width:28px;
-  --dkds-scientific-nav-item-height:28px;
+  /* Desktop scientific chrome keeps its accepted height while the complete
+     horizontal footprint is increased by 10% from the v3.71.121 compact baseline. Mobile owns a separate geometry
+     contract and is intentionally unaffected. */
+  --dkds-scientific-nav-item-width:22.176px;
+  --dkds-scientific-nav-item-height:25.2px;
   --dkds-scientific-nav-padding-block:1px;
-  --dkds-scientific-nav-padding-inline:2px;
+  --dkds-scientific-nav-padding-inline:1.76px;
   --dkds-scientific-nav-font-size:13px;
 }
+
 
 /* Desktop wheel policy: workspace/document scroll regions chain vertically.
    A local table/panel consumes the wheel while it can move; once it reaches

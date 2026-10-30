@@ -6,6 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function assert(v,m){if(!v)throw new Error(m);}
 (async()=>{
+  const chartExport=read('src/core/scientific/chart-export-runtime.js');
   const chart=read('src/core/scientific/chart-runtime.js');
   assert(chart.includes("const VERSION='2.0.0'"),'Chart runtime must advance for corrected display-scale semantics.');
   assert(chart.includes("hasHeatmap(data)?'z'")&&chart.includes('isColorScaleInteraction'),'Heatmap display scale must target Z/colorbar rather than the coordinate Y axis.');
@@ -17,7 +18,7 @@ function assert(v,m){if(!v)throw new Error(m);}
   const fakeWindow={d3:{},DKDSTheme:{subscribeRevision(){return()=>{};}},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(true);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
   const fakeDocument={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
   const styleGate={set(_el,_prop,value){return value;},remove(){return true;}};
-  const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){},DKDSStyleGate:styleGate};context.globalThis=context;context.DKDSTheme=fakeWindow.DKDSTheme;fakeWindow.DKDSStyleGate=styleGate;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
+  const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){},DKDSStyleGate:styleGate};context.globalThis=context;context.DKDSTheme=fakeWindow.DKDSTheme;fakeWindow.DKDSStyleGate=styleGate;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chartExport,context,{filename:'chart-export-runtime.js'});vm.runInContext(chart,context,{filename:'chart-runtime.js'});
 
   const lineY=[-1e-5,-1e-6,0,1e-7];
   await fakeWindow.DKDSCharts.react('plot',[{type:'scatter',y:lineY}],{yaxis:{type:'linear'}},{});
