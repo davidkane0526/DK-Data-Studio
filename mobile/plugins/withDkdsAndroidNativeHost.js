@@ -171,7 +171,7 @@ private object DkdsLocalWebServer {
     while(bytes.size()<8192){
       val c=input.read()
       if(c<0)return if(bytes.size()==0)null else throw IllegalArgumentException("Incomplete HTTP header line.")
-      if(c==10)return bytes.toString("US-ASCII").trimEnd('\r')
+      if(c==10)return bytes.toString("US-ASCII").trimEnd('\\r')
       bytes.write(c)
     }
     throw IllegalArgumentException("HTTP header line too long.")
