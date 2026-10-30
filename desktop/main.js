@@ -15,7 +15,7 @@ const { McpServer } = require('../services/mcp-server');
 const { createAppearanceRuntime } = require('./main-modules/appearance-runtime');
 const { createPluginPackageRuntime } = require('./main-modules/plugin-package-runtime');
 const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
-const { createAgentRuntime } = require('./main-modules/agent-runtime');
+const { createAgentRuntime } = require('./main-modules/agent-runtime');\nconst { createTcpRuntime } = require('./main-modules/tcp-runtime');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
@@ -64,7 +64,7 @@ const {
   currentPluginPackage,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage,installLanPluginPackage
 }=pluginPackageRuntime;
 const {enforcePackagedExpiry}=createPackagedExpiryRuntime({app,appRoot:APP_ROOT});
-const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});
+const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});\nconst tcpRuntime=createTcpRuntime();
 
 function resolveConfiguredPluginWindow(activityId) {
   return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
@@ -519,6 +519,10 @@ app.whenReady().then(() => {
   ipcMain.handle('smb:listShares', async (_event, connection={}) => SmbService.safeSmbOperation(()=>SmbService.scanDesktopSmbShares(connection),'SMB 共享枚举失败'));
   ipcMain.handle('smb:list', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.listDesktopSmb(payload.connection||{},payload.path||''),'SMB 目录读取失败'));
   ipcMain.handle('smb:read', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.readDesktopSmb(payload.connection||{},Array.isArray(payload.paths)?payload.paths:[]),'SMB 文件读取失败'));
+
+  ipcMain.handle('tcp:open', async (_event,payload={}) => tcpRuntime.open(payload));
+  ipcMain.handle('tcp:exchange', async (_event,payload={}) => tcpRuntime.exchange(payload));
+  ipcMain.handle('tcp:close', async (_event,payload={}) => tcpRuntime.close(payload));
 
   ipcMain.handle('agent:getSecret', async (_event,key) => loadAgentSecret(key));
   ipcMain.handle('agent:setSecret', async (_event,payload={}) => storeAgentSecret(payload.key,payload.value));
