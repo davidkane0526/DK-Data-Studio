@@ -191,8 +191,12 @@
       return true;
     }
     function onEdit(id){
-      if(connectionKeys.includes(id)&&session)ui.renderStatus('连接配置已更改；请重新连接 / 识别',sessionTarget?.host||'');
+      if(connectionKeys.includes(id)){
+        identified=null;
+        if(session)ui.renderStatus('连接配置已更改；请重新连接 / 识别',sessionTarget?.host||'');
+      }
       if(planKeys.includes(id))ui.renderPreview('方案已更改，请重新预览。');
+      ctx.project.capture();
     }
     function safe(fn){return (...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;});}catch(e){ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;}};}
     ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>ctx.workspace.openPage('keithley4200Page')});
@@ -219,7 +223,7 @@
     ctx.capabilities.register('instrument.keithley-4200',{
       kind:'instrument.connection',title:'Keithley 4200A KXCI',remote:false,
       methods:{
-        status:()=>({connected:!!session,sessionEndpoint:sessionTarget?{...sessionTarget}:null,identified:identified?{...identified}:null,endpoint:endpoint(),runningSimulation:!!run}),
+        status:()=>({connected:!!session,sessionEndpoint:sessionTarget?{...sessionTarget}:null,identified:identified?{...identified}:null,endpoint:endpoint(),configurationChanged:!!sessionTarget&&routeKey(sessionTarget)!==routeKey(endpoint()),runningSimulation:!!run}),
         connect,identify,disconnect,
         validatePlan:()=>plan(),
         simulate:()=>simulate(),
