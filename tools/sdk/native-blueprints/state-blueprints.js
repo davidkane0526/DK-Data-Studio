@@ -81,6 +81,20 @@ const NATIVE_PLUGIN_STATE_BLUEPRINTS=Object.freeze({
       'unmapped': 0
     }
   },
+  'keithley-4200': {
+    'channels': ['enabled'],
+    'roles': [],
+    'tabIndex': [],
+    'aria': [],
+    'keys': [],
+    'counts': {
+      'states': 2,
+      'roles': 0,
+      'a11y': 0,
+      'keyboard': 0,
+      'unmapped': 0
+    }
+  },
   'flexible-import': {
     'channels': [],
     'roles': [],

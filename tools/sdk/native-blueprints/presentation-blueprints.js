@@ -12,6 +12,7 @@ const NATIVE_PLUGIN_PRESENTATION_BLUEPRINTS=Object.freeze({
     surface('main','primary','data-primary',100,false),surface('data-control','prime','data-control',94,true),surface('chart-preview','prime','scientific-secondary',60,true)
   ]),
   'flexible-import':blueprint(),
+  'keithley-4200':blueprint([surface('main','primary','utility-primary',100,false)]),
   'pulse-analysis':blueprint([
     surface('main','primary','scientific-primary',100,false),surface('data-control','prime','data-control',92,true)
   ]),
