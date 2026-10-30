@@ -144,6 +144,8 @@ jobs:
 
       - name: Run project checks
         shell: pwsh
+        env:
+          DKDS_TESTS_COLLECT_FAILURES: ${{ github.ref == 'refs/heads/4200' && '1' || '0' }}
         run: npm run check
 
       - name: Set unique CI build version
