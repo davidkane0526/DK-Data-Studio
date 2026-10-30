@@ -1,4 +1,4 @@
-> **v3.71.137 Release — Keithley 4200A 三路径连接预览（开发分支 4200）**：安卓支持网线与 Wi-Fi 两种 TCP 接入；Windows 桌面程序新增网线、Wi-Fi 和经安卓平板 LAN 网关三种模式。仪器通信仍仅支持 `*IDN?` 只读身份识别。真实测试扫描、源表原始文件和仪器原生图像的获取尚未实现；此版本为测试版，不代表真机验收。
+> **v3.71.138 Release — Keithley 4200A 安卓以太网路由修复（开发分支 4200）**：安卓支持网线与 Wi-Fi 两种 TCP 接入；Windows 桌面程序新增网线、Wi-Fi 和经安卓平板 LAN 网关三种模式。仪器通信仍仅支持 `*IDN?` 只读身份识别。真实测试扫描、源表原始文件和仪器原生图像的获取尚未实现；此版本为测试版，不代表真机验收。
 
 > **v3.71.133 Release Candidate (WIP) — Phase F DAG-aware Stage Execution / SDK 1.51.90**：生成插件的下游 Stage Action 自动执行前置 Stage，复用 Core Task Runner、ArtifactStore 和 canonical Stage DAG。未完成双端 CI 前不视为正式验收。
 
@@ -165,7 +165,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.71.137**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.90**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**v3.71.138**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.90**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 

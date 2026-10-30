@@ -1,3 +1,11 @@
+# 3.71.138 Release — Android link-local USB Ethernet route recovery (4200 Preview)
+
+- Android native KXCI sessions and LAN gateway now retry with a kernel-visible local Ethernet IPv4 source when USB Ethernet is absent from ConnectivityManager.allNetworks.
+- Auto-mode 169.254/16 no longer silently chooses Wi-Fi when no Ethernet interface is found; diagnostic identifies network route and target on error.
+- Both native paths include routeStrategy in their connection success response.
+- Hardware reachability still needs a live OPPO Pad Mini and KI4200A test. Instrument-native data and sweep features are not available.
+- Android versionCode 278; app version 3.71.138.
+
 # 3.71.137 Release — Keithley 4200A Transport Preview (Android + Windows)
 
 - Establishes the three explicit Windows connection paths for the Keithley 4200A KXCI plugin: local Ethernet, local Wi-Fi, and an authenticated LAN relay through an Android tablet. Android retains its own Ethernet/Wi-Fi outgoing network selection.
