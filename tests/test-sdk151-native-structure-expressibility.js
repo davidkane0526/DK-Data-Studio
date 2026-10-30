@@ -1,11 +1,12 @@
 'use strict';
 const assert=require('assert');
-const path=require('path');const Module=require('module');
+const fs=require('fs');const path=require('path');const Module=require('module');
 process.env.NODE_PATH=[path.join(process.cwd(),'src/core'),process.env.NODE_PATH||''].filter(Boolean).join(path.delimiter);Module._initPaths();
 const {UNIT_CATALOG,UNIT_CHROME_POLICIES,STRUCTURAL_PRIMITIVE_POLICIES}=require('../src/core/ui/modules/composition/unit-template-spec');
 const {scanAll,STRUCTURE_UNIT_MAP}=require('../tools/sdk/native-structure-census');
 const all=scanAll();
-assert.strictEqual(Object.keys(all).length,18,'all native plugin directories must be structurally inventoried');
+const pluginDirs=fs.readdirSync('src/plugins').filter(name=>fs.statSync(path.join('src/plugins',name)).isDirectory()).sort();
+assert.deepStrictEqual(Object.keys(all).sort(),pluginDirs,'all native plugin directories must be structurally inventoried');
 for(const [primitive,row] of Object.entries(STRUCTURAL_PRIMITIVE_POLICIES))assert(UNIT_CATALOG[row.unit],`structural primitive ${primitive} maps to missing Unit ${row.unit}`);
 for(const [primitive,unit] of Object.entries(STRUCTURE_UNIT_MAP))assert(UNIT_CATALOG[unit],`scanner primitive ${primitive} maps to missing Unit ${unit}`);
 let counts={buttons:0,fields:0,selects:0,checks:0,tables:0};
