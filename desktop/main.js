@@ -15,7 +15,8 @@ const { McpServer } = require('../services/mcp-server');
 const { createAppearanceRuntime } = require('./main-modules/appearance-runtime');
 const { createPluginPackageRuntime } = require('./main-modules/plugin-package-runtime');
 const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
-const { createAgentRuntime } = require('./main-modules/agent-runtime');\nconst { createTcpRuntime } = require('./main-modules/tcp-runtime');
+const { createAgentRuntime } = require('./main-modules/agent-runtime');
+const { createTcpRuntime } = require('./main-modules/tcp-runtime');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
@@ -64,7 +65,8 @@ const {
   currentPluginPackage,pluginInstallPlan,commitPluginInstall,restoreInstalledPackage,installLanPluginPackage
 }=pluginPackageRuntime;
 const {enforcePackagedExpiry}=createPackagedExpiryRuntime({app,appRoot:APP_ROOT});
-const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});\nconst tcpRuntime=createTcpRuntime();
+const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});
+const tcpRuntime=createTcpRuntime();
 
 function resolveConfiguredPluginWindow(activityId) {
   return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
