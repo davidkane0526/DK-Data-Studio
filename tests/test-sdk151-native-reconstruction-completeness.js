@@ -4,7 +4,7 @@ const {NATIVE_PLUGIN_BLUEPRINTS,NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS,NATIVE_PLUGIN_
 const {scanAll:scanStructure}=require('../tools/sdk/native-structure-census');
 const {scanAll:scanState}=require('../tools/sdk/native-state-census');
 const maps={unit:NATIVE_PLUGIN_BLUEPRINTS,services:NATIVE_PLUGIN_SERVICE_BLUEPRINTS,presentation:NATIVE_PLUGIN_PRESENTATION_BLUEPRINTS,state:NATIVE_PLUGIN_STATE_BLUEPRINTS,structure:scanStructure(),stateCensus:scanState()};
-const ids=Object.keys(maps.unit).sort();assert.strictEqual(ids.length,18,'reconstruction dossier must cover all native plugin directories');
+const ids=Object.keys(maps.unit).sort();assert.deepStrictEqual(ids,Object.keys(maps.structure).sort(),'reconstruction dossier must cover every native plugin directory');
 for(const [name,map] of Object.entries(maps))assert.deepStrictEqual(Object.keys(map).sort(),ids,`${name} blueprint/census plugin set drifted`);
 for(const id of Object.keys(NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS))assert(ids.includes(id),`geometry blueprint references unknown native plugin ${id}`);
 for(const id of ids){

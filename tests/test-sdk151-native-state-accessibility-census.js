@@ -2,7 +2,7 @@
 const assert=require('assert');
 const {scanAll}=require('../tools/sdk/native-state-census');
 const {STATE_CHANNELS,ACCESSIBILITY_ATTRIBUTES,ACCESSIBILITY_ROLES,ACCESSIBILITY_TABINDEX,KEYBOARD_KEYS}=require('../src/core/ui/modules/composition/unit-template-state');
-const all=scanAll();assert.strictEqual(Object.keys(all).length,18,'all native plugin directories must be state/accessibility inventoried');
+const all=scanAll();const pluginDirs=require('fs').readdirSync('src/plugins').filter(name=>require('fs').statSync(require('path').join('src/plugins',name)).isDirectory()).sort();assert.deepStrictEqual(Object.keys(all).sort(),pluginDirs,'all native plugin directories must be state/accessibility inventoried');
 let totals={states:0,roles:0,a11y:0,keyboard:0,unmapped:0};
 for(const [id,row] of Object.entries(all)){
   for(const key of Object.keys(totals))totals[key]+=row.counts[key];
