@@ -366,7 +366,11 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported TCP network mode: "+mode)
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network=when(mode){
-          "auto"->null
+          // 169.254/16 instruments are typically directly connected via USB Ethernet.
+          // Prefer that Android Network without changing the device-wide Wi-Fi route.
+          "auto"->if(target.startsWith("169.254.")) cm.allNetworks.firstOrNull {
+            cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
+          } else null
           "interface"->cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
           "wifi"->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true }
           else->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true }
@@ -384,7 +388,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
             putInt("localPort",socket.localPort)
             putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
             putInt("remotePort",socket.port)
-            putString("interfaceName",cm.getLinkProperties(network)?.interfaceName ?: wanted)
+            putString("interfaceName",network?.let { cm.getLinkProperties(it)?.interfaceName } ?: wanted)
             putString("networkMode",mode)
           })
         } catch(error:Throwable) {
