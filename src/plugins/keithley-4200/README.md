@@ -2,6 +2,13 @@
 
 This plugin implements a **read-only live connection** and a **simulation-only measurement GUI**. Do not mistake simulated curves for data from a Keithley instrument.
 
+## How to open the 4200A workbench
+
+- Android app: tap **分析** at the top, choose **4200A** in **分析工作区**.
+- Desktop / LAN browser: find the **4200A** activity in the workspace navigation (or **更多工作区** if it is in overflow).
+- The entry is registered as the activity `keithley-4200` by the built-in plugin `com.dkds.keithley-4200`.
+- If the entry is missing, open **插件** and inspect the status of **Keithley 4200A KXCI**; activation errors may suppress its activity. A page-header mounting bug that could cause activation failure was fixed after release `3.71.134` and covered by `test-keithley-4200-presentation.js`.
+
 ## Connection
 
 - Editable IP address or hostname, TCP port (default `1225`), connection timeout, response timeout and optional serial-number verification.

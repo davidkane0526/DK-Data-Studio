@@ -17,6 +17,9 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-keithley-4200-presentation.js",
+      "args": []
+    },
     {
       "file": "tests/test-v371115-plot-export-desktop-lifecycle-brand.js",
       "args": []
