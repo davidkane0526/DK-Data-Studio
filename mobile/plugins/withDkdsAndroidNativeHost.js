@@ -21,6 +21,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.Context
 import android.net.Uri\nimport android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Debug
 import android.os.Process
 import android.provider.OpenableColumns
@@ -353,7 +354,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     return true
   }
 
-  @ReactMethod fun tcpOpen(host:String,port:Double,connectTimeoutMs:Double,interfaceName:String,promise:Promise) {
+  @ReactMethod fun tcpOpen(host:String,port:Double,connectTimeoutMs:Double,interfaceName:String,networkMode:String,promise:Promise) {
     thread(name="dkds-tcp-open",isDaemon=true) {
       try {
         val target=host.trim()
@@ -361,9 +362,16 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val timeout=boundedTcpInt(connectTimeoutMs,5000,250,120000)
         if(target.isBlank())throw IllegalArgumentException("TCP host is required.")
         val wanted=interfaceName.trim()
+        val mode=networkMode.trim().ifBlank { "auto" }
+        if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported TCP network mode: "+mode)
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network=if(wanted.isBlank()) null else (cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
-          ?: throw IllegalStateException("Android network interface is unavailable: "+wanted))
+        val network=when(mode){
+          "auto"->null
+          "interface"->cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
+          "wifi"->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true }
+          else->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true }
+        }
+        if(mode!="auto"&&network==null)throw IllegalStateException("Requested Android network is unavailable: "+mode+(if(mode=="interface")" / "+wanted else ""))
         val socket=network?.socketFactory?.createSocket() ?: Socket()
         try {
           socket.tcpNoDelay=true
@@ -376,7 +384,8 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
             putInt("localPort",socket.localPort)
             putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
             putInt("remotePort",socket.port)
-            putString("interfaceName",wanted)
+            putString("interfaceName",cm.getLinkProperties(network)?.interfaceName ?: wanted)
+            putString("networkMode",mode)
           })
         } catch(error:Throwable) {
           try{socket.close()}catch(_:Throwable){}
