@@ -20,7 +20,7 @@ function kotlinSource(packageName) {
 import android.app.Activity
 import android.content.Intent
 import android.content.Context
-import android.net.Uri
+import android.net.Uri\nimport android.net.ConnectivityManager
 import android.os.Debug
 import android.os.Process
 import android.provider.OpenableColumns
@@ -49,7 +49,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.InputStream
 import java.io.ByteArrayOutputStream
-import java.net.InetAddress
+import java.net.InetAddress\nimport java.net.InetSocketAddress\nimport java.net.SocketTimeoutException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.ServerSocket
@@ -273,6 +273,8 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   private var saveBytes: ByteArray? = null
   private data class DataReadSession(val token:String,val uri:Uri,val size:Long,var stream:InputStream,var offset:Long=0L,@Volatile var touchedAt:Long=System.currentTimeMillis())
   private val dataReadSessions = ConcurrentHashMap<String, DataReadSession>()
+  private data class TcpSession(val id:String,val socket:Socket,@Volatile var busy:Boolean=false)
+  private val tcpSessions = ConcurrentHashMap<String, TcpSession>()
   private val dataReadTtlMs = 5L * 60L * 1000L
 
   private fun documentSize(uri:Uri, hint:Long):Long {
@@ -340,6 +342,107 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   @ReactMethod fun smbListShares(connection: ReadableMap, promise: Promise) { thread(name="dkds-smb-shares",isDaemon=true) { try { promise.resolve(DkdsSmbService.listShares(connection)) } catch(e:Throwable){ promise.reject("E_SMB_SHARES",DkdsSmbService.message(e),e) } } }
   @ReactMethod fun smbList(connection: ReadableMap, path: String, promise: Promise) { thread(name="dkds-smb-list",isDaemon=true) { try { promise.resolve(DkdsSmbService.list(connection,path)) } catch(e:Throwable){ promise.reject("E_SMB_LIST",DkdsSmbService.message(e),e) } } }
   @ReactMethod fun smbRead(connection: ReadableMap, paths: ReadableArray, promise: Promise) { thread(name="dkds-smb-read",isDaemon=true) { try { promise.resolve(DkdsSmbService.read(connection,paths)) } catch(e:Throwable){ promise.reject("E_SMB_READ",DkdsSmbService.message(e),e) } } }
+
+  private fun boundedTcpInt(value:Double,fallback:Int,min:Int,max:Int):Int {
+    val raw=if(value.isFinite())value.toInt() else fallback
+    return raw.coerceIn(min,max)
+  }
+  private fun closeTcpSession(id:String):Boolean {
+    val row=tcpSessions.remove(id) ?: return false
+    try{row.socket.close()}catch(_:Throwable){}
+    return true
+  }
+
+  @ReactMethod fun tcpOpen(host:String,port:Double,connectTimeoutMs:Double,interfaceName:String,promise:Promise) {
+    thread(name="dkds-tcp-open",isDaemon=true) {
+      try {
+        val target=host.trim()
+        val portInt=boundedTcpInt(port,0,1,65535)
+        val timeout=boundedTcpInt(connectTimeoutMs,5000,250,120000)
+        if(target.isBlank())throw IllegalArgumentException("TCP host is required.")
+        val wanted=interfaceName.trim()
+        val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network=if(wanted.isBlank()) null else cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
+          ?: throw IllegalStateException("Android network interface is unavailable: "+wanted)
+        val socket=network?.socketFactory?.createSocket() ?: Socket()
+        try {
+          socket.tcpNoDelay=true
+          socket.connect(InetSocketAddress(target,portInt),timeout)
+          val id=UUID.randomUUID().toString()
+          tcpSessions[id]=TcpSession(id,socket)
+          promise.resolve(WritableNativeMap().apply {
+            putString("sessionId",id)
+            putString("localAddress",socket.localAddress?.hostAddress ?: "")
+            putInt("localPort",socket.localPort)
+            putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
+            putInt("remotePort",socket.port)
+            putString("interfaceName",wanted)
+          })
+        } catch(error:Throwable) {
+          try{socket.close()}catch(_:Throwable){}
+          throw error
+        }
+      } catch(error:Throwable) { promise.reject("E_TCP_OPEN",error.message ?: "TCP open failed.",error) }
+    }
+  }
+
+  @ReactMethod fun tcpExchange(sessionId:String,base64:String,readTimeoutMs:Double,idleTimeoutMs:Double,maxBytes:Double,promise:Promise) {
+    thread(name="dkds-tcp-exchange",isDaemon=true) {
+      val id=sessionId.trim()
+      val row=tcpSessions[id]
+      if(row==null){promise.reject("E_TCP_SESSION","TCP session is unavailable or closed.");return@thread}
+      synchronized(row){
+        if(row.busy){promise.reject("E_TCP_BUSY","TCP session already has an active exchange.");return@thread}
+        row.busy=true
+      }
+      try {
+        val write=Base64.decode(base64,Base64.DEFAULT)
+        if(write.size>1024*1024)throw IllegalArgumentException("TCP write exceeds the 1 MiB safety limit.")
+        val readTimeout=boundedTcpInt(readTimeoutMs,5000,250,120000)
+        val idleTimeout=boundedTcpInt(idleTimeoutMs,120,20,10000)
+        val limit=boundedTcpInt(maxBytes,65536,1,8*1024*1024)
+        val socket=row.socket
+        socket.getOutputStream().apply { write(write);flush() }
+        val input=socket.getInputStream()
+        val output=ByteArrayOutputStream()
+        val buffer=ByteArray(4096)
+        socket.soTimeout=readTimeout
+        while(output.size()<limit){
+          val remaining=limit-output.size()
+          try {
+            val count=input.read(buffer,0,minOf(buffer.size,remaining))
+            if(count<0)break
+            if(count==0)continue
+            output.write(buffer,0,count)
+            socket.soTimeout=idleTimeout
+          } catch(timeout:SocketTimeoutException) {
+            if(output.size()>0)break
+            closeTcpSession(id)
+            throw IllegalStateException("TCP read timeout before any response; session closed to prevent late-response contamination.",timeout)
+          }
+        }
+        if(output.size()>=limit){
+          closeTcpSession(id)
+          throw IllegalStateException("TCP response reached the configured byte limit; session closed.")
+        }
+        val bytes=output.toByteArray()
+        promise.resolve(WritableNativeMap().apply {
+          putString("base64",Base64.encodeToString(bytes,Base64.NO_WRAP))
+          putInt("bytesRead",bytes.size)
+        })
+      } catch(error:Throwable) {
+        closeTcpSession(id)
+        promise.reject("E_TCP_EXCHANGE",error.message ?: "TCP exchange failed.",error)
+      } finally {
+        row.busy=false
+      }
+    }
+  }
+
+  @ReactMethod fun tcpClose(sessionId:String,promise:Promise) {
+    try { promise.resolve(closeTcpSession(sessionId.trim())) }
+    catch(error:Throwable){ promise.reject("E_TCP_CLOSE",error.message ?: "TCP close failed.",error) }
+  }
 
   @ReactMethod fun agentSetSecret(key: String, value: String, promise: Promise) {
     try { setSecret(key,value); promise.resolve(true) } catch(e:Throwable){ promise.reject("E_AGENT_SECRET",e) }
