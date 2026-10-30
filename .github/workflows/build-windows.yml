@@ -5,6 +5,7 @@ on:
     branches:
       - plugin
       - dev
+      - '4200'
     paths:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
@@ -394,6 +395,45 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "Failed to remove unexpected Release asset: $($asset.name)" }
             }
           }
+
+      - name: Publish 4200 Windows preview (portable and installer)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/4200'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "4200-windows-preview-$env:GITHUB_RUN_ID"
+          $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
+          $setup = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
+            Where-Object { $_.Name -match '(?i)setup' } | Select-Object -First 1
+          if (-not $portable -or -not $setup) { throw 'Missing portable Windows EXE or setup EXE.' }
+          $releaseDir = Join-Path $env:RUNNER_TEMP 'dkds-4200-windows-release'
+          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
+          $portableExe = Join-Path $releaseDir 'DK-Data-Studio-4200-Windows-Portable.exe'
+          $setupExe = Join-Path $releaseDir 'DK-Data-Studio-4200-Windows-Setup.exe'
+          Copy-Item -LiteralPath $portable.FullName -Destination $portableExe -Force
+          Copy-Item -LiteralPath $setup.FullName -Destination $setupExe -Force
+          $shaShort = $env:GITHUB_SHA.Substring(0,12)
+          $notes = @"
+          Automated Windows preview from branch 4200.
+
+          - Source app version: $env:DKDS_RELEASE_VERSION
+          - Commit: $env:GITHUB_SHA
+          - Build: https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID
+          - Keithley 4200A: direct Ethernet, direct Wi-Fi and Android-LAN relay transports.
+          - The remote Android gateway permits only verified read-only *IDN? queries.
+          - Real instrument sweeps and 4200A-native graph/file retrieval are not yet implemented.
+
+          Development preview; kept separate from stable v* releases.
+          "@
+          $notesPath = Join-Path $releaseDir 'notes.md'
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8
+          gh release create $tag $portableExe $setupExe --target $env:GITHUB_SHA --title "4200 Windows Preview · $shaShort" --notes-file $notesPath --prerelease --latest=false
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to publish 4200 Windows preview Release.' }
+          gh release view $tag --json url,assets,isPrerelease
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to verify 4200 Windows preview Release.' }
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7
