@@ -3,7 +3,7 @@
   const manifest={
     id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.2.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['measurement-model.js','unit-presentation.js','plugin.js'],enabled:true,order:82,
-    description:'Configurable KXCI connection and safe simulation-based GUI test design, live plots and exports.',
+    description:"Configurable KXCI connection, simulation-only GUI plan editor, live scientific plots and CSV/JSON/SVG export.",
     pluginType:'developer',
     requiresCore:['runtime','status','services','modules','project','io','workspace','capabilities','ui.dom','ui.activities','ui.pages','ui.unit-templates','ui.scientific-plot','ui.table'],
     capabilities:['instrument.keithley-4200','network.tcp-client','ui.page','ui.scientific-plot','ui.table'],
