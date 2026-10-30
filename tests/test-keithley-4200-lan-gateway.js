@@ -32,7 +32,6 @@ assert(kotlin.includes('DkdsLanKxci.closeAll();lastError=""'),'Stop the LAN serv
 assert(kotlin.includes('DkdsLanKxci.closeAll();return status(context)'),'Key rotation must revoke instrument control.');
 assert(lan.includes('bytes.contentEquals(byteArrayOf(42,73,68,78,63,0))'),
   'Only KXCI *IDN? + NUL is allowed remotely.');
-assert(lan.includes('owner!=owner')===false,'Do not accidentally compare owner to itself.');
 assert(lan.includes('row.owner!=owner'),'Instrument sessions must belong to the pairing owner.');
 assert(lan.includes('if(mode!="auto"&&network==null)'),'Missing requested Android transport must fail closed.');
 assert(lan.includes('if(current!=null && current?.owner!=owner)'),'Only one paired controller at a time.');
