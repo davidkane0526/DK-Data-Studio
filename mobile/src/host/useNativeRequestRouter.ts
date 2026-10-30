@@ -51,7 +51,7 @@ export function useNativeRequestRouter(
       if (req.type === 'tcpOpen') {
         if (!nativeHost?.tcpOpen) throw new Error('Android TCP Host 不可用。');
         const payload=req.payload||{};
-        resolveWeb(req.id,true,await nativeHost.tcpOpen(String(payload.host||''),Number(payload.port)||0,Number(payload.connectTimeoutMs)||5000,String(payload.interfaceName||'')));
+        resolveWeb(req.id,true,await nativeHost.tcpOpen(String(payload.host||''),Number(payload.port)||0,Number(payload.connectTimeoutMs)||5000,String(payload.interfaceName||''),String(payload.networkMode||'auto')));
         return;
       }
       if (req.type === 'tcpExchange') {
