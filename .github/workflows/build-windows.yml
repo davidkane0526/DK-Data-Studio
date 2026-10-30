@@ -26,6 +26,7 @@ on:
       - 'services/update-server/**'
       - 'sdk/**'
       - 'tools/quality/**'
+      - 'tools/sdk/**'
       - 'tests/**'
   pull_request:
     branches:
