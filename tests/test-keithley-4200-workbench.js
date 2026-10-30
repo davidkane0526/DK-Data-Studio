@@ -28,11 +28,14 @@ for(const row of cases){
 for(const bad of [
   {loops:0},{loops:1001},{points:1},{points:5002},{complianceA:-0.1},
   {startV:Infinity},{delayMs:-1},{direction:'both'},{speed:'ultra'},
-  {sourceSmU:2,measureSmU:2},{sourceSmU:3,gateSmU:3},
+  {sourceSmU:3,gateSmU:3},{measureSmU:3,gateSmU:3},
   {points:5001,loops:1000,direction:'roundtrip'}
 ]){
   assert.throws(()=>model.validatePlan(bad));
 }
+const combined=model.validatePlan({sourceSmU:1,measureSmU:1,gateSmU:0});
+assert.equal(combined.measureSmU,1);
+assert.equal(combined.gateSmU,0);
 const timed=model.validatePlan({mode:'timed',direction:'roundtrip',loops:4,points:8});
 assert.equal(timed.perCycle,8);
 const dataset=model.createDataset(timed);
