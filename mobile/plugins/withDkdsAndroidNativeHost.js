@@ -121,7 +121,7 @@ private object DkdsLocalWebServer {
     var settings=readSettings(context)
     if(persistEnabled&&!settings.enabled){settings=settings.copy(enabled=true);saveSettings(context,settings)}
     noKey=settings.noKey
-    pairKey=randomPairKey();tokens.clear()
+    pairKey=randomPairKey();tokens.clear();DkdsLanKxci.closeAll()
     val server=ServerSocket().apply { reuseAddress=true; bind(java.net.InetSocketAddress("0.0.0.0",settings.port),24) }
     socket=server;port=server.localPort
     thread(name="dkds-lan-web",isDaemon=true){while(!server.isClosed){try{val client=server.accept();thread(name="dkds-lan-web-client",isDaemon=true){serve(context,client)}}catch(error:Throwable){if(!server.isClosed)lastError="局域网网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"}}}
@@ -136,7 +136,7 @@ private object DkdsLocalWebServer {
   @Synchronized fun stop(context: Context,persistEnabled:Boolean=true) {
     if(persistEnabled){val s=readSettings(context);saveSettings(context,s.copy(enabled=false))}
     try { socket?.close() } catch (_: Throwable) {}
-    socket=null;port=0;tokens.clear();lastError=""
+    socket=null;port=0;tokens.clear();DkdsLanKxci.closeAll();lastError=""
   }
 
   @Synchronized fun applySettings(context: ReactApplicationContext,enabled:Boolean,nextNoKey:Boolean,nextPort:Int):WritableMap {
@@ -148,13 +148,13 @@ private object DkdsLocalWebServer {
     return status(context)
   }
 
-  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();return status(context)}
+  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();DkdsLanKxci.closeAll();return status(context)}
 
   fun status(context: Context): WritableMap {
     val settings=readSettings(context);val running=socket?.isClosed==false&&port>0;val activePort=if(running)port else settings.port;val urls=if(running)baseUrls(activePort) else emptyList();val primary=urls.firstOrNull() ?: ""
     val arr=WritableNativeArray();urls.forEach{arr.pushString(it)}
     return WritableNativeMap().apply {
-      putBoolean("running",running);putBoolean("enabled",settings.enabled);putBoolean("noKey",settings.noKey);putInt("port",activePort);putString("key",if(settings.noKey)"" else pairKey);putArray("urls",arr);putString("url",if(running&&primary.isNotBlank())authUrl(primary) else "");putString("localhostUrl",if(running)"http://127.0.0.1:$activePort/" else "");putString("browserUrl",if(running)browserUrl() else "");putInt("pairedClients",tokens.size);putString("error",lastError)
+      putBoolean("running",running);putBoolean("enabled",settings.enabled);putBoolean("noKey",settings.noKey);putInt("port",activePort);putString("key",if(settings.noKey)"" else pairKey);putArray("urls",arr);putString("url",if(running&&primary.isNotBlank())authUrl(primary) else "");putString("localhostUrl",if(running)"http://127.0.0.1:$activePort/" else "");putString("browserUrl",if(running)browserUrl() else "");putInt("pairedClients",tokens.size);putBoolean("readOnlyKxciGateway",running&&!noKey);putString("error",lastError)
     }
   }
 
@@ -166,21 +166,98 @@ private object DkdsLocalWebServer {
     return html.toByteArray(StandardCharsets.UTF_8)
   }
 
+  private fun readAsciiLine(input:BufferedInputStream):String? {
+    val bytes=ByteArrayOutputStream()
+    while(bytes.size()<8192){
+      val c=input.read()
+      if(c<0)return if(bytes.size()==0)null else throw IllegalArgumentException("Incomplete HTTP header line.")
+      if(c==10)return bytes.toString("US-ASCII").trimEnd('\r')
+      bytes.write(c)
+    }
+    throw IllegalArgumentException("HTTP header line too long.")
+  }
   private fun serve(context: ReactApplicationContext, client: Socket) {
     client.use { sock ->
-      sock.soTimeout=6000;val reader=BufferedReader(InputStreamReader(BufferedInputStream(sock.getInputStream()),StandardCharsets.US_ASCII));val first=reader.readLine() ?: return;val headers=linkedMapOf<String,String>();while(true){val line=reader.readLine() ?: break;if(line.isEmpty())break;val i=line.indexOf(':');if(i>0)headers[line.substring(0,i).trim().lowercase()]=line.substring(i+1).trim()}
-      val parts=first.split(" ");val method=parts.getOrNull(0) ?: "";val target=parts.getOrNull(1) ?: "/";if(method!="GET"&&method!="HEAD")return response(sock,405,"text/plain; charset=utf-8","Method Not Allowed".toByteArray())
-      val raw=target.substringBefore('?');if(raw=="/__dkds_health")return response(sock,200,"text/plain; charset=utf-8","ok".toByteArray())
+      sock.soTimeout=13000
+      val input=BufferedInputStream(sock.getInputStream())
+      val first=readAsciiLine(input) ?: return
+      val headers=linkedMapOf<String,String>()
+      var headerCount=0
+      while(true){
+        val line=readAsciiLine(input) ?: throw IllegalArgumentException("Incomplete HTTP headers.")
+        if(line.isEmpty())break
+        if(++headerCount>64)throw IllegalArgumentException("Too many HTTP headers.")
+        val at=line.indexOf(':')
+        if(at>0)headers[line.substring(0,at).trim().lowercase()]=line.substring(at+1).trim()
+      }
+      val parts=first.split(" ")
+      val method=parts.getOrNull(0) ?: ""
+      val target=parts.getOrNull(1) ?: "/"
+      val raw=target.substringBefore('?')
+      if(raw=="/__dkds_health" && (method=="GET"||method=="HEAD"))
+        return response(sock,200,"text/plain; charset=utf-8","ok".toByteArray())
+      if(method!="GET"&&method!="HEAD"&&method!="POST")
+        return response(sock,405,"text/plain; charset=utf-8","Method Not Allowed".toByteArray())
+      val token=cookieToken(headers)
       if(!noKey){
-        val token=cookieToken(headers);val key=queryKey(target)
+        val key=if(method=="GET")queryKey(target) else ""
         if(key.isNotEmpty()){
           if(key!=pairKey)return response(sock,200,"text/html; charset=utf-8",pairPage("配对 Key 不正确。"))
-          val newToken=UUID.randomUUID().toString().replace("-","");tokens.add(newToken);return response(sock,302,"text/plain; charset=utf-8",ByteArray(0),mapOf("Location" to "/","Set-Cookie" to "dkds_pair=$newToken; Path=/; SameSite=Lax"))
+          val newToken=UUID.randomUUID().toString().replace("-","")
+          tokens.add(newToken)
+          return response(sock,302,"text/plain; charset=utf-8",ByteArray(0),
+            mapOf("Location" to "/","Set-Cookie" to "dkds_pair=$newToken; Path=/; HttpOnly; SameSite=Strict"))
         }
-        if(token.isEmpty()||!tokens.contains(token)){if(raw=="/"||raw=="/index.html")return response(sock,200,"text/html; charset=utf-8",pairPage());return response(sock,401,"text/plain; charset=utf-8","Pairing required".toByteArray())}
+        if(token.isEmpty()||!tokens.contains(token)){
+          if(method=="GET"&&(raw=="/"||raw=="/index.html"))
+            return response(sock,200,"text/html; charset=utf-8",pairPage())
+          return response(sock,401,"text/plain; charset=utf-8","Pairing required".toByteArray())
+        }
       }
-      val decoded=try{URLDecoder.decode(raw,"UTF-8")}catch(_:Throwable){raw};val relative=decoded.trimStart('/').ifEmpty{"index.html"};if(relative.split('/').any{it==".."})return response(sock,403,"text/plain; charset=utf-8","Forbidden".toByteArray());val assetPath="dkds/$relative";val bytes=try{context.assets.open(assetPath).use{it.readBytes()}}catch(_:Throwable){return response(sock,404,"text/plain; charset=utf-8","Not Found".toByteArray())};response(sock,200,mime(relative),if(method=="HEAD")ByteArray(0) else bytes,emptyMap(),bytes.size)
+      if(raw=="/__dkds_kxci"){
+        if(method!="POST")return response(sock,405,"application/json; charset=utf-8",
+          JSONObject().put("ok",false).put("error","POST required").toString().toByteArray())
+        // The LAN browser gateway must never be exposed through no-key mode.
+        if(noKey||token.isEmpty()||!tokens.contains(token))
+          return rpcError(sock,403,"Remote instrument access requires a paired browser and an enabled pairing Key.")
+        val host=headers["host"] ?: return rpcError(sock,403,"Host header required.")
+        val origin=headers["origin"] ?: return rpcError(sock,403,"Browser Origin header required.")
+        if(origin!="http://"+host || headers["x-dkds-rpc"]!="kxci-readonly-v1")
+          return rpcError(sock,403,"Invalid request origin or RPC header.")
+        if(headers["content-type"]?.substringBefore(';')?.trim()?.lowercase()!="application/json")
+          return rpcError(sock,400,"JSON request required.")
+        val size=headers["content-length"]?.toIntOrNull() ?: return rpcError(sock,400,"Content-Length required.")
+        if(size !in 2..4096)return rpcError(sock,413,"RPC request too large.")
+        val data=ByteArray(size)
+        var off=0
+        while(off<size){
+          val n=input.read(data,off,size-off)
+          if(n<0)return rpcError(sock,400,"Truncated RPC body.")
+          off+=n
+        }
+        try{
+          val request=JSONObject(String(data,StandardCharsets.UTF_8))
+          val value=DkdsLanKxci.execute(context,token,request)
+          return response(sock,200,"application/json; charset=utf-8",
+            JSONObject().put("ok",true).put("value",value).toString().toByteArray(StandardCharsets.UTF_8))
+        }catch(error:Throwable){
+          return rpcError(sock,if(error is SecurityException)403 else 400,error.message ?: "Instrument request failed.")
+        }
+      }
+      if(method!="GET"&&method!="HEAD")
+        return response(sock,405,"text/plain; charset=utf-8","Method Not Allowed".toByteArray())
+      val decoded=try{URLDecoder.decode(raw,"UTF-8")}catch(_:Throwable){raw}
+      val relative=decoded.trimStart('/').ifEmpty{"index.html"}
+      if(relative.split('/').any{it==".."})return response(sock,403,"text/plain; charset=utf-8","Forbidden".toByteArray())
+      val assetPath="dkds/$relative"
+      val bytes=try{context.assets.open(assetPath).use{it.readBytes()}}
+        catch(_:Throwable){return response(sock,404,"text/plain; charset=utf-8","Not Found".toByteArray())}
+      response(sock,200,mime(relative),if(method=="HEAD")ByteArray(0) else bytes,emptyMap(),bytes.size)
     }
+  }
+  private fun rpcError(sock:Socket,status:Int,error:String){
+    val bytes=JSONObject().put("ok",false).put("error",error).toString().toByteArray(StandardCharsets.UTF_8)
+    response(sock,status,"application/json; charset=utf-8",bytes)
   }
 
   private fun mime(path:String):String=when(path.substringAfterLast('.',"").lowercase()){"html"->"text/html; charset=utf-8";"js"->"application/javascript; charset=utf-8";"css"->"text/css; charset=utf-8";"json"->"application/json; charset=utf-8";"svg"->"image/svg+xml";"png"->"image/png";"jpg","jpeg"->"image/jpeg";"webp"->"image/webp";"ico"->"image/x-icon";"woff2"->"font/woff2";else->"application/octet-stream"}
@@ -763,7 +840,9 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     const javaRoot = path.join(mod.modRequest.platformProjectRoot, 'app', 'src', 'main', 'java');
     const packageDir = path.join(javaRoot, ...packageName.split('.'));
     fs.mkdirSync(packageDir, { recursive: true });
-    fs.writeFileSync(path.join(packageDir, 'DkdsNativeHostModule.kt'), kotlinSource(packageName), 'utf8');
+    const lanKxci = fs.readFileSync(path.join(__dirname, 'DkdsLanKxci.template'), 'utf8');
+    const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanKxci + '\nprivate object DkdsLocalWebServer {');
+    fs.writeFileSync(path.join(packageDir, 'DkdsNativeHostModule.kt'), nativeSource, 'utf8');
     fs.writeFileSync(path.join(packageDir, 'DkdsSmbService.java'), smbJavaSource(packageName), 'utf8');
 
     const appGradle = path.join(mod.modRequest.platformProjectRoot, 'app', 'build.gradle');
