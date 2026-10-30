@@ -13,6 +13,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-keithley-4200-desktop-relay.js",
+      "args": []
+    },
+    {
       "file": "tests/test-keithley-4200-lan-gateway.js",
       "args": []
     },
