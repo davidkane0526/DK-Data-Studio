@@ -5,6 +5,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-keithley-4200-workbench.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371114-unit-maturity-freeze.js",
       "args": []
     },
