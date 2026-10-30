@@ -190,3 +190,24 @@ New implementation in branch `4200`:
 **Security limitation:** Pairing uses a 4-digit Key and plain HTTP and is intended **only for a trusted private LAN**. Never expose `45910` to public Internet or untrusted WLAN. Before enabling any write/output command, implement substantially stronger pairing/authentication, explicit controller lease with safe stop, hardware output-off handling, stream provenance, audit, and stress tests. Android app may be suspended in background; foreground service/wakelock/reconnect state must be designed for actual long acquisitions.
 
 **Acceptance path:** install new APK from its prerelease, make sure Key is enabled, open Android LAN URL on desktop, connect to `169.254.111.118:1225` using Ethernet mode, identify expected `KI4200A` / serial `1498377` while Wi-Fi stays active. Confirm another paired browser cannot control the same session; raw POST other than `*IDN?\0` must be blocked. Test read errors, disconnects, lockout, key rotation and app lifecycle. CI compilation tests are necessary but not a substitute for this physical verification.
+
+
+## Iteration 4 — Windows native three-path transport
+
+The target matrix is:
+- Android: **direct USB Ethernet** or **direct Wi-Fi** to an IP-reachable 4200A.
+- Windows native Electron: **direct Ethernet**, **direct Wi-Fi**, or **via Android tablet** (Windows Wi-Fi -> tablet LAN web server -> tablet Ethernet or Wi-Fi -> 4200A).
+- Desktop web browser served by the tablet uses the native Android LAN endpoint implicitly, not the Windows desktop relay.
+
+Implemented in this iteration:
+- \`desktop/main-modules/lan-kxci-relay.js\`: strict private-IPv4-only Android host, per-connection four-digit Key pairing with cookie in the **Electron main process**, bounded HTTP JSON RPC, exact \`*IDN?\0\` byte allowlist and local session UUID; no retries or command execution beyond identification.
+- \`desktop/main.js\`: routes \`tcp:open/exchange/close\` based on explicit \`via-mobile\` mode or relay session ID, leaving existing direct Ethernet/Wi-Fi TCP runtime unchanged.
+- \`src/plugins/keithley-4200/unit-presentation.js\`: Windows-only transport selector and separate mobile Wi-Fi IPv4 address, port, Key, and tablet outgoing-network fields.
+- \`src/plugins/keithley-4200/plugin.js\`: relay configuration validation, session route identity and connection profiles excluding secret pairing Key. The Key is not persisted to project data or exposed via capability status.
+- \`tests/test-keithley-4200-desktop-relay.js\`: local fake Android HTTP gateway checks pairing, private IPv4 scope, exact identity-byte rule, outbound Ethernet mode and session close.
+- \`.github/workflows/build-windows.yml\`: build on branch 4200 and upload Windows portable + installer as an independent prerelease, without touching stable version tags.
+- The simulated SVG export now uses standards-based XML DOM composition to satisfy the architecture Runtime Style Write Gate.
+
+**Important:** None of the above enables real instrument scanning, output or measurement-data transfer. The instrument's KXCI operation mode must be verified independently of Clarius, which cannot operate simultaneously with KXCI. The tablet-to-instrument link and the desktop-to-tablet link have independent network requirements. Native app-build success does not prove physical end-to-end instrument operation.
+
+**Lab test:** on OPPO Pad Mini, enable Key-protected LAN web service on port 45910, keep tablet Wi-Fi and USB Ethernet up. On Windows, select 4200A > 通过安卓平板, supply target 169.254.111.118:1225, tablet Wi-Fi IPv4 address and active four-digit Key, choose 平板网线, click 连接 TCP then 识别仪器. Expect KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14. Validate negative paths: incorrect Key, untrusted network address, concurrent browser owner, Wi-Fi disconnect, tablet rotation of PIN. Avoid exposing the four-digit-Key/plain-HTTP interface to untrusted networks.

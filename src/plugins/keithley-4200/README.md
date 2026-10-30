@@ -2,6 +2,21 @@
 
 This plugin implements a **read-only live connection** and a **simulation-only measurement GUI**. Do not mistake simulated curves for data from a Keithley instrument.
 
+## Supported transport topology (read-only verification stage)
+
+**Android app** supports direct instrument TCP via USB-Ethernet or Wi-Fi-selected Android network (and Auto/specified interface). **Windows Electron** supports direct Ethernet, direct Wi-Fi, or **via Android LAN relay**. A plain desktop browser accessing the Android-hosted website already uses the Android gateway; it does not require Windows Electron.
+
+Windows via-Android steps:
+
+1. On OPPO Pad Mini, connect to 4200A over USB-Ethernet, with the Wi-Fi interface still connected to the same trusted private LAN as the Windows PC.
+2. Enable **局域网网页版** in Android, with **无需配对 Key turned OFF**. Record the tablet's Wi-Fi IPv4 address, listener port (default `45910`) and currently displayed four-digit pairing Key.
+3. In **Windows DK Data Studio** > **4200A** > **连接方式**, select **通过安卓平板（LAN 网关）**.
+4. Set **仪器 IP** `169.254.111.118`, **端口** `1225`, **平板 Wi-Fi IPv4 地址** to the tablet LAN IP, **平板网页服务端口** `45910`, **平板当前 4 位配对 Key** to the displayed PIN, and **平板到仪器的连接方式** to **平板网线** (or **平板 Wi-Fi** only if its Wi-Fi network can actually reach the instrument).
+5. Use **连接 TCP**, then **识别仪器** to get the original KXCI `*IDN?\0` response. The Windows main process authenticates to the Android web server and forwards only the allowed read-only query. It does not try to route `169.254.*` through the PC's Wi-Fi.
+6. Connection profiles persist instrument and tablet addresses and transport choices **without storing the pairing Key**. The Key must be re-entered after loading a saved profile.
+
+The native Android gateway and Windows relay both reject anything other than `*IDN?\0`. TCP command output, sweeps, Clarius native data and images remain unavailable. Authentication is a **four-digit Key over HTTP on a trusted LAN**, not a secure Internet remote-control protocol. Never port-forward the tablet's listener or use it on untrusted Wi-Fi. A session belongs to one paired remote client, and the server terminates stale sessions after 120 seconds. The Android and Windows programs still require real device end-to-end tests in the laboratory.
+
 ## How to open the 4200A workbench
 
 - Android app: tap **分析** at the top, choose **4200A** in **分析工作区**.
