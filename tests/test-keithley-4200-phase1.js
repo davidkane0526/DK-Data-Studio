@@ -45,6 +45,18 @@ assert(plugin.includes('Model.createDataset(p,null)')&&model.includes("source:'s
 assert(presentation.includes('SIMULATION')&&plugin.includes('stopSimulation'),'Simulation must be identifiable and stoppable.');
 assert(plugin.includes('ctx.io.saveText')&&plugin.includes('exportCsv')&&plugin.includes('exportJson')&&plugin.includes('exportSvg'),'CSV JSON SVG exports required.');
 assert(native.includes('NetworkCapabilities.TRANSPORT_WIFI')&&native.includes('NetworkCapabilities.TRANSPORT_ETHERNET'),'Android network binding must support Wi-Fi and Ethernet.');
+const gateway=read('mobile/plugins/DkdsLanKxci.template');
+assert(native.includes('private fun tcpFallbackSource(') && native.includes('java.net.NetworkInterface.getByName(wanted)'),
+  'Native TCP must support kernel-visible USB Ethernet when Android ConnectivityManager omits the link-local interface.');
+assert(native.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
+  'Native TCP must bind the local source IPv4 before connect instead of silently using the Wi-Fi default route.');
+assert(native.includes('network==null&&fallback==null&&(mode!="auto"||linkLocal)'),
+  'Auto mode must fail explicitly for missing link-local Ethernet rather than silently use Wi-Fi.');
+assert(gateway.includes('private fun fallbackSource(')&&gateway.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
+  'Android LAN gateway must share the same Ethernet fallback for Windows relay sessions.');
+assert(native.includes('putString("routeStrategy"')&&gateway.includes('.put("routeStrategy"'),
+  'Both Android transports must report their selected route strategy.');
+
 assert(router.includes("String(payload.networkMode||'auto')"),'Android routing must pass network-mode selection.');
 
 for(const token of ["tcpOpen: payload => ipcRenderer.invoke('tcp:open'","tcpExchange: payload => ipcRenderer.invoke('tcp:exchange'","tcpClose: payload => ipcRenderer.invoke('tcp:close'"])assert(preload.includes(token),'Desktop preload missing '+token);
