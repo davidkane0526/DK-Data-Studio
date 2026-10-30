@@ -8,10 +8,10 @@ process.env.NODE_PATH=[path.join(root,'src/core'),process.env.NODE_PATH||''].fil
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const audit=require('../tools/quality/unit-runtime-style-ownership');
 const report=audit.audit();
-assert.strictEqual(report.plugins,6,'All six production Unit migrations must be audited.');
-assert.strictEqual(report.layouts,102,'Production Unit Layout census changed; review the cross-layer ownership gate instead of silently changing coverage.');
+assert.strictEqual(report.plugins,7,'All seven production Unit presentations including Keithley 4200A must be audited.');
+assert.strictEqual(report.layouts,111,'Production Unit Layout census changed; review the cross-layer ownership gate instead of silently changing coverage.');
 assert.strictEqual(report.splits,1,'Production SplitPane census changed; review ownership coverage.');
-assert.deepStrictEqual(report.reports.map(row=>row.plugin).sort(),['data-center','pulse-analysis','pulse-sampler-tool','resonance-workbench','ter-analysis','transfer-vth-lab'],'Cross-layer gate must cover every production Unit presentation.');
+assert.deepStrictEqual(report.reports.map(row=>row.plugin).sort(),['data-center','keithley-4200','pulse-analysis','pulse-sampler-tool','resonance-workbench','ter-analysis','transfer-vth-lab'],'Cross-layer gate must cover every production Unit presentation.');
 assert.strictEqual(report.violations.length,0,audit.format(report));
 
 const dc=read('src/plugins/data-center/unit-presentation.js'),dcCss=read('src/plugins/data-center/plugin.css');
