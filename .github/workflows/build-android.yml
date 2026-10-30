@@ -251,12 +251,12 @@ jobs:
 
           This preview is kept separate from the production \`v*\` releases.
           EOF
-          gh release create "$tag" "$apk#$asset_name" \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --target "$GITHUB_SHA" \\
-            --title "4200 Android Preview · ${sha_short}" \\
-            --notes-file release-notes.md \\
-            --prerelease \\
+          gh release create "$tag" "$apk#$asset_name" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "4200 Android Preview · ${sha_short}" \
+            --notes-file release-notes.md \
+            --prerelease \
             --latest=false
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,tagName
 
