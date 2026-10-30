@@ -184,10 +184,28 @@
       const x=p=>left+(p-minX)/(maxX-minX)*(width-left-right);
       const y=p=>height-bottom-(p-minY)/(maxY-minY)*(height-top-bottom);
       const colors=['#2563eb','#f97316','#16a34a','#9333ea','#dc2626','#0891b2'];
-      const lines=curves.map((c,i)=>'<polyline fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="2" points="'+c.points.map(p=>x(p.x).toFixed(2)+','+y(p.y).toFixed(2)).join(' ')+'"/>').join('');
-      const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const xt=dataset.plan.mode==='timed'?'Time (s)':'Source voltage (V)';
-      return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'"><rect width="100%" height="100%" fill="white"/><text x="50" y="30" font-size="20">Keithley 4200A — SIMULATION ONLY</text><line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(height-bottom)+'" stroke="#333"/><line x1="'+left+'" y1="'+(height-bottom)+'" x2="'+(width-right)+'" y2="'+(height-bottom)+'" stroke="#333"/><text x="'+(width/2-60)+'" y="'+(height-25)+'" font-size="18">'+esc(xt)+'</text><text x="12" y="'+(height/2)+'" font-size="18">Current (A)</text><text x="'+left+'" y="'+(height-45)+'" font-size="14">'+minX.toPrecision(4)+'</text><text x="'+(width-right-75)+'" y="'+(height-45)+'" font-size="14">'+maxX.toPrecision(4)+'</text><text x="15" y="'+top+'" font-size="14">'+maxY.toExponential(3)+'</text><text x="15" y="'+(height-bottom)+'" font-size="14">'+minY.toExponential(3)+'</text>'+lines+'</svg>';
+      // Compose an export-only SVG as XML nodes. Avoid injecting SVG paint
+      // markup directly into plugin source or styling the live application DOM.
+      const ns='http://www.w3.org/2000/svg';
+      const documentSvg=document.implementation.createDocument(ns,'svg',null);
+      const rootSvg=documentSvg.documentElement;
+      rootSvg.setAttribute('width',String(width));
+      rootSvg.setAttribute('height',String(height));
+      rootSvg.setAttribute('viewBox','0 0 '+width+' '+height);
+      const append=(tag,attrs={},content)=>{const el=documentSvg.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));if(content!==undefined)el.textContent=String(content);rootSvg.appendChild(el);return el;};
+      append('rect',{width:'100%',height:'100%',fill:'white'});
+      append('text',{x:50,y:30,'font-size':20},'Keithley 4200A — SIMULATION ONLY');
+      append('line',{x1:left,y1:top,x2:left,y2:height-bottom,stroke:'#333'});
+      append('line',{x1:left,y1:height-bottom,x2:width-right,y2:height-bottom,stroke:'#333'});
+      append('text',{x:width/2-60,y:height-25,'font-size':18},xt);
+      append('text',{x:12,y:height/2,'font-size':18},'Current (A)');
+      append('text',{x:left,y:height-45,'font-size':14},minX.toPrecision(4));
+      append('text',{x:width-right-75,y:height-45,'font-size':14},maxX.toPrecision(4));
+      append('text',{x:15,y:top,'font-size':14},maxY.toExponential(3));
+      append('text',{x:15,y:height-bottom,'font-size':14},minY.toExponential(3));
+      curves.forEach((curve,i)=>append('polyline',{fill:'none',stroke:colors[i%colors.length],'stroke-width':2,points:curve.points.map(p=>x(p.x).toFixed(2)+','+y(p.y).toFixed(2)).join(' ')}));
+      return new XMLSerializer().serializeToString(documentSvg);
     }
     const exportSvg=()=>saveFile('4200-simulation-curve.svg',svgImage(),'svg');
     function refreshProfiles(){
