@@ -33,7 +33,8 @@ assert(kotlin.includes('DkdsLanKxci.closeAll();return status(context)'),'Key rot
 assert(lan.includes('bytes.contentEquals(byteArrayOf(42,73,68,78,63,0))'),
   'Only KXCI *IDN? + NUL is allowed remotely.');
 assert(lan.includes('row.owner!=owner'),'Instrument sessions must belong to the pairing owner.');
-assert(lan.includes('if(mode!="auto"&&network==null)'),'Missing requested Android transport must fail closed.');
+assert(lan.includes('network==null&&fallback==null&&(mode!="auto"||linkLocal)'),'Missing requested Android transport and absent interface IPv4 must fail closed.');
+assert(lan.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),'Android relay should attempt an eth0 source bind if ConnectivityManager omits Ethernet.');
 assert(lan.includes('if(current!=null && current?.owner!=owner)'),'Only one paired controller at a time.');
 assert(lan.includes('if(output.size()==0)throw'),'Read timeout must fail closed before a first byte.');
 assert(bridge.includes("fetch('/__dkds_kxci'"),'Plain browser bridge must forward via LAN gateway.');
