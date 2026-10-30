@@ -24,8 +24,20 @@
     const cgrid=units.layout.create(conn.body,{variant:'form-grid-2'});
     field(cgrid,'host','仪器 IP / 主机名','169.254.111.118',{inputType:'text'});
     field(cgrid,'port','TCP 端口',1225,{step:1});
-    field(cgrid,'networkMode','网络选择','auto',{kind:'select',options:[{value:'auto',label:'自动 (系统路由)'},{value:'wifi',label:'Wi-Fi'},{value:'ethernet',label:'USB Ethernet'},{value:'interface',label:'指定接口'}]});
-    field(cgrid,'interfaceName','接口名称（指定时使用）','eth0',{inputType:'text'});
+    // Desktop Electron may relay through Android. Android itself and LAN web
+    // browsers should only offer local Ethernet/Wi-Fi network bindings.
+    const desktopHost=window.electronAPI?.isWebClient===undefined;
+    const modes=[{value:'auto',label:'自动（系统路由）'},{value:'wifi',label:'Wi-Fi 直连'},{value:'ethernet',label:'网线直连'},{value:'interface',label:'指定本机网卡'}];
+    if(desktopHost)modes.push({value:'via-mobile',label:'通过安卓平板（LAN 网关）'});
+    field(cgrid,'networkMode','连接方式','auto',{kind:'select',options:modes});
+    field(cgrid,'interfaceName','网卡名称（指定接口时使用）','eth0',{inputType:'text'});
+    if(desktopHost){
+      units.note.create(conn.body,{variant:'meta',text:'通过安卓平板：电脑与平板连接同一可信 Wi-Fi，平板开启「局域网网页版」并启用配对 Key；平板可再通过网线或 Wi-Fi 访问仪器。当前远程操作仅支持 *IDN? 身份查询。'});
+      field(cgrid,'mobileHost','平板 Wi-Fi IPv4 地址','192.168.1.100',{inputType:'text'});
+      field(cgrid,'mobilePort','平板网页服务端口',45910,{step:1});
+      field(cgrid,'mobilePairKey','平板当前 4 位配对 Key','',{inputType:'password'});
+      field(cgrid,'mobileNetworkMode','平板到仪器的连接方式','ethernet',{kind:'select',options:[{value:'ethernet',label:'平板网线'},{value:'wifi',label:'平板 Wi-Fi'},{value:'auto',label:'平板自动'},{value:'interface',label:'平板指定接口'}]});
+    }
     field(cgrid,'connectTimeoutMs','连接超时 (ms)',5000,{step:1});
     field(cgrid,'readTimeoutMs','响应超时 (ms)',5000,{step:1});
     field(cgrid,'expectedSerial','序列号校验（留空不校验）','1498377',{inputType:'text'});
