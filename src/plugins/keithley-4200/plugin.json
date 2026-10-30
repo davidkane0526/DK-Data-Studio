@@ -1,0 +1,30 @@
+{
+  "id": "com.dkds.keithley-4200",
+  "name": "Keithley 4200A KXCI",
+  "version": "0.1.0",
+  "apiVersion": "1.19.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 82,
+  "description": "Phase 1 read-only Keithley 4200A-SCS KXCI connection and identity verification over the generic TCP Host service.",
+  "pluginType": "developer",
+  "requiresCore": [
+    "runtime",
+    "status",
+    "services",
+    "capabilities",
+    "workspace",
+    "ui.activities",
+    "ui.pages",
+    "ui.unit-templates"
+  ],
+  "capabilities": [
+    "instrument.keithley-4200",
+    "network.tcp-client",
+    "ui.page"
+  ],
+  "platformPresentation": {
+    "desktop": {"mode": "shared"},
+    "mobile": {"mode": "adaptive"}
+  }
+}
