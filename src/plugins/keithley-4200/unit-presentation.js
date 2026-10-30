@@ -26,7 +26,7 @@
     field(cgrid,'port','TCP 端口',1225,{step:1});
     // Desktop Electron may relay through Android. Android itself and LAN web
     // browsers should only offer local Ethernet/Wi-Fi network bindings.
-    const desktopHost=window.electronAPI?.isWebClient===undefined;
+    const desktopHost=ctx.services?.get?.('tcp')?.supportsRelay===true;
     const modes=[{value:'auto',label:'自动（系统路由）'},{value:'wifi',label:'Wi-Fi 直连'},{value:'ethernet',label:'网线直连'},{value:'interface',label:'指定本机网卡'}];
     if(desktopHost)modes.push({value:'via-mobile',label:'通过安卓平板（LAN 网关）'});
     field(cgrid,'networkMode','连接方式','auto',{kind:'select',options:modes});

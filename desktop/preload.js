@@ -13,6 +13,7 @@ const withSaveIntent=(kind,payload={})=>{
 };
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  isElectronApp: true,
   openCsvFiles: () => ipcRenderer.invoke('files:openCsv'),
   openDataFiles: () => ipcRenderer.invoke('files:openData'),
   openDataDirectory: () => ipcRenderer.invoke('files:openDataDirectory'),

@@ -49,7 +49,7 @@
       if(value.networkMode==='interface'&&!/^[a-zA-Z0-9_.:-]{1,32}$/.test(value.interfaceName))throw Error('指定接口名称无效');
       for(const key of ['connectTimeoutMs','readTimeoutMs'])if(!Number.isInteger(value[key])||value[key]<250||value[key]>120000)throw Error(key+' 应为 250–120000 ms');
       if(value.networkMode==='via-mobile'){
-        if(window.electronAPI?.isWebClient!==undefined)throw Error('通过移动端模式仅支持 Windows 桌面程序');
+        if(!tcp.supportsRelay)throw Error('通过移动端模式仅支持 Windows 桌面程序');
         if(!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value.mobileHost))throw Error('请输入平板 Wi-Fi IPv4 地址');
         if(!Number.isInteger(value.mobilePort)||value.mobilePort<1024||value.mobilePort>65535)throw Error('平板服务端口无效');
         if(!/^\d{4}$/.test(value.mobilePairKey))throw Error('请输入平板当前显示的 4 位配对 Key');
@@ -128,7 +128,7 @@
     function stop(){
       if(!run)return false;
       run.cancelled=true;
-      if(run.timer)clearTimeout(run.timer);
+      run.timer?.();
       run=null;
       if(dataset){dataset.complete=true;dataset.stopped=true;}
       ui.setRunning(false);renderData();ctx.status.set('Keithley 4200A：仿真已停止；已采集数据保留。');
@@ -161,9 +161,9 @@
         if(index>=p.totalPoints){
           run=null;dataset.complete=true;dataset.stopped=false;ui.setRunning(false);renderData();
           ctx.status.set('Keithley 4200A：模拟采集完成；'+dataset.rows.length+' 点。');
-        }else token.timer=setTimeout(step,tickMs);
+        }else token.timer=ctx.ui.dom.timeout(step,tickMs);
       };
-      token.timer=setTimeout(step,0);
+      token.timer=ctx.ui.dom.timeout(step,0);
       return {simulated:true,totalPoints:p.totalPoints};
     }
     async function saveFile(name,text,extension){
@@ -188,24 +188,26 @@
       // Compose an export-only SVG as XML nodes. Avoid injecting SVG paint
       // markup directly into plugin source or styling the live application DOM.
       const ns='http://www.w3.org/2000/svg';
-      const documentSvg=document.implementation.createDocument(ns,'svg',null);
-      const rootSvg=documentSvg.documentElement;
-      rootSvg.setAttribute('width',String(width));
-      rootSvg.setAttribute('height',String(height));
-      rootSvg.setAttribute('viewBox','0 0 '+width+' '+height);
-      const append=(tag,attrs={},content)=>{const el=documentSvg.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));if(content!==undefined)el.textContent=String(content);rootSvg.appendChild(el);return el;};
-      append('rect',{width:'100%',height:'100%',fill:'white'});
-      append('text',{x:50,y:30,'font-size':20},'Keithley 4200A — SIMULATION ONLY');
-      append('line',{x1:left,y1:top,x2:left,y2:height-bottom,stroke:'#333'});
-      append('line',{x1:left,y1:height-bottom,x2:width-right,y2:height-bottom,stroke:'#333'});
-      append('text',{x:width/2-60,y:height-25,'font-size':18},xt);
-      append('text',{x:12,y:height/2,'font-size':18},'Current (A)');
-      append('text',{x:left,y:height-45,'font-size':14},minX.toPrecision(4));
-      append('text',{x:width-right-75,y:height-45,'font-size':14},maxX.toPrecision(4));
-      append('text',{x:15,y:top,'font-size':14},maxY.toExponential(3));
-      append('text',{x:15,y:height-bottom,'font-size':14},minY.toExponential(3));
-      curves.forEach((curve,i)=>append('polyline',{fill:'none',stroke:colors[i%colors.length],'stroke-width':2,points:curve.points.map(p=>x(p.x).toFixed(2)+','+y(p.y).toFixed(2)).join(' ')}));
-      return new XMLSerializer().serializeToString(documentSvg);
+      const escXml=value=>String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const element=(tag,attrs={},value=null,raw=false)=>{
+        const attributes=Object.entries(attrs).map(([key,item])=>' '+key+'="'+escXml(item)+'"').join('');
+        return value===null?'<'+tag+attributes+'/>':'<'+tag+attributes+'>'+(raw?String(value):escXml(value))+'</'+tag+'>';
+      };
+      const items=[
+        element('rect',{width:'100%',height:'100%',fill:'white'}),
+        element('text',{x:50,y:30,'font-size':20},'Keithley 4200A — SIMULATION ONLY'),
+        element('line',{x1:left,y1:top,x2:left,y2:height-bottom,stroke:'#333'}),
+        element('line',{x1:left,y1:height-bottom,x2:width-right,y2:height-bottom,stroke:'#333'}),
+        element('text',{x:width/2-60,y:height-25,'font-size':18},xt),
+        element('text',{x:12,y:height/2,'font-size':18},'Current (A)'),
+        element('text',{x:left,y:height-45,'font-size':14},minX.toPrecision(4)),
+        element('text',{x:width-right-75,y:height-45,'font-size':14},maxX.toPrecision(4)),
+        element('text',{x:15,y:top,'font-size':14},maxY.toExponential(3)),
+        element('text',{x:15,y:height-bottom,'font-size':14},minY.toExponential(3))
+      ];
+      curves.forEach((curve,i)=>items.push(element('polyline',{fill:'none',stroke:colors[i%colors.length],'stroke-width':2,points:curve.points.map(p=>x(p.x).toFixed(2)+','+y(p.y).toFixed(2)).join(' ')})));
+      return '<?xml version="1.0" encoding="UTF-8"?>\n'+
+        element('svg',{xmlns:ns,width,height,viewBox:'0 0 '+width+' '+height},items.join(''),true);
     }
     const exportSvg=()=>saveFile('4200-simulation-curve.svg',svgImage(),'svg');
     function refreshProfiles(){

@@ -16,8 +16,7 @@ const { createAppearanceRuntime } = require('./main-modules/appearance-runtime')
 const { createPluginPackageRuntime } = require('./main-modules/plugin-package-runtime');
 const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
 const { createAgentRuntime } = require('./main-modules/agent-runtime');
-const { createTcpRuntime } = require('./main-modules/tcp-runtime');
-const { createLanKxciRelay } = require('./main-modules/lan-kxci-relay');
+const { installInstrumentTcpIpc } = require('./main-modules/instrument-tcp-ipc');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
@@ -31,7 +30,6 @@ require('../src/project-importers/compatibility-gateway').register(DKDSProjectFo
 const APP_NAME = 'DK Data Studio';
 const APP_ID = 'com.dk.datastudio';
 
-// Keep development, installed and portable Windows identities consistent.
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 try { process.title = APP_NAME; } catch {}
@@ -70,8 +68,7 @@ const {
 }=pluginPackageRuntime;
 const {enforcePackagedExpiry}=createPackagedExpiryRuntime({app,appRoot:APP_ROOT});
 const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});
-const tcpRuntime=createTcpRuntime();
-const lanKxciRelay=createLanKxciRelay();
+
 
 function resolveConfiguredPluginWindow(activityId) {
   return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
@@ -542,14 +539,7 @@ app.whenReady().then(() => {
   ipcMain.handle('smb:list', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.listDesktopSmb(payload.connection||{},payload.path||''),'SMB 目录读取失败'));
   ipcMain.handle('smb:read', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.readDesktopSmb(payload.connection||{},Array.isArray(payload.paths)?payload.paths:[]),'SMB 文件读取失败'));
 
-  // Explicit desktop transport: direct Ethernet/Wi-Fi or paired Android bridge.
-  // Only the relay path accepts `via-mobile`; Android independently verifies *IDN? + NUL.
-  ipcMain.handle('tcp:open', async (_event,payload={}) =>
-    payload.networkMode==='via-mobile'?lanKxciRelay.open(payload):tcpRuntime.open(payload));
-  ipcMain.handle('tcp:exchange', async (_event,payload={}) =>
-    lanKxciRelay.isRelay(payload.sessionId)?lanKxciRelay.exchange(payload):tcpRuntime.exchange(payload));
-  ipcMain.handle('tcp:close', async (_event,payload={}) =>
-    lanKxciRelay.isRelay(payload.sessionId)?lanKxciRelay.close(payload):tcpRuntime.close(payload));
+  installInstrumentTcpIpc(ipcMain);
 
   ipcMain.handle('agent:getSecret', async (_event,key) => loadAgentSecret(key));
   ipcMain.handle('agent:setSecret', async (_event,payload={}) => storeAgentSecret(payload.key,payload.value));

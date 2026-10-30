@@ -69,7 +69,7 @@ const ctx={
   workspace:{openPage:()=>{}},
   project:{registerSlice:(id,value)=>{assert.equal(id,'keithley-4200');slice=value;},capture:()=>{}},
   io:{saveText:async info=>{saved.push(info);return true;}},
-  ui:{activities:{add:row=>{activity=row;}},topWorkspace:{register:row=>{topWorkspace=row;}},pages:{add:()=>({})}},
+  ui:{dom:{timeout:(fn,ms)=>{const id=setTimeout(fn,ms);return ()=>clearTimeout(id);}},activities:{add:row=>{activity=row;}},topWorkspace:{register:row=>{topWorkspace=row;}},pages:{add:()=>({})}},
   capabilities:{register:(id,provider)=>{assert.equal(id,'instrument.keithley-4200');capability=provider;}}
 };
 async function main(){

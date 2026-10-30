@@ -609,11 +609,7 @@
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
-      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})}),tcp:Object.freeze({
-        open:payload=>{const fn=window.electronAPI?.tcpOpen;return typeof fn==='function'?fn(payload||{}):Promise.reject(new Error('TCP Host service unavailable.'));},
-        exchange:payload=>{const fn=window.electronAPI?.tcpExchange;return typeof fn==='function'?fn(payload||{}):Promise.reject(new Error('TCP Host service unavailable.'));},
-        close:payload=>{const fn=window.electronAPI?.tcpClose;return typeof fn==='function'?fn(payload||{}):Promise.resolve(false);}
-      })}
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})}),tcp:Object.freeze({supportsRelay:true,open:p=>window.electronAPI.tcpOpen(p||{}),exchange:p=>window.electronAPI.tcpExchange(p||{}),close:p=>window.electronAPI.tcpClose(p||{})})}
     };
   }
 

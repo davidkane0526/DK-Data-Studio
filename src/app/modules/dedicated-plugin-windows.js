@@ -346,7 +346,7 @@ async function initializePluginArchitecture(){
     saveChartImage,
     makeFloating,
     artifacts:artifactHostApi(),
-    services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})}),lanWeb:Object.freeze({getStatus:()=>state.lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),connectivity:window.DKDSConnectivity,tcp:Object.freeze({
+    services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.(),releaseActivityWindow:payload=>window.electronAPI?.releaseActivityWindow?.(payload||{})}),lanWeb:Object.freeze({getStatus:()=>state.lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),connectivity:window.DKDSConnectivity,tcp:Object.freeze({supportsRelay:!!window.electronAPI?.isElectronApp,
       open:payload=>{const fn=window.electronAPI?.tcpOpen;if(typeof fn!=='function')return Promise.reject(new Error('TCP Host service unavailable.'));return fn(payload||{});},
       exchange:payload=>{const fn=window.electronAPI?.tcpExchange;if(typeof fn!=='function')return Promise.reject(new Error('TCP Host service unavailable.'));return fn(payload||{});},
       close:payload=>{const fn=window.electronAPI?.tcpClose;return typeof fn==='function'?fn(payload||{}):Promise.resolve(false);}
