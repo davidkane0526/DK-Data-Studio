@@ -1,3 +1,12 @@
+# 3.71.137 Release — Keithley 4200A Transport Preview (Android + Windows)
+
+- Establishes the three explicit Windows connection paths for the Keithley 4200A KXCI plugin: local Ethernet, local Wi-Fi, and an authenticated LAN relay through an Android tablet. Android retains its own Ethernet/Wi-Fi outgoing network selection.
+- Adds a desktop main-process HTTP client for the Android read-only identity gateway, with four-digit pairing, private LAN IPv4 restrictions, bounded payloads, isolated session IDs and the exact `*IDN?\0` allowlist.
+- Adds dedicated desktop-only Android-relay configuration, including tablet Wi-Fi IPv4/port, active Key and the tablet's outgoing Ethernet/Wi-Fi selection; never persists the pairing Key in connection profiles or project snapshots.
+- Keeps the instrument-native data/graph retrieval and all real source/measure/sweep operations unimplemented; simulation artifacts remain explicitly identified as software-generated previews.
+- Switches simulation SVG export to XML DOM construction to comply with Runtime Style Write Gate, adds desktop relay security regression tests, and enables 4200-branch Windows portable/installer prereleases.
+- Updates app/desktop/mobile to 3.71.137 / Android versionCode 277. Plugin API remains 1.19.0 and Unit Templates remain 2.5.38. Both physical instrument and installer end-to-end validation remain outstanding.
+
 # 3.71.133 Release — Phase F DAG-aware Stage Execution / SDK 1.51.90
 
 - Adds a canonical `dkds.stage-execution-plan.v1` from selected Stage Artifact dependencies, with Stage/Action/Task IDs, ordered prerequisites and expected typed Artifact outputs.
