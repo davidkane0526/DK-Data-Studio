@@ -14,8 +14,8 @@
       const item=units.action.create(host,{id,label,variant:primary?'primary':undefined,direct:true,onInvoke:()=>actions[id]?.()});
       buttons.set(id,item.button);return item.button;
     };
-    const head=units.pageHeader.create(page,{variant:'page-owned',activity:'keithley-4200',title:'Keithley 4200A · 测量工作台',subtitle:'KXCI · 网络配置 / 测试设计 / 仿真实时曲线'});
     const body=units.page.create(page,{variant:'tool'}).element;
+    units.pageHeader.create(body,{variant:'page-owned',activity:'keithley-4200',title:'Keithley 4200A · 测量工作台',subtitle:'KXCI · 网络配置 / 测试设计 / 仿真实时曲线'});
     const workspaceHost=units.layout.create(body,{variant:'identity'});
     const workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'keithley-4200',primaryScroll:'safe'});
     const main=units.layout.create(null,{variant:'stack-comfortable'});
