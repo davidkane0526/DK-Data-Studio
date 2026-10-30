@@ -65,7 +65,7 @@
         return opened;
       }catch(error){session=null;sessionTarget=null;identified=null;status('连接失败',message(error));throw error;}
     }
-    const connect=()=>enqueue(openSession);
+    const connect=()=>enqueue(async()=>{if(session)await closeSession();return openSession();});
     const disconnect=()=>enqueue(closeSession);
     const identify=()=>enqueue(async()=>{
       const target=validateEndpoint(endpoint());
