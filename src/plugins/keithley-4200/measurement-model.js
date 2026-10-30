@@ -17,9 +17,9 @@
     const delayMs=range(value.delayMs??0,'点间延迟',0,60000);
     const sourceSmU=range(value.sourceSmU??1,'源 SMU',1,9,true);
     const measureSmU=range(value.measureSmU??2,'测量 SMU',1,9,true);
-    const gateSmU=range(value.gateSmU??3,'栅极 SMU',1,9,true);
+    const gateSmU=range(value.gateSmU??3,'栅极 SMU (0=不使用)',0,9,true);
     const gateBiasV=range(value.gateBiasV??0,'栅压',-200,200);
-    if(new Set([sourceSmU,measureSmU,gateSmU]).size!==3)throw Error('源、测量及栅极不能选择相同 SMU 端口');
+    if(gateSmU>0&&(gateSmU===sourceSmU||gateSmU===measureSmU))throw Error('栅极与扫描/测量 SMU 不能共用端口');
     const perCycle=mode==='timed'?points:points+(direction==='roundtrip'?points-1:0);
     if(loops*perCycle>250000)throw Error('总采样点超出 250000 点，请减少循环或点数');
     return Object.freeze({schema:'dkds.4200.plan.v1',mode,direction,speed,loops,points,startV,stopV,complianceA,delayMs,sourceSmU,measureSmU,gateSmU,gateBiasV,perCycle,totalPoints:loops*perCycle,hardwareVerified:false,executable:false});
