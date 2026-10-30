@@ -33,14 +33,14 @@
   window.__DKDS_NATIVE_CLIENT__ = !!nativeBridge;
   document.documentElement.classList.add(nativeBridge?'native-client':'web-client');
 
-  function nativeCall(type,payload={}){
+  function nativeCall(type,payload={},timeoutMs=30000){
     if(!nativeBridge)return null;
     const id=`native-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{
         nativePending.delete(id);
         reject(new Error(`Native bridge timeout: ${type}`));
-      },30000);
+      },Math.max(1000,Math.min(130000,Number(timeoutMs)||30000)));
       nativePending.set(id,{resolve,reject,timer});
       nativeBridge.postMessage(JSON.stringify({id,type,payload}));
     });
@@ -263,8 +263,8 @@
     smbListShares: async connection=>nativeBridge?nativeCall('smbListShares',{connection:connection||{}}):[],
     smbList: async payload=>nativeBridge?nativeCall('smbList',payload||{}):[],
     smbRead: async payload=>nativeBridge?nativeCall('smbRead',payload||{}):[],
-    tcpOpen: async payload=>nativeBridge?nativeCall('tcpOpen',payload||{}):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
-    tcpExchange: async payload=>nativeBridge?nativeCall('tcpExchange',payload||{}):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
+    tcpOpen: async payload=>nativeBridge?nativeCall('tcpOpen',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.connectTimeoutMs)||5000)+5000))):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
+    tcpExchange: async payload=>nativeBridge?nativeCall('tcpExchange',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.readTimeoutMs)||5000)+5000))):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
     tcpClose: async payload=>nativeBridge?nativeCall('tcpClose',payload||{}):false,
     agentGetSecret: async key=>nativeBridge?nativeCall('agentGetSecret',{key:String(key||'default')}):'',
     agentSetSecret: async payload=>nativeBridge?nativeCall('agentSetSecret',payload||{}):false,
