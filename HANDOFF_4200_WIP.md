@@ -116,3 +116,23 @@ Do not describe the following as completed:
 6. Expected identity: `KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14`.
 7. Confirm Android works without applying the old Root policy-route command. If it does not, log the Android Network/interface enumeration first; do not immediately reintroduce Root routing into the final architecture.
 8. Only after the read-only path is stable should Phase 2 add safe instrument-state queries and protection/limit handling. Do not enable source output yet.
+
+
+## Requirements extension: GUI and flexible transport (2026-10-30)
+
+The instrument address is not fixed. Transport selection must support system routing, Wi-Fi, Ethernet, and a named interface; IP/hostname, port and connect/read timeout are user-editable. The instrument must be re-identified after reconnect and never automatically resume an output-producing operation. Current code implements the configurable connection fields and Android network selection. Preset persistence, automatic network diagnostics and production runtime verification remain pending.
+
+Target GUI modes: IV, transfer, output, repeated bidirectional sweeps, timed read, and module-dependent PMU/CVU modes. Plan parameters must include test kind, number of cycles, channel-to-terminal mapping, start/stop/step or points, source level, compliance, measurement speed, settling/hold delay, triggering, and output-off/fault handling. The user must be able to preview the complete point sequence before running. Enforce conservative validated limits and hardware inventory checks before any commands that energize terminals.
+
+Data pipeline: streamed observations with cycle and point indices, device readings, timestamps, status and provenance; plot append without copying full arrays on every point; incremental raw storage; CSV/JSON export and chart image export via existing DKDS APIs. Stop, cancellation, timeout and disconnect must not silently duplicate points or restart acquisition. Preserve incomplete runs as such.
+
+Do not claim a finished measurement GUI. Only connection-layer improvements have been committed in this iteration. Measurement command compilation and hardware output remain disabled until protocol sequencing, hardware constraints, and device acceptance tests are verified against the official KXCI guide (Tektronix 4200A-KXCI-907-01 Rev. E, March 2025).
+
+### Immediate technical follow-ups
+
+- Validate Kotlin build on the tablet; check Android NetworkCapabilities transport selection.
+- Test network switching and changed host address with Wi-Fi and USB Ethernet.
+- Add persistent connection profiles and a diagnostic status display.
+- Implement a pure validated measurement-plan schema, without exposing executable commands.
+- Create Unit-first measurement panels and scientific plot, then stream simulated data before real SMU commands.
+- Add safe KXCI command compiler and tests using the official programming reference.
