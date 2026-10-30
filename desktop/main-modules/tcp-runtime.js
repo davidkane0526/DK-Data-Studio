@@ -102,6 +102,7 @@ function createTcpRuntime(){
       const finishError=error=>{
         if(done)return;
         done=true;cleanup();
+        closeSession(row.id);
         reject(error instanceof Error?error:new Error(String(error||'TCP exchange failed.')));
       };
       const armIdle=()=>{
