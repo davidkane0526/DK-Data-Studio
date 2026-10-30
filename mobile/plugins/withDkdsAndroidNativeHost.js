@@ -77,6 +77,16 @@ private object DkdsLocalWebServer {
   @Volatile private var noKey: Boolean = false
   @Volatile private var pairKey: String = randomPairKey()
   private val tokens = ConcurrentHashMap.newKeySet<String>()
+  private var badPairAttempts=0
+  private var pairLockUntil=0L
+  @Synchronized private fun authorizePair(key:String):Boolean {
+    val now=System.currentTimeMillis()
+    if(now<pairLockUntil)return false
+    if(key==pairKey){badPairAttempts=0;return true}
+    badPairAttempts+=1
+    if(badPairAttempts>=5){badPairAttempts=0;pairLockUntil=now+60000L}
+    return false
+  }
 
   private fun randomPairKey(): String = (1000 + java.security.SecureRandom().nextInt(9000)).toString()
   private fun prefs(context: Context)=context.getSharedPreferences("dkds-lan-web-settings",Context.MODE_PRIVATE)
@@ -121,7 +131,7 @@ private object DkdsLocalWebServer {
     var settings=readSettings(context)
     if(persistEnabled&&!settings.enabled){settings=settings.copy(enabled=true);saveSettings(context,settings)}
     noKey=settings.noKey
-    pairKey=randomPairKey();tokens.clear();DkdsLanKxci.closeAll()
+    pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanKxci.closeAll()
     val server=ServerSocket().apply { reuseAddress=true; bind(java.net.InetSocketAddress("0.0.0.0",settings.port),24) }
     socket=server;port=server.localPort
     thread(name="dkds-lan-web",isDaemon=true){while(!server.isClosed){try{val client=server.accept();thread(name="dkds-lan-web-client",isDaemon=true){serve(context,client)}}catch(error:Throwable){if(!server.isClosed)lastError="局域网网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"}}}
@@ -148,7 +158,7 @@ private object DkdsLocalWebServer {
     return status(context)
   }
 
-  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();DkdsLanKxci.closeAll();return status(context)}
+  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanKxci.closeAll();return status(context)}
 
   fun status(context: Context): WritableMap {
     val settings=readSettings(context);val running=socket?.isClosed==false&&port>0;val activePort=if(running)port else settings.port;val urls=if(running)baseUrls(activePort) else emptyList();val primary=urls.firstOrNull() ?: ""
@@ -202,7 +212,7 @@ private object DkdsLocalWebServer {
       if(!noKey){
         val key=if(method=="GET")queryKey(target) else ""
         if(key.isNotEmpty()){
-          if(key!=pairKey)return response(sock,200,"text/html; charset=utf-8",pairPage("配对 Key 不正确。"))
+          if(!authorizePair(key))return response(sock,200,"text/html; charset=utf-8",pairPage("配对 Key 不正确或正在限速，请稍后重试。"))
           val newToken=UUID.randomUUID().toString().replace("-","")
           tokens.add(newToken)
           return response(sock,302,"text/plain; charset=utf-8",ByteArray(0),
