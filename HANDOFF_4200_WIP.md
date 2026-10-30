@@ -136,3 +136,23 @@ Do not claim a finished measurement GUI. Only connection-layer improvements have
 - Implement a pure validated measurement-plan schema, without exposing executable commands.
 - Create Unit-first measurement panels and scientific plot, then stream simulated data before real SMU commands.
 - Add safe KXCI command compiler and tests using the official programming reference.
+
+
+## Iteration 2 — GUI workbench and configurable networking
+
+Commit series following the original Phase 1 includes:
+
+- `src/plugins/keithley-4200/measurement-model.js`: validated non-executable plans (`executable:false`, `hardwareVerified:false`), forward/reverse/roundtrip point generation, simulated dataset and CSV serialization.
+- `src/plugins/keithley-4200/unit-presentation.js`: Unit-first measurement form, TCP connection form, named project connection profiles, simulated streaming scientific plot, data table, CSV/JSON/SVG export buttons.
+- `src/plugins/keithley-4200/plugin.js`: modular GUI orchestration, user-managed profiles and project plan persistence, simulated data scheduler with Stop/cancel, identity-only KXCI connection, revalidation on changed settings.
+- `src/plugins/keithley-4200/plugin.json`: script registration and Core requirements for project, IO, model, scientific plot and table.
+- `desktop/main-modules/tcp-runtime.js`: explicit Wi-Fi/Ethernet/adapter address binding, versus automatic system route.
+- `mobile/plugins/withDkdsAndroidNativeHost.js`: Android Wi-Fi/Ethernet/interface selection, link-local auto-prefers-Ethernet, null Network handling.
+- `src/web-bridge.js`: timeout for native TCP open/exchange matches user-configured operation timeouts rather than an unrelated hard-coded 30-second bridge deadline.
+- `tests/test-keithley-4200-workbench.js` and `tests/test-keithley-4200-integration.js`: plan/model/CSV boundary checks and mocked identity/simulation/data export regression, registered in `tests/manifest.js`.
+
+User requirements: editable address/port, Ethernet and Wi-Fi, test type and cycles, port/channel mapping, compliance, speed, continuously updating curves and simple data/image export.
+
+Current **reality**: GUI data is generated locally from a clearly marked simulation. Only `*IDN?\\0` can be sent to real hardware. The simulation module has no TCP access. CSV, JSON and SVG outputs carry simulation provenance. The raw dataset is in memory and requires user export; project persistence only covers settings and named profiles. The simulated transfer/output curves are not physically calibrated or module-specific.
+
+Outstanding verification: full desktop/Core test suite, Android Expo/Kotlin build, installed tablet UI, Android 169.254 routing while Wi-Fi remains on, Wi-Fi KXCI access, USB sleep/reconnect, adapter detection on Windows, Android/Desktop project-slice restore, and file-export UX. Do not mark hardware control complete. Do not enable output commands until verified per the official KXCI guide and instrument installed-module safety checks.
