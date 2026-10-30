@@ -5,6 +5,7 @@ on:
     branches:
       - plugin
       - dev
+      - '4200'
     paths:
       - '.github/workflows/build-android.yml'
       - 'mobile/**'
@@ -63,6 +64,9 @@ jobs:
       - name: Verify mobile presentation contracts
         shell: bash
         run: |
+          node tests/test-keithley-4200-phase1.js
+          node tests/test-keithley-4200-workbench.js
+          node tests/test-keithley-4200-integration.js
           node tests/test-v371106-data-center-live-hydration-presentation.js
           node tests/test-data-center-runtime-v36113.js
           node tests/test-v371108-mobile-drawer-fill-sizing.js
