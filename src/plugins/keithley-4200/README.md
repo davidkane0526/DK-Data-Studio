@@ -31,6 +31,27 @@ Known initial bench values: `169.254.111.118:1225`, adapter `eth0`, serial `1498
 
 Refs: Tektronix *4200A-SCS Clarius User's Manual*, "Save results and graphs"; Tektronix *4200A-SCS KXCI Remote Control Programming*, Rev. E (2025), "Using KXCI / Output data formats / Graphing the test results".
 
+## Android-hosted LAN browser operation — read-only instrument access
+
+The Android APK contains a LAN static web server (default port 45910). This branch now adds a **dedicated native KXCI gateway** available only to paired browsers at `POST /__dkds_kxci`:
+
+1. Connect the OPPO Pad Mini to Wi-Fi (same local network as the desktop) and to the 4200A with USB Ethernet. For direct 4200A Ethernet the known IP is `169.254.111.118:1225`.
+2. In the **Android native DKDS app**, open **局域网网页版** and enable web sharing with **无需配对 Key = OFF**. Four-digit pairing is not strong enough for an untrusted network; use only a trusted local network.
+3. From the desktop, browse to the tablet's **Wi-Fi LAN IPv4 URL** (e.g. `http://<tablet-wifi-ip>:45910/`) and enter the current pairing Key. Do not use the 4200A's link-local IP as the browser server address.
+4. In the desktop browser open the 4200A tool. Select instrument address, network mode `USB Ethernet` (or Auto for a `169.254.*` target), then **Connect** and **Identify**.
+5. The web client calls `tcpOpen` / `tcpExchange` / `tcpClose` via the authenticated Android native gateway; the native gateway binds the actual TCP socket to the requested Android network. The response is passed back unchanged as base64 bytes to the existing plugin.
+6. **All real instrument LAN exchanges are strictly restricted to the exact bytes of `*IDN?\0`.** Local simulation does not use the gateway. Instrument output, sweep, raw instrument data transfer and original graph retrieval are still absent.
+
+### Gateway safeguards
+
+- Paired cookie, `HttpOnly`, `SameSite=Strict`; refuse gateway operations when no-key mode is enabled.
+- Strict `Origin`, `Host` and custom RPC header checks; bounded request body (4 KiB).
+- 5 incorrect pairing attempts cause a 60-second lockout; rotate pairing Key to revoke existing sessions.
+- A single native instrument session belongs to one paired browser; another browser cannot hijack it. An inactive session expires after 2 minutes.
+- TCP connect/read response timeouts, maximum response bytes, no write-command replay; close the session on errors and when the LAN service stops.
+- The gateway is **HTTP, not HTTPS**: do not expose the Android port to the Internet or an untrusted/shared Wi-Fi. Future output-producing operation needs stronger remote authorization, audited transaction state, hardware shutdown semantics and additional dedicated safety checks.
+- Unit/plot/table function parity on the desktop browser is still subject to on-device UI testing. Android build success alone does not verify Wi-Fi and Ethernet concurrency.
+
 ## GUI and simulated acquisition
 
 The workbench uses DKDS Unit templates, DKDS scientific plot and DKDS table:
@@ -51,7 +72,7 @@ Note: current simulated model does not represent a physically calibrated device.
 
 1. Live instrument commands are restricted to the verified NUL-terminated `*IDN?` identity query.
 2. TCP exchange is serialized and fail-closed after read errors. No blind command replay or automatic post-reconnect test restart.
-3. No SMU output, sweep execution, PMU/CVU commands or real-time instrument data acquisition is implemented yet.
+3. No SMU output, sweep execution, PMU/CVU commands or real-time instrument data acquisition is implemented yet. LAN access is limited to identification.
 4. Android CI release APK build passed for commit ec0086e401ee1884b907c0f630dfa4d44ecf73f5, but the app has not been installed/tested on the OPPO Pad Mini; later commits require a fresh CI result.
 5. Project storage currently captures connection profiles and plan fields, **not** streaming raw measurements; users must export the simulated dataset before leaving the page.
 
