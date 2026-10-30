@@ -60,7 +60,10 @@
     action(designActions,'simulate','开始模拟采集',true);
     action(designActions,'stop','停止模拟采集');
     const previewNote=units.note.create(design.body,{variant:'meta',text:'请先验证方案。'});
-    const chart=units.panel.create(main,{variant:'headed',title:'实时数据 · SIMULATION',sizing:'content'});
+    const originals=units.panel.create(main,{variant:'headed',title:'仪器原生数据与图片归档 · 尚未接通',sizing:'content'});
+    units.note.create(originals.body,{variant:'normal',text:'目标：直接保存 4200A 仪器侧生成的测量数据文件及 Clarius / KXCI 原生图文件或原始屏幕截图。保存原文件字节，不做插值、拟合、重采样、重新绘图或图片重编码。'});
+    units.note.create(originals.body,{variant:'meta',text:'当前仅能连接并读取 *IDN?。原生文件获取尚未实现；下方所有曲线与导出均为本地 SIMULATION 调试产物，不属于仪器原件。Clarius 与 KXCI 不可同时运行，原生图文件获取路径需按实际模式验证。'});
+    const chart=units.panel.create(main,{variant:'headed',title:'本地仿真预览 · 不是仪器实时曲线',sizing:'content'});
     const progressNote=units.note.create(chart.body,{variant:'normal',text:'尚无仿真数据'});
     const plotHost=units.layout.create(chart.body,{variant:'identity',geometry:{width:'100%',minHeight:'300px'}});
     const plot=units.scientificPlot.create(plotHost,{variant:'curve',source:'keithley-4200:simulation',minHeight:300,xTitle:'Source voltage (V) / Time index',yTitle:'Current (A)',legend:{enabled:true,placement:'auto',interaction:'isolate',maxRows:2},getCurves:()=>currentCurves,getMarkers:()=>[]});
@@ -68,9 +71,9 @@
     const columns=[{key:'cycle',label:'Cycle'},{key:'point',label:'Point'},{key:'elapsed_s',label:'Time (s)'},{key:'set_v',label:'Set (V)'},{key:'read_v',label:'Read (V)'},{key:'read_a',label:'Current (A)'},{key:'status',label:'Status'}];
     const table=units.table.mount('keithley-4200-sim-data',tableHost,{variant:'standard',columns,rows:[]});
     const exportActions=units.layout.create(chart.body,{variant:'action-grid-4'});
-    action(exportActions,'exportCsv','导出 CSV').dataset.dkdsNativeSave='export';
-    action(exportActions,'exportJson','导出 JSON').dataset.dkdsNativeSave='export';
-    action(exportActions,'exportSvg','导出曲线 SVG').dataset.dkdsNativeSave='export';
+    action(exportActions,'exportCsv','仿真 CSV').dataset.dkdsNativeSave='export';
+    action(exportActions,'exportJson','仿真 JSON').dataset.dkdsNativeSave='export';
+    action(exportActions,'exportSvg','软件生成 SVG').dataset.dkdsNativeSave='export';
     workbench.compose({primary:{id:'main',label:'4200A',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},primes:[],subs:[]});
     const get=id=>controls.get(id)?.value;
     const set=(id,value)=>{const node=controls.get(id);if(node)node.value=String(value??'');};
