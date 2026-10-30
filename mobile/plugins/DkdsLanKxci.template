@@ -39,6 +39,20 @@ private object DkdsLanKxci {
       else->throw IllegalArgumentException("Unsupported read-only LAN KXCI operation.")
     }
   }
+  private fun localSource(iface:String,linkLocal:Boolean):java.net.Inet4Address?{
+    val ni=try{java.net.NetworkInterface.getByName(iface)}catch(_:Throwable){null} ?: return null
+    if(!ni.isUp)return null
+    val ipv4=java.util.Collections.list(ni.inetAddresses).filterIsInstance<java.net.Inet4Address>().filter{!it.isLoopbackAddress}
+    return if(linkLocal)ipv4.firstOrNull{it.hostAddress.startsWith("169.254.")}else ipv4.firstOrNull()
+  }
+  private fun fallbackSource(mode:String,iface:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>?{
+    if(!(mode=="ethernet"||mode=="interface"||mode=="auto"&&linkLocal))return null
+    val names=if(mode=="interface")listOf(iface)else{
+      val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
+      (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
+    }
+    return names.firstNotNullOfOrNull{name->localSource(name,linkLocal)?.let{Pair(name,it)}}
+  }
   private fun open(context:Context,owner:String,p:JSONObject):JSONObject{
     cleanExpired()
     if(current!=null && current?.owner!=owner)throw IllegalStateException("Another paired browser owns the instrument. Disconnect it first.")
@@ -61,10 +75,14 @@ private object DkdsLanKxci {
       "ethernet"->cm.allNetworks.firstOrNull{cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true}
       else->cm.allNetworks.firstOrNull{cm.getLinkProperties(it)?.interfaceName==wanted}
     }
-    if(mode!="auto"&&network==null)throw IllegalStateException("Requested Android network is not available.")
+    val linkLocal=host.startsWith("169.254.")
+    val fallback=if(network==null)fallbackSource(mode,wanted,linkLocal)else null
+    if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
+      "Android cannot access the selected Ethernet/IPv4 interface. eth0 may be visible only to ADB/root.")
     val socket=network?.socketFactory?.createSocket() ?: Socket()
     try{
       socket.tcpNoDelay=true
+      if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))
       socket.connect(InetSocketAddress(host,port),timeout)
       val id=UUID.randomUUID().toString()
       current=Session(id,owner,socket)
@@ -74,11 +92,14 @@ private object DkdsLanKxci {
         .put("localPort",socket.localPort)
         .put("remoteAddress",socket.inetAddress?.hostAddress ?: host)
         .put("remotePort",socket.port)
-        .put("interfaceName",network?.let{cm.getLinkProperties(it)?.interfaceName} ?: wanted)
+        .put("interfaceName",network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: wanted)
+        .put("routeStrategy",if(network!=null)"android-network"else if(fallback!=null)"local-source-bind"else"system-default")
         .put("networkMode",mode)
     }catch(error:Throwable){
       try{socket.close()}catch(_:Throwable){}
-      throw error
+      throw IllegalStateException("Android LAN TCP connect failed via "+
+        (network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: "system-default")+
+        " to "+host+":"+port+": "+(error.message ?: error.javaClass.simpleName),error)
     }
   }
   private fun exchange(owner:String,p:JSONObject):JSONObject{
