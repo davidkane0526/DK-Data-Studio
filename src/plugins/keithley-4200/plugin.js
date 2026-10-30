@@ -14,7 +14,7 @@
     const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8');
     let session=null,identified=null,workbench=null;
     let commandTail=Promise.resolve();
-    let hostField,portField,interfaceField,serialField,stateNote,responseNote;
+    let hostField,portField,interfaceField,serialField,networkModeField,connectTimeoutField,readTimeoutField,stateNote,responseNote;
 
     const encodeBase64=text=>{
       const bytes=encoder.encode(text);
@@ -35,10 +35,23 @@
     };
     const endpoint=()=>({
       host:String(hostField.control.value||'').trim(),
-      port:Number(portField.control.value)||1225,
+      port:Number(portField.control.value),
+      networkMode:String(networkModeField.control.value||'auto'),
       interfaceName:String(interfaceField.control.value||'').trim(),
+      connectTimeoutMs:Number(connectTimeoutField.control.value),
+      readTimeoutMs:Number(readTimeoutField.control.value),
       expectedSerial:String(serialField.control.value||'').trim()
     });
+    const validateEndpoint=target=>{
+      if(!target.host||target.host.length>253||/[\\s\\/\\\\]/.test(target.host))throw new Error('仪器地址无效，请输入 IP 或主机名。');
+      if(!Number.isInteger(target.port)||target.port<1||target.port>65535)throw new Error('端口必须为 1–65535。');
+      if(!['auto','wifi','ethernet','interface'].includes(target.networkMode))throw new Error('网络模式无效。');
+      if(target.networkMode==='interface'&&!/^[a-zA-Z0-9_.:-]{1,32}$/.test(target.interfaceName))throw new Error('指定接口名称无效。');
+      if(!Number.isInteger(target.connectTimeoutMs)||target.connectTimeoutMs<250||target.connectTimeoutMs>120000)throw new Error('连接超时需为 250–120000 ms。');
+      if(!Number.isInteger(target.readTimeoutMs)||target.readTimeoutMs<250||target.readTimeoutMs>120000)throw new Error('响应超时需为 250–120000 ms。');
+      return target;
+    };
+    const tcpOptions=target=>({host:target.host,port:target.port,connectTimeoutMs:target.connectTimeoutMs,networkMode:target.networkMode,interfaceName:target.networkMode==='interface'?target.interfaceName:''});
     const renderState=(headline,detail='')=>{
       stateNote.textContent=headline;
       responseNote.textContent=detail||'—';
@@ -53,12 +66,11 @@
     };
     const openSession=async()=>{
       if(session)return session;
-      const target=endpoint();
-      if(!target.host)throw new Error('请输入仪器 IP。');
+      const target=validateEndpoint(endpoint());
       renderState('正在连接…',target.host+':'+target.port);
       try{
-        session=await tcp.open({host:target.host,port:target.port,connectTimeoutMs:5000,interfaceName:target.interfaceName});
-        renderState('TCP 已连接，尚未识别仪器',target.host+':'+target.port+(target.interfaceName?' · interface='+target.interfaceName:''));
+        session=await tcp.open(tcpOptions(target));
+        renderState('TCP 已连接，尚未识别仪器',target.host+':'+target.port+(target.networkMode!=='auto'?' · network='+target.networkMode+(target.networkMode==='interface'?':'+target.interfaceName:''):''));
         ctx.status.set('Keithley 4200A：TCP 已连接，等待只读身份识别。');
         return session;
       }catch(error){
@@ -70,14 +82,14 @@
     };
     const connect=()=>enqueue(openSession);
     const identify=()=>enqueue(async()=>{
-      const target=endpoint();
+      const target=validateEndpoint(endpoint());
       await openSession();
       renderState('正在执行只读身份查询…','KXCI: *IDN? + NUL');
       try{
         const result=await tcp.exchange({
           sessionId:session.sessionId,
           base64:encodeBase64('*IDN?\0'),
-          readTimeoutMs:5000,
+          readTimeoutMs:target.readTimeoutMs,
           idleTimeoutMs:120,
           maxBytes:8192
         });
@@ -115,7 +127,15 @@
     units.layout.apply(connectionPanel.body,{variant:'form-grid-2'});
     hostField=units.field.create(connectionPanel.body,{label:'仪器 IP',inputType:'text',value:'169.254.111.118'});
     portField=units.field.create(connectionPanel.body,{label:'TCP 端口',inputType:'number',value:1225});
-    interfaceField=units.field.create(connectionPanel.body,{label:'Android 网络接口',inputType:'text',value:'eth0'});
+    networkModeField=units.field.create(connectionPanel.body,{variant:'select',kind:'select',label:'网络选择',value:'auto',options:[
+      {value:'auto',label:'自动（系统路由）'},
+      {value:'wifi',label:'Wi-Fi'},
+      {value:'ethernet',label:'USB Ethernet'},
+      {value:'interface',label:'指定接口'}
+    ]});
+    interfaceField=units.field.create(connectionPanel.body,{label:'指定接口（如 eth0）',inputType:'text',value:'eth0'});
+    connectTimeoutField=units.field.create(connectionPanel.body,{label:'连接超时 (ms)',inputType:'number',value:5000});
+    readTimeoutField=units.field.create(connectionPanel.body,{label:'响应超时 (ms)',inputType:'number',value:5000});
     serialField=units.field.create(connectionPanel.body,{label:'预期序列号',inputType:'text',value:'1498377'});
     units.toolbar.create(connectionPanel.body,{variant:'ordinary',actions:[
       {id:'connect',label:'Connect',onInvoke:()=>connect()},
