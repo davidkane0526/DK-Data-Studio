@@ -51,9 +51,9 @@
     field(dgrid,'complianceA','电流限值 (A)',0.0001);
     field(dgrid,'delayMs','采样间隔 / 延迟 (ms)',20);
     field(dgrid,'speed','速度预设','normal',{kind:'select',options:[{value:'fast',label:'快速'},{value:'normal',label:'标准'},{value:'quiet',label:'低噪声'}]});
-    field(dgrid,'sourceSmU','源 SMU',1,{step:1});
-    field(dgrid,'measureSmU','测量 SMU',2,{step:1});
-    field(dgrid,'gateSmU','栅极 SMU',3,{step:1});
+    field(dgrid,'sourceSmU','扫描 / 源 SMU',1,{step:1});
+    field(dgrid,'measureSmU','读数 SMU（可与扫描相同）',2,{step:1});
+    field(dgrid,'gateSmU','Gate SMU（0 = 不使用）',3,{step:1});
     field(dgrid,'gateBiasV','栅极偏置 (V)',0);
     const designActions=units.layout.create(design.body,{variant:'action-grid-4'});
     action(designActions,'preview','验证并预览方案');
