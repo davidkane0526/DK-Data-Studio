@@ -40,7 +40,8 @@ assert(manager.includes("window.DKDSPlugins?.manager?.refresh?.()")&&manager.inc
 const generator=require('../scripts/generate-plugin-index.js');
 const built=generator.buildPluginIndexSource();
 assert.strictEqual(built.meta.appVersion,app.version);
-assert.strictEqual(built.meta.count,17);
+assert.strictEqual(built.meta.count,built.plugins.length,'Catalog metadata must match the complete generated built-in list.');
+assert(built.plugins.some(row=>row.id==='com.dkds.keithley-4200'),'New Keithley 4200A activity must be included in the generated built-in catalog.');
 for(const id of ['builtin.flexible-import','builtin.resonance-workbench','builtin.ter-analysis','builtin.data-center','com.dkds.theme.aurora-pop','com.dkds.theme.liquid-glass'])
   assert(built.plugins.some(row=>row.id===id),`Current catalog must still contain ${id}.`);
 for(const row of built.plugins){
