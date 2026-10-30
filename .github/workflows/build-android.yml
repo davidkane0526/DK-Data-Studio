@@ -76,6 +76,7 @@ jobs:
           node tests/test-keithley-4200-workbench.js
           node tests/test-keithley-4200-integration.js
           node tests/test-keithley-4200-lan-gateway.js
+          node tests/test-keithley-4200-desktop-relay.js
           node tests/test-keithley-4200-presentation.js
           node -e "require('./tests/manifest.js')"
           node tests/test-v371106-data-center-live-hydration-presentation.js
