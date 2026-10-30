@@ -156,3 +156,19 @@ User requirements: editable address/port, Ethernet and Wi-Fi, test type and cycl
 Current **reality**: GUI data is generated locally from a clearly marked simulation. Only `*IDN?\\0` can be sent to real hardware. The simulation module has no TCP access. CSV, JSON and SVG outputs carry simulation provenance. The raw dataset is in memory and requires user export; project persistence only covers settings and named profiles. The simulated transfer/output curves are not physically calibrated or module-specific.
 
 Outstanding verification: full desktop/Core test suite, Android Expo/Kotlin build, installed tablet UI, Android 169.254 routing while Wi-Fi remains on, Wi-Fi KXCI access, USB sleep/reconnect, adapter detection on Windows, Android/Desktop project-slice restore, and file-export UX. Do not mark hardware control complete. Do not enable output commands until verified per the official KXCI guide and instrument installed-module safety checks.
+
+
+## Critical user clarification: instrument-original files and graphs (2026-10-30)
+
+The user specifically requires that the "raw data" and "graph/image" come from **the Keithley 4200A**, not from DKDS processing or generating them. This supersedes any imprecise interpretation of simulation CSV/SVG as product deliverables.
+
+- **Instrument-native raw data**: original Clarius-exported measurement file or exact KXCI measurement response payload (preserve original KXCI bytes even when parsing a separate view); never silently smooth, fit, interpolate, resample, round or regenerate as a claimed original. For a Clarius file, copy exact original bytes.
+- **Instrument-native graph**: original 4200A-side Clarius export (e.g. PNG) or independently verified instrument-side graph capture. It is *not* a DKDS scientific-plot rendering or SVG recreation.
+- **DKDS live scientific plot**: optional monitoring preview only, explicitly not an instrument original graph; preserve readouts separately.
+- **Developer simulation**: not hardware measurements; all local CSV, JSON and SVG exports retain simulation provenance and labels. UI now contains an explicit separate instrument-original archive section with unimplemented status; it does not fake an export action.
+
+Official manual constraint (2025 KXCI manual, Clarius user's guide): Clarius and KXCI cannot run simultaneously. Clarius exports graph and measurement sheets via Save Data. KXCI can expose original measurement readings and draw in its instrument UI; generic remote native graph export is **not verified** by currently reviewed KXCI docs. This is a two-path acquisition requirement, not a single KXCI screenshot command.
+
+Implementation must validate 4200A provenance and provide byte-preserving native file copy using a verified instrument-side transport (e.g. supported file share / manually exported file / tested capture). Do not pretend the KXCI TCP instrument command channel is a universal remote filesystem or screenshot API. UI/download must not relabel derived images or reconstructed tabular data as instrument originals. Plan acceptance tests for exact byte identity (including image metadata), original filename + format, device/run provenance, incomplete file transfer rejection and no silent fallback. See updated plugin README.
+
+GitHub Android CI for earlier commit ec0086e4 completed successfully, confirming build path; the OPPO Pad Mini live installation and any graph retrieval remain unverified.
