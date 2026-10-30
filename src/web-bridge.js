@@ -46,6 +46,28 @@
     });
   }
 
+  // Plain LAN browser clients have no ReactNativeWebView bridge. Route only
+  // the verified, read-only KXCI operations through the Android HTTP gateway.
+  // The Android Host verifies the cookie, Origin and exact *IDN? bytes.
+  async function lanKxciCall(op,payload={}){
+    const timeout=Math.min(14000,Math.max(2000,Number(payload.readTimeoutMs||payload.connectTimeoutMs||5000)+2500));
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),timeout);
+    try{
+      const res=await fetch('/__dkds_kxci',{
+        method:'POST',mode:'same-origin',credentials:'same-origin',
+        headers:{'Content-Type':'application/json','X-DKDS-RPC':'kxci-readonly-v1'},
+        body:JSON.stringify({op,payload}),signal:controller.signal,cache:'no-store',redirect:'error'
+      });
+      const json=await res.json().catch(()=>null);
+      if(!res.ok||json?.ok!==true)throw new Error(String(json?.error||(res.status===404?'当前网页服务未提供安卓 KXCI 网关。':'远程 KXCI 请求失败，HTTP '+res.status)));
+      return json.value;
+    }catch(error){
+      if(error?.name==='AbortError')throw new Error('安卓 KXCI 网关响应超时；请检查设备和局域网连接。');
+      throw error;
+    }finally{clearTimeout(timer);}
+  }
+
   window.__DKDS_NATIVE_RESOLVE__=(id,ok,value)=>{
     const row=nativePending.get(id);
     if(!row)return;
@@ -263,9 +285,9 @@
     smbListShares: async connection=>nativeBridge?nativeCall('smbListShares',{connection:connection||{}}):[],
     smbList: async payload=>nativeBridge?nativeCall('smbList',payload||{}):[],
     smbRead: async payload=>nativeBridge?nativeCall('smbRead',payload||{}):[],
-    tcpOpen: async payload=>nativeBridge?nativeCall('tcpOpen',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.connectTimeoutMs)||5000)+5000))):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
-    tcpExchange: async payload=>nativeBridge?nativeCall('tcpExchange',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.readTimeoutMs)||5000)+5000))):(()=>{throw new Error('TCP Host transport is unavailable in plain web mode.');})(),
-    tcpClose: async payload=>nativeBridge?nativeCall('tcpClose',payload||{}):false,
+    tcpOpen: async payload=>nativeBridge?nativeCall('tcpOpen',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.connectTimeoutMs)||5000)+5000))):lanKxciCall('open',payload||{}),
+    tcpExchange: async payload=>nativeBridge?nativeCall('tcpExchange',payload||{},Math.min(130000,Math.max(5000,(Number(payload?.readTimeoutMs)||5000)+5000))):lanKxciCall('exchange',payload||{}),
+    tcpClose: async payload=>nativeBridge?nativeCall('tcpClose',payload||{}):lanKxciCall('close',payload||{}).then(()=>true),
     agentGetSecret: async key=>nativeBridge?nativeCall('agentGetSecret',{key:String(key||'default')}):'',
     agentSetSecret: async payload=>nativeBridge?nativeCall('agentSetSecret',payload||{}):false,
     agentHttpJson: async payload=>nativeBridge?nativeCall('agentHttpJson',payload||{}):(()=>{throw new Error('AI Host transport is unavailable in plain web mode.');})(),
