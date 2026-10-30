@@ -24,8 +24,30 @@ const ui={
   renderData:(curves,rows)=>{ui.curves=curves;ui.rows=rows;},
   setRunning:flag=>{ui.running=flag;},dispose:()=>{}
 };
+// Export-only SVG DOM mock: verifies that the plugin creates valid SVG elements
+// through XML APIs rather than embedding raw paint markup in application code.
+const xmlNode=name=>({
+  name,attrs:{},children:[],textContent:'',
+  setAttribute(key,value){this.attrs[key]=String(value);},
+  appendChild(child){this.children.push(child);}
+});
+const svgDocument={
+  implementation:{createDocument:(_ns,name)=>({
+    documentElement:xmlNode(name),
+    createElementNS:(_uri,tag)=>xmlNode(tag)
+  })}
+};
+const xmlEscape=t=>String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+class XMLSerializerMock{
+  serializeToString(documentSvg){
+    const render=el=>'<'+el.name+Object.entries(el.attrs).map(([k,v])=>' '+k+'="'+xmlEscape(v)+'"').join('')+'>'+
+      xmlEscape(el.textContent)+el.children.map(render).join('')+'</'+el.name+'>';
+    return render(documentSvg.documentElement);
+  }
+}
 const sandbox={
   TextEncoder,TextDecoder,setTimeout,clearTimeout,atob,btoa,
+  document:svgDocument,XMLSerializer:XMLSerializerMock,
   window:{DKDSPluginModules:{define:(_,id,part)=>registry.set(id,part)}},
   DKDSPlugins:{define:(manifest,factory)=>{createPlugin=factory;}}
 };
