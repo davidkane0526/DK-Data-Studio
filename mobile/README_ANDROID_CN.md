@@ -211,7 +211,11 @@ Android 被 Core 标识为 Native Client，不会被当作 LAN Web Client。APK 
 - PRIMARY / PRIME / SUB：由统一移动布局映射；
 - 使用 Electron/Node 私有 API、查找桌面按钮或只支持鼠标的插件：不能直接跨平台，需改用 Plugin API 的 host/platform/input 服务。
 
-移动端自身直接启动离线原生壳工作区，不会把 `file://` 渲染器误报成网页端。“更多 → 在浏览器打开网页版”会按需启动只绑定 `127.0.0.1` 的本机 HTTP 服务，并在 Android 系统浏览器中打开独立网页版；它不会向局域网暴露，也不会改变 Native Client 身份。
+移动端自身直接启动离线原生壳工作区，不会把 `file://` 渲染器误报成网页端。“局域网网页版”服务在用户启用后监听 `0.0.0.0:45910`（端口可配置），同一 Wi-Fi 局域网的台式机可以通过平板的局域网 IPv4 地址打开独立网页版。服务默认使用 4 位配对 Key；不要将端口暴露到互联网或不可信 Wi-Fi。此服务不会改变平板内部原生工作区的 Native Client 身份。
+
+### 4200A 局域网只读网关
+
+从 `4200` 分支开始，另一台电脑的浏览器可通过安卓局域网服务的认证接口执行 4200A `Connect / Identify / Disconnect`。必须关闭“无需配对 Key”选项，使用 Key 配对网页。安卓端按照“自动 / Wi-Fi / USB Ethernet / 指定接口”选择出站网络，避免连接源表时被 Wi-Fi 默认路由抢占。当前网关仅接受 `*IDN?` 加 NUL 结尾的设备身份查询，不能加压、扫描或获取仪器原生图片；其它数据分析工具属于浏览器本地计算。具体安全限制见 `src/plugins/keithley-4200/README.md`。
 
 ## 当前 Android 交互原则
 
