@@ -235,12 +235,43 @@ if ($bytesCheck.ExitCode -ne 0 -or $bytesCheck.Output.Trim() -ne "2a49444e3f00")
     exit 0
 }
 Note "Verified KXCI TX: 2a49444e3f00 (ASCII *IDN? plus NUL)"
-$reply = Inspect -Label "KXCI response bytes (hex)" -Command ("echo 2a49444e3f00 | xxd -r -p | nc -w 6 " + $InstrumentIP + " " + $Port + " | xxd -p")
-$hexReply = ($reply.Output -replace '[^a-fA-F0-9]','').ToLowerInvariant()
-if (!$hexReply) {
-    Note "RESULT: no response bytes after NUL-terminated KXCI request; check active KXCI console."
+# KXCI is a persistent TCP session: it normally sends a NUL-terminated
+# response WITHOUT closing the socket. Plain nc | xxd waits for EOF, so -w
+# alone cannot be trusted to bound an active TCP session. An Android toybox
+# timeout forcibly ends only the per-query nc process after eight seconds.
+$deadline = Inspect -Label "bounded socket helper" -Command "toybox timeout -s KILL 1 true"
+if ($deadline.ExitCode -ne 0) {
+    Note "RESULT: bounded query unavailable; refused to run an unbounded TCP read."
+    Note ("REPORT: " + $reportFile)
+    exit 0
+}
+Note "Starting one NUL-terminated identity query; socket read is forcibly bounded to 8 seconds."
+$reply = Inspect -Label "KXCI response bytes (hex, bounded)" -Command ("echo 2a49444e3f00 | xxd -r -p | toybox timeout -s KILL 8 nc -w 3 " + $InstrumentIP + " " + $Port + " | xxd -p")
+$lines = @($reply.Output -split "\r?\n" | Where-Object { $_ -match '^[a-fA-F0-9]+
+    $responseBytes = New-Object byte[] ($hexReply.Length / 2)
+    for ($k = 0; $k -lt $responseBytes.Length; $k++) {
+        $responseBytes[$k] = [Convert]::ToByte($hexReply.Substring(2*$k,2),16)
+    }
+    $responseText = [Text.Encoding]::ASCII.GetString($responseBytes).Trim([char]0,[char]13,[char]10,[char]32)
+    Note ("KXCI decoded response: " + $responseText)
+    if ($responseText -match '^KEITHLEY INSTRUMENTS,KI4200A,') {
+        Note "RESULT: KXCI *IDN? responds from the tablet root environment."
+    } else {
+        Note "RESULT: unexpected KXCI response (preserved above as hex)."
+    }
+}
+$null = Inspect -Label "recent DKDS TCP exceptions (filtered)" -Command "logcat -d -t 1200 | grep -i tcp | tail -n 70"
+Note ("Root route changed during this run: " + $script:modified)
+Note "NOTE: Root and app UID routes can differ under Android policy routing. Socket source binding alone does not prove eth0 use."
+Note ("REPORT: " + $reportFile)
+ })
+$hexReply = ($lines -join "").ToLowerInvariant()
+if ($reply.ExitCode -ne 0) {
+    Note ("RESULT: bounded query command failed (exit=" + $reply.ExitCode + "); inspect raw output above.")
+} elseif (!$hexReply) {
+    Note "RESULT: TCP 1225 is open, but no KXCI response bytes arrived within 8 seconds. Check whether the KXCI console is currently active and Ethernet mode enabled."
 } elseif (($hexReply.Length % 2) -ne 0) {
-    Note "RESULT: malformed hexadecimal response; inspect KXCI response bytes."
+    Note "RESULT: malformed hexadecimal response; inspect raw output."
 } else {
     $responseBytes = New-Object byte[] ($hexReply.Length / 2)
     for ($k = 0; $k -lt $responseBytes.Length; $k++) {
