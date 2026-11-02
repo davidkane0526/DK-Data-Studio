@@ -2,7 +2,6 @@
    this stylesheet only arranges the 4200-specific content and responsive density. */
 .dkds-4200-workbench{
   width:min(1320px,100%);
-  min-width:0;
   margin:0 auto;
   padding:8px 12px 22px;
 }
