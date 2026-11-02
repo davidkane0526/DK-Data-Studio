@@ -120,8 +120,20 @@ case "${1:-once}" in
     ;;
   stop)
     if is_running; then
-      kill "$(cat "$PIDFILE")" 2>/dev/null || true
-      echo "Stop requested"
+      target=$(cat "$PIDFILE")
+      kill "$target" 2>/dev/null || true
+      tries=0
+      while is_running && [ "$tries" -lt 3 ]; do
+        sleep 1
+        tries=$((tries + 1))
+      done
+      # Older agent versions may be blocked in a foreground sleep.
+      # Force-stop only if PID and verified agent command still match.
+      if is_running && [ "$(cat "$PIDFILE")" = "$target" ]; then
+        kill -9 "$target" 2>/dev/null || true
+        rm -f "$PIDFILE"
+      fi
+      echo "Agent stop completed"
     else
       echo "Agent not running"
     fi
