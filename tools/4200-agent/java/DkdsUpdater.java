@@ -22,14 +22,14 @@ import java.util.regex.Pattern;
 public final class DkdsUpdater {
     private static final String OWNER_REPO = "davidkane0526/DK-Data-Studio";
     private static final String PACKAGE_NAME = "com.dk.datastudio";
-    private static final String API = "https://api.github.com/repos/" + OWNER_REPO + "/releases?per_page=30";
+    private static final String API = "https://api.github.com/repos/" + OWNER_REPO + "/releases?per_page=100";
     private static final File ROOT = new File("/data/adb/dkds-agent");
     private static final File LOG = new File(ROOT, "logs/update.log");
     private static final Pattern TAG = Pattern.compile("4200-preview-[0-9]+");
     private static final Pattern ASSET = Pattern.compile("(DK-Data-Studio-arm64-v8a-release\\.apk|DK-Data-Studio-4200-[a-f0-9]{12}-arm64\\.apk)");
     private static final Pattern DIGEST = Pattern.compile("sha256:[a-f0-9]{64}");
     private static final long MAX_APK = 180L * 1024 * 1024;
-    private static final int MAX_JSON = 2 * 1024 * 1024;
+    private static final int MAX_JSON = 5 * 1024 * 1024;
     private static final int TIMEOUT = 30000;
 
     private DkdsUpdater() {}
