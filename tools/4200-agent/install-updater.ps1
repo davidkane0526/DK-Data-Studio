@@ -4,8 +4,8 @@
 param([string]$AdbPath = "")
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$release = "4200-agent-preview-41402285251"
-$expected = "ba8f562ff25f4baef9c5db31dd7b33b8a88b7a1bd7e1d54e36b98c04160a4724"
+$release = "4200-agent-preview-41402750207"
+$expected = "86c62b1d95745c61aca439cfa850a9a270b65f9d83e0f34ca172c8176cf2a268"
 $url = "https://github.com/davidkane0526/DK-Data-Studio/releases/download/$release/dkds-updater.jar"
 
 if ($AdbPath -eq "") {
