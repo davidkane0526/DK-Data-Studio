@@ -51,8 +51,6 @@
 .dkds-4200-design-card,
 .dkds-4200-chart-card{padding:12px 14px}
 .dkds-4200-card-heading{padding:0 0 8px}
-.dkds-4200-card-heading .dkds-surface-title{font-size:14px}
-.dkds-4200-card-heading .dkds-meta{font-size:10px}
 .dkds-4200-parameter-grid .dkds-4200-field,
 .dkds-4200-advanced-grid .dkds-4200-field{min-width:0}
 .dkds-4200-run-actions{
@@ -82,7 +80,5 @@
 }
 @media(max-width:420px){
   .dkds-4200-device-card{padding:10px}
-  
-  .dkds-4200-device-title{font-size:15px}
   .dkds-4200-connect-button{min-width:82px}
 }
