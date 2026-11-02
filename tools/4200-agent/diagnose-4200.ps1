@@ -128,8 +128,9 @@ if ($RepairRoute) {
             $currentRules = Inspect -Label "policy rules before targeted fix" -Command "ip -4 rule show"
             $priorityLine = @($currentRules.Output -split "\r?\n" | Where-Object { $_ -match '^\s*9000:\s' })
             $expectedRule = "to " + $InstrumentIP
+            $priorityRule = ($priorityLine -join " ")
             if ($priorityLine.Count -gt 0 -and
-                !($priorityLine -join " ").Contains($expectedRule)) {
+                (!$priorityRule.Contains($expectedRule) -or !$priorityRule.Contains("lookup 4200"))) {
                 Note "POLICY SKIPPED: rule priority 9000 belongs to another Android rule; not replacing it."
             } else {
                 $existingTable = Inspect -Label "reserved 4200 routing table" -Command "ip -4 route show table 4200"
