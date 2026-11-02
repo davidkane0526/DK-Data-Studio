@@ -118,3 +118,15 @@ jobs:
             --title "4200 diagnostic agent · $GITHUB_RUN_ID" \
             --notes "Development helper for standalone KernelSU agent. No instrument commands. APK installation is disabled by default and must be locally approved." \
             --prerelease --latest=false
+
+  windows-adb-integration:
+    name: Exercise installers under Windows PowerShell 5.1 (mock ADB)
+    runs-on: windows-2022
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test native argument quoting and stderr progress for both installers
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\tools\4200-agent\test-windows-adb-mock.ps1
