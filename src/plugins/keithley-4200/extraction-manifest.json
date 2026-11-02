@@ -27,12 +27,16 @@
     "ctx.capabilities.register",
     "tcp:open",
     "tcp:exchange",
-    "tcp:close"
+    "tcp:close",
+    "standalone Node createTcpRuntime + kxci-protocol CommonJS export"
   ],
   "nonPortableRuntimeServices": [
     "android ConnectivityManager socketFactory",
     "KernelSU su -c",
     "Electron ipcMain",
     "DKDS unit-presentation UI"
+  ],
+  "standaloneReadOnlyCli": [
+    "tools/4200-extract/identify.js"
   ]
 }
