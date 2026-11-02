@@ -74,6 +74,7 @@
       try{
         const opened=await tcp.open({
           host:target.host,port:target.port,networkMode:target.networkMode,
+          preferLinkLocalEthernet:target.networkMode==='auto'&&target.host.startsWith('169.254.'),
           interfaceName:(target.networkMode==='interface'||target.networkMode==='via-mobile'&&target.mobileNetworkMode==='interface')?target.interfaceName:'',
           connectTimeoutMs:target.connectTimeoutMs,
           ...(target.networkMode==='via-mobile'?{
