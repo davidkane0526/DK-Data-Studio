@@ -13,6 +13,19 @@ Runs without DK Data Studio, without access to the Keithley instrument, and with
 
 Manual APK updates remain via the existing validated ADB `install -r` procedure. Later phases may add an authenticated, explicitly enabled updater after verifying signing stability and a safe recovery path.
 
+## Windows PowerShell 5.1 / ADB stderr
+
+Some ADB builds print successful `adb push` progress to stderr. Earlier v0.1 installers with `$ErrorActionPreference = "Stop"` could treat that as `NativeCommandError` even when the file was pushed correctly. The installer now temporarily downgrades the preference only while executing ADB and **always checks its exit code**; real nonzero exits still fail.
+
+If you already downloaded the repository ZIP, refresh only the bootstrap script while in `tools/4200-agent`:
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/davidkane0526/DK-Data-Studio/4200/tools/4200-agent/install.ps1" -OutFile ".\install.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+An interrupted initial `adb push` does not mean the KernelSU boot service has been installed. Rerun the corrected installer to finish installing and verifying both files.
+
 ## First deployment
 
 On Windows with ADB connected, run `tools/4200-agent/install.ps1` from PowerShell. It checks exactly one attached device, verifies root and existing app, transfers the fixed scripts, and installs a KernelSU boot entry. Installation does not reboot the tablet or alter the DKDS app.
