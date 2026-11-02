@@ -226,11 +226,33 @@ if ($rootRoute.ExitCode -ne 0 -or $rootRoute.Output -notmatch ' dev eth0( |$)' -
     exit 0
 }
 $null = Inspect -Label "KXCI TCP port (read-only handshake)" -Command ("nc -z -w 3 " + $InstrumentIP + " " + $Port)
-$id = Inspect -Label "KXCI identity (read-only *IDN?)" -Command ('printf "*IDN?\000" | nc -w 3 ' + $InstrumentIP + ' ' + $Port)
-if ($id.Output -match 'KEITHLEY INSTRUMENTS,KI4200A') {
-    Note "RESULT: KXCI *IDN? responds from the tablet root environment."
+# Use binary hex on the Android shell to avoid nested Windows/ADB quote mangling.
+# Request bytes: ASCII *IDN? followed by the REQUIRED 00 terminator.
+$bytesCheck = Inspect -Label "KXCI command byte validation" -Command "echo 2a49444e3f00 | xxd -r -p | xxd -p"
+if ($bytesCheck.ExitCode -ne 0 -or $bytesCheck.Output.Trim() -ne "2a49444e3f00") {
+    Note "RESULT: Android xxd could not verify exact six-byte identity query. No command sent."
+    Note ("REPORT: " + $reportFile)
+    exit 0
+}
+Note "Verified KXCI TX: 2a49444e3f00 (ASCII *IDN? plus NUL)"
+$reply = Inspect -Label "KXCI response bytes (hex)" -Command ("echo 2a49444e3f00 | xxd -r -p | nc -w 6 " + $InstrumentIP + " " + $Port + " | xxd -p")
+$hexReply = ($reply.Output -replace '[^a-fA-F0-9]','').ToLowerInvariant()
+if (!$hexReply) {
+    Note "RESULT: no response bytes after NUL-terminated KXCI request; check active KXCI console."
+} elseif (($hexReply.Length % 2) -ne 0) {
+    Note "RESULT: malformed hexadecimal response; inspect KXCI response bytes."
 } else {
-    Note "RESULT: no recognized KXCI identity. Check root route, port, Ethernet link and instrument KXCI mode."
+    $responseBytes = New-Object byte[] ($hexReply.Length / 2)
+    for ($k = 0; $k -lt $responseBytes.Length; $k++) {
+        $responseBytes[$k] = [Convert]::ToByte($hexReply.Substring(2*$k,2),16)
+    }
+    $responseText = [Text.Encoding]::ASCII.GetString($responseBytes).Trim([char]0,[char]13,[char]10,[char]32)
+    Note ("KXCI decoded response: " + $responseText)
+    if ($responseText -match '^KEITHLEY INSTRUMENTS,KI4200A,') {
+        Note "RESULT: KXCI *IDN? responds from the tablet root environment."
+    } else {
+        Note "RESULT: unexpected KXCI response (preserved above as hex)."
+    }
 }
 $null = Inspect -Label "recent DKDS TCP exceptions (filtered)" -Command "logcat -d -t 1200 | grep -i tcp | tail -n 70"
 Note ("Root route changed during this run: " + $script:modified)
