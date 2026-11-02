@@ -17,6 +17,14 @@ Manual APK updates remain via the existing validated ADB `install -r` procedure.
 
 On Windows with ADB connected, run `tools/4200-agent/install.ps1` from PowerShell. It checks exactly one attached device, verifies root and existing app, transfers the fixed scripts, and installs a KernelSU boot entry. Installation does not reboot the tablet or alter the DKDS app.
 
+If PowerShell cannot find `adb.exe`, locate your existing Android platform-tools executable and pass it explicitly instead of reinstalling ADB:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\4200-agent\install.ps1 -AdbPath "C:\path\to\adb.exe"
+```
+
+The installer also searches `PATH`, the current directory, and the usual Android SDK locations.
+
 After installation:
 
 ```powershell
