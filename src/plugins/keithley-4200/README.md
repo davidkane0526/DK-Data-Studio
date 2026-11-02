@@ -25,16 +25,20 @@ The native Android gateway and Windows relay both reject anything other than `*I
 - Android analysis navigation requires BOTH the plugin activity and the native `ui.topWorkspaces` contract. Earlier APK 3.71.135 declared the activity but omitted `workspace.role=top` / `ctx.ui.topWorkspace.register(...)`, so the Android PresentationModel intentionally filtered the entry. Both are now declared, and the real `PresentationModel.workspaces()` projection is covered by the integration test.
 - If the entry is missing, open **插件** and inspect the status of **Keithley 4200A KXCI**; activation errors may suppress its activity. A page-header mounting bug that could cause activation failure was fixed after release `3.71.134` and covered by `test-keithley-4200-presentation.js`.
 
-## Connection
+## Connection — automatic probe, one user action
 
-- Editable IP address or hostname, TCP port (default `1225`), connection timeout, response timeout and optional serial-number verification.
-- Network selection: `Auto`, `Wi-Fi`, `USB Ethernet`, `Specific interface`.
-- Android: bind sockets to Android `Network.socketFactory`. In Auto mode, link-local `169.254.*` destinations prefer an Ethernet network when exposed to Android; otherwise OS routing applies. Selecting a missing transport fails closed.
-- Desktop: For the 4200A link-local target, Auto prefers the sole matching Ethernet adapter with 169.254/16 IPv4. Ethernet mode also supports Chinese Windows names (以太网/乙太網); if multiple adapters qualify it fails closed and asks for Specific interface. A local source-address bind does not force Windows to use the intended physical route; if needed, manually verify the Windows host route. Wi-Fi mode allows a non-link-local local IPv4 only when the network has an independently configured route to the device. The application does not modify system routing or adapter IP on Windows.
-- Connection profiles persist in the **current DKDS project**, together with editable plan settings. A saved profile does not auto-connect.
-- Clicking Connect establishes a fresh socket. Identify sends exactly `*IDN?\0`, verifies the `KI4200A` identity and optional serial, and does not retry a timed-out transaction. Identity is invalidated when the connection configuration changes.
+- Opening the **4200A** workspace starts a fresh connection attempt automatically. No separate **Connect TCP** or **Identify instrument** action is exposed.
+- The device card has one connection button. It reads **断开** after a verified identity; otherwise it reads **连接**. Clicking it toggles the session.
+- A successful TCP handshake is not enough: the app immediately sends the exact NUL-terminated `*IDN?\0`, verifies manufacturer/model `KI4200A`, and checks the configured serial when non-empty. No measurement/output command is sent.
+- Default bench target: `169.254.111.118:1225`, expected serial `1498377`. The **高级连接设置** disclosure allows changing target/serial for the current page session only.
+- **Connection parameters are never persisted** in project data or profile storage. Reopening the page starts from defaults and probes again. Test-plan parameters may still be saved in the current project.
+- Direct mode is automatic; users do not choose TCP, adapter names or individual network modes:
+  - **Windows:** for a link-local target, try every detected IPv4 source address with Ethernet/link-local adapters first, then Wi-Fi/other adapter addresses, and the OS route. For ordinary routed IPs, try the OS route first, then every visible adapter. A successful TCP connection is followed by the identity check. If the first route reaches a non-KI4200A endpoint or the ID query fails, the desktop controller continues with Ethernet and Wi-Fi-specific passes. It does not modify Windows IP configuration or route tables.
+  - **Android:** enumerate all Android-managed Ethernet/Wi-Fi/other networks, then all kernel-visible local IPv4 addresses. For a link-local instrument, only after the no-Root paths fail, optionally run the existing one-shot KernelSU Ethernet preparation and repeat the attempts. The helper never changes the default route and does not install a daemon.
+- Windows can optionally use **通过安卓平板中继** from the advanced connection settings. This requires the tablet's current LAN IPv4 and pairing Key each time; neither is saved. The tablet gateway also probes its Android networks and local interfaces before optional Ethernet recovery.
+- Automatic probing is bounded per route; typical direct attempts finish within a few seconds. A missing cable, missing host route, disabled KXCI listener or wrong target is reported with the routes and interface attempts. A slow/missing *IDN?* response closes the socket; the app does not replay a measurement command.
+- The application status shows the verified model/serial and the selected local interface/source address. Advanced settings remain collapsed during normal use.
 
-Known initial bench values: `169.254.111.118:1225`, adapter `eth0`, serial `1498377`. These are user-editable defaults, not hardcoded constraints. To connect via Wi-Fi, the instrument must be reachable on the Wi-Fi LAN and its KXCI TCP service must be accessible.
 
 ## Definition of ORIGINAL data and ORIGINAL graph (user requirement)
 
