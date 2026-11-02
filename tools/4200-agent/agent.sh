@@ -1,10 +1,12 @@
 #!/system/bin/sh
-# DKDS 4200 Agent v0.2: read-only local diagnostics, no remote commands.
+# DKDS 4200 Agent v0.3: independent diagnostics and locally approved release update checks.
 set -u
 BASE=/data/adb/dkds-agent
 LOGDIR="$BASE/logs"
 LOG="$LOGDIR/diagnostics.log"
 PIDFILE="$BASE/agent.pid"
+UPDATER="$BASE/dkds-updater.jar"
+UPDATEMODE="$BASE/update.mode"
 
 ensure_dirs() {
   [ "$(id -u)" = "0" ] || { echo "KernelSU/root required" >&2; exit 1; }
@@ -54,6 +56,13 @@ snapshot() {
   echo
 }
 
+update_once() {
+  [ -r "$UPDATER" ] || { echo "Update helper not installed; diagnostics continue"; return 0; }
+  choice=check
+  if [ -r "$UPDATEMODE" ] && [ "$(cat "$UPDATEMODE" 2>/dev/null)" = "install" ]; then choice=install; fi
+  CLASSPATH="$UPDATER" /system/bin/app_process /system/bin com.dkds.agent.DkdsUpdater "$choice"
+}
+
 is_running() {
   [ -r "$PIDFILE" ] || return 1
   old=$(cat "$PIDFILE" 2>/dev/null)
@@ -70,6 +79,9 @@ case "${1:-once}" in
     snapshot >> "$LOG" 2>&1
     echo "Saved diagnostic snapshot to $LOG"
     ;;
+  check-update)
+    update_once
+    ;;
   crash)
     # AndroidRuntime logs stay on this device; nothing is uploaded.
     rotate
@@ -85,9 +97,15 @@ case "${1:-once}" in
     echo "$$" > "$PIDFILE"
     trap 'rm -f "$PIDFILE"' EXIT
     trap 'exit 0' HUP INT TERM
+    iteration=0
     while :; do
       rotate
       snapshot >> "$LOG" 2>&1
+      # A release check is periodic and bounded; it does not contact the instrument.
+      if [ "$iteration" -eq 0 ] && [ -f "$UPDATER" ]; then
+        update_once >> "$LOGDIR/update-loop.log" 2>&1 || true
+      fi
+      iteration=$(( (iteration + 1) % 72 ))
       sleep 300
     done
     ;;
@@ -112,7 +130,7 @@ case "${1:-once}" in
     else echo "stopped"; fi
     ;;
   *)
-    echo "Usage: agent.sh {once|crash|start|stop|status}" >&2
+    echo "Usage: agent.sh {once|crash|check-update|start|stop|status}" >&2
     exit 2
     ;;
 esac
