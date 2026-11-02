@@ -52,8 +52,18 @@ Write-Host "Using ADB: $adb"
 
 function Call-Adb {
     param([string[]]$Arguments)
-    $output = & $script:adb @Arguments 2>&1 | Out-String
-    if ($LASTEXITCODE -ne 0) { throw ("ADB failed: " + ($Arguments -join ' ') + [Environment]::NewLine + $output) }
+    # On Windows PowerShell 5.1 adb writes successful transfer progress to
+    # stderr. Under ErrorActionPreference=Stop this becomes NativeCommandError
+    # even when adb exits 0. Evaluate native exit code instead.
+    $oldPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $script:adb @Arguments 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $oldPreference
+    }
+    if ($exitCode -ne 0) { throw ("ADB failed (exit " + $exitCode + "): " + ($Arguments -join ' ') + [Environment]::NewLine + $output) }
     return $output.Trim()
 }
 
