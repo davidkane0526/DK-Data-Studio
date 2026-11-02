@@ -5,9 +5,6 @@
   min-width:0;
   margin:0 auto;
   padding:8px 12px 22px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
 }
 .dkds-4200-card{min-width:0;overflow:hidden}
 .dkds-4200-device-card{
@@ -17,12 +14,7 @@
   gap:6px;
 }
 .dkds-4200-device-head{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:center;
-  gap:14px;
 }
-.dkds-4200-device-identity{min-width:0}
 .dkds-4200-eyebrow{
   color:var(--dkui-muted);
   font-size:10px;
@@ -73,8 +65,6 @@
 }
 .dkds-4200-advanced-grid{
   padding:7px 0 9px;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px 10px;
 }
 .dkds-4200-design-card,
 .dkds-4200-chart-card{padding:12px 14px}
@@ -82,15 +72,10 @@
 .dkds-4200-card-heading .dkds-surface-title{font-size:14px}
 .dkds-4200-card-heading .dkds-meta{font-size:10px}
 .dkds-4200-parameter-grid{
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:8px 10px;
 }
 .dkds-4200-parameter-grid .dkds-4200-field,
 .dkds-4200-advanced-grid .dkds-4200-field{min-width:0}
 .dkds-4200-run-actions{
-  display:flex;
-  align-items:center;
-  gap:7px;
   margin-top:10px;
 }
 .dkds-4200-run-button{min-width:112px}
@@ -102,9 +87,6 @@
   line-height:1.45;
 }
 .dkds-4200-plot-host{
-  min-width:0;
-  width:100%;
-  min-height:260px;
   overflow:hidden;
 }
 .dkds-4200-data-details{margin-top:7px}
@@ -118,7 +100,6 @@
 .dkds-4200-workbench [hidden]{display:none}
 @media(max-width:760px){
   .dkds-4200-workbench{padding:6px 8px 18px;gap:8px}
-  .dkds-4200-parameter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dkds-4200-design-card,.dkds-4200-chart-card{padding:10px}
 }
 @media(max-width:420px){
@@ -126,5 +107,4 @@
   .dkds-4200-device-head{grid-template-columns:minmax(0,1fr) auto;gap:8px}
   .dkds-4200-device-title{font-size:15px}
   .dkds-4200-connect-button{min-width:82px}
-  .dkds-4200-parameter-grid,.dkds-4200-advanced-grid{grid-template-columns:minmax(0,1fr)}
 }
