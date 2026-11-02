@@ -19,7 +19,7 @@ assert(!recovery.includes('ip route replace default') && !recovery.includes('ip 
 assert(!recovery.includes('service.d') && !recovery.includes('127.0.0.1:'), 'No daemon/relay is needed');
 assert(recovery.includes('waitFor(8,java.util.concurrent.TimeUnit.SECONDS)'), 'Root command timeout mandatory');
 assert(generator.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'), 'Native host source must invoke the generated recovery helper');
-assert(generator.includes('network?.socketFactory?.createSocket()'), 'Preserve scoped Android Ethernet sockets');
+assert(generator.includes('network.socketFactory.createSocket()'), 'Preserve scoped Android Ethernet sockets');
 assert(generator.includes('android-ethernet-no-root'), 'Configured Android Ethernet should connect without requesting Root');
 assert(fs.readFileSync(path.join(root, 'mobile/plugins/DkdsLanKxci.template'),'utf8').includes('DkdsKeithleyEthernet.prepare(host,mode,wanted)'), 'Paired LAN gateway should recover the USB adapter on demand');
 console.log('4200 Android on-demand Ethernet recovery contract OK');
