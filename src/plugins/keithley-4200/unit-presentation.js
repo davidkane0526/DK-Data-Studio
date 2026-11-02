@@ -10,7 +10,7 @@
         variant:opts.variant||(kind==='select'?'select':'input'),
         kind,label,value,inputType:opts.inputType||'number',
         options:opts.options||[],min:opts.min,max:opts.max,step:opts.step||'any',
-        placeholder:opts.placeholder||'',className:'dkds-4200-field '+(opts.className||'')
+        placeholder:opts.placeholder||'',className:'dkds-4200-field '+(opts.className||''),onChange:()=>actions.onEdit?.(id)
       });
       controls.set(id,item.control);
       fieldElements.set(id,item.element);
