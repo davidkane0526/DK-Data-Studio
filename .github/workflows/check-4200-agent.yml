@@ -1,0 +1,62 @@
+name: Check 4200 Diagnostic Agent
+
+on:
+  push:
+    branches: ['4200']
+    paths:
+      - 'tools/4200-agent/**'
+      - '.github/workflows/check-4200-agent.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  agent-static-check:
+    name: Shell and PowerShell safety checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse Android shell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in tools/4200-agent/agent.sh tools/4200-agent/service.sh; do
+            bash -n "$f"
+            dash -n "$f"
+          done
+      - name: Verify read-only agent contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          a = Path("tools/4200-agent/agent.sh").read_text()
+          s = Path("tools/4200-agent/service.sh").read_text()
+          p = Path("tools/4200-agent/install.ps1").read_text()
+          assert '/data/adb/dkds-agent' in a
+          assert 'route get 169.254.111.118' in a
+          assert 'diagnostics.log' in a
+          assert '/data/adb/dkds-agent/agent.sh' in s
+          assert 'Get-FileHash' in p and 'sha256sum' in p
+          for value in ('pm install', 'adb uninstall', 'ip route add', 'ip route replace',
+                        'iptables ', 'curl ', 'wget ', 'nc -', '*IDN?', 'forcev', 'forcei'):
+            assert value not in a, f"Unsafe operation in agent.sh: {value}"
+            assert value not in s, f"Unsafe operation in service.sh: {value}"
+          print("4200 agent v0.1: read-only contract OK")
+          PY
+      - name: Parse Windows bootstrap
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "tools/4200-agent/install.ps1"),
+            [ref]$tokens,
+            [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host $_ }
+            exit 1
+          }
+          Write-Host "PowerShell syntax OK"
