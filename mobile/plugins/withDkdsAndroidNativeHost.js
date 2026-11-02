@@ -476,7 +476,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         .sortedBy{if(linkLocal&&it.hostAddress.startsWith("169.254."))0 else 1}
       for(address in addresses)rows.add(Pair(name,address))
     }
-    return rows.distinctBy{it.first+"|"+it.second.hostAddress}.take(8)
+    return rows.distinctBy{it.first+"|"+it.second.hostAddress}.sortedWith(compareBy<Pair<String,java.net.Inet4Address>> { if(linkLocal&&it.second.hostAddress.startsWith("169.254."))0 else 1 }.thenBy { it.first }).take(16)
   }
   private fun tcpFallbackSource(mode:String,wanted:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>? =
     tcpFallbackSources(mode,wanted,linkLocal).firstOrNull()
@@ -496,8 +496,15 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val errors=mutableListOf<String>()
         var networkPreparation="not-required"
+        val initialEthernetReady=orderedNetworks().any { network ->
+          cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true &&
+          cm.getLinkProperties(network)?.linkAddresses?.any {
+            it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
+          }==true
+        }
+        if(linkLocal&&initialEthernetReady)networkPreparation="android-ethernet-no-root"
         var connected=false
-        val perAttempt=timeout.coerceAtMost(1000)
+        val perAttempt=timeout.coerceAtMost(500)
         fun orderedNetworks():List<android.net.Network>{
           val all=cm.allNetworks.toList()
           fun iface(n:android.net.Network)=cm.getLinkProperties(n)?.interfaceName.orEmpty()
