@@ -51,7 +51,7 @@ dataset.complete=true;
 assert.throws(()=>model.append(dataset,{cycle:1,point:3,elapsed_s:0,set_v:0,read_v:0,read_a:0,status:'ok'}));
 const plugin=read('src/plugins/keithley-4200/plugin.js');
 const ui=read('src/plugins/keithley-4200/unit-presentation.js');
-assert(plugin.includes("encodeBase64('*IDN?\\0')"),'Only verified identity command is allowed for live transport');
+assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'Only verified identity command is allowed for live transport');
 assert(plugin.includes('Model.createDataset(p,null)'),'Simulated dataset must not carry live identity');
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'No SMU command path may be added in simulation phase');
 assert(ui.includes('units.scientificPlot.create')&&ui.includes('units.table.mount'));

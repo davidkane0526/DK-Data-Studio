@@ -33,13 +33,13 @@ assert(presentationSource.includes("this.contractFor(row)||text(row.navigation)=
   'Navigation regression guard: without TOP registration the native analysis menu filters 4200A.');
 assert(manifest.requiresCore.includes('services')&&manifest.requiresCore.includes('ui.unit-templates'));
 assert(plugin.includes("ctx.services.require('tcp')"),'4200 plugin must consume the generic TCP service.');
-assert(plugin.includes("encodeBase64('*IDN?\\0')"),'Phase 1 must send the verified NUL-terminated ID query.');
+assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'Phase 1 must send the verified NUL-terminated ID query.');
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'Phase 1 plugin must not contain source/measure/output command paths.');
 assert(presentation.includes('units.page.create')&&presentation.includes('units.workspace.create')&&presentation.includes('units.field.create')&&presentation.includes('units.scientificPlot.create'),'4200 UI must be Unit-first.');
 assert(plugin.includes('commandTail')&&!plugin.includes('retry'),'4200 commands must be serialized without blind retry.');
-assert(manifest.scripts.includes('measurement-model.js')&&manifest.scripts.includes('unit-presentation.js'),'4200 must load model and UI before entry.');
-assert(plugin.includes("ctx.modules.require('measurement-model')")&&plugin.includes("ctx.modules.require('unit-presentation')"),'4200 requires the dedicated model and UI.');
-assert(plugin.includes("encodeBase64('*IDN?\\0')"),'KXCI identity query must remain exact.');
+assert(manifest.scripts.includes('measurement-model.js')&&manifest.scripts.includes('kxci-protocol.js')&&manifest.scripts.includes('unit-presentation.js'),'4200 must load model and UI before entry.');
+assert(plugin.includes("ctx.modules.require('measurement-model')")&&plugin.includes("ctx.modules.require('kxci-protocol')")&&plugin.includes("ctx.modules.require('unit-presentation')"),'4200 requires the dedicated model and UI.');
+assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'KXCI identity query must remain exact.');
 assert(model.includes('executable:false')&&model.includes('hardwareVerified:false'),'Plans must remain non-executable and unverified.');
 assert(plugin.includes('Model.createDataset(p,null)')&&model.includes("source:'simulation'"),'Simulation must never masquerade as instrument data.');
 assert(presentation.includes('SIMULATION')&&plugin.includes('stopSimulation'),'Simulation must be identifiable and stoppable.');

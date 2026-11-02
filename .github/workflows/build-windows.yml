@@ -142,6 +142,12 @@ jobs:
         shell: pwsh
         run: npm install --no-audit --no-fund
 
+      - name: Verify extractable 4200A protocol and deterministic TCP adapters
+        shell: pwsh
+        run: |
+          node tests/test-keithley-4200-protocol.js
+          node tests/test-keithley-4200-desktop-adapters.js
+
       - name: Run project checks
         shell: pwsh
         env:

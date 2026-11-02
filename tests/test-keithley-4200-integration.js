@@ -52,6 +52,7 @@ const sandbox={
   DKDSPlugins:{define:(manifest,factory)=>{createPlugin=factory;}}
 };
 vm.runInNewContext(source('src/plugins/keithley-4200/measurement-model.js'),sandbox);
+vm.runInNewContext(source('src/plugins/keithley-4200/kxci-protocol.js'),sandbox);
 registry.set('unit-presentation',{mount:(_ctx,_page,events)=>{callbacks=events;return ui;}});
 vm.runInNewContext(source('src/plugins/keithley-4200/plugin.js'),sandbox);
 const tcp={

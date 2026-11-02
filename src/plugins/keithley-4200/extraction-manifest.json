@@ -1,0 +1,38 @@
+{
+  "schema": "dkds.4200.extraction.v1",
+  "stage": "read-only KXCI connection; measurement simulation only",
+  "coreIndependentModules": [
+    "src/plugins/keithley-4200/kxci-protocol.js",
+    "src/plugins/keithley-4200/measurement-model.js"
+  ],
+  "embeddedPlugin": [
+    "src/plugins/keithley-4200/plugin.json",
+    "src/plugins/keithley-4200/plugin.js",
+    "src/plugins/keithley-4200/unit-presentation.js",
+    "src/plugins/keithley-4200/README.md"
+  ],
+  "desktopTransportAdapters": [
+    "desktop/main-modules/tcp-runtime.js",
+    "desktop/main-modules/instrument-tcp-ipc.js",
+    "desktop/main-modules/lan-kxci-relay.js"
+  ],
+  "androidTransportAdapters": [
+    "mobile/plugins/DkdsKeithleyEthernet.template",
+    "mobile/plugins/DkdsLanKxci.template",
+    "mobile/plugins/withDkdsAndroidNativeHost.js"
+  ],
+  "integrationBoundaries": [
+    "DKDSPluginModules.define",
+    "ctx.services.require('tcp')",
+    "ctx.capabilities.register",
+    "tcp:open",
+    "tcp:exchange",
+    "tcp:close"
+  ],
+  "nonPortableRuntimeServices": [
+    "android ConnectivityManager socketFactory",
+    "KernelSU su -c",
+    "Electron ipcMain",
+    "DKDS unit-presentation UI"
+  ]
+}

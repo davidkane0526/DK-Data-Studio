@@ -9,7 +9,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const manifest=JSON.parse(read('src/plugins/keithley-4200/plugin.json'));
 assert.equal(manifest.enabled,true);
 assert.equal(manifest.id,'com.dkds.keithley-4200');
-assert.deepEqual(manifest.scripts,['measurement-model.js','unit-presentation.js','plugin.js']);
+assert.deepEqual(manifest.scripts,['measurement-model.js','kxci-protocol.js','unit-presentation.js','plugin.js']);
 assert(read('scripts/generate-plugin-index.js').includes("path.join(dir, 'plugin.json')"));
 const registered=new Map();
 vm.runInNewContext(read('src/plugins/keithley-4200/unit-presentation.js'),{

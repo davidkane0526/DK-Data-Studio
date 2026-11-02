@@ -41,6 +41,6 @@ assert(bridge.includes("fetch('/__dkds_kxci'"),'Plain browser bridge must forwar
 assert(bridge.includes("lanKxciCall('open'")&&bridge.includes("lanKxciCall('exchange'")&&bridge.includes("lanKxciCall('close'"),
   'Open, exchange and close must route through native LAN gateway.');
 assert(bridge.includes("credentials:'same-origin'")&&bridge.includes("redirect:'error'"),'Browser must not leak pairing sessions to other origins.');
-assert(plugin.includes("encodeBase64('*IDN?\\0')"),'The 4200A plugin must send NUL-terminated *IDN? only.');
+assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'The 4200A plugin must send NUL-terminated *IDN? only.');
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'Instrument output commands remain unavailable.');
 console.log('Keithley 4200 authenticated LAN gateway and identity-only safety contract PASS');

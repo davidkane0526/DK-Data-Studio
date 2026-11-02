@@ -2,7 +2,7 @@
   'use strict';
   const manifest={
     id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.2.0',apiVersion:'1.19.0',entry:'plugin.js',
-    scripts:['measurement-model.js','unit-presentation.js','plugin.js'],enabled:true,order:82,
+    scripts:['measurement-model.js','kxci-protocol.js','unit-presentation.js','plugin.js'],enabled:true,order:82,
     description:"Configurable KXCI connection, simulation-only GUI plan editor, live scientific plots and CSV/JSON/SVG export.",
     pluginType:'developer',workspace:{role:'top',activity:'keithley-4200',icon:'K',title:'Keithley 4200A'},window:{activity:'keithley-4200',title:'Keithley 4200A KXCI',width:1280,height:850,minWidth:880,minHeight:620,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project'},
     requiresCore:['runtime','status','services','modules','project','io','workspace','capabilities','ui.dom','ui.activities','ui.top-workspace','ui.pages','ui.unit-templates','ui.scientific-plot','ui.table'],
@@ -12,6 +12,7 @@
   DKDSPlugins.define(manifest,async ctx=>{
     const tcp=ctx.services.require('tcp');
     const Model=ctx.modules.require('measurement-model');
+    const Kxci=ctx.modules.require('kxci-protocol');
     const Presentation=ctx.modules.require('unit-presentation');
     const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8');
     let session=null,sessionTarget=null,identified=null,ui=null;
@@ -94,13 +95,10 @@
       await openSession();
       status('正在识别仪器','KXCI: *IDN? + NUL');
       try{
-        const answer=await tcp.exchange({sessionId:session.sessionId,base64:encodeBase64('*IDN?\0'),readTimeoutMs:target.readTimeoutMs,idleTimeoutMs:120,maxBytes:8192});
-        const raw=decodeBase64(answer?.base64||'').replace(/\0+$/g,'').trim();
-        const parts=raw.split(',').map(s=>s.trim());
-        if(parts[0]!=='KEITHLEY INSTRUMENTS'||parts[1]!=='KI4200A')throw Error('仪器身份不匹配：'+(raw||'空响应'));
-        if(target.expectedSerial&&parts[2]!==target.expectedSerial)throw Error('序列号不匹配：预期 '+target.expectedSerial+'，实际 '+(parts[2]||'未知'));
-        identified={manufacturer:parts[0],model:parts[1],serial:parts[2]||'',version:parts[3]||'',raw};
-        status('仪器身份校验成功',raw);return identified;
+        const answer=await tcp.exchange({sessionId:session.sessionId,base64:encodeBase64(Kxci.IDN_REQUEST),readTimeoutMs:target.readTimeoutMs,idleTimeoutMs:120,maxBytes:8192});
+        const raw=decodeBase64(answer?.base64||'');
+        identified=Kxci.parseIdentity(raw,target.expectedSerial);
+        status('仪器身份校验成功',identified.raw);return identified;
       }catch(error){
         const old=session?.sessionId;session=null;sessionTarget=null;identified=null;
         if(old)try{await tcp.close({sessionId:old});}catch{}
