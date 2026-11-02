@@ -19,11 +19,11 @@ if (!(Test-Path -LiteralPath $AdbPath -PathType Leaf)) {
     throw "adb.exe missing; supply -AdbPath with the full path."
 }
 
-function ADB([string[]]$Args) {
+function ADB([string[]]$AdbArguments) {
     $old = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $result = & $script:AdbPath @Args 2>&1 | Out-String
+        $result = & $script:AdbPath @AdbArguments 2>&1 | Out-String
         $code = $LASTEXITCODE
     } finally { $ErrorActionPreference = $old }
     if ($code -ne 0) { throw "adb exit=$code; $result" }
@@ -57,6 +57,6 @@ try {
     ADB @("-s",$id,"shell","su","-c","sh /data/adb/dkds-agent/agent.sh check-update") | Write-Host
 } catch {
     Write-Warning "Initial check failed (network/Android app_process). Inspect the output before enabling update mode."
-    Write-Warning $_.Exception.Message
+    Write-Warning ($_.Exception.Message)
 }
 Write-Host 'Log: adb shell su -c "tail -n 50 /data/adb/dkds-agent/logs/update.log"'
