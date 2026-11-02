@@ -33,11 +33,11 @@
     units.pageHeader.create(body,{variant:'page-owned',activity:'keithley-4200',title:'Keithley 4200A',subtitle:'仪器连接与测试工作台'});
     const workspaceHost=units.layout.create(body,{variant:'identity',className:'dkds-4200-workspace-host'});
     workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'keithley-4200',primaryScroll:'safe'});
-    const main=units.layout.create(null,{variant:'stack-comfortable',className:'dkds-4200-workbench'});
+    const main=units.layout.create(null,{variant:'stack-compact',className:'dkds-4200-workbench'});
 
     const device=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-device-card'});
-    const deviceHead=units.layout.create(device.element,{variant:'identity',className:'dkds-4200-device-head'});
-    const deviceIdentity=units.layout.create(deviceHead,{variant:'identity',className:'dkds-4200-device-identity'});
+    const deviceHead=units.layout.create(device.element,{variant:'row-between',className:'dkds-4200-device-head'});
+    const deviceIdentity=units.layout.create(deviceHead,{variant:'stack-compact',className:'dkds-4200-device-identity'});
     textNode(deviceIdentity,'div','dkds-4200-eyebrow','INSTRUMENT');
     textNode(deviceIdentity,'div','dkds-4200-device-title','Keithley 4200A-SCS');
     textNode(deviceIdentity,'div','dkds-4200-device-subtitle','自动探测 USB Ethernet、Wi-Fi 与可用路由');
