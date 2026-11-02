@@ -56,7 +56,7 @@ assert(plugin.includes('Model.createDataset(p,null)'),'Simulated dataset must no
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'No SMU command path may be added in simulation phase');
 assert(ui.includes('units.scientificPlot.create')&&ui.includes('units.table.mount'));
 assert(ui.includes('仪器原生数据文件与原生图获取尚未接通'),'Native instrument artifacts must remain clearly identified as not implemented');
-assert(ui.includes('原生文件获取尚未实现'),'Unimplemented instrument-file retrieval must be explicitly disclosed');
+assert(ui.includes('原生数据文件与原生图获取尚未接通'),'Unimplemented instrument-file retrieval must be explicitly disclosed');
 assert(ui.includes('dkds-4200-card')&&ui.includes('dkds-4200-device-card'),'The workbench must use compact device and parameter cards');
 assert(ui.includes('SIMULATION')&&ui.includes('非仪器原始数据'),'Simulation previews must never be labeled instrument data');
 assert(!/action\(exportActions,'(?:exportOriginal|saveOriginal)/.test(ui),'Do not expose nonfunctional native-file export commands');
