@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# DKDS 4200 Agent v0.1: read-only local diagnostics, no remote commands.
+# DKDS 4200 Agent v0.2: read-only local diagnostics, no remote commands.
 set -u
 BASE=/data/adb/dkds-agent
 LOGDIR="$BASE/logs"
@@ -27,12 +27,30 @@ snapshot() {
   dumpsys package com.dk.datastudio 2>/dev/null | grep -m 1 'versionName=' || true
   pidof com.dk.datastudio 2>/dev/null || echo "not-running"
   echo "[interfaces]"
-  ip -4 -o addr show dev eth0 2>&1 || true
   ip -4 -o addr show dev wlan0 2>&1 || true
-  echo "[link-local route]"
-  ip -4 route get 169.254.111.118 2>&1 || true
-  echo "[neighbor cache]"
-  ip neigh show dev eth0 2>&1 || true
+  if [ ! -d /sys/class/net/eth0 ]; then
+    echo "ETHERNET_WAITING: eth0 absent (USB Ethernet unplugged or not enumerated)."
+    echo "No instrument reachability test attempted."
+    echo "[route without Ethernet; Wi-Fi fallback is expected]"
+    ip -4 route get 169.254.111.118 2>&1 || true
+  else
+    echo "ETHERNET_PRESENT: eth0 detected"
+    cat /sys/class/net/eth0/operstate 2>/dev/null || true
+    ip -4 -o addr show dev eth0 2>&1 || true
+    echo "[instrument route]"
+    route_result=$(ip -4 route get 169.254.111.118 2>&1)
+    echo "$route_result"
+    case " $route_result " in
+      *" dev eth0 "*)
+        echo "ROUTE_ETH0: destination route uses USB Ethernet"
+        ;;
+      *)
+        echo "ROUTE_WARNING: eth0 exists but selected route does not use eth0"
+        ;;
+    esac
+    echo "[neighbor cache]"
+    ip neigh show dev eth0 2>&1 || true
+  fi
   echo
 }
 
@@ -40,7 +58,9 @@ is_running() {
   [ -r "$PIDFILE" ] || return 1
   old=$(cat "$PIDFILE" 2>/dev/null)
   case "$old" in *[!0-9]*|"") return 1;; esac
-  kill -0 "$old" 2>/dev/null
+  kill -0 "$old" 2>/dev/null || return 1
+  [ -r "/proc/$old/cmdline" ] || return 1
+  tr '\000' ' ' < "/proc/$old/cmdline" | grep -F "$BASE/agent.sh loop" >/dev/null 2>&1
 }
 
 ensure_dirs
@@ -63,7 +83,8 @@ case "${1:-once}" in
       exit 0
     fi
     echo "$$" > "$PIDFILE"
-    trap 'rm -f "$PIDFILE"' EXIT HUP INT TERM
+    trap 'rm -f "$PIDFILE"' EXIT
+    trap 'exit 0' HUP INT TERM
     while :; do
       rotate
       snapshot >> "$LOG" 2>&1
