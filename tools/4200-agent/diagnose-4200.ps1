@@ -7,10 +7,12 @@ param(
     [string]$InstrumentIP = "169.254.111.118",
     [string]$PreferredSourceIP = "169.254.111.115",
     [int]$Port = 1225,
-    [switch]$RepairRoute
+    [switch]$RepairRoute,
+    [switch]$CleanupRoute
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+if ($RepairRoute -and $CleanupRoute) { throw "Choose only -RepairRoute or -CleanupRoute." }
 if ($InstrumentIP -notmatch '^169\.254\.(\d{1,3})\.(\d{1,3})$' -or
     [int]$Matches[1] -gt 255 -or [int]$Matches[2] -gt 255) {
     throw "InstrumentIP must be a valid link-local 169.254.x.y address."
@@ -82,6 +84,35 @@ Note ("Device: " + $script:serial)
 Note ("Instrument: " + $InstrumentIP + ":" + $Port)
 Note ("Repair requested: " + [bool]$RepairRoute)
 Note "No default route or instrument output settings will be changed."
+if ($CleanupRoute) {
+    Note "CLEANUP: removing only DKDS 4200A-specific network adjustments"
+    $rules = Inspect -Label "rules before cleanup" -Command "ip -4 rule show"
+    $rulePattern = "(?m)^\\s*9000:.*to\\s+" + [regex]::Escape($InstrumentIP) + "(?:/32)?\\s+lookup\\s+4200(?:\\s|$)"
+    if ($rules.Output -match $rulePattern) {
+        $res = Root -Command ("ip -4 rule del pref 9000 to " + $InstrumentIP + "/32 lookup 4200") -AllowFailure
+        Note ("Removed instrument-only rule: exit=" + $res.ExitCode + " " + $res.Output)
+    }
+    $table = Inspect -Label "table 4200 before cleanup" -Command "ip -4 route show table 4200"
+    if ($table.Output -match [regex]::Escape($InstrumentIP) -and $table.Output -match "dev eth0") {
+        $res = Root -Command ("ip -4 route del " + $InstrumentIP + "/32 dev eth0 table 4200") -AllowFailure
+        Note ("Removed instrument-only table route: exit=" + $res.ExitCode + " " + $res.Output)
+    }
+    $main = Inspect -Label "main table before cleanup" -Command "ip -4 route show table main"
+    if ($main.Output -match ([regex]::Escape($InstrumentIP) + "/32.*dev eth0")) {
+        $res = Root -Command ("ip -4 route del " + $InstrumentIP + "/32 dev eth0") -AllowFailure
+        Note ("Removed instrument-only main route: exit=" + $res.ExitCode + " " + $res.Output)
+    }
+    $eth = Inspect -Label "eth0 before cleanup" -Command "ip -4 -o addr show dev eth0"
+    if ($eth.Output -match ([regex]::Escape($PreferredSourceIP) + "/16")) {
+        $res = Root -Command ("ip -4 addr del " + $PreferredSourceIP + "/16 dev eth0") -AllowFailure
+        Note ("Removed exact 4200 test source address: exit=" + $res.ExitCode + " " + $res.Output)
+    }
+    $null = Inspect -Label "route after cleanup" -Command ("ip -4 route get " + $InstrumentIP)
+    Note "CLEANUP DONE: DKDS APK, Wi-Fi, default route and KernelSU remain unchanged."
+    Note ("REPORT: " + $reportFile)
+    exit 0
+}
+
 $null = Inspect -Label "Android Ethernet transport registry" -Command "dumpsys connectivity | grep -i eth0 | head -n 20"
 $null = Inspect -Label "device" -Command "getprop ro.product.model"
 $null = Inspect -Label "dkds version" -Command "dumpsys package com.dk.datastudio | grep versionName="
