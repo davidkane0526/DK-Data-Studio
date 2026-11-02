@@ -75,15 +75,31 @@ public static class MockAdb {
         if (command == "cat /sys/class/net/eth0/carrier") { Console.WriteLine("1"); return 0; }
         if (command == "ip -4 -o addr show dev eth0") { return 0; }
         if (command == "pm list packages -U com.dk.datastudio") { Console.WriteLine("package:com.dk.datastudio uid:10256"); return 0; }
+        if (command == "ip -4 rule show") {
+            Console.WriteLine("0: from all lookup local");
+            string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
+            if (trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200")) {
+                Console.WriteLine("9000: from all to 169.254.111.118 lookup 4200");
+            }
+            Console.WriteLine("18000: from all lookup wlan0");
+            Console.WriteLine("32766: from all lookup main");
+            return 0;
+        }
+        if (command == "ip -4 route show table main") { Console.WriteLine("default via 10.87.255.254 dev wlan0"); return 0; }
+        if (command == "ip -4 route show table 4200") { return 0; }
         if (command.StartsWith("ip -4 route get 169.254.111.118")) {
             string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
-            if (trace.Contains("ip route replace 169.254.111.118/32 dev eth0")) {
-                Console.WriteLine("169.254.111.118 dev eth0 src 169.254.111.115");
+            bool hasRule = trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200");
+            bool hasCustomTableRoute = trace.Contains("ip -4 route replace 169.254.111.118/32 dev eth0 src 169.254.111.115 table 4200");
+            if (hasRule && hasCustomTableRoute) {
+                Console.WriteLine("169.254.111.118 dev eth0 table 4200 src 169.254.111.115");
             } else {
-                Console.WriteLine("169.254.111.118 via 10.87.255.254 dev wlan0 src 10.87.70.190");
+                Console.WriteLine("169.254.111.118 via 10.87.255.254 dev wlan0 table wlan0 src 10.87.70.190");
             }
             return 0;
         }
+        if (command == "ip -4 route replace 169.254.111.118/32 dev eth0 src 169.254.111.115 table 4200") { return 0; }
+        if (command == "ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200") { return 0; }
         if (command == "ip neigh show dev eth0") { return 0; }
         if (command == "ip addr add 169.254.111.115/16 dev eth0") { return 0; }
         if (command == "ip route replace 169.254.111.118/32 dev eth0 src 169.254.111.115") { return 0; }
@@ -127,6 +143,12 @@ try {
     if ($trace -notmatch "shell\|su -c 'grep -q check-update ") { throw "Updater root command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'ip route replace 169\.254\.111\.118/32 dev eth0 src 169\.254\.111\.115'") {
         throw "Instrument-only /32 route repair was not sent as one quoted command."
+    }
+    if ($trace -notmatch "shell\|su -c 'ip -4 route replace 169\.254\.111\.118/32 dev eth0 src 169\.254\.111\.115 table 4200'") {
+        throw "Instrument-only policy table route was not installed."
+    }
+    if ($trace -notmatch "shell\|su -c 'ip -4 rule add pref 9000 to 169\.254\.111\.118/32 lookup 4200'") {
+        throw "Android destination-only policy rule was not installed."
     }
     if ($trace -match 'ip route (replace|add) default') { throw "Test observed an unexpected default-route change." }
     Write-Host "Windows PowerShell ADB native argument and stderr simulation passed."
