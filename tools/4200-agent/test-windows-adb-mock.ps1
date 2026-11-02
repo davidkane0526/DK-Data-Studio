@@ -67,6 +67,26 @@ public static class MockAdb {
             Console.WriteLine("CURRENT 4200-preview-mocked checksum matches");
             return 0;
         }
+        if (command == "getprop ro.product.model") { Console.WriteLine("OPD2515"); return 0; }
+        if (command.StartsWith("dumpsys package com.dk.datastudio")) { Console.WriteLine("versionName=3.71.138"); return 0; }
+        if (command == "ip -4 -o addr show dev wlan0") { Console.WriteLine("wlan0 inet 10.87.70.190/16"); return 0; }
+        if (command.StartsWith("if [ -d /sys/class/net/eth0 ]")) { Console.WriteLine("ethernet-present"); return 0; }
+        if (command == "cat /sys/class/net/eth0/carrier") { Console.WriteLine("1"); return 0; }
+        if (command == "ip -4 -o addr show dev eth0") { return 0; }
+        if (command == "pm list packages -U com.dk.datastudio") { Console.WriteLine("package:com.dk.datastudio uid:10256"); return 0; }
+        if (command.StartsWith("ip -4 route get 169.254.111.118")) {
+            Console.WriteLine("169.254.111.118 via 10.87.255.254 dev wlan0 src 10.87.70.190");
+            return 0;
+        }
+        if (command == "ip neigh show dev eth0") { return 0; }
+        if (command == "ip addr add 169.254.111.115/16 dev eth0") { return 0; }
+        if (command == "ip route replace 169.254.111.118/32 dev eth0 src 169.254.111.115") { return 0; }
+        if (command == "nc -z -w 3 169.254.111.118 1225") { return 0; }
+        if (command.StartsWith("printf ") && command.Contains("nc -w 3 169.254.111.118 1225")) {
+            Console.WriteLine("KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14");
+            return 0;
+        }
+        if (command.StartsWith("logcat -d -t")) { return 0; }
         Console.Error.WriteLine("Unexpected root command: " + command);
         return 5;
     }
@@ -83,10 +103,26 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir "install-updater.ps1") -AdbPath $mock
     if ($LASTEXITCODE -ne 0) { throw "install-updater.ps1 failed with fake ADB." }
 
+    Write-Host "Testing Keithley 4200A read-only diagnosis and targeted repair with fake ADB"
+    Push-Location $temporary
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir "diagnose-4200.ps1") -AdbPath $mock -RepairRoute
+        if ($LASTEXITCODE -ne 0) { throw "diagnose-4200.ps1 failed with fake ADB." }
+        $reports = @(Get-ChildItem -LiteralPath $temporary -Filter "4200-connection-*.txt")
+        if ($reports.Count -ne 1) { throw "Expected one generated diagnostic report." }
+        $body = Get-Content -LiteralPath $reports[0].FullName -Raw
+        if ($body -notmatch "KXCI \*IDN\? responds") { throw "Identity report missing." }
+        if ($body -notmatch "Root route changed during this run: True") { throw "Route fix not tested." }
+    } finally { Pop-Location }
+
     $trace = Get-Content -LiteralPath $env:MOCK_ADB_TRACE -Raw
     if ($trace -notmatch "shell\|su -c 'if \[ -f ") { throw "Compound shell command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'umask 077; ") { throw "Root installation command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'grep -q check-update ") { throw "Updater root command lost its quoting." }
+    if ($trace -notmatch "shell\|su -c 'ip route replace 169\.254\.111\.118/32 dev eth0 src 169\.254\.111\.115'") {
+        throw "Instrument-only /32 route repair was not sent as one quoted command."
+    }
+    if ($trace -match 'ip route (replace|add) default') { throw "Test observed an unexpected default-route change." }
     Write-Host "Windows PowerShell ADB native argument and stderr simulation passed."
 } finally {
     Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
