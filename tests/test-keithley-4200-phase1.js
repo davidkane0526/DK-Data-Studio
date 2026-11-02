@@ -36,7 +36,9 @@ assert(plugin.includes("ctx.services.require('tcp')"),'4200 plugin must consume 
 assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'Phase 1 must send the verified NUL-terminated ID query.');
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'Phase 1 plugin must not contain source/measure/output command paths.');
 assert(presentation.includes('units.page.create')&&presentation.includes('units.workspace.create')&&presentation.includes('units.field.create')&&presentation.includes('units.scientificPlot.create'),'4200 UI must be Unit-first.');
-assert(plugin.includes('commandTail')&&!plugin.includes('retry'),'4200 commands must be serialized without blind retry.');
+assert(plugin.includes('commandTail')&&!plugin.includes('retry'),'4200 commands must be serialized without replaying timed-out instrument commands.');
+assert(plugin.includes("onOpen:()=>{void safe(connect)();}")&&plugin.includes("['auto','ethernet','wifi']"),'Page open must automatically probe available direct network paths.');
+assert(plugin.includes('serialize:()=>({plan:form(planKeys)})')&&!plugin.includes('connection:form(connectionKeys)'),'Connection parameters must not be persisted.');
 assert(manifest.scripts.includes('measurement-model.js')&&manifest.scripts.includes('kxci-protocol.js')&&manifest.scripts.includes('unit-presentation.js'),'4200 must load model and UI before entry.');
 assert(plugin.includes("ctx.modules.require('measurement-model')")&&plugin.includes("ctx.modules.require('kxci-protocol')")&&plugin.includes("ctx.modules.require('unit-presentation')"),'4200 requires the dedicated model and UI.');
 assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'KXCI identity query must remain exact.');
@@ -48,10 +50,12 @@ assert(native.includes('NetworkCapabilities.TRANSPORT_WIFI')&&native.includes('N
 const gateway=read('mobile/plugins/DkdsLanKxci.template');
 assert(native.includes('private fun tcpFallbackSource(') && native.includes('java.net.NetworkInterface.getByName(wanted)'),
   'Native TCP must support kernel-visible USB Ethernet when Android ConnectivityManager omits the link-local interface.');
-assert(native.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
-  'Native TCP must bind the local source IPv4 before connect instead of silently using the Wi-Fi default route.');
-assert(native.includes('network==null&&fallback==null&&(mode!="auto"||linkLocal)'),
-  'Auto mode must fail explicitly for missing link-local Ethernet rather than silently use Wi-Fi.');
+assert(native.includes('private fun tcpFallbackSources(')&&native.includes('socket.bind(InetSocketAddress(source.second,0))'),
+  'Native TCP must enumerate and try every kernel-visible local IPv4 instead of selecting one interface.');
+assert(native.includes('for(network in orderedNetworks())')&&native.includes('for(source in tcpFallbackSources(mode,wanted,linkLocal))'),
+  'Android Auto must try every Android-managed network and kernel-visible interface.');
+assert(native.includes('system-default')&&native.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'),
+  'Auto mode must retain a system-route last resort and only then attempt optional Ethernet recovery.');
 assert(gateway.includes('DkdsKeithleyEthernet.prepare(host,mode,wanted)'),'The paired gateway must share USB adapter repair logic.');
 assert(gateway.includes('private fun fallbackSource(')&&gateway.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
   'Android LAN gateway must share the same Ethernet fallback for Windows relay sessions.');
