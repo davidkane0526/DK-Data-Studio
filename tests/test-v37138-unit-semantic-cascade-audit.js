@@ -33,7 +33,7 @@ assert.deepStrictEqual(report.proxyExposure.map(row=>[row.plugin,row.count]),[['
 // resonance helper-definition false positive from source-token counting.
 const ownerReport=ownership.audit();
 assert.strictEqual(ownerReport.plugins,7);
-assert.strictEqual(ownerReport.layouts,111);
+assert.strictEqual(ownerReport.layouts,112);
 assert.strictEqual(ownerReport.splits,1);
 assert.strictEqual(ownerReport.violations.length,0,ownership.format(ownerReport));
 
