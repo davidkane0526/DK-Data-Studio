@@ -44,7 +44,7 @@ is_running() {
 }
 
 ensure_dirs
-case "\${1:-once}" in
+case "${1:-once}" in
   once)
     rotate
     snapshot >> "$LOG" 2>&1
