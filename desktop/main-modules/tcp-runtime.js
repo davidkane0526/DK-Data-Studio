@@ -40,7 +40,9 @@ function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()
   };
   const candidates=(mode==='auto'?rows.filter(row=>/(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(row.interfaceName)):rows);
   const choices=targetLinkLocal?candidates.filter(row=>row.address.startsWith('169.254.')):candidates.filter(row=>!row.address.startsWith('169.254.'));
-  if(targetLinkLocal&&choices.length===0){
+  const wifiRoute=targetLinkLocal&&choices.length===0&&
+    (mode==='wifi'||mode==='interface'&&/(wi-?fi|wireless|wlan|wlp[0-9]|802\\.11|^en0$)/i.test(name));
+  if(targetLinkLocal&&choices.length===0&&!wifiRoute){
     throw new Error('No Ethernet adapter has a 169.254.x.x IPv4 for '+host+
       '. Configure a link-local IPv4 (/16) on the intended adapter without a default gateway, then retry.');
   }
@@ -54,7 +56,7 @@ function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()
     throw new Error('Several '+mode+' adapters match '+host+': '+
       [...adapters].join(', ')+'. Select Specific interface to avoid routing via the wrong cable.');
   }
-  return {...selected[0],routeStrategy:'local-address-bound'};
+  return {...selected[0],routeStrategy:wifiRoute?'wifi-route-required':'local-address-bound'};
 }
 
 function createTcpRuntime(){

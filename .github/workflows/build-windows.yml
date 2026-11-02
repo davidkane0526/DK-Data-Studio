@@ -145,6 +145,7 @@ jobs:
       - name: Verify extractable 4200A protocol and deterministic TCP adapters
         shell: pwsh
         run: |
+          node tools/4200-extract/extract.js --verify
           node tests/test-keithley-4200-protocol.js
           node tests/test-keithley-4200-desktop-adapters.js
 

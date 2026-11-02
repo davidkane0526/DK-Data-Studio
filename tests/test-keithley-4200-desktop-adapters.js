@@ -15,7 +15,8 @@ assert.equal(resolveLocalAddress({...target,networkMode:'auto',preferLinkLocalEt
 assert.equal(resolveLocalAddress({...target,networkMode:'ethernet'},interfaces).interfaceName,'Ethernet');
 assert.equal(resolveLocalAddress({...target,networkMode:'interface',interfaceName:'Ethernet'},interfaces).address,'169.254.111.116');
 assert.equal(resolveLocalAddress({host:'10.87.70.31',networkMode:'wifi'},interfaces).address,'10.87.70.30');
-assert.throws(()=>resolveLocalAddress({...target,networkMode:'wifi'},interfaces),/No Ethernet adapter|169\.254/);
+assert.equal(resolveLocalAddress({...target,networkMode:'wifi'},interfaces).address,'10.87.70.30');
+assert.equal(resolveLocalAddress({...target,networkMode:'wifi'},interfaces).routeStrategy,'wifi-route-required');
 assert.throws(()=>resolveLocalAddress({...target,networkMode:'interface',interfaceName:'Ethernet'}, {'Ethernet':[{family:'IPv4',address:'192.168.1.3',internal:false}]}),/169\.254/);
 assert.throws(()=>resolveLocalAddress({...target,networkMode:'ethernet'}, {...interfaces,'Ethernet 2':[{family:'IPv4',address:'169.254.111.117',internal:false}]}),/Several ethernet adapters/);
 assert.throws(()=>resolveLocalAddress({...target,localAddress:'__invalid__'},interfaces),/IPv4/);

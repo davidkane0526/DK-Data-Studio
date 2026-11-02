@@ -84,7 +84,9 @@
           }:{})
         });
         session=opened;sessionTarget=target;identified=null;
-        status('TCP 已连接，等待身份校验',(opened.remoteAddress||target.host)+':'+target.port+' · '+target.networkMode);
+        const routeDetail=[opened.interfaceName,opened.localAddress,opened.routeStrategy,opened.networkPreparation]
+          .filter(Boolean).join(' · ');
+        status('TCP 已连接，等待身份校验',(opened.remoteAddress||target.host)+':'+target.port+' · '+target.networkMode+(routeDetail?' · '+routeDetail:''));
         return opened;
       }catch(error){session=null;sessionTarget=null;identified=null;status('连接失败',message(error));throw error;}
     }

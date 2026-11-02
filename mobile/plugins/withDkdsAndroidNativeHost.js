@@ -472,11 +472,9 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val wanted=interfaceName.trim()
         val mode=networkMode.trim().ifBlank { "auto" }
         if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported TCP network mode: "+mode)
-        // Called only for an explicit TCP Connect, not at app startup.
-        // Recreates the USB-Ethernet link-local address after a tablet reboot
-        // without changing wlan0 or the default route.
-        val networkPreparation=if(target.startsWith("169.254.") && mode!="wifi")
-          DkdsKeithleyEthernet.prepare(target,mode,wanted) else "not-required"
+        // Only an explicit user Connect triggers any optional Root setup.
+        // Prefer Android network-scoped sockets without Root whenever the
+        // selected Ethernet network already has a link-local IPv4.
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network=when(mode){
           // 169.254/16 instruments are typically directly connected via USB Ethernet.
@@ -489,6 +487,14 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
           else->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true }
         }
         val linkLocal=target.startsWith("169.254.")
+        val configuredEthernet=network!=null&&
+          cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true&&
+          cm.getLinkProperties(network)?.linkAddresses?.any {
+            it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
+          }==true
+        val networkPreparation=if(linkLocal&&mode!="wifi"&&!configuredEthernet)
+          DkdsKeithleyEthernet.prepare(target,mode,wanted)
+          else if(configuredEthernet) "android-ethernet-no-root" else "not-required"
         val fallback=if(network==null)tcpFallbackSource(mode,wanted,linkLocal) else null
         if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
           "Android did not expose a usable "+mode+" network or IPv4 on "+

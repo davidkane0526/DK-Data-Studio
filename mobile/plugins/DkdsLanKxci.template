@@ -76,6 +76,14 @@ private object DkdsLanKxci {
       else->cm.allNetworks.firstOrNull{cm.getLinkProperties(it)?.interfaceName==wanted}
     }
     val linkLocal=host.startsWith("169.254.")
+    val configuredEthernet=network!=null&&
+      cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true&&
+      cm.getLinkProperties(network)?.linkAddresses?.any {
+        it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
+      }==true
+    val networkPreparation=if(linkLocal&&mode!="wifi"&&!configuredEthernet)
+      DkdsKeithleyEthernet.prepare(host,mode,wanted)
+      else if(configuredEthernet) "android-ethernet-no-root" else "not-required"
     val fallback=if(network==null)fallbackSource(mode,wanted,linkLocal)else null
     if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
       "Android cannot access the selected Ethernet/IPv4 interface. eth0 may be visible only to ADB/root.")
@@ -94,6 +102,7 @@ private object DkdsLanKxci {
         .put("remotePort",socket.port)
         .put("interfaceName",network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: wanted)
         .put("routeStrategy",if(network!=null)"android-network"else if(fallback!=null)"local-source-bind"else"system-default")
+        .put("networkPreparation",networkPreparation)
         .put("networkMode",mode)
     }catch(error:Throwable){
       try{socket.close()}catch(_:Throwable){}

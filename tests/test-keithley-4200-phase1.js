@@ -52,6 +52,7 @@ assert(native.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback
   'Native TCP must bind the local source IPv4 before connect instead of silently using the Wi-Fi default route.');
 assert(native.includes('network==null&&fallback==null&&(mode!="auto"||linkLocal)'),
   'Auto mode must fail explicitly for missing link-local Ethernet rather than silently use Wi-Fi.');
+assert(gateway.includes('DkdsKeithleyEthernet.prepare(host,mode,wanted)'),'The paired gateway must share USB adapter repair logic.');
 assert(gateway.includes('private fun fallbackSource(')&&gateway.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
   'Android LAN gateway must share the same Ethernet fallback for Windows relay sessions.');
 assert(native.includes('putString("routeStrategy"')&&gateway.includes('.put("routeStrategy"'),

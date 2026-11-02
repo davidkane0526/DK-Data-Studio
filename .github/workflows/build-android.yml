@@ -73,6 +73,7 @@ jobs:
         shell: bash
         run: |
           node tests/test-keithley-4200-native-recovery.js
+          node tools/4200-extract/extract.js --verify
           node tests/test-keithley-4200-protocol.js
           node tests/test-keithley-4200-desktop-adapters.js
           node tests/test-keithley-4200-phase1.js
