@@ -44,5 +44,7 @@
     const q=x=>{if(x===null||x===undefined)return '';const s=String(x);return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
     return [dataset.columns.join(','),...dataset.rows.map(r=>dataset.columns.map(k=>q(r[k])).join(','))].join('\n')+'\n';
   }
-  window.DKDSPluginModules.define(KEY,'measurement-model',Object.freeze({validatePlan,sample,createDataset,append,csv,modes,directions,speeds}));
+  const model=Object.freeze({validatePlan,sample,createDataset,append,csv,modes,directions,speeds});
+  if(typeof window!=='undefined'&&window.DKDSPluginModules)window.DKDSPluginModules.define(KEY,'measurement-model',model);
+  if(typeof module!=='undefined'&&module.exports)module.exports=model;
 })();
