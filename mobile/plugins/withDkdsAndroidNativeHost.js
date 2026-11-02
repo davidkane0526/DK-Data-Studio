@@ -452,15 +452,34 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     return if(linkLocal)ipv4.firstOrNull{it.hostAddress.startsWith("169.254.")}
       else ipv4.firstOrNull()
   }
-  private fun tcpFallbackSource(mode:String,wanted:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>? {
-    val allowed=mode=="ethernet"||mode=="interface"||mode=="auto"&&linkLocal
-    if(!allowed)return null
-    val names=if(mode=="interface")listOf(wanted) else {
-      val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
-      (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
+  private fun tcpFallbackSources(mode:String,wanted:String,linkLocal:Boolean):List<Pair<String,java.net.Inet4Address>> {
+    val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}
+      catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
+    val names=when(mode){
+      "interface"->listOf(wanted)
+      "ethernet"->all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")||it.contains("ethernet",true)||it.contains("以太网")}
+      "wifi"->all.map{it.name}.filter{it.startsWith("wlan")||it.startsWith("wifi")||it.startsWith("wlp")||it.contains("wireless",true)||it.contains("无线")}
+      else->all.map{it.name}
+    }.distinct().sortedWith(compareBy<String> {
+      when {
+        it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")||it.contains("ethernet",true)||it.contains("以太网")->0
+        it.startsWith("wlan")||it.startsWith("wifi")||it.startsWith("wlp")||it.contains("wireless",true)||it.contains("无线")->1
+        else->2
+      }
+    })
+    val rows=mutableListOf<Pair<String,java.net.Inet4Address>>()
+    for(name in names){
+      val ni=try{java.net.NetworkInterface.getByName(name)}catch(_:Throwable){null} ?: continue
+      if(!ni.isUp)continue
+      val addresses=java.util.Collections.list(ni.inetAddresses)
+        .filterIsInstance<java.net.Inet4Address>().filter{!it.isLoopbackAddress}
+        .sortedBy{if(linkLocal&&it.hostAddress.startsWith("169.254."))0 else 1}
+      for(address in addresses)rows.add(Pair(name,address))
     }
-    return names.firstNotNullOfOrNull{name->tcpLocalSource(name,linkLocal)?.let{Pair(name,it)}}
+    return rows.distinctBy{it.first+"|"+it.second.hostAddress}.take(8)
   }
+  private fun tcpFallbackSource(mode:String,wanted:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>? =
+    tcpFallbackSources(mode,wanted,linkLocal).firstOrNull()
 
   @ReactMethod fun tcpOpen(host:String,port:Double,connectTimeoutMs:Double,interfaceName:String,networkMode:String,promise:Promise) {
     thread(name="dkds-tcp-open",isDaemon=true) {
@@ -472,59 +491,120 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val wanted=interfaceName.trim()
         val mode=networkMode.trim().ifBlank { "auto" }
         if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported TCP network mode: "+mode)
-        // Only an explicit user Connect triggers any optional Root setup.
-        // Prefer Android network-scoped sockets without Root whenever the
-        // selected Ethernet network already has a link-local IPv4.
-        val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network=when(mode){
-          // 169.254/16 instruments are typically directly connected via USB Ethernet.
-          // Prefer that Android Network without changing the device-wide Wi-Fi route.
-          "auto"->if(target.startsWith("169.254.")) cm.allNetworks.firstOrNull {
-            cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
-          } else null
-          "interface"->cm.allNetworks.firstOrNull { cm.getLinkProperties(it)?.interfaceName==wanted }
-          "wifi"->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true }
-          else->cm.allNetworks.firstOrNull { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true }
-        }
+        if(mode=="interface"&&wanted.isBlank())throw IllegalArgumentException("TCP interface name is required.")
         val linkLocal=target.startsWith("169.254.")
-        val configuredEthernet=network!=null&&
-          cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true&&
-          cm.getLinkProperties(network)?.linkAddresses?.any {
-            it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
-          }==true
-        val networkPreparation=if(linkLocal&&mode!="wifi"&&!configuredEthernet)
-          DkdsKeithleyEthernet.prepare(target,mode,wanted)
-          else if(configuredEthernet) "android-ethernet-no-root" else "not-required"
-        val fallback=if(network==null)tcpFallbackSource(mode,wanted,linkLocal) else null
-        if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
-          "Android did not expose a usable "+mode+" network or IPv4 on "+
-          (if(mode=="interface")wanted else "eth0")+
-          ". ADB/root eth0 connectivity does not imply app-visible networking.")
-        val socket=network?.socketFactory?.createSocket() ?: Socket()
-        try {
-          socket.tcpNoDelay=true
-          if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))
-          socket.connect(InetSocketAddress(target,portInt),timeout)
-          val id=UUID.randomUUID().toString()
-          tcpSessions[id]=TcpSession(id,socket)
-          promise.resolve(WritableNativeMap().apply {
-            putString("sessionId",id)
-            putString("localAddress",socket.localAddress?.hostAddress ?: "")
-            putInt("localPort",socket.localPort)
-            putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
-            putInt("remotePort",socket.port)
-            putString("interfaceName",network?.let { cm.getLinkProperties(it)?.interfaceName } ?: fallback?.first ?: wanted)
-            putString("routeStrategy",if(network!=null)"android-network" else if(fallback!=null)"local-source-bind" else "system-default")
-            putString("networkPreparation",networkPreparation)
-            putString("networkMode",mode)
-          })
-        } catch(error:Throwable) {
-          try{socket.close()}catch(_:Throwable){}
-          throw IllegalStateException("TCP connect failed via "+
-            (network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: "system-default")+
-            " to "+target+":"+portInt+": "+(error.message ?: error.javaClass.simpleName),error)
+        val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val errors=mutableListOf<String>()
+        var networkPreparation="not-required"
+        var connected=false
+        val perAttempt=timeout.coerceAtMost(1000)
+        fun orderedNetworks():List<android.net.Network>{
+          val all=cm.allNetworks.toList()
+          fun iface(n:android.net.Network)=cm.getLinkProperties(n)?.interfaceName.orEmpty()
+          fun eth(n:android.net.Network)=cm.getNetworkCapabilities(n)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
+          fun wifi(n:android.net.Network)=cm.getNetworkCapabilities(n)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true
+          return when(mode){
+            "ethernet"->all.filter{eth(it)}
+            "wifi"->all.filter{wifi(it)}
+            "interface"->all.filter{iface(it)==wanted}
+            else->if(linkLocal)all.filter{eth(it)}+all.filter{wifi(it)}+all.filter{!eth(it)&&!wifi(it)}
+              else all.filter{wifi(it)}+all.filter{eth(it)}+all.filter{!eth(it)&&!wifi(it)}
+          }.distinct()
         }
-      } catch(error:Throwable) { promise.reject("E_TCP_OPEN",error.message ?: "TCP open failed.",error) }
+        fun complete(socket:Socket,iface:String,strategy:String,preparation:String):Boolean{
+          try{
+            val id=UUID.randomUUID().toString()
+            tcpSessions[id]=TcpSession(id,socket)
+            promise.resolve(WritableNativeMap().apply{
+              putString("sessionId",id)
+              putString("localAddress",socket.localAddress?.hostAddress ?: "")
+              putInt("localPort",socket.localPort)
+              putString("remoteAddress",socket.inetAddress?.hostAddress ?: target)
+              putInt("remotePort",socket.port)
+              putString("interfaceName",iface)
+              putString("routeStrategy",strategy)
+              putString("networkPreparation",preparation)
+              putString("networkMode",mode)
+            })
+            return true
+          }catch(error:Throwable){
+            try{socket.close()}catch(_:Throwable){}
+            errors.add("session registration: "+(error.message ?: error.javaClass.simpleName))
+            return false
+          }
+        }
+        fun tryNetwork(network:android.net.Network):Boolean{
+          val iface=cm.getLinkProperties(network)?.interfaceName.orEmpty()
+          val socket=try{network.socketFactory.createSocket()}catch(error:Throwable){
+            errors.add((iface.ifBlank{"Android Network"})+": "+(error.message ?: error.javaClass.simpleName));return false
+          }
+          try{
+            socket.tcpNoDelay=true
+            socket.connect(InetSocketAddress(target,portInt),perAttempt)
+            return complete(socket,iface,"android-network",networkPreparation)
+          }catch(error:Throwable){
+            try{socket.close()}catch(_:Throwable){}
+            errors.add((iface.ifBlank{"Android Network"})+": "+(error.message ?: error.javaClass.simpleName))
+            return false
+          }
+        }
+        fun trySource(source:Pair<String,java.net.Inet4Address>):Boolean{
+          val socket=Socket()
+          try{
+            socket.tcpNoDelay=true
+            socket.bind(InetSocketAddress(source.second,0))
+            socket.connect(InetSocketAddress(target,portInt),perAttempt)
+            return complete(socket,source.first,"local-source-bind",networkPreparation)
+          }catch(error:Throwable){
+            try{socket.close()}catch(_:Throwable){}
+            errors.add(source.first+" ["+source.second.hostAddress+"]: "+(error.message ?: error.javaClass.simpleName))
+            return false
+          }
+        }
+        // First pass: use every Android-managed network without Root.
+        for(network in orderedNetworks()){
+          if(tryNetwork(network)){connected=true;break}
+        }
+        // Second pass: try every kernel-visible local IPv4, Ethernet first,
+        // then Wi-Fi/other interfaces where an explicit route may exist.
+        if(!connected){
+          for(source in tcpFallbackSources(mode,wanted,linkLocal)){
+            if(trySource(source)){connected=true;break}
+          }
+        }
+        // Only after all no-Root paths fail, repair a missing USB Ethernet
+        // link-local address and retry. This never changes the default route.
+        if(!connected&&linkLocal&&mode!="wifi"){
+          networkPreparation=try{DkdsKeithleyEthernet.prepare(target,mode,wanted)}
+            catch(error:Throwable){"root-recovery-failed: "+(error.message ?: error.javaClass.simpleName)}
+          for(network in orderedNetworks()){
+            if(tryNetwork(network)){connected=true;break}
+          }
+          if(!connected){
+            for(source in tcpFallbackSources(mode,wanted,linkLocal)){
+              if(trySource(source)){connected=true;break}
+            }
+          }
+        }
+        // Last resort for auto mode: let Android's current routing table decide.
+        if(!connected&&mode=="auto"){
+          val socket=Socket()
+          try{
+            socket.tcpNoDelay=true
+            socket.connect(InetSocketAddress(target,portInt),perAttempt)
+            connected=complete(socket,"","system-default",networkPreparation)
+          }catch(error:Throwable){
+            try{socket.close()}catch(_:Throwable){}
+            errors.add("system route: "+(error.message ?: error.javaClass.simpleName))
+          }
+        }
+        if(!connected)throw IllegalStateException(
+          "4200A TCP connection failed after trying "+errors.size+" available Android network paths: "+
+          (errors.take(8).joinToString(" | ").ifBlank{"no usable network/interface was exposed"})+
+          ". Verify the cable, Wi-Fi route, instrument IP and KXCI port.")
+      } catch(error:Throwable) {
+        promise.reject("E_TCP_OPEN",error.message ?: "TCP open failed.",error)
+      }
     }
   }
 
