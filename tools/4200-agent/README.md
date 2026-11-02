@@ -1,3 +1,16 @@
+## Direct 4200A hardware diagnosis (preferred while instrument is available)
+
+The independent Windows `diagnose-4200.ps1` runs against the tablet via the existing ADB connection. It does not require the KernelSU background agent or the updater.
+It gathers `eth0` link/IPv4, Android ConnectivityManager Ethernet exposure, Wi-Fi IPv4, both root and DKDS app UID route selection, ARP neighbors, TCP port 1225 and a **read-only** `*IDN?` exchange. It also collects a small filtered set of TCP errors.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\diagnose-4200.ps1 -RepairRoute
+```
+
+`-RepairRoute` is opt-in and only permitted if `eth0` physically exists and has carrier=1. It may add a missing link-local `169.254.111.115/16` to `eth0`, and replace the **instrument-only** `169.254.111.118/32` route on the tablet. It never changes the default route or instrument output. Addresses are parameters when lab configuration changes. Before contacting the instrument it verifies the root route selects eth0; otherwise TCP/IDN probes are skipped.
+
+The report is written to the Windows working directory as `4200-connection-YYYYMMDD-HHMMSS.txt`. The user can provide this local report for targeted Android connection fixes. No data is automatically uploaded.
+
 ## v0.3 GitHub update checker
 
 The helper `java/DkdsUpdater.java` is compiled by GitHub Actions into a DEX jar for Android `app_process` and published as a separate `4200-agent-preview-*` prerelease.
