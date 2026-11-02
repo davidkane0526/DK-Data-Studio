@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   agent-static-check:
@@ -60,3 +60,51 @@ jobs:
             exit 1
           }
           Write-Host "PowerShell syntax OK"
+
+      - name: Compile standalone Android app_process helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_HOME:-}"
+          sdk="$ANDROID_HOME/platforms/android-36/android.jar"
+          d8="$ANDROID_HOME/build-tools/36.0.0/d8"
+          test -f "$sdk"
+          test -x "$d8"
+          mkdir -p tools/4200-agent/out/classes tools/4200-agent/out/dex
+          javac -source 8 -target 8 \
+            -cp "$sdk" \
+            -d tools/4200-agent/out/classes \
+            tools/4200-agent/java/DkdsUpdater.java
+          "$d8" --min-api 26 --lib "$sdk" \
+            --output tools/4200-agent/out/dex \
+            tools/4200-agent/out/classes/com/dkds/agent/*.class
+          test -s tools/4200-agent/out/dex/classes.dex
+          (cd tools/4200-agent/out/dex && zip -q -j ../dkds-updater.jar classes.dex)
+          unzip -t tools/4200-agent/out/dkds-updater.jar
+          sha256sum tools/4200-agent/out/dkds-updater.jar
+      - name: Upload standalone Android updater artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dkds-4200-updater-${{ github.sha }}
+          path: tools/4200-agent/out/dkds-updater.jar
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish standalone agent preview
+        if: github.event_name == 'push' && github.ref == 'refs/heads/4200'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current="$(gh api repos/$GITHUB_REPOSITORY/branches/4200 --jq '.commit.sha')"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "Superseded commit; artifact remains available in Actions."
+            exit 0
+          fi
+          tag="4200-agent-preview-$GITHUB_RUN_ID"
+          gh release create "$tag" \
+            "tools/4200-agent/out/dkds-updater.jar#dkds-updater.jar" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "4200 diagnostic agent · $GITHUB_RUN_ID" \
+            --notes "Development helper for standalone KernelSU agent. No instrument commands. APK installation is disabled by default and must be locally approved." \
+            --prerelease --latest=false
