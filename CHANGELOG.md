@@ -1,3 +1,12 @@
+# 3.71.139 Release — 4200A Ethernet recovery, desktop transport and detachable KXCI module (Preview)
+
+- Mobile 4200A direct USB-Ethernet connection: when Android exposes a configured link-local Ethernet network, use its network-scoped socket without Root; only a missing usable IPv4 or policy requires optional KernelSU recovery after the user presses Connect.
+- The authenticated Android LAN gateway shares the same on-demand Ethernet preparation. Existing four-digit LAN pairing and read-only *IDN? restrictions remain; it is not a general instrument-control tunnel.
+- Windows now detects ambiguous multiple Ethernet adapters and fails with an actionable selection error. It prefers a matching link-local interface for 169.254/16 destinations, and permits Wi-Fi bindings where a separate host route can reach an instrument.
+- Extracts KXCI NUL-terminated identity encoding and parsing from the UI into a dedicated plug-in module and adds a verified source-only extraction manifest for future standalone packaging. No independent APK/EXE is claimed yet.
+- Real instrument identity check and current Android root-connected testing are supported; native instrument-generated data files, original graphs and real measurement/output commands remain unimplemented.
+- Application version 3.71.139; Android versionCode 279.
+
 # 3.71.138 Release — Android link-local USB Ethernet route recovery (4200 Preview)
 
 - Android native KXCI sessions and LAN gateway now retry with a kernel-visible local Ethernet IPv4 source when USB Ethernet is absent from ConnectivityManager.allNetworks.
