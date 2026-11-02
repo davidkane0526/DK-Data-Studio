@@ -6,7 +6,7 @@
   "entry": "plugin.js",
   "enabled": true,
   "order": 82,
-  "description": "Configurable KXCI connection, simulation-only GUI plan editor, live scientific plots and CSV/JSON/SVG export.",
+  "description": "Automatic Keithley 4200A connection and identity verification with a compact simulation workbench.",
   "pluginType": "developer",
   "requiresCore": [
     "runtime",
@@ -67,5 +67,8 @@
     "prewarm": false,
     "reuse": true,
     "persistence": "project"
-  }
+  },
+  "styles": [
+    "plugin.css"
+  ]
 }
