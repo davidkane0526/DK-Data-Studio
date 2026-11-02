@@ -13,6 +13,8 @@ assert.deepEqual(resolveLocalAddress({...target,networkMode:'auto'},interfaces),
   {address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'});
 assert.equal(resolveLocalAddress({...target,networkMode:'auto',preferLinkLocalEthernet:true},interfaces).address,'169.254.111.116');
 assert.equal(resolveLocalAddress({...target,networkMode:'ethernet'},interfaces).interfaceName,'Ethernet');
+assert.equal(resolveLocalAddress({...target,networkMode:'ethernet'}, {'以太网 2':[{family:'IPv4',address:'169.254.111.116',internal:false}]}).interfaceName,'以太网 2');
+assert.equal(resolveLocalAddress({host:'192.168.3.8',networkMode:'wifi'}, {'无线网络连接':[{family:'IPv4',address:'192.168.3.9',internal:false}]}).interfaceName,'无线网络连接');
 assert.equal(resolveLocalAddress({...target,networkMode:'interface',interfaceName:'Ethernet'},interfaces).address,'169.254.111.116');
 assert.equal(resolveLocalAddress({host:'10.87.70.31',networkMode:'wifi'},interfaces).address,'10.87.70.30');
 assert.equal(resolveLocalAddress({...target,networkMode:'wifi'},interfaces).address,'10.87.70.30');

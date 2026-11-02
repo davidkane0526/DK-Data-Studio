@@ -30,7 +30,7 @@ The native Android gateway and Windows relay both reject anything other than `*I
 - Editable IP address or hostname, TCP port (default `1225`), connection timeout, response timeout and optional serial-number verification.
 - Network selection: `Auto`, `Wi-Fi`, `USB Ethernet`, `Specific interface`.
 - Android: bind sockets to Android `Network.socketFactory`. In Auto mode, link-local `169.254.*` destinations prefer an Ethernet network when exposed to Android; otherwise OS routing applies. Selecting a missing transport fails closed.
-- Desktop: Auto follows the OS route; explicit transports select a local IPv4 address from matching OS adapters. Adapter-name classification may be ambiguous; use Specific interface when needed.
+- Desktop: For the 4200A link-local target, Auto prefers the sole matching Ethernet adapter with 169.254/16 IPv4. Ethernet mode also supports Chinese Windows names (以太网/乙太網); if multiple adapters qualify it fails closed and asks for Specific interface. A local source-address bind does not force Windows to use the intended physical route; if needed, manually verify the Windows host route. Wi-Fi mode allows a non-link-local local IPv4 only when the network has an independently configured route to the device. The application does not modify system routing or adapter IP on Windows.
 - Connection profiles persist in the **current DKDS project**, together with editable plan settings. A saved profile does not auto-connect.
 - Clicking Connect establishes a fresh socket. Identify sends exactly `*IDN?\0`, verifies the `KI4200A` identity and optional serial, and does not retry a timed-out transaction. Identity is invalidated when the connection configuration changes.
 
@@ -109,3 +109,7 @@ Note: current simulated model does not represent a physically calibrated device.
 - `tests/test-keithley-4200-integration.js`: mocked identity, simulated collection, export and project profile regression.
 
 Next: verify complete Android and Desktop builds, connect via both Wi-Fi and Ethernet, exercise disconnects, then build a KXCI command compiler against the official 4200A KXCI programming manual with hardware identification and physical protection gates.
+
+## Future extraction to a standalone controller
+
+The portable KXCI identity implementation is `kxci-protocol.js`, with a migration contract in `extraction-manifest.json` and `EXTRACTION.md`. `node tools/4200-extract/extract.js --verify` checks all source-only dependencies. `node tools/4200-extract/extract.js --output <empty-folder-outside-repo>` copies the relevant source files, **not a runnable standalone app**. The Android native host and desktop IPC still require adapters in a future separate project.

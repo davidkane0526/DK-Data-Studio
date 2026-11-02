@@ -24,8 +24,8 @@ function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()
   if(mode==='interface'&&!name)throw new Error('TCP interfaceName is required in interface mode.');
   const match=(iface)=>{
     if(mode==='interface')return iface.toLowerCase()===name.toLowerCase();
-    if(mode==='wifi')return /(wi-?fi|wireless|wlan|wlp[0-9]|airport|802\\.11|^en0$)/i.test(iface);
-    return /(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(iface);
+    if(mode==='wifi')return /(wi-?fi|wireless|wlan|wlp[0-9]|无线|無線|airport|802[.]11|^en0$)/i.test(iface);
+    return /(ethernet|ether|以太网|乙太網|有线|本地连接|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(iface);
   };
   const rows=[];
   for(const [iface,addresses] of Object.entries(networkInterfaces)){
@@ -38,10 +38,10 @@ function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()
   if(mode==='auto'&&!payload.preferLinkLocalEthernet)return {
     address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'
   };
-  const candidates=(mode==='auto'?rows.filter(row=>/(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(row.interfaceName)):rows);
+  const candidates=(mode==='auto'?rows.filter(row=>/(ethernet|ether|以太网|乙太網|有线|本地连接|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(row.interfaceName)):rows);
   const choices=targetLinkLocal?candidates.filter(row=>row.address.startsWith('169.254.')):candidates.filter(row=>!row.address.startsWith('169.254.'));
   const wifiRoute=targetLinkLocal&&choices.length===0&&
-    (mode==='wifi'||mode==='interface'&&/(wi-?fi|wireless|wlan|wlp[0-9]|802\\.11|^en0$)/i.test(name));
+    (mode==='wifi'||mode==='interface'&&/(wi-?fi|wireless|wlan|wlp[0-9]|无线|無線|802[.]11|^en0$)/i.test(name));
   if(targetLinkLocal&&choices.length===0&&!wifiRoute){
     throw new Error('No Ethernet adapter has a 169.254.x.x IPv4 for '+host+
       '. Configure a link-local IPv4 (/16) on the intended adapter without a default gateway, then retry.');
