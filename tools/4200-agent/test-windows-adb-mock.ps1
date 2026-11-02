@@ -73,23 +73,44 @@ public static class MockAdb {
         if (command == "ip -4 -o addr show dev wlan0") { Console.WriteLine("wlan0 inet 10.87.70.190/16"); return 0; }
         if (command.StartsWith("if [ -d /sys/class/net/eth0 ]")) { Console.WriteLine("ethernet-present"); return 0; }
         if (command == "cat /sys/class/net/eth0/carrier") { Console.WriteLine("1"); return 0; }
-        if (command == "ip -4 -o addr show dev eth0") { return 0; }
+        if (command == "ip -4 -o addr show dev eth0") {
+            string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
+            if (trace.Contains("ip addr add 169.254.111.115/16 dev eth0") &&
+                !trace.Contains("ip -4 addr del 169.254.111.115/16 dev eth0"))
+                Console.WriteLine("20: eth0 inet 169.254.111.115/16 scope global eth0");
+            return 0;
+        }
         if (command == "pm list packages -U com.dk.datastudio") { Console.WriteLine("package:com.dk.datastudio uid:10256"); return 0; }
         if (command == "ip -4 rule show") {
             Console.WriteLine("0: from all lookup local");
             string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
-            if (trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200")) {
+            if (trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200") &&
+                !trace.Contains("ip -4 rule del pref 9000 to 169.254.111.118/32 lookup 4200")) {
                 Console.WriteLine("9000: from all to 169.254.111.118 lookup 4200");
             }
             Console.WriteLine("18000: from all lookup wlan0");
             Console.WriteLine("32766: from all lookup main");
             return 0;
         }
-        if (command == "ip -4 route show table main") { Console.WriteLine("default via 10.87.255.254 dev wlan0"); return 0; }
-        if (command == "ip -4 route show table 4200") { return 0; }
+        if (command == "ip -4 route show table main") {
+            Console.WriteLine("default via 10.87.255.254 dev wlan0");
+            string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
+            if (trace.Contains("ip route replace 169.254.111.118/32 dev eth0") &&
+                !trace.Contains("ip -4 route del 169.254.111.118/32 dev eth0"))
+                Console.WriteLine("169.254.111.118/32 dev eth0 src 169.254.111.115");
+            return 0;
+        }
+        if (command == "ip -4 route show table 4200") {
+            string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
+            if (trace.Contains("ip -4 route replace 169.254.111.118/32 dev eth0 src 169.254.111.115 table 4200") &&
+                !trace.Contains("ip -4 route del 169.254.111.118/32 dev eth0 table 4200"))
+                Console.WriteLine("169.254.111.118/32 dev eth0 src 169.254.111.115");
+            return 0;
+        }
         if (command.StartsWith("ip -4 route get 169.254.111.118")) {
             string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
-            bool hasRule = trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200");
+            bool hasRule = trace.Contains("ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200") &&
+                !trace.Contains("ip -4 rule del pref 9000 to 169.254.111.118/32 lookup 4200");
             bool hasCustomTableRoute = trace.Contains("ip -4 route replace 169.254.111.118/32 dev eth0 src 169.254.111.115 table 4200");
             if (hasRule && hasCustomTableRoute) {
                 Console.WriteLine("169.254.111.118 dev eth0 table 4200 src 169.254.111.115");
@@ -100,6 +121,10 @@ public static class MockAdb {
         }
         if (command == "ip -4 route replace 169.254.111.118/32 dev eth0 src 169.254.111.115 table 4200") { return 0; }
         if (command == "ip -4 rule add pref 9000 to 169.254.111.118/32 lookup 4200") { return 0; }
+        if (command == "ip -4 rule del pref 9000 to 169.254.111.118/32 lookup 4200") { return 0; }
+        if (command == "ip -4 route del 169.254.111.118/32 dev eth0 table 4200") { return 0; }
+        if (command == "ip -4 route del 169.254.111.118/32 dev eth0") { return 0; }
+        if (command == "ip -4 addr del 169.254.111.115/16 dev eth0") { return 0; }
         if (command == "ip neigh show dev eth0") { return 0; }
         if (command == "ip addr add 169.254.111.115/16 dev eth0") { return 0; }
         if (command == "ip route replace 169.254.111.118/32 dev eth0 src 169.254.111.115") { return 0; }
@@ -137,6 +162,18 @@ try {
         if ($body -notmatch "Root route changed during this run: True") { throw "Route fix not tested." }
     } finally { Pop-Location }
 
+    Write-Host "Testing scoped cleanup of Android policy rules and eth0 address"
+    Push-Location $temporary
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir "diagnose-4200.ps1") -AdbPath $mock -CleanupRoute
+        if ($LASTEXITCODE -ne 0) { throw "diagnose-4200.ps1 -CleanupRoute failed." }
+        $latest = Get-ChildItem -LiteralPath $temporary -Filter "4200-connection-*.txt" |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (!(Select-String -LiteralPath $latest.FullName -Pattern "CLEANUP DONE" -Quiet)) {
+            throw "Cleanup report missing its completion status."
+        }
+    } finally { Pop-Location }
+
     $trace = Get-Content -LiteralPath $env:MOCK_ADB_TRACE -Raw
     if ($trace -notmatch "shell\|su -c 'if \[ -f ") { throw "Compound shell command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'umask 077; ") { throw "Root installation command lost its quoting." }
@@ -149,6 +186,14 @@ try {
     }
     if ($trace -notmatch "shell\|su -c 'ip -4 rule add pref 9000 to 169\.254\.111\.118/32 lookup 4200'") {
         throw "Android destination-only policy rule was not installed."
+    }
+    foreach ($expectedRoot in @(
+        "ip -4 rule del pref 9000 to 169.254.111.118/32 lookup 4200",
+        "ip -4 route del 169.254.111.118/32 dev eth0 table 4200",
+        "ip -4 route del 169.254.111.118/32 dev eth0",
+        "ip -4 addr del 169.254.111.115/16 dev eth0"
+    )) {
+        if (!$trace.Contains($expectedRoot)) { throw "Cleanup missed: $expectedRoot" }
     }
     if ($trace -match 'ip route (replace|add) default') { throw "Test observed an unexpected default-route change." }
     Write-Host "Windows PowerShell ADB native argument and stderr simulation passed."
