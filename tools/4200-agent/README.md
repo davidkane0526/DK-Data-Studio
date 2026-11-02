@@ -1,4 +1,34 @@
-# DKDS 4200A diagnostic agent v0.2 (local read-only diagnostics)
+## v0.3 GitHub update checker
+
+The helper `java/DkdsUpdater.java` is compiled by GitHub Actions into a DEX jar for Android `app_process` and published as a separate `4200-agent-preview-*` prerelease.
+It is **not** a new DK Data Studio APK. The KernelSU script schedules release checks every six hours while retaining five-minute local diagnostics.
+
+For a fresh installation or upgrade, download the latest 4200 branch ZIP, open PowerShell in `tools/4200-agent`, and execute:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-updater.ps1
+```
+
+The updater installer downloads a pinned GitHub Release JAR, verifies its SHA-256, and installs it to `/data/adb/dkds-agent/dkds-updater.jar` with root-only permissions.
+Its `update.mode` remains `observe` (no automatic APK installs).
+
+Check operation without any 4200A instrument:
+
+```powershell
+adb shell su -c "sh /data/adb/dkds-agent/agent.sh check-update"
+adb shell su -c "tail -n 50 /data/adb/dkds-agent/logs/update.log"
+```
+
+The updater accepts only the exact repository GitHub release URL, vetted arm64 APK names and a SHA-256 digest from GitHub metadata.
+It downloads over HTTPS with a restricted redirect allowlist. Android Package Manager performs its usual signing compatibility check on install.
+It backs up the installed `base.apk` before an opt-in upgrade, but **backing up an APK is not a working automatic rollback**.
+Android may reject a lower versionCode downgrade, and an APK that passes Package Manager checks may still crash or fail to render.
+Automatic installation is implemented but **disabled by default and not yet validated on this tablet**. Do not enable install mode before health checks and recovery are tested.
+
+No log upload, Root network listener, remote command execution, system route modification, or instrument test is provided.
+
+# DKDS 4200A diagnostic agent v0.3 (local diagnostics + opt-in update helper)
 
 An independent, **read-only** KernelSU service for OPPO Pad Mini (Android 16).
 Runs without DK Data Studio, without access to the Keithley instrument, and without Windows ADB remaining connected.
