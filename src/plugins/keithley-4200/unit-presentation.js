@@ -155,6 +155,13 @@
     updateModeVisibility('iv');
     const initialMode=controls.get('mode');
     if(initialMode){initialMode.addEventListener('change',()=>updateModeVisibility(String(initialMode.value||'iv')));}
+    const updateConnectionPathVisibility=mode=>{
+      const relay=mode==='via-mobile';
+      for(const id of ['mobileHost','mobilePort','mobilePairKey','mobileNetworkMode'])show(id,relay);
+    };
+    const connectionMode=controls.get('networkMode');
+    if(connectionMode)connectionMode.addEventListener('change',()=>updateConnectionPathVisibility(String(connectionMode.value||'auto')));
+    updateConnectionPathVisibility(String(connectionMode?.value||'auto'));
     return Object.freeze({
       get,set,setConnectionState,renderPreview,renderProgress,renderData,setRunning,
       dispose(){table?.dispose?.();plot?.dispose?.();workbench?.dispose?.();}
