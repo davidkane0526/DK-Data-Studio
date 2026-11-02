@@ -19,24 +19,33 @@ if (!(Test-Path -LiteralPath $AdbPath -PathType Leaf)) {
     throw "adb.exe missing; supply -AdbPath with the full path."
 }
 
-function ADB([string[]]$AdbArguments) {
+function ADB {
+    param([Parameter(Mandatory=$true)][string[]]$AdbArguments)
     $old = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
         $result = & $script:AdbPath @AdbArguments 2>&1 | Out-String
         $code = $LASTEXITCODE
     } finally { $ErrorActionPreference = $old }
-    if ($code -ne 0) { throw "adb exit=$code; $result" }
+    if ($code -ne 0) { throw ("ADB failed (exit " + $code + "): " + ($AdbArguments -join " ") + [Environment]::NewLine + $result) }
     return $result.Trim()
 }
-$listing = ADB @("devices","-l")
+function Root {
+    param([Parameter(Mandatory=$true)][string]$Command)
+    if ($Command.Contains("'") -or $Command.Contains("`n") -or $Command.Contains("`r")) {
+        throw "Unsafe quotation/control character in fixed root command."
+    }
+    $remote = "su -c '" + $Command + "'"
+    return ADB -AdbArguments @("-s", $script:id, "shell", $remote)
+}
+$listing = ADB -AdbArguments @("devices", "-l")
 $connected = @($listing -split "\r?\n" | Where-Object { $_ -match '^\S+\s+device(\s|$)' })
 if ($connected.Count -ne 1) { throw "Expected exactly one connected and authorized ADB device." }
 $id = ($connected[0] -split '\s+')[0]
-if ((ADB @("-s",$id,"shell","su","-c","id")) -notmatch 'uid=0\(root\)') {
+if ((Root -Command "id") -notmatch 'uid=0\(root\)') {
     throw "KernelSU uid=0 required."
 }
-$exists = ADB @("-s",$id,"shell","su","-c","grep -q check-update /data/adb/dkds-agent/agent.sh && echo ready")
+$exists = Root -Command "grep -q check-update /data/adb/dkds-agent/agent.sh && echo ready"
 if ($exists -notmatch "ready") {
     throw "Install current v0.3 agent.sh first using install.ps1."
 }
@@ -46,15 +55,15 @@ Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $temp
 $actual = (Get-FileHash -LiteralPath $temp -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actual -ne $expected) { throw "Updater binary checksum mismatch; no device change." }
 Write-Host "SHA-256 verified."
-ADB @("-s",$id,"push",$temp,"/data/local/tmp/dkds-updater.jar.stage") | Out-Null
+ADB -AdbArguments @("-s",$id,"push",$temp,"/data/local/tmp/dkds-updater.jar.stage") | Out-Null
 $script = "umask 077; cp /data/local/tmp/dkds-updater.jar.stage /data/adb/dkds-agent/dkds-updater.jar; chmod 600 /data/adb/dkds-agent/dkds-updater.jar; if [ ! -f /data/adb/dkds-agent/update.mode ]; then printf observe > /data/adb/dkds-agent/update.mode; fi; chmod 600 /data/adb/dkds-agent/update.mode; sha256sum /data/adb/dkds-agent/dkds-updater.jar"
-$verify = ADB @("-s",$id,"shell","su","-c",$script)
+$verify = Root -Command $script
 if (!$verify.ToLowerInvariant().Contains($expected)) {
     throw "Tablet updater checksum mismatch. Do not enable updates."
 }
 Write-Host "Standalone updater installed; mode remains observe (no APK installs)."
 try {
-    ADB @("-s",$id,"shell","su","-c","sh /data/adb/dkds-agent/agent.sh check-update") | Write-Host
+    Root -Command "sh /data/adb/dkds-agent/agent.sh check-update" | Write-Host
 } catch {
     Write-Warning "Initial check failed (network/Android app_process). Inspect the output before enabling update mode."
     Write-Warning ($_.Exception.Message)
