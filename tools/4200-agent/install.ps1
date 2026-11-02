@@ -1,7 +1,9 @@
 # DKDS 4200 Agent v0.1. Safe one-time installation over an existing ADB connection.
 # No APK replacement, no route changes, no instrument commands.
 [CmdletBinding()]
-param()
+param(
+    [string]$AdbPath = ""
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -11,8 +13,42 @@ $serviceFile = Join-Path $root "service.sh"
 foreach ($file in @($agentFile, $serviceFile)) {
     if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing file: $file. Download the full tools/4200-agent directory." }
 }
-$adbCommand = Get-Command adb -ErrorAction Stop
-$adb = $adbCommand.Source
+# Resolve the Android platform-tools executable without relying on the current directory.
+# Use -AdbPath "C:\path\to\adb.exe" when ADB is distributed in a portable folder.
+function Resolve-Adb {
+    param([string]$ExplicitPath)
+    if (![string]::IsNullOrWhiteSpace($ExplicitPath)) {
+        $candidate = [System.IO.Path]::GetFullPath($ExplicitPath)
+        if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            throw "Specified ADB executable not found: $candidate"
+        }
+        return $candidate
+    }
+    $found = Get-Command "adb.exe" -CommandType Application -ErrorAction SilentlyContinue
+    if ($null -ne $found) { return $found.Source }
+
+    $candidates = @(
+        (Join-Path $root "adb.exe"),
+        (Join-Path (Get-Location).Path "adb.exe")
+    )
+    foreach ($key in @("ANDROID_HOME", "ANDROID_SDK_ROOT")) {
+        $sdk = [Environment]::GetEnvironmentVariable($key)
+        if (![string]::IsNullOrWhiteSpace($sdk)) {
+            $candidates += Join-Path $sdk "platform-tools\adb.exe"
+        }
+    }
+    if (![string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $candidates += Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"
+    }
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return (Resolve-Path -LiteralPath $candidate).ProviderPath
+        }
+    }
+    throw "adb.exe not found. Pass -AdbPath 'C:\your\platform-tools\adb.exe' or add its folder to PATH."
+}
+$adb = Resolve-Adb -ExplicitPath $AdbPath
+Write-Host "Using ADB: $adb"
 
 function Call-Adb {
     param([string[]]$Arguments)
