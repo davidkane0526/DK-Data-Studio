@@ -59,7 +59,8 @@ snapshot() {
 update_once() {
   [ -r "$UPDATER" ] || { echo "Update helper not installed; diagnostics continue"; return 0; }
   choice=check
-  if [ -r "$UPDATEMODE" ] && [ "$(cat "$UPDATEMODE" 2>/dev/null)" = "install" ]; then choice=install; fi
+  # An explicit "check-update" never installs, even if auto-install was enabled.
+  if [ "${1:-check}" = "auto" ] && [ -r "$UPDATEMODE" ] && [ "$(cat "$UPDATEMODE" 2>/dev/null)" = "install" ]; then choice=install; fi
   CLASSPATH="$UPDATER" /system/bin/app_process /system/bin com.dkds.agent.DkdsUpdater "$choice"
 }
 
@@ -80,7 +81,7 @@ case "${1:-once}" in
     echo "Saved diagnostic snapshot to $LOG"
     ;;
   check-update)
-    update_once
+    update_once check
     ;;
   crash)
     # AndroidRuntime logs stay on this device; nothing is uploaded.
@@ -103,7 +104,7 @@ case "${1:-once}" in
       snapshot >> "$LOG" 2>&1
       # A release check is periodic and bounded; it does not contact the instrument.
       if [ "$iteration" -eq 0 ] && [ -f "$UPDATER" ]; then
-        update_once >> "$LOGDIR/update-loop.log" 2>&1 || true
+        update_once auto >> "$LOGDIR/update-loop.log" 2>&1 || true
       fi
       iteration=$(( (iteration + 1) % 72 ))
       sleep 300
