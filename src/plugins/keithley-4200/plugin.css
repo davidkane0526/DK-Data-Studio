@@ -12,8 +12,6 @@
   flex-direction:column;
   gap:6px;
 }
-.dkds-4200-device-head{
-}
 .dkds-4200-eyebrow{
   color:var(--dkui-muted);
   font-size:10px;
@@ -98,12 +96,12 @@
 }
 .dkds-4200-workbench [hidden]{display:none}
 @media(max-width:760px){
-  .dkds-4200-workbench{padding:6px 8px 18px;gap:8px}
+  .dkds-4200-workbench{padding:6px 8px 18px}
   .dkds-4200-design-card,.dkds-4200-chart-card{padding:10px}
 }
 @media(max-width:420px){
   .dkds-4200-device-card{padding:10px}
-  .dkds-4200-device-head{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  
   .dkds-4200-device-title{font-size:15px}
   .dkds-4200-connect-button{min-width:82px}
 }
