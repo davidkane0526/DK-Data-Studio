@@ -28,6 +28,17 @@ const PRIVATE_GEOMETRY_BRIDGES=Object.freeze({
 });
 
 const NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS=Object.freeze({
+  'keithley-4200':Object.freeze([
+    entry('dkds-4200-workbench','layout','stack-compact',{role:'compact-card-flow'}),
+    entry('dkds-4200-card','panel','plain',{role:'instrument-card'}),
+    entry('dkds-4200-device-card','panel','plain',{role:'instrument-summary-card'}),
+    entry('dkds-4200-connect-button','action','primary',{role:'connection-toggle'}),
+    entry('dkds-4200-device-(?:title|subtitle)','header','panel',{role:'instrument-heading'}),
+    entry('dkds-4200-advanced|dkds-4200-data-details','layout','identity',{role:'progressive-disclosure'}),
+    entry('dkds-4200-design-card|dkds-4200-chart-card','panel','plain',{role:'measurement-card'}),
+    entry('dkds-4200-run-actions','layout','row-wrap',{role:'simulation-actions'}),
+    entry('dkds-4200-table-host','layout','identity',{role:'data-table-disclosure'})
+  ]),
   'connectivity-center':Object.freeze([
     entry('dksvc-overlay','layout','overlay-center',{role:'service-overlay'}),
     entry('dksvc-(?:window|head|sub|close)','popover','service',{role:'service-window'}),

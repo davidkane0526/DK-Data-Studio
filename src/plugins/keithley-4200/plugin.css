@@ -1,84 +1,14 @@
-/* Compact, card-based Keithley 4200A workbench. Core owns component paint;
-   this stylesheet only arranges the 4200-specific content and responsive density. */
-.dkds-4200-workbench{
-  width:min(1320px,100%);
-  margin:0 auto;
-  padding:8px 12px 22px;
-}
-.dkds-4200-card{min-width:0;overflow:visible}
-.dkds-4200-device-card{
-  padding:12px 14px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.dkds-4200-eyebrow{
-  letter-spacing:.1em;
-}
-.dkds-4200-device-title{
-  margin-top:2px;
-  line-height:1.3;
-}
-.dkds-4200-device-subtitle{
-  margin-top:3px;
-}
-.dkds-4200-connect-button{
-  min-width:104px;
-  min-height:36px;
-}
-.dkds-4200-status{
-  margin:0;
-  padding:5px 0 0;
-}
-.dkds-4200-route-detail{
-  margin:0;
-  padding:0;
-  overflow-wrap:anywhere;
-}
-.dkds-4200-advanced,
-.dkds-4200-data-details{
-  min-width:0;
-}
-.dkds-4200-advanced>summary,
-.dkds-4200-data-details>summary{
-  cursor:pointer;
-  user-select:none;
-  padding:8px 0 3px;
-}
-.dkds-4200-advanced-grid{
-  padding:7px 0 9px;
-}
-.dkds-4200-design-card,
-.dkds-4200-chart-card{padding:12px 14px}
-.dkds-4200-card-heading{padding:0 0 8px}
-.dkds-4200-parameter-grid .dkds-4200-field,
-.dkds-4200-advanced-grid .dkds-4200-field{min-width:0}
-.dkds-4200-run-actions{
-  margin-top:10px;
-}
-.dkds-4200-run-button{min-width:112px}
-.dkds-4200-plan-summary,
-.dkds-4200-progress{
-  margin:6px 0 0;
-  padding:0;
-  line-height:1.45;
-}
-.dkds-4200-plot-host{
-  overflow:visible;
-}
-.dkds-4200-data-details{margin-top:7px}
-.dkds-4200-table-host{min-width:0;overflow:auto;padding-top:8px}
-.dkds-4200-native-note{
-  margin:0;
-  padding:2px 3px;
-  line-height:1.45;
-}
+/* 4200A owns card composition and spacing; Core Unit/Theme owns
+   control paint, typography, responsive recipes and interactive states. */
+.dkds-4200-workbench{width:100%;margin:0 auto;padding:10px}
+.dkds-4200-card{overflow:visible}
+.dkds-4200-device-card{padding:10px;display:flex;flex-direction:column;gap:6px}
+.dkds-4200-connect-button{min-width:105px;min-height:36px}
+.dkds-4200-device-title{margin-top:2px}
+.dkds-4200-device-subtitle{margin-top:3px}
+.dkds-4200-advanced,.dkds-4200-data-details{min-width:0}
+.dkds-4200-advanced>summary,.dkds-4200-data-details>summary{cursor:pointer;user-select:none;padding:10px}
+.dkds-4200-design-card,.dkds-4200-chart-card{padding:10px}
+.dkds-4200-run-actions{margin-top:10px}
+.dkds-4200-table-host{min-width:0;overflow:auto;padding:8px}
 .dkds-4200-workbench [hidden]{display:none}
-@media(max-width:760px){
-  .dkds-4200-workbench{padding:6px 8px 18px}
-  .dkds-4200-design-card,.dkds-4200-chart-card{padding:10px}
-}
-@media(max-width:420px){
-  .dkds-4200-device-card{padding:10px}
-  .dkds-4200-connect-button{min-width:82px}
-}

@@ -18,7 +18,7 @@ assert.strictEqual(report.broadButtonGeometryViolations.length,0,'A generic tag-
 const byPlugin=Object.fromEntries(report.pluginExposure.map(row=>[row.plugin,row]));
 assert.deepStrictEqual(Object.fromEntries(Object.entries(byPlugin).map(([id,row])=>[id,[row.layoutMounts,row.shorthandSensitiveMounts.length]])),{
   'data-center':[15,2],
-  'keithley-4200':[9,4],
+  'keithley-4200':[10,4],
   'pulse-analysis':[18,10],
   'pulse-sampler-tool':[15,9],
   'resonance-workbench':[43,2],

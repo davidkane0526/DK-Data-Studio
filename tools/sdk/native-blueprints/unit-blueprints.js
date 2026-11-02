@@ -15,13 +15,18 @@ const NATIVE_PLUGIN_BLUEPRINTS=Object.freeze({
     region('page','page','data','activity-root'),region('header','pageHeader','page-owned','activity-header'),region('workspace','workspace','standard','data-workspace'),region('desktop-split','layout','sidebar-main-wide','data-browser'),region('artifact-list','layout','artifact-list','artifact-list'),region('artifact-row','layout','artifact-row','artifact-row'),region('primary-flow','layout','primary-flow','primary-flow'),region('filter-grid','layout','form-grid-2','filters'),region('selection-grid','layout','action-grid-4','selection-actions'),region('preview-fields','parameterForm','auto-fit','chart-parameters'),region('parameter-forms','parameterForm','auto-fit','workflow-parameters'),region('formula-grid','layout','formula-grid','formula-parameters'),region('workflow-toolbar','layout','toolbar-bottom','workflow-toolbar'),region('workflow-step-head','layout','workflow-step-head','workflow-step-header'),region('provenance-list','layout','provenance-list','provenance-list'),region('provenance-row','layout','provenance-row','provenance'),region('source-actions','layout','toolbar-wrap','source-actions'),region('summary','summary','strip','data-summary'),region('empty','emptyState','standard','data-empty'),region('objects','prime','fixed-titleless','data-control',{placements:['left']}),region('chart-preview','prime','canonical-header','scientific-secondary'),region('chart','plotView','prime-contained','data-preview'),region('table','table','standard','data-preview'),region('workflow','list','plain','recipe-steps'),region('dialogs','dialog','standard','workflow-dialogs'),region('context','menu','context','data-context')
   ]),
   'flexible-import':blueprint('data-provider',['provider'],[region('import','provider','data','data-provider')]),
-  'keithley-4200':blueprint('scientific-tool',['page','pageHeader','workspace','layout','panel','field','action','note','table','scientificPlot'],[
+  'keithley-4200':blueprint('scientific-tool',['page','pageHeader','workspace','layout','surface','panel','header','field','action','note','table','scientificPlot'],[
     region('page','page','tool','activity-root'),
     region('header','pageHeader','page-owned','activity-header'),
     region('workspace','workspace','standard','tool-workspace'),
-    region('main','layout','stack-comfortable','connection-and-simulation'),
-    region('connection-grid','layout','form-grid-2','connection-form'),
-    region('connection-actions','layout','action-grid-4','connection-actions'),
+    region('main','layout','stack-compact','compact-card-flow'),
+    region('device','panel','plain','instrument-connection-summary'),
+    region('device-head','layout','row-between','instrument-identity-and-toggle'),
+    region('connection-grid','layout','form-grid-2','transient-connection-form'),
+    region('connection-action','action','primary','single-connection-toggle'),
+    region('plan','panel','plain','simulation-plan-card'),
+    region('plan-grid','layout','form-grid-4','simulation-parameter-grid'),
+    region('run-actions','layout','row-wrap','simulation-run-actions'),
     region('simulation','scientificPlot','curve','simulation-preview'),
     region('measurements','table','standard','simulation-table')
   ]),
