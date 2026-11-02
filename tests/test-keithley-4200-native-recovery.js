@@ -7,7 +7,7 @@ const generator = fs.readFileSync(path.join(root, 'mobile/plugins/withDkdsAndroi
 const recovery = fs.readFileSync(path.join(root, 'mobile/plugins/DkdsKeithleyEthernet.template'), 'utf8');
 assert(generator.includes("DkdsKeithleyEthernet.template"), 'Recovery helper must be compiled into the APK');
 assert(generator.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'), 'Native TCP Connect must invoke self-healing');
-assert(generator.includes('putString("networkPreparation",networkPreparation)'), 'Native session must report preparation strategy');
+assert(generator.includes('putString("networkPreparation",preparation)'), 'Native session must report preparation strategy');
 assert(recovery.includes('ProcessBuilder(args)'), 'Use fixed native command arrays without a background server');
 assert(recovery.includes('listOf("su","-c",command)'), 'Root should be opt-in through KernelSU when actually needed');
 assert(recovery.includes('if(mode=="wifi")return null'), 'Never repair Wi-Fi mode');
