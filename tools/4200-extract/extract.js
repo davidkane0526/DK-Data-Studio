@@ -7,7 +7,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const manifestPath='src/plugins/keithley-4200/extraction-manifest.json';
 const manifest=JSON.parse(fs.readFileSync(path.join(root,manifestPath),'utf8'));
-const groups=['coreIndependentModules','embeddedPlugin','desktopTransportAdapters','androidTransportAdapters'];
+const groups=['coreIndependentModules','embeddedPlugin','desktopTransportAdapters','androidTransportAdapters','standaloneReadOnlyCli'];
 const files=[manifestPath,'src/plugins/keithley-4200/EXTRACTION.md',...groups.flatMap(key=>{
   if(!Array.isArray(manifest[key]))throw Error('Missing extraction group '+key);
   return manifest[key];
@@ -17,7 +17,9 @@ const safe=(p)=>typeof p==='string'&&p.length>0&&p===p.replaceAll('\\','/')&&
 const unique=[...new Set(files)];
 for(const p of unique){
   if(!safe(p))throw Error('Unsafe extraction path: '+p);
-  if(!fs.statSync(path.join(root,p)).isFile())throw Error('File is missing: '+p);
+  const source=path.join(root,p);
+  if(!fs.existsSync(source)||!fs.lstatSync(source).isFile())throw Error('Regular source file is missing: '+p);
+  if(!fs.realpathSync(source).startsWith(root+path.sep))throw Error('Source escapes repo: '+p);
 }
 const argIndex=process.argv.indexOf('--output');
 const dryRun=process.argv.includes('--verify');
