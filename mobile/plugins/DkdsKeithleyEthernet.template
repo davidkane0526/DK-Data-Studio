@@ -40,8 +40,11 @@ internal object DkdsKeithleyEthernet {
       val all=java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
       (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
     }catch(_:Throwable){listOf("eth0")}
-    return names.firstOrNull{name->ifaceRegex.matches(name) &&
-      try{java.net.NetworkInterface.getByName(name)?.isUp==true}catch(_:Throwable){false}}
+    return names.firstOrNull { name ->
+      if (!ifaceRegex.matches(name)) false
+      else try { java.net.NetworkInterface.getByName(name)?.isUp == true }
+        catch (_:Throwable) { false }
+    }
   }
 
   /** Prefer non-root Android network APIs. Root is required only to provision a missing Ethernet IP or policy. */
