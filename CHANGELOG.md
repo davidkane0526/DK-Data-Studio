@@ -1,3 +1,12 @@
+# 3.71.140 Release — 4200A detachable KXCI core and multihomed network reliability (Preview)
+
+- Separates the read-only NUL-terminated KI4200A identity protocol from the plugin UI. Adds a machine-readable migration manifest and verified source-only extraction tool for future standalone Android/Windows development.
+- Android native Ethernet transport prefers configured system Ethernet without Root, preserving optional KernelSU restoration only when required. The paired LAN gateway shares the same on-demand Ethernet preparation; Wi-Fi and system default routing remain unchanged.
+- Windows 4200A connection chooses an unambiguous link-local Ethernet source, recognizes Chinese adapter names, and supports routed Wi-Fi connections where the OS has a valid route. Local address binding alone is not guaranteed to override Windows routing.
+- CI tests cover protocol bytes, desktop TCP roundtrip and routing ambiguity, Android network contracts, and extraction-file completeness. Actual Windows, non-Root Android, and Wi-Fi hardware regressions still require end-to-end testing.
+- Real instrument control and original instrument-generated data/graph retrieval remain unimplemented; simulation remains clearly labelled.
+- App version 3.71.140; Android versionCode 280.
+
 # 3.71.139 Release — 4200A Ethernet recovery, desktop transport and detachable KXCI module (Preview)
 
 - Mobile 4200A direct USB-Ethernet connection: when Android exposes a configured link-local Ethernet network, use its network-scoped socket without Root; only a missing usable IPv4 or policy requires optional KernelSU recovery after the user presses Connect.
