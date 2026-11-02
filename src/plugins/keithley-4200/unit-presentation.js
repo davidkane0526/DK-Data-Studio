@@ -71,7 +71,7 @@
 
     const design=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-design-card'});
     units.header.create(design.element,{tagName:'div',kind:'panel',variant:'panel',className:'dkds-4200-card-heading',stacked:true,titleTag:'h3',titleClassName:false,title:'测试参数',subtitle:'当前版本的测试方案与曲线仍为本地仿真，不会驱动 SMU。',actions:false});
-    const dgrid=units.layout.create(design.element,{variant:'form-grid-3',className:'dkds-4200-parameter-grid'});
+    const dgrid=units.layout.create(design.element,{variant:'form-grid-4',className:'dkds-4200-parameter-grid'});
     field(dgrid,'mode','测试模式','iv',{kind:'select',options:[
       {value:'iv',label:'I–V 曲线'},{value:'transfer',label:'转移特性'},{value:'output',label:'输出特性'},{value:'timed',label:'时间响应'}
     ]});
@@ -87,7 +87,7 @@
     const planAdvanced=dom.create('details');
     planAdvanced.className='dkds-4200-advanced dkds-4200-plan-advanced';
     const planSummary=dom.create('summary');planSummary.textContent='高级测试参数（端口与速度）';planAdvanced.appendChild(planSummary);
-    const pgrid=units.layout.create(planAdvanced,{variant:'form-grid-3',className:'dkds-4200-advanced-grid'});
+    const pgrid=units.layout.create(planAdvanced,{variant:'form-grid-4',className:'dkds-4200-advanced-grid'});
     field(pgrid,'speed','速度预设','normal',{kind:'select',options:[
       {value:'fast',label:'快速'},{value:'normal',label:'标准'},{value:'quiet',label:'低噪声'}
     ]});
@@ -96,7 +96,7 @@
     field(pgrid,'gateSmU','Gate SMU（0 = 不使用）',3,{step:1,min:0,max:9});
     field(pgrid,'gateBiasV','Gate 偏置 (V)',0);
     design.element.appendChild(planAdvanced);
-    const designActions=units.layout.create(design.element,{variant:'action-row',className:'dkds-4200-run-actions'});
+    const designActions=units.layout.create(design.element,{variant:'row-wrap',className:'dkds-4200-run-actions'});
     action(designActions,'simulate','运行仿真',true,'dkds-4200-run-button');
     action(designActions,'stop','停止',false,'dkds-4200-stop-button');
     const previewNote=units.note.create(design.element,{variant:'meta',className:'dkds-4200-plan-summary',text:'方案参数变更后自动校验。'});
