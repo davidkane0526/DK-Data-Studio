@@ -472,6 +472,11 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val wanted=interfaceName.trim()
         val mode=networkMode.trim().ifBlank { "auto" }
         if(mode !in listOf("auto","wifi","ethernet","interface"))throw IllegalArgumentException("Unsupported TCP network mode: "+mode)
+        // Called only for an explicit TCP Connect, not at app startup.
+        // Recreates the USB-Ethernet link-local address after a tablet reboot
+        // without changing wlan0 or the default route.
+        val networkPreparation=if(target.startsWith("169.254.") && mode!="wifi")
+          DkdsKeithleyEthernet.prepare(target,mode,wanted) else "not-required"
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network=when(mode){
           // 169.254/16 instruments are typically directly connected via USB Ethernet.
@@ -504,6 +509,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
             putInt("remotePort",socket.port)
             putString("interfaceName",network?.let { cm.getLinkProperties(it)?.interfaceName } ?: fallback?.first ?: wanted)
             putString("routeStrategy",if(network!=null)"android-network" else if(fallback!=null)"local-source-bind" else "system-default")
+            putString("networkPreparation",networkPreparation)
             putString("networkMode",mode)
           })
         } catch(error:Throwable) {
@@ -881,7 +887,8 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     const packageDir = path.join(javaRoot, ...packageName.split('.'));
     fs.mkdirSync(packageDir, { recursive: true });
     const lanKxci = fs.readFileSync(path.join(__dirname, 'DkdsLanKxci.template'), 'utf8');
-    const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanKxci + '\nprivate object DkdsLocalWebServer {');
+    const ethernetRecovery = fs.readFileSync(path.join(__dirname, 'DkdsKeithleyEthernet.template'), 'utf8');
+    const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanKxci + '\n' + ethernetRecovery + '\nprivate object DkdsLocalWebServer {');
     fs.writeFileSync(path.join(packageDir, 'DkdsNativeHostModule.kt'), nativeSource, 'utf8');
     fs.writeFileSync(path.join(packageDir, 'DkdsSmbService.java'), smbJavaSource(packageName), 'utf8');
 
