@@ -24,14 +24,14 @@ assert.throws(()=>resolveLocalAddress({...target,localAddress:'__invalid__'},int
 async function main(){
  const server=net.createServer(socket=>socket.on('data',bytes=>{
    assert.deepEqual([...bytes],[42,73,68,78,63,0]);
-   socket.write(Buffer.from('KEITHLEY INSTRUMENTS,KI4200A,TEST,V0\\0','utf8'));
+   socket.write(Buffer.from('KEITHLEY INSTRUMENTS,KI4200A,TEST,V0\0','utf8'));
  }));
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const tcp=createTcpRuntime();
  try{
    const opened=await tcp.open({host:'127.0.0.1',port:server.address().port,networkMode:'auto',connectTimeoutMs:2000});
    assert.equal(opened.routeStrategy,'system-routing');
-   const response=await tcp.exchange({sessionId:opened.sessionId,base64:Buffer.from('*IDN?\\0').toString('base64'),
+   const response=await tcp.exchange({sessionId:opened.sessionId,base64:Buffer.from('*IDN?\0').toString('base64'),
      readTimeoutMs:2000,idleTimeoutMs:25,maxBytes:2048});
    assert.match(Buffer.from(response.base64,'base64').toString(),/^KEITHLEY INSTRUMENTS,KI4200A,TEST/);
    await tcp.close({sessionId:opened.sessionId});
