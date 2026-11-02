@@ -1,4 +1,4 @@
-# DKDS 4200A diagnostic agent v0.1
+# DKDS 4200A diagnostic agent v0.2 (local read-only diagnostics)
 
 An independent, **read-only** KernelSU service for OPPO Pad Mini (Android 16).
 Runs without DK Data Studio, without access to the Keithley instrument, and without Windows ADB remaining connected.
@@ -6,6 +6,8 @@ Runs without DK Data Studio, without access to the Keithley instrument, and with
 ## Scope of v0.1
 
 - Records periodic device version, DKDS process status, Wi-Fi/USB Ethernet interface state, link-local route, and neighbor information.
+- Explicitly reports `ETHERNET_WAITING` when no USB Ethernet adapter is attached (expected while the 4200A is occupied) and checks for `ROUTE_WARNING` only once `eth0` exists.
+- Validates that its saved PID belongs to the actual agent loop before reporting running or issuing a stop command.
 - Saves local rotating logs under `/data/adb/dkds-agent/logs/` (root-only, mode 0700).
 - Survives Wi-Fi ADB disconnections and starts at boot through `/data/adb/service.d/`.
 - Supports on-demand one-shot diagnostics through ADB.
@@ -25,6 +27,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 An interrupted initial `adb push` does not mean the KernelSU boot service has been installed. Rerun the corrected installer to finish installing and verifying both files.
+
+## Updating an already installed v0.1 agent
+
+The GitHub repository is newer than files already deployed to a tablet. Updating the GitHub branch **does not** automatically update the installed KernelSU script. To update after refreshing the ZIP or scripts, stop the existing agent safely and rerun the installer:
+
+```powershell
+adb shell su -c "sh /data/adb/dkds-agent/agent.sh stop"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The installer is idempotent for files and does not touch the installed DKDS application. Do not reboot or connect the instrument merely to refresh this script.
 
 ## First deployment
 
