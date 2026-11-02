@@ -496,15 +496,6 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val errors=mutableListOf<String>()
         var networkPreparation="not-required"
-        val initialEthernetReady=orderedNetworks().any { network ->
-          cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true &&
-          cm.getLinkProperties(network)?.linkAddresses?.any {
-            it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
-          }==true
-        }
-        if(linkLocal&&initialEthernetReady)networkPreparation="android-ethernet-no-root"
-        var connected=false
-        val perAttempt=timeout.coerceAtMost(500)
         fun orderedNetworks():List<android.net.Network>{
           val all=cm.allNetworks.toList()
           fun iface(n:android.net.Network)=cm.getLinkProperties(n)?.interfaceName.orEmpty()
@@ -518,6 +509,15 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
               else all.filter{wifi(it)}+all.filter{eth(it)}+all.filter{!eth(it)&&!wifi(it)}
           }.distinct()
         }
+        val initialEthernetReady=orderedNetworks().any { network ->
+          cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true &&
+          cm.getLinkProperties(network)?.linkAddresses?.any {
+            it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
+          }==true
+        }
+        if(linkLocal&&initialEthernetReady)networkPreparation="android-ethernet-no-root"
+        var connected=false
+        val perAttempt=timeout.coerceAtMost(500)
         fun complete(socket:Socket,iface:String,strategy:String,preparation:String):Boolean{
           try{
             val id=UUID.randomUUID().toString()
