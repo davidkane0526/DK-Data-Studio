@@ -16,12 +16,12 @@
     const Presentation=ctx.modules.require('unit-presentation');
     const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8');
     let session=null,sessionTarget=null,identified=null,ui=null;
-    let profiles=[],dataset=null,run=null,plotByCycle=new Map(),commandTail=Promise.resolve();
-    const connectionKeys=['host','port','networkMode','interfaceName','connectTimeoutMs','readTimeoutMs','expectedSerial','mobileHost','mobilePort','mobileNetworkMode'];
+    let dataset=null,run=null,plotByCycle=new Map(),commandTail=Promise.resolve();
+    const connectionKeys=['host','port','networkMode','expectedSerial','mobileHost','mobilePort','mobileNetworkMode','mobilePairKey'];
     const planKeys=['mode','direction','loops','points','startV','stopV','complianceA','delayMs','speed','sourceSmU','measureSmU','gateSmU','gateBiasV'];
     const enqueue=fn=>{const task=commandTail.then(fn,fn);commandTail=task.catch(()=>{});return task;};
     const message=error=>String(error?.message||error||'未知错误');
-    const status=(text,detail='')=>{ui?.renderStatus(text,detail);ctx.status.set('Keithley 4200A：'+text);};
+    const status=(text,detail='')=>{ctx.status.set('Keithley 4200A：'+text);if(ui?.setConnectionState){const state=text==='已连接'?'connected':/正在|探测|校验/.test(text)?'connecting':/失败|异常/.test(text)?'error':'idle';ui.setConnectionState(state,text,detail);}};
     const encodeBase64=text=>{
       const bytes=encoder.encode(text);let binary='';
       for(const n of bytes)binary+=String.fromCharCode(n);
@@ -32,81 +32,90 @@
       for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
       return decoder.decode(bytes);
     };
-    const endpoint=()=>({
-      host:String(ui.get('host')||'').trim(),port:Number(ui.get('port')),
-      networkMode:String(ui.get('networkMode')||'auto'),
-      interfaceName:String(ui.get('interfaceName')||'').trim(),
-      connectTimeoutMs:Number(ui.get('connectTimeoutMs')),readTimeoutMs:Number(ui.get('readTimeoutMs')),
-      expectedSerial:String(ui.get('expectedSerial')||'').trim(),
-      mobileHost:String(ui.get('mobileHost')||'').trim(),
-      mobilePort:Number(ui.get('mobilePort')||45910),
-      mobileNetworkMode:String(ui.get('mobileNetworkMode')||'ethernet'),
-      mobilePairKey:String(ui.get('mobilePairKey')||'').trim()
-    });
+    const endpoint=()=>{
+      const networkMode=String(ui.get('networkMode')||'auto');
+      return {
+        host:String(ui.get('host')||'169.254.111.118').trim(),
+        port:Number(ui.get('port')||1225),
+        networkMode,
+        connectTimeoutMs:networkMode==='via-mobile'?2500:1800,
+        readTimeoutMs:networkMode==='via-mobile'?2500:1500,
+        expectedSerial:String(ui.get('expectedSerial')||'').trim(),
+        mobileHost:String(ui.get('mobileHost')||'').trim(),
+        mobilePort:Number(ui.get('mobilePort')||45910),
+        mobileNetworkMode:String(ui.get('mobileNetworkMode')||'auto'),
+        mobilePairKey:String(ui.get('mobilePairKey')||'').trim()
+      };
+    };
     const validateEndpoint=value=>{
-      if(!value.host||value.host.length>253||/[\s\/\\]/.test(value.host))throw Error('请输入有效 IP 或主机名');
-      if(!Number.isInteger(value.port)||value.port<1||value.port>65535)throw Error('端口必须为 1–65535');
-      if(!['auto','wifi','ethernet','interface','via-mobile'].includes(value.networkMode))throw Error('无效网络选择');
-      if(value.networkMode==='interface'&&!/^[a-zA-Z0-9_.:-]{1,32}$/.test(value.interfaceName))throw Error('指定接口名称无效');
-      for(const key of ['connectTimeoutMs','readTimeoutMs'])if(!Number.isInteger(value[key])||value[key]<250||value[key]>120000)throw Error(key+' 应为 250–120000 ms');
+      if(!value.host||value.host.length>253||/[\s\/\\]/.test(value.host))throw Error('请输入有效仪器 IP 或主机名');
+      if(!Number.isInteger(value.port)||value.port<1||value.port>65535)throw Error('KXCI TCP 端口无效');
+      if(!['auto','via-mobile','wifi','ethernet','interface'].includes(value.networkMode))throw Error('无效连接路径');
       if(value.networkMode==='via-mobile'){
         if(!tcp.supportsRelay)throw Error('通过移动端模式仅支持 Windows 桌面程序');
-        if(!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value.mobileHost))throw Error('请输入平板 Wi-Fi IPv4 地址');
+        const octets=value.mobileHost.split('.').map(Number);
+        if(octets.length!==4||octets.some(n=>!Number.isInteger(n)||n<0||n>255))throw Error('请输入有效的平板 Wi-Fi IPv4 地址');
         if(!Number.isInteger(value.mobilePort)||value.mobilePort<1024||value.mobilePort>65535)throw Error('平板服务端口无效');
         if(!/^\d{4}$/.test(value.mobilePairKey))throw Error('请输入平板当前显示的 4 位配对 Key');
-        if(!['auto','wifi','ethernet','interface'].includes(value.mobileNetworkMode))throw Error('平板网络模式无效');
-        if(value.connectTimeoutMs>10000||value.readTimeoutMs>10000)throw Error('通过平板的连接与读取超时不得超过 10000 ms');
+        if(!['auto','wifi','ethernet'].includes(value.mobileNetworkMode))throw Error('平板连接路径无效');
       }
       return value;
     };
-    const routeKey=t=>JSON.stringify([t.host,t.port,t.networkMode,t.networkMode==='interface'?t.interfaceName:'',t.networkMode==='via-mobile'?[t.mobileHost,t.mobilePort,t.mobileNetworkMode,t.mobilePairKey]:null]);
+    const routeKey=t=>JSON.stringify([t.host,t.port,t.networkMode,t.networkMode==='via-mobile'?[t.mobileHost,t.mobilePort,t.mobileNetworkMode,t.mobilePairKey]:null]);
     const withoutSecret=t=>{if(!t)return null;const {mobilePairKey,...rest}=t;return rest;};
     const currentRoute=()=>sessionTarget?routeKey(sessionTarget):null;
     async function closeSession(){
       const old=session?.sessionId;session=null;sessionTarget=null;identified=null;
       if(old)try{await tcp.close({sessionId:old});}catch{}
-      status('未连接','—');return true;
+      status('未连接','下次进入工作台时会自动重新探测。');
+      return true;
     }
-    async function openSession(){
+    async function connectAndIdentify(){
       const target=validateEndpoint(endpoint());
-      if(session&&currentRoute()===routeKey(target))return session;
-      if(session)await closeSession();
-      status('正在连接 TCP',target.host+':'+target.port+' · '+(target.networkMode==='via-mobile'?'经安卓平板 '+target.mobileHost:target.networkMode));
-      try{
-        const opened=await tcp.open({
-          host:target.host,port:target.port,networkMode:target.networkMode,
-          preferLinkLocalEthernet:target.networkMode==='auto'&&target.host.startsWith('169.254.'),
-          interfaceName:(target.networkMode==='interface'||target.networkMode==='via-mobile'&&target.mobileNetworkMode==='interface')?target.interfaceName:'',
-          connectTimeoutMs:target.connectTimeoutMs,
-          ...(target.networkMode==='via-mobile'?{
-            mobileHost:target.mobileHost,mobilePort:target.mobilePort,mobilePairKey:target.mobilePairKey,
-            mobileNetworkMode:target.mobileNetworkMode
-          }:{})
-        });
-        session=opened;sessionTarget=target;identified=null;
-        const routeDetail=[opened.interfaceName,opened.localAddress,opened.routeStrategy,opened.networkPreparation]
-          .filter(Boolean).join(' · ');
-        status('TCP 已连接，等待身份校验',(opened.remoteAddress||target.host)+':'+target.port+' · '+target.networkMode+(routeDetail?' · '+routeDetail:''));
-        return opened;
-      }catch(error){session=null;sessionTarget=null;identified=null;status('连接失败',message(error));throw error;}
-    }
-    const connect=()=>enqueue(async()=>{if(session)await closeSession();return openSession();});
-    const disconnect=()=>enqueue(closeSession);
-    const identify=()=>enqueue(async()=>{
-      const target=validateEndpoint(endpoint());
-      await openSession();
-      status('正在识别仪器','KXCI: *IDN? + NUL');
-      try{
-        const answer=await tcp.exchange({sessionId:session.sessionId,base64:encodeBase64(Kxci.IDN_REQUEST),readTimeoutMs:target.readTimeoutMs,idleTimeoutMs:120,maxBytes:8192});
-        const raw=decodeBase64(answer?.base64||'');
-        identified=Kxci.parseIdentity(raw,target.expectedSerial);
-        status('仪器身份校验成功',identified.raw);return identified;
-      }catch(error){
-        const old=session?.sessionId;session=null;sessionTarget=null;identified=null;
-        if(old)try{await tcp.close({sessionId:old});}catch{}
-        status('身份校验失败，连接已关闭',message(error));throw error;
+      if(session&&identified&&currentRoute()===routeKey(target)){
+        ui?.setConnectionState?.('connected','已连接',identified.model+' · S/N '+identified.serial);
+        return identified;
       }
-    });
+      if(session)await closeSession();
+      const modes=target.networkMode==='via-mobile'?['via-mobile']:tcp.supportsRelay?['auto','ethernet','wifi']:['auto'];
+      const failures=[];
+      ui?.setConnectionState?.('connecting','正在自动连接…','依次检查可用网卡与网络路由；随后自动校验仪器身份。');
+      for(const mode of modes){
+        const attempt={...target,networkMode:mode};
+        try{
+          const opened=await tcp.open({
+            host:target.host,port:target.port,networkMode:mode,
+            preferLinkLocalEthernet:mode==='auto'&&target.host.startsWith('169.254.'),
+            connectTimeoutMs:target.connectTimeoutMs,
+            ...(mode==='via-mobile'?{
+              mobileHost:target.mobileHost,mobilePort:target.mobilePort,
+              mobilePairKey:target.mobilePairKey,mobileNetworkMode:target.mobileNetworkMode
+            }:{})
+          });
+          session=opened;sessionTarget=target;identified=null;
+          const routeDetail=[opened.interfaceName,opened.localAddress,opened.routeStrategy,opened.networkPreparation]
+            .filter(Boolean).join(' · ');
+          ui?.setConnectionState?.('connecting','网络已接通，正在识别仪器…',routeDetail||target.host+':'+target.port);
+          const answer=await tcp.exchange({
+            sessionId:session.sessionId,base64:encodeBase64(Kxci.IDN_REQUEST),
+            readTimeoutMs:target.readTimeoutMs,idleTimeoutMs:120,maxBytes:8192
+          });
+          identified=Kxci.parseIdentity(decodeBase64(answer?.base64||''),target.expectedSerial);
+          status('已连接',identified.model+' · S/N '+identified.serial+' · '+(routeDetail||target.host+':'+target.port));
+          return identified;
+        }catch(error){
+          failures.push((mode==='via-mobile'?'平板中继':mode==='auto'?'自动网卡探测':mode==='ethernet'?'网线':'Wi-Fi')+'：'+message(error));
+          const old=session?.sessionId;session=null;sessionTarget=null;identified=null;
+          if(old)try{await tcp.close({sessionId:old});}catch{}
+        }
+      }
+      const summary='已尝试当前可用的连接路径，仍未识别到目标 4200A。'+failures.join('；');
+      status('连接失败',summary);
+      throw Error(summary);
+    }
+    const connect=()=>enqueue(connectAndIdentify);
+    const disconnect=()=>enqueue(closeSession);
+    const toggleConnection=()=>enqueue(async()=>session?closeSession():connectAndIdentify());
     const form=keys=>Object.fromEntries(keys.map(key=>[key,ui.get(key)]));
     function plan(){return Model.validatePlan(form(planKeys));}
     function preview(){
@@ -211,43 +220,24 @@
         element('svg',{xmlns:ns,width,height,viewBox:'0 0 '+width+' '+height},items.join(''),true);
     }
     const exportSvg=()=>saveFile('4200-simulation-curve.svg',svgImage(),'svg');
-    function refreshProfiles(){
-      ui.setOptions('profiles',[{value:'',label:'— 选择配置 —'},...profiles.map(p=>({value:p.name,label:p.name+' · '+p.endpoint.host+':'+p.endpoint.port}))],'');
-    }
-    function saveProfile(){
-      const target=validateEndpoint(endpoint()),name=String(ui.get('profileName')||'').trim();
-      if(!name||name.length>60)throw Error('配置名称需为 1–60 个字符');
-      profiles=profiles.filter(p=>p.name!==name);
-      if(profiles.length>=20)profiles.shift();
-      profiles.push({name,endpoint:withoutSecret(target)});
-      refreshProfiles();ctx.project.capture();ctx.status.set('Keithley 4200A：连接配置已保存到当前工程。');
-      return true;
-    }
-    function loadProfile(){
-      const name=String(ui.get('profiles')||'');
-      const selected=profiles.find(p=>p.name===name);
-      if(!selected)throw Error('请选择已有配置');
-      for(const key of connectionKeys)if(selected.endpoint[key]!==undefined)ui.set(key,selected.endpoint[key]);
-      ui.set('mobilePairKey','');
-      ui.set('profileName',selected.name);
-      ctx.status.set('Keithley 4200A：已加载配置，需重新连接并识别设备。');
-      return true;
-    }
     function onEdit(id){
       if(connectionKeys.includes(id)){
         identified=null;
-        if(session)ui.renderStatus('连接配置已更改；请重新连接 / 识别',sessionTarget?.host||'');
+        if(session)void enqueue(closeSession);
+        ui?.setConnectionState?.('idle','连接参数已修改','参数仅在本次页面会话有效；点击连接重新探测。');
       }
-      if(planKeys.includes(id))ui.renderPreview('方案已更改，请重新预览。');
-      ctx.project.capture();
+      if(planKeys.includes(id)){
+        try{preview();}catch{}
+        ctx.project.capture();
+      }
     }
     function safe(fn){return (...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;});}catch(e){ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;}};}
     ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,openMode:'window',description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>ctx.workspace.openPage('keithley4200Page')});
-    const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:''});
+    const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:'',onOpen:()=>{void safe(connect)();}});
     ui=Presentation.mount(ctx,page,{
       onEdit,
-      connect:safe(connect),identify:safe(identify),disconnect:safe(disconnect),
-      saveProfile:safe(saveProfile),loadProfile:safe(loadProfile),
+      desktopHost:tcp.supportsRelay===true,
+      toggleConnection:safe(toggleConnection),
       preview:safe(preview),simulate:safe(simulate),stop:safe(stop),
       exportCsv:safe(exportCsv),exportJson:safe(exportJson),exportSvg:safe(exportSvg)
     });
@@ -261,22 +251,18 @@
       }
     });
     ctx.project.registerSlice('keithley-4200',{
-      serialize:()=>({profiles:profiles.map(p=>({name:p.name,endpoint:{...p.endpoint}})),connection:form(connectionKeys),plan:form(planKeys)}),
+      serialize:()=>({plan:form(planKeys)}),
       restore:value=>{
         if(!value||typeof value!=='object')return;
-        profiles=Array.isArray(value.profiles)?value.profiles.filter(p=>p&&typeof p.name==='string'&&p.endpoint&&typeof p.endpoint==='object').slice(0,20).map(p=>({...p,endpoint:withoutSecret(p.endpoint)})):[];
-        for(const key of connectionKeys)if(value.connection&&Object.prototype.hasOwnProperty.call(value.connection,key))ui.set(key,value.connection[key]);
         for(const key of planKeys)if(value.plan&&Object.prototype.hasOwnProperty.call(value.plan,key))ui.set(key,value.plan[key]);
-        refreshProfiles();
       },
-      reset:()=>{profiles=[];refreshProfiles();}
+      reset:()=>{}
     });
-    refreshProfiles();
     ctx.capabilities.register('instrument.keithley-4200',{
       kind:'instrument.connection',title:'Keithley 4200A KXCI',remote:false,
       methods:{
         status:()=>({connected:!!session,sessionEndpoint:withoutSecret(sessionTarget),identified:identified?{...identified}:null,endpoint:withoutSecret(endpoint()),configurationChanged:!!sessionTarget&&routeKey(sessionTarget)!==routeKey(endpoint()),runningSimulation:!!run}),
-        connect,identify,disconnect,
+        connect,identify:connectAndIdentify,disconnect,
         validatePlan:()=>plan(),
         simulate:()=>simulate(),
         stopSimulation:()=>stop(),
