@@ -36,7 +36,7 @@ function Root {
         throw "Unsafe quotation/control character in fixed root command."
     }
     $remote = "su -c '" + $Command + "'"
-    return ADB -AdbArguments @("-s", $script:id, "shell", $remote)
+    return (ADB -AdbArguments @("-s", $script:id, "shell", $remote))
 }
 $listing = ADB -AdbArguments @("devices", "-l")
 $connected = @($listing -split "\r?\n" | Where-Object { $_ -match '^\S+\s+device(\s|$)' })
