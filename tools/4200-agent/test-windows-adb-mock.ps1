@@ -68,6 +68,7 @@ public static class MockAdb {
             return 0;
         }
         if (command == "getprop ro.product.model") { Console.WriteLine("OPD2515"); return 0; }
+        if (command.StartsWith("dumpsys connectivity | grep -iE ")) { return 0; }
         if (command.StartsWith("dumpsys package com.dk.datastudio")) { Console.WriteLine("versionName=3.71.138"); return 0; }
         if (command == "ip -4 -o addr show dev wlan0") { Console.WriteLine("wlan0 inet 10.87.70.190/16"); return 0; }
         if (command.StartsWith("if [ -d /sys/class/net/eth0 ]")) { Console.WriteLine("ethernet-present"); return 0; }
@@ -75,7 +76,12 @@ public static class MockAdb {
         if (command == "ip -4 -o addr show dev eth0") { return 0; }
         if (command == "pm list packages -U com.dk.datastudio") { Console.WriteLine("package:com.dk.datastudio uid:10256"); return 0; }
         if (command.StartsWith("ip -4 route get 169.254.111.118")) {
-            Console.WriteLine("169.254.111.118 via 10.87.255.254 dev wlan0 src 10.87.70.190");
+            string trace = File.ReadAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"));
+            if (trace.Contains("ip route replace 169.254.111.118/32 dev eth0")) {
+                Console.WriteLine("169.254.111.118 dev eth0 src 169.254.111.115");
+            } else {
+                Console.WriteLine("169.254.111.118 via 10.87.255.254 dev wlan0 src 10.87.70.190");
+            }
             return 0;
         }
         if (command == "ip neigh show dev eth0") { return 0; }
