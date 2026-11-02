@@ -82,6 +82,7 @@ Note ("Device: " + $script:serial)
 Note ("Instrument: " + $InstrumentIP + ":" + $Port)
 Note ("Repair requested: " + [bool]$RepairRoute)
 Note "No default route or instrument output settings will be changed."
+$null = Inspect -Label "Android Ethernet transport registry" -Command 'dumpsys connectivity | grep -iE "TRANSPORT_ETHERNET|InterfaceName.*eth0|eth0" | head -n 20'
 $null = Inspect -Label "device" -Command "getprop ro.product.model"
 $null = Inspect -Label "dkds version" -Command "dumpsys package com.dk.datastudio | grep versionName="
 $null = Inspect -Label "wifi IPv4" -Command "ip -4 -o addr show dev wlan0"
@@ -93,7 +94,7 @@ if ($check.Output -notmatch 'ethernet-present') {
 }
 $carrier = Inspect -Label "eth0 link carrier" -Command "cat /sys/class/net/eth0/carrier"
 $address = Inspect -Label "eth0 IPv4" -Command "ip -4 -o addr show dev eth0"
-$null = Inspect -Label "root route before" -Command ("ip -4 route get " + $InstrumentIP)
+$rootRoute = Inspect -Label "root route before" -Command ("ip -4 route get " + $InstrumentIP)
 $appInfo = Inspect -Label "DKDS UID" -Command "pm list packages -U com.dk.datastudio"
 $uid = ""
 if ($appInfo.Output -match 'uid:(\d+)') { $uid = $Matches[1] }
@@ -120,8 +121,14 @@ if ($RepairRoute) {
             if ($route.ExitCode -eq 0) { $script:modified = $true }
         }
     }
-    $null = Inspect -Label "root route after" -Command ("ip -4 route get " + $InstrumentIP)
+    $rootRoute = Inspect -Label "root route after" -Command ("ip -4 route get " + $InstrumentIP)
     if ($uid) { $null = Inspect -Label "DKDS UID route after" -Command ("ip -4 route get " + $InstrumentIP + " uid " + $uid) }
+}
+if ($rootRoute.ExitCode -ne 0 -or $rootRoute.Output -notmatch ' dev eth0( |$)') {
+    Note "RESULT: root route does not select eth0; skip instrument TCP and *IDN? to avoid wrong-network requests."
+    Note "Next diagnostic target: Android per-UID routing or eth0 address/network registration."
+    Note ("REPORT: " + $reportFile)
+    exit 0
 }
 $null = Inspect -Label "KXCI TCP port (read-only handshake)" -Command ("nc -z -w 3 " + $InstrumentIP + " " + $Port)
 $id = Inspect -Label "KXCI identity (read-only *IDN?)" -Command ('printf "*IDN?\000" | nc -w 3 ' + $InstrumentIP + ' ' + $Port)
