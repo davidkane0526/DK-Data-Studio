@@ -35,7 +35,7 @@ internal object DkdsKeithleyEthernet {
   }
   private fun interfaceFor(mode:String,wanted:String):String? {
     if(mode=="wifi")return null
-    if(mode=="interface")return wanted.takeIf{ifaceRegex.matches(it)}
+    if(mode=="interface")return wanted.takeIf{ifaceRegex.matches(it) && (it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb"))}
     val names=try {
       val all=java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
       (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
