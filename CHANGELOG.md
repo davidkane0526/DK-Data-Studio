@@ -1,3 +1,11 @@
+# 3.71.141 Release — Detachable Keithley 4200A read-only standalone CLI (Preview)
+
+- The browser KXCI identity protocol and non-hardware measurement model also export CommonJS modules, with no required DK Data Studio runtime when loaded independently in Node.js.
+- Adds `tools/4200-extract/identify.js`, a one-shot standalone Node.js read-only client: only an explicit `--identify` request sends the exact `*IDN?\\0` command; no source/output/sweep actions and no background service.
+- The source-only extraction manifest includes the independent read-only CLI and transport dependencies. CI extracts to an external directory and tests a real local TCP socket with a simulated KI4200A, including invalid serial and mode checks.
+- Android and Windows networking remain at the 3.71.140 hardware-transport feature level; a real instrument end-to-end regression is still required for Windows, non-Root Android and Wi-Fi.
+- App/mobile version 3.71.141, Android versionCode 281.
+
 # 3.71.140 Release — 4200A detachable KXCI core and multihomed network reliability (Preview)
 
 - Separates the read-only NUL-terminated KI4200A identity protocol from the plugin UI. Adds a machine-readable migration manifest and verified source-only extraction tool for future standalone Android/Windows development.

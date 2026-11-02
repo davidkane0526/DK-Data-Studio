@@ -1,6 +1,6 @@
 {
   "schema": "dkds.4200.extraction.v1",
-  "stage": "read-only KXCI connection; measurement simulation only",
+  "stage": "standalone read-only Node KXCI identity CLI; embedded Android/Windows GUI; measurement simulation only",
   "coreIndependentModules": [
     "src/plugins/keithley-4200/kxci-protocol.js",
     "src/plugins/keithley-4200/measurement-model.js"

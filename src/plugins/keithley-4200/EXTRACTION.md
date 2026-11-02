@@ -4,8 +4,8 @@
 
 ## 可直接迁移的逻辑
 
-- `kxci-protocol.js`：只读 `*IDN? + NUL` 指令和身份解析。不依赖操作系统、Electron、React Native 或仪器输出命令。
-- `measurement-model.js`：**仅仿真**参数验证和曲线数据。不能宣称为实机测量功能。
+- `kxci-protocol.js`：只读 `*IDN? + NUL` 指令和身份解析。不依赖操作系统、Electron、React Native 或仪器输出命令，同时通过 CommonJS 提供独立 Node.js 调用。
+- `measurement-model.js`：**仅仿真**参数验证和曲线数据，且可作为独立 Node.js 模块导入。不能宣称为实机测量功能。
 - `plugin.js`：依赖 DKDS 插件服务、模块、项目持久化、界面与通用 TCP 适配接口。独立软件应替换适配器，不应复制整个 DKDS 主程序。
 
 ## 需要适配而不是直接复制的依赖
