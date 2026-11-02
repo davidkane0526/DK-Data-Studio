@@ -76,7 +76,7 @@ function Call-Root {
         throw "Unsafe quotation/control character in fixed root command."
     }
     $remote = "su -c '" + $Command + "'"
-    return Call-Adb -Arguments @("-s", $script:serial, "shell", $remote)
+    return (Call-Adb -Arguments @("-s", $script:serial, "shell", $remote))
 }
 $deviceOutput = Call-Adb -Arguments @("devices", "-l")
 $devices = @($deviceOutput -split "\r?\n" | Where-Object { $_ -match '^\S+\s+device(\s|$)' })
