@@ -72,6 +72,7 @@ jobs:
       - name: Verify mobile presentation contracts
         shell: bash
         run: |
+          node tests/test-keithley-4200-native-recovery.js
           node tests/test-keithley-4200-phase1.js
           node tests/test-keithley-4200-workbench.js
           node tests/test-keithley-4200-integration.js
