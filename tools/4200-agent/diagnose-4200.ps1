@@ -87,7 +87,7 @@ Note "No default route or instrument output settings will be changed."
 if ($CleanupRoute) {
     Note "CLEANUP: removing only DKDS 4200A-specific network adjustments"
     $rules = Inspect -Label "rules before cleanup" -Command "ip -4 rule show"
-    $rulePattern = "(?m)^\\s*9000:.*to\\s+" + [regex]::Escape($InstrumentIP) + "(?:/32)?\\s+lookup\\s+4200(?:\\s|$)"
+    $rulePattern = "(?m)^\s*9000:.*to\s+" + [regex]::Escape($InstrumentIP) + "(?:/32)?\s+lookup\s+4200(?:\s|$)"
     if ($rules.Output -match $rulePattern) {
         $res = Root -Command ("ip -4 rule del pref 9000 to " + $InstrumentIP + "/32 lookup 4200") -AllowFailure
         Note ("Removed instrument-only rule: exit=" + $res.ExitCode + " " + $res.Output)
