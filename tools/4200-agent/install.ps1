@@ -91,6 +91,10 @@ Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", "if [ -f /data/adb/dkd
 
 $install = "umask 077; mkdir -p /data/adb/dkds-agent/logs; chmod 700 /data/adb/dkds-agent /data/adb/dkds-agent/logs; cp /data/local/tmp/dkds-agent.sh.stage /data/adb/dkds-agent/agent.sh; chmod 700 /data/adb/dkds-agent/agent.sh; cp /data/local/tmp/dkds-agent-service.sh.stage /data/adb/service.d/dkds-agent.sh; chmod 700 /data/adb/service.d/dkds-agent.sh"
 Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", $install) | Out-Null
+# The previous shell loop can remain blocked in a foreground sleep after TERM.
+# Invoke the new bounded stop implementation before the new loop is started.
+Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
+    "sh /data/adb/dkds-agent/agent.sh stop") | Out-Null
 
 $remoteHashes = Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
     "sha256sum /data/adb/dkds-agent/agent.sh /data/adb/service.d/dkds-agent.sh")
