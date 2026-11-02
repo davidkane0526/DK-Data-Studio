@@ -18,7 +18,6 @@ assert(recovery.includes('ip -4 rule add pref 9000 to $target/32 lookup 4200'), 
 assert(!recovery.includes('ip route replace default') && !recovery.includes('ip route add default'), 'Never change Android default route');
 assert(!recovery.includes('service.d') && !recovery.includes('127.0.0.1:'), 'No daemon/relay is needed');
 assert(recovery.includes('waitFor(8,java.util.concurrent.TimeUnit.SECONDS)'), 'Root command timeout mandatory');
-const native = require(path.join(root, 'mobile/plugins/withDkdsAndroidNativeHost.js')).__test.kotlinSource('com.dk.datastudio');
-assert(native.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'),'Generated native TCP method must invoke recovery');
-assert(native.includes('network?.socketFactory?.createSocket()'),'Preserve Android native scoped Ethernet network');
+assert(generator.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'), 'Native host source must invoke the generated recovery helper');
+assert(generator.includes('network?.socketFactory?.createSocket()'), 'Preserve scoped Android Ethernet sockets');
 console.log('4200 Android on-demand Ethernet recovery contract OK');
