@@ -45,7 +45,7 @@ public static class MockAdb {
             Console.WriteLine(Environment.GetEnvironmentVariable("MOCK_SERVICE_HASH") + "  /data/adb/service.d/dkds-agent.sh");
             return 0;
         }
-        if (command.StartsWith("umask 077;") || command.StartsWith("if [ -f /data/adb/dkds-agent/agent.sh ]")) return 0;
+        if (command.StartsWith("umask 077; mkdir -p /data/adb/dkds-agent/logs") || command.StartsWith("if [ -f /data/adb/dkds-agent/agent.sh ]")) return 0;
         if (command == "sh /data/adb/dkds-agent/agent.sh stop") return 0;
         if (command == "sh /data/adb/dkds-agent/agent.sh once") {
             Console.WriteLine("Saved diagnostic snapshot to /data/adb/dkds-agent/logs/diagnostics.log");
