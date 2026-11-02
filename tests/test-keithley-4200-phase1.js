@@ -57,7 +57,7 @@ assert(native.includes('for(network in orderedNetworks())')&&native.includes('fo
 assert(native.includes('system-default')&&native.includes('DkdsKeithleyEthernet.prepare(target,mode,wanted)'),
   'Auto mode must retain a system-route last resort and only then attempt optional Ethernet recovery.');
 assert(gateway.includes('DkdsKeithleyEthernet.prepare(host,mode,wanted)'),'The paired gateway must share USB adapter repair logic.');
-assert(gateway.includes('private fun fallbackSource(')&&gateway.includes('if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))'),
+assert(gateway.includes('private fun fallbackSources(')&&gateway.includes('for(source in fallbackSources(mode,wanted,linkLocal))')&&gateway.includes('socket.bind(InetSocketAddress(source.second,0))'),
   'Android LAN gateway must share the same Ethernet fallback for Windows relay sessions.');
 assert(native.includes('putString("routeStrategy"')&&gateway.includes('.put("routeStrategy"'),
   'Both Android transports must report their selected route strategy.');
@@ -71,6 +71,6 @@ assert(host.includes('tcp:Object.freeze'),'Core host must publish a generic tcp 
 for(const token of ["nativeCall('tcpOpen'","nativeCall('tcpExchange'","nativeCall('tcpClose'"])assert(web.includes(token),'Web/mobile bridge missing '+token);
 for(const token of ['tcpOpen?:','tcpExchange?:','tcpClose?:'])assert(protocol.includes(token),'Native facade missing '+token);
 for(const token of ["req.type === 'tcpOpen'","req.type === 'tcpExchange'","req.type === 'tcpClose'"])assert(router.includes(token),'Native request router missing '+token);
-for(const token of ['ConnectivityManager','socketFactory?.createSocket()','interfaceName','android.permission.ACCESS_NETWORK_STATE','@ReactMethod fun tcpOpen','@ReactMethod fun tcpExchange','@ReactMethod fun tcpClose','val requestBytes=Base64.decode','write(requestBytes)'])assert(native.includes(token),'Android TCP Host missing '+token);
+for(const token of ['ConnectivityManager','network.socketFactory.createSocket()','interfaceName','android.permission.ACCESS_NETWORK_STATE','@ReactMethod fun tcpOpen','@ReactMethod fun tcpExchange','@ReactMethod fun tcpClose','val requestBytes=Base64.decode','write(requestBytes)'])assert(native.includes(token),'Android TCP Host missing '+token);
 
 console.log('Keithley 4200 Phase 1 architecture/safety contract PASS');
