@@ -68,7 +68,7 @@ public static class MockAdb {
             return 0;
         }
         if (command == "getprop ro.product.model") { Console.WriteLine("OPD2515"); return 0; }
-        if (command.StartsWith("dumpsys connectivity | grep -iE ")) { return 0; }
+        if (command == "dumpsys connectivity | grep -i eth0 | head -n 20") { Console.WriteLine("InterfaceName: eth0"); return 0; }
         if (command.StartsWith("dumpsys package com.dk.datastudio")) { Console.WriteLine("versionName=3.71.138"); return 0; }
         if (command == "ip -4 -o addr show dev wlan0") { Console.WriteLine("wlan0 inet 10.87.70.190/16"); return 0; }
         if (command.StartsWith("if [ -d /sys/class/net/eth0 ]")) { Console.WriteLine("ethernet-present"); return 0; }
