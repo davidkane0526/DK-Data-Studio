@@ -39,24 +39,39 @@ private object DkdsLanKxci {
       else->throw IllegalArgumentException("Unsupported read-only LAN KXCI operation.")
     }
   }
-  private fun localSource(iface:String,linkLocal:Boolean):java.net.Inet4Address?{
-    val ni=try{java.net.NetworkInterface.getByName(iface)}catch(_:Throwable){null} ?: return null
-    if(!ni.isUp)return null
-    val ipv4=java.util.Collections.list(ni.inetAddresses).filterIsInstance<java.net.Inet4Address>().filter{!it.isLoopbackAddress}
-    return if(linkLocal)ipv4.firstOrNull{it.hostAddress.startsWith("169.254.")}else ipv4.firstOrNull()
-  }
-  private fun fallbackSource(mode:String,iface:String,linkLocal:Boolean):Pair<String,java.net.Inet4Address>?{
-    if(!(mode=="ethernet"||mode=="interface"||mode=="auto"&&linkLocal))return null
-    val names=if(mode=="interface")listOf(iface)else{
-      val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
-      (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
+  private fun fallbackSources(mode:String,iface:String,linkLocal:Boolean):List<Pair<String,java.net.Inet4Address>>{
+    val all=try{java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())}
+      catch(_:Throwable){emptyList<java.net.NetworkInterface>()}
+    val names=when(mode){
+      "interface"->listOf(iface)
+      "ethernet"->all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")||it.contains("ethernet",true)||it.contains("以太网")}
+      "wifi"->all.map{it.name}.filter{it.startsWith("wlan")||it.startsWith("wifi")||it.startsWith("wlp")||it.contains("wireless",true)||it.contains("无线")}
+      else->all.map{it.name}
+    }.distinct().sortedWith(compareBy<String>{
+      when{
+        it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")||it.contains("ethernet",true)||it.contains("以太网")->0
+        it.startsWith("wlan")||it.startsWith("wifi")||it.startsWith("wlp")||it.contains("wireless",true)||it.contains("无线")->1
+        else->2
+      }
+    })
+    val rows=mutableListOf<Pair<String,java.net.Inet4Address>>()
+    for(name in names){
+      val ni=try{java.net.NetworkInterface.getByName(name)}catch(_:Throwable){null} ?: continue
+      if(!ni.isUp)continue
+      val addresses=java.util.Collections.list(ni.inetAddresses).filterIsInstance<java.net.Inet4Address>()
+        .filter{!it.isLoopbackAddress}
+      for(address in addresses)rows.add(Pair(name,address))
     }
-    return names.firstNotNullOfOrNull{name->localSource(name,linkLocal)?.let{Pair(name,it)}}
+    return rows.distinctBy{it.first+"|"+it.second.hostAddress}
+      .sortedWith(compareBy<Pair<String,java.net.Inet4Address>>{if(linkLocal&&it.second.hostAddress.startsWith("169.254."))0 else 1}.thenBy{it.first})
+      .take(16)
   }
+
   private fun open(context:Context,owner:String,p:JSONObject):JSONObject{
     cleanExpired()
     if(current!=null && current?.owner!=owner)throw IllegalStateException("Another paired browser owns the instrument. Disconnect it first.")
-    // A new Connect is an explicit user action. No automatic retry or output replay.
+    // A new Connect is an explicit user action. The only permitted exchange
+    // remains the read-only *IDN? request; no output command is replayed.
     closeAll()
     val host=p.optString("host","").trim()
     if(host.isEmpty()||host.length>253||host.any{it.isWhitespace()||it=='/'||it=='\\'})throw IllegalArgumentException("Invalid instrument host.")
@@ -67,49 +82,93 @@ private object DkdsLanKxci {
     val wanted=p.optString("interfaceName","").trim()
     if(mode=="interface" && (wanted.isEmpty()||wanted.length>32))throw IllegalArgumentException("Interface name is required.")
     val cm=context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val network=when(mode){
-      "auto"->if(host.startsWith("169.254."))cm.allNetworks.firstOrNull{
-        cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
-      }else null
-      "wifi"->cm.allNetworks.firstOrNull{cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true}
-      "ethernet"->cm.allNetworks.firstOrNull{cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true}
-      else->cm.allNetworks.firstOrNull{cm.getLinkProperties(it)?.interfaceName==wanted}
-    }
     val linkLocal=host.startsWith("169.254.")
-    val configuredEthernet=network!=null&&
-      cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true&&
-      cm.getLinkProperties(network)?.linkAddresses?.any {
-        it.address is java.net.Inet4Address && it.address.hostAddress.startsWith("169.254.")
-      }==true
-    val networkPreparation=if(linkLocal&&mode!="wifi"&&!configuredEthernet)
-      DkdsKeithleyEthernet.prepare(host,mode,wanted)
-      else if(configuredEthernet) "android-ethernet-no-root" else "not-required"
-    val fallback=if(network==null)fallbackSource(mode,wanted,linkLocal)else null
-    if(network==null&&fallback==null&&(mode!="auto"||linkLocal))throw IllegalStateException(
-      "Android cannot access the selected Ethernet/IPv4 interface. eth0 may be visible only to ADB/root.")
-    val socket=network?.socketFactory?.createSocket() ?: Socket()
-    try{
-      socket.tcpNoDelay=true
-      if(fallback!=null)socket.bind(InetSocketAddress(fallback.second,0))
-      socket.connect(InetSocketAddress(host,port),timeout)
-      val id=UUID.randomUUID().toString()
-      current=Session(id,owner,socket)
-      return JSONObject()
-        .put("sessionId",id)
-        .put("localAddress",socket.localAddress?.hostAddress ?: "")
-        .put("localPort",socket.localPort)
-        .put("remoteAddress",socket.inetAddress?.hostAddress ?: host)
-        .put("remotePort",socket.port)
-        .put("interfaceName",network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: wanted)
-        .put("routeStrategy",if(network!=null)"android-network"else if(fallback!=null)"local-source-bind"else"system-default")
-        .put("networkPreparation",networkPreparation)
-        .put("networkMode",mode)
-    }catch(error:Throwable){
-      try{socket.close()}catch(_:Throwable){}
-      throw IllegalStateException("Android LAN TCP connect failed via "+
-        (network?.let{cm.getLinkProperties(it)?.interfaceName} ?: fallback?.first ?: "system-default")+
-        " to "+host+":"+port+": "+(error.message ?: error.javaClass.simpleName),error)
+    val errors=mutableListOf<String>()
+    var networkPreparation="not-required"
+    fun orderedNetworks():List<android.net.Network>{
+      val all=cm.allNetworks.toList()
+      fun iface(n:android.net.Network)=cm.getLinkProperties(n)?.interfaceName.orEmpty()
+      fun eth(n:android.net.Network)=cm.getNetworkCapabilities(n)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true
+      fun wifi(n:android.net.Network)=cm.getNetworkCapabilities(n)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true
+      return when(mode){
+        "ethernet"->all.filter{eth(it)}
+        "wifi"->all.filter{wifi(it)}
+        "interface"->all.filter{iface(it)==wanted}
+        else->if(linkLocal)all.filter{eth(it)}+all.filter{wifi(it)}+all.filter{!eth(it)&&!wifi(it)}
+          else all.filter{wifi(it)}+all.filter{eth(it)}+all.filter{!eth(it)&&!wifi(it)}
+      }.distinct()
     }
+    val initialEthernetReady=orderedNetworks().any{network->
+      cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)==true&&
+      cm.getLinkProperties(network)?.linkAddresses?.any{
+        it.address is java.net.Inet4Address&&it.address.hostAddress.startsWith("169.254.")
+      }==true
+    }
+    if(linkLocal&&initialEthernetReady)networkPreparation="android-ethernet-no-root"
+    val perAttempt=timeout.coerceAtMost(500)
+    var selected:Socket?=null
+    var selectedInterface=""
+    var selectedStrategy=""
+    fun tryNetwork(network:android.net.Network):Boolean{
+      val iface=cm.getLinkProperties(network)?.interfaceName.orEmpty()
+      val socket=try{network.socketFactory.createSocket()}catch(error:Throwable){
+        errors.add((iface.ifBlank{"Android Network"})+": "+(error.message?:error.javaClass.simpleName));return false
+      }
+      try{
+        socket.tcpNoDelay=true
+        socket.connect(InetSocketAddress(host,port),perAttempt)
+        selected=socket;selectedInterface=iface;selectedStrategy="android-network";return true
+      }catch(error:Throwable){
+        try{socket.close()}catch(_:Throwable){}
+        errors.add((iface.ifBlank{"Android Network"})+": "+(error.message?:error.javaClass.simpleName));return false
+      }
+    }
+    fun trySource(source:Pair<String,java.net.Inet4Address>):Boolean{
+      val socket=Socket()
+      try{
+        socket.tcpNoDelay=true
+        socket.bind(InetSocketAddress(source.second,0))
+        socket.connect(InetSocketAddress(host,port),perAttempt)
+        selected=socket;selectedInterface=source.first;selectedStrategy="local-source-bind";return true
+      }catch(error:Throwable){
+        try{socket.close()}catch(_:Throwable){}
+        errors.add(source.first+" ["+source.second.hostAddress+"]: "+(error.message?:error.javaClass.simpleName));return false
+      }
+    }
+    for(network in orderedNetworks())if(tryNetwork(network))break
+    if(selected==null)for(source in fallbackSources(mode,wanted,linkLocal))if(trySource(source))break
+    if(selected==null&&linkLocal&&mode!="wifi"){
+      networkPreparation=try{DkdsKeithleyEthernet.prepare(host,mode,wanted)}
+        catch(error:Throwable){"root-recovery-failed: "+(error.message?:error.javaClass.simpleName)}
+      for(network in orderedNetworks())if(tryNetwork(network))break
+      if(selected==null)for(source in fallbackSources(mode,wanted,linkLocal))if(trySource(source))break
+    }
+    if(selected==null&&mode=="auto"){
+      val socket=Socket()
+      try{
+        socket.tcpNoDelay=true
+        socket.connect(InetSocketAddress(host,port),perAttempt)
+        selected=socket;selectedInterface="";selectedStrategy="system-default"
+      }catch(error:Throwable){
+        try{socket.close()}catch(_:Throwable){}
+        errors.add("system route: "+(error.message?:error.javaClass.simpleName))
+      }
+    }
+    val socket=selected ?: throw IllegalStateException(
+      "Android LAN gateway could not reach "+host+":"+port+" after trying "+errors.size+
+      " network paths: "+(errors.take(8).joinToString(" | ").ifBlank{"no usable network/interface was exposed"}))
+    val id=UUID.randomUUID().toString()
+    current=Session(id,owner,socket)
+    return JSONObject()
+      .put("sessionId",id)
+      .put("localAddress",socket.localAddress?.hostAddress ?: "")
+      .put("localPort",socket.localPort)
+      .put("remoteAddress",socket.inetAddress?.hostAddress ?: host)
+      .put("remotePort",socket.port)
+      .put("interfaceName",selectedInterface)
+      .put("routeStrategy",selectedStrategy)
+      .put("networkPreparation",networkPreparation)
+      .put("networkMode",mode)
   }
   private fun exchange(owner:String,p:JSONObject):JSONObject{
     val row=requireOwned(p.optString("sessionId",""),owner)
