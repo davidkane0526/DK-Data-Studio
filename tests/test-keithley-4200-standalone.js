@@ -28,6 +28,11 @@ async function main(){
     assert(fs.existsSync(cli),'Exported read-only CLI missing.');
     assert(fs.existsSync(path.join(output,'src/plugins/keithley-4200/kxci-protocol.js')));
     assert(fs.existsSync(path.join(output,'desktop/main-modules/tcp-runtime.js')));
+    const model=require(path.join(output,'src/plugins/keithley-4200/measurement-model.js'));
+    const plan=model.validatePlan({mode:'iv',loops:1,points:3});
+    assert.equal(plan.executable,false,'Portable plan remains non-executable');
+    assert.equal(plan.hardwareVerified,false,'Portable plan is not real hardware control');
+    assert.equal(model.createDataset(plan).source,'simulation','Portable model never labels simulation as instrument output');
     const help=await execute(cli,['--help']);
     assert.match(help.stdout,/read-only identity/);
     const noIdentify=await execute(cli,['--host','127.0.0.1']);
