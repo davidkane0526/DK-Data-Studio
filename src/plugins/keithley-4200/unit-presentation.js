@@ -116,7 +116,7 @@
 
     workbench.compose({primary:{id:'main',label:'4200A',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},primes:[],subs:[]});
     const get=id=>controls.get(id)?.value;
-    const set=(id,value)=>{const node=controls.get(id);if(node)node.value=String(value??'');};
+    const set=(id,value)=>{const node=controls.get(id);if(node)node.value=String(value??'');if(id==='mode')updateModeVisibility(String(value||'iv'));};
     const setConnectionState=(state,headline,detail)=>{
       if(stateNote)stateNote.textContent=String(headline||'未连接');
       if(routeNote)routeNote.textContent=String(detail||'—');
