@@ -49,17 +49,19 @@ jobs:
       - name: Parse Windows bootstrap
         shell: pwsh
         run: |
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path "tools/4200-agent/install.ps1"),
-            [ref]$tokens,
-            [ref]$errors) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Host $_ }
-            exit 1
+          foreach ($source in @("tools/4200-agent/install.ps1", "tools/4200-agent/install-updater.ps1")) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $source),
+              [ref]$tokens,
+              [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Host $_ }
+              exit 1
+            }
+            Write-Host "PowerShell syntax OK: $source"
           }
-          Write-Host "PowerShell syntax OK"
 
       - name: Compile standalone Android app_process helper
         shell: bash
