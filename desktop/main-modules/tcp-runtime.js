@@ -59,8 +59,57 @@ function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()
   return {...selected[0],routeStrategy:wifiRoute?'wifi-route-required':'local-address-bound'};
 }
 
-function createTcpRuntime(){
+
+function resolveLocalCandidates(payload={},networkInterfaces=os.networkInterfaces()){
+  const explicitAddress=String(payload.localAddress||'').trim();
+  if(explicitAddress){
+    if(net.isIP(explicitAddress)!==4)throw new Error('Explicit TCP localAddress must be an IPv4 address.');
+    return [{address:explicitAddress,interfaceName:'',networkMode:'address',routeStrategy:'explicit-local-address'}];
+  }
+  const mode=String(payload.networkMode||'auto').trim().toLowerCase();
+  if(!['auto','wifi','ethernet','interface'].includes(mode))throw new Error('Unsupported TCP network mode: '+mode);
+  const host=String(payload.host||'').trim();
+  const targetLinkLocal=net.isIP(host)===4&&host.startsWith('169.254.');
+  const name=String(payload.interfaceName||'').trim();
+  if(mode==='interface'&&!name)throw new Error('TCP interfaceName is required in interface mode.');
+  const ethernetName=iface=>/(ethernet|ether|以太网|乙太網|有线|本地连接|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(iface);
+  const wifiName=iface=>/(wi-?fi|wireless|wlan|wlp[0-9]|无线|無線|airport|802[.]11|^en0$)/i.test(iface);
+  const rows=[];
+  for(const [iface,addresses] of Object.entries(networkInterfaces)){
+    const lower=iface.toLowerCase();
+    const matches=mode==='auto'||mode==='interface'&&lower===name.toLowerCase()||
+      mode==='ethernet'&&ethernetName(iface)||mode==='wifi'&&wifiName(iface);
+    if(!matches)continue;
+    for(const row of addresses||[]){
+      if((row.family!=='IPv4'&&row.family!==4)||row.internal||net.isIP(row.address)!==4)continue;
+      const linkLocal=row.address.startsWith('169.254.');
+      rows.push({address:row.address,interfaceName:iface,networkMode:mode,
+        routeStrategy:targetLinkLocal&&!linkLocal&&wifiName(iface)?'wifi-route-required':'local-address-bound',
+        linkLocal,ethernet:ethernetName(iface),wifi:wifiName(iface)});
+    }
+  }
+  const byPriority=(a,b)=>(Number(b.linkLocal)-Number(a.linkLocal))||
+    (Number(b.ethernet)-Number(a.ethernet))||
+    (Number(b.wifi)-Number(a.wifi));
+  rows.sort(byPriority);
+  let selected=rows;
+  if(mode==='auto'&&!targetLinkLocal&&!payload.preferLinkLocalEthernet){
+    // Let the OS choose its best route first for ordinary routed destinations.
+    selected=[];
+  }else if(mode==='auto'&&targetLinkLocal&&payload.preferLinkLocalEthernet){
+    // All Ethernet link-local addresses first, then Wi-Fi/other source addresses
+    // for networks with an explicit host route, then the OS route as last resort.
+    selected=rows;
+  }
+  const candidates=selected.slice(0,8).map(({linkLocal,ethernet,wifi,...row})=>row);
+  if(mode==='auto')candidates.push({address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'});
+  if(!candidates.length&&mode==='auto')candidates.push({address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'});
+  return candidates;
+}
+
+function createTcpRuntime(options={}){
   const sessions=new Map();
+  const readInterfaces=()=>typeof options.networkInterfaces==='function'?options.networkInterfaces():options.networkInterfaces||os.networkInterfaces();
 
   function getSession(id){
     const key=String(id||'').trim();
@@ -82,51 +131,60 @@ function createTcpRuntime(){
     const host=String(payload.host||'').trim();
     const port=boundedInt(payload.port,0,1,65535);
     const connectTimeoutMs=boundedInt(payload.connectTimeoutMs,5000,250,120000);
-    const binding=resolveLocalAddress(payload);
-    const localAddress=binding.address;
     if(!host)throw new Error('TCP host is required.');
     if(!port)throw new Error('TCP port must be between 1 and 65535.');
-
-    return await new Promise((resolve,reject)=>{
-      const id=crypto.randomUUID();
-      const socket=new net.Socket();
-      const row={id,socket,busy:false,lastError:''};
-      let settled=false;
-      const finishError=error=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        try{socket.destroy();}catch{}
-        const message=String(error?.message||error||'TCP connect failed.');
-        const note=(binding.address&&host.startsWith('169.254.'))
-          ? ' Bound source '+binding.address+' on '+(binding.interfaceName||'selected interface')+
-            '; verify the OS host route and cable/link state for '+host+'.' : '';
-        reject(new Error(message+note));
-      };
-      const timer=setTimeout(()=>finishError(new Error('TCP connect timeout after '+connectTimeoutMs+' ms.')),connectTimeoutMs);
-      socket.setNoDelay(true);
-      socket.once('error',finishError);
-      socket.once('connect',()=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        socket.removeListener('error',finishError);
-        sessions.set(id,row);
-        socket.on('error',error=>{row.lastError=String(error?.message||error||'TCP socket error');});
-        socket.on('close',()=>sessions.delete(id));
-        resolve({
-          sessionId:id,
-          localAddress:socket.localAddress||'',
-          localPort:Number(socket.localPort)||0,
-          remoteAddress:socket.remoteAddress||host,
-          remotePort:Number(socket.remotePort)||port,
-          interfaceName:binding.interfaceName,
-          networkMode:binding.networkMode,
-          routeStrategy:binding.routeStrategy
+    const candidates=resolveLocalCandidates(payload,readInterfaces());
+    const failures=[];
+    const attemptTimeoutMs=Math.min(1200,Math.max(300,Math.ceil(connectTimeoutMs/Math.max(1,candidates.length))));
+    for(const binding of candidates){
+      try{
+        return await new Promise((resolve,reject)=>{
+          const id=crypto.randomUUID();
+          const socket=new net.Socket();
+          const row={id,socket,busy:false,lastError:''};
+          let settled=false;
+          const finishError=error=>{
+            if(settled)return;
+            settled=true;
+            clearTimeout(timer);
+            try{socket.destroy();}catch{}
+            const message=String(error?.message||error||'TCP connect failed.');
+            const note=(binding.address&&host.startsWith('169.254.'))
+              ? ' Bound source '+binding.address+' on '+(binding.interfaceName||'selected interface')+
+                '; verify the OS host route and cable/link state for '+host+'.' : '';
+            reject(new Error(message+note));
+          };
+          const timer=setTimeout(()=>finishError(new Error('TCP connect timeout after '+attemptTimeoutMs+' ms.')),attemptTimeoutMs);
+          socket.setNoDelay(true);
+          socket.once('error',finishError);
+          socket.once('connect',()=>{
+            if(settled)return;
+            settled=true;
+            clearTimeout(timer);
+            socket.removeListener('error',finishError);
+            sessions.set(id,row);
+            socket.on('error',error=>{row.lastError=String(error?.message||error||'TCP socket error');});
+            socket.on('close',()=>sessions.delete(id));
+            resolve({
+              sessionId:id,
+              localAddress:socket.localAddress||'',
+              localPort:Number(socket.localPort)||0,
+              remoteAddress:socket.remoteAddress||host,
+              remotePort:Number(socket.remotePort)||port,
+              interfaceName:binding.interfaceName,
+              networkMode:binding.networkMode,
+              routeStrategy:binding.routeStrategy
+            });
+          });
+          socket.connect({host,port,...(binding.address?{localAddress:binding.address}:{})});
         });
-      });
-      socket.connect({host,port,...(localAddress?{localAddress}:{})});
-    });
+      }catch(error){
+        failures.push((binding.interfaceName||binding.routeStrategy)+
+          (binding.address?' ['+binding.address+']':'')+': '+String(error?.message||error));
+      }
+    }
+    throw new Error('TCP connection failed after trying '+candidates.length+
+      ' available network paths ('+failures.join(' | ')+').');
   }
 
   async function exchange(payload={}){
@@ -198,4 +256,4 @@ function createTcpRuntime(){
   return Object.freeze({open,exchange,close,closeAll});
 }
 
-module.exports={createTcpRuntime,resolveLocalAddress};
+module.exports={createTcpRuntime,resolveLocalAddress,resolveLocalCandidates};
