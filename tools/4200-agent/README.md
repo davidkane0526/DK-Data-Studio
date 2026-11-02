@@ -7,7 +7,9 @@ It gathers `eth0` link/IPv4, Android ConnectivityManager Ethernet exposure, Wi-F
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\diagnose-4200.ps1 -RepairRoute
 ```
 
-`-RepairRoute` is opt-in and only permitted if `eth0` physically exists and has carrier=1. It may add a missing link-local `169.254.111.115/16` to `eth0`, and replace the **instrument-only** `169.254.111.118/32` route on the tablet. It never changes the default route or instrument output. Addresses are parameters when lab configuration changes. Before contacting the instrument it verifies the root route selects eth0; otherwise TCP/IDN probes are skipped.
+`-RepairRoute` is opt-in and requires `eth0` to exist with carrier=1. It may add the missing `169.254.111.115/16` to `eth0`, create an instrument-only `169.254.111.118/32` route in main **and numeric table 4200**, and add a destination-specific priority-9000 `ip rule` to overcome Android Wi-Fi policy routing. It refuses to overwrite any preexisting priority-9000 rule not matching this instrument/table, or unrelated table 4200 entries. It never edits the default route or instrument output. If both Root and the DKDS UID still select `wlan0`, it does not contact the instrument.
+
+At the end of the project, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\diagnose-4200.ps1 -CleanupRoute` to remove the exact instrument-only rule, table route, main host route and test IPv4 address if still present. No resident service is installed by the one-shot diagnostic script. This route cleanup is separate from removing the earlier KernelSU diagnostic agent.
 
 The report is written to the Windows working directory as `4200-connection-YYYYMMDD-HHMMSS.txt`. The user can provide this local report for targeted Android connection fixes. No data is automatically uploaded.
 
