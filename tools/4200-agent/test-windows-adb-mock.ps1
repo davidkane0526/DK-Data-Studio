@@ -19,7 +19,15 @@ public static class MockAdb {
         File.AppendAllText(Environment.GetEnvironmentVariable("MOCK_ADB_TRACE"), String.Join("|", args) + "\n");
         if (args.Length >= 1 && args[0] == "devices") {
             Console.WriteLine("List of devices attached");
-            Console.WriteLine("10.87.70.190:26461 device product:OPD2515 model:OPD2515");
+            string offlineFlag = Environment.GetEnvironmentVariable("MOCK_ADB_START_DISCONNECTED");
+            string onlineMarker = Environment.GetEnvironmentVariable("MOCK_ADB_ONLINE_MARKER");
+            if (offlineFlag != "1" || File.Exists(onlineMarker))
+                Console.WriteLine("10.87.70.190:26461 device product:OPD2515 model:OPD2515");
+            return 0;
+        }
+        if (args.Length == 2 && args[0] == "connect" && args[1] == "10.87.70.190:26461") {
+            File.WriteAllText(Environment.GetEnvironmentVariable("MOCK_ADB_ONLINE_MARKER"), "connected");
+            Console.WriteLine("connected to 10.87.70.190:26461");
             return 0;
         }
         if (args.Length < 4 || args[0] != "-s" || args[1] != "10.87.70.190:26461")
@@ -150,6 +158,9 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir "install-updater.ps1") -AdbPath $mock
     if ($LASTEXITCODE -ne 0) { throw "install-updater.ps1 failed with fake ADB." }
 
+    # Simulate ADB disappearing from the server while tablet Wi-Fi stays online.
+    $env:MOCK_ADB_START_DISCONNECTED = "1"
+    $env:MOCK_ADB_ONLINE_MARKER = Join-Path $temporary "wireless-adb-online"
     Write-Host "Testing Keithley 4200A read-only diagnosis and targeted repair with fake ADB"
     Push-Location $temporary
     try {
@@ -175,6 +186,9 @@ try {
     } finally { Pop-Location }
 
     $trace = Get-Content -LiteralPath $env:MOCK_ADB_TRACE -Raw
+    if (!$trace.Contains("connect|10.87.70.190:26461")) {
+        throw "Diagnostic did not attempt wireless ADB reconnection."
+    }
     if ($trace -notmatch "shell\|su -c 'if \[ -f ") { throw "Compound shell command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'umask 077; ") { throw "Root installation command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'grep -q check-update ") { throw "Updater root command lost its quoting." }
