@@ -21,3 +21,27 @@
 3. 独立应用须同时完成 Android 无 Root 网络能力、可选 Root 适配、Windows 有线/Wi-Fi、平板中继和设备通信回归。
 4. 删除 4200 插件后应确保 DKDS 主程序其他页面、通用 TCP 服务和数据中心正常运行。
 5. 参见 `extraction-manifest.json` 的跨平台文件清单。CI 验证模块加载、协议字节和 Windows 网卡策略；它们不能代替真正仪器的实机测试。
+
+
+## 已可运行的源码级独立验证（只读）
+
+现在不仅能导出源码，还能在 **Node.js 20+** 中完全不加载 DK Data Studio、
+Electron 或 React Native，运行独立的 `tools/4200-extract/identify.js`。
+此工具只允许显式 `--identify`，且只发送 `*IDN?\\0`，不会配置 SMU、电压、限流或写入数据。
+
+在 DKDS 仓库根目录执行：
+
+```powershell
+node .\tools\4200-extract\extract.js --output "$env:TEMP\dkds-4200-standalone"
+node "$env:TEMP\dkds-4200-standalone\tools\4200-extract\identify.js" --help
+node "$env:TEMP\dkds-4200-standalone\tools\4200-extract\identify.js" --identify --host 169.254.111.118 --port 1225 --mode ethernet --serial 1498377
+```
+
+提取目录必须为空或不存在；它只包含独立功能需要的文件，且不会启动后台代理。
+Windows 有线模式仍要求网卡具备可用 IPv4、正确的系统路由及仪器正在运行 KXCI。
+若仅查看说明或离线验证，请只运行 `--help` 或 CI 测试，不连接任何物理仪器。
+
+`tests/test-keithley-4200-standalone.js` 会从实际提取目录启动此命令，对本地仿真
+TCP 服务发送字节 `2A 49 44 4E 3F 00` 并验证身份响应。它不访问真实设备。
+
+**边界**：这证明独立的只读 CLI 已能运行，并不意味着 GUI、Android 或真实测量控制已完整剥离。
