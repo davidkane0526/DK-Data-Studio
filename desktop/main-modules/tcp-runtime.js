@@ -10,30 +10,51 @@ function boundedInt(value,fallback,min,max){
   return Math.max(min,Math.min(max,Math.trunc(n)));
 }
 
-function resolveLocalAddress(payload={}){
+function resolveLocalAddress(payload={},networkInterfaces=os.networkInterfaces()){
   const explicitAddress=String(payload.localAddress||'').trim();
-  if(explicitAddress)return {address:explicitAddress,interfaceName:'',networkMode:'address'};
+  if(explicitAddress){
+    if(net.isIP(explicitAddress)!==4)throw new Error('Explicit TCP localAddress must be an IPv4 address.');
+    return {address:explicitAddress,interfaceName:'',networkMode:'address',routeStrategy:'explicit-local-address'};
+  }
   const mode=String(payload.networkMode||'auto').trim().toLowerCase();
   if(!['auto','wifi','ethernet','interface'].includes(mode))throw new Error('Unsupported TCP network mode: '+mode);
-  if(mode==='auto')return {address:'',interfaceName:'',networkMode:mode};
-  const named=String(payload.interfaceName||'').trim();
-  if(mode==='interface'&&!named)throw new Error('TCP interfaceName is required in interface mode.');
-  const match=name=>{
-    if(mode==='interface')return name.toLowerCase()===named.toLowerCase();
-    if(mode==='wifi')return /(wi-?fi|wireless|wlan|wlp[0-9]|airport|802\\.11|^en0$)/i.test(name);
-    return /(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(name);
+  const host=String(payload.host||'').trim();
+  const targetLinkLocal=net.isIP(host)===4&&host.startsWith('169.254.');
+  const name=String(payload.interfaceName||'').trim();
+  if(mode==='interface'&&!name)throw new Error('TCP interfaceName is required in interface mode.');
+  const match=(iface)=>{
+    if(mode==='interface')return iface.toLowerCase()===name.toLowerCase();
+    if(mode==='wifi')return /(wi-?fi|wireless|wlan|wlp[0-9]|airport|802\\.11|^en0$)/i.test(iface);
+    return /(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(iface);
   };
   const rows=[];
-  for(const [name,addresses] of Object.entries(os.networkInterfaces())){
-    if(!match(name))continue;
+  for(const [iface,addresses] of Object.entries(networkInterfaces)){
+    if(mode!=='auto'&&!match(iface))continue;
     for(const row of addresses||[]){
-      if((row.family==='IPv4'||row.family===4)&&!row.internal&&row.address)rows.push({address:row.address,interfaceName:name,networkMode:mode});
+      if((row.family!=='IPv4'&&row.family!==4)||row.internal||net.isIP(row.address)!==4)continue;
+      rows.push({address:row.address,interfaceName:iface,networkMode:mode});
     }
   }
-  if(!rows.length)throw new Error('No IPv4 address found for TCP '+mode+(named?' interface '+named:'')+'. Choose Auto or a valid interface.');
-  const remote=String(payload.host||'').trim();
-  const preferred=remote.startsWith('169.254.')?rows.find(r=>r.address.startsWith('169.254.')):rows.find(r=>!r.address.startsWith('169.254.'));
-  return preferred||rows[0];
+  if(mode==='auto'&&!payload.preferLinkLocalEthernet)return {
+    address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'
+  };
+  const candidates=(mode==='auto'?rows.filter(row=>/(ethernet|ether|^eth[0-9]|^enp[0-9]|^enx|usb|^en[1-9]$)/i.test(row.interfaceName)):rows);
+  const choices=targetLinkLocal?candidates.filter(row=>row.address.startsWith('169.254.')):candidates.filter(row=>!row.address.startsWith('169.254.'));
+  if(targetLinkLocal&&choices.length===0){
+    throw new Error('No Ethernet adapter has a 169.254.x.x IPv4 for '+host+
+      '. Configure a link-local IPv4 (/16) on the intended adapter without a default gateway, then retry.');
+  }
+  if(!targetLinkLocal&&candidates.length===0){
+    if(mode==='auto')return {address:'',interfaceName:'',networkMode:mode,routeStrategy:'system-routing'};
+    throw new Error('No IPv4 address found for TCP '+mode+(name?' interface '+name:'')+'.');
+  }
+  const selected=choices.length?choices:candidates;
+  const adapters=new Set(selected.map(row=>row.interfaceName.toLowerCase()));
+  if(adapters.size>1){
+    throw new Error('Several '+mode+' adapters match '+host+': '+
+      [...adapters].join(', ')+'. Select Specific interface to avoid routing via the wrong cable.');
+  }
+  return {...selected[0],routeStrategy:'local-address-bound'};
 }
 
 function createTcpRuntime(){
@@ -74,7 +95,11 @@ function createTcpRuntime(){
         settled=true;
         clearTimeout(timer);
         try{socket.destroy();}catch{}
-        reject(error instanceof Error?error:new Error(String(error||'TCP connect failed.')));
+        const message=String(error?.message||error||'TCP connect failed.');
+        const note=(binding.address&&host.startsWith('169.254.'))
+          ? ' Bound source '+binding.address+' on '+(binding.interfaceName||'selected interface')+
+            '; verify the OS host route and cable/link state for '+host+'.' : '';
+        reject(new Error(message+note));
       };
       const timer=setTimeout(()=>finishError(new Error('TCP connect timeout after '+connectTimeoutMs+' ms.')),connectTimeoutMs);
       socket.setNoDelay(true);
@@ -94,7 +119,8 @@ function createTcpRuntime(){
           remoteAddress:socket.remoteAddress||host,
           remotePort:Number(socket.remotePort)||port,
           interfaceName:binding.interfaceName,
-          networkMode:binding.networkMode
+          networkMode:binding.networkMode,
+          routeStrategy:binding.routeStrategy
         });
       });
       socket.connect({host,port,...(localAddress?{localAddress}:{})});
