@@ -3,7 +3,7 @@
   const manifest={
     id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.2.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['measurement-model.js','kxci-protocol.js','unit-presentation.js','plugin.js'],enabled:true,order:82,
-    description:"Configurable KXCI connection, simulation-only GUI plan editor, live scientific plots and CSV/JSON/SVG export.",
+    description:"Automatic Keithley 4200A connection and identity verification with a compact simulation workbench.",
     pluginType:'developer',workspace:{role:'top',activity:'keithley-4200',icon:'K',title:'Keithley 4200A'},window:{activity:'keithley-4200',title:'Keithley 4200A KXCI',width:1280,height:850,minWidth:880,minHeight:620,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project'},
     requiresCore:['runtime','status','services','modules','project','io','workspace','capabilities','ui.dom','ui.activities','ui.top-workspace','ui.pages','ui.unit-templates','ui.scientific-plot','ui.table'],
     capabilities:['instrument.keithley-4200','network.tcp-client','ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table'],

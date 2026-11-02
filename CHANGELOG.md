@@ -1,3 +1,13 @@
+# 3.71.142 Release — compact 4200A cards and automatic all-path connection (Preview)
+
+- Replaces the developer-style connection panel with compact cards. Normal view exposes one **Connect / Disconnect** toggle; TCP setup and `*IDN?` identity verification are one workflow. Opening the 4200A workspace starts connection automatically.
+- Connection parameters are transient only. The default target is `169.254.111.118:1225` with serial verification `1498377`; advanced edits are not saved in project data or profiles. Only the measurement-plan parameters remain project-persisted.
+- Windows direct Auto now probes the OS route and all available IPv4 adapters, prioritizing link-local Ethernet for `169.254/16`; the desktop identity workflow also tests explicit Ethernet and Wi-Fi passes if necessary.
+- Android direct Auto probes all Android-managed Ethernet/Wi-Fi/other networks and kernel-visible source addresses. Only after non-Root paths fail does it attempt the existing one-shot KernelSU Ethernet preparation, then repeat the probe. The tablet LAN gateway uses the same multi-network approach.
+- The default view hides advanced connection and port/speed settings, hides mode-irrelevant test parameters, removes separate TCP/Identify/Profile/Preview/export buttons, and places the simulation table in a collapsed disclosure.
+- Live hardware access remains identity-only: no SMU output, sweep or measurement command is sent. The graph and data table remain simulation-only; original instrument data and native graph retrieval are not implemented.
+- App/mobile version 3.71.142; Android versionCode 282.
+
 # 3.71.141 Release — Detachable Keithley 4200A read-only standalone CLI (Preview)
 
 - The browser KXCI identity protocol and non-hardware measurement model also export CommonJS modules, with no required DK Data Studio runtime when loaded independently in Node.js.
