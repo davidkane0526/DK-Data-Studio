@@ -151,6 +151,11 @@ jobs:
           node tests/test-keithley-4200-standalone.js
           node tests/test-keithley-4200-protocol.js
           node tests/test-keithley-4200-desktop-adapters.js
+          node tests/test-keithley-4200-phase1.js
+          node tests/test-keithley-4200-workbench.js
+          node tests/test-keithley-4200-presentation.js
+          node tests/test-keithley-4200-lan-gateway.js
+          node tests/test-keithley-4200-native-recovery.js
 
       - name: Run project checks
         shell: pwsh
