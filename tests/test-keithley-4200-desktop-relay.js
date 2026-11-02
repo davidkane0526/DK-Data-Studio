@@ -13,7 +13,8 @@ assert(!privateIpV4('8.8.8.8')&&!privateIpV4('127.0.0.1')&&!privateIpV4('169.254
 assert(read('desktop/main-modules/instrument-tcp-ipc.js').includes("payload.networkMode==='via-mobile'?lanKxciRelay.open(payload)"));
 assert(read('desktop/main-modules/instrument-tcp-ipc.js').includes("lanKxciRelay.isRelay(payload.sessionId)"));
 assert(read('src/plugins/keithley-4200/unit-presentation.js').includes("value:'via-mobile'"));
-assert(read('src/plugins/keithley-4200/plugin.js').includes('withoutSecret(target)'));
+assert(read('src/plugins/keithley-4200/plugin.js').includes('endpoint:withoutSecret(endpoint())'));
+assert(read('src/plugins/keithley-4200/plugin.js').includes('const withoutSecret=t=>{if(!t)return null;const {mobilePairKey,...rest}=t;return rest;}'));
 assert(!read('src/plugins/keithley-4200/plugin.js').includes('profiles.push({name,endpoint:target})'));
 assert(read('desktop/main-modules/lan-kxci-relay.js').includes("Only NUL-terminated *IDN?") ||
   read('desktop/main-modules/lan-kxci-relay.js').includes("allows only NUL-terminated *IDN?"));
