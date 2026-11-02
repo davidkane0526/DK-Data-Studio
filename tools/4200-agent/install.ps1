@@ -86,6 +86,8 @@ if ($packages -notmatch '(?m)^package:com\.dk\.datastudio$') {
 Write-Host "Uploading two fixed diagnostic scripts..."
 Call-Adb -Arguments @("-s", $serial, "push", $agentFile, "/data/local/tmp/dkds-agent.sh.stage") | Out-Null
 Call-Adb -Arguments @("-s", $serial, "push", $serviceFile, "/data/local/tmp/dkds-agent-service.sh.stage") | Out-Null
+# Restart the loop when upgrading the agent; merely replacing files leaves the old process running.
+Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", "if [ -f /data/adb/dkds-agent/agent.sh ]; then sh /data/adb/dkds-agent/agent.sh stop; fi") | Out-Null
 
 $install = "umask 077; mkdir -p /data/adb/dkds-agent/logs; chmod 700 /data/adb/dkds-agent /data/adb/dkds-agent/logs; cp /data/local/tmp/dkds-agent.sh.stage /data/adb/dkds-agent/agent.sh; chmod 700 /data/adb/dkds-agent/agent.sh; cp /data/local/tmp/dkds-agent-service.sh.stage /data/adb/service.d/dkds-agent.sh; chmod 700 /data/adb/service.d/dkds-agent.sh"
 Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", $install) | Out-Null
