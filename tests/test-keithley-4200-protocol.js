@@ -13,7 +13,7 @@ vm.runInNewContext(fs.readFileSync(path.join(root,'src/plugins/keithley-4200/kxc
 const protocol=modules.get('kxci-protocol');
 assert(protocol);
 assert.deepEqual([...Buffer.from(protocol.IDN_REQUEST,'utf8')],[42,73,68,78,63,0]);
-const identity=protocol.parseIdentity('KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14\\0','1498377');
+const identity=protocol.parseIdentity('KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14\0','1498377');
 assert.equal(identity.serial,'1498377');
 assert.equal(identity.model,'KI4200A');
 assert.throws(()=>protocol.parseIdentity('ACME,OTHER,1,V1'),/仪器身份不匹配/);
