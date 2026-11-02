@@ -14,6 +14,9 @@
       manufacturer:parts[0],model:parts[1],serial:parts[2]||'',version:parts[3]||'',raw:text
     });
   }
-  const module=Object.freeze({IDN_REQUEST,parseIdentity});
-  if(typeof window!=='undefined'&&window.DKDSPluginModules)window.DKDSPluginModules.define(KEY,'kxci-protocol',module);
+  const protocol=Object.freeze({IDN_REQUEST,parseIdentity});
+  // Dual entry point: browser DKDS module and independent CommonJS host.
+  // Neither path imports Electron, Android, nor DKDS runtime code.
+  if(typeof window!=='undefined'&&window.DKDSPluginModules)window.DKDSPluginModules.define(KEY,'kxci-protocol',protocol);
+  if(typeof module!=='undefined'&&module.exports)module.exports=protocol;
 })();
