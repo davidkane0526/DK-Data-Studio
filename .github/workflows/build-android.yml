@@ -14,6 +14,7 @@ on:
       - 'scripts/generate-plugin-index.js'
       - 'scripts/validate-plugins.js'
       - 'package.json'
+      - 'CHANGELOG.md'
       - 'sdk/**'
       - 'tools/quality/**'
       - 'tests/**'
