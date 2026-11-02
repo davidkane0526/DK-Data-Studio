@@ -29,6 +29,9 @@ const allCandidates=resolveLocalCandidates({...target,networkMode:'auto',preferL
 });
 assert.deepEqual(allCandidates.slice(0,3).map(x=>x.address),['169.254.111.116','169.254.111.117','10.87.70.30']);
 assert.equal(allCandidates.at(-1).routeStrategy,'system-routing','Auto probing must retain OS routing as a last resort.');
+const routedCandidates=resolveLocalCandidates({host:'10.87.70.31',networkMode:'auto'},interfaces);
+assert.equal(routedCandidates[0].routeStrategy,'system-routing','Ordinary routed targets should try the OS route first.');
+assert(routedCandidates.some(x=>x.address==='10.87.70.30'),'If the OS route fails, Auto should try the available Wi-Fi source address.');
 assert.equal(resolveLocalCandidates({...target,networkMode:'ethernet'},{
   'Ethernet A':[{family:'IPv4',address:'169.254.111.116',internal:false}],
   'Ethernet B':[{family:'IPv4',address:'169.254.111.117',internal:false}]
