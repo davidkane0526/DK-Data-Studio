@@ -21,8 +21,8 @@ function Call-Adb {
     return $output.Trim()
 }
 
-$devices = @( (Call-Adb -Arguments @("devices", "-l") -split "\r?\n") |
-    Where-Object { $_ -match '^\S+\s+device(\s|$)' } )
+$deviceOutput = Call-Adb -Arguments @("devices", "-l")
+$devices = @($deviceOutput -split "\r?\n" | Where-Object { $_ -match '^\S+\s+device(\s|$)' })
 if ($devices.Count -ne 1) {
     throw "Expected exactly one authorized ADB device; found $($devices.Count). Reconnect wireless debugging first."
 }
