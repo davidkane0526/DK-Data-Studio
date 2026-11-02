@@ -141,7 +141,8 @@ public static class MockAdb {
             Console.WriteLine("2a49444e3f00");
             return 0;
         }
-        if (command == "echo 2a49444e3f00 | xxd -r -p | nc -w 6 169.254.111.118 1225 | xxd -p") {
+        if (command == "toybox timeout -s KILL 1 true") { return 0; }
+        if (command == "echo 2a49444e3f00 | xxd -r -p | toybox timeout -s KILL 8 nc -w 3 169.254.111.118 1225 | xxd -p") {
             Console.WriteLine("4b454954484c455920494e535452554d454e54532c4b4934323030412c313439383337372c56312e31340d00");
             return 0;
         }
@@ -196,7 +197,7 @@ try {
     if ($trace -notmatch "shell\|su -c 'if \[ -f ") { throw "Compound shell command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'umask 077; ") { throw "Root installation command lost its quoting." }
     if ($trace -notmatch "shell\|su -c 'grep -q check-update ") { throw "Updater root command lost its quoting." }
-    if (!$trace.Contains("echo 2a49444e3f00 | xxd -r -p | nc -w 6 169.254.111.118 1225 | xxd -p")) {
+    if (!$trace.Contains("echo 2a49444e3f00 | xxd -r -p | toybox timeout -s KILL 8 nc -w 3 169.254.111.118 1225 | xxd -p")) {
         throw "Instrument identity probe was not sent with verifiable NUL terminator."
     }
     if ($trace -notmatch "shell\|su -c 'ip route replace 169\.254\.111\.118/32 dev eth0 src 169\.254\.111\.115'") {
