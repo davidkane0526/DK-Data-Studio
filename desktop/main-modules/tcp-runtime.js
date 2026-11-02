@@ -93,17 +93,21 @@ function resolveLocalCandidates(payload={},networkInterfaces=os.networkInterface
     (Number(b.wifi)-Number(a.wifi));
   rows.sort(byPriority);
   let selected=rows;
-  if(mode==='auto'&&!targetLinkLocal&&!payload.preferLinkLocalEthernet){
-    // Let the OS choose its best route first for ordinary routed destinations.
-    selected=[];
+  const system={address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'};
+  const systemFirst=mode==='auto'&&!targetLinkLocal&&!payload.preferLinkLocalEthernet;
+  if(systemFirst){
+    // Try the OS-selected route first for ordinary routed targets, then
+    // explicitly bind each visible adapter if the OS route does not connect.
+    selected=rows;
   }else if(mode==='auto'&&targetLinkLocal&&payload.preferLinkLocalEthernet){
     // All Ethernet link-local addresses first, then Wi-Fi/other source addresses
     // for networks with an explicit host route, then the OS route as last resort.
     selected=rows;
   }
-  const candidates=selected.slice(0,8).map(({linkLocal,ethernet,wifi,...row})=>row);
-  if(mode==='auto')candidates.push({address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'});
-  if(!candidates.length&&mode==='auto')candidates.push({address:'',interfaceName:'',networkMode:'auto',routeStrategy:'system-routing'});
+  const candidates=selected.slice(0,16).map(({linkLocal,ethernet,wifi,...row})=>row);
+  if(mode==='auto'&&systemFirst)candidates.unshift(system);
+  else if(mode==='auto')candidates.push(system);
+  if(!candidates.length&&mode==='auto')candidates.push(system);
   return candidates;
 }
 
