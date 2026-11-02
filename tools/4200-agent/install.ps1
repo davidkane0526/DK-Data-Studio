@@ -67,6 +67,17 @@ function Call-Adb {
     return $output.Trim()
 }
 
+function Call-Root {
+    param([Parameter(Mandatory=$true)][string]$Command)
+    # ADB shell joins its argument list, therefore pass the entire remote
+    # command as ONE argument, including literal single quotes protecting
+    # the su -c payload from the Android remote shell.
+    if ($Command.Contains("'") -or $Command.Contains("`n") -or $Command.Contains("`r")) {
+        throw "Unsafe quotation/control character in fixed root command."
+    }
+    $remote = "su -c '" + $Command + "'"
+    return Call-Adb -Arguments @("-s", $script:serial, "shell", $remote)
+}
 $deviceOutput = Call-Adb -Arguments @("devices", "-l")
 $devices = @($deviceOutput -split "\r?\n" | Where-Object { $_ -match '^\S+\s+device(\s|$)' })
 if ($devices.Count -ne 1) {
@@ -75,7 +86,7 @@ if ($devices.Count -ne 1) {
 $serial = ($devices[0] -split '\s+')[0]
 Write-Host "ADB target: $serial"
 
-$rootId = Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", "id")
+$rootId = Call-Root -Command "id"
 if ($rootId -notmatch 'uid=0\(root\)') { throw "KernelSU root access was not granted. No files changed." }
 
 $packages = Call-Adb -Arguments @("-s", $serial, "shell", "pm", "list", "packages", "com.dk.datastudio")
@@ -87,17 +98,15 @@ Write-Host "Uploading two fixed diagnostic scripts..."
 Call-Adb -Arguments @("-s", $serial, "push", $agentFile, "/data/local/tmp/dkds-agent.sh.stage") | Out-Null
 Call-Adb -Arguments @("-s", $serial, "push", $serviceFile, "/data/local/tmp/dkds-agent-service.sh.stage") | Out-Null
 # Restart the loop when upgrading the agent; merely replacing files leaves the old process running.
-Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", "if [ -f /data/adb/dkds-agent/agent.sh ]; then sh /data/adb/dkds-agent/agent.sh stop; fi") | Out-Null
+Call-Root -Command "if [ -f /data/adb/dkds-agent/agent.sh ]; then sh /data/adb/dkds-agent/agent.sh stop; fi" | Out-Null
 
 $install = "umask 077; mkdir -p /data/adb/dkds-agent/logs; chmod 700 /data/adb/dkds-agent /data/adb/dkds-agent/logs; cp /data/local/tmp/dkds-agent.sh.stage /data/adb/dkds-agent/agent.sh; chmod 700 /data/adb/dkds-agent/agent.sh; cp /data/local/tmp/dkds-agent-service.sh.stage /data/adb/service.d/dkds-agent.sh; chmod 700 /data/adb/service.d/dkds-agent.sh"
-Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c", $install) | Out-Null
+Call-Root -Command $install | Out-Null
 # The previous shell loop can remain blocked in a foreground sleep after TERM.
 # Invoke the new bounded stop implementation before the new loop is started.
-Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
-    "sh /data/adb/dkds-agent/agent.sh stop") | Out-Null
+Call-Root -Command "sh /data/adb/dkds-agent/agent.sh stop" | Out-Null
 
-$remoteHashes = Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
-    "sha256sum /data/adb/dkds-agent/agent.sh /data/adb/service.d/dkds-agent.sh")
+$remoteHashes = Call-Root -Command "sha256sum /data/adb/dkds-agent/agent.sh /data/adb/service.d/dkds-agent.sh"
 $agentHash = (Get-FileHash -LiteralPath $agentFile -Algorithm SHA256).Hash.ToLowerInvariant()
 $serviceHash = (Get-FileHash -LiteralPath $serviceFile -Algorithm SHA256).Hash.ToLowerInvariant()
 if (!$remoteHashes.Contains($agentHash) -or !$remoteHashes.Contains($serviceHash)) {
@@ -105,10 +114,8 @@ if (!$remoteHashes.Contains($agentHash) -or !$remoteHashes.Contains($serviceHash
 }
 
 Write-Host "Running a one-shot read-only diagnosis..."
-Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
-    "sh /data/adb/dkds-agent/agent.sh once") | Write-Host
-Call-Adb -Arguments @("-s", $serial, "shell", "su", "-c",
-    "sh /data/adb/dkds-agent/agent.sh start") | Write-Host
+Call-Root -Command "sh /data/adb/dkds-agent/agent.sh once" | Write-Host
+Call-Root -Command "sh /data/adb/dkds-agent/agent.sh start" | Write-Host
 
 Write-Host "Agent installed. It records snapshots every five minutes, locally only."
 Write-Host 'Read latest log with: adb shell su -c "tail -n 70 /data/adb/dkds-agent/logs/diagnostics.log"'
