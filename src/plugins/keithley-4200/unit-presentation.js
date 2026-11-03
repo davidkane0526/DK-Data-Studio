@@ -33,17 +33,23 @@
     units.pageHeader.create(body,{variant:'page-owned',activity:'keithley-4200',title:'Keithley 4200A',subtitle:'仪器连接与测试工作台'});
     const workspaceHost=units.layout.create(body,{variant:'identity',className:'dkds-4200-workspace-host'});
     workbench=units.workspace.create(workspaceHost,{variant:'standard',header:false,activity:'keithley-4200',primaryScroll:'safe'});
-    const main=units.layout.create(null,{variant:'stack-compact',className:'dkds-4200-workbench'});
+    const main=units.layout.create(null,{variant:'stack-comfortable',className:'dkds-4200-workbench'});
+    const topCards=units.layout.create(main,{variant:'two-card-grid',className:'dkds-4200-top-cards'});
 
-    const device=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-device-card'});
+    const device=units.panel.create(topCards,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-device-card'});
+    device.element.classList.add('dkds-surface-elevated');
     const deviceHead=units.layout.create(device.element,{variant:'row-between',className:'dkds-4200-device-head'});
     const deviceIdentity=units.layout.create(deviceHead,{variant:'stack-compact',className:'dkds-4200-device-identity'});
-    textNode(deviceIdentity,'div','dkds-4200-eyebrow','INSTRUMENT');
+    textNode(deviceIdentity,'div','dkds-4200-eyebrow','仪器连接');
     textNode(deviceIdentity,'div','dkds-4200-device-title','Keithley 4200A-SCS');
-    textNode(deviceIdentity,'div','dkds-4200-device-subtitle','自动探测 USB Ethernet、Wi-Fi 与可用路由');
+    textNode(deviceIdentity,'div','dkds-4200-device-subtitle','自动连接并校验仪器身份');
     action(deviceHead,'toggleConnection','正在准备连接…',true,'dkds-4200-connect-button');
-    const stateNote=units.note.create(device.element,{variant:'normal',className:'dkds-4200-status',text:'等待自动连接'});
-    const routeNote=units.note.create(device.element,{variant:'meta',className:'dkds-4200-route-detail',text:'目标：169.254.111.118:1225'});
+    const stateNote=units.note.create(device.element,{variant:'meta',className:'dkds-4200-status',text:'准备连接'});
+    const routeNote=units.note.create(device.element,{variant:'meta',className:'dkds-4200-route-detail',text:'169.254.111.118:1225'});
+    const diagnosticDetails=dom.create('details');diagnosticDetails.className='dkds-4200-diagnostics';diagnosticDetails.hidden=true;
+    const diagnosticSummary=dom.create('summary');diagnosticSummary.textContent='查看连接诊断';diagnosticDetails.appendChild(diagnosticSummary);
+    const diagnosticLog=textNode(diagnosticDetails,'pre','dkds-4200-diagnostic-log','');
+    device.element.appendChild(diagnosticDetails);
     const desktopHost=actions.desktopHost===true;
 
     const connectionDetails=dom.create('details');
@@ -69,9 +75,12 @@
     }
     device.element.appendChild(connectionDetails);
 
-    const design=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-design-card'});
-    units.header.create(design.element,{tagName:'div',kind:'panel',variant:'panel',className:'dkds-4200-card-heading',stacked:true,titleTag:'h3',titleClassName:false,title:'测试参数',subtitle:'当前版本的测试方案与曲线仍为本地仿真，不会驱动 SMU。',actions:false});
-    const dgrid=units.layout.create(design.element,{variant:'form-grid-4',className:'dkds-4200-parameter-grid'});
+    const design=units.panel.create(topCards,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-design-card'});
+    design.element.classList.add('dkds-surface-elevated');
+    const designHeading=units.layout.create(design.element,{variant:'stack-compact',className:'dkds-4200-card-heading'});
+    textNode(designHeading,'h3','dkds-surface-title','测试设置');
+    textNode(designHeading,'p','dkds-meta','目前仅支持参数仿真，不会驱动 SMU');
+    const dgrid=units.layout.create(design.element,{variant:'form-grid-2',className:'dkds-4200-parameter-grid'});
     field(dgrid,'mode','测试模式','iv',{kind:'select',options:[
       {value:'iv',label:'I–V 曲线'},{value:'transfer',label:'转移特性'},{value:'output',label:'输出特性'},{value:'timed',label:'时间响应'}
     ]});
@@ -80,14 +89,14 @@
     field(dgrid,'points','采样点数',101,{step:1,min:2,max:5001});
     field(dgrid,'loops','循环次数',3,{step:1,min:1,max:1000});
     field(dgrid,'complianceA','电流限值 (A)',0.0001,{min:0.000000000001,max:1});
-    field(dgrid,'delayMs','采样间隔 (ms)',20,{step:1,min:0,max:60000});
-    field(dgrid,'direction','扫描方向','roundtrip',{kind:'select',options:[
-      {value:'forward',label:'正向'},{value:'reverse',label:'反向'},{value:'roundtrip',label:'正反往返'}
-    ]});
     const planAdvanced=dom.create('details');
     planAdvanced.className='dkds-4200-advanced dkds-4200-plan-advanced';
     const planSummary=dom.create('summary');planSummary.textContent='高级测试参数（端口与速度）';planAdvanced.appendChild(planSummary);
-    const pgrid=units.layout.create(planAdvanced,{variant:'form-grid-4',className:'dkds-4200-advanced-grid'});
+    const pgrid=units.layout.create(planAdvanced,{variant:'form-grid-2',className:'dkds-4200-advanced-grid'});
+    field(pgrid,'direction','扫描方向','roundtrip',{kind:'select',options:[
+      {value:'forward',label:'正向'},{value:'reverse',label:'反向'},{value:'roundtrip',label:'正反往返'}
+    ]});
+    field(pgrid,'delayMs','采样间隔 (ms)',20,{step:1,min:0,max:60000});
     field(pgrid,'speed','速度预设','normal',{kind:'select',options:[
       {value:'fast',label:'快速'},{value:'normal',label:'标准'},{value:'quiet',label:'低噪声'}
     ]});
@@ -102,24 +111,32 @@
     const previewNote=units.note.create(design.element,{variant:'meta',className:'dkds-4200-plan-summary',text:'方案参数变更后自动校验。'});
 
     const chart=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-chart-card'});
-    units.header.create(chart.element,{tagName:'div',kind:'panel',variant:'panel',className:'dkds-4200-card-heading',stacked:true,titleTag:'h3',titleClassName:false,title:'曲线预览',subtitle:'SIMULATION · 非仪器原始数据',actions:false});
-    const progressNote=units.note.create(chart.element,{variant:'meta',className:'dkds-4200-progress',text:'尚无仿真数据'});
+    chart.element.classList.add('dkds-surface-elevated');
+    const chartHeading=units.layout.create(chart.element,{variant:'stack-compact',className:'dkds-4200-card-heading'});
+    textNode(chartHeading,'h3','dkds-surface-title','曲线预览');
+    textNode(chartHeading,'p','dkds-meta','仅本地仿真，非仪器原始数据');
+    const progressNote=units.note.create(chart.element,{variant:'meta',className:'dkds-4200-progress',text:'运行仿真后显示曲线'});
     const plotHost=units.layout.create(chart.element,{variant:'identity',className:'dkds-4200-plot-host',geometry:{width:'100%',minHeight:'260px'}});
+    plotHost.hidden=true;
     plot=units.scientificPlot.create(plotHost,{variant:'curve',source:'keithley-4200:simulation',minHeight:260,xTitle:'Source voltage (V) / Time index',yTitle:'Current (A)',legend:{enabled:true,placement:'auto',interaction:'isolate',maxRows:2},getCurves:()=>currentCurves,getMarkers:()=>[]});
-    const tableDetails=dom.create('details');tableDetails.className='dkds-4200-data-details';
+    const tableDetails=dom.create('details');tableDetails.className='dkds-4200-data-details';tableDetails.hidden=true;
     const tableSummary=dom.create('summary');tableSummary.textContent='查看模拟数据点（0 点）';tableDetails.appendChild(tableSummary);
     const tableHost=units.layout.create(tableDetails,{variant:'identity',className:'dkds-4200-table-host',geometry:{minHeight:'120px'}});
     const columns=[{key:'cycle',label:'Cycle'},{key:'point',label:'Point'},{key:'elapsed_s',label:'Time (s)'},{key:'set_v',label:'Set (V)'},{key:'read_v',label:'Read (V)'},{key:'read_a',label:'Current (A)'},{key:'status',label:'Status'}];
     table=units.table.mount('keithley-4200-sim-data',tableHost,{variant:'standard',appearance:{density:'compact',stripe:'subtle'},columns,rows:[]});
     chart.element.appendChild(tableDetails);
-    units.note.create(main,{variant:'meta',className:'dkds-4200-native-note',text:'仪器原生数据文件与原生图获取尚未接通。此处曲线和数据表均为 DK Data Studio 仿真产物，不能作为 4200A 原始数据。'});
+    units.note.create(chart.element,{variant:'meta',className:'dkds-4200-native-note',text:'仪器原生数据文件与原生图获取尚未接通。此处曲线和数据表均为 DK Data Studio 仿真产物，不能作为 4200A 原始数据。'});
 
     workbench.compose({primary:{id:'main',label:'4200A',presentationRole:'utility-primary',scroll:'safe',titlePolicy:'host-only',mainNode:main},primes:[],subs:[]});
     const get=id=>controls.get(id)?.value;
     const set=(id,value)=>{const node=controls.get(id);if(node)node.value=String(value??'');if(id==='mode')updateModeVisibility(String(value||'iv'));};
-    const setConnectionState=(state,headline,detail)=>{
+    const setConnectionState=(state,headline,detail,diagnostic='')=>{
       if(stateNote)stateNote.textContent=String(headline||'未连接');
       if(routeNote)routeNote.textContent=String(detail||'—');
+      device.element.dataset.connectionState=state;
+      diagnosticDetails.hidden=!diagnostic;
+      diagnosticLog.textContent=String(diagnostic||'').slice(0,6000);
+      diagnosticDetails.open=false;
       const button=buttons.get('toggleConnection');
       if(button){
         button.textContent=state==='connected'?'断开':state==='connecting'?'正在连接…':'连接';
@@ -131,6 +148,9 @@
     const renderProgress=value=>{progressNote.textContent=String(value||'');};
     const renderData=(curves,rows)=>{
       currentCurves=curves||[];
+      const hasData=Array.isArray(rows)&&rows.length>0;
+      plotHost.hidden=!hasData;
+      tableDetails.hidden=!hasData;
       table.setData?.(columns,rows||[]);
       tableSummary.textContent='查看模拟数据点（'+(rows?.length||0)+' 点）';
       plot.requestRender?.('keithley-4200:sim:'+ ++plotRevision);
