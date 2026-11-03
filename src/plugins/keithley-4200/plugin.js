@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const manifest={
-    id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.2.0',apiVersion:'1.19.0',entry:'plugin.js',
+    id:'com.dkds.keithley-4200',name:'Keithley 4200A KXCI',version:'0.3.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['measurement-model.js','kxci-protocol.js','unit-presentation.js','plugin.js'],styles:['plugin.css'],enabled:true,order:82,
     description:"Automatic Keithley 4200A connection and identity verification with a compact simulation workbench.",
     pluginType:'developer',workspace:{role:'top',activity:'keithley-4200',icon:'K',title:'Keithley 4200A'},window:{activity:'keithley-4200',title:'Keithley 4200A KXCI',width:1280,height:850,minWidth:880,minHeight:620,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project'},
