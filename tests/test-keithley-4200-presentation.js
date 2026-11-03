@@ -37,6 +37,7 @@ const units={
   action:{create:(parent,spec)=>{const button=node('button');button.textContent=spec.label;button.disabled=false;parent?.appendChild?.(button);buttons.set(spec.id,button);return {button};}},
   note:{create:(parent,spec)=>{const n=node('note');n.textContent=spec.text||'';parent?.appendChild?.(n);return n;}},
   panel:{create:(parent)=>{const element=node('panel');parent?.appendChild?.(element);return {element,body:element};}},
+  surface:{create:(parent)=>{const element=node('surface');parent?.appendChild?.(element);return element;}},
   scientificPlot:{create:()=>({requestRender:()=>{},dispose:()=>{}})},
   table:{mount:()=>({setData:()=>{},dispose:()=>{}})}
 };

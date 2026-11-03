@@ -36,8 +36,7 @@
     const main=units.layout.create(null,{variant:'stack-comfortable',className:'dkds-4200-workbench'});
     const topCards=units.layout.create(main,{variant:'two-card-grid',className:'dkds-4200-top-cards'});
 
-    const device=units.panel.create(topCards,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-device-card'});
-    device.element.classList.add('dkds-surface-elevated');
+    const device={element:units.surface.create(topCards,{tagName:'section',variant:'elevated',className:'dkds-4200-card dkds-4200-device-card'})};
     const deviceHead=units.layout.create(device.element,{variant:'row-between',className:'dkds-4200-device-head'});
     const deviceIdentity=units.layout.create(deviceHead,{variant:'stack-compact',className:'dkds-4200-device-identity'});
     textNode(deviceIdentity,'div','dkds-4200-eyebrow','仪器连接');
@@ -75,8 +74,7 @@
     }
     device.element.appendChild(connectionDetails);
 
-    const design=units.panel.create(topCards,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-design-card'});
-    design.element.classList.add('dkds-surface-elevated');
+    const design={element:units.surface.create(topCards,{tagName:'section',variant:'elevated',className:'dkds-4200-card dkds-4200-design-card'})};
     const designHeading=units.layout.create(design.element,{variant:'stack-compact',className:'dkds-4200-card-heading'});
     textNode(designHeading,'h3','dkds-surface-title','测试设置');
     textNode(designHeading,'p','dkds-meta','目前仅支持参数仿真，不会驱动 SMU');
@@ -110,8 +108,7 @@
     action(designActions,'stop','停止',false,'dkds-4200-stop-button');
     const previewNote=units.note.create(design.element,{variant:'meta',className:'dkds-4200-plan-summary',text:'方案参数变更后自动校验。'});
 
-    const chart=units.panel.create(main,{tagName:'section',variant:'plain',header:false,className:'dkds-4200-card dkds-4200-chart-card'});
-    chart.element.classList.add('dkds-surface-elevated');
+    const chart={element:units.surface.create(main,{tagName:'section',variant:'elevated',className:'dkds-4200-card dkds-4200-chart-card'})};
     const chartHeading=units.layout.create(chart.element,{variant:'stack-compact',className:'dkds-4200-card-heading'});
     textNode(chartHeading,'h3','dkds-surface-title','曲线预览');
     textNode(chartHeading,'p','dkds-meta','SIMULATION · 仅本地仿真，非仪器原始数据');
