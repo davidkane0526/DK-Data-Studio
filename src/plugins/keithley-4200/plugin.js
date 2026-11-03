@@ -120,7 +120,7 @@
       }
       const hint=connectionHint(failures,target);
       const diagnostic=['目标：'+target.host+':'+target.port,'尝试过的连接路径：',...failures].join('\n\n');
-      status('连接失败',hint);
+      ctx.status.set('Keithley 4200A：连接失败');
       ui?.setConnectionState?.('error','连接失败',hint,diagnostic);
       const error=new Error(hint);error.connectionHandled=true;
       throw error;
@@ -250,7 +250,7 @@
       }
     }
     function safe(fn){return (...args)=>{const fail=e=>{ctx.status.set('Keithley 4200A：操作失败');ui?.renderProgress?.('操作失败：'+message(e).slice(0,120));return false;};try{return Promise.resolve(fn(...args)).catch(fail);}catch(e){return fail(e);}};}
-    function safeConnection(fn){return (...args)=>{const fail=e=>{if(e?.connectionHandled)return false;const hint=message(e).slice(0,150);status('连接失败',hint);ui?.setConnectionState?.('error','连接失败',hint,message(e));return false;};try{return Promise.resolve(fn(...args)).catch(fail);}catch(e){return fail(e);}};}
+    function safeConnection(fn){return (...args)=>{const fail=e=>{if(e?.connectionHandled)return false;const hint=message(e).slice(0,150);ctx.status.set('Keithley 4200A：连接失败');ui?.setConnectionState?.('error','连接失败',hint,message(e));return false;};try{return Promise.resolve(fn(...args)).catch(fail);}catch(e){return fail(e);}};}
     ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,openMode:'window',description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>{ctx.workspace.openPage('keithley4200Page');void safeConnection(connect)();}});
     const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:'',onOpen:()=>{void safeConnection(connect)();}});
     ui=Presentation.mount(ctx,page,{

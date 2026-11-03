@@ -9,6 +9,7 @@ const root=path.resolve(__dirname,'..');
 const source=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 let createPlugin=null,callbacks=null,slice=null,capability=null,topWorkspace=null,activity=null,pageSpec=null;
 const registry=new Map(),messages=[],requests=[],openedModes=[],closed=[];
+let failOpen=false;
 const controls={
   host:'169.254.111.118',port:'1225',networkMode:'auto',expectedSerial:'1498377',
   mobileHost:'',mobilePort:'45910',mobileNetworkMode:'auto',mobilePairKey:'',
@@ -34,7 +35,7 @@ registry.set('unit-presentation',{mount:(_ctx,_page,events)=>{callbacks=events;r
 vm.runInNewContext(source('src/plugins/keithley-4200/plugin.js'),sandbox);
 const tcp={
   supportsRelay:true,
-  open:async info=>{openedModes.push(info.networkMode);return {sessionId:'session-1',remoteAddress:info.host,localAddress:'169.254.111.115',interfaceName:'Ethernet',routeStrategy:'local-address-bound'};},
+  open:async info=>{openedModes.push(info.networkMode);if(failOpen)throw Error('TCP connection failed after trying 4 paths: ENETUNREACH and timeouts; internal adapter diagnostics');return {sessionId:'session-1',remoteAddress:info.host,localAddress:'169.254.111.115',interfaceName:'Ethernet',routeStrategy:'local-address-bound'};},
   exchange:async payload=>{
     requests.push(Buffer.from(payload.base64,'base64'));
     return {base64:Buffer.from('KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14\0').toString('base64')};
@@ -88,6 +89,7 @@ async function main(){
 
   // Opening the activity automatically performs TCP open + *IDN? verification.
   activity.onActivate();
+  pageSpec.onOpen(); // Both host callbacks may fire; they must share one pending connection.
   await new Promise(resolve=>setTimeout(resolve,30));
   assert.equal(openPageCalls,1);
   assert.equal(capability.methods.status().connected,true);
@@ -124,6 +126,20 @@ async function main(){
   assert.equal(ui.running,false);
   assert.equal(requests.length,2,'Simulation must not send instrument commands.');
   assert(ui.curves.length>0&&ui.rows.length===10);
+  await callbacks.toggleConnection(); // disconnect
+  failOpen=true;
+  const before=messages.filter(x=>x[0]==='progress').length;
+  const fails=await callbacks.toggleConnection();
+  assert.equal(fails,false,'Failed connection must be reported without an unhandled rejection.');
+  const events=messages.filter(x=>x[0]==='connection'&&x[1]==='error');
+  assert.equal(events.length,1,'One failed probe should produce one connection error card.');
+  assert(events[0][3].length<130&&!events[0][3].includes('TCP connection failed after trying'),
+    'Only an actionable short error belongs on the connection card.');
+  assert(events[0][4].includes('ENETUNREACH'),'The collapsed diagnostic must retain the transport failure.');
+  assert.equal(messages.filter(x=>x[0]==='progress').length,before,
+    'Connection failures must never appear in the simulation chart.');
+  assert(!messages.filter(x=>x[0]==='host').at(-1)[1].includes('TCP connection failed after trying'),
+    'The bottom status must not duplicate raw network failures.');
   lifecycle.deactivate();
   console.log('Keithley 4200 automatic connect/identify, transient connection settings and simulation isolation PASS');
 }

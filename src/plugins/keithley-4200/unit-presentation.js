@@ -114,7 +114,7 @@
     chart.element.classList.add('dkds-surface-elevated');
     const chartHeading=units.layout.create(chart.element,{variant:'stack-compact',className:'dkds-4200-card-heading'});
     textNode(chartHeading,'h3','dkds-surface-title','曲线预览');
-    textNode(chartHeading,'p','dkds-meta','仅本地仿真，非仪器原始数据');
+    textNode(chartHeading,'p','dkds-meta','SIMULATION · 仅本地仿真，非仪器原始数据');
     const progressNote=units.note.create(chart.element,{variant:'meta',className:'dkds-4200-progress',text:'运行仿真后显示曲线'});
     const plotHost=units.layout.create(chart.element,{variant:'identity',className:'dkds-4200-plot-host',geometry:{width:'100%',minHeight:'260px'}});
     plotHost.hidden=true;
