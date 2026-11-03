@@ -25,19 +25,15 @@ The native Android gateway and Windows relay both reject anything other than `*I
 - Android analysis navigation requires BOTH the plugin activity and the native `ui.topWorkspaces` contract. Earlier APK 3.71.135 declared the activity but omitted `workspace.role=top` / `ctx.ui.topWorkspace.register(...)`, so the Android PresentationModel intentionally filtered the entry. Both are now declared, and the real `PresentationModel.workspaces()` projection is covered by the integration test.
 - If the entry is missing, open **插件** and inspect the status of **Keithley 4200A KXCI**; activation errors may suppress its activity. A page-header mounting bug that could cause activation failure was fixed after release `3.71.134` and covered by `test-keithley-4200-presentation.js`.
 
-## Connection — automatic probe, one user action
+## Connection — responsive cards and concise diagnostics
 
-- Opening the **4200A** workspace starts a fresh connection attempt automatically. No separate **Connect TCP** or **Identify instrument** action is exposed.
-- The device card has one connection button. It reads **断开** after a verified identity; otherwise it reads **连接**. Clicking it toggles the session.
-- A successful TCP handshake is not enough: the app immediately sends the exact NUL-terminated `*IDN?\0`, verifies manufacturer/model `KI4200A`, and checks the configured serial when non-empty. No measurement/output command is sent.
-- Default bench target: `169.254.111.118:1225`, expected serial `1498377`. The **高级连接设置** disclosure allows changing target/serial for the current page session only.
-- **Connection parameters are never persisted** in project data or profile storage. Reopening the page starts from defaults and probes again. Test-plan parameters may still be saved in the current project.
-- Direct mode is automatic; users do not choose TCP, adapter names or individual network modes:
-  - **Windows:** for a link-local target, try every detected IPv4 source address with Ethernet/link-local adapters first, then Wi-Fi/other adapter addresses, and the OS route. For ordinary routed IPs, try the OS route first, then every visible adapter. A successful TCP connection is followed by the identity check. If the first route reaches a non-KI4200A endpoint or the ID query fails, the desktop controller continues with Ethernet and Wi-Fi-specific passes. It does not modify Windows IP configuration or route tables.
-  - **Android:** enumerate all Android-managed Ethernet/Wi-Fi/other networks, then all kernel-visible local IPv4 addresses. For a link-local instrument, only after the no-Root paths fail, optionally run the existing one-shot KernelSU Ethernet preparation and repeat the attempts. The helper never changes the default route and does not install a daemon.
-- Windows can optionally use **通过安卓平板中继** from the advanced connection settings. This requires the tablet's current LAN IPv4 and pairing Key each time; neither is saved. The tablet gateway also probes its Android networks and local interfaces before optional Ethernet recovery.
-- Automatic probing is bounded per route; typical direct attempts finish within a few seconds. A missing cable, missing host route, disabled KXCI listener or wrong target is reported with the routes and interface attempts. A slow/missing *IDN?* response closes the socket; the app does not replay a measurement command.
-- The application status shows the verified model/serial and the selected local interface/source address. Advanced settings remain collapsed during normal use.
+- Opening the 4200A activity automatically starts a new connection probe; a simultaneous page-open callback shares that pending request instead of repeating the same TCP attempts.
+- Auto mode enumerates all relevant host OS / Android Ethernet and Wi-Fi network paths in one pass; it does not redundantly rescan the same adapters under forced modes.
+- The connection card shows one Connect/Disconnect toggle and concise status. Full host/adapter errors remain available exclusively in the collapsed **查看连接诊断** disclosure. The plot and bottom status bar do not duplicate transport logs.
+- Two responsive cards present the device and essential test-plan parameters, with another Core-material card for simulation preview. The empty plot and simulated-data table stay hidden until simulation has data.
+- Connection parameters are session-only and never persisted with projects or profiles. Only test-plan parameters can be saved. Desktop relay mode is in advanced connection settings.
+- Default target is `169.254.111.118:1225` and expected serial is `1498377`. A Windows PC without a route to the target requires a direct Ethernet connection with a suitable IP route, or the existing Android-tablet relay.
+- Real measurement/SMU output, instrument-native raw files and original instrument graph export are **not implemented**.
 
 
 ## Definition of ORIGINAL data and ORIGINAL graph (user requirement)

@@ -1,3 +1,11 @@
+# 3.71.143 — Real 4200A card layout and single concise network error (Preview)
+
+- Instrument connection and essential test settings share a responsive two-card row; curve preview is a separate Core-elevated card.
+- Replaces repeated raw TCP/adapter errors with a concise actionable connection message and a collapsed diagnostic log. The simulation chart and global status bar no longer receive the raw connection exception.
+- Auto mode scans available Ethernet and Wi-Fi transports once; duplicate page/activity activation requests share a pending connection promise.
+- Hides unused options in advanced settings and collapses the empty simulation plot. No hardware sweeps are dispatched and no instrument-native raw files or graphs are claimed.
+- Unified app version 3.71.143, Android versionCode 283.
+
 # 3.71.142 Release — compact 4200A cards and automatic all-path connection (Preview)
 
 - Replaces the developer-style connection panel with compact cards. Normal view exposes one **Connect / Disconnect** toggle; TCP setup and `*IDN?` identity verification are one workflow. Opening the 4200A workspace starts connection automatically.
