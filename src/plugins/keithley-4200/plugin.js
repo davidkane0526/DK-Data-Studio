@@ -15,12 +15,20 @@
     const Kxci=ctx.modules.require('kxci-protocol');
     const Presentation=ctx.modules.require('unit-presentation');
     const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8');
-    let session=null,sessionTarget=null,identified=null,ui=null;
+    let session=null,sessionTarget=null,identified=null,ui=null,connectPending=null;
     let dataset=null,run=null,plotByCycle=new Map(),commandTail=Promise.resolve();
     const connectionKeys=['host','port','networkMode','expectedSerial','mobileHost','mobilePort','mobileNetworkMode','mobilePairKey'];
     const planKeys=['mode','direction','loops','points','startV','stopV','complianceA','delayMs','speed','sourceSmU','measureSmU','gateSmU','gateBiasV'];
     const enqueue=fn=>{const task=commandTail.then(fn,fn);commandTail=task.catch(()=>{});return task;};
     const message=error=>String(error?.message||error||'未知错误');
+    const connectionHint=(failures,target)=>{
+      const joined=failures.join(' ').toLowerCase(),address=target.host+':'+target.port;
+      if(/en(et)?unreach|network is unreachable|no route to host/.test(joined))return '无法到达 '+address+'。请检查网线与 IP 路由，或选择平板中继。';
+      if(/econnrefused|connection refused/.test(joined))return '已到达 '+target.host+'，但端口 '+target.port+' 拒绝连接。请确认 KXCI 服务已启动。';
+      if(/serial|序列号|manufacturer|model|identity|识别|idn/.test(joined))return '网络已接通，但仪器身份校验失败。请检查型号与序列号。';
+      if(/timeout|timed out|etimedout/.test(joined))return '连接 '+address+' 超时。请检查网线、路由与 KXCI 服务。';
+      return '未能连接 '+address+'。请检查网络或展开连接诊断。';
+    };
     const status=(text,detail='')=>{ctx.status.set('Keithley 4200A：'+text);if(ui?.setConnectionState){const state=text==='已连接'?'connected':/正在|探测|校验/.test(text)?'connecting':/失败|异常/.test(text)?'error':'idle';ui.setConnectionState(state,text,detail);}};
     const encodeBase64=text=>{
       const bytes=encoder.encode(text);let binary='';
@@ -77,7 +85,8 @@
         return identified;
       }
       if(session)await closeSession();
-      const modes=target.networkMode==='via-mobile'?['via-mobile']:tcp.supportsRelay?['auto','ethernet','wifi']:['auto'];
+      // Auto enumerates all eligible Ethernet/Wi-Fi interfaces; avoid repeating the same probes.
+      const modes=target.networkMode==='via-mobile'?['via-mobile']:['auto'];
       const failures=[];
       ui?.setConnectionState?.('connecting','正在自动连接…','依次检查可用网卡与网络路由；随后自动校验仪器身份。');
       for(const mode of modes){
@@ -109,11 +118,20 @@
           if(old)try{await tcp.close({sessionId:old});}catch{}
         }
       }
-      const summary='已尝试当前可用的连接路径，仍未识别到目标 4200A。'+failures.join('；');
-      status('连接失败',summary);
-      throw Error(summary);
+      const hint=connectionHint(failures,target);
+      const diagnostic=['目标：'+target.host+':'+target.port,'尝试过的连接路径：',...failures].join('\n\n');
+      status('连接失败',hint);
+      ui?.setConnectionState?.('error','连接失败',hint,diagnostic);
+      const error=new Error(hint);error.connectionHandled=true;
+      throw error;
     }
-    const connect=()=>enqueue(connectAndIdentify);
+    const connect=()=>{
+      if(connectPending)return connectPending;
+      const request=enqueue(connectAndIdentify);
+      connectPending=request;
+      request.then(()=>{if(connectPending===request)connectPending=null;},()=>{if(connectPending===request)connectPending=null;});
+      return request;
+    };
     const disconnect=()=>enqueue(closeSession);
     const toggleConnection=()=>enqueue(async()=>session?closeSession():connectAndIdentify());
     const form=keys=>Object.fromEntries(keys.map(key=>[key,ui.get(key)]));
@@ -231,13 +249,14 @@
         ctx.project.capture();
       }
     }
-    function safe(fn){return (...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;});}catch(e){ctx.status.set('Keithley 4200A：'+message(e));ui.renderProgress('操作失败：'+message(e));return false;}};}
-    ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,openMode:'window',description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>{ctx.workspace.openPage('keithley4200Page');void safe(connect)();}});
-    const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:'',onOpen:()=>{void safe(connect)();}});
+    function safe(fn){return (...args)=>{const fail=e=>{ctx.status.set('Keithley 4200A：操作失败');ui?.renderProgress?.('操作失败：'+message(e).slice(0,120));return false;};try{return Promise.resolve(fn(...args)).catch(fail);}catch(e){return fail(e);}};}
+    function safeConnection(fn){return (...args)=>{const fail=e=>{if(e?.connectionHandled)return false;const hint=message(e).slice(0,150);status('连接失败',hint);ui?.setConnectionState?.('error','连接失败',hint,message(e));return false;};try{return Promise.resolve(fn(...args)).catch(fail);}catch(e){return fail(e);}};}
+    ctx.ui.activities.add({id:'keithley-4200',label:'4200A',contextLabel:'Keithley 4200A',icon:'K',order:82,primary:true,openMode:'window',description:'KXCI 连接 + 安全仿真测试工作台',onActivate:()=>{ctx.workspace.openPage('keithley4200Page');void safeConnection(connect)();}});
+    const page=ctx.ui.pages.add({id:'keithley-4200-page',pageId:'keithley4200Page',activity:'keithley-4200',label:'4200A',title:'Keithley 4200A KXCI',toolbar:false,html:'',onOpen:()=>{void safeConnection(connect)();}});
     ui=Presentation.mount(ctx,page,{
       onEdit,
       desktopHost:tcp.supportsRelay===true,
-      toggleConnection:safe(toggleConnection),
+      toggleConnection:safeConnection(toggleConnection),
       preview:safe(preview),simulate:safe(simulate),stop:safe(stop),
       exportCsv:safe(exportCsv),exportJson:safe(exportJson),exportSvg:safe(exportSvg)
     });
