@@ -1,14 +1,21 @@
-/* 4200A owns card composition and spacing; Core Unit/Theme owns
-   control paint, typography, responsive recipes and interactive states. */
+/* Card arrangement only. Core Unit/Theme owns visual paint, type, borders and shadows. */
 .dkds-4200-workbench{width:100%;margin:0 auto;padding:10px}
-.dkds-4200-card{overflow:visible}
-.dkds-4200-device-card{padding:10px;display:flex;flex-direction:column;gap:6px}
-.dkds-4200-connect-button{min-width:105px;min-height:36px}
+.dkds-4200-top-cards{width:100%}
+.dkds-4200-card{min-width:0;overflow:visible}
+.dkds-4200-device-card,.dkds-4200-design-card,.dkds-4200-chart-card{padding:14px}
+.dkds-4200-device-card{display:flex;flex-direction:column;gap:6px}
+.dkds-4200-card-heading{margin-bottom:8px}
+.dkds-4200-card-heading h3,.dkds-4200-card-heading p{margin:0}
 .dkds-4200-device-title{margin-top:2px}
 .dkds-4200-device-subtitle{margin-top:3px}
-.dkds-4200-advanced,.dkds-4200-data-details{min-width:0}
-.dkds-4200-advanced>summary,.dkds-4200-data-details>summary{cursor:pointer;user-select:none;padding:10px}
-.dkds-4200-design-card,.dkds-4200-chart-card{padding:10px}
+.dkds-4200-connect-button{min-width:105px;min-height:36px}
+.dkds-4200-route-detail{overflow-wrap:anywhere}
+.dkds-4200-advanced,.dkds-4200-data-details,.dkds-4200-diagnostics{min-width:0}
+.dkds-4200-advanced>summary,.dkds-4200-data-details>summary,.dkds-4200-diagnostics>summary{cursor:pointer;user-select:none;padding:8px}
+.dkds-4200-diagnostic-log{white-space:pre-wrap;overflow:auto;max-height:240px;overflow-wrap:anywhere}
+.dkds-4200-advanced-grid{padding:8px}
 .dkds-4200-run-actions{margin-top:10px}
+.dkds-4200-plan-summary,.dkds-4200-progress{margin-top:6px}
 .dkds-4200-table-host{min-width:0;overflow:auto;padding:8px}
+.dkds-4200-native-note{margin-top:8px}
 .dkds-4200-workbench [hidden]{display:none}
