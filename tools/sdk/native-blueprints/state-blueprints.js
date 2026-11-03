@@ -88,7 +88,7 @@ const NATIVE_PLUGIN_STATE_BLUEPRINTS=Object.freeze({
     'aria': [],
     'keys': [],
     'counts': {
-      'states': 4,
+      'states': 10,
       'roles': 0,
       'a11y': 0,
       'keyboard': 0,

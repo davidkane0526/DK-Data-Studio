@@ -18,7 +18,7 @@ assert.strictEqual(report.broadButtonGeometryViolations.length,0,'A generic tag-
 const byPlugin=Object.fromEntries(report.pluginExposure.map(row=>[row.plugin,row]));
 assert.deepStrictEqual(Object.fromEntries(Object.entries(byPlugin).map(([id,row])=>[id,[row.layoutMounts,row.shorthandSensitiveMounts.length]])),{
   'data-center':[15,2],
-  'keithley-4200':[10,4],
+  'keithley-4200':[13,7],
   'pulse-analysis':[18,10],
   'pulse-sampler-tool':[15,9],
   'resonance-workbench':[43,2],
@@ -33,7 +33,7 @@ assert.deepStrictEqual(report.proxyExposure.map(row=>[row.plugin,row.count]),[['
 // resonance helper-definition false positive from source-token counting.
 const ownerReport=ownership.audit();
 assert.strictEqual(ownerReport.plugins,7);
-assert.strictEqual(ownerReport.layouts,112);
+assert.strictEqual(ownerReport.layouts,115);
 assert.strictEqual(ownerReport.splits,1);
 assert.strictEqual(ownerReport.violations.length,0,ownership.format(ownerReport));
 

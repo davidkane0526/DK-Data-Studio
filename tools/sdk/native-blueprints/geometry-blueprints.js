@@ -29,7 +29,11 @@ const PRIVATE_GEOMETRY_BRIDGES=Object.freeze({
 
 const NATIVE_PLUGIN_GEOMETRY_BLUEPRINTS=Object.freeze({
   'keithley-4200':Object.freeze([
-    entry('dkds-4200-workbench','layout','stack-compact',{role:'compact-card-flow'}),
+    entry('dkds-4200-workbench','layout','stack-comfortable',{role:'compact-card-flow'}),
+    entry('dkds-4200-top-cards','layout','two-card-grid',{role:'instrument-and-plan-cards'}),
+    entry('dkds-4200-card-heading','layout','stack-compact',{role:'card-heading'}),
+    entry('dkds-4200-diagnostics|dkds-4200-diagnostic-log','layout','identity',{role:'collapsed-connection-diagnostics'}),
+    entry('dkds-4200-plan-summary|dkds-4200-progress|dkds-4200-native-note','note','meta',{role:'status-and-provenance'}),
     entry('dkds-4200-card','panel','plain',{role:'instrument-card'}),
     entry('dkds-4200-device-card','panel','plain',{role:'instrument-summary-card'}),
     entry('dkds-4200-connect-button','action','primary',{role:'connection-toggle'}),

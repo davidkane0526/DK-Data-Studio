@@ -37,7 +37,7 @@ assert(plugin.includes("encodeBase64(Kxci.IDN_REQUEST)"),'Phase 1 must send the 
 assert(!/forcev|forcei|measi|measv|output\s*on/i.test(plugin),'Phase 1 plugin must not contain source/measure/output command paths.');
 assert(presentation.includes('units.page.create')&&presentation.includes('units.workspace.create')&&presentation.includes('units.field.create')&&presentation.includes('units.scientificPlot.create'),'4200 UI must be Unit-first.');
 assert(plugin.includes('commandTail')&&!plugin.includes('retry'),'4200 commands must be serialized without replaying timed-out instrument commands.');
-assert(plugin.includes("onOpen:()=>{void safe(connect)();}")&&plugin.includes("['auto','ethernet','wifi']"),'Page open must automatically probe available direct network paths.');
+assert(plugin.includes("onOpen:()=>{void safeConnection(connect)();}")&&plugin.includes("['auto']")&&plugin.includes('connectPending'),'Page open must automatically probe available direct network paths once.');
 assert(plugin.includes('serialize:()=>({plan:form(planKeys)})')&&!plugin.includes('connection:form(connectionKeys)'),'Connection parameters must not be persisted.');
 assert(manifest.scripts.includes('measurement-model.js')&&manifest.scripts.includes('kxci-protocol.js')&&manifest.scripts.includes('unit-presentation.js'),'4200 must load model and UI before entry.');
 assert(plugin.includes("ctx.modules.require('measurement-model')")&&plugin.includes("ctx.modules.require('kxci-protocol')")&&plugin.includes("ctx.modules.require('unit-presentation')"),'4200 requires the dedicated model and UI.');
