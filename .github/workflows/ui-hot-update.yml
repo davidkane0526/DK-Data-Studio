@@ -1,0 +1,53 @@
+name: DKDS Fast UI Hot Update
+on:
+  push:
+    branches: ['4200']
+    paths:
+      - 'src/styles/**'
+      - 'src/mobile.css'
+      - 'tools/updates/**'
+      - 'package.json'
+      - '.github/workflows/ui-hot-update.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: dkds-ui-hot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  hot-update:
+    name: Publish verified CSS-only UI bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate hot-update runtime
+        run: |
+          node --check src/core/host/ui-hot-runtime.js
+          node --check desktop/ui-hot-update.js
+          node --check tools/updates/build-ui-hot-bundle.js
+      - name: Create verified hot-style bundle without native compilation
+        run: |
+          node tools/updates/build-ui-hot-bundle.js dist/DKDS-UI-bundle.json
+          test -s dist/DKDS-UI-bundle.json
+          node -e "const x=require('./dist/DKDS-UI-bundle.json');if(x.schema!=='dkds-ui-v1'||Object.keys(x.files).length!==3)process.exit(1)"
+      - name: Publish UI-only update release
+        if: github.ref == 'refs/heads/4200'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/4200" --jq '.commit.sha')"
+          if [ "$head_sha" != "$GITHUB_SHA" ]; then
+            echo 'Newer branch commit exists; skip an obsolete UI bundle.'
+            exit 0
+          fi
+          version="$(node -p "require('./package.json').version")"
+          tag="dkds-ui-v${version}-${GITHUB_RUN_ID}"
+          gh release create "$tag" dist/DKDS-UI-bundle.json \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "DKDS UI Style Hot Update · v${version}" \
+            --notes 'Verified CSS-only UI resources. Apply from the DKDS version panel without replacing EXE/APK; JavaScript and native updates still require a full app release.' \
+            --prerelease --latest=false
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,tagName

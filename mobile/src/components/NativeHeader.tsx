@@ -216,7 +216,7 @@ export function NativeHeader({ shell, palette, onAction, onSheet, onOverflowChan
         <View style={shellStyles.headerUtilityGroup}>
           <Pressable accessibilityRole="button" accessibilityLabel="软件版本，检查更新" onPress={onVersionPress}
             style={({pressed})=>[shellStyles.headerVersionButton,pressed&&shellStyles.pressed]}>
-            <Text style={[shellStyles.headerVersionText,{color:textColor}]} numberOfLines={1}>{'v'+(shell.appVersion||'3.71.144')}</Text>
+            <Text style={[shellStyles.headerVersionText,{color:textColor}]} numberOfLines={1}>{'v'+(shell.appVersion||'3.71.145')}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button" accessibilityLabel="撤销" disabled={!shell.history?.canUndo}

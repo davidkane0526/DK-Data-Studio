@@ -1,3 +1,12 @@
+# 3.71.145 — Fast UI release channel and cross-platform update reliability (Preview)
+
+- Added a fast standalone GitHub Releases job for verified CSS-only hot-update bundles; no APK or EXE compilation is required for style-only updates.
+- Desktop and Android accept signed-release UI style bundles within the compatible 3.71 release line and keep a validated local fallback.
+- Click the application version to check both the CSS hot-update and full executable/APK update channels.
+- Android uses the existing acknowledged Mobile Host protocol, not renderer JavaScript injection.
+- Core-only generic TCP communication remains built-in; 4200A logic remains wholly external to DK Test Studio.
+- Source app version 3.71.145; Android versionCode 285. JavaScript or native feature updates still require a full app update.
+
 # 3.71.144 — Generic communication plugin and in-app updates (Preview)
 
 - DKDS Connectivity includes a protocol-neutral TCP/IP communications panel and a reusable network.tcp capability; instrument-specific workflows remain external DK Test Studio plugins.

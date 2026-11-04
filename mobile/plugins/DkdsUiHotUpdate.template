@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 /** Verified CSS-only UI hot-updates; no code injection and no APK modification. */
 final class DkdsUiHotUpdateManager {
   private static final String REPO="davidkane0526/DK-Data-Studio";
-  private static final String API="https://api.github.com/repos/"+REPO+"/releases?per_page=30";
+  private static final String API="https://api.github.com/repos/"+REPO+"/releases?per_page=100";
   private static final String ASSET="DKDS-UI-bundle.json";
-  private static final Pattern TAG=Pattern.compile("dkds-android-v(\\d+\\.\\d+\\.\\d+)-[0-9]+");
+  private static final Pattern TAG=Pattern.compile("dkds-(?:ui|android)-v(\\d+\\.\\d+\\.\\d+)-[0-9]+");
   private static final String[] FILES={"src/styles/structure/connectivity-panels.css",
     "src/styles/platform/native-client-shell.css","src/styles/theme/component-appearance.css"};
   private static final int LIMIT=2*1024*1024;
@@ -54,11 +54,16 @@ final class DkdsUiHotUpdateManager {
   private String installedVersion()throws Exception{
     return activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
   }
+  private boolean compatible(String available)throws Exception{
+    String installed=installedVersion();
+    if(!available.matches("\\d+\\.\\d+\\.\\d+")||!installed.matches("\\d+\\.\\d+\\.\\d+"))return false;
+    String[] candidate=available.split("\\."),current=installed.split("\\.");
+    return candidate[0].equals(current[0])&&candidate[1].equals(current[1]);
+  }
   private String validate(JSONObject doc)throws Exception{
     if(!"dkds-ui-v1".equals(doc.optString("schema"))||!REPO.equals(doc.optString("repository")))throw new SecurityException("Invalid UI bundle identity");
     String ver=doc.optString("version");
-    if(!ver.matches("\\d+\\.\\d+\\.\\d+")||DkdsAppUpdateManager.compareVersions(ver,installedVersion())<0)
-      throw new SecurityException("UI bundle is older than the installed application");
+    if(!compatible(ver))throw new SecurityException("UI bundle is incompatible with the installed app");
     JSONObject files=doc.getJSONObject("files");
     if(files.length()!=FILES.length)throw new SecurityException("Unexpected UI bundle files");
     StringBuilder cssText=new StringBuilder();
@@ -93,7 +98,7 @@ final class DkdsUiHotUpdateManager {
           Matcher matcher=TAG.matcher(row.optString("tag_name"));
           if(row.optBoolean("draft")||!matcher.matches())continue;
           String tagVersion=matcher.group(1);
-          if(DkdsAppUpdateManager.compareVersions(tagVersion,installedVersion())<0)continue;
+          if(!compatible(tagVersion))continue;
           JSONArray assets=row.optJSONArray("assets");if(assets==null)continue;
           JSONObject target=null;
           for(int j=0;j<assets.length();j++){JSONObject item=assets.getJSONObject(j);if(ASSET.equals(item.optString("name")))target=item;}
