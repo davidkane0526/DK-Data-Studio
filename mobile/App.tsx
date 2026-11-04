@@ -13,6 +13,7 @@ import {
   type ShellSheet,
 } from './src/Shell';
 import { RendererWorkspace } from './src/components/RendererWorkspace';
+import { UpdateDialog } from './src/components/UpdateDialog';
 import { EMPTY_SHELL } from './src/host/protocol';
 import { useHostBridge } from './src/host/useHostBridge';
 import { useMobileSystemLifecycle } from './src/host/useMobileSystemLifecycle';
@@ -23,6 +24,7 @@ import { useWebServiceController } from './src/services/useWebServiceController'
 
 export default function App() {
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
+  const [updateVisible,setUpdateVisible]=useState(false);
   const [sheet, setSheet] = useState<ShellSheet>(null);
   const [pluginOverflowKeys, setPluginOverflowKeys] = useState<string[]>([]);
   const [statusOverflowItems, setStatusOverflowItems] = useState<NativeStatusOverflowRow[]>([]);
@@ -64,9 +66,10 @@ export default function App() {
       <SafeAreaView style={[styles.root, { backgroundColor: palette.background }]} edges={['top', 'left', 'right']}>
         <StatusBar style={shell.theme === 'dark' ? 'light' : 'dark'} />
         <NavigationBar hidden style={shell.theme === 'dark' ? 'dark' : 'light'} />
-        <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} />
+        <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} onVersionPress={()=>setUpdateVisible(true)} />
         {webView}
         <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setStatusOverflowItems} webService={webService.state} />
+        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.144'} palette={palette} onClose={()=>setUpdateVisible(false)} />
         <ShellActionSheet
           visible={sheet}
           shell={shell}

@@ -294,8 +294,8 @@ jobs:
           set -euo pipefail
           apk="release-apk/DK-Data-Studio-arm64-v8a-release.apk"
           sha_short="${GITHUB_SHA:0:12}"
-          tag="dkds-android-preview-${GITHUB_RUN_ID}"
-          asset_name="DK-Data-Studio-${sha_short}-arm64.apk"
+          tag="dkds-android-v${DKDS_RELEASE_VERSION}-${GITHUB_RUN_ID}"
+          asset_name="DK-Data-Studio-arm64-v8a-release.apk"
           cat > release-notes.md <<EOF
           Automated Android preview of the generic DK Data Studio host.
 

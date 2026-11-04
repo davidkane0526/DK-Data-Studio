@@ -31,6 +31,8 @@ export const shellStyles = StyleSheet.create({
   moreActionText: { fontSize: 13, lineHeight: 16, letterSpacing: 1, fontWeight: '700' },
   moreGlyphCanvas: { width: 16, height: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   moreGlyphDot: { width: 3.2, height: 3.2, borderRadius: 2 },
+  headerVersionButton:{height:28,minWidth:54,alignItems:'center',justifyContent:'center',paddingHorizontal:3,borderRadius:7},
+  headerVersionText:{fontSize:9.5,fontWeight:'600'},
   headerUtilityGroup: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
   headerHistoryButton: { width: 30, height: 30, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   historyGlyphCanvas: { width: 15, height: 14, position: 'relative' },
