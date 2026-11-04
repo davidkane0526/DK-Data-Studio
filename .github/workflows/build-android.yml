@@ -74,6 +74,8 @@ jobs:
         shell: bash
         run: |
           node tests/test-mobile-tcp-gateway.js
+          npm run runtime:build
+          npm run plugin:index
           node tests/test-plugin-package.js
           node tests/test-mobile-plugin-package.js
           node -e "require('./tests/manifest.js')"
