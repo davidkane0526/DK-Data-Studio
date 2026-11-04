@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import type { WebViewMessageEvent } from 'react-native-webview';
 import type { Palette } from '../theme/palette';
 import type { RendererShellState } from '../model/shell-types';
-import { EMPTY_SHELL, LOCAL_APP, shellState } from '../host/protocol';
+import { EMPTY_SHELL, LOCAL_APP, shellState, nativeHost } from '../host/protocol';
 
 type HostRequest = (method: string, payload?: any) => Promise<any>;
 
@@ -57,7 +57,12 @@ export function RendererWorkspace(props: {
           markRendererLoading();
           setShell(current => ({ ...current, ready: false }));
         }}
-        onLoadEnd={() => hostRequest('bootstrap').then(value => setShell(shellState(value))).catch(error => setLoadError(error?.message || String(error)))}
+        onLoadEnd={() => {
+          hostRequest('bootstrap').then(value => setShell(shellState(value))).catch(error => setLoadError(error?.message || String(error)));
+          void nativeHost?.uiHotCss?.().then(css=>{
+            if(css&&css.length<400000)webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
+          }).catch(()=>{});
+        }}
         onRenderProcessGone={() => setLoadError('Android WebView 渲染进程已退出，请重新载入工作区。')}
         onError={event => setLoadError(event.nativeEvent.description || 'WebView 加载失败')}
         onHttpError={event => setLoadError(`HTTP ${event.nativeEvent.statusCode}`)}

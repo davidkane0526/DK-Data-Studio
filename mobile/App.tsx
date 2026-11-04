@@ -25,6 +25,10 @@ import { useWebServiceController } from './src/services/useWebServiceController'
 export default function App() {
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
   const [updateVisible,setUpdateVisible]=useState(false);
+  const applyVerifiedUiCss=useCallback((css:string)=>{
+    if(!css||css.length>400000)return;
+    host.webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
+  },[host.webRef]);
   const [sheet, setSheet] = useState<ShellSheet>(null);
   const [pluginOverflowKeys, setPluginOverflowKeys] = useState<string[]>([]);
   const [statusOverflowItems, setStatusOverflowItems] = useState<NativeStatusOverflowRow[]>([]);
@@ -69,7 +73,7 @@ export default function App() {
         <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} onVersionPress={()=>setUpdateVisible(true)} />
         {webView}
         <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setStatusOverflowItems} webService={webService.state} />
-        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.144'} palette={palette} onClose={()=>setUpdateVisible(false)} />
+        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.144'} palette={palette} onClose={()=>setUpdateVisible(false)} onUiCss={applyVerifiedUiCss} />
         <ShellActionSheet
           visible={sheet}
           shell={shell}
