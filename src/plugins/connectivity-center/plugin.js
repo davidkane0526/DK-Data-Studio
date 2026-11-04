@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   const platformPresentation={desktop:{mode:'shared'},mobile:{mode:'adaptive'}};
-  DKDSPlugins.define({"id":"builtin.connectivity-center","name":"SMB & AI Services","version":"1.2.8","apiVersion":"1.19.0","requiresCore":["runtime","status","io","services","capabilities","data.import-workbench","ui.dom","ui.menus","ui.status-bar","ui.workspace"],"entry":"plugin.js","enabled":true,"order":34,"description":"SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.","capabilities":["network.smb","ai.agent.kernel","ai.chat.mentions","mcp.kernel-server","ui.status-bar"],"pluginType":"foundation","styles":["plugin.css"],"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"adaptive"}}}, async ctx => {
+  DKDSPlugins.define({"id":"builtin.connectivity-center","name":"Communication & Connectivity","version":"1.2.9","apiVersion":"1.19.0","requiresCore":["runtime","status","io","services","capabilities","data.import-workbench","ui.dom","ui.menus","ui.status-bar","ui.workspace"],"entry":"plugin.js","enabled":true,"order":34,"description":"Built-in generic TCP/IP communication interface, Ethernet/Wi-Fi transport, SMB browser and AI services. No instrument-specific protocol.","capabilities":["network.smb","ai.agent.kernel","ai.chat.mentions","mcp.kernel-server","ui.status-bar","network.tcp","network.interface.generic"],"pluginType":"foundation","styles":["plugin.css"],"platformPresentation":{"desktop":{"mode":"shared"},"mobile":{"mode":"adaptive"}}}, async ctx => {
     const dom=ctx.ui.dom;
     const connectivity=ctx.services.require('connectivity');
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -56,6 +56,46 @@
     const hide=el=>el?.classList.add('hidden');
     const show=el=>el?.classList.remove('hidden');
     const setBusy=async(sel,fn,label='处理中')=>{const button=$(sel),original=button?.textContent||'';if(button){button.disabled=true;button.dataset.busy='true';button.textContent=label;}try{return await fn();}finally{if(button){button.disabled=false;button.dataset.busy='false';button.textContent=original;}}};
+
+    // The first-party communication plugin owns a protocol-neutral transport API.
+    const tcp=connectivity.tcp;
+    ctx.services.register('communication.tcp',tcp,{replace:true,metadata:{transport:'tcp',generic:true}});
+    ctx.capabilities.register('network.tcp',{kind:'network.transport',title:'Generic TCP transport',tags:['tcp','wifi','ethernet','lan','binary'],
+      methods:{open:params=>tcp.open(params||{}),exchange:params=>tcp.exchange(params||{}),close:params=>tcp.close(params||{})}});
+    const tcpOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',html:"<section class=\"dksvc-window dktcp-window dkds-dialog-shell dkds-material-role-elevated\" role=\"dialog\" aria-label=\"通用通信接口\"><div class=\"dksvc-head dkds-surface-header\"><strong>通信接口</strong><span class=\"dksvc-sub dkds-meta\">TCP/IP · Ethernet · Wi-Fi</span><button id=\"dktcpClose\" class=\"dksvc-close dkds-icon-button dkds-panel-close-button\" type=\"button\">×</button></div><div class=\"dktcp-body\"><div class=\"dktcp-grid\"><label>目标主机<input id=\"dktcpHost\" spellcheck=\"false\" placeholder=\"IP 地址 / 主机名\"></label><label>TCP 端口<input id=\"dktcpPort\" type=\"number\" min=\"1\" max=\"65535\"></label><label>连接模式<select id=\"dktcpMode\"><option value=\"auto\">自动</option><option value=\"ethernet\">以太网</option><option value=\"wifi\">Wi-Fi</option><option value=\"interface\">指定接口</option></select></label><label>接口名称<input id=\"dktcpInterface\" placeholder=\"自动模式留空\"></label></div><div class=\"dktcp-actions\"><button id=\"dktcpToggle\" class=\"primary\" type=\"button\">连接</button><span id=\"dktcpState\" role=\"status\" aria-live=\"polite\">未连接</span></div><label class=\"dktcp-payload\">发送字节（Base64）<textarea id=\"dktcpPayload\" spellcheck=\"false\"></textarea></label><div class=\"dktcp-actions\"><button id=\"dktcpSend\" type=\"button\" disabled>发送并接收</button><span>无设备专用命令</span></div><label class=\"dktcp-payload\">接收字节（Base64）<textarea id=\"dktcpResponse\" readonly></textarea></label><p class=\"dkds-meta\">DKDS 仅提供网络会话和原始字节通信。仪器协议、测试和测量功能由外部插件提供。</p></div></section>"});
+    dom.append(dom.query('body'),tcpOverlay);
+    const te=id=>dom.query('#'+id,tcpOverlay);
+    let tcpSession='',tcpBusy=false;
+    const tcpState=msg=>{te('dktcpState').textContent=String(msg||'').slice(0,160)};
+    async function closeTcp(){const id=tcpSession;tcpSession='';te('dktcpToggle').textContent='连接';te('dktcpSend').disabled=true;if(id)await tcp.close({sessionId:id}).catch(()=>{});tcpState('未连接');}
+    const openTcp=()=>tcpOverlay.classList.remove('hidden');
+    const hideTcp=()=>tcpOverlay.classList.add('hidden');
+    dom.on(te('dktcpClose'),'click',hideTcp);
+    dom.on(tcpOverlay,'click',event=>{if(event.target===tcpOverlay)hideTcp();});
+    dom.on(te('dktcpToggle'),'click',async()=>{
+      if(tcpBusy)return;tcpBusy=true;const btn=te('dktcpToggle');btn.disabled=true;
+      try{
+        if(tcpSession){await closeTcp();return;}
+        const host=te('dktcpHost').value.trim(),port=Number(te('dktcpPort').value),networkMode=te('dktcpMode').value,interfaceName=te('dktcpInterface').value.trim();
+        if(!host||host.length>253||/[\s/\\]/.test(host))throw Error('目标主机地址不合法');
+        if(!Number.isInteger(port)||port<1||port>65535)throw Error('端口必须是 1–65535 的整数');
+        if(networkMode==='interface'&&!interfaceName)throw Error('指定接口模式需要填写接口名称');
+        tcpState('正在连接…');const result=await tcp.open({host,port,networkMode,interfaceName,connectTimeoutMs:5000});
+        if(!result?.sessionId)throw Error('Host 未返回 TCP 会话标识');
+        tcpSession=String(result.sessionId);btn.textContent='断开';te('dktcpSend').disabled=false;
+        tcpState('已连接 · '+String(result.localAddress||result.interfaceName||networkMode));
+      }catch(error){tcpState('连接失败：'+String(error?.message||error));}
+      finally{tcpBusy=false;btn.disabled=false;}
+    });
+    dom.on(te('dktcpSend'),'click',async()=>{
+      if(tcpBusy||!tcpSession)return;tcpBusy=true;const btn=te('dktcpSend');btn.disabled=true;
+      try{const base64=te('dktcpPayload').value.trim();
+        if(!base64||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64))throw Error('请提供有效 Base64 原始字节');
+        tcpState('正在传输…');const result=await tcp.exchange({sessionId:tcpSession,base64,readTimeoutMs:5000,idleTimeoutMs:120,maxBytes:65536});
+        te('dktcpResponse').value=String(result?.base64||'');tcpState('收到 '+(Number(result?.bytesRead)||0)+' 字节');
+      }catch(error){const message=String(error?.message||error);await closeTcp();tcpState('传输失败：'+message);}
+      finally{tcpBusy=false;btn.disabled=!tcpSession;}
+    });
 
     // ---- SMB file manager -------------------------------------------------
     let smbMode='auto',smbPath='',smbEntries=[],selectedPaths=new Set(),servers=[],shares=[],smbBusy=false;
@@ -172,18 +212,21 @@
     dom.on($('#dkaiMentions'),'click',event=>{const hit=event.target?.closest?.('[data-mention]');if(!hit)return;chooseMention($('#dkaiMentions')._rows?.[Number(hit.dataset.mention)]);});
     dom.on($('#dkaiRefs'),'click',event=>{const hit=event.target?.closest?.('[data-ref-remove]');if(!hit)return;selectedRefs.splice(Number(hit.dataset.refRemove),1);renderRefs();});
 
+    ctx.commands.register('connectivity.tcp.open-panel',openTcp);
     ctx.commands.register('connectivity.smb.import',()=>openSmb('data'));
     ctx.commands.register('connectivity.smb.open',()=>openSmb('auto'));
     ctx.commands.register('connectivity.ai.settings',()=>openSettings());
     ctx.commands.register('connectivity.ai.chat',()=>toggleChat(true));
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      ctx.ui.menus.add({id:'tcp-interface',menu:'manage',label:'通信接口（TCP/IP）…',order:33,onClick:openTcp});
       ctx.ui.menus.add({id:'smb-import',menu:'import-data',label:'SMB 网络文件…',order:20,onClick:()=>openSmb('auto')});
       ctx.ui.menus.add({id:'ai-mcp-settings',menu:'manage',label:'AI Agent / MCP…',order:35,onClick:openSettings});
     }
 
+    const tcpStatusItem=ctx.ui.statusBar.add({id:'communication-tcp',side:'right',order:29,icon:'⇄',label:'通信',title:'内置 TCP/IP 通信接口',state:'',className:'compact dktcp-status',onClick:openTcp});
     const cancelStatusPoll=dom.interval(()=>void refreshAiStatus(),10000);
     void refreshAiStatus();
     const mcpSettings=connectivity.mcp.loadSettings?.();if(mcpSettings?.enabled&&mcpSettings.token)void connectivity.mcp.status().then(state=>{if(!state?.running)return connectivity.mcp.start(mcpSettings.token);}).then(()=>refreshAiStatus()).catch(()=>{});
-    return {deactivate(){cancelStatusPoll?.();smbOverlay.remove();settingsOverlay.remove();chat.remove();}};
+    return {deactivate(){void closeTcp();tcpOverlay.remove();cancelStatusPoll?.();smbOverlay.remove();settingsOverlay.remove();chat.remove();}};
   });
 })();

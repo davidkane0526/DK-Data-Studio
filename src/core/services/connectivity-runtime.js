@@ -21,6 +21,11 @@
   function normalizeConnection(connection={}){return {server:text(connection.server),share:text(connection.share),username:String(connection.username||''),password:String(connection.password||''),domain:String(connection.domain||'')};}
   function api(name,...args){const fn=window.electronAPI?.[name];if(typeof fn!=='function')throw new Error(`Host capability unavailable: ${name}`);return fn(...args);}
   const files=Object.freeze({openDirectory:()=>api('openDataDirectory'),listDirectory:payload=>api('listDataDirectory',payload||{}),register:payload=>api('registerDataDocument',payload||{}),saveText:payload=>api('saveText',payload||{}),saveBase64:payload=>api('saveBase64',payload||{})});
+  const tcp=Object.freeze({
+    open:params=>api('tcpOpen',params||{}),
+    exchange:params=>api('tcpExchange',params||{}),
+    close:params=>api('tcpClose',params||{})
+  });
   const smb=Object.freeze({discover:()=>api('smbDiscover'),listShares:connection=>api('smbListShares',normalizeConnection(connection)),list:(connection,path='')=>api('smbList',{connection:normalizeConnection(connection),path:String(path||'')}),read:(connection,paths)=>api('smbRead',{connection:normalizeConnection(connection),paths:Array.isArray(paths)?paths:[]})});
   function loadMcpSettings(){try{return {enabled:false,token:'',...JSON.parse(localStorage.getItem(mcpSettingsKey)||'{}')};}catch{return {enabled:false,token:''};}}
   function saveMcpSettings(value={}){const current=loadMcpSettings(),token=String(value.token??current.token??'').replace(/[\r\n]/g,'');const next={...current,...value,token,enabled:!!value.enabled};localStorage.setItem(mcpSettingsKey,JSON.stringify(next));return next;}
@@ -75,5 +80,5 @@
   async function test(settingsOverride={}){const settings=saveSettings(settingsOverride),key=await api('agentGetSecret',settings.presetId||'default');if(!key)throw new Error('请先保存 AI API Key。');const body=settings.provider==='anthropic'?{model:settings.model,max_tokens:16,messages:[{role:'user',content:'Reply with OK.'}]}:{model:settings.model,messages:[{role:'user',content:'Reply with OK.'}],max_tokens:8};const response=await http(settings,key,body);if(!response?.ok)throw new Error(`连接失败：HTTP ${response?.status||0}`);return true;}
 
   const agent=Object.freeze({presets:()=>presets.map(row=>({...row,models:[...row.models]})),loadSettings,saveSettings,getSecret:key=>api('agentGetSecret',key),setSecret:(key,value)=>api('agentSetSecret',{key,value}),test,chat,run,context:snapshot,tools:()=>availableTools(loadSettings()),audit:()=>loadAudit()});
-  window.DKDSConnectivity=Object.freeze({configure(next={}){core={...core,...next};},files,smb,agent,mcp});
+  window.DKDSConnectivity=Object.freeze({configure(next={}){core={...core,...next};},files,smb,tcp,agent,mcp});
 })();
