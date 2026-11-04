@@ -274,6 +274,13 @@ jobs:
       - name: Checkout UI hot-update source
         uses: actions/checkout@v7
 
+      - name: Resolve release version for publication
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          test -n "$VERSION"
+          echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+
       - name: Download successful Android APK
         uses: actions/download-artifact@v8
         with:

@@ -292,6 +292,11 @@
 
   async function invoke(method,payload={}){
     if(method==='bootstrap'||method==='snapshot'){const state=snapshot();window.DKDSMobileWebPresentation?.apply?.(state);return state;}
+    if(method==='ui-hot-style'){
+      const css=payload?.css;
+      if(typeof css!=='string'||css.length>400000)throw new Error('Invalid UI hot style payload');
+      return {applied:!!window.DKDSUIHot?.apply(css)};
+    }
     const intent=mobileAdapter()?.fromHostRequest?.(method,payload);
     if(!intent)throw new Error(`Unsupported mobile host method: ${method}`);
     return dispatchIntent(intent);

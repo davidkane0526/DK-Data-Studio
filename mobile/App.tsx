@@ -33,8 +33,8 @@ export default function App() {
   const host = useHostBridge(setShell);
   const applyVerifiedUiCss=useCallback((css:string)=>{
     if(!css||css.length>400000)return;
-    host.webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
-  },[host.webRef]);
+    void host.hostRequest('ui-hot-style',{css}).catch(()=>{});
+  },[host.hostRequest]);
   const files = useNativeFileService();
   const webService = useWebServiceController();
   const openWebService = useCallback(() => host.hostRequest('status', { pluginId: 'builtin.status-monitor', id: 'lan-web' }).then(() => undefined), [host.hostRequest]);

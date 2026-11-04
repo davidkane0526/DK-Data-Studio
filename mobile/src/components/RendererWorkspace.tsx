@@ -58,10 +58,11 @@ export function RendererWorkspace(props: {
           setShell(current => ({ ...current, ready: false }));
         }}
         onLoadEnd={() => {
-          hostRequest('bootstrap').then(value => setShell(shellState(value))).catch(error => setLoadError(error?.message || String(error)));
-          void nativeHost?.uiHotCss?.().then(css=>{
-            if(css&&css.length<400000)webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
-          }).catch(()=>{});
+          hostRequest('bootstrap').then(async value => {
+            setShell(shellState(value));
+            const css=await nativeHost?.uiHotCss?.().catch(()=>null);
+            if(css&&css.length<400000)await hostRequest('ui-hot-style',{css}).catch(()=>{});
+          }).catch(error => setLoadError(error?.message || String(error)));
         }}
         onRenderProcessGone={() => setLoadError('Android WebView 渲染进程已退出，请重新载入工作区。')}
         onError={event => setLoadError(event.nativeEvent.description || 'WebView 加载失败')}
