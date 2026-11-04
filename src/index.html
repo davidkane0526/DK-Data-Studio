@@ -65,7 +65,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.71.143</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><button id="appVersionBtn" class="version dkds-version-trigger" type="button" title="点击检查界面热更新和程序更新" aria-controls="updatePanel">v3.71.143</button></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作">
@@ -635,12 +635,17 @@
 
     <div id="updatePanel" class="floating-panel update-panel dkds-material-role-elevated hidden">
       <div class="floating-header drag-handle">
-        <span>局域网热更新</span>
+        <span>检查更新</span>
         <div class="panel-header-actions dkds-integrated-action-group">
           <button class="panel-close dkds-panel-close-button" data-target="updatePanel">×</button>
         </div>
       </div>
       <div class="floating-body update-panel-body">
+        <div class="update-status-card" aria-label="GitHub 便携程序更新">
+          <div class="update-status-line"><strong>程序更新（GitHub）</strong></div>
+          <div id="onlineUpdateStatus" class="update-status-message" role="status">尚未检查</div>
+          <div class="update-actions"><button id="onlineUpdateCheckBtn" type="button">检查程序更新</button><button id="onlineUpdateInstallBtn" type="button" class="primary hidden">下载并安装</button></div>
+        </div>
         <div class="update-status-card">
           <div class="update-status-line">
             <span id="updatePhaseDot" class="update-phase-dot idle"></span>
@@ -669,7 +674,7 @@
         </div>
 
         <details class="update-settings-details">
-          <summary>服务器设置</summary>
+          <summary>局域网更新服务器设置</summary>
           <div class="update-settings-body">
             <label>手动服务器地址
               <input id="updateServerUrlInput" type="text" placeholder="留空 = 自动发现，例如 http://192.168.1.10:45880">

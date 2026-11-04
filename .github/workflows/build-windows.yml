@@ -406,19 +406,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $tag = "dkds-windows-preview-$env:GITHUB_RUN_ID"
+          $tag = "dkds-windows-v$env:DKDS_BUILD_VERSION"
           $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
             Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
           if (-not $portable) { throw 'Portable Windows EXE not found.' }
           $releaseDir = Join-Path $env:RUNNER_TEMP 'dkds-windows-release'
           New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
-          $portableExe = Join-Path $releaseDir 'DK-Data-Studio-Windows-Portable.exe'
+          $portableExe = Join-Path $releaseDir "DK-Data-Studio-Portable-$env:DKDS_BUILD_VERSION-x64.exe"
           Copy-Item -LiteralPath $portable.FullName -Destination $portableExe -Force
           $shaShort = $env:GITHUB_SHA.Substring(0,12)
           $notes = @"
           Automated preview of the generic DK Data Studio host.
 
           - Source app version: $env:DKDS_RELEASE_VERSION
+          - Packaged build version: $env:DKDS_BUILD_VERSION
           - Commit: $env:GITHUB_SHA
           - Build: https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID
           - Distribution: standalone Windows portable executable.

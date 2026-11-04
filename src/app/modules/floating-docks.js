@@ -183,17 +183,54 @@ $('#lanWebRefreshQrBtn').onclick=()=>{
   void renderLanWebQr(state.lanWebStatusState);
 };
 
-$('#updateBtn').onclick=async()=>{
+async function displayOnlineUpdate(result={}){
+  const state=String(result?.status||'unsupported');
+  const label={
+    unsupported:'此运行环境不支持应用内替换',
+    idle:'点击检查 GitHub 上的完整程序版本',
+    checking:'正在检查 GitHub Releases…',
+    current:'当前程序已是最新版本',
+    available:'发现程序更新',
+    ready:'已下载并验证，准备安装',
+    downloading:'正在下载程序更新',
+    restarting:'正在关闭旧版并安装',
+    error:'检查或安装失败'
+  };
+  const el=$('#onlineUpdateStatus');
+  if(el)el.textContent=(label[state]||state)+(result.version?' · v'+result.version:'')+
+    (state==='downloading'?' · '+Math.max(0,Math.min(100,Number(result.progress)||0))+'%':'')+
+    (result.error?'：'+String(result.error).slice(0,160):'');
+  $('#onlineUpdateInstallBtn')?.classList.toggle('hidden',!(state==='available'||state==='ready'));
+}
+async function checkOnlineUpdate(){
+  await displayOnlineUpdate({status:'checking'});
+  try{await displayOnlineUpdate(await window.electronAPI.onlineUpdateCheck?.()||{status:'unsupported'});}
+  catch(error){await displayOnlineUpdate({status:'error',error:String(error.message||error)});}
+}
+async function openUpdatePanel({check=false}={}){
   const panel=$('#updatePanel');
-  panel.classList.toggle('hidden');
-  if(!panel.classList.contains('hidden')){
-    globalThis.DKDSMaterialSurface?.apply?.(panel,'elevated');
-    ensureFloatingPanelVisible(panel);
+  panel.classList.remove('hidden');
+  globalThis.DKDSMaterialSurface?.apply?.(panel,'elevated');
+  ensureFloatingPanelVisible(panel);
+  if(window.electronAPI?.updateGetSettings){
     await loadUpdateSettingsIntoPanel();
     renderUpdateStatus(await window.electronAPI.updateGetStatus());
-    ensureFloatingPanelVisible(panel);
   }
-};
+  await displayOnlineUpdate(await window.electronAPI?.onlineUpdateStatus?.()||{status:'unsupported'});
+  ensureFloatingPanelVisible(panel);
+  if(check)void checkOnlineUpdate();
+}
+$('#updateBtn').onclick=()=>void openUpdatePanel({check:false});
+$('#appVersionBtn')?.addEventListener('click',()=>void openUpdatePanel({check:true}));
+$('#onlineUpdateCheckBtn')?.addEventListener('click',()=>void checkOnlineUpdate());
+$('#onlineUpdateInstallBtn')?.addEventListener('click',async()=>{
+  const saved=await saveProject();
+  if(!saved&&!state.projectPath&&!window.confirm('当前项目尚未保存。仍然继续安装更新？'))return;
+  const button=$('#onlineUpdateInstallBtn');button.disabled=true;
+  try{await displayOnlineUpdate(await window.electronAPI.onlineUpdateInstall());}
+  catch(error){await displayOnlineUpdate({status:'error',error:String(error.message||error)});}
+  finally{button.disabled=false;}
+});
 $('#updateCheckNowBtn').onclick=async()=>{
   $('#updateCheckNowBtn').disabled=true;
   try{await window.electronAPI.updateCheckNow();}finally{$('#updateCheckNowBtn').disabled=false;}
