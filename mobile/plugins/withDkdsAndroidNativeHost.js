@@ -360,6 +360,11 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   private var savePromise: Promise? = null
   private var saveBytes: ByteArray? = null
   private data class DataReadSession(val token:String,val uri:Uri,val size:Long,var stream:InputStream,var offset:Long=0L,@Volatile var touchedAt:Long=System.currentTimeMillis())
+  private var appUpdateManager:DkdsAppUpdateManager?=null
+  private fun appUpdater():DkdsAppUpdateManager {
+    val activity=currentActivity ?: throw IllegalStateException("当前 Android Activity 不可用")
+    return appUpdateManager ?: DkdsAppUpdateManager(activity).also{appUpdateManager=it}
+  }
   private val dataReadSessions = ConcurrentHashMap<String, DataReadSession>()
   private data class TcpSession(val id:String,val socket:Socket,@Volatile var busy:Boolean=false)
   private val tcpSessions = ConcurrentHashMap<String, TcpSession>()
@@ -802,6 +807,18 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     }
   }
 
+  @ReactMethod fun appUpdateStatus(promise:Promise) {
+    try{val updater=appUpdater();updater.onResume();promise.resolve(updater.status().toString())}
+    catch(error:Throwable){promise.reject("E_APP_UPDATE_STATUS",error)}
+  }
+  @ReactMethod fun appUpdateCheck(promise:Promise) {
+    try{appUpdater().checkNow();promise.resolve(true)}
+    catch(error:Throwable){promise.reject("E_APP_UPDATE_CHECK",error)}
+  }
+  @ReactMethod fun appUpdateInstall(promise:Promise) {
+    try{appUpdater().downloadAndInstall();promise.resolve(true)}
+    catch(error:Throwable){promise.reject("E_APP_UPDATE_INSTALL",error)}
+  }
   @ReactMethod fun webStatus(promise: Promise) { promise.resolve(DkdsLocalWebServer.status(context)) }
   @ReactMethod fun webApplySettings(enabled:Boolean,noKey:Boolean,port:Double,promise:Promise){thread(name="dkds-web-settings",isDaemon=true){try{promise.resolve(DkdsLocalWebServer.applySettings(context,enabled,noKey,port.toInt()))}catch(error:Throwable){DkdsLocalWebServer.markError(error);promise.reject("E_WEB_SETTINGS",error)}}}
   @ReactMethod fun webRegenerateKey(promise:Promise){promise.resolve(DkdsLocalWebServer.regenerateKey(context))}
@@ -960,6 +977,19 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     if (!manifest['uses-permission'].some(row => row?.$?.['android:name'] === 'android.permission.ACCESS_NETWORK_STATE')) {
       manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.ACCESS_NETWORK_STATE' } });
     }
+    if(!manifest['uses-permission'].some(row=>row?.$?.['android:name']==='android.permission.REQUEST_INSTALL_PACKAGES')){
+      manifest['uses-permission'].push({$:{'android:name':'android.permission.REQUEST_INSTALL_PACKAGES'}});
+    }
+    const appSection=manifest.application[0];
+    appSection.provider=appSection.provider||[];
+    const updateAuthority=(config.android?.package||'com.dk.datastudio')+'.updates';
+    if(!appSection.provider.some(row=>row?.$?.['android:authorities']===updateAuthority)){
+      appSection.provider.push({
+        $:{'android:name':'androidx.core.content.FileProvider','android:authorities':updateAuthority,
+          'android:exported':'false','android:grantUriPermissions':'true'},
+        'meta-data':[{$:{'android:name':'android.support.FILE_PROVIDER_PATHS','android:resource':'@xml/dkds_update_paths'}}]
+      });
+    }
     const intents = [
       { action: [{ $: { 'android:name': 'android.intent.action.OPEN_DOCUMENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
       { action: [{ $: { 'android:name': 'android.intent.action.GET_CONTENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
@@ -984,6 +1014,13 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanTcp + '\n' + linkLocalTcpRecovery + '\nprivate object DkdsLocalWebServer {');
     fs.writeFileSync(path.join(packageDir, 'DkdsNativeHostModule.kt'), nativeSource, 'utf8');
     fs.writeFileSync(path.join(packageDir, 'DkdsSmbService.java'), smbJavaSource(packageName), 'utf8');
+    const appUpdateSource=fs.readFileSync(path.join(__dirname,'DkdsAppUpdate.template'),'utf8').replace(/__PACKAGE__/g,packageName);
+    fs.writeFileSync(path.join(packageDir,'DkdsAppUpdateManager.java'),appUpdateSource,'utf8');
+    const xmlDir=path.join(mod.modRequest.platformProjectRoot,'app','src','main','res','xml');
+    fs.mkdirSync(xmlDir,{recursive:true});
+    fs.writeFileSync(path.join(xmlDir,'dkds_update_paths.xml'),
+      '<?xml version="1.0" encoding="utf-8"?>\n<paths xmlns:android="http://schemas.android.com/apk/res/android"><cache-path name="native_updates" path="native-updates/"/></paths>\n','utf8');
+
 
     const appGradle = path.join(mod.modRequest.platformProjectRoot, 'app', 'build.gradle');
     if (fs.existsSync(appGradle)) {
