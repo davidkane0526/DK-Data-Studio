@@ -3,7 +3,7 @@
 - DKDS Connectivity includes a protocol-neutral TCP/IP communications panel and a reusable network.tcp capability; instrument-specific workflows remain external DK Test Studio plugins.
 - Click the desktop application version to check GitHub portable updates while retaining the existing LAN update channel.
 - Android includes a version-triggered update dialog with SHA-256 and APK signing-certificate checks before invoking Android's package installer.
-- Release version 3.71.144; Android versionCode 284. UI-only hot-update channel remains under integration.
+- Release version 3.71.144; Android versionCode 284. A verified CSS-only hot-update bundle can now be applied live from GitHub Releases; native/layout logic still requires full app updates.
 
 # 3.71.143 — Real 4200A card layout and single concise network error (Preview)
 
