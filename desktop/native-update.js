@@ -167,4 +167,4 @@ function createPortableUpdater({app,userData,scriptPath,currentVersion,portableP
   }
   return Object.freeze({check,install,status});
 }
-module.exports={createPortableUpdater,pickRelease,newer,trusted};
+module.exports={createPortableUpdater,pickRelease,newer,trusted,openHttps,readJson};
