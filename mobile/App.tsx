@@ -26,6 +26,7 @@ export default function App() {
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
   const [updateVisible,setUpdateVisible]=useState(false);
   const [updateAutoPrompt,setUpdateAutoPrompt]=useState(false);
+  const [installedAppVersion,setInstalledAppVersion]=useState('');
   const startupUpdateChecked=useRef(false);
   const updateDismissedThisSession=useRef(false);
   const [sheet, setSheet] = useState<ShellSheet>(null);
@@ -52,6 +53,7 @@ export default function App() {
             nativeHost?.appUpdateStatus?.(),nativeHost?.uiHotStatus?.()
           ]);
           const app=a.status==='fulfilled'&&a.value?JSON.parse(a.value):null;
+          if(app?.installedVersion)setInstalledAppVersion(String(app.installedVersion));
           const ui=u.status==='fulfilled'&&u.value?JSON.parse(u.value):null;
           if(ui?.status==='updated'&&nativeHost?.uiHotCss){
             const css=await nativeHost.uiHotCss().catch(()=>'');
@@ -116,7 +118,7 @@ export default function App() {
         <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} />
         {webView}
         <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setStatusOverflowItems} webService={webService.state} />
-        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.145'} palette={palette} autoPrompt={updateAutoPrompt} onClose={dismissUpdate} onUiCss={applyVerifiedUiCss} />
+        <UpdateDialog visible={updateVisible} version={installedAppVersion||shell.appVersion||'3.71.145'} palette={palette} autoPrompt={updateAutoPrompt} onClose={dismissUpdate} onUiCss={applyVerifiedUiCss} />
         <ShellActionSheet
           visible={sheet}
           shell={shell}
@@ -127,6 +129,7 @@ export default function App() {
           statusOverflowItems={statusOverflowItems}
           onClose={() => setSheet(null)}
           onVersionPress={openManualUpdate}
+          installedAppVersion={installedAppVersion}
         />
       </SafeAreaView>
     </SafeAreaProvider>
