@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationBar } from 'expo-navigation-bar';
@@ -14,7 +14,7 @@ import {
 } from './src/Shell';
 import { RendererWorkspace } from './src/components/RendererWorkspace';
 import { UpdateDialog } from './src/components/UpdateDialog';
-import { EMPTY_SHELL } from './src/host/protocol';
+import { EMPTY_SHELL, nativeHost } from './src/host/protocol';
 import { useHostBridge } from './src/host/useHostBridge';
 import { useMobileSystemLifecycle } from './src/host/useMobileSystemLifecycle';
 import { useNativeFileService } from './src/host/useNativeFileService';
@@ -25,6 +25,9 @@ import { useWebServiceController } from './src/services/useWebServiceController'
 export default function App() {
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
   const [updateVisible,setUpdateVisible]=useState(false);
+  const [updateAutoPrompt,setUpdateAutoPrompt]=useState(false);
+  const startupUpdateChecked=useRef(false);
+  const updateDismissedThisSession=useRef(false);
   const [sheet, setSheet] = useState<ShellSheet>(null);
   const [pluginOverflowKeys, setPluginOverflowKeys] = useState<string[]>([]);
   const [statusOverflowItems, setStatusOverflowItems] = useState<NativeStatusOverflowRow[]>([]);
@@ -35,6 +38,46 @@ export default function App() {
     if(!css||css.length>400000)return;
     void host.hostRequest('ui-hot-style',{css}).catch(()=>{});
   },[host.hostRequest]);
+  // One silent check per app launch; skipping suppresses only automatic prompts
+  // until the process restarts. Manual checks always remain available.
+  useEffect(()=>{
+    if(!shell.ready||startupUpdateChecked.current)return;
+    startupUpdateChecked.current=true;
+    let canceled=false;
+    void (async()=>{
+      try{
+        await Promise.allSettled([nativeHost?.appUpdateCheck?.(),nativeHost?.uiHotCheck?.()]);
+        for(let i=0;i<22&&!canceled;i++){
+          const [a,u]=await Promise.allSettled([
+            nativeHost?.appUpdateStatus?.(),nativeHost?.uiHotStatus?.()
+          ]);
+          const app=a.status==='fulfilled'&&a.value?JSON.parse(a.value):null;
+          const ui=u.status==='fulfilled'&&u.value?JSON.parse(u.value):null;
+          if(ui?.status==='updated'&&nativeHost?.uiHotCss){
+            const css=await nativeHost.uiHotCss().catch(()=>'');
+            if(css)applyVerifiedUiCss(css);
+          }
+          if(!canceled&&!updateDismissedThisSession.current&&
+             (app?.status==='available'||app?.status==='ready'||ui?.status==='updated')){
+            setUpdateAutoPrompt(true);setUpdateVisible(true);
+            return;
+          }
+          const appDone=!app||!['idle','checking'].includes(app.status);
+          const uiDone=!ui||!['idle','checking'].includes(ui.status);
+          if(appDone&&uiDone)return;
+          await new Promise(resolve=>setTimeout(resolve,750));
+        }
+      }catch(error){console.warn('DKDS silent startup update check:',error);}
+    })();
+    return()=>{canceled=true;};
+  },[shell.ready,applyVerifiedUiCss]);
+  const dismissUpdate=useCallback(()=>{
+    updateDismissedThisSession.current=true;
+    setUpdateVisible(false);setUpdateAutoPrompt(false);
+  },[]);
+  const openManualUpdate=useCallback(()=>{
+    setUpdateAutoPrompt(false);setUpdateVisible(true);
+  },[]);
   const files = useNativeFileService();
   const webService = useWebServiceController();
   const openWebService = useCallback(() => host.hostRequest('status', { pluginId: 'builtin.status-monitor', id: 'lan-web' }).then(() => undefined), [host.hostRequest]);
@@ -70,10 +113,10 @@ export default function App() {
       <SafeAreaView style={[styles.root, { backgroundColor: palette.background }]} edges={['top', 'left', 'right']}>
         <StatusBar style={shell.theme === 'dark' ? 'light' : 'dark'} />
         <NavigationBar hidden style={shell.theme === 'dark' ? 'dark' : 'light'} />
-        <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} onVersionPress={()=>setUpdateVisible(true)} />
+        <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} />
         {webView}
         <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setStatusOverflowItems} webService={webService.state} />
-        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.145'} palette={palette} onClose={()=>setUpdateVisible(false)} onUiCss={applyVerifiedUiCss} />
+        <UpdateDialog visible={updateVisible} version={shell.appVersion||'3.71.145'} palette={palette} autoPrompt={updateAutoPrompt} onClose={dismissUpdate} onUiCss={applyVerifiedUiCss} />
         <ShellActionSheet
           visible={sheet}
           shell={shell}
@@ -83,6 +126,7 @@ export default function App() {
           pluginOverflowKeys={pluginOverflowKeys}
           statusOverflowItems={statusOverflowItems}
           onClose={() => setSheet(null)}
+          onVersionPress={openManualUpdate}
         />
       </SafeAreaView>
     </SafeAreaProvider>
