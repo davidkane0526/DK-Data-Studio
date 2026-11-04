@@ -12,7 +12,6 @@ export type HeaderProps = {
   onAction: (action: string, payload?: unknown) => void;
   onSheet: (sheet: Exclude<ShellSheet, null>) => void;
   onOverflowChange?: (keys: string[]) => void;
-  onVersionPress?: () => void;
 };
 
 function HistoryGlyph({ direction, color }: { direction: 'undo' | 'redo'; color: string }) {
@@ -58,7 +57,7 @@ const identity = (value: unknown) => String(value ?? '').toLowerCase().replace(/
 const rowIdentities = (row: { id?: string; surfaceId?: string; label?: string }) => new Set([row.id, row.surfaceId, row.label].map(identity).filter(Boolean));
 const overlapsIdentity = (a: Set<string>, b: Set<string>) => [...a].some(value => b.has(value));
 
-export function NativeHeader({ shell, palette, onAction, onSheet, onOverflowChange, onVersionPress }: HeaderProps) {
+export function NativeHeader({ shell, palette, onAction, onSheet, onOverflowChange }: HeaderProps) {
   const activeProject = (shell.projects || []).find(project => project.active) || (shell.projects || [])[0];
   const surfaces = navigableSurfaces(shell);
   const dataControlSurface = canonicalDataControlSurface(shell);
@@ -214,10 +213,6 @@ export function NativeHeader({ shell, palette, onAction, onSheet, onOverflowChan
         </View>
 
         <View style={shellStyles.headerUtilityGroup}>
-          <Pressable accessibilityRole="button" accessibilityLabel="软件版本，检查更新" onPress={onVersionPress}
-            style={({pressed})=>[shellStyles.headerVersionButton,pressed&&shellStyles.pressed]}>
-            <Text style={[shellStyles.headerVersionText,{color:textColor}]} numberOfLines={1}>{'v'+(shell.appVersion||'3.71.145')}</Text>
-          </Pressable>
           <Pressable
             accessibilityRole="button" accessibilityLabel="撤销" disabled={!shell.history?.canUndo}
             onPress={() => onAction('history-undo')}

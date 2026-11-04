@@ -190,7 +190,8 @@ async function checkUiHotUpdate(){
     if(info.status==='updated')await window.DKDSUIHot?.refresh?.();
     const names={updated:'界面热更新已应用，无需重启',current:'当前已是最新界面',error:'更新失败',unsupported:'当前平台不支持此更新'};
     if(label)label.textContent=(names[info.status]||info.status)+(info.version?' · v'+info.version:'')+(info.error?'：'+info.error:'');
-  }catch(error){if(label)label.textContent='热更新失败：'+String(error.message||error).slice(0,150);}
+    return info;
+  }catch(error){if(label)label.textContent='热更新失败：'+String(error.message||error).slice(0,150);return {status:'error'};}
 }
 async function displayOnlineUpdate(result={}){
   const state=String(result?.status||'unsupported');
@@ -213,8 +214,8 @@ async function displayOnlineUpdate(result={}){
 }
 async function checkOnlineUpdate(){
   await displayOnlineUpdate({status:'checking'});
-  try{await displayOnlineUpdate(await window.electronAPI.onlineUpdateCheck?.()||{status:'unsupported'});}
-  catch(error){await displayOnlineUpdate({status:'error',error:String(error.message||error)});}
+  try{const info=await window.electronAPI?.onlineUpdateCheck?.()||{status:'unsupported'};await displayOnlineUpdate(info);return info;}
+  catch(error){await displayOnlineUpdate({status:'error',error:String(error.message||error)});return {status:'error'};}
 }
 async function openUpdatePanel({check=false}={}){
   const panel=$('#updatePanel');
@@ -229,6 +230,24 @@ async function openUpdatePanel({check=false}={}){
   ensureFloatingPanelVisible(panel);
   if(check){void checkOnlineUpdate();void checkUiHotUpdate();}
 }
+let startupUpdateChecked=false;
+let autoUpdatePromptDismissed=false;
+$('#updateSkipBtn')?.addEventListener('click',()=>{
+  autoUpdatePromptDismissed=true;
+  $('#updatePanel')?.classList.add('hidden');
+});
+async function checkUpdatesOnStartup(){
+  // One silent check per window launch. Never create repeat prompts this session.
+  if(startupUpdateChecked||!window.electronAPI?.onlineUpdateCheck)return;
+  startupUpdateChecked=true;
+  const [native,ui]=await Promise.allSettled([checkOnlineUpdate(),checkUiHotUpdate()]);
+  const nativeState=native.status==='fulfilled'?native.value?.status:'error';
+  const uiState=ui.status==='fulfilled'?ui.value?.status:'error';
+  if(autoUpdatePromptDismissed)return;
+  if(nativeState==='available'||nativeState==='ready'||uiState==='updated')
+    await openUpdatePanel({check:false});
+}
+setTimeout(()=>{void checkUpdatesOnStartup();},2000);
 $('#updateBtn').onclick=()=>void openUpdatePanel({check:false});
 $('#appVersionBtn')?.addEventListener('click',()=>void openUpdatePanel({check:true}));
 $('#onlineUpdateCheckBtn')?.addEventListener('click',()=>void checkOnlineUpdate());

@@ -483,3 +483,16 @@ body.dkds-modern-ui .dkds-selection-item.dkds-selection-row:focus-visible{outlin
 body.dkds-modern-ui input[type="number"]{appearance:textfield;-moz-appearance:textfield}
 body.dkds-modern-ui input[type="number"]::-webkit-inner-spin-button,
 body.dkds-modern-ui input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+
+/* DKDS updater: concise two-column status layout; legacy LAN updater stays collapsed. */
+#updatePanel .update-panel-body{display:block}
+#updatePanel .dkds-update-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#updatePanel .dkds-update-choices .update-status-card{min-width:0;margin:0;display:flex;flex-direction:column;gap:7px;padding:12px}
+#updatePanel .dkds-update-choices .update-status-message{font-size:12px;line-height:1.45;min-height:34px;overflow-wrap:anywhere}
+#updatePanel .dkds-update-choices .update-actions{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap}
+#updatePanel .dkds-update-choices .update-actions button{padding:6px 10px;font-size:12px}
+#updatePanel .dkds-update-footer{display:flex;justify-content:flex-end;margin-top:10px}
+#updatePanel .dkds-advanced-updates{margin-top:8px}
+#updatePanel .dkds-advanced-updates>summary{cursor:pointer;font-size:11px;opacity:.72;padding:6px 0}
+#updatePanel .dkds-advanced-updates>.update-status-card{margin-top:6px}
+@media(max-width:540px){#updatePanel .dkds-update-choices{grid-template-columns:1fr}}
