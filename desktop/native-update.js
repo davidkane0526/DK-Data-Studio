@@ -11,7 +11,7 @@ const crypto=require('node:crypto');
 const {spawn}=require('node:child_process');
 const {pipeline}=require('node:stream/promises');
 const {Transform}=require('node:stream');
-const RELEASES='https://api.github.com/repos/davidkane0526/DK-Data-Studio/releases?per_page=20';
+const RELEASES='https://api.github.com/repos/davidkane0526/DK-Data-Studio/releases?per_page=100';
 const PREVIEW=/^dkds-windows-v\d+\.\d+\.\d+$/;
 const PORTABLE=/^DK-Data-Studio-Portable-(\d+\.\d+\.\d+)-x64\.exe$/;
 const LIMIT=180*1024*1024;
@@ -21,6 +21,19 @@ function trusted(url){
     url.hostname==='release-assets.githubusercontent.com'||
     url.hostname.endsWith('.githubusercontent.com')
   );
+}
+function githubHttpError(status,headers={},endpoint=''){
+  const remaining=String(headers['x-ratelimit-remaining']??'');
+  const reset=Number(headers['x-ratelimit-reset']||0);
+  const retryAfter=Number(headers['retry-after']||0);
+  const rateLimited=(status===403||status===429)&&(remaining==='0'||retryAfter>0);
+  const time=retryAfter>0?Date.now()+retryAfter*1000:reset>0?reset*1000:0;
+  const when=time>0?'，可在 '+new Date(time).toLocaleTimeString('zh-CN')+' 后重试':'';
+  const description=rateLimited?'GitHub API 限流':status===403?'GitHub 拒绝访问':'GitHub 请求失败';
+  const error=Error(description+' (HTTP '+status+')'+when+' · '+(endpoint.startsWith('https://api.github.com')?'API':'下载'));
+  error.httpStatus=status;
+  error.retryAt=time;
+  return error;
 }
 function openHttps(urlString,redirects=0){
   return new Promise((resolve,reject)=>{
@@ -41,7 +54,7 @@ function openHttps(urlString,redirects=0){
       }
       if(response.statusCode!==200){
         response.resume();
-        return reject(Error('GitHub HTTP '+response.statusCode));
+        return reject(githubHttpError(response.statusCode,response.headers,urlString));
       }
       resolve(response);
     });
@@ -49,7 +62,36 @@ function openHttps(urlString,redirects=0){
     request.on('error',reject);
   });
 }
+const releaseCache=new Map();
+const RELEASE_CACHE_MS=5*60*1000;
+const RELEASE_STALE_MS=15*60*1000;
 async function readJson(url,maximum=2*1024*1024){
+  const cacheable=url===RELEASES;
+  const cached=cacheable?releaseCache.get(url):null;
+  const now=Date.now();
+  if(cached?.data&&now-cached.time<RELEASE_CACHE_MS)return cached.data;
+  if(cached?.pending)return cached.pending;
+  if(cached?.retryAt>now){
+    if(cached.data&&now-cached.time<RELEASE_STALE_MS)return cached.data;
+    throw Error('GitHub API 暂时限流，请稍后重试');
+  }
+  const task=readJsonNetwork(url,maximum).then(data=>{
+    if(cacheable)releaseCache.set(url,{data,time:Date.now(),retryAt:0});
+    return data;
+  }).catch(error=>{
+    if(cacheable){
+      const old=releaseCache.get(url);
+      const retryAt=error.retryAt>Date.now()?error.retryAt:
+        ([403,429].includes(error.httpStatus)?Date.now()+5*60*1000:0);
+      releaseCache.set(url,{data:old?.data,time:old?.time||0,retryAt});
+      if(old?.data&&Date.now()-old.time<RELEASE_STALE_MS)return old.data;
+    }
+    throw error;
+  });
+  if(cacheable)releaseCache.set(url,{...cached,pending:task});
+  return task;
+}
+async function readJsonNetwork(url,maximum){
   const response=await openHttps(url),parts=[];
   let size=0;
   for await(const part of response){
@@ -180,4 +222,4 @@ function createPortableUpdater({app,userData,scriptPath,currentVersion,portableP
   }
   return Object.freeze({check,install,status});
 }
-module.exports={createPortableUpdater,pickRelease,newer,trusted,openHttps,readJson};
+module.exports={createPortableUpdater,pickRelease,newer,trusted,openHttps,readJson,githubHttpError,RELEASES};

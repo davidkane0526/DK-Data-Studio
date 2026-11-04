@@ -38,10 +38,52 @@ import java.util.regex.Pattern;
 final class DkdsAppUpdateManager {
     private static final String TAG = "DKDS-AppUpdate";
     private static final String REPO = "davidkane0526/DK-Data-Studio";
-    private static final String API = "https://api.github.com/repos/" + REPO + "/releases?per_page=20";
+    private static final String API = "https://api.github.com/repos/" + REPO + "/releases?per_page=100";
     private static final String APK_ASSET = "DK-Data-Studio-arm64-v8a-release.apk";
     private static final Pattern TAG_VERSION = Pattern.compile("dkds-android-v(\\d+\\.\\d+\\.\\d+)-[0-9]+");
     private static final int MAX_APK = 180 * 1024 * 1024;
+    private static final long CACHE_MS=5*60*1000L;
+    private static final long STALE_MS=15*60*1000L;
+    private static final Object RELEASE_LOCK=new Object();
+    private static JSONArray cachedReleases=null;
+    private static long cachedAt=0L, retryAt=0L;
+    static JSONArray fetchReleases() throws Exception{
+        synchronized(RELEASE_LOCK){
+            long now=System.currentTimeMillis();
+            if(cachedReleases!=null&&now-cachedAt<CACHE_MS)return cachedReleases;
+            if(now<retryAt){
+                if(cachedReleases!=null&&now-cachedAt<STALE_MS)return cachedReleases;
+                throw new IllegalStateException("GitHub API 限流，稍后自动恢复");
+            }
+            HttpURLConnection connection=null;
+            try{
+                connection=connect(API);
+                JSONArray data;
+                try(InputStream in=connection.getInputStream()){
+                    data=new JSONArray(new String(readLimited(in,4*1024*1024),
+                        java.nio.charset.StandardCharsets.UTF_8));
+                }
+                cachedReleases=data;cachedAt=System.currentTimeMillis();
+                retryAt=0L;
+                return data;
+            }catch(Exception error){
+                if(error instanceof GithubHttpException &&
+                   (((GithubHttpException)error).status==403||((GithubHttpException)error).status==429)){
+                    long fromHeader=((GithubHttpException)error).retryAt;
+                    retryAt=Math.max(System.currentTimeMillis()+60*1000L,fromHeader);
+                }
+                if(cachedReleases!=null&&System.currentTimeMillis()-cachedAt<STALE_MS)return cachedReleases;
+                throw error;
+            }finally{if(connection!=null)connection.disconnect();}
+        }
+    }
+    private static final class GithubHttpException extends IllegalStateException{
+        final int status;
+        final long retryAt;
+        GithubHttpException(String message,int status,long retryAt){
+            super(message);this.status=status;this.retryAt=retryAt;
+        }
+    }
     private final Activity activity;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -86,6 +128,18 @@ final class DkdsAppUpdateManager {
             h.equals("release-assets.githubusercontent.com")||
             h.endsWith(".githubusercontent.com");
     }
+    private static GithubHttpException responseError(int status,HttpURLConnection c,String url){
+        String remaining=c.getHeaderField("X-RateLimit-Remaining");
+        long reset=0L,retry=0L;
+        try{reset=Long.parseLong(c.getHeaderField("X-RateLimit-Reset"))*1000L;}catch(Exception ignored){}
+        try{retry=Long.parseLong(c.getHeaderField("Retry-After"))*1000L+System.currentTimeMillis();}catch(Exception ignored){}
+        boolean limited=(status==403||status==429)&&("0".equals(remaining)||retry>0L);
+        String kind=limited?"GitHub API 限流":status==403?"GitHub 拒绝访问":"GitHub 请求失败";
+        long at=retry>0L?retry:reset;
+        String detail=at>System.currentTimeMillis()?"，稍后重试":"";
+        return new GithubHttpException(kind+" (HTTP "+status+")"+detail+
+            (url.startsWith("https://api.github.com")?" · API":" · 下载"),status,at);
+    }
     static HttpURLConnection connect(String raw) throws Exception {
         URL url=new URL(raw);
         for(int redirect=0;redirect<6;redirect++){
@@ -102,7 +156,10 @@ final class DkdsAppUpdateManager {
                 if(location==null)throw new IllegalStateException("Missing redirect target");
                 URL next=new URL(url,location);c.disconnect();url=next;continue;
             }
-            if(status!=200){c.disconnect();throw new IllegalStateException("GitHub HTTP "+status);}
+            if(status!=200){
+                GithubHttpException problem=responseError(status,c,raw);
+                c.disconnect();throw problem;
+            }
             return c;
         }
         throw new IllegalStateException("Too many GitHub redirects");
@@ -122,12 +179,7 @@ final class DkdsAppUpdateManager {
         return result.toString();
     }
     private Candidate latest() throws Exception {
-        HttpURLConnection c=connect(API);
-        JSONArray releases;
-        try(InputStream in=c.getInputStream()){
-            releases=new JSONArray(new String(readLimited(in,2097152),
-                java.nio.charset.StandardCharsets.UTF_8));
-        } finally {c.disconnect();}
+        JSONArray releases=fetchReleases();
         Candidate chosen=null;
         for(int i=0;i<releases.length();i++){
             JSONObject row=releases.getJSONObject(i);

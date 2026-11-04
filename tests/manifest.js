@@ -1,5 +1,6 @@
 module.exports = {
   "test": [
+    { "file": "tests/test-dkds-github-update-403.js", "args": [] },
     { "file": "tests/test-dkds-startup-update-ui.js", "args": [] },
     {
       "file": "tests/test-dkds-android-update-versioning.js",

@@ -2,9 +2,9 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
-const {openHttps,readJson}=require('./native-update');
+const {openHttps,readJson,RELEASES}=require('./native-update');
 const REPO='davidkane0526/DK-Data-Studio';
-const API='https://api.github.com/repos/'+REPO+'/releases?per_page=100';
+const API=RELEASES;
 const ASSET='DKDS-UI-bundle.json';
 const SCHEMA='dkds-ui-v1';
 const FILES=Object.freeze(['src/styles/structure/connectivity-panels.css',
