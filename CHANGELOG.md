@@ -1,3 +1,10 @@
+# 3.71.144 — Generic communication plugin and in-app updates (Preview)
+
+- DKDS Connectivity includes a protocol-neutral TCP/IP communications panel and a reusable network.tcp capability; instrument-specific workflows remain external DK Test Studio plugins.
+- Click the desktop application version to check GitHub portable updates while retaining the existing LAN update channel.
+- Android includes a version-triggered update dialog with SHA-256 and APK signing-certificate checks before invoking Android's package installer.
+- Release version 3.71.144; Android versionCode 284. UI-only hot-update channel remains under integration.
+
 # 3.71.143 — Real 4200A card layout and single concise network error (Preview)
 
 - Instrument connection and essential test settings share a responsive two-card row; curve preview is a separate Core-elevated card.
