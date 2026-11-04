@@ -9,5 +9,5 @@
 .dktcp-window{width:min(650px,calc(100vw - 26px));max-height:calc(100vh - 26px);display:grid;grid-template-rows:46px minmax(0,1fr)}
 .dktcp-body{padding:15px;overflow:auto;display:grid;gap:12px}.dktcp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .dktcp-grid label,.dktcp-payload{display:grid;gap:5px;min-width:0;font-size:12px}.dktcp-grid input,.dktcp-grid select,.dktcp-payload textarea{width:100%;min-width:0;box-sizing:border-box}
-.dktcp-payload textarea{min-height:56px;max-height:140px;resize:vertical}.dktcp-actions{display:flex;align-items:center;gap:10px}.dktcp-actions span{min-width:0;overflow-wrap:anywhere;font-size:11px}
+.dktcp-payload textarea{resize:vertical}.dktcp-actions{display:flex;align-items:center;gap:10px}.dktcp-actions span{min-width:0;overflow-wrap:anywhere;font-size:11px}
 @media(max-width:560px){.dktcp-grid{grid-template-columns:minmax(0,1fr)}.dktcp-body{padding:10px}}
