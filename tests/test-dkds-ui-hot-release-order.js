@@ -14,4 +14,9 @@ assert.equal(selectUiRelease(rows,'3.71.145').tag_name,'dkds-ui-v3.71.146-12345'
 assert.equal(selectUiRelease(rows,'3.71.145','3.71.147'),null,'never roll back already applied hot UI');
 assert.equal(selectUiRelease([release('3.71.144','2026-11-04T23:00:00Z')],'3.71.145'),null);
 assert.equal(selectUiRelease([{...release('3.71.999','2026-11-04T23:00:00Z'),draft:true},release('3.71.146','2026-11-04T21:00:00Z')],'3.71.145').tag_name,'dkds-ui-v3.71.146-12345');
-console.log('DKDS UI hot-update candidate order and rollback prevention PASS');
+const fs=require('node:fs');
+const path=require('node:path');
+const native=fs.readFileSync(path.join(__dirname,'../desktop/native-update.js'),'utf8');
+assert.match(native,/file\\?\\.digest!==candidate\\.digest/,'cache identity includes release digest');
+assert.match(native,/Windows 便携更新缓存校验失败/,'cached executable is checked again before execution');
+console.log('DKDS UI hot-update candidate order and cached portable integrity PASS');
