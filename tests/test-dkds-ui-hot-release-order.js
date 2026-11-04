@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {compareUiVersions,compatible,selectUiRelease}=require('../desktop/ui-hot-update');
+const asset={name:'DKDS-UI-bundle.json'};
+const release=(v,time)=>({tag_name:'dkds-ui-v'+v+'-12345',published_at:time,draft:false,assets:[asset]});
+assert.equal(compareUiVersions('3.71.145','3.71.144'),1);
+assert.equal(compareUiVersions('3.71.145','3.71.145'),0);
+assert.equal(compareUiVersions('3.71.145','3.71.146'),-1);
+assert.equal(compatible('3.71.144','3.71.145'),false,'older UI cannot downgrade installed shell');
+assert.equal(compatible('3.71.146','3.71.145'),true);
+assert.equal(compatible('3.72.0','3.71.145'),false,'different release line is not compatible');
+const rows=[release('3.71.144','2026-11-04T23:00:00Z'),release('3.71.146','2026-11-04T21:00:00Z'),release('3.71.145','2026-11-04T22:00:00Z')];
+assert.equal(selectUiRelease(rows,'3.71.145').tag_name,'dkds-ui-v3.71.146-12345','version priority beats publication timestamp');
+assert.equal(selectUiRelease(rows,'3.71.145','3.71.147'),null,'never roll back already applied hot UI');
+assert.equal(selectUiRelease([release('3.71.144','2026-11-04T23:00:00Z')],'3.71.145'),null);
+assert.equal(selectUiRelease([{...release('3.71.999','2026-11-04T23:00:00Z'),draft:true},release('3.71.146','2026-11-04T21:00:00Z')],'3.71.145').tag_name,'dkds-ui-v3.71.146-12345');
+console.log('DKDS UI hot-update candidate order and rollback prevention PASS');
