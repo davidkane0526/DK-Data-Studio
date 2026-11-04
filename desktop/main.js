@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme
 const { safeStorage } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const {createPortableUpdater}=require('./native-update');
+const {installOnlineUpdateIpc}=require('./main-modules/online-update-ipc');
 const { ProjectFileSafety } = require('./project-file-safety');
 const { LanWebServer } = require('./lan-web-server');
 const { resolvePluginWindow, listPluginWindows } = require('./plugin-window-manager');
@@ -411,17 +412,7 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.handle('onlineUpdate:status',()=>onlinePortableUpdater?.status()||{status:'unsupported'});
-  ipcMain.handle('onlineUpdate:check',()=>onlinePortableUpdater?.check()||{status:'unsupported'});
-  ipcMain.handle('onlineUpdate:install',async()=>{
-    const check=onlinePortableUpdater?.status();
-    if(!check||!['available','ready'].includes(check.status))return check||{status:'unsupported'};
-    const safety=getProjectFileSafety();
-    safety.prepareForQuit('explicit-online-update-install');
-    const paths=safety.pathsInside(path.dirname(process.env.PORTABLE_EXECUTABLE_FILE||process.execPath));
-    if(paths.length)throw new Error('当前打开的工程位于更新目标目录中，请先另存到独立位置。');
-    return onlinePortableUpdater.install();
-  });
+  installOnlineUpdateIpc({ipcMain,getUpdater:()=>onlinePortableUpdater,getProjectFileSafety});
   ipcMain.handle('update:getStatus', async () => lanUpdater?.getStatus() || null);
   ipcMain.handle('update:getSettings', async () => lanUpdater?.getSettings() || null);
   ipcMain.handle('update:setSettings', async (_event, settings) => lanUpdater?.setSettings(settings) || null);
