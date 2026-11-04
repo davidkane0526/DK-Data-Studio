@@ -15,7 +15,8 @@ try{
   const script=path.join(tmp,'tools/updates/stamp-android-build.cjs');
   const env={...process.env,GITHUB_RUN_NUMBER:'250'};
   const expected=cp.execFileSync(process.execPath,[script,'--print'],{env,encoding:'utf8'}).trim();
-  assert.equal(expected,'3.71.1250');
+  const baseline=JSON.parse(fs.readFileSync(path.join(tmp,'package.json'),'utf8')).version;
+  assert.equal(expected,baseline.split('.').slice(0,2).join('.')+'.1250');
   cp.execFileSync(process.execPath,[script],{env,stdio:'pipe'});
   const app=JSON.parse(fs.readFileSync(path.join(tmp,'mobile/app.json'),'utf8'));
   const mobile=JSON.parse(fs.readFileSync(path.join(tmp,'mobile/package.json'),'utf8'));
@@ -23,7 +24,7 @@ try{
   assert.equal(app.expo.version,expected);
   assert.equal(app.expo.android.versionCode,100250);
   assert.equal(mobile.version,expected);
-  assert.equal(source.version,'3.71.145','source version must remain unmodified');
+  assert.equal(source.version,baseline,'source version must remain unmodified');
   assert.throws(()=>cp.execFileSync(process.execPath,[script],{env:{...process.env,GITHUB_RUN_NUMBER:'0'},stdio:'pipe'}));
   const workflow=fs.readFileSync(path.join(root,'.github/workflows/build-android.yml'),'utf8');
   assert(workflow.includes('node tools/updates/stamp-android-build.cjs'));
