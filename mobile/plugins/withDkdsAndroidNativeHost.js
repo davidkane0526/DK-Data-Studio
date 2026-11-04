@@ -362,7 +362,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   private data class DataReadSession(val token:String,val uri:Uri,val size:Long,var stream:InputStream,var offset:Long=0L,@Volatile var touchedAt:Long=System.currentTimeMillis())
   private var appUpdateManager:DkdsAppUpdateManager?=null
   private fun appUpdater():DkdsAppUpdateManager {
-    val activity=currentActivity ?: throw IllegalStateException("当前 Android Activity 不可用")
+    val activity=reactApplicationContext.currentActivity ?: throw IllegalStateException("当前 Android Activity 不可用")
     return appUpdateManager ?: DkdsAppUpdateManager(activity).also{appUpdateManager=it}
   }
   private val dataReadSessions = ConcurrentHashMap<String, DataReadSession>()
