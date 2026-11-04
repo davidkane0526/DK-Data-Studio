@@ -13,6 +13,7 @@ assert.deepEqual(manifest.scripts,['measurement-model.js','kxci-protocol.js','un
 assert.deepEqual(manifest.styles,['plugin.css']);
 const runtimePlugin=read('src/plugins/keithley-4200/plugin.js');
 assert.match(runtimePlugin,/enabled:false/,'Runtime and package manifests must agree that the built-in is disabled.');
+assert(runtimePlugin.includes("styles:['plugin.css'],enabled:false,order:82,"),'Runtime and package manifest ordering metadata must remain identical.');
 const generatedPluginIndex=require('../scripts/generate-plugin-index').buildPluginIndexSource();
 assert(!generatedPluginIndex.plugins.some(row=>row.id===manifest.id),'Disabled 4200 built-in must not enter the generated plugin catalog or duplicate the external DK Test Studio workspace.');
 const registered=new Map();
