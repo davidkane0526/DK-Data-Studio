@@ -48,7 +48,7 @@ const NATIVE_PLUGIN_STATE_BLUEPRINTS=Object.freeze({
       'Enter'
     ],
     'counts': {
-      'states': 11,
+      'states': 19,
       'roles': 2,
       'a11y': 8,
       'keyboard': 2,

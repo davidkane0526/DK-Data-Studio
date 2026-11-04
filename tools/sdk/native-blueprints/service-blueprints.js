@@ -3,7 +3,7 @@
 const NATIVE_PLUGIN_SERVICE_BLUEPRINTS=Object.freeze({
   '_template':Object.freeze({services:['interaction','interactionBehaviors','pages','unitTemplates'],migrations:[]}),
   'aurora-pop-theme':Object.freeze({services:['theme'],migrations:[]}),
-  'connectivity-center':Object.freeze({services:['dom','layout','menus','statusBar'],migrations:[Object.freeze({from:'layout.move',to:'movableWindow',count:2}),Object.freeze({from:'menus.add',to:'menu',count:2}),Object.freeze({from:'statusBar.add',to:'status',count:2})]}),
+  'connectivity-center':Object.freeze({services:['dom','layout','menus','statusBar'],migrations:[Object.freeze({from:'layout.move',to:'movableWindow',count:2}),Object.freeze({from:'menus.add',to:'menu',count:3}),Object.freeze({from:'statusBar.add',to:'status',count:3})]}),
   'data-center':Object.freeze({services:['activities','contextMenus','dialogs','dom','interaction','interactionBehaviors','menus','pages','parameters','scientificPlot','selection','topWorkspace','unitTemplates'],migrations:[Object.freeze({from:'menus.add',to:'menu',count:1}),Object.freeze({from:'dialogs.confirm',to:'dialog',count:1}),Object.freeze({from:'dialogs.prompt',to:'dialog',count:1}),Object.freeze({from:'parameters.render',to:'parameterForm',count:1})]}),
   'flexible-import':Object.freeze({services:[],migrations:[]}),
   'pulse-analysis':Object.freeze({services:['activities','dom','interaction','menus','pages','portable','scientificPlot','selection','topWorkspace','unitTemplates'],migrations:[Object.freeze({from:'menus.add',to:'menu',count:1}),Object.freeze({from:'portable.create',to:'portable',count:1})]}),
