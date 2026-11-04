@@ -641,12 +641,22 @@
         </div>
       </div>
       <div class="floating-body update-panel-body">
-        <div class="update-status-card" aria-label="界面热更新"><div class="update-status-line"><strong>界面热更新</strong></div><div id="uiHotStatus" class="update-status-message" role="status">尚未检查</div><div class="update-actions"><button id="uiHotCheckBtn" type="button">检查并应用界面更新</button></div></div>
-        <div class="update-status-card" aria-label="GitHub 便携程序更新">
-          <div class="update-status-line"><strong>程序更新（GitHub）</strong></div>
-          <div id="onlineUpdateStatus" class="update-status-message" role="status">尚未检查</div>
-          <div class="update-actions"><button id="onlineUpdateCheckBtn" type="button">检查程序更新</button><button id="onlineUpdateInstallBtn" type="button" class="primary hidden">下载并安装</button></div>
+        <div class="dkds-update-choices">
+          <div class="update-status-card" aria-label="程序更新">
+            <div class="update-status-line"><strong>程序</strong></div>
+            <div id="onlineUpdateStatus" class="update-status-message" role="status">未检查</div>
+            <div class="update-actions"><button id="onlineUpdateCheckBtn" type="button">检查</button><button id="onlineUpdateInstallBtn" type="button" class="primary hidden">下载并安装</button></div>
+          </div>
+          <div class="update-status-card" aria-label="界面热更新">
+            <div class="update-status-line"><strong>界面</strong></div>
+            <div id="uiHotStatus" class="update-status-message" role="status">未检查</div>
+            <div class="update-actions"><button id="uiHotCheckBtn" type="button">检查并应用</button></div>
+          </div>
         </div>
+        <div class="update-actions dkds-update-footer">
+          <button id="updateSkipBtn" type="button">本次跳过</button>
+        </div>
+        <details class="dkds-advanced-updates"><summary>局域网更新（高级）</summary>
         <div class="update-status-card">
           <div class="update-status-line">
             <span id="updatePhaseDot" class="update-phase-dot idle"></span>
@@ -697,6 +707,7 @@
           latest.yml，并由 electron-updater 使用其中的 SHA512 校验下载安装包完整性。
           请只连接你信任的实验室或办公室局域网服务器。
         </div>
+        </details>
       </div>
     </div>
 
