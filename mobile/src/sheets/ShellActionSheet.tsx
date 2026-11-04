@@ -15,6 +15,7 @@ export type SheetProps = {
   statusOverflowItems?: NativeStatusOverflowRow[];
   onClose: () => void;
   onVersionPress?: () => void;
+  installedAppVersion?: string;
 };
 
 function SheetAction({
@@ -81,7 +82,7 @@ function ProjectRow({ project, palette, onSwitch, onDelete }: {
   );
 }
 
-function ProjectDrawer({ shell, palette, onAction, onClose, onVersionPress }: Pick<SheetProps, 'shell' | 'palette' | 'onAction' | 'onClose' | 'onVersionPress'>) {
+function ProjectDrawer({ shell, palette, onAction, onClose, onVersionPress, installedAppVersion }: Pick<SheetProps, 'shell' | 'palette' | 'onAction' | 'onClose' | 'onVersionPress' | 'installedAppVersion'>) {
   const run = (action: string, payload?: unknown, close = true) => { if (close) onClose(); onAction(action, payload); };
   const slide = React.useRef(new Animated.Value(-380)).current;
   React.useEffect(() => {
@@ -112,7 +113,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose, onVersionPress }: Pi
           </ScrollView>
           <Pressable accessibilityRole="button" accessibilityLabel="软件版本，检查更新" onPress={() => { onClose(); onVersionPress?.(); }}
             style={({ pressed }) => [shellStyles.projectDrawerVersion, pressed && shellStyles.pressed]}>
-            <Text style={{ color: palette.textSoft, fontSize: 11 }}>DK Data Studio v{shell.appVersion || '—'}</Text>
+            <Text style={{ color: palette.textSoft, fontSize: 11 }}>DK Data Studio v{installedAppVersion || shell.appVersion || '—'}</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -120,8 +121,8 @@ function ProjectDrawer({ shell, palette, onAction, onClose, onVersionPress }: Pi
   );
 }
 
-export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, pluginOverflowKeys = [], statusOverflowItems = [], onClose, onVersionPress }: SheetProps) {
-  if (visible === 'projects') return <ProjectDrawer shell={shell} palette={palette} onAction={onAction} onClose={onClose} onVersionPress={onVersionPress} />;
+export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, pluginOverflowKeys = [], statusOverflowItems = [], onClose, onVersionPress, installedAppVersion }: SheetProps) {
+  if (visible === 'projects') return <ProjectDrawer shell={shell} palette={palette} onAction={onAction} onClose={onClose} onVersionPress={onVersionPress} installedAppVersion={installedAppVersion} />;
   const run = (action: string, payload?: unknown) => {
     onClose();
     onAction(action, payload);
