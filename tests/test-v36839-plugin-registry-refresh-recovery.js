@@ -33,7 +33,7 @@ assert(manager.includes('void refreshManager({silent:true})'),'Opening Plugin Ma
 
 const generator=require('../scripts/generate-plugin-index.js');
 const built=generator.buildPluginIndexSource();
-assert.strictEqual(built.meta.appVersion,app.version);assert.strictEqual(built.meta.count,built.plugins.length);assert(!built.plugins.some(row=>row.id==='com.dkds.keithley-4200'),'Generated catalog must exclude the retired 4200A built-in; the external DK Test Studio plugin owns this workspace.');
+assert.strictEqual(built.meta.appVersion,app.version);assert.strictEqual(built.meta.count,built.plugins.length);
 for(const id of ['builtin.flexible-import','builtin.resonance-detector-robust','builtin.resonance-workbench','builtin.ter-analysis','com.dkds.theme.aurora-pop','com.dkds.theme.liquid-glass'])
   assert(built.plugins.some(row=>row.id===id),`Current generated catalog must contain ${id}.`);
 assert(built.source.includes('DKDS_BUILTIN_PLUGIN_INDEX_META')&&built.meta.catalogDigest.length===64,'Generated plugin catalog must carry current app identity plus a content digest.');

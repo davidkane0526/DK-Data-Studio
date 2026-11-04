@@ -16,7 +16,7 @@ const { createAppearanceRuntime } = require('./main-modules/appearance-runtime')
 const { createPluginPackageRuntime } = require('./main-modules/plugin-package-runtime');
 const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
 const { createAgentRuntime } = require('./main-modules/agent-runtime');
-const { installInstrumentTcpIpc } = require('./main-modules/instrument-tcp-ipc');
+const { installTcpIpc } = require('./main-modules/tcp-ipc');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
 const { createNativeDialogBroker } = require('./main-modules/native-dialog-broker');
@@ -539,7 +539,7 @@ app.whenReady().then(() => {
   ipcMain.handle('smb:list', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.listDesktopSmb(payload.connection||{},payload.path||''),'SMB 目录读取失败'));
   ipcMain.handle('smb:read', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.readDesktopSmb(payload.connection||{},Array.isArray(payload.paths)?payload.paths:[]),'SMB 文件读取失败'));
 
-  installInstrumentTcpIpc(ipcMain);
+  installTcpIpc(ipcMain);
 
   ipcMain.handle('agent:getSecret', async (_event,key) => loadAgentSecret(key));
   ipcMain.handle('agent:setSecret', async (_event,payload={}) => storeAgentSecret(payload.key,payload.value));

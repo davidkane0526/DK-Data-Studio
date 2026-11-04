@@ -1,0 +1,24 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const native=read('mobile/plugins/withDkdsAndroidNativeHost.js');
+const bridge=read('src/web-bridge.js');
+const gateway=read('mobile/plugins/DkdsLanTcp.template');
+const recovery=read('mobile/plugins/DkdsLinkLocalTcpRecovery.template');
+const desktop=read('desktop/main-modules/tcp-ipc.js');
+
+assert(native.includes('raw=="/__dkds_tcp"'),'Android LAN host must expose the generic TCP route.');
+assert(native.includes('DkdsLanTcp.execute(context,token,request)'),'The LAN route must delegate to the generic TCP session owner.');
+assert(native.includes('DkdsLinkLocalTcpRecovery.prepare(target,mode,wanted)'),'Link-local recovery must be a generic network utility.');
+assert(native.includes('x-dkds-rpc')&&native.includes('tcp-v1'),'The LAN gateway must validate the generic RPC marker.');
+assert(bridge.includes("fetch('/__dkds_tcp'"),'Plain LAN browsers must use the generic TCP gateway.');
+assert(bridge.includes("'X-DKDS-RPC':'tcp-v1'"),'The web bridge must identify generic TCP requests.');
+assert(gateway.includes('MAX_SESSIONS_PER_OWNER')&&gateway.includes('MAX_WRITE_BYTES')&&gateway.includes('MAX_RESPONSE_BYTES'),'The generic gateway must bound session counts and byte payloads.');
+assert(gateway.includes('resolvePrivateTarget')&&gateway.includes('isPrivateAddress'),'Remote TCP targets must be restricted to private networks.');
+assert(gateway.includes('sessions[id]=row')&&gateway.includes('row.owner!=owner'),'Sessions must be owned by the paired browser.');
+assert(recovery.includes('routeIds')&&recovery.includes('ip -4 route replace'),'Link-local route recovery must allocate a destination-scoped route.');
+assert(desktop.includes("ipcMain.handle('tcp:open'")&&desktop.includes("ipcMain.handle('tcp:exchange'")&&desktop.includes("ipcMain.handle('tcp:close'"),'Desktop must expose the same generic TCP lifecycle.');
+console.log('Generic TCP host gateway and network boundary PASS.');

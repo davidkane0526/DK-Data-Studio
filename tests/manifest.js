@@ -1,27 +1,7 @@
 module.exports = {
   "test": [
     {
-      "file": "tests/test-keithley-4200-phase1.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-keithley-4200-workbench.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-keithley-4200-integration.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-keithley-4200-desktop-relay.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-keithley-4200-lan-gateway.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-keithley-4200-presentation.js",
+      "file": "tests/test-mobile-tcp-gateway.js",
       "args": []
     },
     {

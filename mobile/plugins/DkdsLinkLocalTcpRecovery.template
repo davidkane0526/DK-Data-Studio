@@ -1,5 +1,6 @@
-// Instrument-only Ethernet recovery. Invoked only from an explicit user Connect.
-internal object DkdsKeithleyEthernet {
+// Generic link-local TCP network recovery.
+// Prefer Android-managed network sockets; use root only as a last-resort interface setup.
+internal object DkdsLinkLocalTcpRecovery {
   private val ipv4Regex=Regex("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$")
   private val ifaceRegex=Regex("^[A-Za-z0-9_.-]{1,20}$")
   private data class Cmd(val code:Int,val output:String)
@@ -7,7 +8,7 @@ internal object DkdsKeithleyEthernet {
   private fun execute(args:List<String>):Cmd {
     val proc=ProcessBuilder(args).redirectErrorStream(true).start()
     val buffer=java.io.ByteArrayOutputStream()
-    val drain=kotlin.concurrent.thread(name="dkds-4200-route-reader",isDaemon=true) {
+    val drain=kotlin.concurrent.thread(name="dkds-linklocal-route-reader",isDaemon=true) {
       try {
         proc.inputStream.use { stream ->
           val bytes=ByteArray(1024)
@@ -21,7 +22,7 @@ internal object DkdsKeithleyEthernet {
     }
     if(!proc.waitFor(8,java.util.concurrent.TimeUnit.SECONDS)){
       proc.destroyForcibly()
-      throw IllegalStateException("4200A 网络准备超时。请检查 KernelSU 授权请求。")
+      throw IllegalStateException("Link-local network preparation timed out.")
     }
     drain.join(1000)
     return Cmd(proc.exitValue(),buffer.toString("UTF-8").trim())
@@ -35,23 +36,26 @@ internal object DkdsKeithleyEthernet {
   }
   private fun interfaceFor(mode:String,wanted:String):String? {
     if(mode=="wifi")return null
-    if(mode=="interface")return wanted.takeIf{ifaceRegex.matches(it) && (it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb"))}
+    if(mode=="interface")return wanted.takeIf{ifaceRegex.matches(it)&&(it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb"))}
     val names=try {
       val all=java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
       (listOf("eth0")+all.map{it.name}.filter{it.startsWith("eth")||it.startsWith("enx")||it.startsWith("usb")}).distinct()
     }catch(_:Throwable){listOf("eth0")}
-    return names.firstOrNull { name ->
-      if (!ifaceRegex.matches(name)) false
-      else try { java.net.NetworkInterface.getByName(name)?.isUp == true }
-        catch (_:Throwable) { false }
+    return names.firstOrNull{name->
+      if(!ifaceRegex.matches(name))false
+      else try{java.net.NetworkInterface.getByName(name)?.isUp==true}catch(_:Throwable){false}
     }
   }
+  private fun routeIds(target:String):Pair<Int,Int>{
+    val octets=target.split(".").mapNotNull{it.toIntOrNull()}
+    val hash=(((octets.getOrNull(2)?:0)*256)+(octets.getOrNull(3)?:0))%8000
+    return Pair(10000+hash,20000+hash)
+  }
 
-  /** Prefer non-root Android network APIs. Root is required only to provision a missing Ethernet IP or policy. */
   fun prepare(target:String,mode:String,wanted:String):String {
     val groups=ipv4Regex.matchEntire(target)?.groupValues?.drop(1) ?: return "not-ipv4"
     val octets=groups.map{it.toIntOrNull() ?: return "invalid-ipv4"}
-    if(octets.any{it !in 0..255}||octets[0]!=169||octets[1]!=254||mode=="wifi")return "not-usb-linklocal"
+    if(octets.any{it !in 0..255}||octets[0]!=169||octets[1]!=254||mode=="wifi")return "not-link-local"
     val iface=interfaceFor(mode,wanted) ?: return "ethernet-absent"
     val net=try{java.net.NetworkInterface.getByName(iface)}catch(_:Throwable){null} ?: return "ethernet-absent"
     if(!net.isUp)return "ethernet-down"
@@ -59,40 +63,44 @@ internal object DkdsKeithleyEthernet {
     if(carrier=="0")return "ethernet-unplugged"
     var source=localIp(iface)?.hostAddress
     if(source==null){
-      val last=if(octets[3]==115)116 else 115
-      val candidate="169.254."+octets[2]+"."+last
-      val created=try{root("ip -4 addr add $candidate/16 dev $iface")}catch(e:Throwable){
-        throw IllegalStateException("USB 网卡未配置 IPv4，KernelSU 初始化失败："+(e.message ?: "unknown"),e)
+      val last=when{
+        octets[3]<=1->2
+        octets[3]>=254->253
+        octets[3]%2==0->octets[3]-1
+        else->octets[3]+1
       }
-      if(created.code!=0 && !created.output.contains("File exists",true))
-        throw IllegalStateException("USB 网卡 IPv4 初始化失败："+created.output)
+      val candidate="169.254."+octets[2]+"."+last
+      val created=try{root("ip -4 addr add $candidate/16 dev $iface")}catch(error:Throwable){
+        throw IllegalStateException("USB Ethernet has no link-local IPv4 address and automatic setup failed: "+(error.message?:"unknown"),error)
+      }
+      if(created.code!=0&&!created.output.contains("File exists",true))
+        throw IllegalStateException("USB Ethernet IPv4 setup failed: "+created.output)
       Thread.sleep(150)
       source=localIp(iface)?.hostAddress
-        ?: throw IllegalStateException("已尝试配置 $candidate/16，但应用仍无法读取 $iface 的 IPv4 地址。")
+        ?:throw IllegalStateException("Configured $candidate/16, but the interface still has no visible IPv4 address.")
     }
-    // Network.socketFactory binds Android's Ethernet transport directly.
-    // Destination-specific policy route is only a fallback when UID routing still uses Wi-Fi.
     val route=try{execute(listOf("ip","-4","route","get",target))}catch(_:Throwable){Cmd(-1,"")}
-    if(route.code==0 && route.output.contains(" dev $iface "))return "ethernet-ready"
-    try {
+    if(route.code==0&&route.output.contains(" dev $iface "))return "ethernet-ready"
+    val (tableId,rulePriority)=routeIds(target)
+    try{
       val rules=root("ip -4 rule show")
       if(rules.code!=0)return "ethernet-ip-ready (rule read failed)"
-      val previous=rules.output.lines().firstOrNull{it.trimStart().startsWith("9000:")}
-      if(previous!=null && !(previous.contains("to $target ") && previous.contains("lookup 4200")))
+      val previous=rules.output.lines().firstOrNull{it.trimStart().startsWith("$rulePriority:")}
+      if(previous!=null&&!(previous.contains("to $target ")&&previous.contains("lookup $tableId")))
         return "ethernet-ip-ready (priority already occupied)"
-      val table=root("ip -4 route show table 4200")
-      val entries=table.output.lines().filter{it.isNotBlank() && !it.contains("FIB table does not exist",true)}
-      if(table.code==0 && entries.any{!it.contains("$target ")||!it.contains(" dev $iface ")})
-        return "ethernet-ip-ready (table already occupied)"
-      val entry=root("ip -4 route replace $target/32 dev $iface src $source table 4200")
+      val table=root("ip -4 route show table $tableId")
+      val entries=table.output.lines().filter{it.isNotBlank()&&!it.contains("FIB table does not exist",true)}
+      if(table.code==0&&entries.any{!it.contains("$target ")||!it.contains(" dev $iface ")})
+        return "ethernet-ip-ready (route table already occupied)"
+      val entry=root("ip -4 route replace $target/32 dev $iface src $source table $tableId")
       if(entry.code!=0)return "ethernet-ip-ready (route rejected)"
       if(previous==null){
-        val policy=root("ip -4 rule add pref 9000 to $target/32 lookup 4200")
+        val policy=root("ip -4 rule add pref $rulePriority to $target/32 lookup $tableId")
         if(policy.code!=0)return "ethernet-ip-ready (policy rejected)"
       }
       return "ethernet-policy-ready"
     }catch(_:Throwable){
-      return "ethernet-ip-ready (root policy unavailable)"
+      return "ethernet-ip-ready (policy routing unavailable)"
     }
   }
 }

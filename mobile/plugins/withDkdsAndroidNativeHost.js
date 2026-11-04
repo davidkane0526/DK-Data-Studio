@@ -131,7 +131,7 @@ private object DkdsLocalWebServer {
     var settings=readSettings(context)
     if(persistEnabled&&!settings.enabled){settings=settings.copy(enabled=true);saveSettings(context,settings)}
     noKey=settings.noKey
-    pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanKxci.closeAll()
+    pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanTcp.closeAll()
     val server=ServerSocket().apply { reuseAddress=true; bind(java.net.InetSocketAddress("0.0.0.0",settings.port),24) }
     socket=server;port=server.localPort
     thread(name="dkds-lan-web",isDaemon=true){while(!server.isClosed){try{val client=server.accept();thread(name="dkds-lan-web-client",isDaemon=true){serve(context,client)}}catch(error:Throwable){if(!server.isClosed)lastError="局域网网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"}}}
@@ -146,7 +146,7 @@ private object DkdsLocalWebServer {
   @Synchronized fun stop(context: Context,persistEnabled:Boolean=true) {
     if(persistEnabled){val s=readSettings(context);saveSettings(context,s.copy(enabled=false))}
     try { socket?.close() } catch (_: Throwable) {}
-    socket=null;port=0;tokens.clear();DkdsLanKxci.closeAll();lastError=""
+    socket=null;port=0;tokens.clear();DkdsLanTcp.closeAll();lastError=""
   }
 
   @Synchronized fun applySettings(context: ReactApplicationContext,enabled:Boolean,nextNoKey:Boolean,nextPort:Int):WritableMap {
@@ -158,13 +158,13 @@ private object DkdsLocalWebServer {
     return status(context)
   }
 
-  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanKxci.closeAll();return status(context)}
+  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();badPairAttempts=0;pairLockUntil=0L;DkdsLanTcp.closeAll();return status(context)}
 
   fun status(context: Context): WritableMap {
     val settings=readSettings(context);val running=socket?.isClosed==false&&port>0;val activePort=if(running)port else settings.port;val urls=if(running)baseUrls(activePort) else emptyList();val primary=urls.firstOrNull() ?: ""
     val arr=WritableNativeArray();urls.forEach{arr.pushString(it)}
     return WritableNativeMap().apply {
-      putBoolean("running",running);putBoolean("enabled",settings.enabled);putBoolean("noKey",settings.noKey);putInt("port",activePort);putString("key",if(settings.noKey)"" else pairKey);putArray("urls",arr);putString("url",if(running&&primary.isNotBlank())authUrl(primary) else "");putString("localhostUrl",if(running)"http://127.0.0.1:$activePort/" else "");putString("browserUrl",if(running)browserUrl() else "");putInt("pairedClients",tokens.size);putBoolean("readOnlyKxciGateway",running&&!noKey);putString("error",lastError)
+      putBoolean("running",running);putBoolean("enabled",settings.enabled);putBoolean("noKey",settings.noKey);putInt("port",activePort);putString("key",if(settings.noKey)"" else pairKey);putArray("urls",arr);putString("url",if(running&&primary.isNotBlank())authUrl(primary) else "");putString("localhostUrl",if(running)"http://127.0.0.1:$activePort/" else "");putString("browserUrl",if(running)browserUrl() else "");putInt("pairedClients",tokens.size);putBoolean("tcpGateway",running&&!noKey);putString("error",lastError)
     }
   }
 
@@ -224,34 +224,34 @@ private object DkdsLocalWebServer {
           return response(sock,401,"text/plain; charset=utf-8","Pairing required".toByteArray())
         }
       }
-      if(raw=="/__dkds_kxci"){
+      if(raw=="/__dkds_tcp"){
         if(method!="POST")return response(sock,405,"application/json; charset=utf-8",
           JSONObject().put("ok",false).put("error","POST required").toString().toByteArray())
-        // The LAN browser gateway must never be exposed through no-key mode.
         if(noKey||token.isEmpty()||!tokens.contains(token))
-          return rpcError(sock,403,"Remote instrument access requires a paired browser and an enabled pairing Key.")
+          return rpcError(sock,403,"Remote TCP access requires a paired browser and an enabled pairing Key.")
         val host=headers["host"] ?: return rpcError(sock,403,"Host header required.")
         val origin=headers["origin"] ?: return rpcError(sock,403,"Browser Origin header required.")
-        if(origin!="http://"+host || headers["x-dkds-rpc"]!="kxci-readonly-v1")
+        if(origin!="http://"+host || headers["x-dkds-rpc"]!="tcp-v1")
           return rpcError(sock,403,"Invalid request origin or RPC header.")
         if(headers["content-type"]?.substringBefore(';')?.trim()?.lowercase()!="application/json")
           return rpcError(sock,400,"JSON request required.")
         val size=headers["content-length"]?.toIntOrNull() ?: return rpcError(sock,400,"Content-Length required.")
-        if(size !in 2..4096)return rpcError(sock,413,"RPC request too large.")
+        if(size !in 2..1500000)return rpcError(sock,413,"TCP request exceeds the gateway size limit.")
+        sock.soTimeout=130000
         val data=ByteArray(size)
         var off=0
         while(off<size){
           val n=input.read(data,off,size-off)
-          if(n<0)return rpcError(sock,400,"Truncated RPC body.")
+          if(n<0)return rpcError(sock,400,"Truncated TCP request body.")
           off+=n
         }
         try{
           val request=JSONObject(String(data,StandardCharsets.UTF_8))
-          val value=DkdsLanKxci.execute(context,token,request)
+          val value=DkdsLanTcp.execute(context,token,request)
           return response(sock,200,"application/json; charset=utf-8",
             JSONObject().put("ok",true).put("value",value).toString().toByteArray(StandardCharsets.UTF_8))
         }catch(error:Throwable){
-          return rpcError(sock,if(error is SecurityException)403 else 400,error.message ?: "Instrument request failed.")
+          return rpcError(sock,if(error is SecurityException)403 else 400,error.message ?: "TCP gateway request failed.")
         }
       }
       if(method!="GET"&&method!="HEAD")
@@ -582,7 +582,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         // Only after all no-Root paths fail, repair a missing USB Ethernet
         // link-local address and retry. This never changes the default route.
         if(!connected&&linkLocal&&mode!="wifi"){
-          networkPreparation=try{DkdsKeithleyEthernet.prepare(target,mode,wanted)}
+          networkPreparation=try{DkdsLinkLocalTcpRecovery.prepare(target,mode,wanted)}
             catch(error:Throwable){"root-recovery-failed: "+(error.message ?: error.javaClass.simpleName)}
           for(network in orderedNetworks()){
             if(tryNetwork(network)){connected=true;break}
@@ -606,9 +606,9 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
           }
         }
         if(!connected)throw IllegalStateException(
-          "4200A TCP connection failed after trying "+errors.size+" available Android network paths: "+
+          "TCP connection failed after trying "+errors.size+" available Android network paths: "+
           (errors.take(8).joinToString(" | ").ifBlank{"no usable network/interface was exposed"})+
-          ". Verify the cable, Wi-Fi route, instrument IP and KXCI port.")
+          ". Verify the network interface, route, target address and TCP port.")
       } catch(error:Throwable) {
         promise.reject("E_TCP_OPEN",error.message ?: "TCP open failed.",error)
       }
@@ -979,9 +979,9 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     const javaRoot = path.join(mod.modRequest.platformProjectRoot, 'app', 'src', 'main', 'java');
     const packageDir = path.join(javaRoot, ...packageName.split('.'));
     fs.mkdirSync(packageDir, { recursive: true });
-    const lanKxci = fs.readFileSync(path.join(__dirname, 'DkdsLanKxci.template'), 'utf8');
-    const ethernetRecovery = fs.readFileSync(path.join(__dirname, 'DkdsKeithleyEthernet.template'), 'utf8');
-    const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanKxci + '\n' + ethernetRecovery + '\nprivate object DkdsLocalWebServer {');
+    const lanTcp = fs.readFileSync(path.join(__dirname, 'DkdsLanTcp.template'), 'utf8');
+    const linkLocalTcpRecovery = fs.readFileSync(path.join(__dirname, 'DkdsLinkLocalTcpRecovery.template'), 'utf8');
+    const nativeSource = kotlinSource(packageName).replace('private object DkdsLocalWebServer {', lanTcp + '\n' + linkLocalTcpRecovery + '\nprivate object DkdsLocalWebServer {');
     fs.writeFileSync(path.join(packageDir, 'DkdsNativeHostModule.kt'), nativeSource, 'utf8');
     fs.writeFileSync(path.join(packageDir, 'DkdsSmbService.java'), smbJavaSource(packageName), 'utf8');
 
