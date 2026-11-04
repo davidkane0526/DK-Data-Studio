@@ -309,7 +309,7 @@ jobs:
           sha_short="${GITHUB_SHA:0:12}"
           tag="dkds-android-v${DKDS_RELEASE_VERSION}-${GITHUB_RUN_ID}"
           asset_name="DK-Data-Studio-arm64-v8a-release.apk"
-          node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
+          DKDS_UI_BUNDLE_VERSION="$DKDS_RELEASE_VERSION" node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
           test -s release-apk/DKDS-UI-bundle.json
           cat > release-notes.md <<EOF
           Automated Android preview of the generic DK Data Studio host.
