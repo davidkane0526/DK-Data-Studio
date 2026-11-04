@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-dkds-ui-hot-release-order.js",
+      "args": []
+    },
+    {
       "file": "tests/test-mobile-tcp-gateway.js",
       "args": []
     },
