@@ -3,7 +3,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const root=path.resolve(__dirname,'../..');
-const version=String(require(path.join(root,'package.json')).version);
+const version=String(process.env.DKDS_UI_BUNDLE_VERSION||require(path.join(root,'package.json')).version);
+if(!/^\d+\.\d+\.\d+$/.test(version))throw Error('Invalid hot UI release version');
 const names=Object.freeze([
   'src/styles/structure/connectivity-panels.css',
   'src/styles/platform/native-client-shell.css',
