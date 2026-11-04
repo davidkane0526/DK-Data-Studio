@@ -25,16 +25,16 @@ import { useWebServiceController } from './src/services/useWebServiceController'
 export default function App() {
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
   const [updateVisible,setUpdateVisible]=useState(false);
-  const applyVerifiedUiCss=useCallback((css:string)=>{
-    if(!css||css.length>400000)return;
-    host.webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
-  },[host.webRef]);
   const [sheet, setSheet] = useState<ShellSheet>(null);
   const [pluginOverflowKeys, setPluginOverflowKeys] = useState<string[]>([]);
   const [statusOverflowItems, setStatusOverflowItems] = useState<NativeStatusOverflowRow[]>([]);
   const palette = useMemo(() => paletteFor(shell.theme, shell.themeTokens || {}), [shell.theme, shell.themeTokens]);
 
   const host = useHostBridge(setShell);
+  const applyVerifiedUiCss=useCallback((css:string)=>{
+    if(!css||css.length>400000)return;
+    host.webRef.current?.injectJavaScript('window.DKDSUIHot?.apply('+JSON.stringify(css)+');true;');
+  },[host.webRef]);
   const files = useNativeFileService();
   const webService = useWebServiceController();
   const openWebService = useCallback(() => host.hostRequest('status', { pluginId: 'builtin.status-monitor', id: 'lan-web' }).then(() => undefined), [host.hostRequest]);
