@@ -365,6 +365,11 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     val activity=reactApplicationContext.currentActivity ?: throw IllegalStateException("当前 Android Activity 不可用")
     return appUpdateManager ?: DkdsAppUpdateManager(activity).also{appUpdateManager=it}
   }
+  private var uiHotManager:DkdsUiHotUpdateManager?=null
+  private fun uiHotUpdater():DkdsUiHotUpdateManager {
+    val activity=reactApplicationContext.currentActivity ?: throw IllegalStateException("Android Activity 不可用")
+    return uiHotManager ?: DkdsUiHotUpdateManager(activity).also{uiHotManager=it}
+  }
   private val dataReadSessions = ConcurrentHashMap<String, DataReadSession>()
   private data class TcpSession(val id:String,val socket:Socket,@Volatile var busy:Boolean=false)
   private val tcpSessions = ConcurrentHashMap<String, TcpSession>()
@@ -807,6 +812,18 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     }
   }
 
+  @ReactMethod fun uiHotStatus(promise:Promise) {
+    try{promise.resolve(uiHotUpdater().state().toString())}
+    catch(error:Throwable){promise.reject("E_UI_HOT_STATUS",error)}
+  }
+  @ReactMethod fun uiHotCheck(promise:Promise) {
+    try{uiHotUpdater().checkNow();promise.resolve(true)}
+    catch(error:Throwable){promise.reject("E_UI_HOT_CHECK",error)}
+  }
+  @ReactMethod fun uiHotCss(promise:Promise) {
+    try{promise.resolve(uiHotUpdater().css())}
+    catch(error:Throwable){promise.reject("E_UI_HOT_CSS",error)}
+  }
   @ReactMethod fun appUpdateStatus(promise:Promise) {
     try{val updater=appUpdater();updater.onResume();promise.resolve(updater.status().toString())}
     catch(error:Throwable){promise.reject("E_APP_UPDATE_STATUS",error)}
@@ -1016,6 +1033,8 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     fs.writeFileSync(path.join(packageDir, 'DkdsSmbService.java'), smbJavaSource(packageName), 'utf8');
     const appUpdateSource=fs.readFileSync(path.join(__dirname,'DkdsAppUpdate.template'),'utf8').replace(/__PACKAGE__/g,packageName);
     fs.writeFileSync(path.join(packageDir,'DkdsAppUpdateManager.java'),appUpdateSource,'utf8');
+    const uiHotSource=fs.readFileSync(path.join(__dirname,'DkdsUiHotUpdate.template'),'utf8').replace(/__PACKAGE__/g,packageName);
+    fs.writeFileSync(path.join(packageDir,'DkdsUiHotUpdateManager.java'),uiHotSource,'utf8');
     const xmlDir=path.join(mod.modRequest.platformProjectRoot,'app','src','main','res','xml');
     fs.mkdirSync(xmlDir,{recursive:true});
     fs.writeFileSync(path.join(xmlDir,'dkds_update_paths.xml'),
