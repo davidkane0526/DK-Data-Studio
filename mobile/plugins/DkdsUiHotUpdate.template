@@ -1,0 +1,131 @@
+package __PACKAGE__;
+import android.app.Activity;
+import android.util.Base64;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/** Verified CSS-only UI hot-updates; no code injection and no APK modification. */
+final class DkdsUiHotUpdateManager {
+  private static final String REPO="davidkane0526/DK-Data-Studio";
+  private static final String API="https://api.github.com/repos/"+REPO+"/releases?per_page=30";
+  private static final String ASSET="DKDS-UI-bundle.json";
+  private static final Pattern TAG=Pattern.compile("dkds-android-v(\\d+\\.\\d+\\.\\d+)-[0-9]+");
+  private static final String[] FILES={"src/styles/structure/connectivity-panels.css",
+    "src/styles/platform/native-client-shell.css","src/styles/theme/component-appearance.css"};
+  private static final int LIMIT=2*1024*1024;
+  private final Activity activity;
+  private final ExecutorService worker=Executors.newSingleThreadExecutor();
+  private final File root,active,staging,backup;
+  private volatile String status="idle",version="",tag="",error="",css="";
+
+  DkdsUiHotUpdateManager(Activity activity){
+    this.activity=activity;
+    root=new File(activity.getFilesDir(),"verified-ui-hot");
+    active=new File(root,"active.json");staging=new File(root,"next.json");backup=new File(root,"previous.json");
+    try{JSONObject data=readBundle(active);css=validate(data);tag=data.optString("_tag");version=data.optString("version");}
+    catch(Exception e){
+      try{JSONObject data=readBundle(backup);css=validate(data);tag=data.optString("_tag");version=data.optString("version");
+        if(!root.exists())root.mkdirs();copy(backup,active);
+      }catch(Exception ignored){css="";tag="";version="";}
+    }
+  }
+  private static void copy(File a,File b)throws Exception{
+    try(InputStream in=new FileInputStream(a);FileOutputStream out=new FileOutputStream(b)){
+      byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1)out.write(buf,0,n);out.getFD().sync();
+    }
+  }
+  private static JSONObject readBundle(File file)throws Exception{
+    try(InputStream in=new FileInputStream(file)){
+      return new JSONObject(new String(DkdsAppUpdateManager.readLimited(in,LIMIT),StandardCharsets.UTF_8));
+    }
+  }
+  private String installedVersion()throws Exception{
+    return activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+  }
+  private String validate(JSONObject doc)throws Exception{
+    if(!"dkds-ui-v1".equals(doc.optString("schema"))||!REPO.equals(doc.optString("repository")))throw new SecurityException("Invalid UI bundle identity");
+    String ver=doc.optString("version");
+    if(!ver.matches("\\d+\\.\\d+\\.\\d+")||DkdsAppUpdateManager.compareVersions(ver,installedVersion())<0)
+      throw new SecurityException("UI bundle is older than the installed application");
+    JSONObject files=doc.getJSONObject("files");
+    if(files.length()!=FILES.length)throw new SecurityException("Unexpected UI bundle files");
+    StringBuilder cssText=new StringBuilder();
+    int total=0;
+    for(String name:FILES){
+      JSONObject row=files.getJSONObject(name);int size=row.getInt("bytes");
+      if(size<1||size>150000)throw new SecurityException("UI resource size invalid");
+      byte[] bytes=Base64.decode(row.getString("base64"),Base64.DEFAULT);total+=bytes.length;
+      if(bytes.length!=size||!DkdsAppUpdateManager.hex(MessageDigest.getInstance("SHA-256").digest(bytes)).equals(row.getString("sha256")))
+        throw new SecurityException("UI resource SHA-256 mismatch");
+      cssText.append("/* verified UI resource: ").append(name).append(" */\n").append(new String(bytes,StandardCharsets.UTF_8)).append('\n');
+    }
+    if(total>1024*1024)throw new SecurityException("UI bundle exceeds limits");
+    return cssText.toString();
+  }
+  JSONObject state()throws Exception{
+    return new JSONObject().put("status",status).put("version",version).put("tag",tag).put("error",error).put("applied",!css.isEmpty());
+  }
+  String css(){return css;}
+  void checkNow(){
+    if("checking".equals(status))return;
+    status="checking";error="";
+    worker.execute(()->{
+      try{
+        HttpURLConnection c=DkdsAppUpdateManager.connect(API);
+        JSONArray releases;
+        try(InputStream in=c.getInputStream()){releases=new JSONArray(new String(DkdsAppUpdateManager.readLimited(in,LIMIT),StandardCharsets.UTF_8));}
+        finally{c.disconnect();}
+        JSONObject chosen=null,asset=null;String latestTag="",latestVersion="";long latestRun=-1;
+        for(int i=0;i<releases.length();i++){
+          JSONObject row=releases.getJSONObject(i);
+          Matcher matcher=TAG.matcher(row.optString("tag_name"));
+          if(row.optBoolean("draft")||!matcher.matches())continue;
+          String tagVersion=matcher.group(1);
+          if(DkdsAppUpdateManager.compareVersions(tagVersion,installedVersion())<0)continue;
+          JSONArray assets=row.optJSONArray("assets");if(assets==null)continue;
+          JSONObject target=null;
+          for(int j=0;j<assets.length();j++){JSONObject item=assets.getJSONObject(j);if(ASSET.equals(item.optString("name")))target=item;}
+          if(target==null)continue;
+          long run=Long.parseLong(row.getString("tag_name").substring(row.getString("tag_name").lastIndexOf('-')+1));
+          if(chosen==null||DkdsAppUpdateManager.compareVersions(tagVersion,latestVersion)>0||
+            (tagVersion.equals(latestVersion)&&run>latestRun)){
+            chosen=row;asset=target;latestTag=row.getString("tag_name");latestVersion=tagVersion;latestRun=run;
+          }
+        }
+        if(chosen==null||latestTag.equals(tag)){status="current";return;}
+        String url=asset.getString("browser_download_url"),digest=asset.optString("digest");
+        long size=asset.optLong("size");
+        if(!url.startsWith("https://github.com/"+REPO+"/releases/download/"+latestTag+"/")||
+          !digest.matches("sha256:[0-9a-fA-F]{64}")||size<100||size>LIMIT)throw new SecurityException("Untrusted UI release asset");
+        HttpURLConnection remote=DkdsAppUpdateManager.connect(url);byte[] raw;
+        try(InputStream in=remote.getInputStream()){raw=DkdsAppUpdateManager.readLimited(in,LIMIT);}
+        finally{remote.disconnect();}
+        if(raw.length!=size||!DkdsAppUpdateManager.hex(MessageDigest.getInstance("SHA-256").digest(raw)).equals(digest.substring(7).toLowerCase(Locale.ROOT)))
+          throw new SecurityException("UI bundle GitHub digest mismatch");
+        JSONObject bundle=new JSONObject(new String(raw,StandardCharsets.UTF_8));
+        if(!latestVersion.equals(bundle.optString("version")))throw new SecurityException("UI version mismatch");
+        String nextCss=validate(bundle);bundle.put("_tag",latestTag);
+        if(!root.exists()&&!root.mkdirs())throw new IllegalStateException("UI update cache unavailable");
+        if(staging.exists())staging.delete();
+        try(FileOutputStream out=new FileOutputStream(staging)){out.write(bundle.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+        validate(readBundle(staging));
+        if(active.exists())copy(active,backup);
+        if(active.exists())active.delete();
+        if(!staging.renameTo(active))throw new IllegalStateException("Unable to activate UI update");
+        css=nextCss;tag=latestTag;version=latestVersion;status="updated";
+      }catch(Exception ex){status="error";error=String.valueOf(ex.getMessage());}
+    });
+  }
+}

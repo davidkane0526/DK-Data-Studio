@@ -66,7 +66,7 @@ final class DkdsAppUpdateManager {
         return new JSONObject().put("status",state).put("version",version)
             .put("progress",progress).put("error",error);
     }
-    private static int compareVersions(String a, String b) {
+    static int compareVersions(String a, String b) {
         String[] x=a.split("\\."),y=b.split("\\.");
         if(x.length!=3||y.length!=3)return 0;
         for(int i=0;i<3;i++){
@@ -82,7 +82,7 @@ final class DkdsAppUpdateManager {
             h.equals("release-assets.githubusercontent.com")||
             h.endsWith(".githubusercontent.com");
     }
-    private static HttpURLConnection connect(String raw) throws Exception {
+    static HttpURLConnection connect(String raw) throws Exception {
         URL url=new URL(raw);
         for(int redirect=0;redirect<6;redirect++){
             if(!trusted(url))throw new SecurityException("Untrusted download host");
@@ -103,7 +103,7 @@ final class DkdsAppUpdateManager {
         }
         throw new IllegalStateException("Too many GitHub redirects");
     }
-    private static byte[] readLimited(InputStream in,int maximum)throws Exception{
+    static byte[] readLimited(InputStream in,int maximum)throws Exception{
         java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
         byte[] buf=new byte[8192];int n;
         while((n=in.read(buf))!=-1){
@@ -112,7 +112,7 @@ final class DkdsAppUpdateManager {
         }
         return out.toByteArray();
     }
-    private static String hex(byte[] hash){
+    static String hex(byte[] hash){
         StringBuilder result=new StringBuilder(hash.length*2);
         for(byte b:hash)result.append(String.format(Locale.ROOT,"%02x",b&255));
         return result.toString();
