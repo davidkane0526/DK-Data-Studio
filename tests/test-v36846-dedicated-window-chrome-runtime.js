@@ -21,7 +21,6 @@ for(const folder of pluginRoots){
 dedicated.sort((a,b)=>a.id.localeCompare(b.id));
 const expected=[
   'builtin.data-center',
-  'com.dkds.keithley-4200',
   'builtin.pulse-analysis',
   'builtin.resonance-workbench',
   'builtin.ter-analysis',
