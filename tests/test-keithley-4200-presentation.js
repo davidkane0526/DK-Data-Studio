@@ -7,10 +7,14 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const manifest=JSON.parse(read('src/plugins/keithley-4200/plugin.json'));
-assert.equal(manifest.enabled,true);
+assert.equal(manifest.enabled,false,'The legacy 4200 implementation must remain disabled as a DKDS built-in.');
 assert.equal(manifest.id,'com.dkds.keithley-4200');
 assert.deepEqual(manifest.scripts,['measurement-model.js','kxci-protocol.js','unit-presentation.js','plugin.js']);
 assert.deepEqual(manifest.styles,['plugin.css']);
+const runtimePlugin=read('src/plugins/keithley-4200/plugin.js');
+assert.match(runtimePlugin,/enabled:false/,'Runtime and package manifests must agree that the built-in is disabled.');
+const generatedPluginIndex=require('../scripts/generate-plugin-index').buildPluginIndexSource();
+assert(!generatedPluginIndex.plugins.some(row=>row.id===manifest.id),'Disabled 4200 built-in must not enter the generated plugin catalog or duplicate the external DK Test Studio workspace.');
 const registered=new Map();
 vm.runInNewContext(read('src/plugins/keithley-4200/unit-presentation.js'),{
   window:{DKDSPluginModules:{define:(owner,name,item)=>registered.set(name,item)}}

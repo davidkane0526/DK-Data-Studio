@@ -4,7 +4,7 @@
   "version": "0.3.0",
   "apiVersion": "1.19.0",
   "entry": "plugin.js",
-  "enabled": true,
+  "enabled": false,
   "order": 82,
   "description": "Automatic Keithley 4200A connection and identity verification with a compact simulation workbench.",
   "pluginType": "developer",
