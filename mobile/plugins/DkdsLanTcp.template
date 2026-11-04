@@ -45,11 +45,11 @@ private object DkdsLanTcp {
     if(address is java.net.Inet4Address){
       val b=address.address.map{it.toInt() and 255}
       return b[0]==10 || (b[0]==172&&b[1] in 16..31) ||
-        (b[0]==192&&b[1]==168) || (b[0]==169&&b[1]==254) || b[0]==127
+        (b[0]==192&&b[1]==168) || (b[0]==169&&b[1]==254)
     }
     val bytes=address.address
     val uniqueLocal=bytes.isNotEmpty()&&(bytes[0].toInt() and 0xfe)==0xfc
-    return address.isLoopbackAddress||address.isLinkLocalAddress||address.isSiteLocalAddress||uniqueLocal
+    return address.isLinkLocalAddress||address.isSiteLocalAddress||uniqueLocal
   }
   private fun resolvePrivateTarget(host:String):InetAddress{
     val addresses=try{InetAddress.getAllByName(host).toList()}catch(error:Throwable){

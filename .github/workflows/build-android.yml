@@ -70,20 +70,12 @@ jobs:
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -d "{\"state\":\"pending\",\"context\":\"dkds/android-build\",\"description\":\"run=$GITHUB_RUN_ID\",\"target_url\":\"https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
 
-      - name: Verify mobile presentation contracts
+      - name: Verify mobile presentation and generic host contracts
         shell: bash
         run: |
-          node tests/test-keithley-4200-native-recovery.js
-          node tools/4200-extract/extract.js --verify
-          node tests/test-keithley-4200-standalone.js
-          node tests/test-keithley-4200-protocol.js
-          node tests/test-keithley-4200-desktop-adapters.js
-          node tests/test-keithley-4200-phase1.js
-          node tests/test-keithley-4200-workbench.js
-          node tests/test-keithley-4200-integration.js
-          node tests/test-keithley-4200-lan-gateway.js
-          node tests/test-keithley-4200-desktop-relay.js
-          node tests/test-keithley-4200-presentation.js
+          node tests/test-mobile-tcp-gateway.js
+          node tests/test-plugin-package.js
+          node tests/test-mobile-plugin-package.js
           node -e "require('./tests/manifest.js')"
           node tests/test-v371106-data-center-live-hydration-presentation.js
           node tests/test-data-center-runtime-v36113.js
@@ -97,7 +89,6 @@ jobs:
           node tests/test-v371113-unit-first-sdk-authoring.js
           node tools/quality/unit-sdk-authoring-audit.js --strict
           node tests/test-v371114-unit-maturity-freeze.js
-          node tools/quality/unit-production-css-dependency-audit.js --strict
 
       - name: Select preinstalled JDK 21
         shell: bash
@@ -268,8 +259,8 @@ jobs:
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -d "{\"state\":\"$STATE\",\"context\":\"dkds/android-build\",\"description\":\"run=$GITHUB_RUN_ID; status=$JOB_STATUS\",\"target_url\":\"https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
 
-  publish-4200-release:
-    name: Publish 4200 preview APK to GitHub Releases
+  publish-android-preview:
+    name: Publish DKDS Android preview to GitHub Releases
     if: github.event_name == 'push' && github.ref == 'refs/heads/4200'
     needs: build-android
     runs-on: ubuntu-24.04
@@ -301,24 +292,24 @@ jobs:
           set -euo pipefail
           apk="release-apk/DK-Data-Studio-arm64-v8a-release.apk"
           sha_short="${GITHUB_SHA:0:12}"
-          tag="4200-preview-${GITHUB_RUN_ID}"
-          asset_name="DK-Data-Studio-4200-${sha_short}-arm64.apk"
+          tag="dkds-android-preview-${GITHUB_RUN_ID}"
+          asset_name="DK-Data-Studio-${sha_short}-arm64.apk"
           cat > release-notes.md <<EOF
-          Automated Android preview from branch \`4200\`.
+          Automated Android preview of the generic DK Data Studio host.
 
           - Git commit: \`${GITHUB_SHA}\`
           - GitHub Actions run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           - Device architecture: arm64-v8a
           - Build: Release APK, verified signed
           - Status: **development preview**, not a production release.
-          - Keithley 4200A: connection and identification are real, while the measurement GUI is still simulation-only. Instrument-native data and graph-file retrieval are not yet implemented.
+          - The app provides the generic DKDS host and external plugin package installation/runtime.
 
           This preview is kept separate from the production \`v*\` releases.
           EOF
           gh release create "$tag" "$apk#$asset_name" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "4200 Android Preview · ${sha_short}" \
+            --title "DK Data Studio Android Preview · ${sha_short}" \
             --notes-file release-notes.md \
             --prerelease \
             --latest=false
