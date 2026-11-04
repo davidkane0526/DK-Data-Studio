@@ -12,10 +12,31 @@ const FILES=Object.freeze(['src/styles/structure/connectivity-panels.css',
 const LIMIT=1024*1024;
 const versionPattern=/^\d+\.\d+\.\d+$/;
 const releasePattern=/^dkds-(?:ui|android)-v(\d+\.\d+\.\d+)-\d+$/;
+function compareUiVersions(a,b){
+  if(!versionPattern.test(a||'')||!versionPattern.test(b||''))throw Error('Invalid UI version');
+  const left=a.split('.').map(Number),right=b.split('.').map(Number);
+  for(let i=0;i<3;i++){
+    if(left[i]!==right[i])return left[i]>right[i]?1:-1;
+  }
+  return 0;
+}
 function compatible(source,installed){
   if(!versionPattern.test(source||'')||!versionPattern.test(installed||''))return false;
   const a=source.split('.'),b=installed.split('.');
-  return a[0]===b[0]&&a[1]===b[1];
+  return a[0]===b[0]&&a[1]===b[1]&&compareUiVersions(source,installed)>=0;
+}
+function selectUiRelease(releases,currentVersion,appliedVersion=currentVersion){
+  if(!Array.isArray(releases))throw Error('Invalid GitHub release metadata');
+  return releases.filter(row=>{
+    const match=releasePattern.exec(String(row.tag_name||''));
+    return !row.draft&&match&&compatible(match[1],currentVersion)&&
+      compareUiVersions(match[1],appliedVersion)>=0&&
+      row.assets?.some(a=>a.name===ASSET);
+  }).sort((a,b)=>{
+    const va=releasePattern.exec(a.tag_name)[1],vb=releasePattern.exec(b.tag_name)[1];
+    return compareUiVersions(vb,va)||
+      String(b.published_at||b.created_at||'').localeCompare(String(a.published_at||a.created_at||''));
+  })[0]||null;
 }
 function valid(bundle,current){
   if(!bundle||bundle.schema!==SCHEMA||bundle.repository!==REPO||!versionPattern.test(bundle.version||''))throw Error('UI bundle manifest invalid');
@@ -62,9 +83,7 @@ function createUiHotUpdater({userData,currentVersion}){
       status='checking';error='';
       try{
         const releases=await readJson(API);
-        if(!Array.isArray(releases))throw Error('Invalid GitHub release metadata');
-        const chosen=releases.filter(row=>!row.draft&&releasePattern.test(String(row.tag_name||''))&&compatible(releasePattern.exec(String(row.tag_name||''))?.[1],currentVersion)&&row.assets?.some(a=>a.name===ASSET))
-          .sort((a,b)=>String(b.published_at||b.created_at||'').localeCompare(String(a.published_at||a.created_at||'')))[0];
+        const chosen=selectUiRelease(releases,currentVersion,version);
         if(!chosen||chosen.tag_name===tag){status='current';return state();}
         const match=releasePattern.exec(chosen.tag_name);
         const asset=chosen.assets.find(a=>a.name===ASSET);
@@ -84,4 +103,4 @@ function createUiHotUpdater({userData,currentVersion}){
   }
   return Object.freeze({check,state,css:()=>css});
 }
-module.exports={createUiHotUpdater,valid,compatible,FILES};
+module.exports={createUiHotUpdater,valid,compatible,compareUiVersions,selectUiRelease,FILES};
