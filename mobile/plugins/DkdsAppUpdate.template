@@ -63,7 +63,11 @@ final class DkdsAppUpdateManager {
         this.activity=activity;
     }
     JSONObject status() throws org.json.JSONException {
+        String installed="";
+        try{installed=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;}
+        catch(Exception ignored){}
         return new JSONObject().put("status",state).put("version",version)
+            .put("installedVersion",installed)
             .put("progress",progress).put("error",error);
     }
     static int compareVersions(String a, String b) {
