@@ -63,7 +63,11 @@ final class DkdsAppUpdateManager {
         this.activity=activity;
     }
     JSONObject status() throws org.json.JSONException {
+        String installed="";
+        try{installed=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;}
+        catch(Exception ignored){}
         return new JSONObject().put("status",state).put("version",version)
+            .put("installedVersion",installed)
             .put("progress",progress).put("error",error);
     }
     static int compareVersions(String a, String b) {
@@ -161,7 +165,8 @@ final class DkdsAppUpdateManager {
                 if(found==null||compareVersions(found.version,installed)<=0){
                     candidate=null;version=installed;state="current";return;
                 }
-                if(candidate==null||!candidate.version.equals(found.version))downloaded=null;
+                if(candidate==null||!candidate.version.equals(found.version)||
+                    !candidate.sha256.equals(found.sha256))downloaded=null;
                 candidate=found;version=found.version;
                 state=downloaded!=null&&downloaded.exists()?"ready":"available";
             }catch(Exception ex){state="error";error=String.valueOf(ex.getMessage());Log.w(TAG,"Update check failed",ex);}
@@ -175,12 +180,17 @@ final class DkdsAppUpdateManager {
                 Candidate selected=candidate;
                 if(selected==null)throw new IllegalStateException("请先检查程序更新");
                 File apk=downloaded;
+                if(apk!=null&&apk.exists()){
+                    try{verifyDownloaded(apk,selected);validateApk(apk,selected.version);}
+                    catch(Exception invalid){
+                        Log.w(TAG,"Cached APK invalid; downloading again",invalid);
+                        downloaded=null;apk=null;
+                    }
+                }
                 if(apk==null||!apk.exists()){
                     apk=download(selected);
                     validateApk(apk,selected.version);
                     downloaded=apk;
-                }else{
-                    validateApk(apk,selected.version);
                 }
                 if(closed)return;
                 state="ready";progress=100;
@@ -189,6 +199,15 @@ final class DkdsAppUpdateManager {
                 state="error";error=String.valueOf(ex.getMessage());Log.w(TAG,"APK update rejected",ex);
             }
         });
+    }
+    private void verifyDownloaded(File apk,Candidate selected)throws Exception{
+        if(!apk.isFile()||apk.length()!=selected.size)throw new SecurityException("APK 缓存大小不匹配");
+        MessageDigest digest=MessageDigest.getInstance("SHA-256");
+        try(InputStream in=new FileInputStream(apk)){
+            byte[] buffer=new byte[65536];int n;
+            while((n=in.read(buffer))!=-1)digest.update(buffer,0,n);
+        }
+        if(!hex(digest.digest()).equals(selected.sha256))throw new SecurityException("APK 缓存校验值不匹配");
     }
     private File download(Candidate selected)throws Exception{
         state="downloading";progress=0;error="";

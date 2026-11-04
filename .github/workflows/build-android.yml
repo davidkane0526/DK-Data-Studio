@@ -119,6 +119,9 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
+      - name: Stamp monotonic Android versionName and versionCode
+        shell: bash
+        run: node tools/updates/stamp-android-build.cjs
       - name: Prepare offline web assets
         working-directory: mobile
         shell: bash
@@ -277,7 +280,7 @@ jobs:
       - name: Resolve release version for publication
         shell: bash
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION="$(node tools/updates/stamp-android-build.cjs --print)"
           test -n "$VERSION"
           echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
@@ -306,7 +309,7 @@ jobs:
           sha_short="${GITHUB_SHA:0:12}"
           tag="dkds-android-v${DKDS_RELEASE_VERSION}-${GITHUB_RUN_ID}"
           asset_name="DK-Data-Studio-arm64-v8a-release.apk"
-          node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
+          DKDS_UI_BUNDLE_VERSION="$DKDS_RELEASE_VERSION" node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
           test -s release-apk/DKDS-UI-bundle.json
           cat > release-notes.md <<EOF
           Automated Android preview of the generic DK Data Studio host.

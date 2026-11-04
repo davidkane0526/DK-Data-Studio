@@ -28,7 +28,9 @@ jobs:
           node --check tools/updates/build-ui-hot-bundle.js
       - name: Create verified hot-style bundle without native compilation
         run: |
-          node tools/updates/build-ui-hot-bundle.js dist/DKDS-UI-bundle.json
+          DKDS_UI_BUNDLE_VERSION="$(node -p "const p=require('./package.json').version.split('.'); p[0]+'.'+p[1]+'.'+(10000+Number(process.env.GITHUB_RUN_NUMBER))")"
+          echo "DKDS_UI_BUNDLE_VERSION=$DKDS_UI_BUNDLE_VERSION" >> "$GITHUB_ENV"
+          DKDS_UI_BUNDLE_VERSION="$DKDS_UI_BUNDLE_VERSION" node tools/updates/build-ui-hot-bundle.js dist/DKDS-UI-bundle.json
           test -s dist/DKDS-UI-bundle.json
           node -e "const x=require('./dist/DKDS-UI-bundle.json');if(x.schema!=='dkds-ui-v1'||Object.keys(x.files).length!==3)process.exit(1)"
       - name: Publish UI-only update release
@@ -43,7 +45,7 @@ jobs:
             echo 'Newer branch commit exists; skip an obsolete UI bundle.'
             exit 0
           fi
-          version="$(node -p "require('./package.json').version")"
+          version="$DKDS_UI_BUNDLE_VERSION"
           tag="dkds-ui-v${version}-${GITHUB_RUN_ID}"
           gh release create "$tag" dist/DKDS-UI-bundle.json \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \

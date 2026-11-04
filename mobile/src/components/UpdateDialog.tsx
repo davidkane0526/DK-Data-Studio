@@ -3,7 +3,7 @@ import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { nativeHost } from '../host/protocol';
 import type { Palette } from '../theme/palette';
 
-type UpdateState={status:string;version?:string;progress?:number;error?:string};
+type UpdateState={status:string;version?:string;installedVersion?:string;progress?:number;error?:string};
 type Props={visible:boolean;version:string;palette:Palette;onClose:()=>void;onUiCss:(css:string)=>void};
 const statusLabel:Record<string,string>={idle:'等待检查',checking:'检查中',current:'当前已是最新版本',available:'发现新版',
   downloading:'下载中',ready:'下载与校验完成',installer:'等待 Android 安装器确认',permission:'需要允许安装此应用来源',
@@ -58,7 +58,7 @@ export function UpdateDialog({visible,version,palette,onClose,onUiCss}:Props){
     <View style={styles.shade}><View style={[styles.card,{backgroundColor:palette.surface,borderColor:palette.divider}]}>
       <View style={styles.row}><Text style={[styles.heading,{color:palette.text}]}>DK Data Studio · 更新</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="关闭" onPress={onClose}><Text style={[styles.close,{color:palette.text}]}>×</Text></Pressable></View>
-      <Text style={[styles.body,{color:palette.text}]}>当前版本：v{version}</Text>
+      <Text style={[styles.body,{color:palette.text}]}>当前版本：v{state.installedVersion||version}</Text>
       <Text style={[styles.body,{color:palette.text}]}>程序更新：{statusLabel[state.status]||state.status}</Text>
       {state.version?<Text style={[styles.body,{color:palette.text}]}>可用版本：v{state.version}</Text>:null}
       {state.status==='downloading'?<Text style={[styles.body,{color:palette.text}]}>下载进度：{state.progress||0}%</Text>:null}
