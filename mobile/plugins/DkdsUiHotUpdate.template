@@ -88,10 +88,7 @@ final class DkdsUiHotUpdateManager {
     status="checking";error="";
     worker.execute(()->{
       try{
-        HttpURLConnection c=DkdsAppUpdateManager.connect(API);
-        JSONArray releases;
-        try(InputStream in=c.getInputStream()){releases=new JSONArray(new String(DkdsAppUpdateManager.readLimited(in,LIMIT),StandardCharsets.UTF_8));}
-        finally{c.disconnect();}
+        JSONArray releases=DkdsAppUpdateManager.fetchReleases();
         JSONObject chosen=null,asset=null;String latestTag="",latestVersion="";long latestRun=-1;
         for(int i=0;i<releases.length();i++){
           JSONObject row=releases.getJSONObject(i);
