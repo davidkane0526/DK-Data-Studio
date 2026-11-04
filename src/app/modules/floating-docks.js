@@ -183,6 +183,15 @@ $('#lanWebRefreshQrBtn').onclick=()=>{
   void renderLanWebQr(state.lanWebStatusState);
 };
 
+async function checkUiHotUpdate(){
+  const label=$('#uiHotStatus');if(label)label.textContent='正在检查界面更新…';
+  try{
+    const info=await window.electronAPI?.uiHotCheck?.()||{status:'unsupported'};
+    if(info.status==='updated')await window.DKDSUIHot?.refresh?.();
+    const names={updated:'界面热更新已应用，无需重启',current:'当前已是最新界面',error:'更新失败',unsupported:'当前平台不支持此更新'};
+    if(label)label.textContent=(names[info.status]||info.status)+(info.version?' · v'+info.version:'')+(info.error?'：'+info.error:'');
+  }catch(error){if(label)label.textContent='热更新失败：'+String(error.message||error).slice(0,150);}
+}
 async function displayOnlineUpdate(result={}){
   const state=String(result?.status||'unsupported');
   const label={
@@ -218,11 +227,12 @@ async function openUpdatePanel({check=false}={}){
   }
   await displayOnlineUpdate(await window.electronAPI?.onlineUpdateStatus?.()||{status:'unsupported'});
   ensureFloatingPanelVisible(panel);
-  if(check)void checkOnlineUpdate();
+  if(check){void checkOnlineUpdate();void checkUiHotUpdate();}
 }
 $('#updateBtn').onclick=()=>void openUpdatePanel({check:false});
 $('#appVersionBtn')?.addEventListener('click',()=>void openUpdatePanel({check:true}));
 $('#onlineUpdateCheckBtn')?.addEventListener('click',()=>void checkOnlineUpdate());
+$('#uiHotCheckBtn')?.addEventListener('click',()=>void checkUiHotUpdate());
 $('#onlineUpdateInstallBtn')?.addEventListener('click',async()=>{
   const saved=await saveProject();
   if(!saved&&!state.projectPath&&!window.confirm('当前项目尚未保存。仍然继续安装更新？'))return;

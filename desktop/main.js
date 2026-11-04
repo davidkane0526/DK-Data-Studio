@@ -1,7 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme, session } = require('electron');
 const { safeStorage } = require('electron');
 const { LanUpdateClient } = require('./update-client');
-const {createPortableUpdater}=require('./native-update');
 const {installOnlineUpdateIpc}=require('./main-modules/online-update-ipc');
 const { ProjectFileSafety } = require('./project-file-safety');
 const { LanWebServer } = require('./lan-web-server');
@@ -37,7 +36,6 @@ if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 try { process.title = APP_NAME; } catch {}
 
 let lanUpdater = null;
-let onlinePortableUpdater=null;
 let lanWebServer = null;
 const pendingCapabilityInvocations = new Map();
 let capabilityRequestSeq = 0;
@@ -412,7 +410,7 @@ app.whenReady().then(() => {
     });
   });
 
-  installOnlineUpdateIpc({ipcMain,getUpdater:()=>onlinePortableUpdater,getProjectFileSafety});
+  installOnlineUpdateIpc({ipcMain,app,getProjectFileSafety});
   ipcMain.handle('update:getStatus', async () => lanUpdater?.getStatus() || null);
   ipcMain.handle('update:getSettings', async () => lanUpdater?.getSettings() || null);
   ipcMain.handle('update:setSettings', async (_event, settings) => lanUpdater?.setSettings(settings) || null);
@@ -808,10 +806,6 @@ app.whenReady().then(() => {
     return {path:filePath,project:parsed.project,encoding:parsed.encoding};
   });
 
-  onlinePortableUpdater=createPortableUpdater({
-    app,userData:app.getPath('userData'),scriptPath:path.join(__dirname,'apply-portable-update.ps1'),
-    currentVersion:app.getVersion()
-  });
   lanUpdater = new LanUpdateClient({ app, BrowserWindow, installPluginPackage:installLanPluginPackage });
   lanUpdater.start();
   lanWebServer = new LanWebServer({ app, BrowserWindow });
