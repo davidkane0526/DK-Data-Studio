@@ -119,6 +119,9 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
+      - name: Stamp monotonic Android versionName and versionCode
+        shell: bash
+        run: node tools/updates/stamp-android-build.cjs
       - name: Prepare offline web assets
         working-directory: mobile
         shell: bash
@@ -277,7 +280,7 @@ jobs:
       - name: Resolve release version for publication
         shell: bash
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION="$(node tools/updates/stamp-android-build.cjs --print)"
           test -n "$VERSION"
           echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
