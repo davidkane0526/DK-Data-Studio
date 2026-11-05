@@ -77,7 +77,7 @@ function lightweightActivityProject(tab,pluginId='',options={}){
   return {
     format:'dk-data-studio-project',
     schemaVersion:3,
-    version:'3.72.1',
+    version:'3.72.2',
     // Live dedicated windows hydrate scientific data from artifactSnapshot / owner
     // capability. Duplicating the entire Artifact Store into project.dataModel on
     // every open is unnecessary synchronous work on the user's click path.
