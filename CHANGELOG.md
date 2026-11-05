@@ -1,3 +1,12 @@
+# 3.72.0 — Stable application version and independent hot-update identity
+
+- Establishes `V3.72.0` as the stable DKDS application version for the migration from CI-stamped version names. Windows and Android full installers are built on every development commit without rewriting the application version.
+- Every commit receives one shared, deterministic hot-update identity (`aNNNN`) derived from the full Git history. Windows, Android and CSS hot-update Actions/Release records display the same `V3.72.0 aNNNN` identity.
+- CSS hot updates advance only the `aNNNN` identity. When the installed application version is already current, the client applies the hot update and does not offer or prompt for a complete installer/APK update. Complete platform installers remain downloadable from GitHub Releases for manual installation.
+- Android keeps `versionName=3.72.0` stable while monotonically increasing `versionCode` for each APK build, so a manually downloaded same-version APK can replace an earlier build.
+- The first migration release advances beyond previously CI-stamped Windows 3.71.577 and Android 3.71.1623 builds, avoiding version rollback.
+- The host remains generic; 4200 instrument-specific functionality is supplied only by the external DK Test Studio plugin package.
+
 # 3.71.145 — Fast UI release channel and cross-platform update reliability (Preview)
 
 - Added a fast standalone GitHub Releases job for verified CSS-only hot-update bundles; no APK or EXE compilation is required for style-only updates.
