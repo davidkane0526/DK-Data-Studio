@@ -70,6 +70,8 @@ try{
   assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
   assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');
   const changelog=fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8');
+  const readme=fs.readFileSync(path.join(root,'README_CN.md'),'utf8');
+  assert(readme.includes('当前版本：**v3.72.2**'),'README current version must match the lowercase v release identity.');
   assert(changelog.includes('# v3.72.2 — Lowercase application version prefix'));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.2');
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.2');
