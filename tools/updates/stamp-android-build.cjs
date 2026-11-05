@@ -27,6 +27,6 @@ pack.version=version;
 fs.writeFileSync(packFile,JSON.stringify(pack,null,2)+'\n');
 if(process.env.GITHUB_ENV)
   fs.appendFileSync(process.env.GITHUB_ENV,
-    'DKDS_ANDROID_BUILD_VERSION='+version+'\n'+
+    'DKDS_ANDROID_APP_VERSION='+version+'\n'+
     'DKDS_ANDROID_VERSION_CODE='+versionCode+'\n');
 console.log('Stamped DKDS Android app version V'+version+' (versionCode '+versionCode+')');
