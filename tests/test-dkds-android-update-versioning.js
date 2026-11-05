@@ -70,6 +70,15 @@ try{
   assert(changelog.includes('# 3.72.1 — Direct Android update installation'));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.1');
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.1');
+  const updateScope=require(path.join(root,'tools/updates/validate-update-scope.cjs'));
+  const hotScope=updateScope.validateUpdateScope({changedPaths:['src/styles/platform/native-client-shell.css'],baseVersion:'3.72.1',currentVersion:'3.72.1'});
+  assert.equal(hotScope.channel,'hot-update-only');
+  const fullScope=updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.1'});
+  assert.equal(fullScope.channel,'full-app');
+  assert.throws(()=>updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.0'}),{code:'FULL_APP_VERSION_BUMP_REQUIRED'});
+  const hotWorkflowText=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
+  assert(hotWorkflowText.includes("if: steps.scope.outputs.channel == 'hot-update-only'"),'CSS hot bundle and release must be gated to validated hot-only commits.');
+  assert(hotWorkflowText.includes("if: github.ref == 'refs/heads/4200' && steps.scope.outputs.channel == 'hot-update-only'"),'Full application commits must never publish a CSS-only UI release.');
   const native=fs.readFileSync(path.join(root,'mobile/plugins/DkdsAppUpdate.template'),'utf8');
   assert(native.includes('dkds-android-v(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})'));
   assert(native.includes('verifyDownloaded(apk,selected)'));
