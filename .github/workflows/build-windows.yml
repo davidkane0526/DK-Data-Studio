@@ -10,6 +10,7 @@ on:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
       - 'desktop/**'
+      - 'mobile/**'
       - 'plugin-window-manager.js'
       - 'preload.js'
       - 'plugin-package.js'
@@ -33,6 +34,7 @@ on:
   pull_request:
     branches:
       - main
+      - '4200'
     paths:
       - 'main.js'
       - 'plugin-window-manager.js'
@@ -51,6 +53,7 @@ on:
       - 'scripts/**'
       - 'tools/windows/**'
       - 'services/update-server/**'
+      - 'mobile/**'
   workflow_dispatch:
 
 permissions:
