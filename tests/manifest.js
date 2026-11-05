@@ -2177,6 +2177,9 @@ module.exports = {
     }
   ],
   "check": [
+    { "file": "tests/test-dkds-android-update-versioning.js", "args": [] },
+    { "file": "tests/test-dkds-ui-hot-release-order.js", "args": [] },
+    { "file": "tests/test-dkds-update-scope.js", "args": [] },
     {
       "file": "tests/test-phase-f-live-scientific-plot-binding.js",
       "args": []
