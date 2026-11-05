@@ -8,6 +8,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-dkds-update-scope.js",
+      "args": []
+    },
+    {
       "file": "tests/test-dkds-ui-hot-release-order.js",
       "args": []
     },
