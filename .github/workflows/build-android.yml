@@ -347,9 +347,9 @@ jobs:
           cat > release-notes.md <<EOF
           Automated Android preview of the generic DK Data Studio host.
 
-          - Application version: \`V${DKDS_RELEASE_VERSION}\`
+          - Application version: \`v${DKDS_RELEASE_VERSION}\`
           - Hot-update build ID: \`${DKDS_HOT_BUILD_ID}\`
-          - Complete build identity: \`V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}\`
+          - Complete build identity: \`v${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}\`
           - Git commit: \`${GITHUB_SHA}\`
           - GitHub Actions run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           - Device architecture: arm64-v8a
@@ -361,12 +361,12 @@ jobs:
           EOF
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · v${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease
           else
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · v${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease --latest=false
           fi
           gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \
