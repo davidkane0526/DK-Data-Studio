@@ -33,13 +33,13 @@ const versionCode = Number(mobileApp?.expo?.android?.versionCode);
 if (!Number.isInteger(versionCode) || versionCode < 1) {
   throw new Error('mobile/app.json expo.android.versionCode must be a positive integer.');
 }
-if (!new RegExp('^# ' + escapeRegExp(version) + '(?:\\s|$)', 'm').test(changelog)) {
-  throw new Error('CHANGELOG.md is missing an explicit # ' + version + ' release heading.');
+if (!new RegExp('^# v' + escapeRegExp(version) + '(?:\\s|$)', 'm').test(changelog)) {
+  throw new Error('CHANGELOG.md is missing an explicit # v' + version + ' release heading.');
 }
-if (!new RegExp('[vV]' + escapeRegExp(version) + '\\s+Release').test(readme)) {
-  throw new Error('README_CN.md is missing the V' + version + ' Release marker.');
+if (!new RegExp('v' + escapeRegExp(version) + '\\s+Release').test(readme)) {
+  throw new Error('README_CN.md is missing the v' + version + ' Release marker.');
 }
-if (!desktopHtml.includes('<span class="version">V' + version + '</span>')) {
+if (!desktopHtml.includes('<span class="version">v' + version + '</span>')) {
   throw new Error('src/index.html desktop version label does not match the stable application version.');
 }
 if (!androidStamp.includes('const version=source;')||!androidStamp.includes('const versionCode=100000+run;')) {
@@ -52,4 +52,4 @@ if (windowsWorkflow.includes('npm version $ciVersion')||
   throw new Error('Platform and hot-update workflows must use the independent aNNNN build identity without rewriting the stable app version.');
 }
 
-console.log('Release identity PASS: V' + version + ', Android versionCode=' + versionCode + ', independent aNNNN hot identity');
+console.log('Release identity PASS: v' + version + ', Android versionCode=' + versionCode + ', independent aNNNN hot identity');
