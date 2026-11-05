@@ -198,6 +198,7 @@ function createTcpRuntime(options={}){
     const readTimeoutMs=boundedInt(payload.readTimeoutMs,5000,250,120000);
     const idleTimeoutMs=boundedInt(payload.idleTimeoutMs,120,20,10000);
     const maxBytes=boundedInt(payload.maxBytes,65536,1,8*1024*1024);
+    const noReply=payload.noReply===true;
     if(write.length>1024*1024)throw new Error('TCP write exceeds the 1 MiB safety limit.');
 
     row.busy=true;
@@ -242,15 +243,17 @@ function createTcpRuntime(options={}){
       const onError=error=>finishError(error);
       const onClose=()=>{if(total>0)finishOk();else finishError(new Error('TCP session closed before a response was received.'));};
 
-      readTimer=setTimeout(()=>{
-        if(total>0)return finishOk();
-        closeSession(row.id);
-        finishError(new Error('TCP read timeout after '+readTimeoutMs+' ms; session closed to prevent late-response contamination.'));
-      },readTimeoutMs);
-      socket.on('data',onData);
+      if(!noReply){
+        readTimer=setTimeout(()=>{
+          if(total>0)return finishOk();
+          closeSession(row.id);
+          finishError(new Error('TCP read timeout after '+readTimeoutMs+' ms; session closed to prevent late-response contamination.'));
+        },readTimeoutMs);
+        socket.on('data',onData);
+      }
       socket.once('error',onError);
       socket.once('close',onClose);
-      socket.write(write,error=>{if(error)finishError(error);});
+      socket.write(write,error=>{if(error)finishError(error);else if(noReply)finishOk();});
     });
   }
 
