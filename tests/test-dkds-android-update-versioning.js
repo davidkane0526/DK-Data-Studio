@@ -71,7 +71,7 @@ try{
   assert(changelog.includes('# 3.72.2 — KXCI write-only TCP transport'));
   assert(changelog.includes('# 3.72.3 — Restrict KXCI write-only TCP commands'));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.3');
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.2');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.3');
   const updateScope=require(path.join(root,'tools/updates/validate-update-scope.cjs'));
   const hotScope=updateScope.validateUpdateScope({changedPaths:['src/styles/platform/native-client-shell.css'],baseVersion:'3.72.1',currentVersion:'3.72.1'});
   assert.equal(hotScope.channel,'hot-update-only');
