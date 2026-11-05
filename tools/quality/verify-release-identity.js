@@ -36,8 +36,8 @@ if (!Number.isInteger(versionCode) || versionCode < 1) {
 if (!new RegExp('^# ' + escapeRegExp(version) + '(?:\\s|$)', 'm').test(changelog)) {
   throw new Error('CHANGELOG.md is missing an explicit # ' + version + ' release heading.');
 }
-if (!readme.includes('v' + version + ' Release')) {
-  throw new Error('README_CN.md is missing the v' + version + ' Release marker.');
+if (!new RegExp('[vV]' + escapeRegExp(version) + '\\s+Release').test(readme)) {
+  throw new Error('README_CN.md is missing the V' + version + ' Release marker.');
 }
 if (!desktopHtml.includes('<span class="version">V' + version + '</span>')) {
   throw new Error('src/index.html desktop version label does not match the stable application version.');
