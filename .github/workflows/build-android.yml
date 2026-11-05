@@ -82,6 +82,9 @@ jobs:
           node tests/test-plugin-package.js
           node tests/test-mobile-plugin-package.js
           node tests/test-dkds-no-builtin-4200-external-plugin.js
+          node tests/test-dkds-android-update-versioning.js
+          node tests/test-dkds-ui-hot-release-order.js
+          node tests/test-dkds-update-scope.js
           node -e "require('./tests/manifest.js')"
           node tests/test-v371106-data-center-live-hydration-presentation.js
           node tests/test-data-center-runtime-v36113.js
