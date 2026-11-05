@@ -9,7 +9,8 @@ const json=rel=>JSON.parse(read(rel));
 const hash=rel=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,rel))).digest('hex');
 
 const pkg=json('package.json');
-assert(Number(pkg.version.split('.').at(-1))>=48,'v3.71.48 surface-containment guarantees must remain present on later 3.71.x patches.');
+const versionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(versionAtLeast(pkg.version,'3.71.48'),'v3.71.48 surface-containment guarantees must remain present on later application versions.')
 
 // Pulse: one Sampling Material owner. The command block is geometry-only and every
 // nested responsive Unit measures the width actually allocated by the Sampling panel.
