@@ -199,7 +199,7 @@ jobs:
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
           if ([string]$pkg.version -ne $env:DKDS_RELEASE_VERSION) { throw 'The packaged application version must remain the stable package.json version.' }
           if ($env:DKDS_HOT_BUILD_ID -notmatch '^a\d{4,}$') { throw "Invalid hot-update build ID: $env:DKDS_HOT_BUILD_ID" }
-          Write-Host "Full application version: V$env:DKDS_RELEASE_VERSION"
+          Write-Host "Full application version: v$env:DKDS_RELEASE_VERSION"
           Write-Host "Hot-update build ID: $env:DKDS_HOT_BUILD_ID"
           Write-Host "Complete build identity: $env:DKDS_BUILD_LABEL"
       - name: Build Windows distribution
@@ -449,7 +449,7 @@ jobs:
           $notes = @"
           Automated preview of the generic DK Data Studio host.
 
-          - Application version: V$env:DKDS_RELEASE_VERSION
+          - Application version: v$env:DKDS_RELEASE_VERSION
           - Hot-update build ID: $env:DKDS_HOT_BUILD_ID
           - Complete build identity: $env:DKDS_BUILD_LABEL
           - Commit: $env:GITHUB_SHA
@@ -464,14 +464,14 @@ jobs:
           Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8
           gh release view $tag *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
+            gh release create $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · v$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
             if ($LASTEXITCODE -ne 0) {
               Start-Sleep -Seconds 2
               gh release view $tag *> $null
               if ($LASTEXITCODE -ne 0) { throw 'Failed to create DKDS Windows preview Release.' }
             }
           } else {
-            gh release edit $tag --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease
+            gh release edit $tag --title "DK Data Studio Windows · v$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease
             if ($LASTEXITCODE -ne 0) { throw 'Failed to refresh DKDS Windows preview Release metadata.' }
           }
           gh release upload $tag $portableExe --clobber
