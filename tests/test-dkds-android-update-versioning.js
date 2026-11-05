@@ -56,6 +56,14 @@ try{
   const desktopNative=fs.readFileSync(path.join(root,'desktop/native-update.js'),'utf8');
   assert(desktopNative.includes('dkds-windows-v(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})'));
   assert(desktopNative.includes('DK-Data-Studio-Portable-(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})-x64\\\\.exe'));
+  const updateDialog=fs.readFileSync(path.join(root,'mobile/src/components/UpdateDialog.tsx'),'utf8');
+  assert(!updateDialog.includes('Alert.alert'),'DKDS must not show a second confirmation dialog before invoking Android installer.');
+  assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
+  assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');
+  const changelog=fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8');
+  assert(changelog.includes('# 3.72.1 — Direct Android update installation'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.1');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.1');
   const native=fs.readFileSync(path.join(root,'mobile/plugins/DkdsAppUpdate.template'),'utf8');
   assert(native.includes('dkds-android-v(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})'));
   assert(native.includes('verifyDownloaded(apk,selected)'));
