@@ -22,7 +22,9 @@ async function initializeWindowChrome(){
     renderMaximizedState(state?.maximized);
   };
   $('#windowCloseBtn').onclick=()=>void api.closeCurrentWindow();
-  if(api.shutdownSmokeMode)setTimeout(()=>void api.closeCurrentWindow(),1500);
+  let smokeMode=!!api.shutdownSmokeMode;
+  try{if(typeof api.getShutdownSmokeMode==='function')smokeMode=!!(await api.getShutdownSmokeMode());}catch{}
+  if(smokeMode){document.documentElement.dataset.dkdsShutdownSmokeMode='active';setTimeout(()=>void api.closeCurrentWindow(),1500);}
   try{renderMaximizedState((await api.getCurrentWindowState?.())?.maximized);}catch{renderMaximizedState(false);}
   api.onCurrentWindowMaximizedChanged?.(renderMaximizedState);
   return true;
