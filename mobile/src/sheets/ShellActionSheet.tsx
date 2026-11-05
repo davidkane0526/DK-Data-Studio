@@ -113,7 +113,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose, onVersionPress, inst
           </ScrollView>
           <Pressable accessibilityRole="button" accessibilityLabel="软件版本，检查更新" onPress={() => { onClose(); onVersionPress?.(); }}
             style={({ pressed }) => [shellStyles.projectDrawerVersion, pressed && shellStyles.pressed]}>
-            <Text style={{ color: palette.textSoft, fontSize: 11 }}>DK Data Studio V{installedAppVersion || shell.appVersion || '—'}</Text>
+            <Text style={{ color: palette.textSoft, fontSize: 11 }}>DK Data Studio v{installedAppVersion || shell.appVersion || '—'}</Text>
           </Pressable>
         </Animated.View>
       </View>

@@ -63,6 +63,8 @@ try{
   assert(desktopNative.includes('dkds-windows-v(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})'));
   assert(desktopNative.includes('DK-Data-Studio-Portable-(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})-x64\\.exe'));
   const updateDialog=fs.readFileSync(path.join(root,'mobile/src/components/UpdateDialog.tsx'),'utf8');
+  const projectDrawer=fs.readFileSync(path.join(root,'mobile/src/sheets/ShellActionSheet.tsx'),'utf8');
+  assert(projectDrawer.includes("DK Data Studio v{installedAppVersion || shell.appVersion || '—'}"),'Project management drawer must display the app version with lowercase v.');
   assert(!updateDialog.includes('Alert.alert'),'DKDS must not show a second confirmation dialog before invoking Android installer.');
   assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
   assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');

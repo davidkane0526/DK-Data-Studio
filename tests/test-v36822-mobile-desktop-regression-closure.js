@@ -77,7 +77,7 @@ assert(material.includes('.plugin-manager-card{border-radius:11px;border-color:c
 
 const host=read('src/core/host/mobile-host-runtime.js'),presentationModel=read('src/core/ui/modules/presentation/model.js'),presentationPresenters=read('src/core/ui/modules/presentation/presenters.js'),appComposition=read('src/app/modules/dedicated-plugin-windows.js'),sheet=read('mobile/src/sheets/ShellActionSheet.tsx'),types=read('mobile/src/model/shell-types.ts');
 assert(!host.includes('querySelector')&&presentationModel.includes('appVersion:text(this.configured.appVersion)')&&presentationPresenters.includes('appVersion:core.appVersion')&&appComposition.includes(`appVersion:'${app.version}'`),'Mobile version must flow from Core Presentation state without reverse-reading Desktop DOM.');
-assert(types.includes('appVersion?: string')&&sheet.includes("DK Data Studio V{installedAppVersion || shell.appVersion || '—'}"),'Project management drawer must display the synchronized app version at its bottom.');
+assert(types.includes('appVersion?: string')&&sheet.includes("DK Data Studio v{installedAppVersion || shell.appVersion || '—'}"),'Project management drawer must display the synchronized app version at its bottom.');
 
 const vth=read('src/plugins/transfer-vth-lab/plugin.js');
 assert(vth.includes("legend:{enabled:true,placement:'top',maxRows:2}"),'Vth plot legend must stay on the top so no right-side blank strip remains on Desktop or Mobile.');
