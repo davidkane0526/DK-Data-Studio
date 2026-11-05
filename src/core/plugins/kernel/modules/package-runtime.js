@@ -217,11 +217,12 @@ const {addStyle}=require('./pages/panels');
     return [...active.keys()];
   }
 
-  function loadInlinePluginScript(source,label){
+  function loadInlinePluginScript(source,label,packageSource='builtin'){
     return new Promise((resolve,reject)=>{
       const script=document.createElement('script');
       script.async=false;
       script.dataset.dkdsExternalPlugin=label;
+      script.dataset.dkdsPackageSource=packageSource;
       script.textContent=`${String(source||'')}\n//# sourceURL=dkds-plugin://${encodeURIComponent(label)}`;
       let runtimeError=null;
       const onError=event=>{runtimeError=event?.error||new Error(event?.message||`External plugin script failed: ${label}`);};
@@ -275,9 +276,9 @@ const {addStyle}=require('./pages/panels');
       const assets=presentationAssets(manifest);
       const sharedScripts=manifest.scripts?.length?manifest.scripts:[manifest.entry];
       for(const file of [...sharedScripts,...(assets.platformScripts||[])]){
-        const source=pkg?.files?.[file];
-        if(typeof source!=='string')throw new Error(`External plugin script missing: ${file}`);
-        await loadInlinePluginScript(source,`${manifest.id}/${file}`);
+        const scriptContent=pkg?.files?.[file];
+        if(typeof scriptContent!=='string')throw new Error(`External plugin script missing: ${file}`);
+        await loadInlinePluginScript(scriptContent,`${manifest.id}/${file}`,source);
       }
       const created=definitions.filter(d=>!beforeIds.has(d.manifest.id));
       const unexpected=created.filter(d=>d.manifest.id!==manifest.id);
@@ -342,7 +343,19 @@ const {addStyle}=require('./pages/panels');
     const oldPackage=externalPackages.get(id)||pkg.previousPackage||null;
     const oldEnabled=existing?isDefinitionEnabled(existing):null;const oldPreference=preferenceFor(id);
     try{
-      if(existing){if(existing.packageSource!=='external')throw new Error(`不能覆盖内置插件：${id}`);await deactivate(id,{captureProject:true});removeDefinition(id);externalPackages.delete(id);}
+      if(existing){
+        // The generated distribution catalog is authoritative for built-ins.
+        // Plugin definitions begin with packageSource='builtin' while scripts
+        // register and may retain that provisional label after an interrupted
+        // external load. Never treat this provisional label as proof that the
+        // host actually bundles the plugin.
+        const distributed=generatedBuiltinRows().some(row=>startupRowId(row)===id);
+        if(distributed)throw new Error(`不能覆盖内置插件：${id}`);
+        await deactivate(id,{captureProject:true});
+        removeDefinition(id);
+        externalPackages.delete(id);
+        overridePackages.delete(id);
+      }
       const definition=await loadExternalPackage(pkg);
       if(isDefinitionEnabled(definition)){await activateDefinition(definition,{restoreCurrentProject:true});if(!active.has(id))throw new Error(disabled.get(id)||`Plugin ${id} failed to activate.`);}
       chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
@@ -608,7 +621,9 @@ const {addStyle}=require('./pages/panels');
       pluginTypeForManifest(manifest);
       if (definitions.some(d => d.manifest.id === manifest.id)) throw new Error(`Duplicate plugin id: ${manifest.id}`);
       if (typeof activate !== 'function') throw new Error(`Plugin ${manifest.id} must provide activate(api).`);
-      definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate, packageSource:'builtin', sourceIdentity:currentPluginSource(manifest) });
+      const declaredSource=String(document.currentScript?.dataset?.dkdsPackageSource||'builtin');
+      const packageSource=['external','override'].includes(declaredSource)?declaredSource:'builtin';
+      definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate, packageSource, sourceIdentity:currentPluginSource(manifest) });
     },
     configure(nextHost) {
       state.host = nextHost || {};resetPluginHostView();

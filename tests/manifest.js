@@ -1,5 +1,6 @@
 module.exports = {
   "test": [
+    { "file": "tests/test-dkds-no-builtin-4200-external-plugin.js", "args": [] },
     { "file": "tests/test-dkds-github-update-403.js", "args": [] },
     { "file": "tests/test-dkds-startup-update-ui.js", "args": [] },
     {
