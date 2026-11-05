@@ -76,7 +76,7 @@ export function UpdateDialog({ visible,version,palette,autoPrompt=false,onClose,
           <View style={[styles.column,{borderColor:palette.divider}]}>
             <Text style={[styles.section,{color:palette.text}]}>界面</Text>
             <Text style={[styles.detail,{color:palette.text}]}>{label[ui.status]||ui.status}</Text>
-            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>{ui.version?'v'+ui.version:'CSS 热更新'}</Text>
+            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>{ui.appVersion&&ui.buildId?'V'+ui.appVersion+' · '+ui.buildId:(ui.version?'V'+ui.version:'CSS 热更新')}</Text>
             {ui.error?<Text style={[styles.error,{color:palette.text}]} numberOfLines={3}>{ui.error}</Text>:null}
           </View>
         </View>
