@@ -1,7 +1,16 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {compareUiVersions,compareBuildIds,compareUiIdentities,compatible,selectUiRelease}=require('../desktop/ui-hot-update');
+const {compareUiVersions,compareBuildIds,compareUiIdentities,compatible,valid,FILES,selectUiRelease}=require('../desktop/ui-hot-update');
 const {pickRelease}=require('../desktop/native-update');
+const crypto=require('node:crypto');
+const bundleFiles=Object.fromEntries(FILES.map(name=>{
+  const bytes=Buffer.from('/* hot css */');
+  return [name,{bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),base64:bytes.toString('base64')}];
+}));
+const validBundle={schema:'dkds-ui-v2',repository:'davidkane0526/DK-Data-Studio',appVersion:'3.72.0',buildId:'a1234',files:bundleFiles};
+assert.match(valid(validBundle,'3.72.0'),/hot css/);
+assert.throws(()=>valid({...validBundle,schema:'dkds-ui-v1'},'3.72.0'));
+assert.throws(()=>valid({...validBundle,buildId:'3.72.1'},'3.72.0'));
 const asset={name:'DKDS-UI-bundle.json'};
 const uiRelease=(version,buildId,time)=>({tag_name:'dkds-ui-v'+version+'-'+buildId,published_at:time,draft:false,assets:[asset]});
 const androidRelease=(version,buildId,time)=>({tag_name:'dkds-android-v'+version+'-'+buildId,published_at:time,draft:false,assets:[asset]});
