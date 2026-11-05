@@ -53,7 +53,8 @@ global.ResizeObserver=undefined;
 const pkg=json('package.json');
 const app=json('mobile/app.json');
 const pulse=json('src/plugins/pulse-analysis/plugin.json');
-assert(/^3\.71\.(?:6[5-9]|[7-9]\d|\d{3,})$/.test(pkg.version),'App version must retain v3.71.65+ Pulse Unit result-flow baseline.');
+const appVersionAtLeast=(actual,minimum)=>{const a=String(actual).split('.').map(Number),b=String(minimum).split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(appVersionAtLeast(pkg.version,'3.71.65'),'App version must retain v3.71.65+ Pulse Unit result-flow baseline.');
 assert(Number(app.expo.android.versionCode)>=206,'Android versionCode must retain v3.71.65+ baseline.');
 assert(/^2\.12\.(?:[5-9]|\d{2,})$/.test(pulse.version),'Pulse Analysis version must retain the v2.12.5+ Unit result-flow baseline.');
 
