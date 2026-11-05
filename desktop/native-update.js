@@ -12,8 +12,8 @@ const {spawn}=require('node:child_process');
 const {pipeline}=require('node:stream/promises');
 const {Transform}=require('node:stream');
 const RELEASES='https://api.github.com/repos/davidkane0526/DK-Data-Studio/releases?per_page=100';
-const PREVIEW=/^dkds-windows-v\d+\.\d+\.\d+$/;
-const PORTABLE=/^DK-Data-Studio-Portable-(\d+\.\d+\.\d+)-x64\.exe$/;
+const PREVIEW=/^dkds-windows-v(\d+\.\d+\.\d+)-(a\d{4,})$/;
+const PORTABLE=/^DK-Data-Studio-Portable-(\d+\.\d+\.\d+)-(a\d{4,})-x64\.exe$/;
 const LIMIT=180*1024*1024;
 function trusted(url){
   return url.protocol==='https:'&&(
@@ -107,20 +107,29 @@ function newer(a,b){
   if(x.length!==3||y.length!==3||x.some(n=>!Number.isSafeInteger(n))||y.some(n=>!Number.isSafeInteger(n)))return false;
   return x.some((n,i)=>n>y[i]&&x.slice(0,i).every((value,k)=>value===y[k]));
 }
+function compareBuildIds(a,b){
+  const x=/^a(\d{4,})$/.exec(String(a||'')),y=/^a(\d{4,})$/.exec(String(b||''));
+  if(!x||!y)return 0;
+  const left=BigInt(x[1]),right=BigInt(y[1]);
+  return left===right?0:left>right?1:-1;
+}
 function pickRelease(releases,currentVersion){
   let best=null;
   for(const release of releases){
-    if(!PREVIEW.test(String(release.tag_name||''))||release.draft)continue;
+    const releaseMatch=PREVIEW.exec(String(release.tag_name||''));
+    if(!releaseMatch||release.draft)continue;
+    const releaseVersion=releaseMatch[1],releaseBuildId=releaseMatch[2];
     const assets=Array.isArray(release.assets)?release.assets:[];
-    const portable=assets.filter(a=>PORTABLE.test(String(a.name||'')));
-    for(const asset of portable){
-      const match=PORTABLE.exec(asset.name);if(!match||!newer(match[1],currentVersion))continue;
+    for(const asset of assets){
+      const match=PORTABLE.exec(String(asset.name||''));
+      if(!match||match[1]!==releaseVersion||match[2]!==releaseBuildId||!newer(releaseVersion,currentVersion))continue;
       const expected='https://github.com/davidkane0526/DK-Data-Studio/releases/download/'+release.tag_name+'/';
       if(!String(asset.browser_download_url||'').startsWith(expected))continue;
       if(!/^sha256:[a-f0-9]{64}$/i.test(String(asset.digest||'')))continue;
       if(!Number.isSafeInteger(asset.size)||asset.size<1000000||asset.size>LIMIT)continue;
-      if(!best||newer(match[1],best.version)){
-        best=Object.freeze({version:match[1],url:asset.browser_download_url,
+      if(!best||newer(releaseVersion,best.version)||
+        (releaseVersion===best.version&&compareBuildIds(releaseBuildId,best.buildId)>0)){
+        best=Object.freeze({version:releaseVersion,buildId:releaseBuildId,url:asset.browser_download_url,
           digest:asset.digest.slice(7).toLowerCase(),size:asset.size});
       }
     }
@@ -222,4 +231,4 @@ function createPortableUpdater({app,userData,scriptPath,currentVersion,portableP
   }
   return Object.freeze({check,install,status});
 }
-module.exports={createPortableUpdater,pickRelease,newer,trusted,openHttps,readJson,githubHttpError,RELEASES};
+module.exports={createPortableUpdater,pickRelease,newer,compareBuildIds,trusted,openHttps,readJson,githubHttpError,RELEASES};
