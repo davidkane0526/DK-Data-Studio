@@ -27,6 +27,12 @@ for(const row of builtins){
 }
 assert(!builtins.some(row=>row.id==='com.dkts.keithley-4200'),'DKTS must remain an external installation');
 const runtimeSource=fs.readFileSync(path.join(root,'src/core/plugins/kernel/modules/package-runtime.js'),'utf8');
+assert(runtimeSource.includes("RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200'])"),
+  'Runtime must reserve the retired DKDS-owned 4200 identity');
+assert(runtimeSource.includes(".filter(row=>!RETIRED_PLUGIN_IDS.has(startupRowId(row)))"),
+  'Stale generated catalogs must not re-register the retired built-in plugin');
+assert(runtimeSource.includes("if(RETIRED_PLUGIN_IDS.has(String(manifest.id)))"),
+  'The plugin API must fail closed if the retired built-in entry is loaded directly');
 assert(runtimeSource.includes('generatedBuiltinRows().some(row=>startupRowId(row)===id)'),
   'renderer must use the authoritative distribution catalog rather than temporary registration source');
 assert(!runtimeSource.includes("existing.packageSource!=='external'"),
@@ -35,6 +41,11 @@ assert(runtimeSource.includes('script.dataset.dkdsPackageSource=packageSource'),
   'external code must tag itself at registration, not rely on the temporary builtin label');
 assert(runtimeSource.includes("document.currentScript?.dataset?.dkdsPackageSource||'builtin'"),
   'registry must preserve original package source during registration');
+const desktopSource=fs.readFileSync(path.join(root,'desktop/main-modules/plugin-package-runtime.js'),'utf8');
+assert(desktopSource.includes("RETIRED_BUILTIN_PLUGIN_IDS=new Set(['com.dkds.keithley-4200'])"),
+  'Desktop host must reserve the retired DKDS-owned 4200 identity');
+assert(desktopSource.includes("reason:'retired-dkds-builtin-migrated-to-dkts'"),
+  'Desktop host must delete old external and override package files during migration');
 const bridgeSource=fs.readFileSync(path.join(root,'src/web-bridge.js'),'utf8');
 assert(bridgeSource.includes("MOBILE_RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200'])"),
   'Android must explicitly recognize the retired built-in identity');
