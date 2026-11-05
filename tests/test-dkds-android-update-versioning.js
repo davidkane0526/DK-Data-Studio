@@ -44,6 +44,7 @@ try{
   assert(windows.includes('dkds-windows-v$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID'));
   assert(windows.includes('DK-Data-Studio-Portable-$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID-x64.exe'));
   assert(windows.includes('V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID'));
+  assert(windows.includes('--title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID"'),'Windows Release create/edit titles must both expose Vx.y.z aNNNN.');
   assert(!windows.includes('npm version $ciVersion'),'Windows CI must not rewrite the stable application version.');
   assert(windows.includes('gh release upload $tag $portableExe --clobber'),'Windows full installer release must be rerunnable for the same aNNNN build.');
   const hotWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
@@ -52,10 +53,12 @@ try{
   assert(hotWorkflow.includes('node tools/updates/validate-update-scope.cjs'));
   assert(!hotWorkflow.includes('10000+Number(process.env.GITHUB_RUN_NUMBER)'));
   assert(hotWorkflow.includes('DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}'));
+  assert(hotWorkflow.includes('--title "DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}"'),'UI hot-update Release create/edit titles must both expose Vx.y.z aNNNN.');
   assert(hotWorkflow.includes('gh release upload "$tag" dist/DKDS-UI-bundle.json --repo "$GITHUB_REPOSITORY" --clobber'));
   assert(workflow.includes('gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json"'));
   assert(workflow.includes('--repo "$GITHUB_REPOSITORY" --clobber'));
   assert(workflow.includes('DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}'));
+  assert(workflow.includes('--title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}"'),'Android Release create/edit titles must both expose Vx.y.z aNNNN.');
   const desktopNative=fs.readFileSync(path.join(root,'desktop/native-update.js'),'utf8');
   assert(desktopNative.includes('dkds-windows-v(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})'));
   assert(desktopNative.includes('DK-Data-Studio-Portable-(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})-x64\\.exe'));
