@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
   shutdownSmokeMode: process.env.DKDS_WINDOW_COMMAND_CLOSE_SMOKE === '1',
+  getShutdownSmokeMode: () => ipcRenderer.invoke('system:getShutdownSmokeMode'),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
   releaseActivityWindow: payload => ipcRenderer.invoke('windows:releaseActivity', payload || {}),
   minimizeCurrentWindow: () => ipcRenderer.invoke('windows:minimizeCurrent'),
