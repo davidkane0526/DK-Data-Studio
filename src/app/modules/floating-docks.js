@@ -189,7 +189,8 @@ async function checkUiHotUpdate(){
     const info=await window.electronAPI?.uiHotCheck?.()||{status:'unsupported'};
     if(info.status==='updated')await window.DKDSUIHot?.refresh?.();
     const names={updated:'界面热更新已应用，无需重启',current:'当前已是最新界面',error:'更新失败',unsupported:'当前平台不支持此更新'};
-    if(label)label.textContent=(names[info.status]||info.status)+(info.version?' · v'+info.version:'')+(info.error?'：'+info.error:'');
+    const identity=info.appVersion&&info.buildId?' · V'+info.appVersion+' '+info.buildId:(info.version?' · V'+info.version:'');
+    if(label)label.textContent=(names[info.status]||info.status)+identity+(info.error?'：'+info.error:'');
     return info;
   }catch(error){if(label)label.textContent='热更新失败：'+String(error.message||error).slice(0,150);return {status:'error'};}
 }
