@@ -9,6 +9,17 @@ on:
     paths:
       - '.github/workflows/build-android.yml'
       - 'mobile/**'
+      - 'desktop/**'
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'services/update-server/**'
+      - 'tools/windows/**'
+      - 'scripts/**'
       - 'src/**'
       - 'scripts/generate-brand-assets.js'
       - 'scripts/generate-plugin-index.js'
@@ -22,12 +33,24 @@ on:
   pull_request:
     branches:
       - main
+      - '4200'
     paths:
       - 'mobile/**'
       - 'src/**'
       - 'scripts/generate-brand-assets.js'
       - 'scripts/generate-plugin-index.js'
       - 'scripts/validate-plugins.js'
+      - 'desktop/**'
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'services/update-server/**'
+      - 'tools/windows/**'
+      - 'scripts/**'
   workflow_dispatch:
 
 permissions:
