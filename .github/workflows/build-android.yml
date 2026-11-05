@@ -366,7 +366,7 @@ jobs:
           else
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease --latest=false
           fi
           gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \
