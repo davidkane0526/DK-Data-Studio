@@ -11,6 +11,8 @@
   const projectFileHandles = new Map();
   const nativePending = new Map();
   const pluginInstallPending = new Map();
+  const MOBILE_RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200']);
+  const assertCurrentExternalPluginId=id=>{if(MOBILE_RETIRED_PLUGIN_IDS.has(String(id||'')))throw new Error('旧版 DKDS 内置 4200 插件已退役。请安装 DK Test Studio 当前生成的独立插件包（com.dkts.keithley-4200）。');};
   const nativeBridge = window.ReactNativeWebView?.postMessage
     ? window.ReactNativeWebView
     : null;
@@ -185,7 +187,14 @@
   }
 
   const mobilePluginGet=id=>mobilePluginStore('readonly',store=>store.get(String(id||'')));
-  const mobilePluginList=()=>mobilePluginStore('readonly',store=>store.getAll());
+  const mobilePluginList=async()=>{
+    const packages=await mobilePluginStore('readonly',store=>store.getAll());
+    const retired=packages.filter(pkg=>MOBILE_RETIRED_PLUGIN_IDS.has(String(pkg?.manifest?.id||'')));
+    if(retired.length)await mobilePluginStore('readwrite',store=>{
+      let last=null;for(const pkg of retired)last=store.delete(String(pkg?.manifest?.id||''));return last;
+    });
+    return packages.filter(pkg=>!MOBILE_RETIRED_PLUGIN_IDS.has(String(pkg?.manifest?.id||'')));
+  };
   const mobilePluginPut=pkg=>mobilePluginStore('readwrite',store=>store.put(pkg));
   const mobilePluginDelete=id=>mobilePluginStore('readwrite',store=>store.delete(String(id||'')));
 
@@ -523,6 +532,7 @@
         const decoded=decodeBytes(await nativeFileBytes(asset),'utf-8');
         const pkg=window.DKDSMobilePluginPackage?.normalize(decoded.text);
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        assertCurrentExternalPluginId(pkg.manifest.id);
         const previous=await mobilePluginGet(pkg.manifest.id),token=`plugin-${uuid()}`;
         pluginInstallPending.set(token,{pkg,previous});
         return {ok:true,token,manifest:pkg.manifest,exists:!!previous,previousVersion:previous?.manifest?.version||null};
@@ -541,6 +551,7 @@
       try{
         const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        assertCurrentExternalPluginId(pkg.manifest.id);
         return {ok:true,package:pkg,manifest:pkg.manifest};
       }catch(err){return {ok:false,error:{title:'生成插件包无效',message:String(err?.message||err),code:'mobile-generated-package-invalid'}};}
     },
@@ -550,6 +561,7 @@
         const raw=payload?.package||payload;
         const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
         if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        assertCurrentExternalPluginId(pkg.manifest.id);
         const previous=await mobilePluginGet(pkg.manifest.id);
         const installed={...pkg,installedAt:new Date().toISOString(),generatedBy:String(payload?.source||'studio-kernel')};
         await mobilePluginPut(installed);
@@ -559,6 +571,7 @@
     pluginRestorePackage: async payload=>{
       if(!nativeBridge)return false;
       const id=String(payload?.id||payload?.package?.manifest?.id||'');
+      if(MOBILE_RETIRED_PLUGIN_IDS.has(id)){await mobilePluginDelete(id);return true;}
       if(payload?.package)await mobilePluginPut(payload.package);else if(id)await mobilePluginDelete(id);
       return true;
     },
