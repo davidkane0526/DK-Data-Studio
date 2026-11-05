@@ -1,3 +1,5 @@
+> **V3.72.1 Release — Android 更新流程精简**：移除 DKDS 在 APK 安装前额外弹出的“安装更新/继续”确认框。点击“下载并安装”后，软件直接下载或复用 APK，完成 SHA-256 与签名校验，再调用 Android 系统安装器。Android 系统自身的安装确认和未知来源安装权限提示仍保留。本次修改涉及应用 JavaScript 逻辑，不属于 CSS 热更新范围，因此完整程序版本由 V3.72.0 升至 V3.72.1。Windows 便携版和 Android APK 均按 V3.72.1 与同一 aNNNN 构建编号发布。
+
 > **v3.72.0 Release — 内置通用通信接口与跨平台软件内更新（开发分支 4200）**：DKDS 内置协议无关的 TCP/IP 通信插件，提供以太网、Wi-Fi、局域网连接及原始字节收发服务，不包含 4200A 仪器控制、专用测试逻辑或相关内置插件。DK Test Studio 的仪器功能通过独立 `.dkplugin` 安装。Windows 便携版和 Android 均可点击软件版本号检查完整程序更新；界面样式支持校验后直接热更新，且可独立发布，无需重新构建 EXE/APK。完整 JavaScript 工作区和原生功能仍通过正式程序更新发布。本版本为开发预览，真机验收结果以设备测试为准。
 
 > **v3.72.0 Release — 稳定程序版本与独立热更新编号（开发分支 4200）**：完整程序版本固定为 V3.72.0；每次提交通过完整 Git 历史生成唯一且双端一致的 aNNNN 热更新编号。Windows 与 Android 每次开发均构建完整安装包，Actions 和 GitHub Release 同时标注 V3.72.0 与 aNNNN。纯 CSS 热更新只推进 aNNNN；当本机程序版本相同，客户端只应用热更新，不向用户显示完整安装更新。完整 Portable EXE 与 Android APK 始终保留在 GitHub Releases，可手动下载。Android versionName 保持 V3.72.0，versionCode 独立递增以支持同版本 APK 覆盖安装。此次从旧 CI 递增版本迁移，V3.72.0 高于此前 Windows 3.71.577 和 Android 3.71.1623，避免安装版本倒退。
