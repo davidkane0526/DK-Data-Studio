@@ -14,6 +14,18 @@ const {pluginHostView,resetPluginHostView}=require('./host-facade');
 const {addStyle}=require('./pages/panels');
 
 const RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200']);
+function purgeRetiredPluginPreferences(){
+  const id='com.dkds.keithley-4200';
+  try{
+    for(const key of [preferenceStorageKey,prewarmPreferenceStorageKey]){
+      const raw=localStorage.getItem(key);if(!raw)continue;
+      const saved=JSON.parse(raw);if(!saved||typeof saved!=='object'||Array.isArray(saved)||!Object.prototype.hasOwnProperty.call(saved,id))continue;
+      delete saved[id];localStorage.setItem(key,JSON.stringify(saved));
+    }
+    if(String(localStorage.getItem(superPreferenceStorageKey)||'').trim()===id)localStorage.removeItem(superPreferenceStorageKey);
+  }catch{}
+}
+purgeRetiredPluginPreferences();
 
 
   function activePresentationPlatform(){
