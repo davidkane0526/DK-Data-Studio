@@ -27,6 +27,8 @@ for(const row of builtins){
 }
 assert(!builtins.some(row=>row.id==='com.dkts.keithley-4200'),'DKTS must remain an external installation');
 const runtimeSource=fs.readFileSync(path.join(root,'src/core/plugins/kernel/modules/package-runtime.js'),'utf8');
+assert(runtimeSource.includes('purgeRetiredPluginPreferences();'),
+  'The host must clear stale enabled/prewarm/SUPER preferences for the retired plugin');
 assert(runtimeSource.includes("RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200'])"),
   'Runtime must reserve the retired DKDS-owned 4200 identity');
 assert(runtimeSource.includes(".filter(row=>!RETIRED_PLUGIN_IDS.has(startupRowId(row)))"),
