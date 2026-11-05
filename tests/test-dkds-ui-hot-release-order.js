@@ -19,7 +19,8 @@ assert.equal(compareUiVersions('3.72.0','3.72.0'),0);
 assert.equal(compareBuildIds('a1235','a1234'),1);
 assert.equal(compareBuildIds('a01234','a1234'),0);
 assert.equal(compareUiIdentities({appVersion:'3.72.0',buildId:'a1235'},{appVersion:'3.72.0',buildId:'a1234'}),1);
-assert.equal(compatible('3.72.1','3.72.0'),true);
+assert.equal(compatible('3.72.0','3.72.0'),true);
+assert.equal(compatible('3.72.1','3.72.0'),false,'a newer app version requires its complete installer first');
 assert.equal(compatible('3.73.0','3.72.0'),false,'hot CSS must not cross the app release line');
 assert.equal(compatible('3.71.999','3.72.0'),false,'older app version cannot supply hot CSS');
 const rows=[
