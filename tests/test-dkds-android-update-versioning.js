@@ -43,10 +43,15 @@ try{
   assert(windows.includes('DK-Data-Studio-Portable-$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID-x64.exe'));
   assert(windows.includes('V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID'));
   assert(!windows.includes('npm version $ciVersion'),'Windows CI must not rewrite the stable application version.');
+  assert(windows.includes('gh release upload $tag $portableExe --clobber'),'Windows full installer release must be rerunnable for the same aNNNN build.');
   const hotWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
   assert(hotWorkflow.includes('DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION"'));
   assert(hotWorkflow.includes('DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID"'));
   assert(!hotWorkflow.includes('10000+Number(process.env.GITHUB_RUN_NUMBER)'));
+  assert(hotWorkflow.includes('DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}'));
+  assert(hotWorkflow.includes('gh release upload "$tag" dist/DKDS-UI-bundle.json --repo "$GITHUB_REPOSITORY" --clobber'));
+  assert(workflow.includes('gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json"'));
+  assert(workflow.includes('--repo "$GITHUB_REPOSITORY" --clobber'));
   const desktopNative=fs.readFileSync(path.join(root,'desktop/native-update.js'),'utf8');
   assert(desktopNative.includes('dkds-windows-v(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})'));
   assert(desktopNative.includes('DK-Data-Studio-Portable-(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})-x64\\\\.exe'));
