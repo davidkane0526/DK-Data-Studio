@@ -356,7 +356,7 @@ jobs:
           EOF
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease
           else
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
