@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
-// Workflow-scoped build identity. Android's versionCode must increase even
-// when multiple source commits share the same app.json version.
+// Keep Android versionName equal to the stable application version.
+// Only versionCode changes per Actions run so a manually downloaded APK can
+// replace an older APK with the same Vx.y.z app version.
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
@@ -11,7 +12,7 @@ if(!Number.isSafeInteger(run)||run<1||run>1000000)
 const source=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 const match=/^(\d+)\.(\d+)\.(\d+)$/.exec(source);
 if(!match)throw Error('Invalid source application version: '+source);
-const version=match[1]+'.'+match[2]+'.'+(1000+run);
+const version=source;
 const versionCode=100000+run;
 if(process.argv.includes('--print')){process.stdout.write(version);process.exit(0);}
 const appFile=path.join(root,'mobile','app.json');
@@ -25,5 +26,7 @@ const pack=JSON.parse(fs.readFileSync(packFile,'utf8'));
 pack.version=version;
 fs.writeFileSync(packFile,JSON.stringify(pack,null,2)+'\n');
 if(process.env.GITHUB_ENV)
-  fs.appendFileSync(process.env.GITHUB_ENV,'DKDS_ANDROID_BUILD_VERSION='+version+'\n');
-console.log('Stamped DKDS Android '+version+' (versionCode '+versionCode+')');
+  fs.appendFileSync(process.env.GITHUB_ENV,
+    'DKDS_ANDROID_APP_VERSION='+version+'\n'+
+    'DKDS_ANDROID_VERSION_CODE='+versionCode+'\n');
+console.log('Stamped DKDS Android app version V'+version+' (versionCode '+versionCode+')');

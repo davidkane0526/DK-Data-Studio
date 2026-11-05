@@ -4,7 +4,7 @@ import { nativeHost } from '../host/protocol';
 import type { Palette } from '../theme/palette';
 
 type UpdateState = { status:string; version?:string; installedVersion?:string; progress?:number; error?:string };
-type UiState = { status:string; version?:string; tag?:string; error?:string; applied?:boolean };
+type UiState = { status:string; version?:string; appVersion?:string; buildId?:string; tag?:string; error?:string; applied?:boolean };
 type Props = { visible:boolean; version:string; palette:Palette; autoPrompt?:boolean; onClose:()=>void; onUiCss:(css:string)=>void };
 const label:Record<string,string> = {
   idle:'未检查',checking:'检查中',current:'已是最新',available:'有新版本',
@@ -70,13 +70,13 @@ export function UpdateDialog({ visible,version,palette,autoPrompt=false,onClose,
           <View style={[styles.column,{borderColor:palette.divider}]}>
             <Text style={[styles.section,{color:palette.text}]}>程序</Text>
             <Text style={[styles.detail,{color:palette.text}]} numberOfLines={2}>{label[native.status]||native.status}{native.status==='downloading'?' '+(native.progress||0)+'%':''}</Text>
-            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>v{native.installedVersion||version}{native.version&&native.version!==native.installedVersion?' → '+native.version:''}</Text>
+            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>V{native.installedVersion||version}{native.version&&native.version!==native.installedVersion?' → V'+native.version:''}</Text>
             {native.error?<Text style={[styles.error,{color:palette.text}]} numberOfLines={3}>{native.error}</Text>:null}
           </View>
           <View style={[styles.column,{borderColor:palette.divider}]}>
             <Text style={[styles.section,{color:palette.text}]}>界面</Text>
             <Text style={[styles.detail,{color:palette.text}]}>{label[ui.status]||ui.status}</Text>
-            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>{ui.version?'v'+ui.version:'CSS 热更新'}</Text>
+            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>{ui.appVersion&&ui.buildId?'V'+ui.appVersion+' · '+ui.buildId:(ui.version?'V'+ui.version:'CSS 热更新')}</Text>
             {ui.error?<Text style={[styles.error,{color:palette.text}]} numberOfLines={3}>{ui.error}</Text>:null}
           </View>
         </View>
