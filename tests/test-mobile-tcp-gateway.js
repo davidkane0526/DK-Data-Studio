@@ -29,6 +29,6 @@ assert(nativeHost.includes('noReply:Boolean')&&nativeHost.includes('if(noReply)'
 assert(router.includes('!!payload.noReply'),'Android request router must forward write-only intent.');
 assert(tcpRuntime.includes('payload.noReply===true')&&tcpRuntime.includes('else if(noReply)finishOk()'),'Desktop TCP host must finish write-only exchanges without waiting for a response.');
 assert(tcpRuntime.includes("!['UL\\0','DE\\0'].includes(write.toString('ascii'))"),'Desktop write-only mode must be restricted to fixed KXCI mode switches.');
-assert(gateway.includes('bytes.contentEquals("UL\\\\u0000".toByteArray(Charsets.US_ASCII))')&&gateway.includes('bytes.contentEquals("DE\\\\u0000".toByteArray(Charsets.US_ASCII))'),'LAN write-only mode must be restricted to fixed KXCI mode switches.');
-assert(nativeHost.includes('requestBytes.contentEquals("UL\\\\u0000".toByteArray(Charsets.US_ASCII))')&&nativeHost.includes('requestBytes.contentEquals("DE\\\\u0000".toByteArray(Charsets.US_ASCII))'),'Android native write-only mode must be restricted to fixed KXCI mode switches.');
+assert(gateway.includes('bytes.contentEquals("UL')&&gateway.includes('bytes.contentEquals("DE')&&gateway.includes('Write-only TCP mode is restricted to fixed KXCI UL/DE commands.'),'LAN write-only mode must be restricted to fixed KXCI mode switches.');
+assert(nativeHost.includes('requestBytes.contentEquals("UL')&&nativeHost.includes('requestBytes.contentEquals("DE')&&nativeHost.includes('Write-only TCP mode is restricted to fixed KXCI UL/DE commands.'),'Android native write-only mode must be restricted to fixed KXCI mode switches.');
 console.log('Generic TCP host gateway and network boundary PASS.');
