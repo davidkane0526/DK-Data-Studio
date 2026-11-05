@@ -342,7 +342,19 @@ const {addStyle}=require('./pages/panels');
     const oldPackage=externalPackages.get(id)||pkg.previousPackage||null;
     const oldEnabled=existing?isDefinitionEnabled(existing):null;const oldPreference=preferenceFor(id);
     try{
-      if(existing){if(existing.packageSource!=='external')throw new Error(`不能覆盖内置插件：${id}`);await deactivate(id,{captureProject:true});removeDefinition(id);externalPackages.delete(id);}
+      if(existing){
+        // The generated distribution catalog is authoritative for built-ins.
+        // Plugin definitions begin with packageSource='builtin' while scripts
+        // register and may retain that provisional label after an interrupted
+        // external load. Never treat this provisional label as proof that the
+        // host actually bundles the plugin.
+        const distributed=generatedBuiltinRows().some(row=>startupRowId(row)===id);
+        if(distributed)throw new Error(`不能覆盖内置插件：${id}`);
+        await deactivate(id,{captureProject:true});
+        removeDefinition(id);
+        externalPackages.delete(id);
+        overridePackages.delete(id);
+      }
       const definition=await loadExternalPackage(pkg);
       if(isDefinitionEnabled(definition)){await activateDefinition(definition,{restoreCurrentProject:true});if(!active.has(id))throw new Error(disabled.get(id)||`Plugin ${id} failed to activate.`);}
       chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
