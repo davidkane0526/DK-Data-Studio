@@ -34,6 +34,7 @@ on:
   pull_request:
     branches:
       - main
+      - '4200'
     paths:
       - 'main.js'
       - 'plugin-window-manager.js'
