@@ -20,6 +20,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-tcp-write-only.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v371115-plot-export-desktop-lifecycle-brand.js",
       "args": []
     },
