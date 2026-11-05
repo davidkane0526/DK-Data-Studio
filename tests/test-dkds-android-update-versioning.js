@@ -68,12 +68,15 @@ try{
   assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');
   const changelog=fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8');
   assert(changelog.includes('# 3.72.1 — Direct Android update installation'));
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.1');
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.1');
+  assert(changelog.includes('# 3.72.2 — KXCI write-only TCP transport'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.2');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.2');
   const updateScope=require(path.join(root,'tools/updates/validate-update-scope.cjs'));
   const hotScope=updateScope.validateUpdateScope({changedPaths:['src/styles/platform/native-client-shell.css'],baseVersion:'3.72.1',currentVersion:'3.72.1'});
   assert.equal(hotScope.channel,'hot-update-only');
   const fullScope=updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.1'});
+  const transportScope=updateScope.validateUpdateScope({changedPaths:['desktop/main-modules/tcp-runtime.js','mobile/plugins/withDkdsAndroidNativeHost.js'],baseVersion:'3.72.1',currentVersion:'3.72.2'});
+  assert.equal(transportScope.channel,'full-app');
   assert.equal(fullScope.channel,'full-app');
   assert.throws(()=>updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.0'}),{code:'FULL_APP_VERSION_BUMP_REQUIRED'});
   const hotWorkflowText=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');

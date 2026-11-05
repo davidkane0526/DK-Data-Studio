@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
 const versionTuple=String(pkg.version||'0.0.0').split('.').slice(0,3).map(Number);
 assert(versionTuple[0]>3||(versionTuple[0]===3&&(versionTuple[1]>67||(versionTuple[1]===67&&versionTuple[2]>=10))),'Visual Closure freeze baseline applies to v3.67.10 and later patch releases.');
-assert(read('README_CN.md').includes(`当前版本：**v${pkg.version}**`),'README must expose the current application release identity.');
+assert(read('README_CN.md').includes(`当前版本：**V${pkg.version}**`),'README must expose the current application release identity.');
 assert(read('CHANGELOG.md').includes(pkg.version)&&read('CHANGELOG.md').includes('Desktop Visual Closure'),'CHANGELOG must expose the current patch delivery while retaining visual-closure history.');
 const audit=read('docs/VISUAL_CLOSURE_FINAL_FREEZE_AUDIT_3.67.10.md');
 for(const token of ['STATUS: REOPENED / SUPERSEDED','47 PASS','0 FAIL','occludedMaterial=0','rendererOk=true','appearanceOk=true','38','Electron 43.4.0']) assert(audit.includes(token),`Historical audit must retain ${token}.`);

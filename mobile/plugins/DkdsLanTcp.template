@@ -219,7 +219,9 @@ private object DkdsLanTcp {
       val readTimeout=bounded(p.optInt("readTimeoutMs",5000),250,120000,"read timeout")
       val idleTimeout=bounded(p.optInt("idleTimeoutMs",120),20,10000,"idle timeout")
       val maxBytes=bounded(p.optInt("maxBytes",65536),1,MAX_RESPONSE_BYTES,"response size")
+      val noReply=p.optBoolean("noReply",false)
       row.socket.getOutputStream().apply{write(bytes);flush()}
+      if(noReply){row.lastUsed=System.currentTimeMillis();return JSONObject().put("base64","").put("bytesRead",0)}
       val output=ByteArrayOutputStream()
       val input=row.socket.getInputStream()
       val buffer=ByteArray(4096)

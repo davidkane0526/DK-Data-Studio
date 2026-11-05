@@ -111,8 +111,8 @@ if (version !== current && fs.existsSync(mobileAppPath)) {
 const indexPath = path.join(root, 'src', 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 html = html.replace(
-  /<span class="version">v[^<]+<\/span>/,
-  `<span class="version">v${version}</span>`
+  /<span class="version">V[^<]+<\/span>/,
+  `<span class="version">V${version}</span>`
 );
 fs.writeFileSync(indexPath, html, 'utf8');
 
@@ -142,8 +142,8 @@ const readmePath = path.join(root, 'README_CN.md');
 if (fs.existsSync(readmePath)) {
   const before = fs.readFileSync(readmePath, 'utf8');
   const after = before
-    .replace(/^# DK Data Studio — v[^\r\n]+/m, `# DK Data Studio — v${version}`)
-    .replace(/^(当前版本：\*\*v)[^*]+(\*\*)/m, `$1${version}$2`);
+    .replace(/^# DK Data Studio — V[^\r\n]+/m, `# DK Data Studio — v${version}`)
+    .replace(/^(当前版本：\*\*V)[^*]+(\*\*)/m, `$1${version}$2`);
   if (after !== before) fs.writeFileSync(readmePath, after, 'utf8');
 }
 

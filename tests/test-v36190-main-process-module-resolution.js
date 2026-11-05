@@ -49,10 +49,10 @@ assert(!main.includes("src/core/project-format"),'desktop/main.js must not refer
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 const readme=fs.readFileSync(path.join(root,'README_CN.md'),'utf8');
 assert(
-  readme.includes(`当前版本：**v${pkg.version}**`),
+  readme.includes(`当前版本：**V${pkg.version}**`),
   'README current-version marker must match package.json'
 );
 const versionScript=fs.readFileSync(path.join(root,'scripts','set-version.js'),'utf8');
-assert(versionScript.includes('当前版本：\\*\\*v'),'set-version.js must update the current README version marker');
+assert(versionScript.includes('当前版本：\\*\\*V'),'set-version.js must update the current README version marker');
 
 console.log(`v3.61.90 main-process module resolution PASS (${seen.size} local modules checked)`);

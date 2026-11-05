@@ -1,3 +1,10 @@
+# 3.72.2 — KXCI write-only TCP transport
+
+- Add explicit no-reply TCP writes for KXCI `UL` and `DE` mode switches across DKTS Windows/Android and DKDS desktop/Android/LAN hosts.
+- Preserve the same TCP session for subsequent read-only SystemUtil queries; tests model no reply for `UL`/`DE` and NUL-delimited command coalescing.
+- Keep instrument discovery read-only; no SMU/PMU/PGU output or measurement executor is enabled.
+- Bump stable application version from `V3.72.1` to `V3.72.2`; the hot-update identity remains independent as `aNNNN`.
+
 # 3.72.1 — Direct Android update installation
 
 - Removes DKDS's redundant confirmation dialog before APK installation. Selecting “下载并安装” now immediately downloads (or reuses) the APK, verifies its SHA-256 digest and signing certificate, and invokes the Android package installer. Android's own system installation/permission confirmations remain in place.
