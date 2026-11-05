@@ -1,12 +1,12 @@
-# 3.72.1 — Direct Android update installation
+# v3.72.1 — Direct Android update installation
 
 - Removes DKDS's redundant confirmation dialog before APK installation. Selecting “下载并安装” now immediately downloads (or reuses) the APK, verifies its SHA-256 digest and signing certificate, and invokes the Android package installer. Android's own system installation/permission confirmations remain in place.
-- This change modifies the React Native application logic and is not part of the CSS-only hot-update allowlist; therefore the complete application version advances from `V3.72.0` to `V3.72.1`.
-- Windows Portable EXE and Android APK builds retain the stable application version `V3.72.1` and share the same per-commit hot-update identity `aNNNN`. Full installers remain published for manual download; CSS-only updates continue to advance only the `aNNNN` identity.
+- This change modifies the React Native application logic and is not part of the CSS-only hot-update allowlist; therefore the complete application version advances from `v3.72.0` to `v3.72.1`.
+- Windows Portable EXE and Android APK builds retain the stable application version `v3.72.1` and share the same per-commit hot-update identity `aNNNN`. Full installers remain published for manual download; CSS-only updates continue to advance only the `aNNNN` identity.
 
 # 3.72.0 — Stable application version and independent hot-update identity
 
-- Establishes `V3.72.0` as the stable DKDS application version for the migration from CI-stamped version names. Windows and Android full installers are built on every development commit without rewriting the application version.
+- Establishes `v3.72.0` as the stable DKDS application version for the migration from CI-stamped version names. Windows and Android full installers are built on every development commit without rewriting the application version.
 - Every commit receives one shared, deterministic hot-update identity (`aNNNN`) derived from the full Git history. Windows, Android and CSS hot-update Actions/Release records display the same `V3.72.0 aNNNN` identity.
 - CSS hot updates advance only the `aNNNN` identity. When the installed application version is already current, the client applies the hot update and does not offer or prompt for a complete installer/APK update. Complete platform installers remain downloadable from GitHub Releases for manual installation.
 - Android keeps `versionName=3.72.0` stable while monotonically increasing `versionCode` for each APK build, so a manually downloaded same-version APK can replace an earlier build.
