@@ -47,6 +47,7 @@ try{
   const hotWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
   assert(hotWorkflow.includes('DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION"'));
   assert(hotWorkflow.includes('DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID"'));
+  assert(hotWorkflow.includes('node tools/updates/validate-update-scope.cjs'));
   assert(!hotWorkflow.includes('10000+Number(process.env.GITHUB_RUN_NUMBER)'));
   assert(hotWorkflow.includes('DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}'));
   assert(hotWorkflow.includes('gh release upload "$tag" dist/DKDS-UI-bundle.json --repo "$GITHUB_REPOSITORY" --clobber'));
