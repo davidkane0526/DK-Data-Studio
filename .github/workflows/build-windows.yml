@@ -459,7 +459,7 @@ jobs:
           Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8
           gh release view $tag *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
+            gh release create $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
             if ($LASTEXITCODE -ne 0) {
               Start-Sleep -Seconds 2
               gh release view $tag *> $null
