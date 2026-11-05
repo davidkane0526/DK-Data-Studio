@@ -189,7 +189,7 @@ async function checkUiHotUpdate(){
     const info=await window.electronAPI?.uiHotCheck?.()||{status:'unsupported'};
     if(info.status==='updated')await window.DKDSUIHot?.refresh?.();
     const names={updated:'界面热更新已应用，无需重启',current:'当前已是最新界面',error:'更新失败',unsupported:'当前平台不支持此更新'};
-    const identity=info.appVersion&&info.buildId?' · V'+info.appVersion+' '+info.buildId:(info.version?' · V'+info.version:'');
+    const identity=info.appVersion&&info.buildId?' · v'+info.appVersion+' '+info.buildId:(info.version?' · v'+info.version:'');
     if(label)label.textContent=(names[info.status]||info.status)+identity+(info.error?'：'+info.error:'');
     return info;
   }catch(error){if(label)label.textContent='热更新失败：'+String(error.message||error).slice(0,150);return {status:'error'};}
@@ -208,7 +208,7 @@ async function displayOnlineUpdate(result={}){
     error:'检查或安装失败'
   };
   const el=$('#onlineUpdateStatus');
-  if(el)el.textContent=(label[state]||state)+(result.version?' · V'+result.version:'')+
+  if(el)el.textContent=(label[state]||state)+(result.version?' · v'+result.version:'')+
     (state==='downloading'?' · '+Math.max(0,Math.min(100,Number(result.progress)||0))+'%':'')+
     (result.error?'：'+String(result.error).slice(0,160):'');
   $('#onlineUpdateInstallBtn')?.classList.toggle('hidden',!(state==='available'||state==='ready'));
