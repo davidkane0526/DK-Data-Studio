@@ -35,6 +35,13 @@ assert(chrome.includes('function sync(page=null)')&&chrome.includes('function pr
 assert(chrome.includes('minimizeCurrentWindow')&&chrome.includes('toggleMaximizeCurrentWindow')&&chrome.includes('closeCurrentWindow')&&chrome.includes('getCurrentWindowState'),'Self-drawn titlebar controls must bind the current Core window-control IPC contract.');
 assert(chrome.includes("document.body.dataset.dkdsWindowControls='ready'"),'Window-control readiness must be observable by runtime diagnostics.');
 
+const main=read('desktop/main.js');
+const preload=read('desktop/preload.js');
+const windowChrome=read('src/app/modules/window-chrome.js');
+assert(main.includes("ipcMain.handle('system:getShutdownSmokeMode'")&&main.includes("process.env.DKDS_WINDOW_COMMAND_CLOSE_SMOKE === '1'"),'Main process must expose the shutdown smoke flag through a deterministic IPC contract.');
+assert(preload.includes("getShutdownSmokeMode: () => ipcRenderer.invoke('system:getShutdownSmokeMode')"),'Preload must bridge the main-process shutdown smoke flag.');
+assert(windowChrome.includes('await api.getShutdownSmokeMode()')&&windowChrome.includes("dataset.dkdsShutdownSmokeMode='active'"),'Renderer must activate titlebar-close smoke from the main-process flag and expose readiness.');
+
 const runtime=read('src/plugin-window/runtime.js');
 const setIndex=runtime.indexOf('window.DKDSPlugins.activities.set(bootstrap.activityId)');
 const validateIndex=runtime.indexOf("if(!visiblePage)throw new Error(`插件工作区已激活但没有显示页面：");
