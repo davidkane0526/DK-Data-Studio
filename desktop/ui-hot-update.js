@@ -29,9 +29,7 @@ function compareUiIdentities(a,b){
   return versionOrder||compareBuildIds(a.buildId,b.buildId);
 }
 function compatible(source,installed){
-  if(!versionPattern.test(source||'')||!versionPattern.test(installed||''))return false;
-  const a=source.split('.'),b=installed.split('.');
-  return a[0]===b[0]&&a[1]===b[1]&&compareUiVersions(source,installed)>=0;
+  return versionPattern.test(source||'')&&versionPattern.test(installed||'')&&source===installed;
 }
 function selectUiRelease(releases,currentVersion,appliedIdentity={appVersion:currentVersion,buildId:'a0000'}){
   if(!Array.isArray(releases))throw Error('Invalid GitHub release metadata');
