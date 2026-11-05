@@ -172,9 +172,15 @@ jobs:
         run: |
           Push-Location dkts-plugin-smoke
           try {
-            npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+            npm install --omit=dev --ignore-scripts --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { throw 'DKTS dependency installation failed.' }
             npm run plugin:build
-            node tools/verify-dkds-installability.cjs ..
+            if ($LASTEXITCODE -ne 0) { throw 'DKTS plugin generation failed.' }
+            $manifest = Get-Content integrations/dkds/plugin.json -Raw | ConvertFrom-Json
+            $artifact = "dist/$($manifest.id)-$($manifest.version).dkplugin"
+            if (-not (Test-Path -LiteralPath $artifact)) { throw "DKTS plugin artifact missing: $artifact" }
+            node tools/verify-dkds-installability.cjs .. $artifact
+            if ($LASTEXITCODE -ne 0) { throw 'DKTS real generated package cannot be installed into current DKDS.' }
           } finally {
             Pop-Location
           }
