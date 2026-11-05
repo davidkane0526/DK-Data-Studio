@@ -26,6 +26,10 @@ jobs:
           fetch-depth: 0
       - name: Resolve stable app version and hot-update build ID
         run: node tools/updates/resolve-build-identity.cjs
+      - name: Validate hot-only versus full-app update scope
+        env:
+          DKDS_BASE_SHA: ${{ github.event.before }}
+        run: node tools/updates/validate-update-scope.cjs
       - name: Validate hot-update runtime
         run: |
           node --check src/core/host/ui-hot-runtime.js
