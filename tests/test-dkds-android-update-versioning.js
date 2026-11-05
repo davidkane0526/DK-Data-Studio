@@ -14,6 +14,8 @@ try{
   }
   const script=path.join(tmp,'tools/updates/stamp-android-build.cjs');
   const env={...process.env,GITHUB_RUN_NUMBER:'250'};
+  // Do not let the temporary fixture append to the parent Actions GITHUB_ENV file.
+  delete env.GITHUB_ENV;delete env.GITHUB_STEP_SUMMARY;
   const baseline=JSON.parse(fs.readFileSync(path.join(tmp,'package.json'),'utf8')).version;
   const expected=cp.execFileSync(process.execPath,[script,'--print'],{env,encoding:'utf8'}).trim();
   assert.equal(expected,baseline,'Android versionName must remain the stable app version');
@@ -54,8 +56,8 @@ try{
   assert(workflow.includes('gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json"'));
   assert(workflow.includes('--repo "$GITHUB_REPOSITORY" --clobber'));
   const desktopNative=fs.readFileSync(path.join(root,'desktop/native-update.js'),'utf8');
-  assert(desktopNative.includes('dkds-windows-v(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})'));
-  assert(desktopNative.includes('DK-Data-Studio-Portable-(\\\\d+\\\\.\\\\d+\\\\.\\\\d+)-(a\\\\d{4,})-x64\\\\.exe'));
+  assert(desktopNative.includes('dkds-windows-v(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})'));
+  assert(desktopNative.includes('DK-Data-Studio-Portable-(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})-x64\\.exe'));
   const updateDialog=fs.readFileSync(path.join(root,'mobile/src/components/UpdateDialog.tsx'),'utf8');
   assert(!updateDialog.includes('Alert.alert'),'DKDS must not show a second confirmation dialog before invoking Android installer.');
   assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
