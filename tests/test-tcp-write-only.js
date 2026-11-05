@@ -31,6 +31,7 @@ const {createTcpRuntime}=require('../desktop/main-modules/tcp-runtime');
     assert.match(Buffer.from(identity.base64,'base64').toString('ascii'),/KEITHLEY INSTRUMENTS,KI4200A/);
     const de=await runtime.exchange({sessionId:opened.sessionId,base64:encode('DE\0'),noReply:true,readTimeoutMs:250,idleTimeoutMs:20,maxBytes:1024});
     assert.strictEqual(de.bytesRead,0);
+    await new Promise((resolve,reject)=>{const deadline=Date.now()+750;const poll=()=>{if(received.length===3)return resolve();if(Date.now()>deadline)return reject(new Error('Timed out waiting for the write-only DE command.'));setTimeout(poll,5);};poll();});
     await assert.rejects(()=>runtime.exchange({sessionId:opened.sessionId,base64:encode('EX unsafe\0'),noReply:true}),/restricted to fixed KXCI UL\/DE/);
     assert.deepStrictEqual(received,['UL\0','*IDN?\0','DE\0']);
   }finally{
