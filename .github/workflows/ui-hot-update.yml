@@ -50,9 +50,14 @@ jobs:
           fi
           tag="dkds-ui-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}"
           notes="Verified CSS-only UI resources for V${DKDS_RELEASE_VERSION} (${DKDS_HOT_BUILD_ID}). Apply from the DKDS version panel without replacing EXE/APK. The full Windows/Android installers for this same build identity are published by the platform build workflows."
-          gh release create "$tag" dist/DKDS-UI-bundle.json \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
-            --notes "$notes" \
-            --prerelease --latest=false
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --notes "$notes" --prerelease
+          else
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --notes "$notes" --prerelease --latest=false
+          fi
+          gh release upload "$tag" dist/DKDS-UI-bundle.json --repo "$GITHUB_REPOSITORY" --clobber
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,tagName
