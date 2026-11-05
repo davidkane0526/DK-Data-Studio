@@ -16,7 +16,7 @@ const {MobileWebSurfacePresenter}=require('../src/core/ui/modules/presentation/m
 const {intentionalHorizontalScroll,resolveInlineConstraintDeficit}=require('../src/core/ui/modules/composition/unit-geometry-constraints');
 const presenter=new MobileWebSurfacePresenter();
 
-assert(/^3\.71\.(?:9[1-9]|[1-9]\d{2,})$/.test(json('package.json').version),'Current source must retain the v3.71.91+ parameter Surface contract.');
+assert(atLeast(json('package.json').version,'3.71.91'),'Current source must retain the v3.71.91+ parameter Surface contract.');
 assert.strictEqual(json('mobile/app.json').expo.version,json('package.json').version);
 assert(Number(json('mobile/app.json').expo.android.versionCode)>=231);
 assert(/^1\.51\.(?:3[8-9]|[4-9]\d|\d{3,})$/.test(json('sdk/contract.json').sdkVersion));
