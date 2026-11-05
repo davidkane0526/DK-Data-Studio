@@ -21,6 +21,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve stable app version and hot-update build ID
+        run: node tools/updates/resolve-build-identity.cjs
       - name: Validate hot-update runtime
         run: |
           node --check src/core/host/ui-hot-runtime.js
@@ -28,11 +32,10 @@ jobs:
           node --check tools/updates/build-ui-hot-bundle.js
       - name: Create verified hot-style bundle without native compilation
         run: |
-          DKDS_UI_BUNDLE_VERSION="$(node -p "const p=require('./package.json').version.split('.'); p[0]+'.'+p[1]+'.'+(10000+Number(process.env.GITHUB_RUN_NUMBER))")"
-          echo "DKDS_UI_BUNDLE_VERSION=$DKDS_UI_BUNDLE_VERSION" >> "$GITHUB_ENV"
-          DKDS_UI_BUNDLE_VERSION="$DKDS_UI_BUNDLE_VERSION" node tools/updates/build-ui-hot-bundle.js dist/DKDS-UI-bundle.json
+          DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION" DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID" node tools/updates/build-ui-hot-bundle.js dist/DKDS-UI-bundle.json
           test -s dist/DKDS-UI-bundle.json
-          node -e "const x=require('./dist/DKDS-UI-bundle.json');if(x.schema!=='dkds-ui-v1'||Object.keys(x.files).length!==3)process.exit(1)"
+          node -e "const x=require('./dist/DKDS-UI-bundle.json');if(x.schema!=='dkds-ui-v2'||x.appVersion!==process.env.DKDS_RELEASE_VERSION||x.buildId!==process.env.DKDS_HOT_BUILD_ID||Object.keys(x.files).length!==3)process.exit(1)"
+          echo "Hot update identity: V$DKDS_RELEASE_VERSION $DKDS_HOT_BUILD_ID"
       - name: Publish UI-only update release
         if: github.ref == 'refs/heads/4200'
         env:
@@ -45,11 +48,11 @@ jobs:
             echo 'Newer branch commit exists; skip an obsolete UI bundle.'
             exit 0
           fi
-          version="$DKDS_UI_BUNDLE_VERSION"
-          tag="dkds-ui-v${version}-${GITHUB_RUN_ID}"
+          tag="dkds-ui-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}"
+          notes="Verified CSS-only UI resources for V${DKDS_RELEASE_VERSION} (${DKDS_HOT_BUILD_ID}). Apply from the DKDS version panel without replacing EXE/APK. The full Windows/Android installers for this same build identity are published by the platform build workflows."
           gh release create "$tag" dist/DKDS-UI-bundle.json \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "DKDS UI Style Hot Update · v${version}" \
-            --notes 'Verified CSS-only UI resources. Apply from the DKDS version panel without replacing EXE/APK; JavaScript and native updates still require a full app release.' \
+            --title "DKDS UI Hot Update · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+            --notes "$notes" \
             --prerelease --latest=false
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,tagName
