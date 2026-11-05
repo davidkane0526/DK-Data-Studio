@@ -312,7 +312,6 @@ jobs:
         run: |
           set -euo pipefail
           apk="release-apk/DK-Data-Studio-arm64-v8a-release.apk"
-          sha_short="${GITHUB_SHA:0:12}"
           tag="dkds-android-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}"
           asset_name="DK-Data-Studio-arm64-v8a-release.apk"
           DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION" DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID" node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
@@ -332,12 +331,17 @@ jobs:
 
           This preview is kept separate from the production \`v*\` releases.
           EOF
-          gh release create "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
-            --notes-file release-notes.md \
-            --prerelease \
-            --latest=false
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --notes-file release-notes.md --prerelease
+          else
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --notes-file release-notes.md --prerelease --latest=false
+          fi
+          gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,tagName
 
