@@ -78,6 +78,7 @@ jobs:
           npm run plugin:index
           node tests/test-plugin-package.js
           node tests/test-mobile-plugin-package.js
+          node tests/test-dkds-no-builtin-4200-external-plugin.js
           node -e "require('./tests/manifest.js')"
           node tests/test-v371106-data-center-live-hydration-presentation.js
           node tests/test-data-center-runtime-v36113.js

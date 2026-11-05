@@ -9,6 +9,10 @@ const PluginOverridePolicy=require('../plugin-override-policy');
 const PluginSdkContract=require('../../sdk/contract.json');
 const PlatformPresentation=require('../../sdk/platform-presentation-contract');
 
+// Retired host-owned instrument plugin. DK Test Studio now owns this capability
+// under com.dkts.keithley-4200; never revive the old DKDS bundle identity.
+const RETIRED_BUILTIN_PLUGIN_IDS=new Set(['com.dkds.keithley-4200']);
+
 function createPluginPackageRuntime({app,BrowserWindow}){
   function externalPluginDirectory(){return path.join(app.getPath('userData'),'plugins');}
   function ensureExternalPluginDirectory(){const dir=externalPluginDirectory();fs.mkdirSync(dir,{recursive:true});return dir;}
@@ -21,7 +25,7 @@ function createPluginPackageRuntime({app,BrowserWindow}){
 
   function readBuiltinPluginManifests(){
     const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
-    try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
+    try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id&&!RETIRED_BUILTIN_PLUGIN_IDS.has(String(manifest.id)))rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
     return rows;
   }
   function builtinPluginIds(){return new Set(readBuiltinPluginManifests().map(row=>String(row.manifest.id)));}
@@ -38,7 +42,7 @@ function createPluginPackageRuntime({app,BrowserWindow}){
   function sweepPendingPluginInstalls(){const cutoff=Date.now()-10*60*1000;for(const [token,row] of pendingPluginInstalls)if(Number(row?.createdAt||0)<cutoff)pendingPluginInstalls.delete(token);}
 
   function readBuiltinPluginPackage(id){
-    const pluginId=String(id||''),base=path.join(app.getAppPath(),'src','plugins');
+    const pluginId=String(id||'');if(RETIRED_BUILTIN_PLUGIN_IDS.has(pluginId))return null;const base=path.join(app.getAppPath(),'src','plugins');
     for(const name of fs.readdirSync(base).sort()){
       if(name.startsWith('_'))continue;const folder=path.join(base,name),manifestPath=path.join(folder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
       let manifest;try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}catch{continue;}if(String(manifest?.id||'')!==pluginId)continue;
@@ -58,6 +62,9 @@ function createPluginPackageRuntime({app,BrowserWindow}){
       const filePath=path.join(dir,name);let parsed=null,id='';
       try{
         parsed=JSON.parse(fs.readFileSync(filePath,'utf8'));id=String(parsed?.manifest?.id||'').trim();
+        if(RETIRED_BUILTIN_PLUGIN_IDS.has(id)){
+          fs.rmSync(filePath,{force:true});removed.push({file:name,id,reason:'retired-dkds-builtin-migrated-to-dkts'});continue;
+        }
         if(id&&isBundledPluginId(id)){
           fs.rmSync(filePath,{force:true});removed.push({file:name,id,reason:'bundled-id-must-use-current-override-directory'});continue;
         }
@@ -72,7 +79,7 @@ function createPluginPackageRuntime({app,BrowserWindow}){
     const dir=ensurePluginOverrideDirectory(),packages=[],errors=[],removed=[];
     for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort()){
       const filePath=path.join(dir,name);let id='';try{
-        const raw=JSON.parse(fs.readFileSync(filePath,'utf8'));id=String(raw?.manifest?.id||'').trim();const bundled=id?bundledManifest(id):null;
+        const raw=JSON.parse(fs.readFileSync(filePath,'utf8'));id=String(raw?.manifest?.id||'').trim();if(RETIRED_BUILTIN_PLUGIN_IDS.has(id)){fs.rmSync(filePath,{force:true});removed.push({file:name,id,reason:'retired-dkds-builtin-migrated-to-dkts'});continue;}const bundled=id?bundledManifest(id):null;
         let pkg;try{pkg=normalizePluginPackage(raw,{allowBuiltinId:true});}
         catch(err){
           if(bundled&&retiredContractPackageError(err)){fs.rmSync(filePath,{force:true});removed.push({file:name,id,reason:'non-current-contract'});continue;}
@@ -107,7 +114,7 @@ function createPluginPackageRuntime({app,BrowserWindow}){
   }
 
   function isBundledPluginId(id){return builtinPluginIds().has(String(id||''));}
-  function normalizeInstallCandidate(raw){const id=String(raw?.manifest?.id||'').trim();return normalizePluginPackage(raw,{allowBuiltinId:isBundledPluginId(id)});}
+  function normalizeInstallCandidate(raw){const id=String(raw?.manifest?.id||'').trim();if(RETIRED_BUILTIN_PLUGIN_IDS.has(id)){const error=new Error('旧版 DKDS 内置 4200 插件已退役。请安装 DK Test Studio 当前生成的独立插件包（com.dkts.keithley-4200）。');error.code='RETIRED_PLUGIN_ID';throw error;}return normalizePluginPackage(raw,{allowBuiltinId:isBundledPluginId(id)});}
   function installedOverridePackage(id){return readInstalledPluginOverrides().packages.find(pkg=>String(pkg?.manifest?.id||'')===String(id||''))||null;}
   function installedExternalPackage(id){return readInstalledExternalPlugins().packages.find(pkg=>String(pkg?.manifest?.id||'')===String(id||''))||null;}
   function pluginInstallPlan(raw){
@@ -126,6 +133,12 @@ function createPluginPackageRuntime({app,BrowserWindow}){
   }
   function restoreInstalledPackage(id,pkg=null){
     const pluginId=String(id||pkg?.manifest?.id||'');if(!validPluginId(pluginId))throw new Error('无效的插件恢复 ID。');
+    if(RETIRED_BUILTIN_PLUGIN_IDS.has(pluginId)){
+      for(const dir of [ensureExternalPluginDirectory(),ensurePluginOverrideDirectory()]){
+        const stale=path.join(dir,pluginPackageFileName(pluginId));if(fs.existsSync(stale))fs.rmSync(stale,{force:true});
+      }
+      return {ok:true,id:pluginId,retired:true,installationKind:'retired',requiresRestart:false};
+    }
     const bundled=isBundledPluginId(pluginId),target=path.join(bundled?ensurePluginOverrideDirectory():ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
     if(!pkg){if(fs.existsSync(target))fs.rmSync(target,{force:true});return {ok:true,id:pluginId,installationKind:bundled?'override':'external',requiresRestart:bundled};}
     const normalized=normalizePluginPackage(pkg,{allowBuiltinId:bundled});if(normalized.manifest.id!==pluginId)throw new Error('插件恢复包 ID 不匹配。');atomicWritePluginPackage(target,normalized);return {ok:true,id:pluginId,package:{...normalized,installedPath:target},installationKind:bundled?'override':'external',requiresRestart:bundled};
