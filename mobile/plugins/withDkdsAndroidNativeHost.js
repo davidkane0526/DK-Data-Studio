@@ -625,7 +625,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     }
   }
 
-  @ReactMethod fun tcpExchange(sessionId:String,base64:String,readTimeoutMs:Double,idleTimeoutMs:Double,maxBytes:Double,promise:Promise) {
+  @ReactMethod fun tcpExchange(sessionId:String,base64:String,readTimeoutMs:Double,idleTimeoutMs:Double,maxBytes:Double,noReply:Boolean,promise:Promise) {
     thread(name="dkds-tcp-exchange",isDaemon=true) {
       val id=sessionId.trim()
       val row=tcpSessions[id]
@@ -642,6 +642,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
         val limit=boundedTcpInt(maxBytes,65536,1,8*1024*1024)
         val socket=row.socket
         socket.getOutputStream().apply { write(requestBytes);flush() }
+        if(noReply){promise.resolve(WritableNativeMap().apply{putString("base64","");putInt("bytesRead",0)});return@thread}
         val input=socket.getInputStream()
         val output=ByteArrayOutputStream()
         val buffer=ByteArray(4096)
