@@ -18,7 +18,7 @@ assert(sdkAtLeast(contract.minimumAppVersion,'3.70.6'));
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
 assert(app.includes(`version:'${release}'`)&&app.includes(`appVersion:'${release}'`),'Main renderer version metadata must match the release version.');
-assert(index.includes(`<span class="version">V${release}</span>`),'Visible shell version must match the release version using the canonical uppercase V prefix.');
+assert(index.includes(`<span class="version">v${release}</span>`),'Visible shell version must match the release version using the canonical lowercase v prefix.');
 assert(pluginWindow.includes(`appVersion:'${release}'`),'Dedicated plugin windows must report the release version.');
 
 const chart=read('src/core/scientific/chart-runtime.js');
