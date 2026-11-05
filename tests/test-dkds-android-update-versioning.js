@@ -32,7 +32,7 @@ try{
   const identity=JSON.parse(cp.execFileSync(process.execPath,[path.join(root,'tools/updates/resolve-build-identity.cjs'),'--print'],{encoding:'utf8'}));
   assert.equal(identity.appVersion,baseline);
   assert.match(identity.buildId,/^a\d{4,}$/);
-  assert.equal(identity.label,'V'+baseline+' '+identity.buildId);
+  assert.equal(identity.label,'v'+baseline+' '+identity.buildId);
 
   const workflow=fs.readFileSync(path.join(root,'.github/workflows/build-android.yml'),'utf8');
   assert(workflow.includes('node tools/updates/resolve-build-identity.cjs'));
@@ -67,15 +67,15 @@ try{
   assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
   assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');
   const changelog=fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8');
-  assert(changelog.includes('# 3.72.1 — Direct Android update installation'));
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.1');
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.1');
+  assert(changelog.includes('# v3.72.2 — Lowercase application version prefix'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'mobile/package.json'),'utf8')).version,'3.72.2');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'3.72.2');
   const updateScope=require(path.join(root,'tools/updates/validate-update-scope.cjs'));
-  const hotScope=updateScope.validateUpdateScope({changedPaths:['src/styles/platform/native-client-shell.css'],baseVersion:'3.72.1',currentVersion:'3.72.1'});
+  const hotScope=updateScope.validateUpdateScope({changedPaths:['src/styles/platform/native-client-shell.css'],baseVersion:'3.72.2',currentVersion:'3.72.2'});
   assert.equal(hotScope.channel,'hot-update-only');
-  const fullScope=updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.1'});
+  const fullScope=updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.1',currentVersion:'3.72.2'});
   assert.equal(fullScope.channel,'full-app');
-  assert.throws(()=>updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.0',currentVersion:'3.72.0'}),{code:'FULL_APP_VERSION_BUMP_REQUIRED'});
+  assert.throws(()=>updateScope.validateUpdateScope({changedPaths:['mobile/src/components/UpdateDialog.tsx'],baseVersion:'3.72.1',currentVersion:'3.72.1'}),{code:'FULL_APP_VERSION_BUMP_REQUIRED'});
   const hotWorkflowText=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
   assert(hotWorkflowText.includes("if: steps.scope.outputs.channel == 'hot-update-only'"),'CSS hot bundle and release must be gated to validated hot-only commits.');
   assert(hotWorkflowText.includes("if: github.ref == 'refs/heads/4200' && steps.scope.outputs.channel == 'hot-update-only'"),'Full application commits must never publish a CSS-only UI release.');

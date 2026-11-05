@@ -1,3 +1,9 @@
+# v3.72.2 — Lowercase application version prefix
+
+- Standardizes the visible version prefix to lowercase `v` in the Windows shell, Android update panel, update status, Actions summaries and GitHub Release titles. The complete identity is `v3.72.2 aNNNN`.
+- This changes bundled HTML and JavaScript, not the CSS-only hot-update allowlist. The complete application version therefore advances from `v3.72.1` to `v3.72.2`; Windows Portable EXE and Android APK are rebuilt. No CSS-only hot update is published for this runtime change.
+- Retains the direct Android APK installation flow introduced in `v3.72.1`, without DKDS's redundant pre-install confirmation.
+
 # v3.72.1 — Direct Android update installation
 
 - Removes DKDS's redundant confirmation dialog before APK installation. Selecting “下载并安装” now immediately downloads (or reuses) the APK, verifies its SHA-256 digest and signing certificate, and invokes the Android package installer. Android's own system installation/permission confirmations remain in place.
@@ -7,7 +13,7 @@
 # 3.72.0 — Stable application version and independent hot-update identity
 
 - Establishes `v3.72.0` as the stable DKDS application version for the migration from CI-stamped version names. Windows and Android full installers are built on every development commit without rewriting the application version.
-- Every commit receives one shared, deterministic hot-update identity (`aNNNN`) derived from the full Git history. Windows, Android and CSS hot-update Actions/Release records display the same `V3.72.0 aNNNN` identity.
+- Every commit receives one shared, deterministic hot-update identity (`aNNNN`) derived from the full Git history. Windows, Android and CSS hot-update Actions/Release records display the same `v3.72.0 aNNNN` identity.
 - CSS hot updates advance only the `aNNNN` identity. When the installed application version is already current, the client applies the hot update and does not offer or prompt for a complete installer/APK update. Complete platform installers remain downloadable from GitHub Releases for manual installation.
 - Android keeps `versionName=3.72.0` stable while monotonically increasing `versionCode` for each APK build, so a manually downloaded same-version APK can replace an earlier build.
 - CI classifies the three signed CSS allowlist files as hot-update-only; any other runtime change must increase the stable application version. A hot bundle is accepted only when its app version exactly matches the installed application, so future-version CSS cannot bypass a required full update.

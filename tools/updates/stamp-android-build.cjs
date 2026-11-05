@@ -2,7 +2,7 @@
 'use strict';
 // Keep Android versionName equal to the stable application version.
 // Only versionCode changes per Actions run so a manually downloaded APK can
-// replace an older APK with the same Vx.y.z app version.
+// replace an older APK with the same vx.y.z app version.
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
@@ -29,4 +29,4 @@ if(process.env.GITHUB_ENV)
   fs.appendFileSync(process.env.GITHUB_ENV,
     'DKDS_ANDROID_APP_VERSION='+version+'\n'+
     'DKDS_ANDROID_VERSION_CODE='+versionCode+'\n');
-console.log('Stamped DKDS Android app version V'+version+' (versionCode '+versionCode+')');
+console.log('Stamped DKDS Android app version v'+version+' (versionCode '+versionCode+')');

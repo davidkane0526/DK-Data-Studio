@@ -28,7 +28,7 @@ function validateUpdateScope({changedPaths,baseVersion,currentVersion}){
   const comparison=compareVersions(currentVersion,baseVersion);
   if(fullRequired&&comparison<=0){
     const runtime=changedPaths.filter(file=>!HOT_UPDATE_FILES.has(String(file).replaceAll('\\','/')));
-    const error=new Error('检测到非热更新白名单的程序代码变更，必须提升 package.json 完整版本号后才能发布完整程序更新。当前 V'+currentVersion+'，基线 V'+baseVersion+'。');
+    const error=new Error('检测到非热更新白名单的程序代码变更，必须提升 package.json 完整版本号后才能发布完整程序更新。当前 v'+currentVersion+'，基线 v'+baseVersion+'。');
     error.code='FULL_APP_VERSION_BUMP_REQUIRED';error.runtimeFiles=runtime;throw error;
   }
   return {fullRequired,baseVersion,currentVersion,channel:fullRequired?'full-app':'hot-update-only'};
@@ -47,11 +47,11 @@ if(require.main===module){
     const basePackage=JSON.parse(git(['show',base+':package.json']));
     const currentPackage=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
     const result=validateUpdateScope({changedPaths:paths,baseVersion:basePackage.version,currentVersion:currentPackage.version});
-    const summary='## DKDS update channel validation\n\n- Channel: **'+result.channel+'**\n- Application version: V'+result.currentVersion+'\n- Changed runtime files: '+(result.fullRequired?'full application version bump verified':'only allowlisted CSS hot-update resources')+'\n';
+    const summary='## DKDS update channel validation\n\n- Channel: **'+result.channel+'**\n- Application version: v'+result.currentVersion+'\n- Changed runtime files: '+(result.fullRequired?'full application version bump verified':'only allowlisted CSS hot-update resources')+'\n';
     if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
     if(process.env.GITHUB_ENV)fs.appendFileSync(process.env.GITHUB_ENV,'DKDS_UPDATE_CHANNEL='+result.channel+'\n');
     if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,'channel='+result.channel+'\n');
-    console.log('DKDS update scope PASS: '+result.channel+'; V'+result.currentVersion);
+    console.log('DKDS update scope PASS: '+result.channel+'; v'+result.currentVersion);
   }
 }
 module.exports={HOT_UPDATE_FILES,requiresFullAppVersionBump,compareVersions,validateUpdateScope};
