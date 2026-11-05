@@ -40,7 +40,7 @@ final class DkdsAppUpdateManager {
     private static final String REPO = "davidkane0526/DK-Data-Studio";
     private static final String API = "https://api.github.com/repos/" + REPO + "/releases?per_page=100";
     private static final String APK_ASSET = "DK-Data-Studio-arm64-v8a-release.apk";
-    private static final Pattern TAG_VERSION = Pattern.compile("dkds-android-v(\\d+\\.\\d+\\.\\d+)-[0-9]+");
+    private static final Pattern TAG_VERSION = Pattern.compile("dkds-android-v(\\d+\\.\\d+\\.\\d+)-(a\\d{4,})");
     private static final int MAX_APK = 180 * 1024 * 1024;
     private static final long CACHE_MS=5*60*1000L;
     private static final long STALE_MS=15*60*1000L;
@@ -95,10 +95,10 @@ final class DkdsAppUpdateManager {
     private volatile boolean resumeInstaller = false;
 
     private static final class Candidate {
-        final String version, url, sha256;
+        final String version, buildId, url, sha256;
         final int size;
-        Candidate(String version, String url, String sha256, int size) {
-            this.version=version;this.url=url;this.sha256=sha256;this.size=size;
+        Candidate(String version, String buildId, String url, String sha256, int size) {
+            this.version=version;this.buildId=buildId;this.url=url;this.sha256=sha256;this.size=size;
         }
     }
     DkdsAppUpdateManager(Activity activity) {
@@ -178,6 +178,10 @@ final class DkdsAppUpdateManager {
         for(byte b:hash)result.append(String.format(Locale.ROOT,"%02x",b&255));
         return result.toString();
     }
+    static int compareBuildIds(String a,String b){
+        try{return Long.compare(Long.parseLong(a.substring(1)),Long.parseLong(b.substring(1)));}
+        catch(Exception ignored){return 0;}
+    }
     private Candidate latest() throws Exception {
         JSONArray releases=fetchReleases();
         Candidate chosen=null;
@@ -186,7 +190,7 @@ final class DkdsAppUpdateManager {
             Matcher tagMatcher=TAG_VERSION.matcher(row.optString("tag_name"));
             if(row.optBoolean("draft",false)||!tagMatcher.matches())continue;
             JSONArray assets=row.optJSONArray("assets");if(assets==null)continue;
-            JSONObject apk=null;String releaseVersion=tagMatcher.group(1);
+            JSONObject apk=null;String releaseVersion=tagMatcher.group(1),releaseBuildId=tagMatcher.group(2);
             for(int j=0;j<assets.length();j++){
                 JSONObject item=assets.getJSONObject(j);
                 if(APK_ASSET.equals(item.optString("name")))apk=item;
@@ -200,8 +204,9 @@ final class DkdsAppUpdateManager {
                 size<100000||size>MAX_APK||
                 !url.startsWith("https://github.com/"+REPO+"/releases/download/"+
                     row.getString("tag_name")+"/"))continue;
-            Candidate candidate=new Candidate(releaseVersion,url,sha.substring(7).toLowerCase(Locale.ROOT),(int)size);
-            if(chosen==null||compareVersions(candidate.version,chosen.version)>0)chosen=candidate;
+            Candidate candidate=new Candidate(releaseVersion,releaseBuildId,url,sha.substring(7).toLowerCase(Locale.ROOT),(int)size);
+            if(chosen==null||compareVersions(candidate.version,chosen.version)>0||
+                (compareVersions(candidate.version,chosen.version)==0&&compareBuildIds(candidate.buildId,chosen.buildId)>0))chosen=candidate;
         }
         return chosen;
     }
