@@ -217,11 +217,12 @@ const {addStyle}=require('./pages/panels');
     return [...active.keys()];
   }
 
-  function loadInlinePluginScript(source,label){
+  function loadInlinePluginScript(source,label,packageSource='builtin'){
     return new Promise((resolve,reject)=>{
       const script=document.createElement('script');
       script.async=false;
       script.dataset.dkdsExternalPlugin=label;
+      script.dataset.dkdsPackageSource=packageSource;
       script.textContent=`${String(source||'')}\n//# sourceURL=dkds-plugin://${encodeURIComponent(label)}`;
       let runtimeError=null;
       const onError=event=>{runtimeError=event?.error||new Error(event?.message||`External plugin script failed: ${label}`);};
@@ -275,9 +276,9 @@ const {addStyle}=require('./pages/panels');
       const assets=presentationAssets(manifest);
       const sharedScripts=manifest.scripts?.length?manifest.scripts:[manifest.entry];
       for(const file of [...sharedScripts,...(assets.platformScripts||[])]){
-        const source=pkg?.files?.[file];
-        if(typeof source!=='string')throw new Error(`External plugin script missing: ${file}`);
-        await loadInlinePluginScript(source,`${manifest.id}/${file}`);
+        const scriptContent=pkg?.files?.[file];
+        if(typeof scriptContent!=='string')throw new Error(`External plugin script missing: ${file}`);
+        await loadInlinePluginScript(scriptContent,`${manifest.id}/${file}`,source);
       }
       const created=definitions.filter(d=>!beforeIds.has(d.manifest.id));
       const unexpected=created.filter(d=>d.manifest.id!==manifest.id);
@@ -620,7 +621,9 @@ const {addStyle}=require('./pages/panels');
       pluginTypeForManifest(manifest);
       if (definitions.some(d => d.manifest.id === manifest.id)) throw new Error(`Duplicate plugin id: ${manifest.id}`);
       if (typeof activate !== 'function') throw new Error(`Plugin ${manifest.id} must provide activate(api).`);
-      definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate, packageSource:'builtin', sourceIdentity:currentPluginSource(manifest) });
+      const declaredSource=String(document.currentScript?.dataset?.dkdsPackageSource||'builtin');
+      const packageSource=['external','override'].includes(declaredSource)?declaredSource:'builtin';
+      definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate, packageSource, sourceIdentity:currentPluginSource(manifest) });
     },
     configure(nextHost) {
       state.host = nextHost || {};resetPluginHostView();
