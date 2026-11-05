@@ -71,7 +71,7 @@ export function UpdateDialog({ visible,version,palette,autoPrompt=false,onClose,
           <View style={[styles.column,{borderColor:palette.divider}]}>
             <Text style={[styles.section,{color:palette.text}]}>程序</Text>
             <Text style={[styles.detail,{color:palette.text}]} numberOfLines={2}>{label[native.status]||native.status}{native.status==='downloading'?' '+(native.progress||0)+'%':''}</Text>
-            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>V{native.installedVersion||version}{native.version&&native.version!==native.installedVersion?' → v'+native.version:''}</Text>
+            <Text style={[styles.muted,{color:palette.textSoft||palette.text}]} numberOfLines={2}>v{native.installedVersion||version}{native.version&&native.version!==native.installedVersion?' → v'+native.version:''}</Text>
             {native.error?<Text style={[styles.error,{color:palette.text}]} numberOfLines={3}>{native.error}</Text>:null}
           </View>
           <View style={[styles.column,{borderColor:palette.divider}]}>

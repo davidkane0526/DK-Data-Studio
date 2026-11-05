@@ -66,6 +66,7 @@ try{
   const projectDrawer=fs.readFileSync(path.join(root,'mobile/src/sheets/ShellActionSheet.tsx'),'utf8');
   assert(projectDrawer.includes("DK Data Studio v{installedAppVersion || shell.appVersion || '—'}"),'Project management drawer must display the app version with lowercase v.');
   assert(!updateDialog.includes('Alert.alert'),'DKDS must not show a second confirmation dialog before invoking Android installer.');
+  assert(updateDialog.includes('>v{native.installedVersion||version}')&&!updateDialog.includes('>V{native.installedVersion||version}'),'Android update dialog must display the installed app version with lowercase v.');
   assert(!updateDialog.includes("import { Alert,"),'Alert must not be imported for the redundant install prompt.');
   assert(updateDialog.includes('nativeHost?.appUpdateInstall?.()'),'the install button must immediately start the verified native install flow.');
   const changelog=fs.readFileSync(path.join(root,'CHANGELOG.md'),'utf8');
