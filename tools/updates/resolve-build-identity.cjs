@@ -15,7 +15,7 @@ const countText=execFileSync('git',['rev-list','--count',head],{cwd:root,encodin
 const count=Number(countText);
 if(!Number.isSafeInteger(count)||count<1)throw Error('Unable to resolve a positive commit sequence for the hot-update identity.');
 const buildId='a'+String(count).padStart(4,'0');
-const identity={appVersion,buildId,commit:head,label:'V'+appVersion+' '+buildId};
+const identity={appVersion,buildId,commit:head,label:'v'+appVersion+' '+buildId};
 if(process.argv.includes('--print')){process.stdout.write(JSON.stringify(identity));process.exit(0);}
 if(process.env.GITHUB_ENV){
   fs.appendFileSync(process.env.GITHUB_ENV,
