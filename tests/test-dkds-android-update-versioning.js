@@ -36,7 +36,7 @@ try{
   assert(workflow.includes('node tools/updates/resolve-build-identity.cjs'));
   assert(workflow.includes('node tools/updates/stamp-android-build.cjs'));
   assert(workflow.includes('DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION" DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID"'));
-  assert(workflow.includes('dkds-android-v\${DKDS_RELEASE_VERSION}-\${DKDS_HOT_BUILD_ID}'));
+  assert(workflow.includes('dkds-android-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}'));
   const hotWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ui-hot-update.yml'),'utf8');
   assert(hotWorkflow.includes('DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION"'));
   assert(hotWorkflow.includes('DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID"'));
