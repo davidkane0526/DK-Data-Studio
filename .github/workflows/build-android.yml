@@ -25,6 +25,7 @@ on:
       - 'scripts/generate-plugin-index.js'
       - 'scripts/validate-plugins.js'
       - 'package.json'
+      - 'README_CN.md'
       - 'CHANGELOG.md'
       - 'sdk/**'
       - 'tools/quality/**'
