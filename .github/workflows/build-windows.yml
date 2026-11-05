@@ -53,6 +53,7 @@ on:
       - 'scripts/**'
       - 'tools/windows/**'
       - 'services/update-server/**'
+      - 'mobile/**'
   workflow_dispatch:
 
 permissions:
