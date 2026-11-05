@@ -1,6 +1,6 @@
 > **V3.72.3 Release — KXCI write-only 安全边界**：在 DKDS 桌面 TCP、Android 原生 TCP 与 LAN TCP 网关中，将 noReply 限定为精确的 `UL\0` 和 `DE\0` 命令，拒绝其他写入请求使用无响应模式，避免外部调用绕过响应读取与会话同步。
 
-> **V3.72.3 Release — KXCI 写命令安全边界**：修复 KXCI `UL`/`DE` 模式切换命令被错误当作查询等待返回而导致的超时。Windows、Android 原生桥接、DKDS 桌面/Android/LAN TCP 服务统一支持 write-only exchange；模块识别仍仅执行身份、选件、模块与校准信息查询，不启用任何仪器输出或测量执行。该改动涉及主进程和 Android 原生桥接，完整程序版本升至 V3.72.2，热更新编号仍独立为 aNNNN。
+> **V3.72.2 Release — KXCI 写命令传输修复**：修复 KXCI `UL`/`DE` 模式切换命令被错误当作查询等待返回而导致的超时。Windows、Android 原生桥接、DKDS 桌面/Android/LAN TCP 服务统一支持 write-only exchange；模块识别仍仅执行身份、选件、模块与校准信息查询，不启用任何仪器输出或测量执行。该改动涉及主进程和 Android 原生桥接，完整程序版本升至 V3.72.2，热更新编号仍独立为 aNNNN。
 
 > **V3.72.1 Release — Android 更新流程精简**：移除 DKDS 在 APK 安装前额外弹出的“安装更新/继续”确认框。点击“下载并安装”后，软件直接下载或复用 APK，完成 SHA-256 与签名校验，再调用 Android 系统安装器。Android 系统自身的安装确认和未知来源安装权限提示仍保留。本次修改涉及应用 JavaScript 逻辑，不属于 CSS 热更新范围，因此完整程序版本由 V3.72.0 升至 V3.72.1。Windows 便携版和 Android APK 均按 V3.72.1 与同一 aNNNN 构建编号发布。
 
