@@ -49,6 +49,8 @@ if(require.main===module){
     const result=validateUpdateScope({changedPaths:paths,baseVersion:basePackage.version,currentVersion:currentPackage.version});
     const summary='## DKDS update channel validation\n\n- Channel: **'+result.channel+'**\n- Application version: V'+result.currentVersion+'\n- Changed runtime files: '+(result.fullRequired?'full application version bump verified':'only allowlisted CSS hot-update resources')+'\n';
     if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
+    if(process.env.GITHUB_ENV)fs.appendFileSync(process.env.GITHUB_ENV,'DKDS_UPDATE_CHANNEL='+result.channel+'\n');
+    if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,'channel='+result.channel+'\n');
     console.log('DKDS update scope PASS: '+result.channel+'; V'+result.currentVersion);
   }
 }

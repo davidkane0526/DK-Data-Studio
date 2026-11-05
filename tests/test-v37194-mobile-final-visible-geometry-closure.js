@@ -7,6 +7,7 @@ const root=path.resolve(__dirname,'..');
 process.env.NODE_PATH=[path.join(root,'src/core'),process.env.NODE_PATH||''].filter(Boolean).join(path.delimiter);Module._initPaths();
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
+const appVersionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
 class StyleDecl{constructor(){this.rows={};}getPropertyValue(k){return this.rows[k]||'';}getPropertyPriority(){return '';}setProperty(k,v){this.rows[k]=String(v);}removeProperty(k){delete this.rows[k];}}
 class Classes{constructor(...rows){this.rows=new Set(rows);}contains(v){return this.rows.has(v);}add(v){this.rows.add(v);}remove(v){this.rows.delete(v);}}
 const old={window:global.window,document:global.document,gate:global.DKDSStyleGate,storage:global.localStorage,innerWidth:global.innerWidth,innerHeight:global.innerHeight};
@@ -14,7 +15,7 @@ global.window={innerWidth:744,innerHeight:420,addEventListener(){},removeEventLi
 global.document={documentElement:{dataset:{dkdsHost:'mobile'},classList:new Classes('react-native-client')}};global.localStorage={getItem(){return null;},setItem(){},removeItem(){}};
 global.DKDSStyleGate={KINDS:{RUNTIME_INLINE:'runtime-inline',CONFIG_TOKEN:'configuration-token'},set(node,p,v){node?.style?.setProperty?.(p,v);return true;},setToken(node,p,v){node?.style?.setProperty?.(p,v);return true;},remove(node,p){node?.style?.removeProperty?.(p);return true;}};global.window.DKDSStyleGate=global.DKDSStyleGate;
 try{
-  const pkg=json('package.json'),app=json('mobile/app.json');assert(/^3\.71\.(?:9[9]|[1-9]\d{2,})$/.test(pkg.version));assert.strictEqual(app.expo.version,pkg.version);assert(app.expo.android.versionCode>=239);
+  const pkg=json('package.json'),app=json('mobile/app.json');assert(appVersionAtLeast(pkg.version,'3.71.99'),'Mobile final-visible-geometry contract must remain active on later app versions.');assert.strictEqual(app.expo.version,pkg.version);assert(app.expo.android.versionCode>=239);
   const geom=require('../src/core/ui/modules/composition/unit-geometry-constraints');
   const {MobileWebSurfacePresenter}=require('../src/core/ui/modules/presentation/mobile-web-surface');
   // Active projected roots are not replayed by generic Unit settlement; only descendants reflow.

@@ -6,7 +6,8 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert(Number(json('package.json').version.split('.').at(-1))>=57,'App must retain the v3.71.57+ baseline.');
+const appVersionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(appVersionAtLeast(json('package.json').version,'3.71.57'),'App must retain the v3.71.57+ baseline.')
 assert(Number(json('mobile/app.json').expo.android.versionCode)>=198,'Android versionCode must retain the v3.71.57+ baseline.');
 const sdkAtLeast=(value,floor)=>{const a=String(value||'0.0.0').split('.').map(Number),b=String(floor||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y;}return true;};
 assert(sdkAtLeast(json('sdk/contract.json').sdkVersion,'1.51.43'),'SDK must retain the 1.51.43+ touch-arbitration contract.');

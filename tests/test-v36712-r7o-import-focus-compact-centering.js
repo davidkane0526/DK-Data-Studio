@@ -6,7 +6,7 @@ const navigation=read('src/styles/structure/shell-navigation.css');
 const component=read('src/styles/theme/component-appearance.css');
 const current=String(pkg.version||'0.0.0').split('.').map(Number);
 assert(current[0]>3||(current[0]===3&&(current[1]>67||(current[1]===67&&current[2]>=12))),'R7O capability requires application 3.67.12 or newer.');
-assert(index.includes(`<span class="version">v${pkg.version}</span>`),'Visible shell version must match the current package version.');
+assert(index.includes(`<span class="version">V${pkg.version}</span>`),'Visible shell version must match the current package version using the canonical uppercase V prefix.');
 assert(navigation.includes('--dkds-command-padding-inline:0px')&&navigation.includes('padding-inline:var(--dkds-command-padding-inline,10px)'),'Compact Presenter commands must center through the canonical command geometry slot rather than a later section-start override.');
 assert(!/\.plugin-context-toolbar \.plugin-toolbar-btn\.plugin-section-start(?:[^{}]*)\{[^}]*(?:padding|height|line-height)\s*:/s.test(navigation),'plugin-section-start must never rewrite the command content box.');
 assert(/data-dkds-presentation-compact="true"\]\{[^}]*width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px;/.test(navigation),'Compact Presenter commands must keep the exact 48px border box while geometry slots own padding and line height.');

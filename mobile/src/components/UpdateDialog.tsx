@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { nativeHost } from '../host/protocol';
 import type { Palette } from '../theme/palette';
 
@@ -47,10 +47,11 @@ export function UpdateDialog({ visible,version,palette,autoPrompt=false,onClose,
     const timer=setInterval(()=>{void refreshNative();void refreshUi();},1000);
     return()=>clearInterval(timer);
   },[visible,autoPrompt,checkAll,refreshNative,refreshUi]);
-  const install=()=>Alert.alert('安装更新','下载并校验 APK 后，由 Android 系统确认安装。',[
-    {text:'取消',style:'cancel'},
-    {text:'继续',onPress:()=>void nativeHost?.appUpdateInstall?.().then(()=>refreshNative()).catch((e:any)=>setNative({status:'error',error:String(e?.message||e)}))}
-  ]);
+  // Start the verified APK download/install flow immediately. Android's
+  // package installer remains responsible for its own system confirmation.
+  const install=()=>void nativeHost?.appUpdateInstall?.()
+    .then(()=>refreshNative())
+    .catch((e:any)=>setNative({status:'error',error:String(e?.message||e)}));
   const button=(title:string,action:()=>void,primary=false)=>(
     <Pressable accessibilityRole="button" onPress={action}
       style={[styles.button,{borderColor:primary?palette.accent:palette.divider,backgroundColor:primary?palette.accentSoft:palette.surfaceSoft}]}>

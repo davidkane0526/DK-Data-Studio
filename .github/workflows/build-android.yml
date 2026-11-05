@@ -9,6 +9,17 @@ on:
     paths:
       - '.github/workflows/build-android.yml'
       - 'mobile/**'
+      - 'desktop/**'
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'services/update-server/**'
+      - 'tools/windows/**'
+      - 'scripts/**'
       - 'src/**'
       - 'scripts/generate-brand-assets.js'
       - 'scripts/generate-plugin-index.js'
@@ -22,12 +33,29 @@ on:
   pull_request:
     branches:
       - main
+      - '4200'
     paths:
       - 'mobile/**'
       - 'src/**'
       - 'scripts/generate-brand-assets.js'
       - 'scripts/generate-plugin-index.js'
       - 'scripts/validate-plugins.js'
+      - 'desktop/**'
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'services/update-server/**'
+      - 'tools/windows/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'tests/**'
+      - 'tools/quality/**'
+      - 'tools/updates/**'
+      - 'sdk/**'
   workflow_dispatch:
 
 permissions:
@@ -57,7 +85,7 @@ jobs:
         run: node tools/updates/resolve-build-identity.cjs
       - name: Validate hot-only versus full-app update scope
         env:
-          DKDS_BASE_SHA: ${{ github.event.before }}
+          DKDS_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node tools/updates/validate-update-scope.cjs
 
       - name: Publish Android build locator
@@ -333,12 +361,12 @@ jobs:
           EOF
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease
           else
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
+              --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}" \
               --notes-file release-notes.md --prerelease --latest=false
           fi
           gh release upload "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \

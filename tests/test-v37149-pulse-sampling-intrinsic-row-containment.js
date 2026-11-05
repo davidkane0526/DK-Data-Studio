@@ -8,7 +8,8 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const hash=rel=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,rel))).digest('hex');
 
-assert(Number(json('package.json').version.split('.').at(-1))>=49,'This regression requires the 3.71.49 baseline or later.');
+const versionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(versionAtLeast(json('package.json').version,'3.71.49'),'This regression requires the 3.71.49 baseline or later.')
 const geometryValues=require('../src/core/ui/modules/composition/unit-template-geometry-values').ACCEPTED_LAYOUT_GEOMETRY_VALUES;
 assert(geometryValues['grid-template-rows'].includes('auto auto auto auto'),'The accepted Unit geometry vocabulary must retain the source-faithful four intrinsic Sampling rows.');
 for(const rel of ['src/plugins/pulse-sampler-tool/unit-presentation.js','examples/sdk151-unit-pulse-sampler-shadow/plugin.js']){

@@ -6,7 +6,8 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert(Number(json('package.json').version.split('.').at(-1))>=56,'App version must retain the v3.71.56+ baseline.');
+const versionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(versionAtLeast(json('package.json').version,'3.71.56'),'App version must retain the v3.71.56+ baseline.')
 const manifest=json('src/plugins/transfer-vth-lab/plugin.json');
 assert(Number(manifest.version.split('.').at(-1))>=3,'Vth must retain the accepted 3.3.3+ baseline.');
 assert.deepStrictEqual(manifest.styles,[],'Vth default-settings fix must not restore private plugin CSS.');
