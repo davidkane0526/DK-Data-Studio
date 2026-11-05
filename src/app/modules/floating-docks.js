@@ -208,7 +208,7 @@ async function displayOnlineUpdate(result={}){
     error:'检查或安装失败'
   };
   const el=$('#onlineUpdateStatus');
-  if(el)el.textContent=(label[state]||state)+(result.version?' · v'+result.version:'')+
+  if(el)el.textContent=(label[state]||state)+(result.version?' · V'+result.version:'')+
     (state==='downloading'?' · '+Math.max(0,Math.min(100,Number(result.progress)||0))+'%':'')+
     (result.error?'：'+String(result.error).slice(0,160):'');
   $('#onlineUpdateInstallBtn')?.classList.toggle('hidden',!(state==='available'||state==='ready'));
