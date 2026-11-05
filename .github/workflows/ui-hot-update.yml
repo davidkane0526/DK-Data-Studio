@@ -3,8 +3,9 @@ on:
   push:
     branches: ['4200']
     paths:
-      - 'src/styles/**'
-      - 'src/mobile.css'
+      - 'src/styles/structure/connectivity-panels.css'
+      - 'src/styles/platform/native-client-shell.css'
+      - 'src/styles/theme/component-appearance.css'
       - 'tools/updates/**'
       - 'package.json'
       - '.github/workflows/ui-hot-update.yml'
