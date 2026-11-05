@@ -9,6 +9,9 @@ const bridge=read('src/web-bridge.js');
 const gateway=read('mobile/plugins/DkdsLanTcp.template');
 const recovery=read('mobile/plugins/DkdsLinkLocalTcpRecovery.template');
 const desktop=read('desktop/main-modules/tcp-ipc.js');
+const nativeHost=read('mobile/plugins/withDkdsAndroidNativeHost.js');
+const router=read('mobile/src/host/useNativeRequestRouter.ts');
+const tcpRuntime=read('desktop/main-modules/tcp-runtime.js');
 
 assert(native.includes('raw=="/__dkds_tcp"'),'Android LAN host must expose the generic TCP route.');
 assert(native.includes('DkdsLanTcp.execute(context,token,request)'),'The LAN route must delegate to the generic TCP session owner.');
@@ -21,4 +24,8 @@ assert(gateway.includes('resolvePrivateTarget')&&gateway.includes('isPrivateAddr
 assert(gateway.includes('sessions[id]=row')&&gateway.includes('row.owner!=owner'),'Sessions must be owned by the paired browser.');
 assert(recovery.includes('routeIds')&&recovery.includes('ip -4 route replace'),'Link-local route recovery must allocate a destination-scoped route.');
 assert(desktop.includes("ipcMain.handle('tcp:open'")&&desktop.includes("ipcMain.handle('tcp:exchange'")&&desktop.includes("ipcMain.handle('tcp:close'"),'Desktop must expose the same generic TCP lifecycle.');
+assert(gateway.includes('val noReply=p.optBoolean("noReply",false)')&&gateway.includes('if(noReply)'),'LAN TCP gateway must support write-only commands without closing the session.');
+assert(nativeHost.includes('noReply:Boolean')&&nativeHost.includes('if(noReply)'),'Android native TCP host must support write-only commands.');
+assert(router.includes('!!payload.noReply'),'Android request router must forward write-only intent.');
+assert(tcpRuntime.includes('payload.noReply===true')&&tcpRuntime.includes('else if(noReply)finishOk()'),'Desktop TCP host must finish write-only exchanges without waiting for a response.');
 console.log('Generic TCP host gateway and network boundary PASS.');
