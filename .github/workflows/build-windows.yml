@@ -438,7 +438,6 @@ jobs:
           New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
           $portableExe = Join-Path $releaseDir "DK-Data-Studio-Portable-$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID-x64.exe"
           Copy-Item -LiteralPath $portable.FullName -Destination $portableExe -Force
-          $shaShort = $env:GITHUB_SHA.Substring(0,12)
           $notes = @"
           Automated preview of the generic DK Data Studio host.
 
@@ -455,7 +454,19 @@ jobs:
           "@
           $notesPath = Join-Path $releaseDir 'notes.md'
           Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8
-          gh release create $tag $portableExe --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to publish DKDS Windows preview Release.' }
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease --latest=false
+            if ($LASTEXITCODE -ne 0) {
+              Start-Sleep -Seconds 2
+              gh release view $tag *> $null
+              if ($LASTEXITCODE -ne 0) { throw 'Failed to create DKDS Windows preview Release.' }
+            }
+          } else {
+            gh release edit $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to refresh DKDS Windows preview Release metadata.' }
+          }
+          gh release upload $tag $portableExe --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to upload the complete Windows Portable EXE.' }
           gh release view $tag --json url,assets,isPrerelease
           if ($LASTEXITCODE -ne 0) { throw 'Unable to verify DKDS Windows preview Release.' }
