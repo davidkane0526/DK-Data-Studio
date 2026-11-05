@@ -54,6 +54,11 @@ on:
       - 'tools/windows/**'
       - 'services/update-server/**'
       - 'mobile/**'
+      - '.github/workflows/**'
+      - 'tests/**'
+      - 'tools/quality/**'
+      - 'tools/updates/**'
+      - 'sdk/**'
   workflow_dispatch:
 
 permissions:
