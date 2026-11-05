@@ -9,7 +9,8 @@ const json=rel=>JSON.parse(read(rel));
 const sha=rel=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,rel))).digest('hex');
 const spec=require('../src/core/ui/modules/composition/unit-template-spec');
 
-assert(Number(json('package.json').version.split('.').at(-1))>=56,'App version must retain the v3.71.56+ baseline.');
+const versionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(versionAtLeast(json('package.json').version,'3.71.56'),'App version must retain the v3.71.56+ baseline.')
 assert.strictEqual(spec.UNIT_TEMPLATE_SPEC_VERSION,'2.5.38');
 assert(Number(json('sdk/contract.json').sdkVersion.split('.').at(-1))>=43,'Vth fill-chain contract requires SDK 1.51.43+');
 assert(spec.UNIT_CONTRACTS.panel.invariants.some(row=>row.includes('continuous fill chain')),'Panel sizing=fill must publish continuous shell/body fill propagation.');
