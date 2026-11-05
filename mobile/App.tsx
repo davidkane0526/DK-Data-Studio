@@ -118,7 +118,7 @@ export default function App() {
         <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setPluginOverflowKeys} />
         {webView}
         <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onOverflowChange={setStatusOverflowItems} webService={webService.state} />
-        <UpdateDialog visible={updateVisible} version={installedAppVersion||shell.appVersion||'3.72.1'} palette={palette} autoPrompt={updateAutoPrompt} onClose={dismissUpdate} onUiCss={applyVerifiedUiCss} />
+        <UpdateDialog visible={updateVisible} version={installedAppVersion||shell.appVersion||'3.72.2'} palette={palette} autoPrompt={updateAutoPrompt} onClose={dismissUpdate} onUiCss={applyVerifiedUiCss} />
         <ShellActionSheet
           visible={sheet}
           shell={shell}

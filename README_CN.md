@@ -1,3 +1,5 @@
+> **V3.72.2 Release — KXCI 写命令传输修复**：修复 KXCI `UL`/`DE` 模式切换命令被错误当作查询等待返回而导致的超时。Windows、Android 原生桥接、DKDS 桌面/Android/LAN TCP 服务统一支持 write-only exchange；模块识别仍仅执行身份、选件、模块与校准信息查询，不启用任何仪器输出或测量执行。该改动涉及主进程和 Android 原生桥接，完整程序版本升至 V3.72.2，热更新编号仍独立为 aNNNN。
+
 > **V3.72.1 Release — Android 更新流程精简**：移除 DKDS 在 APK 安装前额外弹出的“安装更新/继续”确认框。点击“下载并安装”后，软件直接下载或复用 APK，完成 SHA-256 与签名校验，再调用 Android 系统安装器。Android 系统自身的安装确认和未知来源安装权限提示仍保留。本次修改涉及应用 JavaScript 逻辑，不属于 CSS 热更新范围，因此完整程序版本由 V3.72.0 升至 V3.72.1。Windows 便携版和 Android APK 均按 V3.72.1 与同一 aNNNN 构建编号发布。
 
 > **v3.72.0 Release — 内置通用通信接口与跨平台软件内更新（开发分支 4200）**：DKDS 内置协议无关的 TCP/IP 通信插件，提供以太网、Wi-Fi、局域网连接及原始字节收发服务，不包含 4200A 仪器控制、专用测试逻辑或相关内置插件。DK Test Studio 的仪器功能通过独立 `.dkplugin` 安装。Windows 便携版和 Android 均可点击软件版本号检查完整程序更新；界面样式支持校验后直接热更新，且可独立发布，无需重新构建 EXE/APK。完整 JavaScript 工作区和原生功能仍通过正式程序更新发布。本版本为开发预览，真机验收结果以设备测试为准。
@@ -173,7 +175,7 @@
 
 > **v3.69.4 Final Archive 保持不变**：Phase E 的正式互操作合同仍冻结于 3.69.0；3.69.4 继续作为完成 Phase A–E 与真实 Android 验收后的长期归档基线。
 
-当前版本：**v3.72.1**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.90**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
+当前版本：**V3.72.2**  ·  状态：**WIP**  ·  Plugin API：**1.19.0**  ·  SDK：**1.51.90**  ·  Unit Templates：**2.5.38**  ·  Theme Contract：**3.10.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
