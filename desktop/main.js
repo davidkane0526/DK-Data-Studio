@@ -669,6 +669,7 @@ app.whenReady().then(() => {
     return getProjectFileSafety().safeWrite(filePath, serialized);
   });
 
+  ipcMain.handle('system:getShutdownSmokeMode', async () => process.env.DKDS_WINDOW_COMMAND_CLOSE_SMOKE === '1');
   ipcMain.handle('system:getDevToolsState', async event => {
     const win=BrowserWindow.fromWebContents(event.sender);
     if(!win||win.isDestroyed())return {available:false,open:false};
