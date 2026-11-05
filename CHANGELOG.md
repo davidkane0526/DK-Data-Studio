@@ -1,3 +1,9 @@
+# 3.72.3 — Restrict KXCI write-only TCP commands
+
+- Restrict `noReply` to the exact NUL-terminated KXCI `UL` and `DE` mode-switch commands in DKDS Desktop TCP, Android native TCP, and the LAN TCP gateway.
+- Reject arbitrary no-reply writes to preserve response/session synchronization for every other TCP exchange.
+- Keep the stable application version at **V3.72.3** and the independent hot-update ID as `aNNNN`.
+
 # 3.72.2 — KXCI write-only TCP transport
 
 - Add explicit no-reply TCP writes for KXCI `UL` and `DE` mode switches across DKTS Windows/Android and DKDS desktop/Android/LAN hosts.
