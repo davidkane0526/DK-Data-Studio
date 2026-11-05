@@ -14,8 +14,8 @@ global.window={DKDSPlotPresentation:null,addEventListener(){},removeEventListene
 global.document={querySelector(){return null;},addEventListener(){},removeEventListener(){}};
 global.localStorage={getItem(){return null;},setItem(){}};
 
-const patch=Number(json('package.json').version.split('.').at(-1));
-assert(patch>=60,'App must retain the v3.71.60+ Resonance Mobile interaction fix.');
+const appVersionAtLeast=(actual,minimum)=>{const a=String(actual||'0.0.0').split('.').map(Number),b=String(minimum||'0.0.0').split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return true;};
+assert(appVersionAtLeast(json('package.json').version,'3.71.60'),'App must retain the v3.71.60+ Resonance Mobile interaction fix.')
 assert(Number(json('mobile/app.json').expo.android.versionCode)>=201,'Android versionCode must retain the v3.71.60+ baseline.');
 
 // Integration declaration: Resonance main genuinely owns a range-selection workflow,
