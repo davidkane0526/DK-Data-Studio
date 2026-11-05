@@ -20,7 +20,6 @@ if(process.argv.includes('--print')){process.stdout.write(JSON.stringify(identit
 if(process.env.GITHUB_ENV){
   fs.appendFileSync(process.env.GITHUB_ENV,
     'DKDS_RELEASE_VERSION='+appVersion+'\n'+
-    'DKDS_BUILD_VERSION='+appVersion+'\n'+
     'DKDS_HOT_BUILD_ID='+buildId+'\n'+
     'DKDS_BUILD_LABEL='+identity.label+'\n');
 }
