@@ -26,7 +26,7 @@ if(process.env.GITHUB_ENV){
 if(process.env.GITHUB_STEP_SUMMARY){
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     '## DK Data Studio '+identity.label+'\n\n'+
-    '- Application version: `V'+appVersion+'`\n'+
+    '- Application version: `v'+appVersion+'`\n'+
     '- Hot-update build: `'+buildId+'`\n'+
     '- Commit: `'+head+'`\n');
 }
