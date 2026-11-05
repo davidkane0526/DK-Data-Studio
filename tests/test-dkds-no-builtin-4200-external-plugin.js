@@ -21,6 +21,10 @@ assert(runtimeSource.includes('generatedBuiltinRows().some(row=>startupRowId(row
   'renderer must use the authoritative distribution catalog rather than temporary registration source');
 assert(!runtimeSource.includes("existing.packageSource!=='external'"),
   'provisional builtin source must not block an external plugin upgrade');
+assert(runtimeSource.includes('script.dataset.dkdsPackageSource=packageSource'),
+  'external code must tag itself at registration, not rely on the temporary builtin label');
+assert(runtimeSource.includes("document.currentScript?.dataset?.dkdsPackageSource||'builtin'"),
+  'registry must preserve original package source during registration');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-dkts-external-'));
 try{
   const host=createPluginPackageRuntime({
