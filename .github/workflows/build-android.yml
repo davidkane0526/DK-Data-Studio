@@ -17,6 +17,7 @@ on:
       - 'CHANGELOG.md'
       - 'sdk/**'
       - 'tools/quality/**'
+      - 'tools/updates/**'
       - 'tests/**'
   pull_request:
     branches:
@@ -48,14 +49,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Resolve release version
+      - name: Resolve stable app version and hot-update build ID
         shell: bash
-        run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          test -n "$VERSION"
-          echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "Release version: $VERSION"
+        run: node tools/updates/resolve-build-identity.cjs
 
       - name: Publish Android build locator
         shell: bash
@@ -120,7 +119,7 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
-      - name: Stamp monotonic Android versionName and versionCode
+      - name: Keep stable Android versionName and stamp monotonic versionCode
         shell: bash
         run: node tools/updates/stamp-android-build.cjs
       - name: Prepare offline web assets
@@ -277,13 +276,12 @@ jobs:
     steps:
       - name: Checkout UI hot-update source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Resolve release version for publication
+      - name: Resolve stable app version and hot-update build ID for publication
         shell: bash
-        run: |
-          VERSION="$(node tools/updates/stamp-android-build.cjs --print)"
-          test -n "$VERSION"
-          echo "DKDS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+        run: node tools/updates/resolve-build-identity.cjs
 
       - name: Download successful Android APK
         uses: actions/download-artifact@v8
@@ -308,13 +306,16 @@ jobs:
           set -euo pipefail
           apk="release-apk/DK-Data-Studio-arm64-v8a-release.apk"
           sha_short="${GITHUB_SHA:0:12}"
-          tag="dkds-android-v${DKDS_RELEASE_VERSION}-${GITHUB_RUN_ID}"
+          tag="dkds-android-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}"
           asset_name="DK-Data-Studio-arm64-v8a-release.apk"
-          DKDS_UI_BUNDLE_VERSION="$DKDS_RELEASE_VERSION" node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
+          DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION" DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID" node tools/updates/build-ui-hot-bundle.js release-apk/DKDS-UI-bundle.json
           test -s release-apk/DKDS-UI-bundle.json
           cat > release-notes.md <<EOF
           Automated Android preview of the generic DK Data Studio host.
 
+          - Application version: \`V${DKDS_RELEASE_VERSION}\`
+          - Hot-update build ID: \`${DKDS_HOT_BUILD_ID}\`
+          - Complete build identity: \`V${DKDS_RELEASE_VERSION} ${DKDS_HOT_BUILD_ID}\`
           - Git commit: \`${GITHUB_SHA}\`
           - GitHub Actions run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           - Device architecture: arm64-v8a
@@ -327,7 +328,7 @@ jobs:
           gh release create "$tag" "$apk#$asset_name" "release-apk/DKDS-UI-bundle.json" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "DK Data Studio Android Preview · ${sha_short}" \
+            --title "DK Data Studio Android · V${DKDS_RELEASE_VERSION} · ${DKDS_HOT_BUILD_ID}" \
             --notes-file release-notes.md \
             --prerelease \
             --latest=false
