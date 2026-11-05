@@ -35,10 +35,13 @@ function validateUpdateScope({changedPaths,baseVersion,currentVersion}){
 }
 function git(args){return execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}
 if(require.main===module){
-  const base=String(process.env.DKDS_BASE_SHA||'').trim();
+  let base=String(process.env.DKDS_BASE_SHA||'').trim();
   const head=git(['rev-parse','HEAD']);
   if(!base||/^0+$/.test(base)){
-    console.log('Update scope validation skipped: no push base SHA (manual dispatch or initial push).');
+    try{base=git(['rev-parse','HEAD^']);}catch{base='';}
+  }
+  if(!base){
+    console.log('Update scope validation skipped: no parent commit is available.');
   }else{
     const paths=git(['diff','--name-only',base,head]).split(/\r?\n/).filter(Boolean);
     const basePackage=JSON.parse(git(['show',base+':package.json']));
