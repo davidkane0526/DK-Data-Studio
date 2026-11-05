@@ -10,6 +10,7 @@ on:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
       - 'desktop/**'
+      - 'mobile/**'
       - 'plugin-window-manager.js'
       - 'preload.js'
       - 'plugin-package.js'
