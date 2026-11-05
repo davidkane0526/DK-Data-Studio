@@ -133,6 +133,12 @@ function createPluginPackageRuntime({app,BrowserWindow}){
   }
   function restoreInstalledPackage(id,pkg=null){
     const pluginId=String(id||pkg?.manifest?.id||'');if(!validPluginId(pluginId))throw new Error('无效的插件恢复 ID。');
+    if(RETIRED_BUILTIN_PLUGIN_IDS.has(pluginId)){
+      for(const dir of [ensureExternalPluginDirectory(),ensurePluginOverrideDirectory()]){
+        const stale=path.join(dir,pluginPackageFileName(pluginId));if(fs.existsSync(stale))fs.rmSync(stale,{force:true});
+      }
+      return {ok:true,id:pluginId,retired:true,installationKind:'retired',requiresRestart:false};
+    }
     const bundled=isBundledPluginId(pluginId),target=path.join(bundled?ensurePluginOverrideDirectory():ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
     if(!pkg){if(fs.existsSync(target))fs.rmSync(target,{force:true});return {ok:true,id:pluginId,installationKind:bundled?'override':'external',requiresRestart:bundled};}
     const normalized=normalizePluginPackage(pkg,{allowBuiltinId:bundled});if(normalized.manifest.id!==pluginId)throw new Error('插件恢复包 ID 不匹配。');atomicWritePluginPackage(target,normalized);return {ok:true,id:pluginId,package:{...normalized,installedPath:target},installationKind:bundled?'override':'external',requiresRestart:bundled};
