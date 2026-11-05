@@ -4,7 +4,7 @@ import { nativeHost } from '../host/protocol';
 import type { Palette } from '../theme/palette';
 
 type UpdateState = { status:string; version?:string; installedVersion?:string; progress?:number; error?:string };
-type UiState = { status:string; version?:string; tag?:string; error?:string; applied?:boolean };
+type UiState = { status:string; version?:string; appVersion?:string; buildId?:string; tag?:string; error?:string; applied?:boolean };
 type Props = { visible:boolean; version:string; palette:Palette; autoPrompt?:boolean; onClose:()=>void; onUiCss:(css:string)=>void };
 const label:Record<string,string> = {
   idle:'未检查',checking:'检查中',current:'已是最新',available:'有新版本',
