@@ -13,6 +13,8 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
 const {pluginHostView,resetPluginHostView}=require('./host-facade');
 const {addStyle}=require('./pages/panels');
 
+const RETIRED_PLUGIN_IDS=new Set(['com.dkds.keithley-4200']);
+
 
   function activePresentationPlatform(){
     const declared=String(document.documentElement?.dataset?.dkdsHost||globalThis.__DKDS_HOST_KIND__||'').trim().toLowerCase();
@@ -140,7 +142,7 @@ const {addStyle}=require('./pages/panels');
     setTimeout(run,320);
   };
   function generatedBuiltinRows(){
-    return Array.isArray(window.DKDS_BUILTIN_PLUGINS)?window.DKDS_BUILTIN_PLUGINS:[];
+    return (Array.isArray(window.DKDS_BUILTIN_PLUGINS)?window.DKDS_BUILTIN_PLUGINS:[]).filter(row=>!RETIRED_PLUGIN_IDS.has(startupRowId(row)));
   }
   function missingBuiltinCatalogRows(){
     const registered=new Set(definitions.filter(def=>String(def?.packageSource||'builtin')==='builtin').map(def=>String(def?.manifest?.id||'')).filter(Boolean));
@@ -329,8 +331,13 @@ const {addStyle}=require('./pages/panels');
       for(const row of result?.errors||[])externalLoadErrors.push(row);
       const loaded=[];
       for(const pkg of result?.packages||[]){
+        const id=String(pkg?.manifest?.id||'');
+        if(RETIRED_PLUGIN_IDS.has(id)){
+          try{await window.electronAPI?.pluginUninstall?.(id);}catch(err){externalLoadErrors.push({file:id,error:`Failed to purge retired plugin: ${err.message}`});}
+          continue;
+        }
         try{const def=await loadExternalPackage(pkg);loaded.push(def.manifest.id);}
-        catch(err){externalLoadErrors.push({file:pkg?.manifest?.id||'<package>',error:err.message});console.error('[DKDS external plugin]',err);}
+        catch(err){externalLoadErrors.push({file:id||'<package>',error:err.message});console.error('[DKDS external plugin]',err);}
       }
       return loaded;
     })();
@@ -616,6 +623,7 @@ const {addStyle}=require('./pages/panels');
     define(manifest, activate) {
       if (!manifest || typeof manifest !== 'object') throw new Error('Plugin manifest is required.');
       assertId(manifest.id);
+      if(RETIRED_PLUGIN_IDS.has(String(manifest.id)))throw new Error('旧版 DKDS 内置 4200 插件已退役；请使用 DK Test Studio 当前生成的独立插件包。');
       const contractCheck=window.DKDSPluginContract?.validateManifest?.(manifest);
       if(contractCheck&&!contractCheck.ok)throw new Error(`Plugin ${manifest.id}: ${contractCheck.errors.join(' ')}`);
       pluginTypeForManifest(manifest);
