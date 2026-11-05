@@ -636,6 +636,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
       }
       try {
         val requestBytes=Base64.decode(base64,Base64.DEFAULT)
+        if(noReply && !requestBytes.contentEquals("UL\\u0000".toByteArray(Charsets.US_ASCII)) && !requestBytes.contentEquals("DE\\u0000".toByteArray(Charsets.US_ASCII))) throw SecurityException("Write-only TCP mode is restricted to fixed KXCI UL/DE commands.")
         if(requestBytes.size>1024*1024)throw IllegalArgumentException("TCP write exceeds the 1 MiB safety limit.")
         val readTimeout=boundedTcpInt(readTimeoutMs,5000,250,120000)
         val idleTimeout=boundedTcpInt(idleTimeoutMs,120,20,10000)
