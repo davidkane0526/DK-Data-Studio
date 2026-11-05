@@ -471,7 +471,7 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw 'Failed to create DKDS Windows preview Release.' }
             }
           } else {
-            gh release edit $tag --target $env:GITHUB_SHA --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease
+            gh release edit $tag --title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION · $env:DKDS_HOT_BUILD_ID" --notes-file $notesPath --prerelease
             if ($LASTEXITCODE -ne 0) { throw 'Failed to refresh DKDS Windows preview Release metadata.' }
           }
           gh release upload $tag $portableExe --clobber
