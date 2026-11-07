@@ -14,10 +14,10 @@ const sample=()=>({
   info:{type:'Mosfet',polarity:'PMOS',group:'MOS_IV',testType:'DC',name:'IV Sweep'},
   refNode:'S',refValue:'0',outputs:'Id',
   terminals:[
-    {logical:'D',sourceMode:'voltage',signal:'Vds',resource:'None',relativeTo:'S',role:'CONDITION',generator:'Constant',bias:'0.05',compliance:'0.1',measureRange:{mode:'auto'},segments:[]},
-    {logical:'G',sourceMode:'voltage',signal:'Vgs',resource:'None',relativeTo:'S',role:'X',generator:'Linear Step',start:'-0.3',stop:'0',step:'0.02',points:'21',compliance:'0.1',measureRange:{mode:'auto'},segments:[]},
-    {logical:'S',sourceMode:'voltage',signal:'Vs',resource:'None',relativeTo:'GND',role:'CONDITION',generator:'Constant',bias:'0',compliance:'0.1',measureRange:{mode:'auto'},segments:[]},
-    {logical:'B',sourceMode:'voltage',signal:'Vbs',resource:'None',relativeTo:'S',role:'P',generator:'Linear Points',start:'0',stop:'-1.1',step:'0.1',points:'5',compliance:'0.1',measureRange:{mode:'auto'},segments:[]}
+    {logical:'D',sourceMode:'voltage',signal:'Vds',resource:'None',relativeTo:'S',role:'CONDITION',generator:'Constant',bias:'0.05',compliance:'0.1',measureRange:{mode:'auto',value:'1e-6'},segments:[]},
+    {logical:'G',sourceMode:'voltage',signal:'Vgs',resource:'None',relativeTo:'S',role:'X',generator:'Linear Step',start:'-0.3',stop:'0',step:'0.02',points:'21',compliance:'0.1',measureRange:{mode:'auto',value:'1e-6'},segments:[]},
+    {logical:'S',sourceMode:'voltage',signal:'Vs',resource:'None',relativeTo:'GND',role:'CONDITION',generator:'Constant',bias:'0',compliance:'0.1',measureRange:{mode:'auto',value:'1e-6'},segments:[]},
+    {logical:'B',sourceMode:'voltage',signal:'Vbs',resource:'None',relativeTo:'S',role:'P',generator:'Linear Points',start:'0',stop:'-1.1',step:'0.1',points:'5',compliance:'0.1',measureRange:{mode:'auto',value:'1e-6'},segments:[]}
   ],
   pageVars:[{name:'vgs',value:'1.1'},{name:'vstep',value:'0.02'},{name:'vbb',value:'-1.1'},{name:'vdthx',value:'0.05'}],
   associateSpecs:[],
@@ -52,7 +52,9 @@ function validateDraft(){
   if(!draft)return {valid:false,errors:[{reason:'No page'}]};
   const result=VALIDATE?VALIDATE(createValidationPlan()):{valid:false,errors:[{reason:'Validation module not loaded'}],warnings:[],executionAuthorized:false};
   const extra=[];
+  if(draft.info.testType!=='DC')extra.push({code:'UNSUPPORTED_TEST_MODE',path:'info.testType',reason:'该测试类型尚未完成4200A原生测量适配'});
   for(const [i,t] of draft.terminals.entries()){
+    if(t.resource!=='None'&&!inventory.has(t.resource))extra.push({code:'UNVERIFIED_RESOURCE',path:`terminals[${i}].resource`,reason:'通道未经过仪器模块识别'});
     if(!t.logical.trim())extra.push({code:'EMPTY_TERMINAL',path:`terminals[${i}].logical`,reason:'Terminal name is required'});
     if(t.role!=='CONDITION'&&!['Linear Step','Linear Points','Log Points','List','Generator'].includes(t.generator))extra.push({code:'SWEEP_GENERATOR',path:`terminals[${i}].generator`,reason:'Sweep must use a sweep generator'});
     if(t.role==='CONDITION'&&t.generator==='Constant'&&!String(t.bias||'').trim())extra.push({code:'EMPTY_BIAS',path:`terminals[${i}].bias`,reason:'Constant bias is required'});
@@ -148,7 +150,7 @@ function targetMarkup(){
  <aside class="fs-function-info"><strong>Function Info</strong><p>V(node), I(node) · 输出量引用</p><p>公式仅保存为文本，尚未连接求值引擎。</p></aside>
  </div><div class="fs-triptych">
  <div class="fs-triptych-panel"><h3>Plot</h3><div class="fs-plot-options">
- ${['X','Y','H','P'].map(a=>`<span class="fs-inline-field"><label>${a}:</label><input aria-label="Plot ${a}" data-bind="target.plot.${a}" value="${e(p[a])}" style="width:66px"/></span>`).join('')}
+ ${['X','Y','H','P'].map(a=>`<span class="fs-inline-field"><label>${a}:</label><input aria-label="Plot ${a}" data-bind="target.plot.${a}" value="${e(p[a])}" class="fs-plot-input"/></span>`).join('')}
  </div></div>
  ${varsPanel()}
  <div class="fs-triptych-panel"><h3>Quote Var</h3><div class="fs-table-wrap"><table class="fs-table"><tbody>
@@ -164,7 +166,14 @@ function strategyMarkup(){
  <label>Delay Time (s):</label><input data-bind="strategy.delayTime" value="${e(s.delayTime)}"/>
  <label>Source Range:</label>${select('strategy.sourceRange',['Auto','Fixed'],s.sourceRange)}
  <label>Measure Range:</label>${select('strategy.measureRange',['Auto','Fixed'],s.measureRange)}
- </div></div>`;
+ </div>
+ <fieldset class="fs-fieldset"><legend>Per-Terminal Measurement Range</legend>
+ <table class="fs-connection-table"><thead><tr><th>Terminal</th><th>Range Mode</th><th>Range Value</th></tr></thead><tbody>
+ ${draft.terminals.map((t,i)=>`<tr><td>${e(t.logical)}</td>
+ <td>${select(`terminals[${i}].measureRange.mode`,[['auto','Auto'],['fixed','Fixed']],t.measureRange.mode)}</td>
+ <td><input aria-label="${e(t.logical)} range value" data-bind="terminals[${i}].measureRange.value" value="${e(t.measureRange.value)}" ${t.measureRange.mode==='auto'?'disabled title="自动量程模式"':''}/></td>
+ </tr>`).join('')}
+ </tbody></table></fieldset></div>`;
 }
 function pageHTML(){
  return `<div class="fs-editor" role="dialog" aria-modal="true" aria-label="Edit Page">
@@ -190,11 +199,11 @@ function pageHTML(){
  </div>`;
 }
 function connectionHTML(){
- return `<div class="fs-editor" style="width:min(710px,100%);height:min(520px,calc(100dvh - 24px))" role="dialog" aria-modal="true" aria-label="Set Connection">
+ return `<div class="fs-editor fs-connection-dialog" role="dialog" aria-modal="true" aria-label="Set Connection">
  <div class="fs-editor-title">Set Connection <button data-action="close-connection" aria-label="关闭">×</button></div>
  <div class="fs-connection-content">
  <fieldset class="fs-fieldset"><legend>Connection List</legend>
- <select aria-label="Connection preset" style="width:100%"><option>Local 4200A — 当前 Page</option></select>
+ <select aria-label="Connection preset" class="fs-full-field"><option>Local 4200A — 当前 Page</option></select>
  </fieldset>
  <fieldset class="fs-fieldset"><legend>Terminal to Resource</legend>
  <table class="fs-connection-table"><thead><tr><th>Terminal</th><th>Resource</th><th>Source</th></tr></thead><tbody>
@@ -205,7 +214,7 @@ function connectionHTML(){
  <footer class="fs-editor-footer"><span class="fs-validation"></span><button data-action="connection-ok" class="fs-primary">OK</button>
  <button data-action="close-connection">Cancel</button></footer></div>`;
 }
-function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
+function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();window.DKDSComponents?.hydrate?.(host);if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
 function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=true;render();}
 function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
