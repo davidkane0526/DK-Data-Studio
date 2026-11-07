@@ -203,3 +203,21 @@
  .fs-app .fs-terminal button{height:28px;min-height:28px}
  .fs-sweep-head{min-width:485px}
 }
+
+/* Visible terminal fit at reference 1080x770 and CI 1200x850: reduce chrome, never hide B. */
+.fs-editor{height:min(850px,calc(100dvh - 8px))}
+.fs-editor-title{height:35px;min-height:35px}
+.fs-editor-main{padding-top:7px}
+.fs-fieldset{padding-top:6px;padding-bottom:6px;margin-bottom:6px}
+.fs-editor-controls{margin-bottom:5px}
+.fs-app .fs-editor-controls button{min-height:27px;padding-block:3px}
+.fs-tabs,.fs-tabs button{min-height:27px}
+.fs-tab-content{padding:6px;gap:5px}
+.fs-triptych{min-height:145px}
+.fs-editor-footer{height:41px;min-height:41px;padding-block:5px}
+@media(max-width:650px){
+ .fs-editor{height:100dvh}
+ .fs-editor-title{height:38px;min-height:38px}
+ .fs-editor-footer{height:49px;min-height:49px}
+ .fs-app .fs-editor-controls button{min-height:33px}
+}
