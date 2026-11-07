@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-dkds-theme="light">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
@@ -63,6 +63,14 @@
 </div>
 <div class="fs-modal-host" id="fs-modal-host" hidden></div>
 <input type="file" id="fs-open-input" accept=".json,application/json" hidden />
+<!-- Reuse DKDS Core component/semantic infrastructure, without its plugin host. -->
+<script src="../../sdk/theme-contract.js"></script>
+<script src="../core/ui/frame-scheduler.js"></script>
+<script src="../core/ui/dom-mutation-hub.js"></script>
+<script src="../core/contracts/style-ownership-semantics.js"></script>
+<script src="../core/theme/style-ownership-gate-runtime.js"></script>
+<script src="../core/theme/semantic-registry.js"></script>
+<script src="../core/ui/component-runtime.js"></script>
 <script src="domain/page-plan-guard.js"></script>
 <script src="editor.js"></script>
 </body>
