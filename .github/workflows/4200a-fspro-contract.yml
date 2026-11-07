@@ -24,9 +24,12 @@ jobs:
         run: |
           node --check src/4200a-fspro/domain/page-plan-guard.js
           node --check src/4200a-fspro/editor.js
+          node --check src/4200a-fspro/update/release-contract.js
           node --check desktop/4200a-fspro-main.cjs
       - name: Validate PagePlan rules (no instrument access)
-        run: node tests/test-4200a-page-plan-guard.cjs
+        run: |
+          node tests/test-4200a-page-plan-guard.cjs
+          node tests/test-4200a-release-contract.cjs
   browser-visual:
     name: Render desktop and Android-size screenshots
     runs-on: ubuntu-latest
