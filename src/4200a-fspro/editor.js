@@ -25,6 +25,57 @@ const sample=()=>({
   strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'}
 });
 let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true;
+let frameViewer=null;
+const ensureFrameViewer=()=>{
+ if(frameViewer)return frameViewer;
+ if(!window.DK4200RawData?.validate||!window.DK4200FrameView?.create||!window.DKDSScientificPlot?.createScope)
+  throw new Error('DKDS 科学绘图组件尚未加载完成');
+ frameViewer=window.DK4200FrameView.create({
+  root:document.getElementById('fs-shell'),
+  plotRuntime:window.DKDSScientificPlot,rawData:window.DK4200RawData
+ });
+ return frameViewer;
+};
+function saveText(filename,text,mime){
+ const blob=new Blob([text],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function showDataViewer(){
+ const table=frameViewer?.table?.();if(!table){note('当前没有可查看的仪器原始数据');return;}
+ const host=document.getElementById('fs-data-host');
+ const fields=table.columns.map(c=>`${e(c.label)}${c.unit?` (${e(c.unit)})`:''}`);
+ const heads=['Index','Sweep','Status',...fields].map(v=>`<th scope="col">${v}</th>`).join('');
+ const rows=table.rows.slice(0,800).map(row=>`<tr><td>${row.index}</td><td>${e(row.sweepId)}</td><td>${row.status}</td>${table.columns.map(c=>`<td>${e(row.values[c.id]??'')}</td>`).join('')}</tr>`).join('');
+ host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行；导出 CSV 保留全部原始数值文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
+ host.hidden=false;
+}
+document.getElementById('fs-data-host').addEventListener('click',ev=>{
+ const action=ev.target.closest('[data-raw-action]')?.dataset.rawAction;
+ if(action==='close'){const host=document.getElementById('fs-data-host');host.hidden=true;host.innerHTML='';}
+ if(action==='export')exportRawCSV();
+});
+function exportRawCSV(){
+ try{
+  const viewer=ensureFrameViewer();
+  if(!viewer.hasCapture())throw new Error('当前没有仪器原始数据');
+  const table=viewer.table();
+  saveText(`${table.captureId}.csv`,viewer.exportCSV(),'text/csv;charset=utf-8');
+  note('已导出包含全部采样点的原始数据 CSV');
+ }catch(err){note('无法导出原始数据：'+err.message);}
+}
+document.getElementById('fs-raw-input').addEventListener('change',async ev=>{
+ const file=ev.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>48*1024*1024)throw new Error('文件超过 48 MiB，请采用分段采集文件');
+  const raw=JSON.parse(await file.text());
+  const checked=window.DK4200RawData?.validate?.(raw);
+  if(!checked?.valid)throw new Error('不符合 4200A 原始采样记录格式：'+(checked?.errors?.[0]?.code||'SCHEMA'));
+  await ensureFrameViewer().setCapture(raw,{provenance:'imported-file'});
+  note(`已导入原始记录 ${raw.captureId}，${raw.samples.length} 点（导入文件，非当前在线测量）`);
+ }catch(err){note('导入原始数据失败：'+err.message);}
+ finally{ev.target.value='';}
+});
+
 const options=(items,selected)=>items.map(item=>{const [v,l,disabled]=Array.isArray(item)?item:[item,item];return `<option value="${e(v)}"${String(v)===String(selected)?' selected':''}${disabled?' disabled title="等待4200A测量编译器"':''}>${e(l)}</option>`}).join('');
 const field=(label,key,value,kind='text',extra='')=>`<span class="fs-inline-field"><label for="field-${e(key)}">${e(label)}</label><input id="field-${e(key)}" data-bind="${e(key)}" type="${kind}" value="${e(value)}" ${extra}></span>`;
 const select=(key,opts,value,attrs='')=>`<select data-bind="${e(key)}" aria-label="${e(key)}" ${attrs}>${options(opts,value)}</select>`;
@@ -286,6 +337,9 @@ document.addEventListener('click',event=>{
  const btn=event.target.closest('[data-command]');
  closeMenus();if(!btn||host.contains(btn))return;
  const command=btn.dataset.command;
+ if(command==='import-raw'){document.getElementById('fs-raw-input').click();return;}
+ if(command==='export-raw'){exportRawCSV();return;}
+ if(command==='data-viewer'){showDataViewer();return;}
  if(command==='edit'){startEdit();return;}
  if(command==='connection'){startEdit();activeDialog='connection';render();return;}
  if(command==='new'){saved=sample();note('新建工程 · 配置未保存');return;}
