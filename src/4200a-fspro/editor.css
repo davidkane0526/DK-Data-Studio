@@ -178,3 +178,28 @@
 .fs-data-table th,.fs-data-table td{border-bottom:1px solid var(--fs-line);padding:5px 10px;text-align:left}
 .fs-data-table thead th{background:var(--fs-bg);position:sticky;top:0;z-index:1}
 .fs-data-note{margin:0 12px;padding:8px 0;color:var(--fs-sub)}
+
+/* V6 screenshot parity: 4 terminal rows must fit before the fixed lower triptych. */
+.fs-app{--fs-height:28px}
+.fs-sweep-head{grid-template-columns:minmax(145px,170px) minmax(100px,140px) 53px minmax(0,1fr)}
+.fs-terminal-list{gap:4px;padding:5px;min-height:0}
+.fs-terminal{gap:3px;padding:4px 6px;border-radius:4px}
+.fs-terminal-top{grid-template-columns:32px 94px 100px minmax(0,1fr);gap:5px}
+.fs-generator{grid-template-columns:26px minmax(110px,126px) minmax(0,1fr) 26px;gap:5px}
+.fs-generator-values{gap:4px}
+.fs-app .fs-terminal select,.fs-app .fs-terminal input:not([type="checkbox"]){height:25px;padding:2px 5px}
+.fs-app .fs-terminal button{height:25px;min-height:25px;padding:1px 5px}
+.fs-terminal-bottom{padding-left:38px;gap:5px}
+.fs-target{flex:1;min-height:0}
+.fs-triptych-panel{min-height:0}
+.fs-app .fs-sweep-head select{min-width:75px}
+@media(max-width:900px){
+ .fs-terminal-top{grid-template-columns:30px 90px minmax(70px,1fr)}
+ .fs-generator{grid-template-columns:26px 120px minmax(0,1fr) 26px}
+}
+@media(max-width:650px){
+ .fs-app{--fs-height:33px}
+ .fs-app .fs-terminal select,.fs-app .fs-terminal input:not([type="checkbox"]){height:28px}
+ .fs-app .fs-terminal button{height:28px;min-height:28px}
+ .fs-sweep-head{min-width:485px}
+}
