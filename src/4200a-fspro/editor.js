@@ -25,7 +25,7 @@ const sample=()=>({
   strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'}
 });
 let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true;
-const options=(items,selected)=>items.map(item=>{const [v,l]=Array.isArray(item)?item:[item,item];return `<option value="${e(v)}"${String(v)===String(selected)?' selected':''}>${e(l)}</option>`}).join('');
+const options=(items,selected)=>items.map(item=>{const [v,l,disabled]=Array.isArray(item)?item:[item,item];return `<option value="${e(v)}"${String(v)===String(selected)?' selected':''}${disabled?' disabled title="等待4200A测量编译器"':''}>${e(l)}</option>`}).join('');
 const field=(label,key,value,kind='text',extra='')=>`<span class="fs-inline-field"><label for="field-${e(key)}">${e(label)}</label><input id="field-${e(key)}" data-bind="${e(key)}" type="${kind}" value="${e(value)}" ${extra}></span>`;
 const select=(key,opts,value,attrs='')=>`<select data-bind="${e(key)}" aria-label="${e(key)}" ${attrs}>${options(opts,value)}</select>`;
 const get=(obj,path)=>path.replace(/\[(\d+)\]/g,'.$1').split('.').reduce((x,k)=>x?.[k],obj);
@@ -75,7 +75,7 @@ function infoMarkup(){
  <span class="fs-inline-field"><label>Type:</label>${select('info.type',opts,i.type)}</span>
  <span class="fs-inline-field"><label>Polarity:</label>${select('info.polarity',['PMOS','NMOS','N/A'],i.polarity)}</span>
  ${field('Group:','info.group',i.group)}
- <span class="fs-inline-field"><label>Test Type:</label>${select('info.testType',['DC','IVT','Pulse','CV'],i.testType)}</span>
+ <span class="fs-inline-field"><label>Test Type:</label>${select('info.testType',[['DC','DC'],['IVT','IVT',true],['Pulse','Pulse',true],['CV','CV',true]],i.testType)}</span>
  ${field('Name:','info.name',i.name)}
  </div></fieldset>`;
 }
@@ -205,7 +205,7 @@ function connectionHTML(){
  <footer class="fs-editor-footer"><span class="fs-validation"></span><button data-action="connection-ok" class="fs-primary">OK</button>
  <button data-action="close-connection">Cancel</button></footer></div>`;
 }
-function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();if(activeDialog==='page')updateStatus();}
+function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
 function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=true;render();}
 function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
