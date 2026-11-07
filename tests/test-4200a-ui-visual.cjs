@@ -86,6 +86,19 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await desktop.locator('button[data-action="cancel"]').last().click();
   check('SAFE-003',await desktop.locator('.fs-editor').count()===0,'cancel closes and reverts draft');
   await desktop.close();
+  const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
+  await manual.goto(file+'?open=edit');
+  await manual.screenshot({path:path.join(out,'07-edit-page-manual-1080x770.png'),fullPage:true});
+  const manualGeometry=await manual.evaluate(()=>{
+   const list=document.querySelector('.fs-terminal-list');
+   const last=list?.querySelector('.fs-terminal:last-child');
+   const lower=document.querySelector('.fs-triptych');
+   return {listBottom:list?.getBoundingClientRect().bottom,lastBottom:last?.getBoundingClientRect().bottom,
+    lowerTop:lower?.getBoundingClientRect().top,scrollHeight:list?.scrollHeight,clientHeight:list?.clientHeight};
+  });
+  check('UI-033-REFERENCE-VIEWPORT',manualGeometry.lastBottom<=manualGeometry.listBottom+2&&manualGeometry.lastBottom<manualGeometry.lowerTop,
+    'At 1080x770 terminal B must remain visible: '+JSON.stringify(manualGeometry));
+  await manual.close();
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await mobile.goto(file+'?open=edit');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
