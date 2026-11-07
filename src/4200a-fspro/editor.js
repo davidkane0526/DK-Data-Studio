@@ -263,8 +263,28 @@ function bindControl(el){
 host.addEventListener('input',event=>{if(event.target.matches('input[data-bind],textarea[data-bind]'))bindControl(event.target);});
 host.addEventListener('change',event=>{if(event.target.matches('select[data-bind]'))bindControl(event.target);});
 host.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeDialog==='connection'){activeDialog='page';render();}else close();}});
+function closeMenus(){
+ document.querySelectorAll('.fs-menu-item').forEach(item=>{
+  const trigger=item.querySelector('[data-menu]'),popup=item.querySelector('.fs-menu-popup');
+  if(trigger)trigger.setAttribute('aria-expanded','false');
+  if(popup)popup.hidden=true;
+ });
+}
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenus();});
 document.addEventListener('click',event=>{
- const btn=event.target.closest('[data-command]');if(!btn||host.contains(btn))return;
+ const menuTrigger=event.target.closest('[data-menu]');
+ if(menuTrigger){
+  const wasOpen=menuTrigger.getAttribute('aria-expanded')==='true';
+  closeMenus();
+  if(!wasOpen){
+   menuTrigger.setAttribute('aria-expanded','true');
+   const popup=menuTrigger.parentElement.querySelector('.fs-menu-popup');
+   if(popup)popup.hidden=false;
+  }
+  return;
+ }
+ const btn=event.target.closest('[data-command]');
+ closeMenus();if(!btn||host.contains(btn))return;
  const command=btn.dataset.command;
  if(command==='edit'){startEdit();return;}
  if(command==='connection'){startEdit();activeDialog='connection';render();return;}
