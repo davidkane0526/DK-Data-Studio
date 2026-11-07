@@ -165,7 +165,7 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-bottom">
  <label>Ref to:</label>${select(`terminals[${i}].relativeTo`,[['GND','GND'],...logicalOpts],t.relativeTo)}
  ${select(`terminals[${i}].role`,roles,t.role)}
- <span class="fs-caption">Source: ${e(t.resource||'None')}</span>
+
  </div>${segmentMarkup(t,i)}</div>`;
 }
 function limitsPanel(){
