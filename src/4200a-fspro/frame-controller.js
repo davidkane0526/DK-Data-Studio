@@ -34,6 +34,23 @@
    showlegend:true,legend:{orientation:'h',y:-0.22},
    dragmode:'pan'
   });
+  function renderDataFrame(container,table){
+   const existing=container.querySelector('.fs-empty-hint');if(existing)existing.hidden=true;
+   const sheet=document.createElement('div');sheet.className='fs-mini-table-wrap';
+   const grid=document.createElement('table');grid.className='fs-mini-table';
+   const head=document.createElement('thead'),headRow=document.createElement('tr');
+   for(const c of table.columns){const th=document.createElement('th');th.textContent=c.unit?`${c.label} (${c.unit})`:c.label;headRow.appendChild(th);}
+   head.appendChild(headRow);grid.appendChild(head);
+   const body=document.createElement('tbody');
+   for(const row of table.rows.slice(0,80)){
+    const tr=document.createElement('tr');
+    for(const c of table.columns){const td=document.createElement('td');td.textContent=row.values[c.id]??'';tr.appendChild(td);}
+    body.appendChild(tr);
+   }
+   grid.appendChild(body);sheet.appendChild(grid);
+   const foot=document.createElement('div');foot.className='fs-mini-table-note';foot.textContent=`显示前 ${Math.min(80,table.rows.length)} / ${table.rows.length} 点`;
+   container.replaceChildren(sheet,foot);
+  }
   async function setCapture(raw,{provenance='imported-file'}={}){
    ensure();
    if(provenance!=='imported-file'&&provenance!=='native-verified')throw new Error('Unapproved raw-data provenance');
@@ -44,14 +61,14 @@
    const validPlotAxes=axes(original);
    const specs=[
     [validPlotAxes.x,validPlotAxes.y],
-    [validPlotAxes.x,validPlotAxes.y],
-    [original.columns.find(c=>c.id==='time')||validPlotAxes.x,validPlotAxes.y],
+    original.columns.some(c=>c.id==='gate_voltage')?[original.columns.find(c=>c.id==='gate_voltage'),validPlotAxes.y]:null,
+    original.columns.some(c=>c.id==='time')?[original.columns.find(c=>c.id==='time'),validPlotAxes.y]:null,
     null
    ];
    for(let i=0;i<renderers.length;i++){
     if(ticket!==revision||disposed)return false;
     const {content,hint}=renderers[i],pair=specs[i];
-    if(!pair){hint.textContent='原始数据表';hint.hidden=false;continue;}
+    if(!pair){hint.textContent=i===3?'原始数据表':'当前采样没有此图所需的通道';hint.hidden=false;continue;}
     const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
     if(!traces.some(t=>t.x.length)){hint.textContent='原始数据没有有效采样点';hint.hidden=false;continue;}
     hint.hidden=true;
@@ -61,6 +78,7 @@
     });
    }
    if(ticket!==revision||disposed)return false;
+   renderDataFrame(renderers[3].content,rawData.toTable(original));
    capture=Object.freeze({raw:original,provenance,table:rawData.toTable(original)});
    const msg=host.querySelector('#fs-messages');
    if(msg)msg.textContent=`原始数据：${original.captureId} · ${original.samples.length} 点 · 来源：${provenance==='native-verified'?'仪器采集':'导入文件'}`;
