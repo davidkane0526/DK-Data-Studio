@@ -103,7 +103,8 @@
   }else if(assigned.length<=3){
     requested=assigned.flatMap(t=>{const n=channelIndex(t.resource);return ['V'+n,'I'+n];});
   }
-  const names=[...new Set([...mandatory,...requested])];
+  const oldAllReadOrder=page.captureFunctions===undefined&&!String(page.outputs||'').trim()&&assigned.length<=3;
+  const names=[...new Set(oldAllReadOrder?requested:[...mandatory,...requested])];
   for(const name of names)if(!allowed.has(name))fail('MEASUREMENT_CHANNEL_UNAVAILABLE',name);
   if(names.length>6)fail('KXCI_LI_MAX_SIX_FUNCTIONS',names.join(','));
   return Object.freeze(names);
