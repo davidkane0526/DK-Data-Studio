@@ -123,6 +123,9 @@
 .fs-connection-table th,.fs-connection-table td{border-bottom:1px solid var(--fs-line);padding:8px 7px;text-align:left}
 .fs-connection-table select{width:100%}
 .fs-connection-footer{padding:10px;font-size:11px;color:var(--fs-sub)}
+.fs-connection-dialog{width:min(710px,100%);height:min(520px,calc(100dvh - 24px))}
+.fs-plot-input{width:66px!important}
+.fs-full-field{width:100%}
 @media(max-width:900px){
  .fs-body{grid-template-columns:190px minmax(0,1fr)}
  .fs-info{grid-template-columns:repeat(3,minmax(130px,1fr))}
