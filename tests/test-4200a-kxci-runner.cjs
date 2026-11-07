@@ -18,7 +18,7 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  const successAdapter={
   kind:'offline-mock',
   async write(command){commands.push(command);},
-  async query(command){commands.push(command);if(command==='SP')return '1';return {bytes:Buffer.from('1.234E-8,1.235E-8,1.236E-8\0')};}
+  async query(command){commands.push(command);if(command==='SP')return '1';return {bytes:Buffer.from('N+1.234E-8,N+1.235E-8,N+1.236E-8\0')};}
  };
  const runner=createRunner({transport:successAdapter,pollIntervalMs:0});
  const result=await runner.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-ONLY'});
@@ -54,5 +54,20 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  assert.equal(fault.status,'fault');
  assert.ok(fault.state.error.includes('syntax error'));
  assert.ok(faultLog.includes('ME4'));
+ const comp={kind:'offline-mock',async write(s){},async query(s){
+  return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,C+1.235E-8,N+1.236E-8\\0')};
+ }};
+ const compliance=createRunner({transport:comp,pollIntervalMs:0});
+ const reached=await compliance.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-COMPLIANCE'});
+ assert.equal(reached.status,'fault','compliance must not be reported as successful completion');
+ assert.equal(reached.capture?.status,'fault','compliance data retained with explicit fault state');
+ assert.equal(reached.capture?.samples[1].status,1);
+ const badShutdown={kind:'offline-mock',
+  async write(s){if(s==='CH1')throw new Error('cannot disable channel');},
+  async query(s){return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,N+1.235E-8,N+1.236E-8\\0')};}};
+ const shutdown=createRunner({transport:badShutdown,pollIntervalMs:0});
+ const failedShutdown=await shutdown.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-SHUTDOWN-FAIL'});
+ assert.equal(failedShutdown.status,'fault','uncertain source state must never be success');
+ assert.equal(failedShutdown.state.shutdown,'unconfirmed');
  console.log('4200A offline execution state machine: complete, user abort, syntax fault and hardware-command gate verified');
 })().catch(err=>{console.error(err);process.exitCode=1;});
