@@ -64,14 +64,14 @@
   const result=validate(raw,{limit});if(!result.valid)throw new TypeError('Invalid 4200A raw capture: '+result.errors.map(x=>x.code).join(', '));
   const fields=raw.columns.map(c=>({id:c.id,label:c.label,unit:c.unit}));
   return Object.freeze({
-   captureId:raw.captureId,source:raw.source,rows:raw.samples.map(row=>({index:row.index,sweepId:row.sweepId,status:row.status??0,
+   captureId:raw.captureId,source:raw.source,rows:raw.samples.map(row=>({index:row.index,sweepId:row.sweepId,status:row.status??null,
     values:Object.fromEntries(fields.map(c=>[c.id,row[c.id]]))})),columns:fields
   });
  }
  const csvField=v=>{const s=String(v??'');return /[,"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
  function toCSV(raw,opts={}){
   const table=toTable(raw,opts),ids=table.columns.map(c=>c.id),header=['index','sweepId','status',...table.columns.map(c=>`${c.label}${c.unit?` (${c.unit})`:''}`)].map(csvField).join(',');
-  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status,...ids.map(k=>row.values[k]??'')].map(csvField).join(','));
+  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status??'',...ids.map(k=>row.values[k]??'')].map(csvField).join(','));
   return [header,...rows].join('\r\n')+'\r\n';
  }
  function traces(raw,{x='voltage',y='current'}={}){
