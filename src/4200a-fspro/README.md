@@ -77,3 +77,36 @@ This is **NOT** a deployed stable manifest URL, updater, signed release, hash-ch
 3. Connect trusted module inventory and source-limit capability database to these forms.
 4. Implement KXCI compiler, stop and raw-data acquisition behind an instrument-exclusive safety broker; separately verify on a real 4200A before enabling Measure.
 5. Package distinct native shells and deploy a single published update-feed endpoint and signed/verified release pipeline.
+
+## New native raw-data viewer
+
+The main Tools menu now offers **Import Native Raw Capture**, **Export Raw CSV** and **Data Viewer**. Imported files must conform to `dkts.4200a.native.raw.v1` and preserve a KXCI byte-frame transcript; chart numeric projection uses DKDS ScientificPlot while the Data Viewer and CSV retain original numeric strings. Every imported capture is explicitly labeled **imported-file**, not a live instrument measurement. Unknown/mock sources and captures without raw frames are rejected.
+
+No firmware KXCI read command is sent by the importer. Installed module discovery and safe SMU/PMU output remain separate, unimplemented milestones.
+
+## Signed update manifest generation (offline CLI only)
+
+`tools/4200a/build-release-manifest.cjs` now computes SHA-256 and byte lengths for real UI/Windows/Android release artifacts, canonically serializes the manifest and signs it with **Ed25519**. It also provides a public-key signature verifier. This addresses the cryptographic contract, not downloading, installation, atomic rollback or stable release hosting.
+
+Build configuration example (real files and URLs must replace these illustrative paths, never create a manifest for missing artifacts):
+
+```json
+{
+  "channel":"preview","nativeVersion":"0.3.0","uiRevision":"a1234",
+  "sequence":1234,"nativeAbi":1,"commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "releaseId":"v0.3.0-a1234",
+  "assets":{
+    "ui":{"path":"dist/ui.zip","url":"https://release.example.org/ui.zip"},
+    "windows":{"path":"dist/windows.exe","url":"https://release.example.org/windows.exe"},
+    "android":{"path":"dist/android.apk","url":"https://release.example.org/android.apk"}
+  }
+}
+```
+
+Invoke with `DK4200_ED25519_PRIVATE_KEY_PEM` and `DK4200_SIGNING_KEY_ID` in CI secrets:
+
+```sh
+node tools/4200a/build-release-manifest.cjs dist/release-config.json dist/release-manifest.json
+```
+
+No production signing key is committed. **Never publish the `latest` URL until all installer assets and app installation/launch verification have passed.** The code does not yet ship a working in-app update client or a verified app Release.
