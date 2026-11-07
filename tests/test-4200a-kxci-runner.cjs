@@ -55,7 +55,7 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  assert.ok(fault.state.error.includes('syntax error'));
  assert.ok(faultLog.includes('ME4'));
  const comp={kind:'offline-mock',async write(s){},async query(s){
-  return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,C+1.235E-8,N+1.236E-8\\0')};
+  return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,C+1.235E-8,N+1.236E-8\0')};
  }};
  const compliance=createRunner({transport:comp,pollIntervalMs:0});
  const reached=await compliance.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-COMPLIANCE'});
@@ -64,7 +64,7 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  assert.equal(reached.capture?.samples[1].status,1);
  const badShutdown={kind:'offline-mock',
   async write(s){if(s==='CH1')throw new Error('cannot disable channel');},
-  async query(s){return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,N+1.235E-8,N+1.236E-8\\0')};}};
+  async query(s){return s==='SP'?'1':{bytes:Buffer.from('N+1.234E-8,N+1.235E-8,N+1.236E-8\0')};}};
  const shutdown=createRunner({transport:badShutdown,pollIntervalMs:0});
  const failedShutdown=await shutdown.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-SHUTDOWN-FAIL'});
  assert.equal(failedShutdown.status,'fault','uncertain source state must never be success');
