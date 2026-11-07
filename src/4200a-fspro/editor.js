@@ -293,7 +293,7 @@ function dispatch(action,target){
 }
 host.addEventListener('click',event=>{
  const btn=event.target.closest('button[data-action]');if(!btn)return;
- if(!unlocked&&!['lock','cancel','tab','close-connection','connection','reset','ok'].includes(btn.dataset.action))return;
+ if(!unlocked&&activeDialog==='page'&&!['lock','cancel','tab','close-connection','connection','reset','ok'].includes(btn.dataset.action))return;
  dispatch(btn.dataset.action,btn);
 });
 function bindControl(el){
