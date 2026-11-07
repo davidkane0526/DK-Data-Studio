@@ -12,19 +12,21 @@ const page={schema:'dkts.fspro.page.v1',info:{testType:'DC'},
   {logical:'D',resource:'SMU2',role:'X',sourceMode:'voltage',relativeTo:'S',generator:'Linear Step',start:'0',stop:'0.2',step:'0.1',compliance:'0.001',measureRange:{mode:'auto'}}
  ]};
 const compiled=dc.compile(page,{capabilities});assert.equal(compiled.totalPoints,3);
-const nums=['0','1.234567890123E-9','-2.3000e-6'];
-const replies=compiled.read.map((q,i)=>({command:q.command,bytes:Buffer.from(nums.map((v,j)=>String(i+j+1)+'e-7').join(',')+'\0','utf8')}));
+const nums=['N+0','N+1.234567890123E-9','C-2.3000e-6'];
+const replies=compiled.read.map((q,i)=>({command:q.command,bytes:Buffer.from(nums.map((v,j)=>(j===2&&i===1?'C':'N')+'+'+String(i+j+1)+'e-7').join(',')+'\0','utf8')}));
 const capture=assemble({compiled,replies,instrumentId:capabilities.instrumentId,captureId:'OFFLINE-MOCK-ONLY',startedAt:'2026-11-08T00:00:00Z'});
 assert.equal(raw.validate(capture).valid,true);
 assert.equal(capture.samples.length,3);
 assert.equal(capture.columns.some(c=>c.id==='voltage'),true);
 assert.equal(capture.columns.some(c=>c.id==='current'),true);
 assert.equal(capture.rawFrames.length,4);
-assert.equal(capture.samples[0].status,undefined,'do not fabricate absent native status');
+assert.equal(capture.samples[0].status,0,'N status recorded');
+assert.equal(capture.samples[2].status,1,'C compliance recorded');
+assert.equal(capture.samples[2].channelStatuses.i1,'C','per-channel status recorded');
 assert.ok(raw.toCSV(capture).includes('X Voltage (V)'));
-assert.deepEqual(rawTokens(Buffer.from(nums.join(';')),3),nums);
-assert.throws(()=>rawTokens(Buffer.from('1;2'),3),/count mismatch/);
-assert.throws(()=>rawTokens(Buffer.from('1;NaN;3'),3),/Non-numeric/);
+assert.deepEqual(rawTokens(Buffer.from(nums.join(';')),3).map(x=>x.rawToken),nums);
+assert.throws(()=>rawTokens(Buffer.from('N+1;N+2'),3),/count mismatch/);
+assert.throws(()=>rawTokens(Buffer.from('N+1;NaN;C+3'),3),/Invalid KXCI/);
 const corrupted=replies.map(x=>({...x}));
 corrupted[0].command='DO \'I9\'';
 assert.throws(()=>assemble({compiled,replies:corrupted,instrumentId:capabilities.instrumentId,captureId:'TEST'}),/Out-of-order/);
