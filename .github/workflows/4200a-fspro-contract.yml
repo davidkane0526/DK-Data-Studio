@@ -28,11 +28,14 @@ jobs:
           node --check src/4200a-fspro/domain/page-plan-guard.js
           node --check src/4200a-fspro/editor.js
           node --check src/4200a-fspro/update/release-contract.js
+          node --check src/4200a-fspro/domain/native-raw-data.js
+          node --check src/4200a-fspro/frame-controller.js
           node --check desktop/4200a-fspro-main.cjs
       - name: Validate PagePlan rules (no instrument access)
         run: |
           node tests/test-4200a-page-plan-guard.cjs
           node tests/test-4200a-release-contract.cjs
+          node tests/test-4200a-native-raw.cjs
   browser-visual:
     name: Render desktop and Android-size screenshots
     runs-on: ubuntu-24.04
@@ -43,9 +46,13 @@ jobs:
         with:
           node-version: '22'
       - name: Install isolated Playwright
-        run: npm install --prefix /tmp/dk-4200a-qa --no-save --no-package-lock playwright@1.58.2
+        run: npm install --prefix /tmp/dk-4200a-qa --no-save --no-package-lock playwright@1.58.2 d3@7.9.0
       - name: Install test Chromium
         run: /tmp/dk-4200a-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Prepare shared DKDS D3 vendor for isolated UI preview
+        run: |
+          mkdir -p node_modules/d3/dist
+          cp /tmp/dk-4200a-qa/node_modules/d3/dist/d3.min.js node_modules/d3/dist/d3.min.js
       - name: Screenshot and structural interaction audit
         env:
           NODE_PATH: /tmp/dk-4200a-qa/node_modules
