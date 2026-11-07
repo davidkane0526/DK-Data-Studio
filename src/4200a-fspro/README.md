@@ -110,3 +110,25 @@ node tools/4200a/build-release-manifest.cjs dist/release-config.json dist/releas
 ```
 
 No production signing key is committed. **Never publish the `latest` URL until all installer assets and app installation/launch verification have passed.** The code does not yet ship a working in-app update client or a verified app Release.
+
+## Standalone Windows portable PREVIEW
+
+The dedicated Windows build does **not** use DKDS's main version update path (which enforces V3.72.3 for the data analysis application).
+
+- Stager: `scripts/4200a/stage-windows-preview.cjs`; dedicated workflow: `.github/workflows/4200a-preview-windows.yml`.
+- Product identity: **DK Test Studio 4200A Preview**; native version `V0.3.0`; each GitHub build has UI revision `aNNN`.
+- Run command from an installed Electron development checkout: `npx electron desktop/4200a-fspro-main.cjs`.
+- Initial validated preview build **V0.3.0 a3**: independent Windows x64 portable EXE from GitHub Actions run `42394444322`, artifact ID `13581959802`. File name/size/SHA-256 were validated by the workflow; this is **not yet a physical Windows launch test**.
+- The preview executable is unsigned, portable and **read-only KXCI**: only `*IDN?` then `*OPT?` through proven DKTS Ethernet/Wi-Fi network-route selection, persistent TCP session, and explicit Disconnect. It cannot send source/sweep/ME1 commands. The standalone branch does **not replace DKDS**, and the preview executable must not be mistaken for a verified measurement application.
+- Workflow can publish a separate `DKTS-FSPro-V0.3.0-aNNN-preview` GitHub prerelease only **after** the complete Windows build and file verification. Publishing does not imply a hardware safety acceptance.
+- The **Android native build is not ready**; DKDS generic Windows/Android workflow failures are due to DKDS's separate `FULL_APP_VERSION_BUMP_REQUIRED` protection and are not evidence that this standalone Windows preview failed.
+
+## Offline native SMU compiler and acquisition pipeline
+
+Reference doc: `docs/4200A/KXCI_Native_DC_Review.md`.
+
+- Native DC VAR1/VAR2 compiler emits `DE/CH`, `SS/VC/IC/VR/IR/VP/IP`, `IT4/DT`, `SM/DM2/LI`, `MD/ME1`, `SP`, `DO`, and the `ME4` cleanup command sequence in an immutable **offline program**.
+- No arbitrary 3-terminal restriction: up to six selected `LI` measurement functions across more verified terminals, including four-terminal X/P configurations.
+- The runner only accepts `kind:'offline-mock'`. Failure, cancellation, or unconfirmed source shutdown are never reported as a successful DUT measurement.
+- The DO parser retains native compliance prefix `N/C`, exact numeric text and raw bytes, with per-channel compliance status in CSV.
+- Hardware output is **not wired to the native host** until direct testing against the installed 4200A modules and current Rev F documentation.
