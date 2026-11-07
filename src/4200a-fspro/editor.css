@@ -221,3 +221,16 @@
  .fs-editor-footer{height:49px;min-height:49px}
  .fs-app .fs-editor-controls button{min-height:33px}
 }
+
+/* FS-Pro manual 1080x770 viewport: retain all four terminal blocks on screen. */
+@media(min-width:651px) and (max-height:790px){
+ .fs-editor-title{height:31px;min-height:31px}
+ .fs-editor-main{padding-top:4px}
+ .fs-fieldset{padding-top:4px;padding-bottom:4px;margin-bottom:3px}
+ .fs-editor-controls{margin-bottom:2px}
+ .fs-app .fs-editor-controls button{min-height:25px;padding-block:2px}
+ .fs-tabs,.fs-tabs button{min-height:25px}
+ .fs-tab-content{padding:4px;gap:3px}
+ .fs-triptych{min-height:132px}
+ .fs-editor-footer{height:36px;min-height:36px;padding-block:3px}
+}
