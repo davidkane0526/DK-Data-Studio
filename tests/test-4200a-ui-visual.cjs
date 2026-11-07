@@ -43,6 +43,11 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-008',JSON.stringify(buttons)===JSON.stringify(['Unlock','Reset','Set Connection','AutoScale','UnScale']),'command order');
   check('UI-009',JSON.stringify(await editor.locator('.fs-tabs button').allTextContents())===JSON.stringify(['Sweep','Target','Strategy']),'tab order');
   check('UI-010',await editor.locator('.fs-sweep-head').isVisible()&&await editor.locator('.fs-terminal-list').isVisible(),'RefNode/Outputs above terminals');
+  const fieldTrace=await desktop.evaluate(()=>({
+    total:document.querySelectorAll('.fs-editor [data-bind]').length,
+    missing:[...document.querySelectorAll('.fs-editor [data-bind]')].filter(el=>!/^(18|19|20|21)$/.test(el.dataset.fsProManualPage||'')).map(el=>el.dataset.bind)
+  }));
+  check('UI-034-TRACE',fieldTrace.total>=35&&fieldTrace.missing.length===0,'field traceability: '+JSON.stringify(fieldTrace));
   check('UI-011',await editor.locator('.fs-terminal').count()===4,'stacked terminals');
   const sweepGeometry=await desktop.evaluate(()=>{
    const list=document.querySelector('.fs-terminal-list');
