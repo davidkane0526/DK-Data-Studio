@@ -37,6 +37,11 @@ jobs:
           node --check desktop/4200a-readonly-discovery.cjs
           node --check desktop/4200a-kxci-acquisition.cjs
           node --check desktop/4200a-kxci-runner.cjs
+          node --check desktop/4200a-tcp-runtime.cjs
+          node --check desktop/4200a-routed-discovery.cjs
+          node --check desktop/4200a-fspro-preload.cjs
+          node --check desktop/4200a-fspro-main.cjs
+          node --check src/4200a-fspro/discovery-ui.js
           node --check desktop/4200a-fspro-main.cjs
       - name: Validate PagePlan rules (no instrument access)
         run: |
@@ -50,6 +55,7 @@ jobs:
           node tests/test-4200a-readonly-tcp.cjs
           node tests/test-4200a-kxci-acquisition.cjs
           node tests/test-4200a-kxci-runner.cjs
+          node tests/test-4200a-routed-discovery.cjs
   browser-visual:
     name: Render desktop and Android-size screenshots
     runs-on: ubuntu-24.04
