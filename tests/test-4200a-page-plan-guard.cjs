@@ -1,0 +1,46 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {validatePagePlan}=require('../src/4200a-fspro/domain/page-plan-guard');
+const base=()=>({
+  name:'FET family', testMode:'dc_point_by_point',
+  terminals:[
+    {logical:'S',resource:'SMU1',role:'CONDITION',sourceMode:'voltage',bias:'0',compliance:'1e-3'},
+    {logical:'D',resource:'SMU2',role:'X',sourceMode:'voltage',relativeTo:'S',compliance:'1e-3',measureRange:{mode:'auto'}},
+    {logical:'G',resource:'SMU3',role:'P',sourceMode:'voltage',relativeTo:'S',compliance:'1e-4',measureRange:{mode:'fixed',value:'1e-6'}}
+  ],
+  xSweep:{mode:'linear_step',start:'0',stop:'1',step:'0.1'},
+  pSweep:{mode:'linear_points',start:'-1',stop:'1',points:5}
+});
+const clone=()=>structuredClone(base());
+function check(code,edit){
+  const p=clone();edit(p);
+  const result=validatePagePlan(p);
+  assert.equal(result.valid,false,code);
+  assert.ok(result.errors.some(v=>v.code===code),JSON.stringify(result.errors));
+  assert.equal(result.executionAuthorized,false);
+}
+{
+  const v=validatePagePlan(base());
+  assert.equal(v.valid,true);
+  assert.equal(v.executionAuthorized,false,'offline plan must never authorize instrument output');
+}
+check('X_ROLE_COUNT',p=>{p.terminals[1].role='CONDITION';p.terminals[1].bias='0';});
+check('P_ROLE_COUNT',p=>{p.terminals[0].role='P';});
+check('DUPLICATE_TERMINAL',p=>{p.terminals[1].logical='S';});
+check('DUPLICATE_RESOURCE',p=>{p.terminals[1].resource='SMU1';});
+check('INVALID_COMPLIANCE',p=>{p.terminals[1].compliance='Infinity';});
+check('INVALID_MEASURE_RANGE',p=>{p.terminals[2].measureRange.value='0';});
+check('UNKNOWN_REFERENCE',p=>{p.terminals[1].relativeTo='floating';});
+check('SELF_REFERENCE',p=>{p.terminals[1].relativeTo='D';});
+check('REFERENCE_CYCLE',p=>{p.terminals[0].relativeTo='D';});
+check('UNUSED_P_SWEEP',p=>{p.terminals[2].role='CONDITION';p.terminals[2].bias='0';});
+check('MISSING_SEQUENCE_FIELD',p=>{delete p.xSweep.stop;});
+check('INVALID_STEP',p=>{p.xSweep.step='0';});
+{
+  const p=clone();p.terminals[2].resource='None';
+  const v=validatePagePlan(p);
+  assert.equal(v.valid,true,'unassigned channel may remain editable draft');
+  assert.ok(v.warnings.some(w=>w.code==='UNASSIGNED_RESOURCE'));
+  assert.equal(v.executionAuthorized,false);
+}
+console.log('4200A page-plan-guard: 14 offline assertions passed; hardware tests 0.');
