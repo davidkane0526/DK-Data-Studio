@@ -257,7 +257,7 @@ function bindControl(el){
    draft.terminals.forEach((t,i)=>{if(i!==current&&t.role===el.value)t.role='CONDITION';});
   }
   render();
- } else if(path.endsWith('.generator')||path.endsWith('.sourceMode')||path.endsWith('.logical')){render();}
+ } else if(path.endsWith('.generator')||path.endsWith('.sourceMode')||path.endsWith('.logical')||path.endsWith('.measureRange.mode')){render();}
  else updateStatus();
 }
 host.addEventListener('input',event=>{if(event.target.matches('input[data-bind],textarea[data-bind]'))bindControl(event.target);});
