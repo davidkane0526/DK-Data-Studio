@@ -40,7 +40,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const editor=desktop.locator('.fs-editor');
   check('UI-007',JSON.stringify(await editor.locator('.fs-info label').allTextContents())===JSON.stringify(['Type:','Polarity:','Group:','Test Type:','Name:']),'Info field order');
   const buttons=await editor.locator('.fs-editor-controls button').allTextContents();
-  check('UI-008',JSON.stringify(buttons)===JSON.stringify(['Lock','Reset','Set Connection','AutoScale','UnScale']),'command order');
+  check('UI-008',JSON.stringify(buttons)===JSON.stringify(['Unlock','Reset','Set Connection','AutoScale','UnScale']),'command order');
   check('UI-009',JSON.stringify(await editor.locator('.fs-tabs button').allTextContents())===JSON.stringify(['Sweep','Target','Strategy']),'tab order');
   check('UI-010',await editor.locator('.fs-sweep-head').isVisible()&&await editor.locator('.fs-terminal-list').isVisible(),'RefNode/Outputs above terminals');
   check('UI-011',await editor.locator('.fs-terminal').count()===4,'stacked terminals');
@@ -60,6 +60,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-014',JSON.stringify(triptych)===JSON.stringify(['Limits','Page Var','Associate Spec']),'bottom three panels');
   check('UI-015',await editor.locator('input[aria-label="D current compliance"]').count()===1,'voltage source current compliance');
   check('SAFE-002',await desktop.evaluate(()=>window.DK4200FSPro.validate().executionAuthorized===false),'offline cannot authorize instrument');
+  await editor.locator('button[data-action="lock"]').click();
+  check('UI-008-UNLOCK',await editor.locator('button[data-action="lock"]').innerText().then(x=>x==='Lock'),'Unlock activates editing');
   await editor.locator('button[data-action="add-segment"]').first().click();
   check('UI-013',await editor.locator('.fs-terminal').first().locator('.fs-segment-row').count()===1,'segment stays under terminal');
   await editor.locator('button[data-action="remove-segment"]').first().click();
