@@ -99,7 +99,7 @@
 .fs-table{width:100%;border-collapse:collapse;font-size:11px}
 .fs-table td,.fs-table th{border-bottom:1px solid var(--fs-line);padding:3px 6px;text-align:left;white-space:nowrap}
 .fs-table th{font-weight:600;background:color-mix(in srgb,var(--fs-bg) 65%,var(--fs-panel));position:sticky;top:0}
-.fs-table input{width:100%;min-width:55px;height:25px!important;border:0!important;padding:0 2px!important}
+.fs-app .fs-table input{width:100%;min-width:55px;height:25px;border:0;padding:0 2px}
 .fs-table input:focus{outline:1px solid var(--fs-accent)}
 .fs-panel-row{display:flex;min-height:0;flex:1}
 .fs-panel-row .fs-table-wrap{flex:1}
