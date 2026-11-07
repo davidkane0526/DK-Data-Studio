@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const net=require('node:net');
-const {discoverRouted}=require('../desktop/4200a-routed-discovery.cjs');
+const {discoverRouted,openReadonlySession}=require('../desktop/4200a-routed-discovery.cjs');
 const {resolveLocalCandidates}=require('../desktop/4200a-tcp-runtime.cjs');
 async function serverFor(optionsFn){
  const commands=[];
@@ -29,6 +29,13 @@ async function serverFor(optionsFn){
   assert.deepEqual(found.inventory.addressableSMUs.map(x=>x.resource),['SMU1','SMU2']);
   assert.deepEqual(srv.commands,['*IDN?','*OPT?']);
   assert.equal(Buffer.from(found.rawFrames[0].payloadBase64,'base64').toString(),'KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14');
+  const held=await openReadonlySession({host:'127.0.0.1',port:srv.port,timeoutMs:1000,expectedSerial:'1498377'});
+  assert.equal(held.isConnected(),true,'read-only socket stays connected after identity');
+  assert.equal(held.summary.verifiedIdentity,true);
+  assert.equal(typeof held.sendCommand,'undefined','never expose generic KXCI sender');
+  assert.equal(await held.disconnect(),true);
+  assert.equal(held.isConnected(),false,'explicit disconnect releases the socket');
+  assert.equal(await held.disconnect(),false,'idempotent disconnect');
   await assert.rejects(()=>discoverRouted({host:'127.0.0.1',port:srv.port,timeoutMs:1000,expectedSerial:'unexpected'}),/serial number mismatch/);
   assert.deepEqual(srv.commands.slice(-1),['*IDN?'],'must not query modules after serial mismatch');
  }finally{await srv.close();}
