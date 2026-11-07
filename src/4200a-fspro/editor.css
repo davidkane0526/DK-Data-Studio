@@ -150,7 +150,7 @@
  .fs-frame{min-height:130px}
  .fs-bottom{grid-template-columns:1fr;max-height:36%}
  .fs-bottom-cell:nth-child(2){display:none}
- .fs-menu{overflow:auto}
+ .fs-menu{overflow:visible;min-height:30px;height:auto;flex-wrap:wrap}
  .fs-toolbar{overflow:auto;flex-shrink:0}
  .fs-modal-host{padding:0}
  .fs-editor{width:100%;height:100dvh;min-height:0;border:0;border-radius:0}
