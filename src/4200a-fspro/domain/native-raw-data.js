@@ -79,8 +79,9 @@
  const csvField=v=>{const s=String(v??'');return /[,"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
  function toCSV(raw,opts={}){
   const table=toTable(raw,opts),ids=table.columns.map(c=>c.id),header=['index','sweepId','status',...table.columns.map(c=>`${c.label}${c.unit?` (${c.unit})`:''}`)].map(csvField).join(',');
-  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status??'',...ids.map(k=>row.values[k]??'')].map(csvField).join(','));
-  return [header,...rows].join('\r\n')+'\r\n';
+  const stateKeys=[...new Set(table.rows.flatMap(row=>Object.keys(row.channelStatuses||{})))].sort();
+  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status??'',...ids.map(k=>row.values[k]??''),...stateKeys.map(k=>row.channelStatuses?.[k]??'')].map(csvField).join(','));
+  return [[header,...stateKeys.map(k=>csvField(k+' status'))].join(','),...rows].join('\r\n')+'\r\n';
  }
  function traces(raw,{x='voltage',y='current'}={}){
   const table=toTable(raw);
