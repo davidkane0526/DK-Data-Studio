@@ -18,7 +18,7 @@
     <div class="fs-menu-item"><button data-menu="File" aria-expanded="false">File</button><div class="fs-menu-popup" role="menu" hidden><button data-command="new">New Project</button><button data-command="open">Open Page</button><button data-command="save">Save Page</button></div></div>
     <div class="fs-menu-item"><button data-menu="Instruments" aria-expanded="false">Instruments</button><div class="fs-menu-popup" role="menu" hidden><button data-command="connection">Set Connection</button></div></div>
     <div class="fs-menu-item"><button data-menu="Measurement" aria-expanded="false">Measurement</button><div class="fs-menu-popup" role="menu" hidden><button data-command="edit">Edit Page</button><button disabled title="原生输出尚未通过验收">Measure</button><button disabled title="原生输出尚未通过验收">Repeat</button></div></div>
-    <div class="fs-menu-item"><button data-menu="Tools" aria-expanded="false">Tools</button><div class="fs-menu-popup" role="menu" hidden><button data-command="save">Export Page Plan</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Tools" aria-expanded="false">Tools</button><div class="fs-menu-popup" role="menu" hidden><button data-command="save">Export Page Plan</button><button data-command="import-raw">Import Native Raw Capture</button><button data-command="export-raw">Export Raw CSV</button><button data-command="data-viewer">Data Viewer</button></div></div>
     <div class="fs-menu-item"><button data-menu="Window" aria-expanded="false">Window</button><div class="fs-menu-popup" role="menu" hidden><button data-command="arrange">Arrange 2 × 2</button></div></div>
     <div class="fs-menu-item"><button data-menu="Help" aria-expanded="false">Help</button><div class="fs-menu-popup" role="menu" hidden><button data-command="help">About this preview</button></div></div>
   </nav>
@@ -54,7 +54,7 @@
         <section class="fs-frame"><div class="fs-frame-title">Frame 1 <span>I–V</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
         <section class="fs-frame"><div class="fs-frame-title">Frame 2 <span>Transfer</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
         <section class="fs-frame"><div class="fs-frame-title">Frame 3 <span>I–t</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
-        <section class="fs-frame"><div class="fs-frame-title">Frame 4 <span>Data</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame"><div class="fs-frame-title">Frame 4 <span>Data</span><button data-command="data-viewer" class="fs-frame-viewer" title="查看原始数据表">表格</button></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
       </div>
       <div class="fs-bottom">
         <div class="fs-bottom-cell"><div class="fs-pane-header">Messages / Test Log</div><div id="fs-messages" class="fs-messages">离线配置已就绪。未连接仪器。</div></div>
@@ -65,7 +65,7 @@
   <footer class="fs-status"><span id="fs-bottom-status">离线配置</span><span>Keithley 4200A-SCS</span></footer>
 </div>
 <div class="fs-modal-host" id="fs-modal-host" hidden></div>
-<input type="file" id="fs-open-input" accept=".json,application/json" hidden />
+<input type="file" id="fs-open-input" accept=".json,application/json" hidden /><input type="file" id="fs-raw-input" accept=".json,application/json" hidden />
 <!-- Reuse DKDS Core component/semantic infrastructure, without its plugin host. -->
 <script src="../../sdk/theme-contract.js"></script>
 <script src="../core/ui/frame-scheduler.js"></script>
@@ -74,6 +74,20 @@
 <script src="../core/theme/style-ownership-gate-runtime.js"></script>
 <script src="../core/theme/semantic-registry.js"></script>
 <script src="../core/ui/component-runtime.js"></script>
+<!-- The identical scientific plotting engine owned by DKDS Core. -->
+<script src="../../node_modules/d3/dist/d3.min.js"></script>
+<script src="../core/theme/runtime.js"></script>
+<script src="../core/theme/component-appearance.js"></script>
+<script src="../core/scientific/plot-presentation-runtime.js"></script>
+<script src="../core/scientific/display-runtime.js"></script>
+<script src="../core/scientific/heatmap-canvas-runtime.js"></script>
+<script src="../core/scientific/heatmap-selection-overlay-runtime.js"></script>
+<script src="../core/scientific/d3-chart-renderer.js"></script>
+<script src="../core/scientific/chart-export-runtime.js"></script>
+<script src="../core/scientific/chart-runtime.js"></script>
+<script src="../core/scientific/plot-runtime.js"></script>
+<script src="domain/native-raw-data.js"></script>
+<script src="frame-controller.js"></script>
 <script src="domain/page-plan-guard.js"></script>
 <script src="editor.js"></script>
 </body>
