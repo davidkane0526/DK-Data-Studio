@@ -265,7 +265,12 @@ function connectionHTML(){
  <footer class="fs-editor-footer"><span class="fs-validation"></span><button data-action="connection-ok" class="fs-primary">OK</button>
  <button data-action="close-connection">Cancel</button></footer></div>`;
 }
-function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();window.DKDSComponents?.hydrate?.(host);if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
+function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();window.DKDSComponents?.hydrate?.(host);
+ for(const el of host.querySelectorAll?.('[data-bind]')||[]){
+  const path=String(el.dataset.bind||'');
+  el.dataset.fsProManualPage=activeDialog==='connection'?'21':path.startsWith('strategy.')?'20':path.startsWith('target.')?'19':'18';
+ }
+ if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
 function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=false;render();}
 function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
