@@ -202,3 +202,16 @@
 .fs-data-table th,.fs-data-table td{border-bottom:1px solid var(--fs-line);padding:5px 10px;text-align:left}
 .fs-data-table thead th{background:var(--fs-bg);position:sticky;top:0;z-index:1}
 .fs-data-note{margin:0 12px;padding:8px 0;color:var(--fs-sub)}
+
+/* Instrument settings uses the same compact DKDS/FS-Pro controls and geometry. */
+.fs-device-dialog{width:min(650px,100%);height:auto;max-height:min(560px,calc(100dvh - 24px))}
+.fs-device-form{padding:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 16px;overflow:auto}
+.fs-device-form label{display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--fs-sub);font-size:11px}
+.fs-app .fs-device-form input,.fs-app .fs-device-form select{width:100%;height:32px;color:var(--fs-ink);font-size:12px}
+.fs-device-summary{padding:6px 12px;font-weight:550;min-height:30px;border-top:1px solid var(--fs-line)}
+.fs-device-hint{padding:4px 12px 8px;color:var(--fs-sub);font-size:11px}
+.fs-app #fs-instrument-link[data-state="connected"]{color:var(--fs-accent);border-color:var(--fs-accent)}
+@media(max-width:650px){
+ .fs-device-dialog{height:auto;min-height:0;max-height:100dvh}
+ .fs-device-form{grid-template-columns:minmax(0,1fr);gap:9px}
+}
