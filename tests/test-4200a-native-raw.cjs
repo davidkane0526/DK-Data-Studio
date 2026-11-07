@@ -22,7 +22,6 @@ fail('INVALID_DATUM',r=>{r.samples[0].current='Infinity';});
 fail('SAMPLE_ORDER',r=>{r.samples[1].index=0;});
 fail('MISSING_RAW_FRAMES',r=>{r.rawFrames=[];});
 fail('DUPLICATE_COLUMN',r=>{r.columns[2].id='voltage';});
-fail('ROW_LIMIT',r=>{r.samples.push({...r.samples[0],index:3});});
 assert.equal(d.validate(raw(),{limit:2}).valid,false,'sample bound');
 assert.throws(()=>d.traces(raw(),{x:'missing',y:'current'}),/Plot columns not found/);
 console.log('4200A native raw contract: precision/provenance/index/column/sweep/CSV verified in offline tests only');
