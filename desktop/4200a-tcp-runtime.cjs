@@ -270,7 +270,11 @@ function createTcpRuntime(options={}){
   async function close(payload={}){return closeSession(payload.sessionId);}
   function closeAll(){for(const id of [...sessions.keys()])closeSession(id);}
 
-  return Object.freeze({open,exchange,close,closeAll});
+  const hasSession=id=>{
+    const row=sessions.get(String(id||'').trim());
+    return Boolean(row&&!row.socket.destroyed);
+  };
+  return Object.freeze({open,exchange,close,closeAll,hasSession});
 }
 
 module.exports={createTcpRuntime,resolveLocalAddress,resolveLocalCandidates};
