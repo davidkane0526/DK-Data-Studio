@@ -31,7 +31,15 @@
 .fs-titlebar strong{font-size:14px;font-weight:650}
 .fs-title-spacer,.fs-toolbar-fill{flex:1}
 .fs-menu{height:30px;gap:0;border-bottom:1px solid var(--fs-line)}
+.fs-menu-item{position:relative;flex:0 0 auto}
 .fs-menu button{border:0;background:none;border-radius:0;padding:3px 10px;min-height:28px}
+.fs-menu-item > button[aria-expanded="true"]{background:color-mix(in srgb,var(--fs-accent) 10%,var(--fs-panel))}
+.fs-menu-popup{position:absolute;top:100%;left:0;z-index:950;min-width:165px;padding:5px;
+  border:1px solid var(--fs-line);border-radius:6px;background:var(--fs-panel);
+  box-shadow:0 8px 24px #11233a20;display:flex;flex-direction:column}
+.fs-menu-popup[hidden]{display:none}
+.fs-menu-popup button{width:100%;text-align:left;white-space:nowrap;border-radius:4px;padding:6px 9px}
+.fs-menu-popup button:disabled{opacity:.48}
 .fs-toolbar{height:45px;background:var(--fs-panel);border-bottom:1px solid var(--fs-line)}
 .fs-toolbar button{white-space:nowrap}
 .fs-separator{height:21px;width:1px;background:var(--fs-line);margin:0 3px}
