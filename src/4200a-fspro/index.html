@@ -15,9 +15,12 @@
     <span class="fs-caption">FS-Pro · 独立测试工作区</span>
   </header>
   <nav class="fs-menu" aria-label="主菜单">
-    <button data-command="new">File</button><button data-command="connection">Instruments</button>
-    <button data-command="edit">Measurement</button><button data-command="save">Tools</button>
-    <button data-command="arrange">Window</button><button data-command="help">Help</button>
+    <div class="fs-menu-item"><button data-menu="File" aria-expanded="false">File</button><div class="fs-menu-popup" role="menu" hidden><button data-command="new">New Project</button><button data-command="open">Open Page</button><button data-command="save">Save Page</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Instruments" aria-expanded="false">Instruments</button><div class="fs-menu-popup" role="menu" hidden><button data-command="connection">Set Connection</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Measurement" aria-expanded="false">Measurement</button><div class="fs-menu-popup" role="menu" hidden><button data-command="edit">Edit Page</button><button disabled title="原生输出尚未通过验收">Measure</button><button disabled title="原生输出尚未通过验收">Repeat</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Tools" aria-expanded="false">Tools</button><div class="fs-menu-popup" role="menu" hidden><button data-command="save">Export Page Plan</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Window" aria-expanded="false">Window</button><div class="fs-menu-popup" role="menu" hidden><button data-command="arrange">Arrange 2 × 2</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Help" aria-expanded="false">Help</button><div class="fs-menu-popup" role="menu" hidden><button data-command="help">About this preview</button></div></div>
   </nav>
   <div class="fs-toolbar" role="toolbar" aria-label="主工具栏">
     <button data-command="new" title="新建工程">新建</button>
