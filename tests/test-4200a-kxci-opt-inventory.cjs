@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const m=require('../src/4200a-fspro/domain/kxci-opt-inventory.js');
 const parsed=m.parseOptReply('SMU1,HPSMUPA2,CVU,PMURPM,VS1,VM2,');
-assert.equal(parsed.slots.length,7);
+assert.equal(parsed.slots.length,6);
 assert.deepEqual(parsed.addressableSMUs.map(x=>x.resource),['SMU1','SMU2']);
 assert.equal(parsed.unresolvedSlots.length,2,'PMU and CVU without channel remain unresolved (no fake mapping)');
 const opt=m.toModuleCapabilities('SMU,HPSMUPA,CVU,VM',
