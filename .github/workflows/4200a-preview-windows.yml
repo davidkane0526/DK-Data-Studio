@@ -9,6 +9,8 @@ on:
       - 'desktop/4200a-*.cjs'
       - 'scripts/4200a/**'
       - '.github/workflows/4200a-preview-windows.yml'
+  pull_request:
+    branches: ['4200']
   workflow_dispatch:
 permissions:
   contents: write
