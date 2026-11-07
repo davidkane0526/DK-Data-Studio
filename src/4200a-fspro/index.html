@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN" data-dkds-theme="light">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>DK Test Studio · 4200A</title>
+<link rel="stylesheet" href="../core.css"/>
+<link rel="stylesheet" href="editor.css"/>
+</head>
+<body class="dkds-modern-ui fs-app" data-dkds-host="desktop">
+<div id="fs-shell" class="fs-shell">
+  <header class="fs-titlebar">
+    <strong>DK Test Studio</strong><span class="fs-caption">4200A</span>
+    <span class="fs-title-spacer"></span>
+    <span class="fs-caption">FS-Pro · 独立测试工作区</span>
+  </header>
+  <nav class="fs-menu" aria-label="主菜单">
+    <div class="fs-menu-item"><button data-menu="File" aria-expanded="false">File</button><div class="fs-menu-popup" role="menu" hidden><button data-command="new">New Project</button><button data-command="open">Open Page</button><button data-command="save">Save Page</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Instruments" aria-expanded="false">Instruments</button><div class="fs-menu-popup" role="menu" hidden><button data-command="connection">Set Connection</button><button data-native-action="settings">Connection Settings</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Measurement" aria-expanded="false">Measurement</button><div class="fs-menu-popup" role="menu" hidden><button data-command="edit">Edit Page</button><button disabled title="原生输出尚未通过验收">Measure</button><button disabled title="原生输出尚未通过验收">Repeat</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Tools" aria-expanded="false">Tools</button><div class="fs-menu-popup" role="menu" hidden><button data-command="save">Export Page Plan</button><button data-command="import-raw">Import Native Raw Capture</button><button data-command="export-raw">Export Raw CSV</button><button data-command="data-viewer">Data Viewer</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Window" aria-expanded="false">Window</button><div class="fs-menu-popup" role="menu" hidden><button data-command="arrange">Arrange 2 × 2</button></div></div>
+    <div class="fs-menu-item"><button data-menu="Help" aria-expanded="false">Help</button><div class="fs-menu-popup" role="menu" hidden><button data-command="help">About this preview</button></div></div>
+  </nav>
+  <div class="fs-toolbar" role="toolbar" aria-label="主工具栏">
+    <button data-command="new" title="新建工程">新建</button>
+    <button data-command="open" title="载入工程">打开</button>
+    <button data-command="save" title="保存工程文件">保存</button>
+    <i class="fs-separator"></i>
+    <button data-command="edit" class="fs-primary">Edit Page</button>
+    <button data-command="connection">Set Connection</button>
+    <button id="fs-instrument-link" data-native-action="toggle" type="button">连接</button>
+    <i class="fs-separator"></i>
+    <button id="fs-measure" disabled title="尚未获得4200A真实测量执行授权">Measure</button>
+    <button id="fs-repeat" disabled title="尚未获得4200A真实测量执行授权">Repeat</button>
+    <span class="fs-toolbar-fill"></span>
+    <button data-command="arrange">2 × 2</button>
+  </div>
+  <main class="fs-body">
+    <aside class="fs-sidebar">
+      <div class="fs-pane-header">Project Navigation</div>
+      <div class="fs-project" role="tree">
+        <div role="treeitem" aria-expanded="true">▾ Project</div>
+        <div class="fs-depth1" role="treeitem" aria-expanded="true">▾ Device 01</div>
+        <div class="fs-depth2" role="treeitem" aria-expanded="true">▾ Routine 01</div>
+        <button class="fs-depth3 fs-tree-selected" data-command="edit" role="treeitem">Page · IV Sweep</button>
+        <div class="fs-depth2 fs-tree-muted" role="treeitem">Spec</div>
+      </div>
+      <div class="fs-pane-header">Device</div>
+      <div class="fs-device-row"><span>Device 01</span><button data-command="connection">端口配置</button></div>
+    </aside>
+    <section class="fs-right">
+      <div class="fs-pane-header">Visual Area <span>Frame 1–4</span></div>
+      <div class="fs-frames">
+        <section class="fs-frame"><div class="fs-frame-title">Frame 1 <span>I–V</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame"><div class="fs-frame-title">Frame 2 <span>Transfer</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame"><div class="fs-frame-title">Frame 3 <span>I–t</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame"><div class="fs-frame-title">Frame 4 <span>Data</span><button data-command="data-viewer" class="fs-frame-viewer" title="查看原始数据表">表格</button></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+      </div>
+      <div class="fs-bottom">
+        <div class="fs-bottom-cell"><div class="fs-pane-header">Messages / Test Log</div><div id="fs-messages" class="fs-messages">离线配置已就绪。未连接仪器。</div></div>
+        <div class="fs-bottom-cell"><div class="fs-pane-header">Measurement Settings</div><div class="fs-measure-settings">Page <b id="fs-page-name">IV Sweep</b><span id="fs-status-summary">未授权输出</span></div></div>
+      </div>
+    </section>
+  </main>
+  <footer class="fs-status"><span id="fs-bottom-status">离线配置</span><span>Keithley 4200A-SCS</span></footer>
+</div>
+<div class="fs-modal-host" id="fs-modal-host" hidden></div><div class="fs-modal-host" id="fs-data-host" hidden></div><div class="fs-modal-host" id="fs-instrument-host" hidden></div>
+<input type="file" id="fs-open-input" accept=".json,application/json" hidden /><input type="file" id="fs-raw-input" accept=".json,application/json" hidden />
+<!-- Reuse DKDS Core component/semantic infrastructure, without its plugin host. -->
+<script src="../../sdk/theme-contract.js"></script>
+<script src="../core/ui/frame-scheduler.js"></script>
+<script src="../core/ui/dom-mutation-hub.js"></script>
+<script src="../core/contracts/style-ownership-semantics.js"></script>
+<script src="../core/theme/style-ownership-gate-runtime.js"></script>
+<script src="../core/theme/semantic-registry.js"></script>
+<script src="../core/ui/component-runtime.js"></script>
+<!-- The identical scientific plotting engine owned by DKDS Core. -->
+<script src="../../node_modules/d3/dist/d3.min.js"></script>
+<script src="../core/theme/runtime.js"></script>
+<script src="../core/theme/component-appearance.js"></script>
+<script src="../core/scientific/plot-presentation-runtime.js"></script>
+<script src="../core/scientific/display-runtime.js"></script>
+<script src="../core/scientific/heatmap-canvas-runtime.js"></script>
+<script src="../core/scientific/heatmap-selection-overlay-runtime.js"></script>
+<script src="../core/scientific/d3-chart-renderer.js"></script>
+<script src="../core/scientific/chart-export-runtime.js"></script>
+<script src="../core/scientific/chart-runtime.js"></script>
+<script src="../core/scientific/plot-runtime.js"></script>
+<script src="domain/native-raw-data.js"></script>
+<script src="frame-controller.js"></script>
+<script src="domain/page-plan-guard.js"></script>
+<script src="editor.js"></script>
+<script src="discovery-ui.js"></script>
+</body>
+</html>

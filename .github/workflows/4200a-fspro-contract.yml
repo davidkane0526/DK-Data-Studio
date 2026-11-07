@@ -1,0 +1,86 @@
+name: 4200A FS-Pro offline UI and contract checks
+on:
+  push:
+    branches:
+      - feat/4200a-fspro-rebuild
+    paths:
+      - 'src/4200a-fspro/**'
+      - 'desktop/4200a-fspro-main.cjs'
+      - 'tests/test-4200a-*.cjs'
+      - '.github/workflows/4200a-fspro-contract.yml'
+  pull_request:
+    branches:
+      - 4200
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-contract:
+    name: Check PagePlan safety invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JS source
+        run: |
+          node --check src/4200a-fspro/domain/page-plan-guard.js
+          node --check src/4200a-fspro/editor.js
+          node --check src/4200a-fspro/update/release-contract.js
+          node --check src/4200a-fspro/domain/native-raw-data.js
+          node --check src/4200a-fspro/frame-controller.js
+          node --check tools/4200a/build-release-manifest.cjs
+          node --check src/4200a-fspro/domain/kxci-dc-compiler.js
+          node --check src/4200a-fspro/domain/kxci-opt-inventory.js
+          node --check src/4200a-fspro/domain/kxci-wire.js
+          node --check desktop/4200a-readonly-discovery.cjs
+          node --check desktop/4200a-kxci-acquisition.cjs
+          node --check desktop/4200a-kxci-runner.cjs
+          node --check desktop/4200a-tcp-runtime.cjs
+          node --check desktop/4200a-routed-discovery.cjs
+          node --check desktop/4200a-fspro-preload.cjs
+          node --check desktop/4200a-fspro-main.cjs
+          node --check src/4200a-fspro/discovery-ui.js
+          node --check desktop/4200a-fspro-main.cjs
+      - name: Validate PagePlan rules (no instrument access)
+        run: |
+          node tests/test-4200a-page-plan-guard.cjs
+          node tests/test-4200a-release-contract.cjs
+          node tests/test-4200a-native-raw.cjs
+          node tests/test-4200a-signed-manifest.cjs
+          node tests/test-4200a-kxci-dc-compiler.cjs
+          node tests/test-4200a-kxci-opt-inventory.cjs
+          node tests/test-4200a-kxci-wire.cjs
+          node tests/test-4200a-readonly-tcp.cjs
+          node tests/test-4200a-kxci-acquisition.cjs
+          node tests/test-4200a-kxci-runner.cjs
+          node tests/test-4200a-routed-discovery.cjs
+  browser-visual:
+    name: Render desktop and Android-size screenshots
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Playwright
+        run: npm install --prefix /tmp/dk-4200a-qa --no-save --no-package-lock playwright@1.58.2 d3@7.9.0
+      - name: Install test Chromium
+        run: /tmp/dk-4200a-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Prepare shared DKDS D3 vendor for isolated UI preview
+        run: |
+          mkdir -p node_modules/d3/dist
+          cp /tmp/dk-4200a-qa/node_modules/d3/dist/d3.min.js node_modules/d3/dist/d3.min.js
+      - name: Screenshot and structural interaction audit
+        env:
+          NODE_PATH: /tmp/dk-4200a-qa/node_modules
+        run: node tests/test-4200a-ui-visual.cjs
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 4200a-fspro-ui-evidence
+          path: artifacts/4200a-ui/
+          if-no-files-found: warn
