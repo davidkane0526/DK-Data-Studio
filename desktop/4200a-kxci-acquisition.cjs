@@ -10,10 +10,16 @@ function rawTokens(payload,expected){
  const buffer=Buffer.isBuffer(payload)?payload:Buffer.from(payload);
  if(!buffer.length||buffer.length>4*1024*1024)throw new Error('Empty or oversized KXCI DO response');
  const text=buffer.toString('utf8').replace(/\0+$/,'').trim();
- const values=text.split(/[,;\s]+/).filter(Boolean);
- if(values.length!==expected)throw new Error('KXCI DO point count mismatch: expected '+expected+', got '+values.length);
- for(const v of values)if(!numeric.test(v)||!Number.isFinite(Number(v)))throw new Error('Non-numeric KXCI reading');
- return values;
+ const tokens=text.split(/[,;\s]+/).filter(Boolean);
+ if(tokens.length!==expected)throw new Error('KXCI DO point count mismatch: expected '+expected+', got '+tokens.length);
+ return tokens.map((token,index)=>{
+  // KXCI Rev E §3-1: system mode DO readings are X±N.NNNNE±NN.
+  // X=N normal, X=C compliance. These are not user-mode XYZ records.
+  const match=/^([NC])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?)$/.exec(token);
+  if(!match||!numeric.test(match[2])||!Number.isFinite(Number(match[2])))
+   throw new Error('Invalid KXCI system-mode DO status/number at '+index+': '+token.slice(0,32));
+  return Object.freeze({status:match[1],valueText:match[2],rawToken:token});
+ });
 }
 function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
  if(!compiled||compiled.schema!=='dkts.4200a.kxci.dc-compiled.v1'||
@@ -45,9 +51,12 @@ function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
  for(const name of names)columns.push({id:name.toLowerCase(),label:name,unit:name.startsWith('V')?'V':'A'});
  const samples=[];
  for(let i=0;i<compiled.totalPoints;i++){
-  const row={index:i,sweepId:'P'+Math.floor(i/compiled.xPoints),voltage:channels.get('V'+xi)[i],current:channels.get('I'+xi)[i]};
-  if(pi)row.gate_voltage=channels.get('V'+pi)[i];
-  for(const name of names)row[name.toLowerCase()]=channels.get(name)[i];
+  const channelStatuses=Object.fromEntries([...names].map(name=>[name.toLowerCase(),channels.get(name)[i].status]));
+  const row={index:i,sweepId:'P'+Math.floor(i/compiled.xPoints),
+    voltage:channels.get('V'+xi)[i].valueText,current:channels.get('I'+xi)[i].valueText,
+    channelStatuses,status:Object.values(channelStatuses).includes('C')?1:0};
+  if(pi)row.gate_voltage=channels.get('V'+pi)[i].valueText;
+  for(const name of names)row[name.toLowerCase()]=channels.get(name)[i].valueText;
   samples.push(row);
  }
  const canonical=JSON.stringify({prepare:compiled.prepare,start:compiled.start,read:compiled.read,metadata:compiled.metadata});
