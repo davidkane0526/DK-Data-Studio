@@ -71,6 +71,13 @@ function createRunner({transport,onState=()=>{},pause=ms=>new Promise(resolve=>s
      startedAt:startedAt||new Date().toISOString()});
    record.executionContext='offline-mock';
    await cleanup(compiled,false);
+   if(shutdown!=='commands-sent')throw new Error('OUTPUT_SHUTDOWN_UNCONFIRMED');
+   if(record.samples.some(row=>row.status===1)){
+    record.status='fault';
+    lastError='KXCI compliance status C detected in native DO response';
+    signal('fault',lastError);
+    return Object.freeze({status:'fault',capture:Object.freeze(record),state:state()});
+   }
    signal('completed');
    return Object.freeze({status:'completed',capture:Object.freeze(record),state:state()});
   }catch(err){
