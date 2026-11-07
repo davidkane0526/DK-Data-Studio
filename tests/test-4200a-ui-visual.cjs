@@ -18,7 +18,18 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
  try{
   const desktop=await browser.newPage({viewport:{width:1200,height:850},deviceScaleFactor:1,acceptDownloads:true});
   await desktop.goto(file);
+  const pageErrors=[];
+  desktop.on('pageerror',err=>pageErrors.push(String(err.message||err)));
   await desktop.screenshot({path:path.join(out,'01-main-workspace.png'),fullPage:true});
+  await desktop.locator('.fs-menu [data-menu="File"]').click();
+  const menuGeometry=await desktop.evaluate(()=>{
+   const trigger=document.querySelector('.fs-menu [data-menu="File"]').getBoundingClientRect();
+   const popup=document.querySelector('.fs-menu-item .fs-menu-popup').getBoundingClientRect();
+   return {triggerBottom:trigger.bottom,popupTop:popup.top,popupLeft:popup.left,triggerLeft:trigger.left};
+  });
+  check('UI-MENU-ANCHOR',Math.abs(menuGeometry.popupTop-menuGeometry.triggerBottom)<3&&Math.abs(menuGeometry.popupLeft-menuGeometry.triggerLeft)<3,JSON.stringify(menuGeometry));
+  await desktop.locator('.fs-menu [data-menu="File"]').click();
+
   check('UI-001',await desktop.locator('.fs-menu').isVisible()&&await desktop.locator('.fs-toolbar').isVisible(),'top menu and toolbar');
   check('UI-002',await desktop.locator('.fs-project [role=treeitem]').count()>=4,'nested project tree');
   check('UI-003',await desktop.locator('.fs-frame').count()===4,'2x2 Visual Area');
@@ -33,6 +44,17 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-009',JSON.stringify(await editor.locator('.fs-tabs button').allTextContents())===JSON.stringify(['Sweep','Target','Strategy']),'tab order');
   check('UI-010',await editor.locator('.fs-sweep-head').isVisible()&&await editor.locator('.fs-terminal-list').isVisible(),'RefNode/Outputs above terminals');
   check('UI-011',await editor.locator('.fs-terminal').count()===4,'stacked terminals');
+  const sweepGeometry=await desktop.evaluate(()=>{
+   const list=document.querySelector('.fs-terminal-list');
+   const last=list?.querySelector('.fs-terminal:last-child');
+   const ref=document.querySelector('.fs-sweep-head select[data-bind="refNode"]');
+   const triptych=document.querySelector('.fs-triptych');
+   const listRect=list?.getBoundingClientRect(),lastRect=last?.getBoundingClientRect(),bottom=triptych?.getBoundingClientRect();
+   return {listClient:list?.clientHeight,listScroll:list?.scrollHeight,
+     listBottom:listRect?.bottom,lastBottom:lastRect?.bottom,triptychTop:bottom?.top,refWidth:ref?.getBoundingClientRect().width};
+  });
+  check('UI-011-VISIBLE',sweepGeometry.lastBottom<=sweepGeometry.listBottom+2&&sweepGeometry.lastBottom<=sweepGeometry.triptychTop-2,'4 terminals visible: '+JSON.stringify(sweepGeometry));
+  check('UI-010-REFNODE',sweepGeometry.refWidth>=68,'RefNode selection not collapsed: '+JSON.stringify(sweepGeometry));
   check('UI-012',await desktop.evaluate(()=>{const x=window.DK4200FSPro.getDraft().terminals.filter(t=>t.role==='X');const p=window.DK4200FSPro.getDraft().terminals.filter(t=>t.role==='P');return x.length===1&&p.length===1;}),'one X one P');
   const triptych=await editor.locator('.fs-triptych > .fs-triptych-panel h3').allTextContents();
   check('UI-014',JSON.stringify(triptych)===JSON.stringify(['Limits','Page Var','Associate Spec']),'bottom three panels');
@@ -44,6 +66,12 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-013b',await editor.locator('.fs-terminal').first().locator('.fs-segment-row').count()===0,'delete segment');
   await editor.locator('button[data-action="tab"][data-tab="Target"]').click();
   await desktop.screenshot({path:path.join(out,'03-edit-page-target.png'),fullPage:true});
+  const targetGeometry=await desktop.evaluate(()=>{
+   const area=document.querySelector('.fs-tab-content')?.getBoundingClientRect();
+   const triptych=document.querySelector('.fs-target .fs-triptych')?.getBoundingClientRect();
+   return {areaBottom:area?.bottom,triptychBottom:triptych?.bottom};
+  });
+  check('UI-016-BOTTOM',Math.abs(targetGeometry.areaBottom-targetGeometry.triptychBottom)<17,'Target lower panels align to bottom: '+JSON.stringify(targetGeometry));
   check('UI-016',await editor.locator('.fs-target textarea').isVisible()&&await editor.locator('.fs-target .fs-triptych').isVisible(),'equation and lower panels');
   check('UI-017',await editor.locator('.fs-function-info').isVisible()&&await editor.locator('.fs-plot-options input').count()===4,'function info, X/Y/H/P');
   await editor.locator('button[data-action="tab"][data-tab="Strategy"]').click();
@@ -69,7 +97,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
    tabs:Array.from(document.querySelectorAll('.fs-tabs button')).map(x=>x.textContent)
   }));
   check('UI-035',metrics.terminalCount===4&&metrics.tabs.join(',')==='Sweep,Target,Strategy','same terminal and tab composition');
-  fs.writeFileSync(path.join(out,'acceptance-report.json'),JSON.stringify({reference:'FS-Pro V6',kind:'offline UI',checks:report,metrics},null,2));
+  check('UI-NO-PAGEERROR',pageErrors.length===0,'Page errors: '+pageErrors.join('; '));
+  fs.writeFileSync(path.join(out,'acceptance-report.json'),JSON.stringify({reference:'FS-Pro V6',kind:'offline UI',checks:report,metrics,pageErrors},null,2));
   console.log(JSON.stringify({checks:report.length,passed:report.filter(x=>x.pass).length,output:out,metrics}));
  }finally{await browser.close();}
 })().catch(err=>{fs.writeFileSync(path.join(out,'failure.txt'),String(err.stack||err));console.error(err);process.exitCode=1;});
