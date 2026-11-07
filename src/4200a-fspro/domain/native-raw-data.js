@@ -45,6 +45,14 @@
    lastIndex=row.index;
    if(!text(row.sweepId)||row.sweepId.length>80)fail('SWEEP_ID',`samples[${i}].sweepId`);
    if(row.status!==undefined&&(!Number.isInteger(row.status)||row.status<0||row.status>0xFFFFFFFF))fail('STATUS',`samples[${i}].status`);
+   if(row.channelStatuses!==undefined){
+    if(!row.channelStatuses||typeof row.channelStatuses!=='object'||Array.isArray(row.channelStatuses))
+     fail('CHANNEL_STATUSES',`samples[${i}].channelStatuses`);
+    else for(const [key,state] of Object.entries(row.channelStatuses))
+     if(!ids.has(key)||!['N','C'].includes(state))fail('CHANNEL_STATUS',`samples[${i}].channelStatuses.${key}`);
+    if(Object.values(row.channelStatuses||{}).includes('C')&&row.status===0)
+     fail('COMPLIANCE_STATUS_MISMATCH',`samples[${i}].status`);
+   }
    for(const id of ids){
     const val=row[id];
     if(val===null)continue; // instrumentation range overflow / invalid reading; preserve as blank in plot
@@ -64,7 +72,7 @@
   const result=validate(raw,{limit});if(!result.valid)throw new TypeError('Invalid 4200A raw capture: '+result.errors.map(x=>x.code).join(', '));
   const fields=raw.columns.map(c=>({id:c.id,label:c.label,unit:c.unit}));
   return Object.freeze({
-   captureId:raw.captureId,source:raw.source,rows:raw.samples.map(row=>({index:row.index,sweepId:row.sweepId,status:row.status??null,
+   captureId:raw.captureId,source:raw.source,rows:raw.samples.map(row=>({index:row.index,sweepId:row.sweepId,status:row.status??null,channelStatuses:row.channelStatuses?{...row.channelStatuses}:null,
     values:Object.fromEntries(fields.map(c=>[c.id,row[c.id]]))})),columns:fields
   });
  }
