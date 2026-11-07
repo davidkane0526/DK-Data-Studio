@@ -24,7 +24,7 @@ const sample=()=>({
   target:{expression:'Id = I(D)',plot:{X:'Vgs',Y:'Id',H:'',P:''},quoteVars:[]},
   strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'}
 });
-let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true;
+let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=false;
 let frameViewer=null;
 const ensureFrameViewer=()=>{
  if(frameViewer)return frameViewer;
@@ -266,7 +266,7 @@ function connectionHTML(){
  <button data-action="close-connection">Cancel</button></footer></div>`;
 }
 function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();window.DKDSComponents?.hydrate?.(host);if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
-function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=true;render();}
+function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=false;render();}
 function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
  if(!Array.isArray(resourceIDs)||resourceIDs.some(x=>typeof x!=='string'||!/^(?:SMU|PMU|CVU|VM|VS)\d+(?:\.\d+)?$/i.test(x))) throw Error('Invalid instrument resource inventory');
@@ -293,7 +293,7 @@ function dispatch(action,target){
 }
 host.addEventListener('click',event=>{
  const btn=event.target.closest('button[data-action]');if(!btn)return;
- if(!unlocked&&!['lock','cancel','tab','close-connection'].includes(btn.dataset.action))return;
+ if(!unlocked&&!['lock','cancel','tab','close-connection','connection','reset','ok'].includes(btn.dataset.action))return;
  dispatch(btn.dataset.action,btn);
 });
 function bindControl(el){
