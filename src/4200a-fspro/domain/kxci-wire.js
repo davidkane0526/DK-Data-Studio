@@ -32,7 +32,7 @@
     if(total>maxBytes)throw new RangeError('KXCI response exceeds byte limit');
     const payload=new Uint8Array(total);let offset=0;
     for(const p of parts){payload.set(p,offset);offset+=p.length;}
-    ready.push(Object.freeze({bytes:payload,text:new TextDecoder('utf-8',{fatal:true}).decode(payload)}));
+    if(payload.length&&!(payload.length===1&&payload[0]===13))ready.push(Object.freeze({bytes:payload,text:new TextDecoder('utf-8',{fatal:true}).decode(payload)}));
     parts=[];total=0;start=i+1;
    }
    if(start<bytes.length){const part=bytes.subarray(start);parts.push(part.slice());total+=part.length;}
