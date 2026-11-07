@@ -40,7 +40,19 @@ fail('SEGMENTS_UNSUPPORTED',p=>p.terminals[1].segments=[{generator:'Linear Step'
 fail('TEST_MODE_UNSUPPORTED',p=>p.info.testType='Pulse');
 fail('KXCI_DELAY_LIMIT',p=>p.strategy.delayTime='8');
 fail('INTEGRATION_PLC_LIMIT',p=>p.strategy.integrationTime='2');
-fail('KXCI_LI_MAX_SIX_FUNCTIONS',p=>p.terminals.push({...p.terminals[0],logical:'B',resource:'SMU4'}));
+const four=page(),fourInventory=inv();
+fourInventory.smus.push({resource:'SMU4',model:'4200-SMU',preamplifier:false});
+four.terminals.push({...four.terminals[0],logical:'B',resource:'SMU4'});
+four.outputs='Ib,Vgs';
+const fourCompiled=dc.compile(four,{capabilities:fourInventory});
+assert.deepEqual(fourCompiled.metadata.capturedFunctions,['V2','I2','V3','I3','I4','V1'],'four real channels with six explicitly selected functions');
+assert.equal(fourCompiled.channels.length,4,'do not invent a three-SMU software limit');
+assert.equal(fourCompiled.read.length,6);
+fail('KXCI_LI_MAX_SIX_FUNCTIONS',p=>{
+ p.terminals.push({...p.terminals[0],logical:'B',resource:'SMU4'});
+ p.captureFunctions=['V1','I1','V4','I4'];
+},{...fourInventory});
+fail('OUTPUT_FUNCTION_UNSUPPORTED',p=>p.outputs='VnotMapped');
 fail('SWEEP_UNSUPPORTED',p=>p.terminals[1].generator='Log Points');
 fail('KXCI_VOLTAGE_QUANTIZATION',p=>{p.terminals[1].stop='0.001';p.terminals[1].step='0.0001';});
 fail('INVALID_NUMBER',p=>p.terminals[0].bias='0;*RST');
