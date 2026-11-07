@@ -42,7 +42,7 @@ fail('KXCI_DELAY_LIMIT',p=>p.strategy.delayTime='8');
 fail('INTEGRATION_PLC_LIMIT',p=>p.strategy.integrationTime='2');
 fail('KXCI_LI_MAX_SIX_FUNCTIONS',p=>p.terminals.push({...p.terminals[0],logical:'B',resource:'SMU4'}));
 fail('SWEEP_UNSUPPORTED',p=>p.terminals[1].generator='Log Points');
-fail('KXCI_VOLTAGE_QUANTIZATION',p=>p.terminals[1].step='0.0001');
+fail('KXCI_VOLTAGE_QUANTIZATION',p=>p.terminals[1].stop='0.001';p.terminals[1].step='0.0001');
 fail('INVALID_NUMBER',p=>p.terminals[0].bias='0;*RST');
 fail('CURRENT_REFERENCE_UNSUPPORTED',p=>{p.terminals[1].sourceMode='current';p.terminals[1].relativeTo='S'});
 const p=page();p.terminals[1].sourceMode='current';p.terminals[1].relativeTo='GND';p.terminals[1].start='0';p.terminals[1].stop='0.01';p.terminals[1].step='0.001';p.terminals[1].compliance='10';
