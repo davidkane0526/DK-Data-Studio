@@ -20,7 +20,7 @@ function parseResponse(bytes,command){
  if(!messages[0].text.trim())throw Error('Empty KXCI reply body: '+command);
  return messages[0];
 }
-async function discoverRouted({host,port=1225,timeoutMs=5000,networkMode='auto',
+async function openReadonlySession({host,port=1225,timeoutMs=5000,networkMode='auto',
  interfaceName='',localAddress='',expectedSerial=''}={},runtime=createTcpRuntime()){
  if(!validHost(host))throw TypeError('Valid instrument host required');
  if(!Number.isSafeInteger(port)||port<1||port>65535)throw RangeError('Invalid port');
@@ -45,7 +45,7 @@ async function discoverRouted({host,port=1225,timeoutMs=5000,networkMode='auto',
   if(fields[0]!=='KEITHLEY INSTRUMENTS'||fields[1]!=='KI4200A')throw Error('Unexpected instrument identity');
   if(expectedSerial&&fields[2]!==expectedSerial)throw Error('Instrument serial number mismatch');
   const options=await query('*OPT?');
-  return Object.freeze({
+  const summary=Object.freeze({
    schema:'dkts.4200a.readonly-discovery.v2',verifiedIdentity:true,
    idn:idn.text.trim(),options:options.text.trim(),inventory:opt.parseOptReply(options.text),
    route:Object.freeze({
@@ -59,8 +59,25 @@ async function discoverRouted({host,port=1225,timeoutMs=5000,networkMode='auto',
    ]),
    executionAuthorized:false
   });
- }finally{
+  let closed=false;
+  return Object.freeze({
+   summary,
+   async disconnect(){
+    if(closed)return false;
+    closed=true;
+    try{await runtime.close({sessionId:opened.sessionId});}catch{}
+    return true;
+   },
+   isConnected:()=>!closed,
+   // No arbitrary command function exists on the session surface.
+  });
+ }catch(err){
   try{await runtime.close({sessionId:opened.sessionId});}catch{}
+  throw err;
  }
 }
-module.exports={discoverRouted,parseResponse};
+async function discoverRouted(options={},runtime=createTcpRuntime()){
+ const session=await openReadonlySession(options,runtime);
+ try{return session.summary;}finally{await session.disconnect();}
+}
+module.exports={discoverRouted,openReadonlySession,parseResponse};
