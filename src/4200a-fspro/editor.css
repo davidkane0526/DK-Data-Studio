@@ -117,7 +117,7 @@
 .fs-editor-footer .fs-validation{margin-right:auto;font-size:11px;color:var(--fs-sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fs-editor-footer button{min-width:82px}
 .fs-editor-footer .fs-error{color:#b13f3f}
-.fs-target{display:grid;grid-template-rows:minmax(160px,1fr) 175px;gap:8px;min-height:350px}
+.fs-target{display:grid;grid-template-rows:minmax(160px,1fr) 155px;gap:8px;min-height:350px}
 .fs-target-top{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:8px;min-height:0}
 .fs-target-top textarea{width:100%;height:100%;min-height:130px;resize:none;white-space:pre-wrap}
 .fs-function-info{border:1px solid var(--fs-line);border-radius:5px;padding:8px;overflow:auto;color:var(--fs-sub)}
@@ -241,4 +241,5 @@
 .fs-app .fs-table input{height:20px;min-height:20px;padding:0 2px}
 @media(min-width:651px) and (max-height:790px){
  .fs-triptych{height:142px;min-height:142px;max-height:142px}
+ .fs-target{grid-template-rows:minmax(160px,1fr) 142px}
 }
