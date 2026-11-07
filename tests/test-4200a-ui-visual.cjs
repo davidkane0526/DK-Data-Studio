@@ -29,6 +29,12 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   });
   check('UI-MENU-ANCHOR',Math.abs(menuGeometry.popupTop-menuGeometry.triggerBottom)<3&&Math.abs(menuGeometry.popupLeft-menuGeometry.triggerLeft)<3,JSON.stringify(menuGeometry));
   await desktop.locator('.fs-menu [data-menu="File"]').click();
+  await desktop.locator('.fs-menu [data-menu="Instruments"]').click();
+  await desktop.locator('.fs-menu-popup [data-native-action="settings"]').click();
+  check('UI-CONNECTION-SETTINGS',await desktop.locator('#fs-instrument-host .fs-device-dialog').isVisible(),'Instrument connection settings');
+  check('SAFE-CONNECTION-OFFLINE',await desktop.evaluate(()=>window.DK4200ConnectionStatus?.snapshot?.().executionAuthorized===false),'no native output privilege');
+  await desktop.screenshot({path:path.join(out,'08-instrument-settings.png'),fullPage:true});
+  await desktop.locator('#fs-instrument-host [data-fs-device-action="close"]').first().click();
 
   check('UI-001',await desktop.locator('.fs-menu').isVisible()&&await desktop.locator('.fs-toolbar').isVisible(),'top menu and toolbar');
   check('UI-002',await desktop.locator('.fs-project [role=treeitem]').count()>=4,'nested project tree');
