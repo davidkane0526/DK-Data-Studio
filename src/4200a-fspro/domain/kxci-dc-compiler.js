@@ -69,6 +69,45 @@
    fail('SWEEP_SERIALIZATION_DRIFT',t.logical);
   return Object.freeze({role,points,start,stop,step,command:`${t.sourceMode==='voltage'?'VP':'IP'} ${startText},${stepText},${points},${numeric(positive(t.compliance,t.logical+'.compliance'),t.logical+'.compliance')}`});
  }
+ function selectMeasurementFunctions(page,assigned,x,p){
+  const allowed=new Set(assigned.flatMap(t=>{const n=channelIndex(t.resource);return ['V'+n,'I'+n];}));
+  const xch=channelIndex(x.resource);
+  const mandatory=['V'+xch,'I'+xch];
+  if(p){
+    const pch=channelIndex(p.resource);
+    mandatory.push('V'+pch,'I'+pch);
+  }
+  const byLogical=new Map(assigned.map(t=>[t.logical.toUpperCase(),t]));
+  function resolveSignal(input){
+    const token=String(input||'').trim();
+    if(allowed.has(token.toUpperCase()))return [token.toUpperCase()];
+    const simple=/^([VI])([A-Za-z])$/i.exec(token);
+    if(simple){
+     const t=byLogical.get(simple[2].toUpperCase());
+     if(t)return [simple[1].toUpperCase()+channelIndex(t.resource)];
+    }
+    const voltagePair=/^V([A-Za-z])([A-Za-z])$/i.exec(token);
+    if(voltagePair){
+     const a=byLogical.get(voltagePair[1].toUpperCase()),b=byLogical.get(voltagePair[2].toUpperCase());
+     if(a&&b)return ['V'+channelIndex(a.resource),'V'+channelIndex(b.resource)];
+    }
+    fail('OUTPUT_FUNCTION_UNSUPPORTED',token);
+  }
+  let requested=[];
+  if(page.captureFunctions!==undefined){
+    if(!Array.isArray(page.captureFunctions)||page.captureFunctions.length<1)
+      fail('CAPTURE_FUNCTION_SELECTION');
+    for(const name of page.captureFunctions)requested.push(...resolveSignal(name));
+  }else if(String(page.outputs||'').trim()){
+    for(const token of String(page.outputs).split(/[,;\s]+/).filter(Boolean))requested.push(...resolveSignal(token));
+  }else if(assigned.length<=3){
+    requested=assigned.flatMap(t=>{const n=channelIndex(t.resource);return ['V'+n,'I'+n];});
+  }
+  const names=[...new Set([...mandatory,...requested])];
+  for(const name of names)if(!allowed.has(name))fail('MEASUREMENT_CHANNEL_UNAVAILABLE',name);
+  if(names.length>6)fail('KXCI_LI_MAX_SIX_FUNCTIONS',names.join(','));
+  return Object.freeze(names);
+ }
  function compile(page,{capabilities}={}){
   if(!assertPlain(page)||page.schema!=='dkts.fspro.page.v1')fail('PAGE_SCHEMA');
   if(page.info?.testType!=='DC')fail('TEST_MODE_UNSUPPORTED',page.info?.testType);
@@ -76,7 +115,7 @@
   if(!Array.isArray(capabilities.smus)||!capabilities.smus.length)fail('NO_SMU_INVENTORY');
   if(capabilities.lineFrequencyHz!==50&&capabilities.lineFrequencyHz!==60)fail('LINE_FREQUENCY_REQUIRED');
   if(!Array.isArray(page.terminals)||page.terminals.length<2)fail('TERMINALS_REQUIRED');
-  if(page.terminals.length>3)fail('KXCI_LI_MAX_SIX_FUNCTIONS','current compiler captures V and I per SMU');
+  if(page.terminals.length>9)fail('KXCI_CHANNEL_COUNT','KXCI CH maximum 9 channels');
   const inv=new Map();
   for(const row of capabilities.smus){
    if(!assertPlain(row)||!channelIndex(row.resource)||!MODELS[row.model]||typeof row.preamplifier!=='boolean')
@@ -164,7 +203,7 @@
   add('timing',`IT4,0,0,${numeric(plc,'strategy.integrationTime')}`);
   add('measurement','SM');
   add('measurement','DM2');
-  const names=assigned.flatMap(t=>{const i=channelIndex(t.resource);return [`V${i}`,`I${i}`];});
+  const names=selectMeasurementFunctions(page,assigned,x,p);
   add('measurement','LI '+names.map(n=>`'${n}'`).join(','));
   add('start','MD');
   add('start','ME1');
