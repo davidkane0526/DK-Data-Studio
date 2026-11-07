@@ -1,0 +1,23 @@
+name: 4200A FS-Pro contract checks (rebuild branch)
+on:
+  push:
+    branches:
+      - feat/4200a-fspro-rebuild
+    paths:
+      - 'src/4200a-fspro/**'
+      - 'tests/test-4200a-*.cjs'
+      - '.github/workflows/4200a-fspro-contract.yml'
+  workflow_dispatch:
+jobs:
+  offline-contract:
+    name: Validate read-only PagePlan invariants
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate FS-Pro X/P roles, reference graph and resource guards
+        run: node tests/test-4200a-page-plan-guard.cjs
