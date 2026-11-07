@@ -34,6 +34,8 @@ jobs:
           node --check src/4200a-fspro/domain/kxci-dc-compiler.js
           node --check src/4200a-fspro/domain/kxci-opt-inventory.js
           node --check src/4200a-fspro/domain/kxci-wire.js
+          node --check desktop/4200a-readonly-discovery.cjs
+          node --check desktop/4200a-kxci-acquisition.cjs
           node --check desktop/4200a-fspro-main.cjs
       - name: Validate PagePlan rules (no instrument access)
         run: |
@@ -44,6 +46,8 @@ jobs:
           node tests/test-4200a-kxci-dc-compiler.cjs
           node tests/test-4200a-kxci-opt-inventory.cjs
           node tests/test-4200a-kxci-wire.cjs
+          node tests/test-4200a-readonly-tcp.cjs
+          node tests/test-4200a-kxci-acquisition.cjs
   browser-visual:
     name: Render desktop and Android-size screenshots
     runs-on: ubuntu-24.04
