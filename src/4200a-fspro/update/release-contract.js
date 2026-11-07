@@ -36,6 +36,20 @@
   check(m.signature?.algorithm==='ed25519'&&nonblank(m.signature?.keyId)&&nonblank(m.signature?.value),'SIGNATURE_DESCRIPTOR');
   return Object.freeze({ok:errors.length===0,errors:Object.freeze(errors)});
  }
+ function canonicalManifestText(manifest){
+  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest))throw new TypeError('Manifest object required');
+  // Canonical signing covers *all* properties except the detached signature bytes.
+  // UTF-8, recursively alphabetized keys, no hidden keys or implicit URL changes.
+  const sort=value=>{
+   if(Array.isArray(value))return value.map(sort);
+   if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,sort(value[key])]));
+   if(value===null||typeof value==='string'||typeof value==='boolean'||Number.isFinite(value))return value;
+   throw new TypeError('Unsupported manifest data type');
+  };
+  const unsigned={...manifest,signature:{...manifest.signature}};
+  delete unsigned.signature.value;
+  return JSON.stringify(sort(unsigned));
+ }
  function decideUpdate(local,manifest,{signatureVerified=false,platform='windows'}={}){
   const validation=validateManifest(manifest);
   if(!validation.ok)return Object.freeze({action:'blocked',reason:'INVALID_MANIFEST',errors:validation.errors});
@@ -54,5 +68,5 @@
    url:asset.url,sha256:asset.sha256,bytes:asset.bytes,filename:asset.filename,
    target:Object.freeze({nativeVersion:manifest.nativeVersion,uiRevision:manifest.uiRevision,sequence:manifest.sequence,nativeAbi:manifest.nativeAbi})});
  }
- return Object.freeze({VERSION:'1.0.0',validateManifest,decideUpdate});
+ return Object.freeze({VERSION:'1.1.0',validateManifest,canonicalManifestText,decideUpdate});
 });
