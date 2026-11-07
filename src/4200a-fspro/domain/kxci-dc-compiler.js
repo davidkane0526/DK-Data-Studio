@@ -100,6 +100,7 @@
     checkAbs(comp,m.current,t.logical+'.compliance');
    }else checkAbs(comp,m.voltage,t.logical+'.compliance');
    const ref=String(t.relativeTo||'GND').trim();
+   if(t.sourceMode==='current'&&!['GND','GROUND','0'].includes(ref.toUpperCase()))fail('CURRENT_REFERENCE_UNSUPPORTED',t.logical);
    refs.set(t.logical,ref);
   }
   const X=terms.filter(t=>t.role==='X'),P=terms.filter(t=>t.role==='P');
