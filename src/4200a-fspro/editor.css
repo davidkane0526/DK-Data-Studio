@@ -166,3 +166,15 @@
  .fs-strategy-grid{grid-template-columns:130px 1fr}
 }
 @media (prefers-reduced-motion:reduce){.fs-app *{scroll-behavior:auto}}
+
+/* Raw data surfaces use DKDS Core renderers; the empty placeholder has no synthetic trace. */
+.fs-app .fs-plot-slot{position:relative;display:block;overflow:hidden;min-height:0;width:100%;height:100%}
+.fs-empty-hint{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;pointer-events:none;color:var(--fs-sub)}
+.fs-empty-hint[hidden]{display:none}
+.fs-app .fs-frame-viewer{min-height:20px;font-size:11px;padding:1px 5px;margin-left:6px}
+.fs-data-dialog{width:min(1000px,100%);height:min(740px,calc(100dvh - 24px))}
+.fs-data-table-wrap{flex:1;overflow:auto;margin:10px;border:1px solid var(--fs-line);border-radius:5px}
+.fs-app .fs-data-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+.fs-data-table th,.fs-data-table td{border-bottom:1px solid var(--fs-line);padding:5px 10px;text-align:left}
+.fs-data-table thead th{background:var(--fs-bg);position:sticky;top:0;z-index:1}
+.fs-data-note{margin:0 12px;padding:8px 0;color:var(--fs-sub)}
