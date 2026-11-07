@@ -31,7 +31,7 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  assert.ok(commands.includes('MD')&&commands.includes('ME1'),'real KXCI commands emitted to mock only');
  const blocked=()=>createRunner({transport:{kind:'socket',write:async()=>{},query:async()=>{}}});
  assert.throws(blocked,/offline-mock/);
- assert.throws(()=>runner.run({schema:'untrusted'},{}),/audited offline/);
+ await assert.rejects(()=>runner.run({schema:'untrusted'},{}),/audited offline/);
  let cancelCount=0;const stopped=[];
  const abortAdapter={
   kind:'offline-mock',async write(s){stopped.push(s);},
@@ -42,7 +42,7 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  const aborted=await stopping.run(plan,{instrumentId:id});
  assert.equal(aborted.status,'aborted');
  assert.equal(aborted.capture,null);
- assert.deepEqual(stopped.slice(-5),['ME4','DE','CH1','CH2'].slice(0,5).length===5?[]:stopped.slice(-5));
+ assert.deepEqual(stopped.slice(-4),['ME4','DE','CH1','CH2']);
  assert.ok(stopped.includes('ME4')&&stopped.indexOf('ME4')>stopped.indexOf('ME1'));
  assert.ok(stopped.includes('CH1')&&stopped.includes('CH2'));
  const faultLog=[];
