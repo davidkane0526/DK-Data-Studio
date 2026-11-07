@@ -68,7 +68,7 @@ async function openReadonlySession({host,port=1225,timeoutMs=5000,networkMode='a
     try{await runtime.close({sessionId:opened.sessionId});}catch{}
     return true;
    },
-   isConnected:()=>!closed,
+   isConnected:()=>!closed&&Boolean(runtime.hasSession?.(opened.sessionId)),
    // No arbitrary command function exists on the session surface.
   });
  }catch(err){
