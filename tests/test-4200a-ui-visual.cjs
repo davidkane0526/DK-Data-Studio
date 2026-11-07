@@ -24,7 +24,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-003',await desktop.locator('.fs-frame').count()===4,'2x2 Visual Area');
   check('UI-004',await desktop.locator('.fs-bottom-cell').count()===2,'messages and strategy');
   check('SAFE-001',await desktop.locator('#fs-measure').isDisabled()&&await desktop.locator('#fs-repeat').isDisabled(),'no hardware output enabled');
-  await desktop.locator('button[data-command="edit"]').first().click();
+  await desktop.locator('.fs-toolbar button[data-command="edit"]').click();
   await desktop.screenshot({path:path.join(out,'02-edit-page-sweep.png'),fullPage:true});
   const editor=desktop.locator('.fs-editor');
   check('UI-007',JSON.stringify(await editor.locator('.fs-info label').allTextContents())===JSON.stringify(['Type:','Polarity:','Group:','Test Type:','Name:']),'Info field order');
