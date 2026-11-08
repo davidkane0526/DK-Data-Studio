@@ -3,6 +3,17 @@
  // Compact frameless DK Test Studio shell, shared unchanged by desktop and Android.
  const byId=id=>document.getElementById(id);
  const info=window.DKTSPreviewBuild||{};
+ // The packaged PNG comes from the *original* DKTS icon generator. Direct
+ // source checkouts retain the matching readable DK fallback until generated.
+ const brand=byId('fs-brand-mark');
+ const brandedImage=new Image();
+ brandedImage.onload=()=>{
+  if(brandedImage.naturalWidth<64)return;
+  brand.textContent='';
+  brand.dataset.brand='legacy-native-icon';
+  brand.style.backgroundImage='url("brand-icon.png")';
+ };
+ brandedImage.src='brand-icon.png';
  const nativeVersion=/^\d+\.\d+\.\d+$/.test(info.nativeVersion||'')?info.nativeVersion:'0.3.13';
  const uiVersion=/^a\d{1,10}$/.test(info.uiRevision||'')?info.uiRevision:'a0';
  const version=byId('fs-version-badge'),panel=byId('fs-version-popover');
