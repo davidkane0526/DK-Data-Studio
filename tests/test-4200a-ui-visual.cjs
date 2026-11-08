@@ -33,6 +33,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('SHELL-PACKAGED-NATIVE-ICON',!process.env.DK4200_UI_ENTRY_FILE||
     await desktop.locator('#fs-brand-mark').getAttribute('data-brand')==='legacy-native-icon',
     'Android staged UI uses original generated PNG rather than a generic logo');
+  const brandedFit=await desktop.evaluate(()=>{
+    const icon=document.getElementById('fs-brand-mark'),style=getComputedStyle(icon);
+    return {native:icon.dataset.brand==='legacy-native-icon',size:style.backgroundSize,
+      position:style.backgroundPosition,image:style.backgroundImage};
+  });
+  check('SHELL-PACKAGED-ICON-FIT',!process.env.DK4200_UI_ENTRY_FILE||
+    (brandedFit.native&&brandedFit.size==='cover'&&brandedFit.image.includes('brand-icon.png')),
+    'Old 256px PNG must fit entire 27px header box without cropping: '+JSON.stringify(brandedFit));
   check('SHELL-TITLEBAR',await desktop.evaluate(()=>{
     const title=document.querySelector('.fs-titlebar'),menu=document.querySelector('.fs-menu');
     const a=title.getBoundingClientRect(),b=menu.getBoundingClientRect();
