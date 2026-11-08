@@ -39,11 +39,18 @@
  });
  function adapt(){
   if(mobile.matches){
+   // Re-entering portrait changes the host dimensions for the chosen Frame.
+   announced=-1;
    select(current);
   } else {
-   // Desktop keeps all four scientific plots visible; do not reset selection.
+   // Previously hidden plot cards need their original traces re-rendered
+   // after they become visible. Never fabricate a missing channel.
    for(let i=0;i<4;i++)frames[i].dataset.mobileActive=String(i===current);
-   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+   requestAnimationFrame(()=>{
+    for(let i=0;i<3;i++)
+     document.dispatchEvent(new CustomEvent('dkts:frame-selected',{detail:{index:i}}));
+    window.dispatchEvent(new Event('resize'));
+   });
   }
  }
  mobile.addEventListener?.('change',adapt);
