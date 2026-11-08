@@ -60,7 +60,7 @@ function showDataViewer(){
  const rows=table.rows.slice(0,800).map(row=>`<tr data-native-status="${row.status===1?'compliance':row.status===0?'normal':'unknown'}"><td>${row.index}</td><td>${e(row.sweepId)}</td><td>${displayStatus(row.status)}</td>${table.columns.map(c=>`<td>${e(row.values[c.id]??'')}</td>`).join('')}${statusKeys.map(key=>`<td>${e(row.channelStatuses?.[key]??'')}</td>`).join('')}${nativeKeys.map(key=>`<td>${e(row.instrumentStatuses?.[key]??'')}</td>`).join('')}</tr>`).join('');
  const countC=table.rows.filter(row=>row.status===1).length;
  const countUnknown=table.rows.filter(row=>row.status!==0&&row.status!==1).length;
- host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
+ host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer<button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
  const previewRowCount=Math.min(table.rows.length,800);
  const desiredHeight=Math.min(740,Math.max(245,172+Math.min(previewRowCount,20)*26));
  host.querySelector('.fs-data-dialog')?.style.setProperty('--fs-data-height',desiredHeight+'px');
@@ -135,7 +135,9 @@ function updateStatus(){
   if(!el)return;
   const v=validateDraft();
   el.classList.toggle('fs-error',!v.valid);
-  el.textContent=v.valid?'离线参数检查通过 · 未启用仪器输出':`检查：${v.errors[0]?.reason||'无效参数'}`;
+  const fixed=draft.terminals.some(t=>t.measureRange?.mode==='fixed');
+  el.textContent=v.valid?(fixed?'固定档位仅离线保存 · 尚未验证实机量程':'离线参数检查通过 · 未启用仪器输出'):
+    `检查：${v.errors[0]?.reason||'无效参数'}`;
   el.title=v.errors.map(x=>x.path+' '+x.reason).join('\n');
 }
 function infoMarkup(){
@@ -182,7 +184,24 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-bottom">
  <label>Ref to:</label>${select(`terminals[${i}].relativeTo`,[['GND','GND'],...logicalOpts],t.relativeTo)}
  ${select(`terminals[${i}].role`,roles,t.role)}
-
+ </div>
+ <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
+   <label>测量档位</label>
+   ${select(`terminals[${i}].measureRange.mode`,
+     [['auto','自动'],['fixed','固定']],t.measureRange?.mode||'auto',
+     `data-fs-range-mode="${i}"`)}
+   <label>${t.sourceMode==='voltage'?'电流 (A)':'电压 (V)'}</label>
+   <input class="fs-range-value" data-bind="terminals[${i}].measureRange.value"
+     aria-label="${e(t.logical)} 测量档位值" inputmode="decimal"
+     value="${e(t.measureRange?.value||'1e-6')}"
+     ${t.measureRange?.mode!=='fixed'?'disabled':''}/>
+   <label>预设档位</label>
+   <select class="fs-range-presets" data-range-preset="${i}" aria-label="${e(t.logical)} 固定量程预设"
+     ${t.measureRange?.mode!=='fixed'?'disabled':''}>
+     ${options([['','自定义'],...['1e-12','1e-11','1e-10','1e-9','1e-8','1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0'].map(v=>[v,v])],
+       t.measureRange?.mode==='fixed'?t.measureRange?.value:'')}
+   </select>
+   <span class="fs-range-note" title="当前仅保存离线设置；实测固定量程须由真实模块及KXCI能力验证">未验证量程不授权输出</span>
  </div>${segmentMarkup(t,i)}</div>`;
 }
 function limitsPanel(){
@@ -245,7 +264,7 @@ function strategyMarkup(){
 }
 function pageHTML(){
  return `<div class="fs-editor" role="dialog" aria-modal="true" aria-label="Edit Page">
- <div class="fs-editor-title">Edit Page <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-action="cancel" title="关闭" aria-label="关闭">×</button></div>
+ <div class="fs-editor-title">Edit Page<button data-action="cancel" title="关闭" aria-label="关闭">×</button></div>
  <div class="fs-editor-main">
  ${infoMarkup()}
  <div class="fs-editor-controls">
@@ -268,7 +287,7 @@ function pageHTML(){
 }
 function connectionHTML(){
  return `<div class="fs-editor fs-connection-dialog" role="dialog" aria-modal="true" aria-label="Set Connection">
- <div class="fs-editor-title">Set Connection <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-action="close-connection" aria-label="关闭">×</button></div>
+ <div class="fs-editor-title">Set Connection<button data-action="close-connection" aria-label="关闭">×</button></div>
  <div class="fs-connection-content">
  <fieldset class="fs-fieldset"><legend>Connection List</legend>
  <select aria-label="Connection preset" class="fs-full-field"><option>Local 4200A — 当前 Page</option></select>
@@ -283,11 +302,13 @@ function connectionHTML(){
  <button data-action="close-connection">Cancel</button></footer></div>`;
 }
 function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog==='connection'?connectionHTML():pageHTML();window.DKDSComponents?.hydrate?.(host);
+ window.DK4200UIControls?.enhance?.(host);
+ window.DKTSNumericKeypad?.bindNew?.(host);
  for(const el of host.querySelectorAll?.('[data-bind]')||[]){
   const path=String(el.dataset.bind||'');
   el.dataset.fsProManualPage=activeDialog==='connection'?'21':path.startsWith('strategy.')?'20':path.startsWith('target.')?'19':'18';
  }
- if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
+ if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-range-preset],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
 function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=false;render();}
 function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
@@ -299,7 +320,7 @@ function dispatch(action,target){
  if(action==='cancel'){close();return;}
  if(action==='ok'){
   const v=validateDraft();if(!v.valid){updateStatus();return;}
-  saved=clone(draft);document.getElementById('fs-page-name').textContent=saved.info.name;note('Page 已保存（未执行测量）');close();return;
+  saved=clone(draft);document.getElementById('fs-page-name').textContent=saved.info.name;document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;note('Page 已保存（未执行测量）');close();return;
  }
  if(action==='reset'){draft=clone(original);render();return;}
  if(action==='lock'){unlocked=!unlocked;render();return;}
@@ -334,37 +355,33 @@ function bindControl(el){
  else updateStatus();
 }
 host.addEventListener('input',event=>{if(event.target.matches('input[data-bind],textarea[data-bind]'))bindControl(event.target);});
-host.addEventListener('change',event=>{if(event.target.matches('select[data-bind]'))bindControl(event.target);});
-host.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeDialog==='connection'){activeDialog='page';render();}else close();}});
-function closeMenus(){
- document.querySelectorAll('.fs-menu-item').forEach(item=>{
-  const trigger=item.querySelector('[data-menu]'),popup=item.querySelector('.fs-menu-popup');
-  if(trigger)trigger.setAttribute('aria-expanded','false');
-  if(popup)popup.hidden=true;
- });
-}
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenus();});
-document.addEventListener('click',event=>{
- const menuTrigger=event.target.closest('[data-menu]');
- if(menuTrigger){
-  const wasOpen=menuTrigger.getAttribute('aria-expanded')==='true';
-  closeMenus();
-  if(!wasOpen){
-   menuTrigger.setAttribute('aria-expanded','true');
-   const popup=menuTrigger.parentElement.querySelector('.fs-menu-popup');
-   if(popup)popup.hidden=false;
-  }
-  return;
+host.addEventListener('change',event=>{
+ const preset=event.target.closest?.('select[data-range-preset]');
+ if(preset&&draft&&unlocked){
+   const i=Number(preset.dataset.rangePreset);
+   const t=draft.terminals[i];
+   if(t&&preset.value){
+     t.measureRange=t.measureRange||{mode:'auto',value:'1e-6'};
+     t.measureRange.mode='fixed';t.measureRange.value=preset.value;
+     const input=host.querySelector(`[data-bind="terminals[${i}].measureRange.value"]`);
+     if(input)input.value=preset.value;
+     updateStatus();
+   }
+   return;
  }
+ if(event.target.matches('select[data-bind]'))bindControl(event.target);
+});
+host.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeDialog==='connection'){activeDialog='page';render();}else close();}});
+document.addEventListener('click',event=>{
  const btn=event.target.closest('[data-command]');
- closeMenus();if(!btn||host.contains(btn))return;
+ if(!btn||host.contains(btn))return;
  const command=btn.dataset.command;
  if(command==='import-raw'){document.getElementById('fs-raw-input').click();return;}
  if(command==='export-raw'){exportRawCSV();return;}
  if(command==='data-viewer'){showDataViewer();return;}
  if(command==='edit'){startEdit();return;}
  if(command==='connection'){startEdit();activeDialog='connection';render();return;}
- if(command==='new'){saved=sample();note('新建工程 · 配置未保存');return;}
+ if(command==='new'){saved=sample();document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;document.getElementById('fs-page-name').textContent=saved.info.name;note('新建工程 · 配置未保存');return;}
  if(command==='arrange'){note(window.matchMedia('(max-width:650px)').matches?
     '手机竖屏使用图窗标签；宽屏自动恢复 2 × 2 绘图布局':
     '绘图区已使用 2 × 2 布局');return;}
@@ -374,7 +391,6 @@ document.addEventListener('click',event=>{
   note('已导出 Page 配置（未包含仪器数据）');return;
  }
  if(command==='open'){document.getElementById('fs-open-input').click();return;}
- if(command==='help'){note('Edit Page：Sweep / Target / Strategy；保存前执行离线校验。');return;}
 });
 document.getElementById('fs-open-input').addEventListener('change',async event=>{
  const file=event.target.files?.[0];if(!file)return;
@@ -385,7 +401,7 @@ document.getElementById('fs-open-input').addEventListener('change',async event=>
   if(!parsed.info||!Array.isArray(parsed.pageVars)||!Array.isArray(parsed.associateSpecs)||!parsed.strategy||!parsed.target)throw Error('Page 文件结构不完整');
   original=clone(saved);draft=clone(parsed);
   const v=validateDraft();if(!v.valid)throw Error('参数校验失败：'+v.errors[0]?.reason);
-  saved=clone(draft);draft=null;note('Page 文件已载入（离线）');document.getElementById('fs-page-name').textContent=saved.info.name;
+  saved=clone(draft);draft=null;note('Page 文件已载入（离线）');document.getElementById('fs-page-name').textContent=saved.info.name;document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;
  }catch(err){draft=null;note('导入失败：'+err.message);}finally{event.target.value='';}
 });
 window.DK4200FSPro=Object.freeze({
