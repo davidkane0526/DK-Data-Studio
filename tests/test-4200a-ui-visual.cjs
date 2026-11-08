@@ -122,6 +122,13 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   }));
   check('UI-034-TRACE',fieldTrace.total>=35&&fieldTrace.missing.length===0,'field traceability: '+JSON.stringify(fieldTrace));
   check('UI-011',await editor.locator('.fs-terminal').count()===4,'stacked terminals');
+  check('RANGE-PER-TERMINAL',await editor.locator('.fs-terminal-range').count()===4&&
+    await editor.locator('select[data-bind$=".measureRange.mode"]').count()===4&&
+    await editor.locator('input[data-bind$=".measureRange.value"]').count()===4&&
+    await editor.locator('select[data-range-preset]').count()===4,
+    'all four D/G/S/B terminals expose mode, preset and custom scientific measurement range');
+  check('RANGE-DEFAULT-AUTO',await editor.locator('input[data-bind$=".measureRange.value"]:disabled').count()===4,
+    'auto mode does not expose misleading editable fixed current range');
   const sweepGeometry=await desktop.evaluate(()=>{
    const list=document.querySelector('.fs-terminal-list');
    const last=list?.querySelector('.fs-terminal:last-child');
@@ -140,6 +147,19 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('SAFE-002',await desktop.evaluate(()=>window.DK4200FSPro.validate().executionAuthorized===false),'offline cannot authorize instrument');
   await editor.locator('button[data-action="lock"]').click();
   check('UI-008-UNLOCK',await editor.locator('button[data-action="lock"]').innerText().then(x=>x==='Lock'),'Unlock activates editing');
+  await editor.locator('select[data-bind="terminals[0].measureRange.mode"]').selectOption('fixed');
+  check('RANGE-MODE-FIXED',await editor.locator('input[data-bind="terminals[0].measureRange.value"]').isEnabled(),
+    'per-terminal fixed range unlocks user-entered numeric control');
+  await editor.locator('select[data-range-preset="0"]').selectOption('1e-9');
+  check('RANGE-PRESET-SCIENTIFIC',await desktop.evaluate(()=>
+    window.DK4200FSPro.getDraft().terminals[0].measureRange.value==='1e-9'),
+    '1e-9 preset stores exact scientific notation');
+  await editor.locator('input[data-bind="terminals[0].measureRange.value"]').fill('2e-9');
+  check('RANGE-CUSTOM-INPUT',await desktop.evaluate(()=>
+    window.DK4200FSPro.getDraft().terminals[0].measureRange.value==='2e-9'&&
+    window.DK4200FSPro.validate().executionAuthorized===false),
+    'software custom range is saved offline without claiming hardware execution');
+  await desktop.screenshot({path:path.join(out,'17-terminal-fixed-range-config.png'),fullPage:true});
   await editor.locator('button[data-action="add-segment"]').first().click();
   check('UI-013',await editor.locator('.fs-terminal').first().locator('.fs-segment-row').count()===1,'segment stays under terminal');
   await editor.locator('button[data-action="remove-segment"]').first().click();
@@ -428,6 +448,36 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     lastPanel.lastLeft>=lastPanel.stripLeft-5&&lastPanel.lastRight<=lastPanel.stripRight+6,
     'Associate Spec panel must be reachable by swipe: '+JSON.stringify(lastPanel));
   await mobile.screenshot({path:path.join(out,'10-mobile-associate-spec.png'),fullPage:true});
+  // Android-like browser UA runs the same original floating nine-grid keypad
+  // without introducing a second numeric editor on desktop.
+  const androidInput=await browser.newPage({
+    viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true,
+    userAgent:'Mozilla/5.0 (Linux; Android 16; OPD2515) AppleWebKit/537.36 Chrome/156.0 Mobile Safari/537.36'
+  });
+  const androidErrors=[];
+  androidInput.on('pageerror',err=>androidErrors.push(String(err.message||err)));
+  await androidInput.goto(file+'?open=edit');
+  await androidInput.locator('button[data-action="lock"]').click();
+  const bias=androidInput.locator('input[data-bind="terminals[0].bias"]');
+  check('ANDROID-NUMERIC-BIND',await bias.isVisible()&&await bias.getAttribute('inputmode')==='none'&&
+    await bias.getAttribute('readonly')!==null,
+    'Android numeric PagePlan fields use the in-app keypad; OEM keyboard suppressed');
+  await bias.click();
+  check('ANDROID-KEYPAD-OPEN',await androidInput.locator('#dkts-numeric-keypad').isVisible()&&
+    await androidInput.locator('.dkts-keypad-grid button').count()===12,
+    'original 12-button numeric grid appears above editor');
+  await androidInput.locator('#dkts-numeric-keypad [data-key="1"]').click();
+  await androidInput.locator('#dkts-numeric-keypad [data-key="exp"]').click();
+  await androidInput.locator('#dkts-numeric-keypad [data-key="sign"]').click();
+  await androidInput.locator('#dkts-numeric-keypad [data-key="6"]').click();
+  await androidInput.screenshot({path:path.join(out,'18-android-scientific-keypad.png'),fullPage:true});
+  await androidInput.locator('#dkts-numeric-keypad [data-key="done"]').click();
+  check('ANDROID-KEYPAD-EXPONENT',await androidInput.evaluate(()=>
+    window.DK4200FSPro.getDraft().terminals[0].bias==='1e-6'),
+    'keypad scientific exponent edits actual guarded PagePlan field, not a fake overlay');
+  check('ANDROID-KEYPAD-CLOSE',await androidInput.locator('#dkts-numeric-keypad').isHidden()&&
+    androidErrors.length===0,'numeric keyboard closes without JS errors: '+androidErrors.join(' | '));
+  await androidInput.close();
   check('UI-NO-PAGEERROR',pageErrors.length===0,'Page errors: '+pageErrors.join('; '));
   fs.writeFileSync(path.join(out,'acceptance-report.json'),JSON.stringify({reference:'FS-Pro V6',kind:'offline UI',checks:report,metrics,pageErrors},null,2));
   console.log(JSON.stringify({checks:report.length,passed:report.filter(x=>x.pass).length,output:out,metrics}));
