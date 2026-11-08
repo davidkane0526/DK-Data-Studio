@@ -11,7 +11,7 @@
   if(brandedImage.naturalWidth<64)return;
   brand.textContent='';
   brand.dataset.brand='legacy-native-icon';
-  brand.style.backgroundImage='url("brand-icon.png")';
+  window.DKDSStyleGate.set(brand,'background-image','url("brand-icon.png")',{component:'dkts.fspro.brand',owner:'dkts.fspro.shell',source:'src/4200a-fspro/ui-shell.js'});
  };
  brandedImage.src='brand-icon.png';
  const nativeVersion=/^\d+\.\d+\.\d+$/.test(info.nativeVersion||'')?info.nativeVersion:'0.3.13';
