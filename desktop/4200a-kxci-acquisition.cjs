@@ -21,7 +21,16 @@ function rawTokens(payload,expected){
   return Object.freeze({status:match[1]||null,valueText:match[2],rawToken});
  });
 }
-function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
+function opaqueTokens(payload,expected){
+ const bytes=Buffer.isBuffer(payload)?payload:Buffer.from(payload);
+ if(bytes.length===0||bytes.length>4*1024*1024)throw Error('Invalid KXCI status frame size');
+ const text=bytes.toString('utf8').replace(/\0+$/,'').trim();
+ const tokens=text.split(/[,;\s]+/).filter(Boolean);
+ if(tokens.length!==expected)throw Error('KXCI status point count mismatch');
+ if(tokens.some(value=>!/^[A-Za-z0-9_.+\-]{1,32}$/.test(value)))throw Error('Invalid KXCI status token');
+ return tokens;
+}
+function assemble({compiled,replies,metaReplies=[],instrumentId,captureId,startedAt}={}){
  if(!compiled||compiled.schema!=='dkts.4200a.kxci.dc-compiled.v1'||
     !Array.isArray(compiled.read)||!Number.isInteger(compiled.totalPoints))throw new TypeError('Invalid compiled DC plan');
  if(typeof instrumentId!=='string'||!/KI4200A/i.test(instrumentId))throw new Error('Verified instrument ID required');
@@ -43,7 +52,28 @@ function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
  const xi=index(x);
  if(!channels.has('V'+xi)||!channels.has('I'+xi))throw new Error('Xsweep V/I readings unavailable');
  const pi=p?index(p):null;
+ const metaReads=Array.isArray(compiled.metaReads)?compiled.metaReads:[];
+ if(!Array.isArray(metaReplies)||metaReplies.length!==metaReads.length)
+  throw Error('Missing or extra KXCI native timestamp/status buffers');
+ let timeTokens=null;
+ const statusTokens=new Map();
+ for(let j=0;j<metaReads.length;j++){
+   const req=metaReads[j],entry=metaReplies[j];
+   if(!entry||entry.command!==req.command||
+      !(Buffer.isBuffer(entry.bytes)||entry.bytes instanceof Uint8Array))
+    throw Error('Out-of-order KXCI native metadata: '+req.command);
+   if(req.type==='timestamp'){
+    if(timeTokens!==null)throw Error('Duplicate native time function');
+    timeTokens=rawTokens(entry.bytes,compiled.totalPoints).map(item=>item.valueText);
+   }else if(req.type==='instrument-status'){
+    if(statusTokens.has(req.name))throw Error('Duplicate native status channel');
+    statusTokens.set(req.name,opaqueTokens(entry.bytes,compiled.totalPoints));
+   }else throw Error('Unsupported native metadata function');
+   frames.push({command:req.command,payloadBase64:Buffer.from(entry.bytes).toString('base64'),
+     readOrder:compiled.read.length+j});
+ }
  const columns=[
+  ...(timeTokens?[{id:'time',label:'Instrument Time',unit:'s'}]:[]),
   {id:'voltage',label:'X Voltage',unit:'V'},
   {id:'current',label:'X Current',unit:'A'}
  ];
@@ -59,6 +89,9 @@ function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
   if(stateValues.includes('C'))row.status=1;
   else if(stateValues.every(v=>v==='N'))row.status=0;
   if(Object.keys(channelStatuses).length)row.channelStatuses=channelStatuses;
+  if(timeTokens)row.time=timeTokens[i];
+  if(statusTokens.size)row.instrumentStatuses=Object.fromEntries(
+   [...statusTokens].map(([name,values])=>[name.toLowerCase(),values[i]]));
   if(pi)row.gate_voltage=channels.get('V'+pi)[i].valueText;
   for(const name of names)row[name.toLowerCase()]=channels.get(name)[i].valueText;
   samples.push(row);
@@ -75,4 +108,4 @@ function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
  const checked=rawModule.validate(raw);if(!checked.valid)throw new Error('Native raw contract rejected: '+checked.errors.map(x=>x.code).join(','));
  return raw;
 }
-module.exports={rawTokens,assemble};
+module.exports={rawTokens,opaqueTokens,assemble};
