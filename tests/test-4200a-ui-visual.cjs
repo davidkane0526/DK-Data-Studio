@@ -280,6 +280,18 @@ async function seedVisualSMUs(page){
     window.DK4200FSPro.getDraft().info.testType==='Pulse'&&
     document.querySelector('#fs-toolbar-page-name')?.textContent==='Pulse Sweep'),
     'project restore is asynchronous and must preserve the selected offline Pulse Page');
+  const tampered=structuredClone(savedProjectJSON);
+  tampered.pages[0].data.terminals[1].compliance='1000';
+  await desktop.locator('#fs-open-input').setInputFiles({
+    name:'unsafe-hidden-page.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(tampered))
+  });
+  await desktop.waitForFunction(()=>
+    document.querySelector('#fs-messages')?.textContent?.includes('导入失败'));
+  check('PROJECT-REJECT-HIDDEN-OVERRANGE',await desktop.evaluate(()=>
+    document.querySelectorAll('#fs-page-list [data-command="select-page"]').length===2&&
+    window.DK4200FSPro.getDraft().info.testType==='Pulse'),
+    'reject an unsafe inactive test Page without replacing the previous valid project');
   await desktop.close();
   const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
   await manual.goto(file+'?open=edit');
