@@ -369,6 +369,17 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     toolbarCompact.buttons.includes('edit')&&toolbarCompact.buttons.includes('connection')&&
     !toolbarCompact.buttons.includes('new'),
     'no duplicate file operations and terminal settings accessible: '+JSON.stringify(toolbarCompact));
+  const mobilePageName=await mobile.evaluate(()=>{
+    const caption=document.querySelector('.fs-toolbar-caption');
+    const name=document.querySelector('#fs-toolbar-page-name');
+    const prefix=document.querySelector('.fs-toolbar-page-prefix');
+    return {page:name?.textContent?.trim(),shown:name?.getBoundingClientRect().width,
+      available:caption?.getBoundingClientRect().width,
+      prefixHidden:prefix?getComputedStyle(prefix).display==='none':false};
+  });
+  check('MOBILE-FULL-PAGE-NAME',mobilePageName.page==='IV Sweep'&&mobilePageName.prefixHidden&&
+    mobilePageName.shown<=mobilePageName.available+1,
+    'show complete selected test name without clipped current-page prefix: '+JSON.stringify(mobilePageName));
   await mobile.screenshot({path:path.join(out,'12-mobile-title-actions-zh.png'),fullPage:true});
   await mobile.goto(file+'?open=edit');
   check('MOBILE-MODAL-ZH',await mobile.locator('.fs-editor-title').textContent().then(x=>x.includes('编辑页面')),
