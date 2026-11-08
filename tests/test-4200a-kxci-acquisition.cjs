@@ -28,7 +28,7 @@ assert.deepEqual(rawTokens(Buffer.from(nums.join(';')),3).map(x=>x.rawToken),num
 assert.deepEqual(rawTokens(Buffer.from('1.234E-8,-5.0000000000E-9,+0.00000001'),3).map(x=>x.status),
  [null,null,null],'DO section 5 numeric-only data has no fabricated compliance flags');
 const numericOnly=replies.map((row,i)=>({command:row.command,
- bytes:Buffer.from(['+0','-1.2000000000E-8','2.345E-9'].join(',')+'\\0','utf8')}));
+ bytes:Buffer.from(['+0','-1.2000000000E-8','2.345E-9'].join(',')+'\0','utf8')}));
 const numerical=assemble({compiled,replies:numericOnly,instrumentId:capabilities.instrumentId,
  captureId:'OFFLINE-MOCK-PLAIN',startedAt:'2026-11-08T00:00:00Z'});
 assert.equal(numerical.nativeStatusCoverage,'unavailable');
