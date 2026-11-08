@@ -72,11 +72,17 @@
     </aside>
     <section class="fs-right">
       <div class="fs-pane-header">Visual Area <span>Frame 1–4</span></div>
+      <div id="fs-mobile-plot-tabs" class="fs-mobile-plot-tabs" role="tablist" aria-label="移动端图窗切换">
+        <button type="button" role="tab" id="fs-mobile-frame-0" data-frame-index="0" aria-selected="true" aria-controls="fs-frame-1" tabindex="0">I–V</button>
+        <button type="button" role="tab" id="fs-mobile-frame-1" data-frame-index="1" aria-selected="false" aria-controls="fs-frame-2" tabindex="-1">转移</button>
+        <button type="button" role="tab" id="fs-mobile-frame-2" data-frame-index="2" aria-selected="false" aria-controls="fs-frame-3" tabindex="-1">I–t</button>
+        <button type="button" role="tab" id="fs-mobile-frame-3" data-frame-index="3" aria-selected="false" aria-controls="fs-frame-4" tabindex="-1">数据</button>
+      </div>
       <div class="fs-frames">
-        <section class="fs-frame"><div class="fs-frame-title">Frame 1 <span>I–V</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
-        <section class="fs-frame"><div class="fs-frame-title">Frame 2 <span>Transfer</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
-        <section class="fs-frame"><div class="fs-frame-title">Frame 3 <span>I–t</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
-        <section class="fs-frame"><div class="fs-frame-title">Frame 4 <span>Data</span><button data-command="data-viewer" class="fs-frame-viewer" title="查看原始数据表">表格</button></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame" id="fs-frame-1" role="tabpanel" aria-labelledby="fs-mobile-frame-0" data-mobile-active="true"><div class="fs-frame-title">Frame 1 <span>I–V</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame" id="fs-frame-2" role="tabpanel" aria-labelledby="fs-mobile-frame-1" data-mobile-active="false"><div class="fs-frame-title">Frame 2 <span>Transfer</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame" id="fs-frame-3" role="tabpanel" aria-labelledby="fs-mobile-frame-2" data-mobile-active="false"><div class="fs-frame-title">Frame 3 <span>I–t</span></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
+        <section class="fs-frame" id="fs-frame-4" role="tabpanel" aria-labelledby="fs-mobile-frame-3" data-mobile-active="false"><div class="fs-frame-title">Frame 4 <span>Data</span><button data-command="data-viewer" class="fs-frame-viewer" title="查看原始数据表">表格</button></div><div class="fs-empty-plot" aria-label="无测量数据">暂无原始测量数据</div></section>
       </div>
       <div class="fs-bottom">
         <div class="fs-bottom-cell"><div class="fs-pane-header">Messages / Test Log</div><div id="fs-messages" class="fs-messages">离线配置已就绪。未连接仪器。</div></div>
@@ -116,6 +122,7 @@
 <script src="android-bridge.js"></script>
 <script src="build-info.js"></script>
 <script src="ui-shell.js"></script>
+<script src="mobile-frame-tabs.js"></script>
 <script src="discovery-ui.js"></script>
 <script src="locale.js"></script>
 </body>
