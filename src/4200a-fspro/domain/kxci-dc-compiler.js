@@ -218,6 +218,12 @@
   add('start','ME1');
   const poll=Object.freeze({phase:'status',kind:'query',command:'SP',readyMask:1,errorMask:2,busyMask:16});
   const reads=Object.freeze(names.map(name=>Object.freeze({phase:'read',kind:'query',command:`DO '${name}'`,name})));
+  // Optional instrument-produced metadata. DO suffix T=time, S=SMU status (Rev E 5-38).
+  // Unverified status encoding must be retained verbatim, not guessed as N/C.
+  const metaReads=page.captureNativeMeta===true?Object.freeze([
+   Object.freeze({phase:'read-meta',kind:'query',command:`DO 'V${channelIndex(x.resource)}T'`,type:'timestamp',name:'time'}),
+   ...names.map(name=>Object.freeze({phase:'read-meta',kind:'query',command:`DO '${name}S'`,type:'instrument-status',name}))
+  ]):Object.freeze([]);
   // ME4 is the documented test abort. CHn off is a separate best-effort safe state.
   const stop=Object.freeze([Object.freeze({phase:'abort',kind:'write',command:'MD'}),Object.freeze({phase:'abort',kind:'write',command:'ME4'}),
    Object.freeze({phase:'disable',kind:'write',command:'DE'}),...assigned.map(t=>Object.freeze({phase:'disable',kind:'write',command:`CH${channelIndex(t.resource)}`}))]);
@@ -227,7 +233,7 @@
    instrumentId:capabilities.instrumentId||null,channels:Object.freeze(assigned.map(t=>Object.freeze({logical:t.logical,resource:t.resource,role:t.role}))),
    xPoints:xs.points,pPoints:ps?.points||1,totalPoints:total,
    prepare:Object.freeze(commandRows.filter(x=>x.phase!=='start')),start:Object.freeze(commandRows.filter(x=>x.phase==='start')),
-   poll,read:reads,stop,metadata:Object.freeze({lineFrequencyHz:capabilities.lineFrequencyHz,
+   poll,read:reads,metaReads,stop,metadata:Object.freeze({lineFrequencyHz:capabilities.lineFrequencyHz,
     capturedFunctions:Object.freeze(names)})
   });
  }
