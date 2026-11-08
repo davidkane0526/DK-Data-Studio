@@ -12,6 +12,7 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -33,6 +34,7 @@ public final class MainActivity extends Activity {
     private WebView webView;
     private ReadonlyInstrumentBridge nativeBridge;
     private ValueCallback<Uri[]> pendingFiles;
+    private boolean readyLogged = false;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -57,6 +59,13 @@ public final class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
 
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onConsoleMessage(ConsoleMessage message) {
+                if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||
+                    message.messageLevel() == ConsoleMessage.MessageLevel.WARNING)
+                    Log.w("DKTS-FSPro-WebJS", message.message().substring(0,
+                        Math.min(200, message.message().length())));
+                return true;
+            }
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFiles != null) pendingFiles.onReceiveValue(null);
@@ -90,22 +99,44 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 if (!ENTRY.equals(url)) return;
-                Log.i(TAG, "FS-Pro preview loaded; output permissions disabled");
-                view.postDelayed(() -> {
-                    if (!ENTRY.equals(view.getUrl())) return;
-                    view.evaluateJavascript(
-                        "(function(){return (window.DK4200FSPro && window.DK4200ConnectionStatus && " +
-                        "window.DKDSScientificPlot && document.getElementById('fs-measure')?.disabled && " +
-                        "document.getElementById('fs-repeat')?.disabled) ? 'FS_PRO_READY' : 'FS_PRO_BROKEN';})()",
-                        result -> Log.i("DKTS-FSPro-Ready", String.valueOf(result)));
-                }, 2500L);
+                Log.i(TAG, "FS-Pro read-only page loaded");
+                scheduleReadyProbe(0);
             }
+
         });
         nativeBridge = new ReadonlyInstrumentBridge(this, webView);
         webView.addJavascriptInterface(nativeBridge, "DKTSReadOnlyNative");
         setContentView(webView);
         webView.loadUrl(ENTRY);
+        // WebView onPageFinished can be delayed by asset-backed scripts. Probe
+        // the actual JS contract independently and fail closed when incomplete.
+        webView.postDelayed(() -> scheduleReadyProbe(0), 5000L);
         hideStatusBar();
+    }
+
+    private void scheduleReadyProbe(int attempt) {
+        if (readyLogged || webView == null || attempt >= 8) return;
+        webView.postDelayed(() -> {
+            if (readyLogged || !ENTRY.equals(webView.getUrl())) {
+                if (!readyLogged && attempt < 7) scheduleReadyProbe(attempt + 1);
+                return;
+            }
+            webView.evaluateJavascript(
+                "(function(){return !!(window.DK4200FSPro && window.DK4200ConnectionStatus && " +
+                "window.DKDSScientificPlot && document.getElementById('fs-measure')?.disabled && " +
+                "document.getElementById('fs-repeat')?.disabled && " +
+                "window.DKTSNumericKeypad && window.DK4200UIControls)})()",
+                result -> {
+                    if ("true".equals(result)) {
+                        readyLogged = true;
+                        Log.i("DKTS-FSPro-Ready", "FS_PRO_READY");
+                    } else {
+                        Log.w("DKTS-FSPro-Ready", "FS_PRO_PENDING attempt=" + attempt +
+                            " result=" + String.valueOf(result));
+                        if (attempt < 7) scheduleReadyProbe(attempt + 1);
+                    }
+                });
+        }, attempt == 0 ? 800L : 1700L);
     }
 
     @Override
