@@ -517,6 +517,15 @@
  .fs-app .fs-range-note{display:none}
 }
 
+/* The five FS-Pro page actions must stay on one row at mobile width.
+ * The previous 84px minimum forced UnScale onto a misleading second line. */
+@media(max-width:650px){
+  .fs-app .fs-editor-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:4px;align-items:stretch}
+  .fs-app .fs-editor-controls button{width:100%;min-width:0;min-height:29px;
+    padding:3px 2px;font-size:11px;white-space:nowrap}
+}
+
 /* Compact mobile toolbar: retain the complete active Page identifier; the
  * four-character prefix wasted space and made IV Sweep appear as IV S… . */
 .fs-toolbar-page-prefix{display:inline;margin-right:5px}
