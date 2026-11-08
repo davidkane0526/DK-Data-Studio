@@ -164,7 +164,8 @@
    if(occupied.has(t.resource))fail('DUPLICATE_RESOURCE',t.resource);
    occupied.add(t.resource);byLogical.set(t.logical,t);
    if(!['X','P','CONDITION'].includes(t.role)||!['voltage','current'].includes(t.sourceMode))fail('TERMINAL_MODE',t.logical);
-   if(t.measureRange?.mode!=='auto')fail('FIXED_RANGE_NOT_COMPILED',t.logical);
+   if(!assertPlain(t.measureRange)||!['auto','minimum','fixed'].includes(t.measureRange.mode))
+    fail('MEASURE_RANGE_MODE',t.logical);
    const mod=inv.get(t.resource),m=MODELS[mod.model],comp=positive(t.compliance,t.logical+'.compliance');
    if(t.sourceMode==='voltage'){
     const min=mod.preamplifier?1e-10:1e-7;
@@ -239,6 +240,43 @@
   add('measurement','DM2');
   const names=selectMeasurementFunctions(page,assigned,x,p);
   add('measurement','LI '+names.map(n=>`'${n}'`).join(','));
+  // Rev E §§5-42/43: RG is the current autorange FLOOR, not a fixed
+  // measurement range. RI/RV request immediate ranges only.
+  // Neither represents proven range holding during a complete sweep.
+  const rangePrograms=[];
+  for(const t of assigned){
+   const setting=t.measureRange,mode=setting.mode;
+   if(mode==='auto')continue;
+   const module=inv.get(t.resource),model=MODELS[module.model];
+   const value=positive(setting.value,t.logical+'.measureRange.value');
+   const number=channelIndex(t.resource);
+   const currentMin=module.preamplifier?1e-12:1e-7;
+   const currentMax=module.model.startsWith('421')?1:0.1;
+   const compliance=positive(t.compliance,t.logical+'.compliance');
+   let command,semantic;
+   if(mode==='minimum'){
+    if(t.sourceMode!=='voltage')fail('MINIMUM_CURRENT_RANGE_ONLY',t.logical);
+    if(value<currentMin||value>currentMax)
+     fail('KXCI_CURRENT_RANGE_LIMIT',t.logical+' ['+currentMin+','+currentMax+'] A');
+    command=`RG ${number},${numeric(value,t.logical+'.measureRange.value')}`;
+    semantic='autorange-current-floor';
+   }else if(t.sourceMode==='voltage'){
+    // Published RI range limits cover 4200/4201 but not 4210/4211.
+    // Reject unverified high-power RI rather than extrapolating.
+    if(module.model.startsWith('421'))fail('HIGH_POWER_RI_UNVERIFIED',t.logical);
+    if(value<currentMin||value>currentMax)
+     fail('KXCI_CURRENT_RANGE_LIMIT',t.logical+' ['+currentMin+','+currentMax+'] A');
+    command=`RI ${number},${numeric(value,t.logical+'.measureRange.value')},${numeric(compliance,t.logical+'.compliance')}`;
+    semantic='immediate-current-range';
+   }else{
+    checkAbs(value,model.voltage,t.logical+'.measureRange.value');
+    command=`RV ${number},${numeric(value,t.logical+'.measureRange.value')},${numeric(compliance,t.logical+'.compliance')}`;
+    semantic='immediate-voltage-range';
+   }
+   add('range',command,'write',{rangeSemantic:semantic,resource:t.resource});
+   rangePrograms.push(Object.freeze({resource:t.resource,logical:t.logical,
+    mode,requestedValue:value,semantic,command,heldDuringSweepVerified:false}));
+  }
   add('start','MD');
   add('start','ME1');
   const poll=Object.freeze({phase:'status',kind:'query',command:'SP',readyMask:1,errorMask:2,busyMask:16});
@@ -259,7 +297,7 @@
    xPoints:xs.points,pPoints:ps?.points||1,totalPoints:total,
    prepare:Object.freeze(commandRows.filter(x=>x.phase!=='start')),start:Object.freeze(commandRows.filter(x=>x.phase==='start')),
    poll,read:reads,metaReads,stop,metadata:Object.freeze({lineFrequencyHz:capabilities.lineFrequencyHz,
-    capturedFunctions:Object.freeze(names)})
+    capturedFunctions:Object.freeze(names),rangePrograms:Object.freeze(rangePrograms)})
   });
  }
  return Object.freeze({VERSION,MODELS,compile,formatNumber:numeric});
