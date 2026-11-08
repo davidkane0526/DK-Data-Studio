@@ -34,6 +34,18 @@ fail('INVALID_NUMBER',p=>{p.refValue='0;ME1';});
 fail('HARDWARE_LIMIT',p=>p.terminals[1].stop='1000');
 fail('HARDWARE_LIMIT',p=>p.terminals[2].compliance='2');
 fail('KXCI_CLAMPED_COMPLIANCE',p=>p.terminals[0].compliance='1e-10');
+fail('SOURCE_RANGE_COMBINATION',p=>{
+ p.terminals[1].start='22';p.terminals[1].stop='23';p.terminals[1].step='0.1';p.terminals[1].compliance='0.02';
+});
+const highRangeInventory=inv();highRangeInventory.smus[1].model='4210-SMU';
+fail('SOURCE_RANGE_COMBINATION',p=>{
+ p.terminals[1].start='22';p.terminals[1].stop='23';p.terminals[1].step='0.1';p.terminals[1].compliance='0.2';
+},highRangeInventory);
+fail('SOURCE_RANGE_COMBINATION',p=>{
+ p.terminals[1].sourceMode='current';p.terminals[1].relativeTo='GND';
+ p.terminals[1].start='0';p.terminals[1].stop='0.5';p.terminals[1].step='0.01';
+ p.terminals[1].compliance='100';
+},highRangeInventory);
 fail('KXCI_POINT_LIMIT',p=>{p.terminals[1].stop='102.5';p.terminals[1].step='0.1'});
 fail('KXCI_POINT_LIMIT',p=>p.terminals[2].points='33');
 const singleVar2=page();

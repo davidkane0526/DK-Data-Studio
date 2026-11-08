@@ -10,10 +10,10 @@
  'use strict';
  const VERSION='0.1.0';
  const MODELS=Object.freeze({
-  '4200-SMU':Object.freeze({voltage:210,current:0.105}),
-  '4201-SMU':Object.freeze({voltage:210,current:0.105}),
-  '4210-SMU':Object.freeze({voltage:210,current:1.05}),
-  '4211-SMU':Object.freeze({voltage:210,current:1.05})
+  '4200-SMU':Object.freeze({voltage:210,current:0.105,highVoltageCurrent:0.0105}),
+  '4201-SMU':Object.freeze({voltage:210,current:0.105,highVoltageCurrent:0.0105}),
+  '4210-SMU':Object.freeze({voltage:210,current:1.05,highVoltageCurrent:0.105}),
+  '4211-SMU':Object.freeze({voltage:210,current:1.05,highVoltageCurrent:0.105})
  });
  const numberPattern=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
  const fail=(code,detail='')=>{const error=new Error(code+(detail?': '+detail:''));error.code=code;throw error;};
@@ -32,15 +32,30 @@
  };
  const positive=(v,path)=>{const n=parseNumber(v,path);if(n<=0)fail('NOT_POSITIVE',path);return n;};
  const checkAbs=(v,max,path)=>{if(Math.abs(v)>max+max*1e-12)fail('HARDWARE_LIMIT',path+' max ±'+max);return v;};
+ // Tektronix 4200A datasheet: 20 V range extends to 21 V at 105%
+ // full-scale; 200 V range provides only 10.5 mA (medium power) or
+ // 105 mA (high power), never the 20 V range's full current.
+ const HIGH_VOLTAGE_THRESHOLD=21;
+ function checkRangeCombination(t,value,compliance,model,path){
+  if(t.sourceMode==='voltage'&&Math.abs(value)>HIGH_VOLTAGE_THRESHOLD&&
+     compliance>model.highVoltageCurrent*(1+1e-12))
+   fail('SOURCE_RANGE_COMBINATION',path+' >21V requires current limit <= '+model.highVoltageCurrent+' A for '+model.voltage+'V SMU');
+  if(t.sourceMode==='current'&&Math.abs(value)>model.highVoltageCurrent&&
+     compliance>HIGH_VOLTAGE_THRESHOLD*(1+1e-12))
+   fail('SOURCE_RANGE_COMBINATION',path+' >'+model.highVoltageCurrent+' A requires voltage limit <=21V');
+ }
  const channelIndex=v=>{const m=/^SMU([1-9])$/.exec(String(v||''));return m?Number(m[1]):0;};
  const supports=(t)=>t?.resource&&channelIndex(t.resource)>0;
  const assertPlain=x=>x&&typeof x==='object'&&!Array.isArray(x);
- function sweep(t,role,refOffset,limit,hardwareMax){
+ function sweep(t,role,refOffset,limit,hardwareMax,model){
   if(t.segments?.length||t.generator==='Generator')fail('SEGMENTS_UNSUPPORTED',t.logical);
   if(!['Linear Step','Linear Points'].includes(t.generator))fail('SWEEP_UNSUPPORTED',t.logical+' '+t.generator);
   const start=parseNumber(t.start,t.logical+'.start')+refOffset;
   const stop=parseNumber(t.stop,t.logical+'.stop')+refOffset;
   checkAbs(start,hardwareMax,t.logical+'.start');checkAbs(stop,hardwareMax,t.logical+'.stop');
+  const selectedCompliance=positive(t.compliance,t.logical+'.compliance');
+  checkRangeCombination(t,start,selectedCompliance,model,t.logical+'.start');
+  checkRangeCombination(t,stop,selectedCompliance,model,t.logical+'.stop');
   if(Math.abs(start)<0.001&&start!==0&&t.sourceMode==='voltage')fail('KXCI_VOLTAGE_QUANTIZATION',t.logical+'.start');
   let step,points;
   if(t.generator==='Linear Step'){
@@ -197,16 +212,17 @@
     const value=parseNumber(t.bias,t.logical+'.bias')+offset(t.logical);
     checkAbs(value,max,t.logical+'.bias');
     if(t.sourceMode==='voltage'&&Math.abs(value)>0&&Math.abs(value)<0.001)fail('KXCI_VOLTAGE_QUANTIZATION',t.logical+'.bias');
+    checkRangeCombination(t,value,positive(t.compliance,t.logical+'.compliance'),model,t.logical+'.bias');
     add('source',`${t.sourceMode==='voltage'?'VC':'IC'}${i},${numeric(value,t.logical+'.bias')},${numeric(positive(t.compliance,t.logical+'.compliance'),t.logical+'.compliance')}`);
    }
    add('source',`ST ${i},1`); // Auto standby at test completion
   }
   const x=X[0],p=P[0];
   const xModel=MODELS[inv.get(x.resource).model];
-  const xs=sweep(x,'X',offset(x.logical),1024,x.sourceMode==='voltage'?xModel.voltage:xModel.current);
+  const xs=sweep(x,'X',offset(x.logical),1024,x.sourceMode==='voltage'?xModel.voltage:xModel.current,xModel);
   add('source',xs.command);
   let ps=null;
-  if(p){const m=MODELS[inv.get(p.resource).model];ps=sweep(p,'P',offset(p.logical),32,p.sourceMode==='voltage'?m.voltage:m.current);add('source',ps.command);}
+  if(p){const m=MODELS[inv.get(p.resource).model];ps=sweep(p,'P',offset(p.logical),32,p.sourceMode==='voltage'?m.voltage:m.current,m);add('source',ps.command);}
   const total=xs.points*(ps?.points||1);
   if(total>4096)fail('KXCI_BUFFER_LIMIT',String(total)); // System-mode buffer capacity.
   const strategy=page.strategy;

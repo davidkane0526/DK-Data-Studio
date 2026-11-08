@@ -41,10 +41,17 @@ check('HARDWARE_THEORY_LIMIT',p=>{p.pSweep.start='-1000';});
 check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[0].bias='1000';});
 check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[1].compliance='1000';});
 check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[2].measureRange.value='2';});
+check('HARDWARE_THEORY_RANGE_COMBINATION',p=>{
+ p.xSweep.stop='210';p.terminals[1].compliance='0.2';
+});
+check('HARDWARE_THEORY_RANGE_COMBINATION',p=>{
+ p.terminals[1].sourceMode='current';
+ p.xSweep.stop='0.5';p.xSweep.step='0.1';p.terminals[1].compliance='100';
+});
 {
   const p=clone();
   p.xSweep.stop='210';
-  p.terminals[1].compliance='1.05';
+  p.terminals[1].compliance='0.105';
   p.terminals[2].measureRange.value='1.05';
   const result=validatePagePlan(p);
   assert.equal(result.valid,true,'the maximum theoretical 4200A envelope must not be artificially reduced');

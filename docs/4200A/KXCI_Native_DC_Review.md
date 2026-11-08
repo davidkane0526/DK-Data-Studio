@@ -36,6 +36,7 @@
 ## 实机启用门槛
 
 - 对 **Rev. F + 当前固件** 校核所有原生 SMU/PMU 指令及采样状态，确认电压、电流范围、预放型号和软件能力边界与硬件规格逐项一致。
+- 2026-11-08 额定量程补充：依据 [Tektronix 4200A-SCS 官方数据表](https://download.tek.com/datasheet/1KW-60780-7_4200A-SCS_Parameter_Analyzer_Datasheet_20250320.pdf)，20 V 源量程的扩展上限是 21 V；200 V 量程时，4200/4201-SMU 最大电流 10.5 mA，4210/4211-SMU 最大电流 105 mA。Page 离线校验采用所有支持 SMU 的理论并集，物理型号确认后的 KXCI 编译采用各型号电压/电流耦合边界。全局的 ±210 V 与 1.05 A 不能当作可同时输出；20 ns PMU 功能不受这组 DC SMU 边界影响。
 - 2026-11-08 离线编译防错：`readyForCompiler` 与每个 SMU 的 `modelVerified` 必须显式为 `true`，缺失字段不能当作已验证。尚无确定 KXCI 映射的非零 `RefValue` 与不存在的 `RefNode` 必须拒绝编译。Android 断线后撤销旧 KCon 资源选项。此项不改变输出授权状态。
 - 从可信系统信息识别 KCon 通道和物理型号，读取设备状态、互锁与仪器实际能力，而不是通过插槽文本猜测。
 - 将 PagePlan 编译与仪器的一个全局独占租约绑定；经确认后才能将输出命令开放到专用驱动。**不能简单把运行器的 `offline-mock` 字符串替换为 socket。**

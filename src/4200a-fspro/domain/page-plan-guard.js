@@ -14,7 +14,23 @@
   // Maximum theoretical envelope across supported 4200A SMUs. This is NOT
   // an assertion of the installed model or a software-specific derating.
   // Actual SMU capabilities and KCon mapping still gate native execution.
-  const HARDWARE_ENVELOPE = Object.freeze({voltage:210,current:1.05});
+  const HARDWARE_ENVELOPE = Object.freeze({voltage:210,current:1.05,
+    fullCurrentVoltage:21,highVoltageCurrent:0.105});
+  // These bounds are the UNION across supported SMUs. Exact-model checks
+  // in the KXCI compiler further limit medium-power cards to 10.5 mA above
+  // 21 V. Do not treat the largest voltage and current as simultaneous.
+  function checkTheoryCombination(add,path,sourceMode,value,compliance){
+    if(!isFiniteDecimal(value)||!isPositiveDecimal(compliance))return;
+    const v=Math.abs(Number(value)),c=Number(compliance);
+    if(sourceMode==='voltage'&&v>HARDWARE_ENVELOPE.fullCurrentVoltage&&
+       c>HARDWARE_ENVELOPE.highVoltageCurrent)
+      add('HARDWARE_THEORY_RANGE_COMBINATION',path,
+       'Above 21 V the 4200A high-power SMU current limit cannot exceed 0.105 A');
+    if(sourceMode==='current'&&v>HARDWARE_ENVELOPE.highVoltageCurrent&&
+       c>HARDWARE_ENVELOPE.fullCurrentVoltage)
+      add('HARDWARE_THEORY_RANGE_COMBINATION',path,
+       'Above 0.105 A the 4200A high-power SMU voltage limit cannot exceed 21 V');
+  }
   const isFiniteDecimal = value => {
     if (value === null || value === undefined || typeof value === 'boolean') return false;
     const s = String(value).trim();
@@ -86,6 +102,7 @@
       const sourceMode=id(t.sourceMode).toLowerCase();
       const sourcedLimit=HARDWARE_ENVELOPE[sourceMode];
       const measuredMode=sourceMode==='voltage'?'current':'voltage';
+      checkTheoryCombination(add,path+'.bias',sourceMode,t.bias,t.compliance);
       if (sourcedLimit && isFiniteDecimal(t.bias) &&
           Math.abs(Number(t.bias))>sourcedLimit)
         add('HARDWARE_THEORY_LIMIT',path+'.bias','Source exceeds the 4200A theoretical ±'+sourcedLimit+' '+(sourceMode==='voltage'?'V':'A'));
@@ -123,6 +140,7 @@
       if(!max)continue;
       const list=seq.mode==='list'?(Array.isArray(seq.values)?seq.values:[]):[seq.start,seq.stop,seq.step];
       for(const [i,value] of list.entries()){
+        checkTheoryCombination(add,key+'.source-range',mode,value,t.compliance);
         if(!isFiniteDecimal(value))continue; // formula parsing is a separate gate
         if(Math.abs(Number(value))>max)
           add('HARDWARE_THEORY_LIMIT',key+'.'+(seq.mode==='list'?'values['+i+']':['start','stop','step'][i]),
