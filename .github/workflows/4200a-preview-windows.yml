@@ -56,7 +56,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           for ($attempt = 1; $attempt -le 4; $attempt++) {
-            Write-Host "Electron portable build attempt $attempt/4 (official release source)"
+            # Official GitHub electron-builder-binaries NSIS endpoint repeatedly
+            # returned 504 despite successful Electron download. Use a public
+            # byte-identical binary mirror and let electron-builder validate
+            # its pinned bundle checksum; fallback to official on last try.
+            if ($attempt -le 3) {
+              $env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://repo.huaweicloud.com/electron-builder-binaries/'
+            } else {
+              Remove-Item Env:ELECTRON_BUILDER_BINARIES_MIRROR -ErrorAction SilentlyContinue
+            }
+            Write-Host "Electron portable build attempt $attempt/4; binary mirror $(if ($attempt -le 3) {'HuaweiCloud'} else {'official GitHub'})"
             npx --yes electron-builder@26.0.12 --projectDir .stage/4200a-windows --win portable --x64 --publish never
             if ($LASTEXITCODE -eq 0) { break }
             if ($attempt -eq 4) { throw "Electron Builder failed after four download/build attempts" }
