@@ -136,8 +136,8 @@ function updateStatus(){
   if(!el)return;
   const v=validateDraft();
   el.classList.toggle('fs-error',!v.valid);
-  const fixed=draft.terminals.some(t=>t.measureRange?.mode==='fixed');
-  el.textContent=v.valid?(fixed?'固定档位仅离线保存 · 尚未验证实机量程':'离线参数检查通过 · 未启用仪器输出'):
+  const configured=draft.terminals.some(t=>t.measureRange?.mode!=='auto');
+  el.textContent=v.valid?(configured?'量程参数已配置 · 需实机验证全程保持':'离线参数检查通过 · 未启用仪器输出'):
     `检查：${v.errors[0]?.reason||'无效参数'}`;
   el.title=v.errors.map(x=>x.path+' '+x.reason).join('\n');
 }
@@ -188,20 +188,20 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
    <label>测量档位</label>
    ${select(`terminals[${i}].measureRange.mode`,
-     [['auto','自动'],['fixed','固定']],t.measureRange?.mode||'auto',
+     [['auto','自动'],['minimum','自动下限'],['fixed','即时指定']],t.measureRange?.mode||'auto',
      `data-fs-range-mode="${i}"`)}
    <label>${t.sourceMode==='voltage'?'电流 (A)':'电压 (V)'}</label>
    <input class="fs-range-value" data-bind="terminals[${i}].measureRange.value"
      aria-label="${e(t.logical)} 测量档位值" inputmode="decimal"
      value="${e(t.measureRange?.value||'1e-6')}"
-     ${t.measureRange?.mode!=='fixed'?'disabled':''}/>
+     ${t.measureRange?.mode==='auto'?'disabled':''}/>
    <label>预设档位</label>
    <select class="fs-range-presets" data-range-preset="${i}" aria-label="${e(t.logical)} 固定量程预设"
-     ${t.measureRange?.mode!=='fixed'?'disabled':''}>
+     ${t.measureRange?.mode==='auto'?'disabled':''}>
      ${options([['','自定义'],...['1e-12','1e-11','1e-10','1e-9','1e-8','1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0'].map(v=>[v,v])],
-       t.measureRange?.mode==='fixed'?t.measureRange?.value:'')}
+       t.measureRange?.mode!=='auto'?t.measureRange?.value:'')}
    </select>
-   <span class="fs-range-note" title="当前仅保存离线设置；实测固定量程须由真实模块及KXCI能力验证">未验证量程不授权输出</span>
+   <span class="fs-range-note" title="RG 设置电流自动量程下限；RI/RV 请求即时量程，是否全程保持需要实机验收">量程指令仅离线编译</span>
  </div></div>${segmentMarkup(t,i)}</div>`;
 }
 function limitsPanel(){
@@ -257,7 +257,7 @@ function strategyMarkup(){
  <fieldset class="fs-fieldset"><legend>Per-Terminal Measurement Range</legend>
  <table class="fs-connection-table"><thead><tr><th>Terminal</th><th>Range Mode</th><th>Range Value</th></tr></thead><tbody>
  ${draft.terminals.map((t,i)=>`<tr><td>${e(t.logical)}</td>
- <td>${select(`terminals[${i}].measureRange.mode`,[['auto','Auto'],['fixed','Fixed']],t.measureRange.mode)}</td>
+ <td>${select(`terminals[${i}].measureRange.mode`,[['auto','Auto'],['minimum','Auto Floor (I)'],['fixed','Immediate Range']],t.measureRange.mode)}</td>
  <td><input aria-label="${e(t.logical)} range value" data-bind="terminals[${i}].measureRange.value" value="${e(t.measureRange.value)}" ${t.measureRange.mode==='auto'?'disabled title="自动量程模式"':''}/></td>
  </tr>`).join('')}
  </tbody></table></fieldset></div>`;
@@ -362,7 +362,8 @@ host.addEventListener('change',event=>{
    const t=draft.terminals[i];
    if(t&&preset.value){
      t.measureRange=t.measureRange||{mode:'auto',value:'1e-6'};
-     t.measureRange.mode='fixed';t.measureRange.value=preset.value;
+     if(t.measureRange.mode==='auto')t.measureRange.mode='fixed';
+      t.measureRange.value=preset.value;
      const input=host.querySelector(`[data-bind="terminals[${i}].measureRange.value"]`);
      if(input)input.value=preset.value;
      updateStatus();
