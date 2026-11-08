@@ -87,6 +87,15 @@
    const foot=document.createElement('div');foot.className='fs-mini-table-note';foot.textContent=`显示前 ${Math.min(80,table.rows.length)} / ${table.rows.length} 点`;
    container.replaceChildren(sheet,foot);
   }
+  // A new imported capture can omit channels present in the previous one.
+  // Clear the old plot as well as restoring its hint; the original hint node
+  // may have been removed by ScientificPlot when it rendered the SVG.
+  function emptyFrame(index,message){
+   const {content,hint}=renderers[index];
+   hint.textContent=message;hint.hidden=false;
+   content.replaceChildren(hint);
+   content.setAttribute('aria-label',message);
+  }
   // Hidden mobile Frames may have zero layout width. Re-render from the
   // *same original imported capture* once a Frame becomes visible.
   async function refreshFrame(index){
@@ -102,12 +111,12 @@
       [original.columns.find(c=>c.id==='time'),validPlotAxes.y]:null;
    const {content,hint}=renderers[index];
    if(!pair){
-    hint.textContent='当前采样没有此图所需的通道';hint.hidden=false;
+    emptyFrame(index,'当前采样没有此图所需的通道');
     return false;
    }
    const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
    if(!traces.some(t=>t.x.length)){
-    hint.textContent='原始数据没有有效采样点';hint.hidden=false;
+    emptyFrame(index,'原始数据没有有效采样点');
     return false;
    }
    hint.hidden=true;
@@ -139,9 +148,9 @@
        window.matchMedia?.('(max-width:650px)').matches&&
        renderers[i].card.dataset.mobileActive==='false')continue;
     const {content,hint}=renderers[i],pair=specs[i];
-    if(!pair){hint.textContent=i===3?'原始数据表':'当前采样没有此图所需的通道';hint.hidden=false;continue;}
+    if(!pair){emptyFrame(i,i===3?'原始数据表':'当前采样没有此图所需的通道');continue;}
     const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
-    if(!traces.some(t=>t.x.length)){hint.textContent='原始数据没有有效采样点';hint.hidden=false;continue;}
+    if(!traces.some(t=>t.x.length)){emptyFrame(i,'原始数据没有有效采样点');continue;}
     hint.hidden=true;
     await plot.react(content,traces,plotLayout(x,y,traces),{responsive:true,scrollZoom:true,displayModeBar:false},{
      source:'dkts.4200a.native',renderKey:`${original.captureId}:${i}`,
