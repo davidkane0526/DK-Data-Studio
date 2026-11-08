@@ -271,6 +271,24 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('RAW-UI-COMPACT',dialogBounds.height>=225&&dialogBounds.height<=360&&
     dialogBounds.rowBottom<=dialogBounds.paneBottom+2,'3 rows should not create giant empty modal: '+JSON.stringify(dialogBounds));
   check('RAW-UI-PRECISION',cells[0].includes('1.234567890123e-9'),'original instrument numeric text preserved');
+  const nativeDownloadEvent=rawPreview.waitForEvent('download');
+  await viewer.locator('[data-raw-action="export-native"]').click();
+  const nativeDownload=await nativeDownloadEvent;
+  const downloadedRaw=JSON.parse(fs.readFileSync(await nativeDownload.path(),'utf8'));
+  check('RAW-EXPORT-ORIGINAL-FRAMES',
+    nativeDownload.suggestedFilename()==='OFFLINE-IMPORT-QA.raw.json'&&
+    downloadedRaw.rawFrames[0].payloadBase64===fixture.rawFrames[0].payloadBase64&&
+    downloadedRaw.samples[0].current===fixture.samples[0].current,
+    'downloaded JSON must retain original KXCI reply bytes and exact scientific numeric text');
+  const csvDownloadEvent=rawPreview.waitForEvent('download');
+  await viewer.locator('[data-raw-action="export"]').click();
+  const csvDownload=await csvDownloadEvent;
+  const downloadedCsv=fs.readFileSync(await csvDownload.path(),'utf8');
+  check('RAW-EXPORT-COMPLETE-CSV',
+    csvDownload.suggestedFilename()==='OFFLINE-IMPORT-QA.csv'&&
+    downloadedCsv.includes('1.234567890123e-9')&&
+    downloadedCsv.includes('2.500000000000e-7'),
+    'CSV keeps the original source numeric strings and all offline-fixture samples');
   check('RAW-UI-NO-ERRORS',rawPageErrors.length===0,'raw import page errors: '+rawPageErrors.join('; '));
   await rawPreview.screenshot({path:path.join(out,'11-raw-data-viewer-offline-fixture.png'),fullPage:true});
   await rawPreview.close();
