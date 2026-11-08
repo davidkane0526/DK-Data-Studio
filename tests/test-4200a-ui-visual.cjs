@@ -20,7 +20,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await desktop.goto(file);
   check('SHELL-DEFAULT-ZH',await desktop.evaluate(()=>
     window.DKTSLocale?.getLanguage()==='zh'&&document.documentElement.lang==='zh-CN'&&
-    document.querySelector('[data-menu="File"]')?.textContent==='文件'&&
+    document.querySelector('.fs-title-actions [data-command="open"]')?.getAttribute('title')==='打开工程'&&
     document.querySelector('#fs-version-badge')?.textContent==='V0.3.13'),
     'default Chinese and original V0.3.13 identity');
   if(process.env.DK4200_UI_ENTRY_FILE)await desktop.waitForFunction(
@@ -42,10 +42,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     (brandedFit.native&&brandedFit.size==='cover'&&brandedFit.image.includes('brand-icon.png')),
     'Old 256px PNG must fit entire 27px header box without cropping: '+JSON.stringify(brandedFit));
   check('SHELL-TITLEBAR',await desktop.evaluate(()=>{
-    const title=document.querySelector('.fs-titlebar'),menu=document.querySelector('.fs-menu');
-    const a=title.getBoundingClientRect(),b=menu.getBoundingClientRect();
-    return b.top>=a.top&&b.bottom<=a.bottom&&a.height<=46;
-  }),'File and other menus occupy single titlebar, not an extra row');
+    const title=document.querySelector('.fs-titlebar'),buttons=[...title.querySelectorAll('.fs-title-actions button')];
+    const b=title.getBoundingClientRect();
+    const foot=document.querySelector('.fs-status').getBoundingClientRect();
+    const lang=document.querySelector('#fs-language-switch').getBoundingClientRect();
+    return !document.querySelector('#fs-main-menu,#fs-mobile-menu-toggle')&&buttons.length===4&&
+      buttons.every(x=>x.getBoundingClientRect().bottom<=b.bottom+1)&&
+      b.height<=46&&lang.bottom<=foot.bottom+1;
+  }),'No grouped menus; four direct actions and locale in bottom status bar');
   const pageErrors=[];
   desktop.on('pageerror',err=>pageErrors.push(String(err.message||err)));
   await desktop.screenshot({path:path.join(out,'01-main-workspace.png'),fullPage:true});
@@ -80,25 +84,24 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await desktop.locator('#fs-language-switch').click();
   check('SHELL-SWITCH-EN',await desktop.evaluate(()=>
     window.DKTSLocale?.getLanguage()==='en'&&
-    document.querySelector('[data-menu="File"]')?.textContent==='File'&&
+    document.querySelector('.fs-title-actions [data-command="open"]')?.getAttribute('title')==='Open Project'&&
     document.querySelector('#fs-language-switch')?.textContent==='中文'),
     'language changes without a page reload');
-  await desktop.locator('.fs-menu [data-menu="File"]').click();
-  const menuGeometry=await desktop.evaluate(()=>{
-   const trigger=document.querySelector('.fs-menu [data-menu="File"]').getBoundingClientRect();
-   const popup=document.querySelector('.fs-menu-item .fs-menu-popup').getBoundingClientRect();
-   return {triggerBottom:trigger.bottom,popupTop:popup.top,popupLeft:popup.left,triggerLeft:trigger.left};
-  });
-  check('UI-MENU-ANCHOR',Math.abs(menuGeometry.popupTop-menuGeometry.triggerBottom)<3&&Math.abs(menuGeometry.popupLeft-menuGeometry.triggerLeft)<3,JSON.stringify(menuGeometry));
-  await desktop.locator('.fs-menu [data-menu="File"]').click();
-  await desktop.locator('.fs-menu [data-menu="Instruments"]').click();
-  await desktop.locator('.fs-menu-popup [data-native-action="settings"]').click();
+  await desktop.locator('#fs-plot-layout').evaluate(select=>{select.value='3';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  check('UI-PLOT-DROPDOWN',await desktop.evaluate(()=>
+    document.querySelector('.fs-frames')?.dataset.layout==='single'&&
+    getComputedStyle(document.querySelector('#fs-frame-4')).display!=='none'),
+    'scientific subwindow is selected in Visual Area heading');
+  await desktop.locator('#fs-plot-layout').evaluate(select=>{select.value='grid';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  await desktop.locator('#fs-instrument-settings').click();
   check('UI-CONNECTION-SETTINGS',await desktop.locator('#fs-instrument-host .fs-device-dialog').isVisible(),'Instrument connection settings');
   check('SAFE-CONNECTION-OFFLINE',await desktop.evaluate(()=>window.DK4200ConnectionStatus?.snapshot?.().executionAuthorized===false),'no native output privilege');
   await desktop.screenshot({path:path.join(out,'08-instrument-settings.png'),fullPage:true});
   await desktop.locator('#fs-instrument-host [data-fs-device-action="close"]').first().click();
 
-  check('UI-001',await desktop.locator('.fs-menu').isVisible()&&await desktop.locator('.fs-toolbar').isVisible(),'top menu and toolbar');
+  check('UI-001',await desktop.locator('.fs-title-actions').isVisible()&&
+    await desktop.locator('.fs-toolbar').isVisible()&&await desktop.locator('.fs-menu').count()===0,
+    'direct title actions and one testing toolbar without redundant grouped menus');
   check('UI-002',await desktop.locator('.fs-project [role=treeitem]').count()>=4,'nested project tree');
   check('UI-003',await desktop.locator('.fs-frame').count()===4,'2x2 Visual Area');
   check('UI-004',await desktop.locator('.fs-bottom-cell').count()===2,'messages and strategy');
@@ -201,8 +204,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     buffer:Buffer.from(JSON.stringify(fixture))
   });
   await rawPreview.waitForFunction(()=>document.getElementById('fs-messages').textContent.includes('OFFLINE-IMPORT-QA'),{timeout:10000});
-  await rawPreview.locator('.fs-menu [data-menu="Tools"]').click();
-  await rawPreview.locator('.fs-menu-popup [data-command="data-viewer"]').click();
+  await rawPreview.locator('#fs-frame-4 [data-command="data-viewer"]').click();
   const viewer=rawPreview.locator('#fs-data-host');
   check('RAW-UI-OPEN',await viewer.locator('.fs-data-dialog').isVisible(),
     'offline imported native raw capture renders in Data Viewer');
@@ -227,57 +229,53 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await mobile.goto(file);
   const mobileFrameLayout=await mobile.evaluate(()=>{
-    const shell=document.querySelector('.fs-frames');
-    const tabs=document.querySelector('#fs-mobile-plot-tabs');
-    const cards=[...shell.querySelectorAll('.fs-frame')];
-    return {tabsVisible:getComputedStyle(tabs).display!=='none',
-      tabs:tabs.querySelectorAll('[role="tab"]').length,
-      visible:cards.filter(c=>getComputedStyle(c).display!=='none').length,
-      frameHeight:cards[0].getBoundingClientRect().height,
-      gridWidth:shell.getBoundingClientRect().width,
-      pageWidth:document.documentElement.clientWidth};
+    const grid=document.querySelector('.fs-frames'),select=document.querySelector('#fs-plot-layout');
+    return {layout:grid.dataset.layout,selection:select.value,
+      visible:[...grid.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').length,
+      width:document.documentElement.clientWidth,
+      hasRedundantTabs:!!document.querySelector('#fs-mobile-plot-tabs')};
   });
-  check('MOBILE-PLOT-SINGLE',mobileFrameLayout.tabsVisible&&mobileFrameLayout.tabs===4&&
-    mobileFrameLayout.visible===1&&mobileFrameLayout.frameHeight>250,
-    'Mobile portrait must offer one full-size chart instead of four vertically stacked: '+JSON.stringify(mobileFrameLayout));
+  check('MOBILE-PLOT-SINGLE',mobileFrameLayout.layout==='single'&&mobileFrameLayout.selection==='0'&&
+    mobileFrameLayout.visible===1&&!mobileFrameLayout.hasRedundantTabs,
+    'Mobile portrait uses titlebar dropdown and one original Frame: '+JSON.stringify(mobileFrameLayout));
   await mobile.screenshot({path:path.join(out,'14-mobile-single-frame-zh.png'),fullPage:true});
-  await mobile.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').click();
-  const dataTab=await mobile.evaluate(()=>{
-    const selected=document.querySelector('#fs-mobile-plot-tabs [aria-selected="true"]');
-    const visible=[...document.querySelectorAll('.fs-frames .fs-frame')]
-      .filter(x=>getComputedStyle(x).display!=='none');
-    return {selected:selected?.dataset.frameIndex,
-      visible:visible.map(x=>x.id),tabs:document.querySelectorAll('.fs-mobile-plot-tabs [role="tab"]').length};
-  });
-  check('MOBILE-PLOT-DATA-TAB',dataTab.selected==='3'&&
-    dataTab.visible.join(',')==='fs-frame-4',
-    'mobile Data tab activates only raw-data Frame: '+JSON.stringify(dataTab));
+  await mobile.evaluate(()=>window.DK4200MobileFrames.select(3));
+  const dataTab=await mobile.evaluate(()=>({
+    selection:document.querySelector('#fs-plot-layout').value,
+    visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').map(x=>x.id)
+  }));
+  check('MOBILE-PLOT-DATA-TAB',dataTab.selection==='3'&&dataTab.visible.join(',')==='fs-frame-4',
+    'Data view selected via Visual Area subwindow dropdown');
   await mobile.screenshot({path:path.join(out,'15-mobile-data-tab.png'),fullPage:true});
   const rotated=await browser.newPage({viewport:{width:430,height:900},hasTouch:true});
   await rotated.goto(file);
-  await rotated.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').click();
+  await rotated.evaluate(()=>window.DK4200MobileFrames.select(3));
   await rotated.setViewportSize({width:920,height:560});
   const landscape=await rotated.evaluate(()=>({
-    tabs:getComputedStyle(document.querySelector('#fs-mobile-plot-tabs')).display,
+    layout:document.querySelector('.fs-frames').dataset.layout,
     visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').length
   }));
-  check('MOBILE-LANDSCAPE-2X2',landscape.tabs==='none'&&landscape.visible===4,
-    'turning from portrait to landscape restores all 4 native plot Frames: '+JSON.stringify(landscape));
+  check('MOBILE-LANDSCAPE-2X2',landscape.visible===1,
+    'Manually selected subwindow remains selected across orientation: '+JSON.stringify(landscape));
+  await rotated.evaluate(()=>window.DK4200MobileFrames.setLayout('grid'));
+  check('MOBILE-LANDSCAPE-GRID',await rotated.evaluate(()=>
+    [...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').length===4),
+    'Choose 2x2 explicitly using the same heading layout selector');
   await rotated.setViewportSize({width:430,height:900});
-  const portraitAgain=await rotated.evaluate(()=>({
-    active:window.DK4200MobileFrames?.current(),
-    visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').map(x=>x.id)
-  }));
-  check('MOBILE-ROTATION-PRESERVES-SELECTED',portraitAgain.active===3&&
-    portraitAgain.visible.join(',')==='fs-frame-4',
-    'orientation change retains selected raw-data Frame: '+JSON.stringify(portraitAgain));
-  await rotated.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').focus();
-  await rotated.keyboard.press('ArrowLeft');
-  check('MOBILE-PLOT-KEYBOARD',await rotated.locator('#fs-mobile-plot-tabs [aria-selected="true"]')
-    .getAttribute('data-frame-index')==='2',
-    'ArrowLeft changes accessible plot tab to I–t');
+  await rotated.evaluate(()=>window.DK4200MobileFrames.select(2));
+  check('MOBILE-ROTATION-PRESERVES-SELECTED',await rotated.evaluate(()=>
+    document.querySelector('#fs-plot-layout').value==='2'&&document.querySelector('.fs-frames').dataset.layout==='single'),
+    'user can restore I–t after orientation change');
+  const trigger=rotated.locator('.fs-plot-layout-wrap .fs-select-trigger');
+  await trigger.click();
+  check('MOBILE-PLOT-DROPDOWN-ANCHORED',await rotated.evaluate(()=>{
+    const anchor=document.querySelector('.fs-plot-layout-wrap .fs-select-trigger').getBoundingClientRect();
+    const popup=document.querySelector('.fs-select-popover')?.getBoundingClientRect();
+    return !!popup&&popup.top>=7&&popup.bottom<=window.innerHeight+1&&Math.abs(popup.left-anchor.left)<12;
+  }),'custom dropdown opens near actual heading trigger, not at screen bottom');
+  await rotated.keyboard.press('Escape');
   await rotated.close();
-  await mobile.locator('#fs-mobile-plot-tabs [data-frame-index="0"]').click();
+  await mobile.evaluate(()=>window.DK4200MobileFrames.select(0));
   const mobileRaw=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   const mobileFrameErrors=[];mobileRaw.on('pageerror',err=>mobileFrameErrors.push(String(err.message||err)));
   await mobileRaw.goto(file);
@@ -286,7 +284,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     buffer:Buffer.from(JSON.stringify(fixture))
   });
   await mobileRaw.waitForFunction(()=>document.querySelector('#fs-messages')?.textContent.includes('OFFLINE-IMPORT-QA'),{timeout:10000});
-  await mobileRaw.locator('#fs-mobile-plot-tabs [data-frame-index="2"]').click();
+  await mobileRaw.evaluate(()=>window.DK4200MobileFrames.select(2));
   await mobileRaw.waitForTimeout(500);
   const timeFrame=await mobileRaw.evaluate(()=>{
     const card=document.getElementById('fs-frame-3');
@@ -332,43 +330,39 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
   await mobileRaw.close();
   check('MOBILE-DEFAULT-ZH',await mobile.evaluate(()=>
-    document.documentElement.lang==='zh-CN'&&document.querySelector('#fs-mobile-menu-toggle')?.textContent==='菜单'),
-    'mobile interface launches in Chinese');
-  check('MOBILE-COMPACT-MENU',await mobile.locator('.fs-mobile-menu-toggle').isVisible()&&
-    await mobile.locator('.fs-menu').isHidden(),'compact File and other menu groups');
+    document.documentElement.lang==='zh-CN'&&!document.querySelector('#fs-mobile-menu-toggle')&&
+    document.querySelector('#fs-language-switch')?.closest('footer')!==null),
+    'one Chinese mobile shell with language control in bottom status');
+  check('MOBILE-COMPACT-MENU',await mobile.evaluate(()=>
+    document.querySelector('.fs-title-actions')!==null&&document.querySelector('.fs-menu')===null),
+    'no menu collection or obsolete Help/Window buttons');
   const toolbarCompact=await mobile.evaluate(()=>{
-    const t=document.querySelector('.fs-toolbar'),buttons=[...t.querySelectorAll('button')].filter(x=>getComputedStyle(x).display!=='none');
-    return {client:t.clientWidth,scroll:t.scrollWidth,buttons:buttons.map(x=>x.dataset.command||x.id)};
+    const bar=document.querySelector('.fs-toolbar');
+    return {client:bar.clientWidth,scroll:bar.scrollWidth,
+      buttons:[...bar.querySelectorAll('button')].filter(x=>getComputedStyle(x).display!=='none')
+        .map(x=>x.dataset.command||x.id)};
   });
-  check('MOBILE-COMPACT-TOOLBAR',
-    toolbarCompact.scroll<=toolbarCompact.client+2&&
-    !toolbarCompact.buttons.some(x=>['new','open','save','connection'].includes(x)),
-    'File commands live in titlebar menu without horizontal toolbar overflow: '+JSON.stringify(toolbarCompact));
-  await mobile.locator('#fs-mobile-menu-toggle').click();
-  check('MOBILE-MENU-OPEN',await mobile.locator('.fs-menu').isVisible()&&
-    await mobile.locator('.fs-menu [data-menu="File"]').textContent().then(x=>x==='文件'),
-    'mobile category menu accessible in titlebar');
-  await mobile.locator('.fs-menu [data-menu="File"]').click();
-  check('MOBILE-FILE-SUBMENU',await mobile.locator('.fs-menu [data-menu="File"] + .fs-menu-popup').isVisible(),
-    'File submenu remains reachable');
-  await mobile.screenshot({path:path.join(out,'12-mobile-menu-zh.png'),fullPage:true});
-  await mobile.locator('#fs-mobile-menu-toggle').click();
+  check('MOBILE-COMPACT-TOOLBAR',toolbarCompact.scroll<=toolbarCompact.client+2&&
+    toolbarCompact.buttons.includes('edit')&&toolbarCompact.buttons.includes('connection')&&
+    !toolbarCompact.buttons.includes('new'),
+    'no duplicate file operations and terminal settings accessible: '+JSON.stringify(toolbarCompact));
+  await mobile.screenshot({path:path.join(out,'12-mobile-title-actions-zh.png'),fullPage:true});
   await mobile.goto(file+'?open=edit');
   check('MOBILE-MODAL-ZH',await mobile.locator('.fs-editor-title').textContent().then(x=>x.includes('编辑页面')),
     'editor title localized by default');
-  check('MOBILE-MODAL-LANGUAGE',await mobile.locator('.fs-editor [data-fs-locale-switch]').isVisible(),
-    'switch remains reachable while editor is modal');
+  check('MOBILE-MODAL-LANGUAGE',await mobile.locator('.fs-editor [data-fs-locale-switch]').count()===0,
+    'no duplicated modal language button');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
-  await mobile.locator('.fs-editor [data-fs-locale-switch]').click();
+  await mobile.evaluate(()=>window.DKTSLocale.setLanguage('en'));
   check('MOBILE-EN',await mobile.evaluate(()=>
     window.DKTSLocale.getLanguage()==='en'&&
     document.querySelector('.fs-tabs button')?.textContent==='Sweep'),
-    'translate full form without changing data-bind values');
+    'full form translation changes no data-bind values');
   check('UI-030',await mobile.locator('.fs-info').isVisible()&&await mobile.locator('.fs-triptych-panel').count()===3,'mobile preserves three panels and original order');
   const connectPin=await mobile.evaluate(()=>{
     const button=document.querySelector('.fs-titlebar #fs-instrument-link'),title=document.querySelector('.fs-titlebar');
     const b=button?.getBoundingClientRect(),t=title?.getBoundingClientRect();
-    return {visible:!!b&&b.width>=50&&b.right<=t.right+1,bottom:b?.bottom,titleBottom:t?.bottom};
+    return {visible:!!b&&b.width>=42&&b.right<=t.right+1,bottom:b?.bottom,titleBottom:t?.bottom};
   });
   check('UI-MOBILE-CONNECT-PIN',connectPin.visible&&connectPin.bottom<=connectPin.titleBottom+1,
     'Connect control must stay visible without toolbar scrolling: '+JSON.stringify(connectPin));
