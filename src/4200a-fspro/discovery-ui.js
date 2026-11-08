@@ -81,7 +81,7 @@
  function openSettings(){
   if(modal.hidden===false)return;
   modal.innerHTML=`<div class="fs-editor fs-device-dialog" role="dialog" aria-modal="true" aria-label="Connection Settings">
-  <div class="fs-editor-title">Connection Settings <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button type="button" data-fs-device-action="close" title="关闭">×</button></div>
+  <div class="fs-editor-title">Connection Settings <button type="button" data-fs-device-action="close" title="关闭">×</button></div>
   <div class="fs-device-form">
    <label>仪器地址<input data-device-field="host" value="${esc(fields.host)}" autocomplete="off" spellcheck="false"></label>
    <label>端口<input data-device-field="port" type="number" min="1" max="65535" value="${esc(fields.port)}"></label>
@@ -96,6 +96,8 @@
  </div>`;
   modal.hidden=false;
   window.DKDSComponents?.hydrate?.(modal);
+  window.DK4200UIControls?.enhance?.(modal);
+  window.DKTSNumericKeypad?.bindNew?.(modal);
   showDialogStatus();
  }
  function closeSettings(){modal.hidden=true;modal.replaceChildren();}
