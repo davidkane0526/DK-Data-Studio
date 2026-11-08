@@ -30,6 +30,13 @@ check('DUPLICATE_TERMINAL',p=>{p.terminals[1].logical='S';});
 check('DUPLICATE_RESOURCE',p=>{p.terminals[1].resource='SMU1';});
 check('INVALID_COMPLIANCE',p=>{p.terminals[1].compliance='Infinity';});
 check('INVALID_MEASURE_RANGE',p=>{p.terminals[2].measureRange.value='0';});
+check('MINIMUM_CURRENT_RANGE_ONLY',p=>{p.terminals[2].sourceMode='current';
+ p.terminals[2].measureRange={mode:'minimum',value:'1'};});
+check('INVALID_MEASURE_RANGE',p=>{p.terminals[2].measureRange={mode:'minimum',value:'0'};});
+{
+ const p=clone();p.terminals[2].measureRange={mode:'minimum',value:'1e-9'};
+ assert.equal(validatePagePlan(p).valid,true,'current autorange floor is valid for offline Page configuration');
+}
 check('UNKNOWN_REFERENCE',p=>{p.terminals[1].relativeTo='floating';});
 check('SELF_REFERENCE',p=>{p.terminals[1].relativeTo='D';});
 check('REFERENCE_CYCLE',p=>{p.terminals[0].relativeTo='D';});
