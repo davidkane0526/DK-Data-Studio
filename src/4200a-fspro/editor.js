@@ -490,9 +490,20 @@ document.getElementById('fs-open-input').addEventListener('change',async event=>
     incoming=[{id:'page-1',data:clone(parsed)}];
   }else throw Error('不是受支持的 4200A 工程或页面文件');
   const selected=incoming.find(row=>row.id===parsed.activePageId)||incoming[0];
-  const previous=draft;draft=clone(selected.data);
-  const check=validateDraft();draft=previous;
-  if(!check.valid)throw Error('参数校验失败：'+check.errors[0]?.reason);
+  // Every Page must pass the offline bounds/role validator. A malicious or
+  // damaged project must not hide an unsafe plan in an inactive test page.
+  const previous=draft;
+  try{
+   for(const row of incoming){
+    if(!row.data.info||!Array.isArray(row.data.terminals)||
+       !Array.isArray(row.data.pageVars)||!Array.isArray(row.data.associateSpecs)||
+       !row.data.strategy||!row.data.target)
+      throw Error('工程页面结构不完整：'+row.id);
+    draft=clone(row.data);
+    const check=validateDraft();
+    if(!check.valid)throw Error(row.id+' 参数校验失败：'+check.errors[0]?.reason);
+   }
+  }finally{draft=previous;}
   pages=incoming;activePageId=selected.id;saved=clone(selected.data);
   pageSeq=Math.max(...pages.map(row=>Number(row.id.slice(5))));
   if(activeDialog)close();
