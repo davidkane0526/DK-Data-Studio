@@ -24,7 +24,7 @@ const sample=()=>({
   target:{expression:'Id = I(D)',plot:{X:'Vgs',Y:'Id',H:'',P:''},quoteVars:[]},
   strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'}
 });
-let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=false;
+let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true,connectionOrigin='';
 let frameViewer=null;
 const ensureFrameViewer=()=>{
  if(frameViewer)return frameViewer;
@@ -325,8 +325,8 @@ function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog
   el.dataset.fsProManualPage=activeDialog==='connection'?'21':path.startsWith('strategy.')?'20':path.startsWith('target.')?'19':'18';
  }
  if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-range-preset],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
-function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=false;render();}
-function close(){activeDialog='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
+function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=true;connectionOrigin='page';render();}
+function close(){activeDialog='';connectionOrigin='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
  if(!Array.isArray(resourceIDs)||resourceIDs.some(x=>typeof x!=='string'||!/^(?:SMU|PMU|CVU|VM|VS)\d+(?:\.\d+)?$/i.test(x))) throw Error('Invalid instrument resource inventory');
  inventory.clear();resourceIDs.forEach(x=>inventory.add(x));if(activeDialog==='connection')render();
@@ -340,9 +340,9 @@ function dispatch(action,target){
  }
  if(action==='reset'){draft=clone(original);render();return;}
  if(action==='lock'){unlocked=!unlocked;render();return;}
- if(action==='connection'){activeDialog='connection';render();return;}
- if(action==='close-connection'){activeDialog='page';render();return;}
- if(action==='connection-ok'){activeDialog='page';render();return;}
+ if(action==='connection'){connectionOrigin='page';activeDialog='connection';render();return;}
+ if(action==='close-connection'){if(connectionOrigin==='toolbar'){close();return;}activeDialog='page';render();return;}
+ if(action==='connection-ok'){if(connectionOrigin==='toolbar'){saved=clone(draft);close();note('端口配置已保存（未执行测量）');return;}activeDialog='page';render();return;}
  if(action==='add-var'){draft.pageVars.push({name:'',value:''});render();return;}
  if(action==='remove-var'){draft.pageVars.pop();render();return;}
  if(action==='add-spec'){draft.associateSpecs.push('');render();return;}
@@ -395,7 +395,7 @@ host.addEventListener('change',event=>{
  }
  if(event.target.matches('select[data-bind]'))bindControl(event.target);
 });
-host.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeDialog==='connection'){activeDialog='page';render();}else close();}});
+host.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeDialog==='connection'){if(connectionOrigin==='toolbar')close();else{activeDialog='page';render();}}else close();}});
 document.addEventListener('click',event=>{
  const btn=event.target.closest('[data-command]');
  if(!btn||host.contains(btn))return;
@@ -404,7 +404,7 @@ document.addEventListener('click',event=>{
  if(command==='export-raw'){exportRawCSV();return;}
  if(command==='data-viewer'){showDataViewer();return;}
  if(command==='edit'){startEdit();return;}
- if(command==='connection'){startEdit();activeDialog='connection';render();return;}
+ if(command==='connection'){startEdit();connectionOrigin='toolbar';activeDialog='connection';render();return;}
  if(command==='new'){saved=sample();document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;document.getElementById('fs-page-name').textContent=saved.info.name;note('新建工程 · 配置未保存');return;}
  if(command==='arrange'){note(window.matchMedia('(max-width:650px)').matches?
     '手机竖屏使用图窗标签；宽屏自动恢复 2 × 2 绘图布局':

@@ -113,7 +113,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const editor=desktop.locator('.fs-editor');
   check('UI-007',JSON.stringify(await editor.locator('.fs-info label').allTextContents())===JSON.stringify(['Type:','Polarity:','Group:','Test Type:','Name:']),'Info field order');
   const buttons=await editor.locator('.fs-editor-controls button').allTextContents();
-  check('UI-008',JSON.stringify(buttons)===JSON.stringify(['Unlock','Reset','Set Connection','AutoScale','UnScale']),'command order');
+  check('UI-008',JSON.stringify(buttons)===JSON.stringify(['Lock','Reset','Set Connection','AutoScale','UnScale']),'command order');
   check('UI-009',JSON.stringify(await editor.locator('.fs-tabs button').allTextContents())===JSON.stringify(['Sweep','Target','Strategy']),'tab order');
   check('UI-010',await editor.locator('.fs-sweep-head').isVisible()&&await editor.locator('.fs-terminal-list').isVisible(),'RefNode/Outputs above terminals');
   const fieldTrace=await desktop.evaluate(()=>({
@@ -145,8 +145,9 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-014',JSON.stringify(triptych)===JSON.stringify(['Limits','Page Var','Associate Spec']),'bottom three panels');
   check('UI-015',await editor.locator('input[aria-label="D current compliance"]').count()===1,'voltage source current compliance');
   check('SAFE-002',await desktop.evaluate(()=>window.DK4200FSPro.validate().executionAuthorized===false),'offline cannot authorize instrument');
-  await editor.locator('button[data-action="lock"]').click();
-  check('UI-008-UNLOCK',await editor.locator('button[data-action="lock"]').innerText().then(x=>x==='Lock'),'Unlock activates editing');
+  check('UI-008-UNLOCK',await editor.locator('button[data-action="lock"]').innerText().then(x=>x==='Lock')&&
+    await editor.locator('input[data-bind="terminals[0].bias"]').isEnabled(),
+    'Page is editable by default, without unlocking');
   await editor.locator('select[data-bind="terminals[0].measureRange.mode"]').selectOption('fixed');
   check('RANGE-MODE-FIXED',await editor.locator('input[data-bind="terminals[0].measureRange.value"]').isEnabled(),
     'per-terminal fixed range unlocks user-entered numeric control');
@@ -211,7 +212,15 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-020',await desktop.locator('.fs-connection-footer').innerText().then(x=>/共享|shared/i.test(x)),'shared preset warning preserved in either locale');
   check('UI-031',await desktop.locator('select[data-bind="terminals[0].resource"] option').allTextContents().then(xs=>xs.length===1&&xs[0]==='None'),'no fictitious unverified modules');
   await desktop.locator('button[data-action="close-connection"]').last().click();
+  check('CONNECTION-PAGE-RETURN',await desktop.locator('.fs-editor[aria-label="Edit Page"]').count()===1,
+    'Connection opened from Page returns to Page');
   await desktop.locator('button[data-action="cancel"]').last().click();
+  await desktop.locator('.fs-toolbar [data-command="connection"]').click();
+  check('CONNECTION-TOOLBAR',await desktop.locator('.fs-connection-dialog').isVisible(),
+    'toolbar opens standalone Connection dialog');
+  await desktop.locator('button[data-action="close-connection"]').last().click();
+  check('CONNECTION-TOOLBAR-CLOSE',await desktop.locator('#fs-modal-host .fs-editor').count()===0,
+    'standalone Connection close must not open Edit Page');
   check('SAFE-003',await desktop.locator('.fs-editor').count()===0,'cancel closes and reverts draft');
   await desktop.close();
   const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
@@ -565,7 +574,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const androidErrors=[];
   androidInput.on('pageerror',err=>androidErrors.push(String(err.message||err)));
   await androidInput.goto(file+'?open=edit');
-  await androidInput.locator('button[data-action="lock"]').click();
+  check('ANDROID-DEFAULT-EDITABLE',await androidInput.locator('input[data-bind="terminals[0].bias"]').isEnabled(),
+    'Android Page defaults to unlocked');
   const bias=androidInput.locator('input[data-bind="terminals[0].bias"]');
   check('ANDROID-NUMERIC-BIND',await bias.isVisible()&&await bias.getAttribute('inputmode')==='none'&&
     await bias.getAttribute('readonly')!==null,
