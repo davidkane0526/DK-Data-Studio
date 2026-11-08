@@ -40,12 +40,33 @@
    complete:unresolved.length===0
   });
  }
- function toModuleCapabilities(reply,{instrumentId,lineFrequencyHz,verifiedSlotMapping}={}){
+ function parseInstrumentInfo(response){
+  if(typeof response!=='string'||response.length>16384)throw new TypeError('Invalid SystemUtil instrumentinfo');
+  const rows=[];
+  for(const segment of response.split(/(?=slotno:)/i)){
+   const slot=/^slotno:(\\d{1,2})/i.exec(segment.trim());
+   if(!slot)continue;
+   const fields={slot:Number(slot[1])};
+   // Dates contain commas; use "key:" boundaries, not blind CSV splitting.
+   for(const key of ['name','model','serialno','hwver','fwver']){
+    const match=new RegExp('(?:^|,)\\\\s*'+key+':([^,]+)','i').exec(segment);
+    if(match)fields[key]=match[1].trim();
+   }
+   if(fields.slot<1||fields.slot>8||!fields.name||!fields.model||!fields.serialno)
+    throw new Error('Incomplete physical card information at slot '+fields.slot);
+   if(rows.some(v=>v.slot===fields.slot))throw new Error('Duplicate physical card slot '+fields.slot);
+   rows.push(Object.freeze(fields));
+  }
+  return Object.freeze(rows);
+ }
+ function toModuleCapabilities(reply,{instrumentId,lineFrequencyHz,verifiedSlotMapping,instrumentInfoRaw}={}){
   if(typeof instrumentId!=='string'||!/(KI4200A|4200A)/i.test(instrumentId))throw new Error('4200A IDN required');
   if(lineFrequencyHz!==50&&lineFrequencyHz!==60)throw new Error('Line frequency must be verified');
   const parsed=parseOptReply(reply);
   const mapping=verifiedSlotMapping&&typeof verifiedSlotMapping==='object'?verifiedSlotMapping:{};
   const smus=[],used=new Set(),unresolved=[];
+  const physical=instrumentInfoRaw===undefined?[]:parseInstrumentInfo(instrumentInfoRaw);
+  const physicalMap=new Map(physical.map(x=>[x.slot,x]));
   for(const slot of parsed.slots){
    if(slot.kind!=='SMU'){if(slot.kind==='unknown')unresolved.push({slot:slot.slot,reason:'UNKNOWN_SLOT'});continue;}
    const proposed=slot.resource||mapping[slot.slot];
@@ -53,18 +74,25 @@
    if(used.has(proposed))throw new Error('Duplicate KCon SMU channel mapping: '+proposed);
    used.add(proposed);
    const high=slot.model.startsWith('HPSMU'),pa=slot.model.endsWith('PA');
+   const card=physicalMap.get(slot.slot);
+   const exact=/^(?:KI)?(4200|4201|4210|4211)(?:-?SMU)?$/i.exec(card?.model||'');
+   const model=exact?exact[1]+'-SMU':null;
+   const verified=model!==null&&Boolean(card?.serialno)&&((model.startsWith('421')===high));
+   if(card&&!verified)unresolved.push({slot:slot.slot,reason:'PHYSICAL_MODEL_MISMATCH'});
+   if(!card)unresolved.push({slot:slot.slot,reason:'PHYSICAL_MODEL_NOT_OBSERVED'});
    smus.push(Object.freeze({
-    resource:proposed,model:high?'4210-SMU':'4200-SMU',preamplifier:pa,
-    modelFamily:high?'4210/4211':'4200/4201',slot:slot.slot,
-    source:'kxci-opt-plus-verified-kcon-mapping'
+    resource:proposed,modelVerified:verified,model:verified?model:null,
+    preamplifier:pa,modelFamily:high?'4210/4211':'4200/4201',
+    slot:slot.slot,cardSerial:verified?card.serialno:null,
+    source:verified?'kxci-opt-and-systemutil-instrumentinfo':'kxci-opt-family-only'
    }));
   }
   return Object.freeze({
    schema:'dkts.4200a.module-capabilities.v1',instrumentId,lineFrequencyHz,
    smus:Object.freeze(smus),unresolved:Object.freeze(unresolved),
    executionAuthorized:false,
-   readyForCompiler:smus.length>0&&unresolved.length===0
+   readyForCompiler:smus.length>0&&unresolved.length===0&&smus.every(x=>x.modelVerified)
   });
  }
- return Object.freeze({VERSION,parseOptReply,toModuleCapabilities});
+ return Object.freeze({VERSION,parseOptReply,parseInstrumentInfo,toModuleCapabilities});
 });
