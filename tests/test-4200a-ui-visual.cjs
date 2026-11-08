@@ -271,11 +271,15 @@ async function seedVisualSMUs(page){
   await desktop.locator('#fs-open-input').setInputFiles({
     name:'persisted-offline-project.json',mimeType:'application/json',buffer:Buffer.from(savedProjectData)
   });
+  await desktop.waitForFunction(()=>
+    document.querySelectorAll('#fs-page-list [data-command="select-page"]').length===2&&
+    window.DK4200FSPro.getDraft().info.testType==='Pulse'&&
+    document.querySelector('#fs-toolbar-page-name')?.textContent==='Pulse Sweep',{timeout:10000});
   check('PROJECT-RESTORE',await desktop.evaluate(()=>
     document.querySelectorAll('#fs-page-list [data-command="select-page"]').length===2&&
     window.DK4200FSPro.getDraft().info.testType==='Pulse'&&
-    document.querySelector('#fs-toolbar-page-name').textContent==='Pulse Sweep'),
-    'import preserves the selected offline Pulse test without hardware execution');
+    document.querySelector('#fs-toolbar-page-name')?.textContent==='Pulse Sweep'),
+    'project restore is asynchronous and must preserve the selected offline Pulse Page');
   await desktop.close();
   const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
   await manual.goto(file+'?open=edit');
