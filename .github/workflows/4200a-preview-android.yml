@@ -25,6 +25,16 @@ jobs:
     steps:
       - name: Checkout 4200A rebuild
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve common per-commit UI revision
+        id: revision
+        run: |
+          set -euo pipefail
+          number=$(git rev-list --count HEAD)
+          [[ "$number" =~ ^[0-9]+$ ]]
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "Common cross-platform revision a$number"
       - name: Node 22
         uses: actions/setup-node@v4
         with:
@@ -51,7 +61,7 @@ jobs:
           gradle-version: '8.10.2'
       - name: Stage FS-Pro shared web assets
         env:
-          DKTS_UI_REVISION: a${{ github.run_number }}
+          DKTS_UI_REVISION: a${{ steps.revision.outputs.number }}
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         run: |
           npm install --no-save --ignore-scripts --no-audit --no-fund d3@7.9.0
@@ -61,7 +71,7 @@ jobs:
           node --check src/4200a-fspro/discovery-ui.js
       - name: Compile Android preview with temporary CI debug identity
         env:
-          DKTS_FSPRO_BUILD_NUMBER: ${{ github.run_number }}
+          DKTS_FSPRO_BUILD_NUMBER: ${{ steps.revision.outputs.number }}
         run: gradle -p android4200a :app:assembleDebug --no-daemon --stacktrace
       - name: Verify compile-only debug package, never publish it
         run: |
@@ -119,7 +129,7 @@ jobs:
       - name: Build reproducibly signed Android Release APK
         if: steps.sign.outputs.signing == 'true'
         env:
-          DKTS_FSPRO_BUILD_NUMBER: ${{ github.run_number }}
+          DKTS_FSPRO_BUILD_NUMBER: ${{ steps.revision.outputs.number }}
           DKTS_FSPRO_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/dkts-fspro-preview.p12
           DKTS_FSPRO_ANDROID_SIGNING_PASSWORD: ${{ secrets.DKTS_FSPRO_ANDROID_SIGNING_PASSWORD }}
         run: gradle -p android4200a :app:assembleRelease --no-daemon --stacktrace
@@ -129,23 +139,23 @@ jobs:
           apk=android4200a/app/build/outputs/apk/release/app-release.apk
           test -s "$apk"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk"
-          cp "$apk" "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk"
-          sha256sum "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk"
+          cp "$apk" "DKTS-4200A-Preview-V0.3.13-a${{ steps.revision.outputs.number }}-Android.apk"
+          sha256sum "DKTS-4200A-Preview-V0.3.13-a${{ steps.revision.outputs.number }}-Android.apk"
       - name: Upload signed standalone APK
         if: steps.sign.outputs.signing == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android
-          path: DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk
+          name: DKTS-4200A-Preview-V0.3.13-a${{ steps.revision.outputs.number }}-Android
+          path: DKTS-4200A-Preview-V0.3.13-a${{ steps.revision.outputs.number }}-Android.apk
           if-no-files-found: error
       - name: Publish signed Android prerelease
         if: steps.sign.outputs.signing == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/feat/4200a-fspro-rebuild'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="DKTS-FSPro-Android-V0.3.13-a${{ github.run_number }}-preview"
-          gh release create "$tag" "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk" \
+          tag="DKTS-FSPro-Android-V0.3.13-a${{ steps.revision.outputs.number }}-preview"
+          gh release create "$tag" "DKTS-4200A-Preview-V0.3.13-a${{ steps.revision.outputs.number }}-Android.apk" \
             --target "${{ github.sha }}" \
-            --title "DK Test Studio 4200A Preview V0.3.13 a${{ github.run_number }} Android" \
-            --notes "Read-only preview: *IDN? and *OPT? only. Measure/Repeat disabled. Stable repository key required; nativeVersion V0.3.13, uiRevision a${{ github.run_number }}. No real instrument measurement acceptance." \
+            --title "DK Test Studio 4200A Preview V0.3.13 a${{ steps.revision.outputs.number }} Android" \
+            --notes "Read-only preview: *IDN? and *OPT? only. Measure/Repeat disabled. Stable repository key required; nativeVersion V0.3.13, uiRevision a${{ steps.revision.outputs.number }}. No real instrument measurement acceptance." \
             --prerelease
