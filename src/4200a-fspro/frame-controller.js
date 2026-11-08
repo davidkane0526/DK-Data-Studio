@@ -171,6 +171,13 @@
    if(typeof download==='function')return download(`${capture.raw.captureId}.csv`,csv,'text/csv');
    return csv;
   }
+  function rawJSON(){
+   ensure();
+   if(!capture)throw new Error('No native raw capture available for export');
+   // Preserve all original DO reply frames (base64) and exact numeric text.
+   // Do not reconstruct instrument-generated data from plotted coordinates.
+   return JSON.stringify(capture.raw,null,2);
+  }
   function table(){
    ensure();return capture?capture.table:null;
   }
@@ -182,7 +189,7 @@
    try{plot.dispose?.()}catch{}
    return true;
   }
-  return Object.freeze({VERSION,setCapture,refreshFrame,exportCSV,table,hasCapture,provenance,dispose});
+  return Object.freeze({VERSION,setCapture,refreshFrame,exportCSV,rawJSON,table,hasCapture,provenance,dispose});
  }
  return Object.freeze({VERSION,create});
 });
