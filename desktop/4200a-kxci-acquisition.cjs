@@ -9,16 +9,16 @@ const numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
 function rawTokens(payload,expected){
  const buffer=Buffer.isBuffer(payload)?payload:Buffer.from(payload);
  if(!buffer.length||buffer.length>4*1024*1024)throw new Error('Empty or oversized KXCI DO response');
- const text=buffer.toString('utf8').replace(/\0+$/,'').trim();
- const tokens=text.split(/[,;\s]+/).filter(Boolean);
+ const text=buffer.toString('utf8').replace(/\\0+$/,'').trim();
+ const tokens=text.split(/[,;\\s]+/).filter(Boolean);
  if(tokens.length!==expected)throw new Error('KXCI DO point count mismatch: expected '+expected+', got '+tokens.length);
- return tokens.map((token,index)=>{
-  // KXCI Rev E §3-1: system mode DO readings are X±N.NNNNE±NN.
-  // X=N normal, X=C compliance. These are not user-mode XYZ records.
-  const match=/^([NC])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?)$/.exec(token);
+ return tokens.map((rawToken,index)=>{
+  // Rev E §3-1 documents N/C-prefixed system readings; §5-38 describes
+  // unprefixed numeric DO values. Preserve both; never invent a status flag.
+  const match=/^([NC])?([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[Ee][+-]?\\d+)?)$/.exec(rawToken);
   if(!match||!numeric.test(match[2])||!Number.isFinite(Number(match[2])))
-   throw new Error('Invalid KXCI system-mode DO status/number at '+index+': '+token.slice(0,32));
-  return Object.freeze({status:match[1],valueText:match[2],rawToken:token});
+   throw new Error('Invalid KXCI DO number/status at '+index+': '+rawToken.slice(0,32));
+  return Object.freeze({status:match[1]||null,valueText:match[2],rawToken});
  });
 }
 function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
@@ -51,17 +51,23 @@ function assemble({compiled,replies,instrumentId,captureId,startedAt}={}){
  for(const name of names)columns.push({id:name.toLowerCase(),label:name,unit:name.startsWith('V')?'V':'A'});
  const samples=[];
  for(let i=0;i<compiled.totalPoints;i++){
-  const channelStatuses=Object.fromEntries([...names].map(name=>[name.toLowerCase(),channels.get(name)[i].status]));
+  const states=[...names].map(name=>[name.toLowerCase(),channels.get(name)[i].status]);
+  const channelStatuses=Object.fromEntries(states.filter(([,v])=>v!==null));
+  const stateValues=states.map(([,v])=>v);
   const row={index:i,sweepId:'P'+Math.floor(i/compiled.xPoints),
-    voltage:channels.get('V'+xi)[i].valueText,current:channels.get('I'+xi)[i].valueText,
-    channelStatuses,status:Object.values(channelStatuses).includes('C')?1:0};
+    voltage:channels.get('V'+xi)[i].valueText,current:channels.get('I'+xi)[i].valueText};
+  if(stateValues.includes('C'))row.status=1;
+  else if(stateValues.every(v=>v==='N'))row.status=0;
+  if(Object.keys(channelStatuses).length)row.channelStatuses=channelStatuses;
   if(pi)row.gate_voltage=channels.get('V'+pi)[i].valueText;
   for(const name of names)row[name.toLowerCase()]=channels.get(name)[i].valueText;
   samples.push(row);
  }
  const canonical=JSON.stringify({prepare:compiled.prepare,start:compiled.start,read:compiled.read,metadata:compiled.metadata});
  const planHash=crypto.createHash('sha256').update(canonical).digest('hex');
+ const statusesKnown=samples.filter(row=>row.status!==undefined).length;
  const raw={
+  nativeStatusCoverage:statusesKnown===samples.length?'all':statusesKnown?'partial':'unavailable',
   schema:'dkts.4200a.native.raw.v1',source:'keithley-4200a-kxci',
   instrumentId,captureId,planHash,startedAt:startedAt||new Date().toISOString(),
   status:'complete',columns,samples,rawFrames:frames
