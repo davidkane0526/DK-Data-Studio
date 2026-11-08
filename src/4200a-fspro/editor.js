@@ -365,7 +365,9 @@ document.addEventListener('click',event=>{
  if(command==='edit'){startEdit();return;}
  if(command==='connection'){startEdit();activeDialog='connection';render();return;}
  if(command==='new'){saved=sample();note('新建工程 · 配置未保存');return;}
- if(command==='arrange'){note('Visual Area · 2 × 2 Frame');return;}
+ if(command==='arrange'){note(window.matchMedia('(max-width:650px)').matches?
+    '手机竖屏使用图窗标签；宽屏自动恢复 2 × 2 绘图布局':
+    '绘图区已使用 2 × 2 布局');return;}
  if(command==='save'){
   const json=JSON.stringify(saved,null,2),blob=new Blob([json],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='4200A-page.json';a.click();URL.revokeObjectURL(url);
