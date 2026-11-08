@@ -552,3 +552,16 @@
  .fs-app .fs-terminal-range{border-top:1px solid var(--fs-line);padding-top:5px;grid-template-columns:auto minmax(80px,1fr) auto minmax(80px,1fr)}
  .fs-app .fs-terminal-range label:nth-of-type(3){grid-column:1}
 }
+
+/* Project > Device > Routine > dynamically registered tests, instead of a fake static tree. */
+.fs-app #fs-page-list{display:flex;flex-direction:column;gap:1px}
+.fs-app #fs-page-list .fs-depth3{min-height:28px;border-radius:5px;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;padding-left:23px}
+.fs-app #fs-page-list .fs-tree-selected{background:color-mix(in srgb,var(--fs-accent) 10%,var(--fs-panel));color:var(--fs-accent);font-weight:650}
+.fs-app #fs-add-test{margin:4px 0 4px 16px;width:calc(100% - 16px);border:1px dashed var(--fs-line);
+ color:var(--fs-accent);border-radius:5px;text-align:center}
+.fs-app .fs-test-picker{height:auto;min-height:0;max-height:min(650px,90dvh);width:min(480px,96vw)}
+.fs-app .fs-test-type-list{display:flex;flex-direction:column;gap:5px;padding:14px;overflow:auto}
+.fs-app .fs-test-type-list>button{display:flex;justify-content:space-between;align-items:center;
+ gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--fs-line);border-radius:6px;min-height:48px}
+.fs-app .fs-test-type-list>button span{font-size:11px;color:var(--fs-sub);font-weight:400}
