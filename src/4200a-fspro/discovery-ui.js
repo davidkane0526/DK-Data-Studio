@@ -26,6 +26,16 @@
   const route=info.route||{},slots=info.inventory?.addressableSMUs?.length||0;
   return `${info.idn.split(',').slice(1,3).join(' · ')} · ${slots} SMU · ${route.interfaceName||route.routeStrategy||'网络'}`;
  }
+ function summarizeConnectionError(error){
+  const value=String(error?.message||error||'未知错误');
+  if(/identity|serial|身份|序列号/i.test(value))return '设备身份或序列号不匹配';
+  if(/EPERM|Operation not permitted|Binding socket|network was not available|EHOSTUNREACH|ENETUNREACH|路由/i.test(value))
+   return '无法使用当前网络访问仪器，请检查网卡 IP 与路由';
+  if(/ETIMEDOUT|timeout|timed out/i.test(value))return '连接超时，请检查仪器地址与端口';
+  if(/ECONNREFUSED|refused/i.test(value))return '仪器拒绝连接，请检查 KXCI 服务';
+  if(/not connected|closed|reset|broken pipe/i.test(value))return '连接已中断，请重新连接';
+  return value.split('\\n')[0].slice(0,76);
+ }
  async function connect(){
   if(pending)return false;
   if(!bridge?.connect){note('此预览宿主尚未提供原生 TCP 连接');return false;}
@@ -44,7 +54,7 @@
   }catch(err){
    connected=false;discovery=null;
    summary('未连接');
-   note('连接失败：'+String(err?.message||err).split('\n')[0].slice(0,130));
+   note('连接失败：'+summarizeConnectionError(err));
    showDialogStatus();
    return false;
   }finally{pending=false;renderStatus();}
