@@ -208,8 +208,10 @@ function terminalMarkup(t,i){
  ${segmentButton}
  </div></div>
  <div class="fs-terminal-bottom">
- <label>Ref to:</label>${select(`terminals[${i}].relativeTo`,[['GND','GND'],...logicalOpts],t.relativeTo)}
- ${select(`terminals[${i}].role`,roles,t.role)}
+ <div class="fs-terminal-reference" aria-label="${e(t.logical)} 参考节点与扫描角色">
+  <label>Ref to:</label>${select(`terminals[${i}].relativeTo`,[['GND','GND'],...logicalOpts],t.relativeTo)}
+  ${select(`terminals[${i}].role`,roles,t.role)}
+ </div>
  <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
    <label>测量档位</label>
    ${select(`terminals[${i}].measureRange.mode`,
