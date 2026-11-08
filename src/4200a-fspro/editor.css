@@ -499,3 +499,20 @@
  .fs-app .fs-toolbar button[data-command="connection"]{display:inline-flex;align-items:center}
  .fs-app .fs-toolbar .fs-toolbar-caption{max-width:78px}
 }
+
+/* Desktop four-terminal V6 viewport: range and reference share one row,
+ * so all four terminal cards remain visible at 1200x850. */
+@media(min-width:900px){
+ .fs-app .fs-terminal-bottom{display:flex;align-items:center;flex-wrap:nowrap;padding-left:36px;gap:5px;min-height:27px}
+ .fs-app .fs-terminal-bottom>.fs-select-shell{flex:0 0 102px}
+ .fs-app .fs-terminal-range{flex:1 1 auto;display:grid;margin:0;padding:0 0 0 9px;
+   border-top:0;border-left:1px solid var(--fs-divider);
+   grid-template-columns:auto minmax(64px,.7fr) auto minmax(66px,.65fr) auto minmax(82px,.8fr);
+   gap:4px}
+ .fs-app .fs-range-note{display:none}
+}
+@media(max-width:899px){
+ .fs-app .fs-terminal-bottom{flex-wrap:wrap}
+ .fs-app .fs-terminal-range{flex:1 0 100%}
+ .fs-app .fs-range-note{display:none}
+}
