@@ -203,6 +203,56 @@
 .fs-data-table thead th{background:var(--fs-bg);position:sticky;top:0;z-index:1}
 .fs-data-note{margin:0 12px;padding:8px 0;color:var(--fs-sub)}
 
+/* Single mobile responsive owner: keep every numeric Sweep field inside 430px. */
+@media(max-width:650px){
+ .fs-app .fs-sweep-head{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 20px minmax(0,1fr);min-width:0;gap:4px}
+ .fs-app .fs-sweep-head .fs-inline-field{min-width:0}
+ .fs-app .fs-sweep-head input,.fs-app .fs-sweep-head select{width:100%;min-width:0}
+ .fs-app .fs-terminal-list{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+ .fs-app .fs-terminal{min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+ .fs-app .fs-terminal-top{grid-template-columns:26px minmax(80px,98px) minmax(0,1fr);gap:4px}
+ .fs-app .fs-generator{
+   grid-column:1/-1;
+   grid-template-columns:26px minmax(0,1fr) 26px;
+   grid-template-rows:28px auto;
+   gap:4px;
+ }
+ .fs-app .fs-generator>button:first-child{grid-column:1;grid-row:1}
+ .fs-app .fs-generator>select{grid-column:2;grid-row:1;width:100%;min-width:0}
+ .fs-app .fs-generator>button:last-child{grid-column:3;grid-row:1}
+ .fs-app .fs-generator-values{
+   grid-column:1/-1;grid-row:2;
+   display:grid;
+   grid-template-columns:repeat(3,auto minmax(0,1fr));
+   align-items:center;
+   min-width:0;gap:4px;
+ }
+ .fs-app .fs-generator-values .fs-small-input{min-width:0;width:100%;flex:none;padding-inline:3px}
+ .fs-app .fs-generator-values .fs-expression{grid-column:1/-1;min-width:0;width:100%}
+ .fs-app .fs-generator-values label{min-width:0;white-space:nowrap}
+ .fs-app .fs-terminal-bottom{padding-left:30px;gap:4px;flex-wrap:wrap}
+ .fs-app .fs-terminal-bottom select{min-width:68px}
+ .fs-app .fs-triptych{
+   display:flex;
+   flex-direction:row;
+   gap:8px;
+   overflow-x:auto;
+   overflow-y:hidden;
+   scroll-snap-type:x mandatory;
+   overscroll-behavior-inline:contain;
+   scroll-padding-inline:0;
+   touch-action:pan-x;
+   scrollbar-width:thin;
+ }
+ .fs-app .fs-triptych-panel{
+   flex:0 0 min(80%,340px);
+   scroll-snap-align:start;
+   min-width:0;
+   max-width:none;
+ }
+ .fs-app .fs-triptych-panel:last-child{scroll-snap-align:end}
+}
+
 /* Instrument settings uses the same compact DKDS/FS-Pro controls and geometry. */
 .fs-device-dialog{width:min(650px,100%);height:auto;max-height:min(560px,calc(100dvh - 24px))}
 .fs-device-form{padding:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 16px;overflow:auto}
