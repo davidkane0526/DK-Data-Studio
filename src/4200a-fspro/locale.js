@@ -119,6 +119,7 @@
   ['删除分段','Remove segment'],
   ['选择 4200A 原始记录','Select a 4200A raw capture'],
   ['数据查看器','Data Viewer'],
+  ['转移','Transfer'],['移动端图窗切换','Mobile plot navigation'],
   ['关闭连接设置','Close connection settings'],
   ['本地 4200A — 当前页面','Local 4200A — Current Page'],
   ['Local 4200A — 当前 Page','Local 4200A — Current Page'],
