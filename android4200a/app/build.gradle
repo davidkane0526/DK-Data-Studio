@@ -13,8 +13,8 @@ android {
         applicationId 'studio.dk.fspro.preview'
         minSdk 26
         targetSdk 35
-        versionCode runCode
-        versionName '0.3.0'
+        versionCode 24
+        versionName '0.3.13'
         buildConfigField 'String', 'UI_REVISION', '"a' + runCode + '"'
     }
     buildFeatures {
