@@ -40,6 +40,7 @@ jobs:
           DKTS_UI_REVISION: a${{ github.run_number }}
           DKTS_ELECTRON_VERSION: '43.4.0'
         run: |
+          node tools/4200a-generate-brand-icons.cjs
           node scripts/4200a/stage-windows-preview.cjs
           node --check .stage/4200a-windows/desktop/4200a-fspro-main.cjs
           node --check .stage/4200a-windows/desktop/4200a-routed-discovery.cjs
@@ -58,7 +59,7 @@ jobs:
           if ($files.Count -ne 1) { throw "Expected exactly one portable Windows EXE, found $($files.Count)" }
           $file = $files[0]
           if ($file.Length -lt 50000000) { throw "Suspiciously small Electron portable build" }
-          $expected = "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Windows-x64.exe"
+          $expected = "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Windows-x64.exe"
           if ($file.Name -ne $expected) { throw "Unexpected release name: $($file.Name)" }
           Get-FileHash $file.FullName -Algorithm SHA256 | Format-List
           "filename=$($file.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -66,7 +67,7 @@ jobs:
       - name: Upload exact Windows portable preview
         uses: actions/upload-artifact@v4
         with:
-          name: DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Windows-x64
+          name: DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Windows-x64
           path: .stage/4200a-windows/dist/*.exe
           if-no-files-found: error
       - name: Publish explicitly labeled preview GitHub Release
@@ -75,7 +76,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "DKTS-FSPro-V0.3.0-a${{ github.run_number }}-preview"
+          $tag = "DKTS-FSPro-V0.3.13-a${{ github.run_number }}-preview"
           $file = "${{ steps.artifact.outputs.filepath }}"
           $notes = @'
           **Preview ONLY. Not a validated measurement application.**
@@ -85,7 +86,7 @@ jobs:
           - Edit Page, offline PagePlan, plotting of imported raw-data files.
           - **Measure and Repeat are disabled. No SMU/PMU output, real measurement execution, or emergency stop is enabled.**
           - Unsigned preview build. Windows SmartScreen may display a warning.
-          - Native version: V0.3.0. UI build: a${{ github.run_number }}.
+          - Native version: V0.3.13. UI build: a${{ github.run_number }}.
           - Does not replace DK Data Studio and does not upgrade existing DKTS.
           '@
-          gh release create $tag $file --target "${{ github.sha }}" --title "DK Test Studio 4200A Preview V0.3.0 a${{ github.run_number }}" --notes "$notes" --prerelease
+          gh release create $tag $file --target "${{ github.sha }}" --title "DK Test Studio 4200A Preview V0.3.13 a${{ github.run_number }}" --notes "$notes" --prerelease
