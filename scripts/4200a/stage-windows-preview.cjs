@@ -3,6 +3,7 @@
  * This assembly contains only read-only 4200A TCP IPC; ME1 execution is excluded.
  */
 const fs=require('node:fs'),path=require('node:path');
+const {copyFrontend}=require('./copy-frontend.cjs');
 const root=path.resolve(__dirname,'../..'),stage=path.join(root,'.stage','4200a-windows');
 const native='0.3.0';
 const rawRevision=String(process.env.DKTS_UI_REVISION||'a0').trim();
@@ -17,12 +18,10 @@ function copy(from,to){
 }
 fs.rmSync(stage,{recursive:true,force:true});
 fs.mkdirSync(stage,{recursive:true});
-copy(['src'],['src']);
-copy(['assets'],['assets']);
-copy(['sdk','theme-contract.js'],['sdk','theme-contract.js']);
+copyFrontend(root,stage);
+copy(['assets','dkds-icon.ico'],['assets','dkds-icon.ico']);
 for(const file of ['4200a-fspro-main.cjs','4200a-fspro-preload.cjs','4200a-routed-discovery.cjs','4200a-tcp-runtime.cjs'])
  copy(['desktop',file],['desktop',file]);
-copy(['node_modules','d3','dist','d3.min.js'],['node_modules','d3','dist','d3.min.js']);
 const config={
  name:'dk-test-studio-fspro-preview',version:native,private:true,
  description:'4200A FS-Pro research UI preview — read-only KXCI identity, NO source output',
