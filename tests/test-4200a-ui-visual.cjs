@@ -172,6 +172,22 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   }),'preset must not silently switch the current autorange floor to fixed');
   await editor.locator('select[data-bind="terminals[0].measureRange.mode"]').selectOption('fixed');
   await desktop.screenshot({path:path.join(out,'17-terminal-fixed-range-config.png'),fullPage:true});
+  await editor.locator('select[data-bind="terminals[0].sourceMode"]').selectOption('current');
+  const voltageChoices=await editor.locator('select[data-range-preset="0"] option').evaluateAll(items=>items.map(x=>x.value));
+  check('CURRENT-SOURCE-VOLTAGE-PRESETS',voltageChoices.join(',')===",2e-1,2e0,2e1,2e2",
+    'current-sourced terminals must offer voltage rather than 1 pA current presets');
+  check('CURRENT-SOURCE-AUTO-FLOOR-DISABLED',await editor.locator('select[data-bind="terminals[0].measureRange.mode"] option[value="minimum"]').isDisabled(),
+    'KXCI RG current autorange floor must not be offered for voltage measurement');
+  check('CURRENT-SOURCE-UNIT-RESET',await desktop.evaluate(()=>{
+    const v=window.DK4200FSPro.getDraft().terminals[0];
+    return v.sourceMode==='current'&&v.measureRange.mode==='auto'&&v.measureRange.value==='2e0';
+  }),'source-mode change revokes stale ampere ranges');
+  await editor.locator('select[data-bind="terminals[0].sourceMode"]').selectOption('voltage');
+  check('VOLTAGE-SOURCE-UNIT-RESET',await desktop.evaluate(()=>{
+    const v=window.DK4200FSPro.getDraft().terminals[0];
+    return v.sourceMode==='voltage'&&v.measureRange.mode==='auto'&&v.measureRange.value==='1e-6';
+  }),'returning to voltage sourcing restores automatic current measurement range');
+
   await editor.locator('button[data-action="add-segment"]').first().click();
   check('UI-013',await editor.locator('.fs-terminal').first().locator('.fs-segment-row').count()===1,'segment stays under terminal');
   await editor.locator('button[data-action="remove-segment"]').first().click();
