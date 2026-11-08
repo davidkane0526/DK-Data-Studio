@@ -15,7 +15,9 @@ function createRunner({transport,onState=()=>{},pause=ms=>new Promise(resolve=>s
  const notices=[];
  const signal=(stage,detail='')=>{phase=stage;const msg={phase:stage,detail:String(detail),at:new Date().toISOString()};notices.push(msg);
   try{onState(msg);}catch{};};
- const state=()=>Object.freeze({phase,active,abortRequested,shutdown,error:lastError,events:notices.slice()});
+ const state=()=>Object.freeze({phase,active,abortRequested,shutdown,error:lastError,
+  sourceSafeVerified:false,stopPreemption:typeof transport.cancelPendingRead==='function'?'supported':'cooperative-only',
+  events:notices.slice()});
  const ensureNotStopped=()=>{if(abortRequested){const e=new Error('Measurement aborted by '+(abortedBy||'user'));e.code='ABORTED';throw e;}};
  async function cleanup(compiled,abort){
   const commands=abort?compiled.stop:compiled.stop.filter(x=>x.phase==='disable');
@@ -104,8 +106,14 @@ function createRunner({transport,onState=()=>{},pause=ms=>new Promise(resolve=>s
  function stop(reason='user'){
   if(!active)return state();
   abortRequested=true;abortedBy=String(reason||'user');
-  // The runner's next awaited step performs ME4 + channel disable. There is no
-  // claim that mock-side cleanup establishes physical zero volts at the DUT.
+  // Release a blocked query without waiting for its read timeout. The ensuing
+  // execute() error path sends the compiled abort sequence (ME4, channel off).
+  // Hardware proof of source shutdown remains separate and is NEVER claimed.
+  if(typeof transport.cancelPendingRead==='function'){
+    try{transport.cancelPendingRead();}catch(error){
+      lastError+=' Read cancellation failed: '+String(error?.message||error);
+    }
+  }
   return state();
  }
  async function dispose(){stop('dispose');if(task)await task;}
