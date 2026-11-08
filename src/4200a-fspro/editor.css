@@ -565,3 +565,13 @@
 .fs-app .fs-test-type-list>button{display:flex;justify-content:space-between;align-items:center;
  gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--fs-line);border-radius:6px;min-height:48px}
 .fs-app .fs-test-type-list>button span{font-size:11px;color:var(--fs-sub);font-weight:400}
+
+/* Two-row FS-Pro terminal structure: source/generator then grouped reference/range. */
+.fs-app .fs-terminal-reference{display:grid;grid-template-columns:auto minmax(72px,1fr) minmax(90px,1fr);
+  gap:5px;align-items:center;min-width:0}
+.fs-app .fs-terminal-reference>.fs-select-shell{min-width:0;width:100%}
+.fs-app .fs-terminal-bottom{grid-template-columns:minmax(250px,.8fr) minmax(0,1.8fr)}
+@media(max-width:899px){
+ .fs-app .fs-terminal-bottom{grid-template-columns:minmax(0,1fr)}
+ .fs-app .fs-terminal-reference{grid-template-columns:auto minmax(90px,1fr) minmax(100px,1fr)}
+}
