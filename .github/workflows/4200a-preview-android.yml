@@ -55,6 +55,7 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         run: |
           npm install --no-save --ignore-scripts --no-audit --no-fund d3@7.9.0
+          node tools/4200a-generate-brand-icons.cjs
           node scripts/4200a/stage-android-preview.cjs
           node --check src/4200a-fspro/android-bridge.js
           node --check src/4200a-fspro/discovery-ui.js
@@ -128,23 +129,23 @@ jobs:
           apk=android4200a/app/build/outputs/apk/release/app-release.apk
           test -s "$apk"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk"
-          cp "$apk" "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk"
-          sha256sum "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk"
+          cp "$apk" "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk"
+          sha256sum "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk"
       - name: Upload signed standalone APK
         if: steps.sign.outputs.signing == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android
-          path: DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk
+          name: DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android
+          path: DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk
           if-no-files-found: error
       - name: Publish signed Android prerelease
         if: steps.sign.outputs.signing == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/feat/4200a-fspro-rebuild'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="DKTS-FSPro-Android-V0.3.0-a${{ github.run_number }}-preview"
-          gh release create "$tag" "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk" \
+          tag="DKTS-FSPro-Android-V0.3.13-a${{ github.run_number }}-preview"
+          gh release create "$tag" "DKTS-4200A-Preview-V0.3.13-a${{ github.run_number }}-Android.apk" \
             --target "${{ github.sha }}" \
-            --title "DK Test Studio 4200A Preview V0.3.0 a${{ github.run_number }} Android" \
-            --notes "Read-only preview: *IDN? and *OPT? only. Measure/Repeat disabled. Stable repository key required; nativeVersion V0.3.0, uiRevision a${{ github.run_number }}. No real instrument measurement acceptance." \
+            --title "DK Test Studio 4200A Preview V0.3.13 a${{ github.run_number }} Android" \
+            --notes "Read-only preview: *IDN? and *OPT? only. Measure/Repeat disabled. Stable repository key required; nativeVersion V0.3.13, uiRevision a${{ github.run_number }}. No real instrument measurement acceptance." \
             --prerelease
