@@ -3,6 +3,14 @@
  /* DKTS UI localization. Technical identifiers, user-entered data and KXCI
   * protocol values are NEVER translated. Only presentation text is changed. */
  const pairs=[
+  ['Current Page','当前页面'],['Subwindow','子窗口'],['Plot Area','绘图区'],
+  ['Four Frames','四宫格'],['Transfer Curve','转移特性'],['Raw Data','数据表'],
+  ['New','新建'],['Open','打开'],['Save','保存'],['Data','数据'],
+  ['Parameter Settings','参数设置'],['Port Setup','端口配置'],['Start Test','开始测试'],
+  ['Repeat','重复'],['Measurement Range','测量档位'],['Automatic','自动'],
+  ['Fixed','固定'],['Current (A)','电流 (A)'],['Voltage (V)','电压 (V)'],
+  ['Preset Range','预设档位'],['Custom','自定义'],
+  ['Unverified range does not authorize output','未验证量程不授权输出'],
   ['File','文件'],['Instruments','仪器'],['Measurement','测量'],['Tools','工具'],
   ['Window','窗口'],['Help','帮助'],['New Project','新建工程'],['Open Page','打开页面'],
   ['Save Page','保存页面'],['Export Page Plan','导出页面配置'],
@@ -194,7 +202,7 @@
  function updateToggle(){
   const label=language==='zh'?'EN':'中文';
   const caption=language==='zh'?'Switch to English':'切换为中文';
-  for(const button of document.querySelectorAll('#fs-language-switch,[data-fs-locale-switch]')){
+  for(const button of document.querySelectorAll('#fs-language-switch')){
     if(button.textContent!==label)button.textContent=label;
     if(button.getAttribute('title')!==caption)button.setAttribute('title',caption);
     if(button.getAttribute('aria-label')!==caption)button.setAttribute('aria-label',caption);
@@ -206,10 +214,11 @@
   language=next;
   updateToggle();
   walk(document.body);
+  document.dispatchEvent(new CustomEvent('dkts:language-changed',{detail:{language}}));
   return language;
  }
  document.addEventListener('click',event=>{
-  if(event.target.closest?.('#fs-language-switch,[data-fs-locale-switch]'))setLanguage(language==='zh'?'en':'zh');
+  if(event.target.closest?.('#fs-language-switch'))setLanguage(language==='zh'?'en':'zh');
  });
  // The legacy FS-Pro page editor creates entire new forms via innerHTML.
  // Localize after render without altering source-mode, channel or numeric values.
@@ -221,7 +230,7 @@
    if(entry.type==='attributes')nodes.add(entry.target);
   }
   for(const root of nodes)if(root)walk(root);
-  if([...nodes].some(root=>root?.querySelector?.('[data-fs-locale-switch]')))updateToggle();
+  if([...nodes].some(root=>root?.querySelector?.('#fs-language-switch')))updateToggle();
  });
  observer.observe(document.body,{childList:true,subtree:true,characterData:true,
   attributes:true,attributeFilter:['aria-label','title','placeholder']});
