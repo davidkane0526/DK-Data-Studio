@@ -24,7 +24,15 @@ const sample=()=>({
   target:{expression:'Id = I(D)',plot:{X:'Vgs',Y:'Id',H:'',P:''},quoteVars:[]},
   strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'}
 });
-let saved=sample(),draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true,connectionOrigin='';
+const TEST_TYPES=Object.freeze([
+ {id:'iv',label:'I–V Sweep',testType:'DC',group:'MOS_IV'},
+ {id:'transfer',label:'Transfer Sweep',testType:'DC',group:'MOS_TRANSFER'},
+ {id:'time',label:'Time Sweep',testType:'IVT',group:'TIME'},
+ {id:'pulse',label:'Pulse Sweep',testType:'Pulse',group:'PULSE'},
+ {id:'cv',label:'C–V Sweep',testType:'CV',group:'CV'}
+]);
+let saved=sample(),pages=[{id:'page-1',data:clone(saved)}],activePageId='page-1',pageSeq=1,
+ draft=null,original=null,activeTab='Sweep',activeDialog='',unlocked=true,connectionOrigin='';
 let frameViewer=null;
 const ensureFrameViewer=()=>{
  if(frameViewer)return frameViewer;
@@ -131,9 +139,9 @@ function validateDraft(){
   if(!draft)return {valid:false,errors:[{reason:'No page'}]};
   const result=VALIDATE?VALIDATE(createValidationPlan()):{valid:false,errors:[{reason:'Validation module not loaded'}],warnings:[],executionAuthorized:false};
   const extra=[];
-  if(draft.info.testType!=='DC')extra.push({code:'UNSUPPORTED_TEST_MODE',path:'info.testType',reason:'该测试类型尚未完成4200A原生测量适配'});
+  // Non-DC Page is editable but remains blocked by the native KXCI compiler.
   for(const [i,t] of draft.terminals.entries()){
-    if(t.resource!=='None'&&!inventory.has(t.resource))extra.push({code:'UNVERIFIED_RESOURCE',path:`terminals[${i}].resource`,reason:'通道未经过仪器模块识别'});
+    // Saved offline assignments are not evidence of installed physical modules.
     if(!t.logical.trim())extra.push({code:'EMPTY_TERMINAL',path:`terminals[${i}].logical`,reason:'Terminal name is required'});
     if(t.role!=='CONDITION'&&!['Linear Step','Linear Points','Log Points','List','Generator'].includes(t.generator))extra.push({code:'SWEEP_GENERATOR',path:`terminals[${i}].generator`,reason:'Sweep must use a sweep generator'});
     if(t.role==='CONDITION'&&t.generator==='Constant'&&!String(t.bias||'').trim())extra.push({code:'EMPTY_BIAS',path:`terminals[${i}].bias`,reason:'Constant bias is required'});
@@ -147,7 +155,7 @@ function updateStatus(){
   const v=validateDraft();
   el.classList.toggle('fs-error',!v.valid);
   const configured=draft.terminals.some(t=>t.measureRange?.mode!=='auto');
-  el.textContent=v.valid?(configured?'量程参数已配置 · 需实机验证全程保持':'离线参数检查通过 · 未启用仪器输出'):
+  el.textContent=v.valid?(draft.info.testType!=='DC'?'仅离线配置：该测试类型尚未接入原生测量':draft.terminals.some(t=>t.resource!=='None'&&!inventory.has(t.resource))?'离线保存：物理通道尚未验证':configured?'量程参数已配置 · 需实机验证全程保持':'离线参数检查通过 · 未启用仪器输出'):
     `检查：${v.errors[0]?.reason||'无效参数'}`;
   el.title=v.errors.map(x=>x.path+' '+x.reason).join('\n');
 }
@@ -158,7 +166,7 @@ function infoMarkup(){
  <span class="fs-inline-field"><label>Type:</label>${select('info.type',opts,i.type)}</span>
  <span class="fs-inline-field"><label>Polarity:</label>${select('info.polarity',['PMOS','NMOS','N/A'],i.polarity)}</span>
  ${field('Group:','info.group',i.group)}
- <span class="fs-inline-field"><label>Test Type:</label>${select('info.testType',[['DC','DC'],['IVT','IVT',true],['Pulse','Pulse',true],['CV','CV',true]],i.testType)}</span>
+ <span class="fs-inline-field"><label>Test Type:</label>${select('info.testType',[['DC','DC'],['IVT','IVT'],['Pulse','Pulse'],['CV','CV']],i.testType)}</span>
  ${field('Name:','info.name',i.name)}
  </div></fieldset>`;
 }
@@ -326,6 +334,48 @@ function render(){if(!draft)return;host.hidden=false;host.innerHTML=activeDialog
   el.dataset.fsProManualPage=activeDialog==='connection'?'21':path.startsWith('strategy.')?'20':path.startsWith('target.')?'19':'18';
  }
  if(activeDialog==='page'){updateStatus();if(!unlocked)host.querySelectorAll?.('[data-bind],[data-range-preset],[data-action="add-segment"],[data-action="remove-segment"],[data-action="add-var"],[data-action="remove-var"],[data-action="add-spec"],[data-action="remove-spec"]').forEach(el=>el.disabled=true);}}
+function renderPages(){
+ const nav=document.getElementById('fs-page-list');
+ if(nav)nav.innerHTML=pages.map(row=>{
+  const selected=row.id===activePageId;
+  return `<button type="button" class="fs-depth3${selected?' fs-tree-selected':''}"
+  role="treeitem" aria-current="${selected?'page':'false'}" data-command="select-page"
+  data-page-id="${e(row.id)}" title="${e(row.data.info.testType)} · ${e(row.data.info.name)}">
+  Page · ${e(row.data.info.name)}</button>`;
+ }).join('');
+ const label=document.getElementById('fs-toolbar-page-name');if(label)label.textContent=saved.info.name;
+ const status=document.getElementById('fs-page-name');if(status)status.textContent=saved.info.name;
+}
+function selectPage(id){
+ const selected=pages.find(p=>p.id===id);if(!selected)return;
+ if(activeDialog)close();
+ activePageId=selected.id;saved=clone(selected.data);renderPages();
+ note('当前测试：'+saved.info.name+'（'+saved.info.testType+'，未执行测量）');
+}
+function addTest(type){
+ const template=TEST_TYPES.find(row=>row.id===type);
+ if(!template)throw Error('不支持的测试类型');
+ const page=sample();page.info.name=template.label;page.info.testType=template.testType;page.info.group=template.group;
+ if(type==='iv'){
+  page.terminals.forEach(t=>{t.role=t.logical==='D'?'X':'CONDITION';
+    t.generator=t.logical==='D'?'Linear Step':'Constant';});
+  Object.assign(page.terminals[0],{start:'0',stop:'2',step:'0.1'});
+ }else if(type==='transfer'){page.info.polarity='NMOS';}
+ const id='page-'+(++pageSeq);
+ pages.push({id,data:page});
+ close();selectPage(id);
+}
+function openTestPicker(){
+ if(activeDialog)close();
+ activeDialog='picker';host.hidden=false;
+ host.innerHTML=`<div class="fs-editor fs-test-picker" role="dialog" aria-modal="true" aria-label="Add Test">
+  <div class="fs-editor-title">新增测试类型<button type="button" data-action="close-picker" aria-label="关闭">×</button></div>
+  <div class="fs-test-type-list">${TEST_TYPES.map(t=>`<button type="button" data-action="create-test"
+     data-test-type="${t.id}"><strong>${e(t.label)}</strong>
+     <span>${e(t.testType)} · ${t.testType==='DC'?'离线参数可配置':'尚未接入原生测量'}</span></button>`).join('')}</div>
+  <footer class="fs-editor-footer"><button data-action="close-picker">取消</button></footer>
+ </div>`;
+}
 function startEdit(){original=clone(saved);draft=clone(saved);activeTab='Sweep';activeDialog='page';unlocked=true;connectionOrigin='page';render();}
 function close(){activeDialog='';connectionOrigin='';host.hidden=true;host.innerHTML='';draft=null;original=null;}
 function setInventory(resourceIDs){
@@ -333,17 +383,19 @@ function setInventory(resourceIDs){
  inventory.clear();resourceIDs.forEach(x=>inventory.add(x));if(activeDialog==='connection')render();
 }
 function dispatch(action,target){
+ if(action==='close-picker'){close();return;}
+ if(action==='create-test'){addTest(target.dataset.testType);return;}
  if(action==='tab'){activeTab=target.dataset.tab;render();return;}
  if(action==='cancel'){close();return;}
  if(action==='ok'){
   const v=validateDraft();if(!v.valid){updateStatus();return;}
-  saved=clone(draft);document.getElementById('fs-page-name').textContent=saved.info.name;document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;note('Page 已保存（未执行测量）');close();return;
+  saved=clone(draft);pages.find(p=>p.id===activePageId).data=clone(saved);renderPages();note('Page 已保存（未执行测量）');close();return;
  }
  if(action==='reset'){draft=clone(original);render();return;}
  if(action==='lock'){unlocked=!unlocked;render();return;}
  if(action==='connection'){connectionOrigin='page';activeDialog='connection';render();return;}
  if(action==='close-connection'){if(connectionOrigin==='toolbar'){close();return;}activeDialog='page';render();return;}
- if(action==='connection-ok'){if(connectionOrigin==='toolbar'){saved=clone(draft);close();note('端口配置已保存（未执行测量）');return;}activeDialog='page';render();return;}
+ if(action==='connection-ok'){if(connectionOrigin==='toolbar'){saved=clone(draft);pages.find(p=>p.id===activePageId).data=clone(saved);close();note('端口配置已保存（未执行测量）');return;}activeDialog='page';render();return;}
  if(action==='add-var'){draft.pageVars.push({name:'',value:''});render();return;}
  if(action==='remove-var'){draft.pageVars.pop();render();return;}
  if(action==='add-spec'){draft.associateSpecs.push('');render();return;}
@@ -406,14 +458,16 @@ document.addEventListener('click',event=>{
  if(command==='data-viewer'){showDataViewer();return;}
  if(command==='edit'){startEdit();return;}
  if(command==='connection'){startEdit();connectionOrigin='toolbar';activeDialog='connection';render();return;}
- if(command==='new'){saved=sample();document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;document.getElementById('fs-page-name').textContent=saved.info.name;note('新建工程 · 配置未保存');return;}
+ if(command==='new'){if(activeDialog)close();saved=sample();pages=[{id:'page-1',data:clone(saved)}];activePageId='page-1';pageSeq=1;renderPages();note('新建工程 · 配置未保存');return;}
+ if(command==='add-test'){openTestPicker();return;}
+ if(command==='select-page'){selectPage(btn.dataset.pageId);return;}
  if(command==='arrange'){note(window.matchMedia('(max-width:650px)').matches?
     '手机竖屏使用图窗标签；宽屏自动恢复 2 × 2 绘图布局':
     '绘图区已使用 2 × 2 布局');return;}
  if(command==='save'){
-  const json=JSON.stringify(saved,null,2),blob=new Blob([json],{type:'application/json'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='4200A-page.json';a.click();URL.revokeObjectURL(url);
-  note('已导出 Page 配置（未包含仪器数据）');return;
+  const json=JSON.stringify({schema:'dkts.fspro.project.v1',activePageId,pages},null,2),blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='4200A-project.json';a.click();URL.revokeObjectURL(url);
+  note('已导出包含 '+pages.length+' 个测试页面的工程（不含仪器数据）');return;
  }
  if(command==='open'){document.getElementById('fs-open-input').click();return;}
 });
@@ -422,11 +476,27 @@ document.getElementById('fs-open-input').addEventListener('change',async event=>
  try{
   if(file.size>1024*1024)throw Error('配置文件超出 1 MiB 限制');
   const parsed=JSON.parse(await file.text());
-  if(parsed.schema!=='dkts.fspro.page.v1'||!Array.isArray(parsed.terminals)||parsed.terminals.length<2||parsed.terminals.length>16)throw Error('不是受支持的 4200A Page 文件');
-  if(!parsed.info||!Array.isArray(parsed.pageVars)||!Array.isArray(parsed.associateSpecs)||!parsed.strategy||!parsed.target)throw Error('Page 文件结构不完整');
-  original=clone(saved);draft=clone(parsed);
-  const v=validateDraft();if(!v.valid)throw Error('参数校验失败：'+v.errors[0]?.reason);
-  saved=clone(draft);draft=null;note('Page 文件已载入（离线）');document.getElementById('fs-page-name').textContent=saved.info.name;document.getElementById('fs-toolbar-page-name').textContent=saved.info.name;
+  let incoming;
+  if(parsed.schema==='dkts.fspro.project.v1'){
+    if(!Array.isArray(parsed.pages)||parsed.pages.length<1||parsed.pages.length>128)
+      throw Error('工程测试页面数量无效');
+    if(!parsed.pages.every(row=>/^page-[1-9][0-9]*$/.test(row?.id||'')&&
+      row.data?.schema==='dkts.fspro.page.v1'&&Array.isArray(row.data?.terminals)))
+      throw Error('工程页面数据不完整');
+    if(new Set(parsed.pages.map(row=>row.id)).size!==parsed.pages.length)
+      throw Error('工程中存在重复页面 ID');
+    incoming=parsed.pages.map(row=>({id:row.id,data:clone(row.data)}));
+  }else if(parsed.schema==='dkts.fspro.page.v1'){
+    incoming=[{id:'page-1',data:clone(parsed)}];
+  }else throw Error('不是受支持的 4200A 工程或页面文件');
+  const selected=incoming.find(row=>row.id===parsed.activePageId)||incoming[0];
+  const previous=draft;draft=clone(selected.data);
+  const check=validateDraft();draft=previous;
+  if(!check.valid)throw Error('参数校验失败：'+check.errors[0]?.reason);
+  pages=incoming;activePageId=selected.id;saved=clone(selected.data);
+  pageSeq=Math.max(...pages.map(row=>Number(row.id.slice(5))));
+  if(activeDialog)close();
+  renderPages();note('已载入 '+pages.length+' 个测试页面（离线）');
  }catch(err){draft=null;note('导入失败：'+err.message);}finally{event.target.value='';}
 });
 window.DK4200FSPro=Object.freeze({
@@ -435,5 +505,6 @@ window.DK4200FSPro=Object.freeze({
  getDraft:()=>clone(draft||saved),
  validate:()=>{const tmp=draft;draft=clone(draft||saved);try{return validateDraft();}finally{draft=tmp;}}
 });
+renderPages();
 if(new URLSearchParams(location.search).get('open')==='edit')startEdit();
 })();
