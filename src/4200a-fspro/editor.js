@@ -53,6 +53,9 @@ function showDataViewer(){
  const countC=table.rows.filter(row=>row.status===1).length;
  const countUnknown=table.rows.filter(row=>row.status!==0&&row.status!==1).length;
  host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
+ const previewRowCount=Math.min(table.rows.length,800);
+ const desiredHeight=Math.min(740,Math.max(245,172+Math.min(previewRowCount,20)*26));
+ host.querySelector('.fs-data-dialog')?.style.setProperty('--fs-data-height',desiredHeight+'px');
  host.hidden=false;
 }
 document.getElementById('fs-data-host').addEventListener('click',ev=>{
