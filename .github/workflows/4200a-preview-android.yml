@@ -16,9 +16,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Checkout 4200A rebuild
+      - name: Checkout exact 4200A source commit (never synthetic PR merge)
         uses: actions/checkout@v4
         with:
+          # A pull_request checkout otherwise adds one temporary merge commit,
+          # yielding aNNN+1 versus stable-signed Android's actual branch aNNN.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Resolve common per-commit UI revision
         id: revision
