@@ -200,7 +200,7 @@
  .fs-toolbar{height:42px;min-height:42px;overflow:hidden;flex-shrink:0;gap:6px;padding-inline:8px}
  .fs-toolbar button[data-command="new"],.fs-toolbar button[data-command="open"],
  .fs-toolbar button[data-command="save"],.fs-toolbar button[data-command="connection"],
- .fs-toolbar .fs-separator{display:none}
+ .fs-toolbar button[data-command="arrange"],.fs-toolbar .fs-separator{display:none}
  .fs-toolbar button{padding-inline:9px;flex-shrink:0}
  .fs-toolbar-fill{flex:1;min-width:0}
  .fs-modal-host{padding:0}
