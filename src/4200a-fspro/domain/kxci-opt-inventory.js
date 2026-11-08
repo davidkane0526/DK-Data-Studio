@@ -79,7 +79,7 @@
    const exact=/^(?:KI)?(4200|4201|4210|4211)(?:-?SMU)?$/i.exec(card?.model||'');
    const model=exact?exact[1]+'-SMU':null;
    const physicalName=/^(?:SMU|HPSMU|SMUPA|HPSMUPA)([1-9])$/i.exec(card?.name||'');
-   const sameMapping=Boolean(physicalName)&&Number(physicalName[1])===channelIndex(proposed);
+   const sameMapping=Boolean(physicalName)&&Number(physicalName[1])===Number(proposed.slice(3));
    const paRecords=remote.filter(row=>row.slot===slot.slot&&/^PA[1-9]$/i.test(row.name));
    const paConfirmed=!pa||paRecords.some(row=>/^KI4200$/i.test(row.model)&&Boolean(row.serialno));
    const verified=model!==null&&Boolean(card?.serialno)&&sameMapping&&
