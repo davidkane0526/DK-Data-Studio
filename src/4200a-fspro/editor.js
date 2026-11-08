@@ -98,7 +98,7 @@ const field=(label,key,value,kind='text',extra='')=>`<span class="fs-inline-fiel
 const select=(key,opts,value,attrs='')=>`<select data-bind="${e(key)}" aria-label="${e(key)}" ${attrs}>${options(opts,value)}</select>`;
 const get=(obj,path)=>path.replace(/\[(\d+)\]/g,'.$1').split('.').reduce((x,k)=>x?.[k],obj);
 const set=(obj,path,value)=>{const parts=path.replace(/\[(\d+)\]/g,'.$1').split('.');let at=obj;for(const k of parts.slice(0,-1)){if(!Object.prototype.hasOwnProperty.call(at,k))throw Error('Invalid field');at=at[k];}if(!Object.prototype.hasOwnProperty.call(at,parts[parts.length-1]))throw Error('Invalid field '+path);at[parts[parts.length-1]]=value;};
-const note=message=>{document.getElementById('fs-messages').textContent=message;document.getElementById('fs-bottom-status').textContent=message;};
+const note=message=>{document.getElementById('fs-messages').textContent=String(message??'').slice(0,320);};
 const emptyOption=(id)=>[['None','None'],...Array.from(inventory).sort().map(v=>[v,v])];
 function buildSequence(t){
   const map={'Linear Step':'linear_step','Linear Points':'linear_points','Log Points':'log_points','List':'list','Generator':'multi_segment','Constant':'linear_points'};
