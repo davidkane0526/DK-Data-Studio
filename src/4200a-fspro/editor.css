@@ -490,3 +490,12 @@
 .fs-app .dkts-numeric-active{border-color:var(--fs-accent)!important;
   box-shadow:0 0 0 2px color-mix(in srgb,var(--fs-accent) 12%,transparent)}
 @media(max-width:650px){.dkts-numeric-keypad button{min-height:41px}}
+
+/* Final ownership: connector gear is a direct action, not a hidden menu. */
+.fs-app #fs-instrument-settings{min-width:27px;width:27px;height:29px;min-height:29px;
+  padding:0;border:0;background:transparent;color:var(--fs-sub);font-size:17px}
+.fs-app #fs-instrument-settings:hover{color:var(--fs-accent)}
+@media(max-width:650px){
+ .fs-app .fs-toolbar button[data-command="connection"]{display:inline-flex;align-items:center}
+ .fs-app .fs-toolbar .fs-toolbar-caption{max-width:78px}
+}
