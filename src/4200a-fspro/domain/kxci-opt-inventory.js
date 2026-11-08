@@ -44,12 +44,12 @@
   if(typeof response!=='string'||response.length>16384)throw new TypeError('Invalid SystemUtil instrumentinfo');
   const rows=[];
   for(const segment of response.split(/(?=slotno:)/i)){
-   const slot=/^slotno:(\\d{1,2})/i.exec(segment.trim());
+   const slot=/^slotno:(\d{1,2})/i.exec(segment.trim());
    if(!slot)continue;
    const fields={slot:Number(slot[1])};
    // Dates contain commas; use "key:" boundaries, not blind CSV splitting.
    for(const key of ['name','model','serialno','hwver','fwver']){
-    const match=new RegExp('(?:^|,)\\\\s*'+key+':([^,]+)','i').exec(segment);
+    const match=new RegExp('(?:^|,)\\s*'+key+':([^,]+)','i').exec(segment);
     if(match)fields[key]=match[1].trim();
    }
    if(fields.slot<1||fields.slot>8||!fields.name||!fields.model||!fields.serialno)
