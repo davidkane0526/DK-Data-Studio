@@ -29,6 +29,7 @@
 .fs-titlebar,.fs-menu,.fs-toolbar,.fs-status{display:flex;align-items:center;gap:7px;padding:0 11px;flex-shrink:0}
 .fs-titlebar{height:38px;background:var(--fs-panel);border-bottom:1px solid var(--fs-line);gap:12px}
 .fs-titlebar strong{font-size:14px;font-weight:650}
+.fs-titlebar #fs-instrument-link{flex:0 0 auto;min-width:64px;height:27px;padding:3px 9px;font-size:12px}
 .fs-title-spacer,.fs-toolbar-fill{flex:1}
 .fs-menu{height:30px;gap:0;border-bottom:1px solid var(--fs-line)}
 .fs-menu-item{position:relative;flex:0 0 auto}
