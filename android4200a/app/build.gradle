@@ -1,0 +1,61 @@
+plugins {
+    id 'com.android.application'
+}
+
+def stableStore = System.getenv('DKTS_FSPRO_ANDROID_KEYSTORE_PATH')
+def stablePassword = System.getenv('DKTS_FSPRO_ANDROID_SIGNING_PASSWORD')
+def runCode = Integer.parseInt(System.getenv('DKTS_FSPRO_BUILD_NUMBER') ?: '1')
+if(runCode < 1 || runCode > 2000000000) throw new GradleException('Invalid aNNNN build revision')
+android {
+    namespace 'studio.dk.fspro.preview'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'studio.dk.fspro.preview'
+        minSdk 26
+        targetSdk 35
+        versionCode runCode
+        versionName '0.3.0'
+        buildConfigField 'String', 'UI_REVISION', '"a' + runCode + '"'
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    signingConfigs {
+        stablePreview {
+            if(stableStore && stablePassword) {
+                storeFile file(stableStore)
+                storeType 'PKCS12'
+                storePassword stablePassword
+                keyAlias 'dkts-fspro'
+                keyPassword stablePassword
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if(stableStore && stablePassword) signingConfig signingConfigs.stablePreview
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
+tasks.register('verifyStableSigning') {
+    doLast {
+        if(!stableStore || !stablePassword || !file(stableStore).exists())
+            throw new GradleException('Stable Android FS-Pro signing key is required; never release with a random debug certificate')
+    }
+}
+afterEvaluate {
+    tasks.matching { it.name == 'assembleRelease' }.configureEach { dependsOn tasks.named('verifyStableSigning') }
+}
