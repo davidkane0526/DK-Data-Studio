@@ -414,6 +414,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     'editor title localized by default');
   check('MOBILE-MODAL-LANGUAGE',await mobile.locator('.fs-editor [data-fs-locale-switch]').count()===0,
     'no duplicated modal language button');
+  check('MOBILE-EDITOR-ACTIONS-ONE-ROW',await mobile.evaluate(()=>{
+    const buttons=[...document.querySelectorAll('.fs-editor-controls button')];
+    const bounds=buttons.map(button=>button.getBoundingClientRect());
+    const viewport=document.documentElement.clientWidth;
+    return buttons.length===5&&bounds.every(b=>Math.abs(b.top-bounds[0].top)<2)&&
+      bounds.every(b=>b.width>=48&&b.right<=viewport+1)&&
+      Math.max(...bounds.map(b=>b.height))-Math.min(...bounds.map(b=>b.height))<2;
+  }),'all five page actions have equal height and remain in one row on mobile');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
   await mobile.evaluate(()=>window.DKTSLocale.setLanguage('en'));
   check('MOBILE-EN',await mobile.evaluate(()=>
