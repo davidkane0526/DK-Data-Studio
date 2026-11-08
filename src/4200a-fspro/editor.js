@@ -184,7 +184,6 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-bottom">
  <label>Ref to:</label>${select(`terminals[${i}].relativeTo`,[['GND','GND'],...logicalOpts],t.relativeTo)}
  ${select(`terminals[${i}].role`,roles,t.role)}
- </div>
  <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
    <label>测量档位</label>
    ${select(`terminals[${i}].measureRange.mode`,
@@ -202,7 +201,7 @@ function terminalMarkup(t,i){
        t.measureRange?.mode==='fixed'?t.measureRange?.value:'')}
    </select>
    <span class="fs-range-note" title="当前仅保存离线设置；实测固定量程须由真实模块及KXCI能力验证">未验证量程不授权输出</span>
- </div>${segmentMarkup(t,i)}</div>`;
+ </div></div>${segmentMarkup(t,i)}</div>`;
 }
 function limitsPanel(){
  return `<div class="fs-triptych-panel"><h3>Limits</h3><div class="fs-table-wrap"><table class="fs-table">
