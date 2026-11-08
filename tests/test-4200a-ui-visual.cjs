@@ -40,6 +40,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-002',await desktop.locator('.fs-project [role=treeitem]').count()>=4,'nested project tree');
   check('UI-003',await desktop.locator('.fs-frame').count()===4,'2x2 Visual Area');
   check('UI-004',await desktop.locator('.fs-bottom-cell').count()===2,'messages and strategy');
+  check('UI-HEADER-CONNECT',await desktop.locator('.fs-titlebar #fs-instrument-link').count()===1&&
+    await desktop.locator('.fs-toolbar #fs-instrument-link').count()===0,'Connect pinned in titlebar, not scrolled toolbar');
   check('SAFE-001',await desktop.locator('#fs-measure').isDisabled()&&await desktop.locator('#fs-repeat').isDisabled(),'no hardware output enabled');
   await desktop.locator('.fs-toolbar button[data-command="edit"]').click();
   await desktop.screenshot({path:path.join(out,'02-edit-page-sweep.png'),fullPage:true});
@@ -116,6 +118,13 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await mobile.goto(file+'?open=edit');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
   check('UI-030',await mobile.locator('.fs-info').isVisible()&&await mobile.locator('.fs-triptych-panel').count()===3,'mobile preserves three panels and original order');
+  const connectPin=await mobile.evaluate(()=>{
+    const button=document.querySelector('.fs-titlebar #fs-instrument-link'),title=document.querySelector('.fs-titlebar');
+    const b=button?.getBoundingClientRect(),t=title?.getBoundingClientRect();
+    return {visible:!!b&&b.width>=50&&b.right<=t.right+1,bottom:b?.bottom,titleBottom:t?.bottom};
+  });
+  check('UI-MOBILE-CONNECT-PIN',connectPin.visible&&connectPin.bottom<=connectPin.titleBottom+1,
+    'Connect control must stay visible without toolbar scrolling: '+JSON.stringify(connectPin));
   const metrics=await mobile.evaluate(()=>({
    width:document.documentElement.clientWidth,
    bodyScroll:document.documentElement.scrollWidth,
