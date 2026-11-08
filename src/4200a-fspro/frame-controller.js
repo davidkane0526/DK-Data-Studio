@@ -31,9 +31,15 @@
   // formatting can clip nanoamp-scale values at the mobile plot boundary.
   // Only the AXIS labels are formatted; exact raw readings remain unchanged.
   function compactScientificTicks(values){
-   const nums=values.map(Number).filter(Number.isFinite);
-   if(!nums.length)return null;
-   const minimum=Math.min(...nums),maximum=Math.max(...nums);
+   let minimum=Infinity,maximum=-Infinity;
+   // Read captures can contain 200k+ points; never spread arrays into Math.min.
+   for(const datum of values){
+    const value=Number(datum);
+    if(!Number.isFinite(value))continue;
+    if(value<minimum)minimum=value;
+    if(value>maximum)maximum=value;
+   }
+   if(!Number.isFinite(minimum)||!Number.isFinite(maximum))return null;
    const magnitude=Math.max(Math.abs(minimum),Math.abs(maximum));
    if(magnitude===0||(magnitude>=0.0001&&magnitude<10000))return null;
    const spread=maximum-minimum;
