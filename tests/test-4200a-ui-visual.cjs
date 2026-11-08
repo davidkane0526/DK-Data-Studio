@@ -226,6 +226,56 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await rawPreview.close();
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await mobile.goto(file);
+  const mobileFrameLayout=await mobile.evaluate(()=>{
+    const shell=document.querySelector('.fs-frames');
+    const tabs=document.querySelector('#fs-mobile-plot-tabs');
+    const cards=[...shell.querySelectorAll('.fs-frame')];
+    return {tabsVisible:getComputedStyle(tabs).display!=='none',
+      tabs:tabs.querySelectorAll('[role="tab"]').length,
+      visible:cards.filter(c=>getComputedStyle(c).display!=='none').length,
+      frameHeight:cards[0].getBoundingClientRect().height,
+      gridWidth:shell.getBoundingClientRect().width,
+      pageWidth:document.documentElement.clientWidth};
+  });
+  check('MOBILE-PLOT-SINGLE',mobileFrameLayout.tabsVisible&&mobileFrameLayout.tabs===4&&
+    mobileFrameLayout.visible===1&&mobileFrameLayout.frameHeight>250,
+    'Mobile portrait must offer one full-size chart instead of four vertically stacked: '+JSON.stringify(mobileFrameLayout));
+  await mobile.screenshot({path:path.join(out,'14-mobile-single-frame-zh.png'),fullPage:true});
+  await mobile.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').click();
+  const dataTab=await mobile.evaluate(()=>{
+    const selected=document.querySelector('#fs-mobile-plot-tabs [aria-selected="true"]');
+    const visible=[...document.querySelectorAll('.fs-frames .fs-frame')]
+      .filter(x=>getComputedStyle(x).display!=='none');
+    return {selected:selected?.dataset.frameIndex,
+      visible:visible.map(x=>x.id),tabs:document.querySelectorAll('.fs-mobile-plot-tabs [role="tab"]').length};
+  });
+  check('MOBILE-PLOT-DATA-TAB',dataTab.selected==='3'&&
+    dataTab.visible.join(',')==='fs-frame-4',
+    'mobile Data tab activates only raw-data Frame: '+JSON.stringify(dataTab));
+  await mobile.screenshot({path:path.join(out,'15-mobile-data-tab.png'),fullPage:true});
+  await mobile.locator('#fs-mobile-plot-tabs [data-frame-index="0"]').click();
+  const mobileRaw=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+  const mobileFrameErrors=[];mobileRaw.on('pageerror',err=>mobileFrameErrors.push(String(err.message||err)));
+  await mobileRaw.goto(file);
+  await mobileRaw.locator('#fs-raw-input').setInputFiles({
+    name:'offline-native-plot-fixture.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(fixture))
+  });
+  await mobileRaw.waitForFunction(()=>document.querySelector('#fs-messages')?.textContent.includes('OFFLINE-IMPORT-QA'),{timeout:10000});
+  await mobileRaw.locator('#fs-mobile-plot-tabs [data-frame-index="2"]').click();
+  await mobileRaw.waitForTimeout(500);
+  const timeFrame=await mobileRaw.evaluate(()=>{
+    const card=document.getElementById('fs-frame-3');
+    return {active:card?.dataset.mobileActive,
+      visualCount:card?.querySelectorAll('svg,canvas').length||0,
+      data:document.querySelector('#fs-messages')?.textContent};
+  });
+  check('MOBILE-PLOT-REFRESH',timeFrame.active==='true'&&timeFrame.visualCount>0,
+    'selecting hidden I–t frame must redraw original native time/current trace: '+JSON.stringify(timeFrame));
+  check('MOBILE-PLOT-NO-SYNTHETIC',mobileFrameErrors.length===0,
+    'raw-data responsive plotting JS errors: '+mobileFrameErrors.join(' | '));
+  await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
+  await mobileRaw.close();
   check('MOBILE-DEFAULT-ZH',await mobile.evaluate(()=>
     document.documentElement.lang==='zh-CN'&&document.querySelector('#fs-mobile-menu-toggle')?.textContent==='菜单'),
     'mobile interface launches in Chinese');
