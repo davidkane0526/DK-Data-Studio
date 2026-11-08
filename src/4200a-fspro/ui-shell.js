@@ -25,20 +25,11 @@
   version.setAttribute('aria-expanded',String(open));
  };
  version.addEventListener('click',()=>setVersionOpen(panel.hidden));
- const menu=byId('fs-main-menu'),mobileToggle=byId('fs-mobile-menu-toggle');
- function mobileMenu(open){
-  menu.classList.toggle('fs-mobile-menu-open',!!open);
-  mobileToggle.setAttribute('aria-expanded',String(!!open));
- }
- mobileToggle.addEventListener('click',()=>mobileMenu(!menu.classList.contains('fs-mobile-menu-open')));
- document.addEventListener('click',event=>{
-  const target=event.target;
-  if(!panel.contains(target)&&!version.contains(target))setVersionOpen(false);
-  if(target.closest?.('.fs-menu [data-command],.fs-menu [data-native-action]'))mobileMenu(false);
-  if(!menu.contains(target)&&!mobileToggle.contains(target))mobileMenu(false);
+ document.addEventListener('pointerdown',event=>{
+  if(!panel.hidden&&!panel.contains(event.target)&&!version.contains(event.target))setVersionOpen(false);
  });
  document.addEventListener('keydown',event=>{
-  if(event.key==='Escape'){setVersionOpen(false);mobileMenu(false);}
+  if(event.key==='Escape')setVersionOpen(false);
  });
  const actions=byId('fs-window-actions'),native=window.DKTSWindow;
  const maximize=byId('fs-window-maximize');
@@ -58,7 +49,6 @@
  }
  window.DKTSPreviewShell=Object.freeze({
   VERSION:'1.0.0',nativeVersion,uiVersion,
-  isFrameless:Boolean(native?.control),getMobileMenuOpen:()=>menu.classList.contains('fs-mobile-menu-open'),
-  closeMobileMenu:()=>mobileMenu(false)
+  isFrameless:Boolean(native?.control)
  });
 })();
