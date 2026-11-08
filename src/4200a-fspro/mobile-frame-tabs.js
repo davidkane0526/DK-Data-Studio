@@ -1,61 +1,49 @@
 (() => {
  'use strict';
- // Mobile-only frame navigation. All 4 Frames stay in the DOM for DKDS plots.
- const strip=document.getElementById('fs-mobile-plot-tabs');
- const root=document.querySelector('.fs-frames');
- const tabs=[...strip.querySelectorAll('[data-frame-index]')];
- const frames=[...root.querySelectorAll('.fs-frame')];
- if(tabs.length!==4||frames.length!==4)throw Error('Four plot frames are required');
- const mobile=window.matchMedia('(max-width:650px)');
- let current=0,announced=-1;
- function select(index,{focus=false}={}){
-  if(!Number.isInteger(index)||index<0||index>3)throw RangeError('Invalid plot frame index');
-  const changed=index!==current;
-  current=index;
-  for(let i=0;i<4;i++){
-   const chosen=i===current;
-   tabs[i].setAttribute('aria-selected',String(chosen));
-   tabs[i].tabIndex=chosen?0:-1;
-   frames[i].dataset.mobileActive=String(chosen);
-  }
-  if(focus)tabs[current].focus({preventScroll:true});
-  if(mobile.matches&&(changed||announced!==index)){
-   announced=index;
-   document.dispatchEvent(new CustomEvent('dkts:frame-selected',{detail:{index}}));
-   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
-  }
+ // One DKDS-style layout selector in the Visual Area heading owns Frame visibility.
+ // The four original plot nodes remain mounted; their real raw traces are refreshed
+ // after becoming visible, never synthesized or copied from a placeholder.
+ const control=document.getElementById('fs-plot-layout');
+ const container=document.querySelector('.fs-frames');
+ const frames=[...container.querySelectorAll('.fs-frame')];
+ if(!control||frames.length!==4)throw Error('FS-Pro requires all four scientific Frames');
+ const narrow=window.matchMedia('(max-width:650px)');
+ let active=0,selectedByUser=false;
+ function broadcast(index){
+  document.dispatchEvent(new CustomEvent('dkts:frame-selected',{detail:{index}}));
  }
- strip.addEventListener('click',event=>{
-  const item=event.target.closest('button[data-frame-index]');
-  if(item)select(Number(item.dataset.frameIndex));
- });
- strip.addEventListener('keydown',event=>{
-  const keys=['ArrowRight','ArrowLeft','Home','End'];
-  if(!keys.includes(event.key))return;
-  event.preventDefault();
-  const next=event.key==='Home'?0:event.key==='End'?3:
-   (current+(event.key==='ArrowRight'?1:3))%4;
-  select(next,{focus:true});
- });
+ function set(value,{manual=false,focus=false}={}){
+  const key=String(value);
+  if(key!=='grid'&&!/^[0-3]$/.test(key))throw RangeError('Unknown scientific Frame layout');
+  if(key!=='grid')active=Number(key);
+  if(manual)selectedByUser=true;
+  control.value=key;
+  container.dataset.layout=key==='grid'?'grid':'single';
+  frames.forEach((frame,i)=>{
+   const show=key==='grid'||i===active;
+   frame.dataset.mobileActive=String(show);
+   // Keep DOM plots mounted. Hidden state is CSS-owned, not data ownership.
+   frame.setAttribute('aria-hidden',String(!show));
+  });
+  if(focus)control.focus({preventScroll:true});
+  requestAnimationFrame(()=>{
+   for(let i=0;i<3;i++)if(key==='grid'||i===active)broadcast(i);
+   window.dispatchEvent(new Event('resize'));
+  });
+ }
  function adapt(){
-  if(mobile.matches){
-   // Re-entering portrait changes the host dimensions for the chosen Frame.
-   announced=-1;
-   select(current);
-  } else {
-   // Previously hidden plot cards need their original traces re-rendered
-   // after they become visible. Never fabricate a missing channel.
-   for(let i=0;i<4;i++)frames[i].dataset.mobileActive=String(i===current);
-   requestAnimationFrame(()=>{
-    for(let i=0;i<3;i++)
-     document.dispatchEvent(new CustomEvent('dkts:frame-selected',{detail:{index:i}}));
-    window.dispatchEvent(new Event('resize'));
-   });
-  }
+  // On first load and orientation change, restore a useful mobile-only Frame;
+  // wide screens default to the four-panel DKDS scientific grid.
+  if(!selectedByUser)set(narrow.matches?String(active):'grid');
+  else if(narrow.matches&&control.value==='grid')set(String(active));
+  else set(control.value);
  }
- mobile.addEventListener?.('change',adapt);
- select(0);
+ control.addEventListener('change',()=>set(control.value,{manual:true}));
+ narrow.addEventListener?.('change',adapt);
+ set(narrow.matches?'0':'grid');
  window.DK4200MobileFrames=Object.freeze({
-  current:()=>current,select,visible:()=>mobile.matches
+  current:()=>active,select:index=>set(String(index),{manual:true}),
+  visible:()=>narrow.matches,layout:()=>container.dataset.layout,
+  setLayout:choice=>set(choice,{manual:true})
  });
 })();
