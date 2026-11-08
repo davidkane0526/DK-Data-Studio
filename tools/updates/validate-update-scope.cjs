@@ -10,10 +10,24 @@ const HOT_UPDATE_FILES=new Set([
 ]);
 const RUNTIME_PREFIXES=['desktop/','mobile/','src/','sdk/','assets/','services/','config/','scripts/','tools/sdk/'];
 const RUNTIME_ROOT_FILES=new Set(['package.json','package-lock.json','main.js','preload.js','plugin-package.js']);
+/* The 4200A FS-Pro preview ships as its own Windows/Android application.
+ * Its files are never included in the DKDS host release. Keep this allowlist
+ * narrow: src/core, shared desktop/mobile code and SDK still require a host
+ * version bump. The preview has a separate release/signing gate. */
+function isIsolated4200APreviewPath(file){
+  const value=String(file||'').replaceAll('\\','/');
+  return value.startsWith('src/4200a-fspro/')||
+    value.startsWith('android4200a/')||
+    value.startsWith('desktop/4200a-')||
+    value.startsWith('scripts/4200a/')||
+    value.startsWith('tools/4200a/')||
+    value.startsWith('tools/4200a-');
+}
 function requiresFullAppVersionBump(paths){
   return paths.some(file=>{
     const value=String(file||'').replaceAll('\\','/');
     if(HOT_UPDATE_FILES.has(value))return false;
+    if(isIsolated4200APreviewPath(value))return false;
     return RUNTIME_ROOT_FILES.has(value)||RUNTIME_PREFIXES.some(prefix=>value.startsWith(prefix));
   });
 }
@@ -31,7 +45,9 @@ function validateUpdateScope({changedPaths,baseVersion,currentVersion}){
     const error=new Error('检测到非热更新白名单的程序代码变更，必须提升 package.json 完整版本号后才能发布完整程序更新。当前 V'+currentVersion+'，基线 V'+baseVersion+'。');
     error.code='FULL_APP_VERSION_BUMP_REQUIRED';error.runtimeFiles=runtime;throw error;
   }
-  return {fullRequired,baseVersion,currentVersion,channel:fullRequired?'full-app':'hot-update-only'};
+  const previewOnly=!fullRequired&&changedPaths.some(isIsolated4200APreviewPath)&&
+    !changedPaths.some(file=>HOT_UPDATE_FILES.has(String(file||'').replaceAll('\\','/')));
+  return {fullRequired,baseVersion,currentVersion,channel:fullRequired?'full-app':previewOnly?'isolated-preview':'hot-update-only'};
 }
 function git(args){return execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}
 if(require.main===module){
@@ -47,11 +63,11 @@ if(require.main===module){
     const basePackage=JSON.parse(git(['show',base+':package.json']));
     const currentPackage=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
     const result=validateUpdateScope({changedPaths:paths,baseVersion:basePackage.version,currentVersion:currentPackage.version});
-    const summary='## DKDS update channel validation\n\n- Channel: **'+result.channel+'**\n- Application version: V'+result.currentVersion+'\n- Changed runtime files: '+(result.fullRequired?'full application version bump verified':'only allowlisted CSS hot-update resources')+'\n';
+    const summary='## DKDS update channel validation\n\n- Channel: **'+result.channel+'**\n- Application version: V'+result.currentVersion+'\n- Changed runtime files: '+(result.fullRequired?'full application version bump verified':result.channel==='isolated-preview'?'isolated 4200A preview files; DKDS host remains unchanged':'only allowlisted CSS hot-update resources')+'\n';
     if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
     if(process.env.GITHUB_ENV)fs.appendFileSync(process.env.GITHUB_ENV,'DKDS_UPDATE_CHANNEL='+result.channel+'\n');
     if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,'channel='+result.channel+'\n');
     console.log('DKDS update scope PASS: '+result.channel+'; V'+result.currentVersion);
   }
 }
-module.exports={HOT_UPDATE_FILES,requiresFullAppVersionBump,compareVersions,validateUpdateScope};
+module.exports={HOT_UPDATE_FILES,isIsolated4200APreviewPath,requiresFullAppVersionBump,compareVersions,validateUpdateScope};
