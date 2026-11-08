@@ -27,13 +27,44 @@
 .fs-app .fs-caption,.fs-app .fs-muted{color:var(--fs-sub)}
 .fs-shell{height:100dvh;min-height:420px;display:flex;flex-direction:column;overflow:hidden}
 .fs-titlebar,.fs-menu,.fs-toolbar,.fs-status{display:flex;align-items:center;gap:7px;padding:0 11px;flex-shrink:0}
-.fs-titlebar{height:38px;background:var(--fs-panel);border-bottom:1px solid var(--fs-line);gap:12px}
-.fs-titlebar strong{font-size:14px;font-weight:650}
-.fs-titlebar #fs-instrument-link{flex:0 0 auto;min-width:64px;height:27px;padding:3px 9px;font-size:12px}
-.fs-title-spacer,.fs-toolbar-fill{flex:1}
-.fs-menu{height:30px;gap:0;border-bottom:1px solid var(--fs-line)}
+/* Unified DKTS frameless titlebar: one owner for brand, menu, version and native controls. */
+.fs-titlebar{height:42px;background:var(--fs-panel);border-bottom:1px solid var(--fs-line);gap:5px;
+  padding:0 8px;position:relative;z-index:80;white-space:nowrap;-webkit-app-region:drag}
+.fs-brand{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-width:0}
+.fs-brand strong{font-size:13px;font-weight:650;white-space:nowrap;letter-spacing:-.15px}
+.fs-brand-mark{width:27px;height:27px;border-radius:7px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#18294b,#10213c 65%,#1b3a60);
+  color:#e5f5ff;box-shadow:inset 0 0 0 1px #6593b95f;font-size:11px;
+  letter-spacing:-1px;font-weight:750;text-shadow:1px 0 0 #54cce9}
+.fs-title-spacer,.fs-toolbar-fill{flex:1;min-width:4px}
+.fs-title-divider{width:1px;height:19px;background:var(--fs-line);margin:0 3px}
+.fs-app .fs-titlebar button,.fs-menu,.fs-version-popover,.fs-window-actions{-webkit-app-region:no-drag}
+.fs-version-wrap{position:relative;flex:0 0 auto}
+.fs-app .fs-version-badge{height:27px;min-height:27px;padding:3px 7px;font-size:11.5px;
+  background:none;border:0;border-radius:5px;color:var(--fs-sub);font-weight:600}
+.fs-version-popover{position:absolute;z-index:110;top:calc(100% + 7px);left:0;
+  min-width:210px;padding:11px 12px;display:flex;flex-direction:column;gap:5px;
+  background:var(--fs-panel);border:1px solid var(--fs-line);border-radius:7px;
+  white-space:normal;box-shadow:0 8px 25px #142b4540}
+.fs-version-popover[hidden]{display:none}
+.fs-version-popover strong{font-size:12px}
+.fs-version-popover span{font-size:11px;line-height:1.5;color:var(--fs-sub)}
+.fs-titlebar #fs-instrument-link{flex:0 0 auto;min-width:56px;height:29px;min-height:29px;padding:3px 8px;font-size:12px}
+.fs-app .fs-language-switch{height:28px;min-height:28px;min-width:35px;
+  padding:3px 7px;border:0;background:transparent;font-weight:600;font-size:11px}
+.fs-window-actions{height:100%;display:flex;align-items:stretch;gap:0;margin-right:-8px}
+.fs-window-actions[hidden]{display:none}
+.fs-app .fs-window-button{width:38px;min-width:38px;height:100%;min-height:0;padding:0;border:0;
+  background:transparent;display:grid;place-items:center;border-radius:0}
+.fs-window-button svg{grid-column:1;grid-row:1}
+.fs-glyph-restore{display:none}
+.fs-window-button[data-maximized="true"] .fs-glyph-max{display:none}
+.fs-window-button[data-maximized="true"] .fs-glyph-restore{display:block}
+.fs-app .fs-window-button.fs-window-close:hover:not(:disabled){background:#c83c3c;color:#fff}
+.fs-menu{height:auto;gap:0;border:0;padding:0;min-width:0;flex-shrink:1}
 .fs-menu-item{position:relative;flex:0 0 auto}
-.fs-menu button{border:0;background:none;border-radius:0;padding:3px 10px;min-height:28px}
+.fs-menu button{border:0;background:none;border-radius:4px;padding:3px 7px;min-height:28px}
+.fs-app .fs-mobile-menu-toggle{display:none}
 .fs-menu-item > button[aria-expanded="true"]{background:color-mix(in srgb,var(--fs-accent) 10%,var(--fs-panel))}
 .fs-menu-popup{position:absolute;top:100%;left:0;z-index:950;min-width:165px;padding:5px;
   border:1px solid var(--fs-line);border-radius:6px;background:var(--fs-panel);
@@ -143,7 +174,7 @@
 }
 @media(max-width:650px){
  .fs-app{--fs-height:33px}
- .fs-titlebar{height:34px}
+ .fs-titlebar{height:42px}
  .fs-sidebar{display:none}
  .fs-body{display:flex}
  .fs-right{flex:1}
@@ -151,7 +182,6 @@
  .fs-frame{min-height:130px}
  .fs-bottom{grid-template-columns:1fr;max-height:36%}
  .fs-bottom-cell:nth-child(2){display:none}
- .fs-menu{overflow:visible;min-height:30px;height:auto;flex-wrap:wrap}
  .fs-toolbar{overflow:auto;flex-shrink:0}
  .fs-modal-host{padding:0}
  .fs-editor{width:100%;height:100dvh;min-height:0;border:0;border-radius:0}
@@ -254,6 +284,29 @@
    max-width:none;
  }
  .fs-app .fs-triptych-panel:last-child{scroll-snap-align:end}
+}
+
+/* On tablets and phones File/Measurement/Tools use one compact titlebar menu.
+ * The menu is a flyout rather than a separate row, leaving more height for plots. */
+@media(max-width:1050px){
+ .fs-app .fs-mobile-menu-toggle{display:inline-flex;align-items:center;justify-content:center;
+   min-height:28px;height:28px;padding:3px 7px;border:0;background:transparent}
+ .fs-titlebar .fs-menu{display:none;position:absolute;top:calc(100% + 1px);left:8px;
+   right:auto;width:min(300px,calc(100vw - 16px));max-height:calc(100dvh - 55px);
+   overflow-y:auto;padding:5px;background:var(--fs-panel);border:1px solid var(--fs-line);
+   border-radius:7px;box-shadow:0 10px 26px #11233a30;z-index:120;flex-direction:column}
+ .fs-titlebar .fs-menu.fs-mobile-menu-open{display:flex}
+ .fs-menu-item{width:100%}
+ .fs-menu-item>button{width:100%;text-align:left;min-height:33px}
+ .fs-menu-popup{position:static;box-shadow:none;border:0;border-radius:0;
+   padding:0 0 6px 12px;min-width:0}
+ .fs-menu-popup button{min-height:33px}
+}
+@media(max-width:400px){
+ .fs-brand strong{display:none}
+ .fs-titlebar{gap:3px;padding:0 6px}
+ .fs-window-actions{margin-right:-6px}
+ .fs-app .fs-language-switch{min-width:30px;padding:3px}
 }
 
 /* Instrument settings uses the same compact DKDS/FS-Pro controls and geometry. */
