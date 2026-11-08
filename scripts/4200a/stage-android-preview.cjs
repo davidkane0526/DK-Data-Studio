@@ -11,14 +11,19 @@ if(!/^a[0-9]{1,10}$/.test(revision))throw new Error('Invalid FS-Pro UI revision'
 fs.rmSync(dest,{recursive:true,force:true});
 fs.mkdirSync(dest,{recursive:true});
 const copied=copyFrontend(root,dest);
+const appIcon=path.join(root,'build','icon.png');
+if(!fs.existsSync(appIcon))throw new Error('Legacy DKTS app icon must be generated before packaging');
+fs.copyFileSync(appIcon,path.join(dest,'src','4200a-fspro','brand-icon.png'));
 const metadata={
  schema:'dkts.4200a.preview-package.v1',
- nativeVersion:'0.3.0',uiRevision:revision,
+ nativeVersion:'0.3.13',uiRevision:revision,
  sourceCommit:process.env.GITHUB_SHA||'local',
  measurementExecutionAuthorized:false,
  tcpMode:'native-read-only'
 };
 fs.writeFileSync(path.join(dest,'src','4200a-fspro','preview-build.json'),JSON.stringify(metadata,null,2)+'\n');
+fs.writeFileSync(path.join(dest,'src','4200a-fspro','build-info.js'),
+ 'window.DKTSPreviewBuild='+JSON.stringify(metadata)+';\n');
 for(const file of [
  'src/4200a-fspro/index.html',
  'src/4200a-fspro/android-bridge.js',
