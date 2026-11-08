@@ -85,8 +85,7 @@
   ['正常 (N)','正常 (N)'],['限流 (C)','限流 (C)'],
   ['未知','未知'],['菜单','菜单'],
   ['连接设置','连接设置'],
-  ['仅显示经过 4200A 模块识别的资源。修改共享 Connection 预设可能影响其他 Page；本次仅保存当前 Page 的映射。',
-   '仅显示已识别的 4200A 资源。端口分配仅保存到当前页面。'],
+  
   ['当前界面资源版本。预览版尚未启用自动更新。',
    '当前界面资源版本。预览版尚未启用自动更新。']
  ];
@@ -109,7 +108,7 @@
   ['当前界面资源版本。预览版尚未启用自动更新。',
    'Current UI revision. Automatic updates are not enabled for this preview.'],
   ['仅显示经过 4200A 模块识别的资源。修改共享 Connection 预设可能影响其他 Page；本次仅保存当前 Page 的映射。',
-   'Only identified 4200A resources are listed. Changes apply to this Page only.'],
+   'Only identified 4200A resources are shown. Editing a shared Connection preset may affect other Pages; this operation saves only the current Page mapping.'],
   ['公式仅保存为文本，尚未连接求值引擎。','The expression is saved as text; evaluation is not enabled.'],
   ['变量名','Variable name'],['变量值','Variable value'],['关联规格','Associated specification'],
   ['增加变量','Add variable'],['删除最后一个变量','Remove last variable'],
