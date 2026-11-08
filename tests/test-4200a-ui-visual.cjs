@@ -272,6 +272,19 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   });
   check('MOBILE-PLOT-REFRESH',timeFrame.active==='true'&&timeFrame.visualCount>0,
     'selecting hidden I–t frame must redraw original native time/current trace: '+JSON.stringify(timeFrame));
+  const axisTicks=await mobileRaw.evaluate(()=>{
+    const card=document.getElementById('fs-frame-3');
+    const labels=[...card.querySelectorAll('.dkds-d3-y-axis .tick text')];
+    const bounds=card.getBoundingClientRect();
+    return {labels:labels.map(x=>x.textContent),
+      minimumLeft:Math.min(...labels.map(x=>x.getBoundingClientRect().left)),
+      plotLeft:bounds.left};
+  });
+  check('MOBILE-PLOT-SCIENTIFIC-TICKS',
+    axisTicks.labels.some(x=>/e-[0-9]+/.test(x))&&
+    !axisTicks.labels.some(x=>/0\\.0{5,}[1-9]/.test(x))&&
+    axisTicks.minimumLeft>=axisTicks.plotLeft-1,
+    'nanoamp current ticks must use scientific notation and remain visible: '+JSON.stringify(axisTicks));
   check('MOBILE-PLOT-NO-SYNTHETIC',mobileFrameErrors.length===0,
     'raw-data responsive plotting JS errors: '+mobileFrameErrors.join(' | '));
   await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
