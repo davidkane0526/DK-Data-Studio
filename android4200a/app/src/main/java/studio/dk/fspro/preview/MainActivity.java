@@ -91,6 +91,14 @@ public final class MainActivity extends Activity {
             @Override public void onPageFinished(WebView view, String url) {
                 if (!ENTRY.equals(url)) return;
                 Log.i(TAG, "FS-Pro preview loaded; output permissions disabled");
+                view.postDelayed(() -> {
+                    if (!ENTRY.equals(view.getUrl())) return;
+                    view.evaluateJavascript(
+                        "(function(){return (window.DK4200FSPro && window.DK4200ConnectionStatus && " +
+                        "window.DKDSScientificPlot && document.getElementById('fs-measure')?.disabled && " +
+                        "document.getElementById('fs-repeat')?.disabled) ? 'FS_PRO_READY' : 'FS_PRO_BROKEN';})()",
+                        result -> Log.i("DKTS-FSPro-Ready", String.valueOf(result)));
+                }, 2500L);
             }
         });
         nativeBridge = new ReadonlyInstrumentBridge(this, webView);
