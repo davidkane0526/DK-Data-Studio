@@ -23,8 +23,16 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     document.querySelector('[data-menu="File"]')?.textContent==='文件'&&
     document.querySelector('#fs-version-badge')?.textContent==='V0.3.13'),
     'default Chinese and original V0.3.13 identity');
-  check('SHELL-BRAND',await desktop.locator('.fs-brand-mark').textContent().then(x=>x==='DK'),
-    'original DK brand mark exists');
+  if(process.env.DK4200_UI_ENTRY_FILE)await desktop.waitForFunction(
+    ()=>document.querySelector('#fs-brand-mark')?.dataset.brand==='legacy-native-icon',
+    {timeout:4000});
+  check('SHELL-BRAND',await desktop.evaluate(()=>{
+    const logo=document.getElementById('fs-brand-mark');
+    return logo?.textContent==='DK'||logo?.dataset.brand==='legacy-native-icon';
+  }),'original DK brand mark or exact packaged PNG exists');
+  check('SHELL-PACKAGED-NATIVE-ICON',!process.env.DK4200_UI_ENTRY_FILE||
+    await desktop.locator('#fs-brand-mark').getAttribute('data-brand')==='legacy-native-icon',
+    'Android staged UI uses original generated PNG rather than a generic logo');
   check('SHELL-TITLEBAR',await desktop.evaluate(()=>{
     const title=document.querySelector('.fs-titlebar'),menu=document.querySelector('.fs-menu');
     const a=title.getBoundingClientRect(),b=menu.getBoundingClientRect();
