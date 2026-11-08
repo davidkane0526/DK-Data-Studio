@@ -36,6 +36,20 @@ check('REFERENCE_CYCLE',p=>{p.terminals[0].relativeTo='D';});
 check('UNUSED_P_SWEEP',p=>{p.terminals[2].role='CONDITION';p.terminals[2].bias='0';});
 check('MISSING_SEQUENCE_FIELD',p=>{delete p.xSweep.stop;});
 check('INVALID_STEP',p=>{p.xSweep.step='0';});
+check('HARDWARE_THEORY_LIMIT',p=>{p.xSweep.stop='1000';});
+check('HARDWARE_THEORY_LIMIT',p=>{p.pSweep.start='-1000';});
+check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[0].bias='1000';});
+check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[1].compliance='1000';});
+check('HARDWARE_THEORY_LIMIT',p=>{p.terminals[2].measureRange.value='2';});
+{
+  const p=clone();
+  p.xSweep.stop='210';
+  p.terminals[1].compliance='1.05';
+  p.terminals[2].measureRange.value='1.05';
+  const result=validatePagePlan(p);
+  assert.equal(result.valid,true,'the maximum theoretical 4200A envelope must not be artificially reduced');
+  assert.equal(result.executionAuthorized,false,'within theoretical envelope is still not an output permit');
+}
 {
   const p=clone();p.terminals[2].resource='None';
   const v=validatePagePlan(p);
@@ -43,4 +57,4 @@ check('INVALID_STEP',p=>{p.xSweep.step='0';});
   assert.ok(v.warnings.some(w=>w.code==='UNASSIGNED_RESOURCE'));
   assert.equal(v.executionAuthorized,false);
 }
-console.log('4200A page-plan-guard: 14 offline assertions passed; hardware tests 0.');
+console.log('4200A PagePlan: offline hardware-envelope checks reject 1000 V/A without applying artificial derating');

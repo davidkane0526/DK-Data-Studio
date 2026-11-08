@@ -11,6 +11,10 @@
   const ROLE = new Set(['X','P','CONDITION']);
   const MODE = new Set(['voltage','current']);
   const NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?$/;
+  // Maximum theoretical envelope across supported 4200A SMUs. This is NOT
+  // an assertion of the installed model or a software-specific derating.
+  // Actual SMU capabilities and KCon mapping still gate native execution.
+  const HARDWARE_ENVELOPE = Object.freeze({voltage:210,current:1.05});
   const isFiniteDecimal = value => {
     if (value === null || value === undefined || typeof value === 'boolean') return false;
     const s = String(value).trim();
@@ -79,6 +83,15 @@
       if (role==='P') p++;
       if (!MODE.has(id(t.sourceMode).toLowerCase())) add('INVALID_SOURCE_MODE',path+'.sourceMode','Expected voltage or current');
       if (!isPositiveDecimal(t.compliance)) add('INVALID_COMPLIANCE',path+'.compliance','Positive finite compliance is required');
+      const sourceMode=id(t.sourceMode).toLowerCase();
+      const sourcedLimit=HARDWARE_ENVELOPE[sourceMode];
+      const measuredMode=sourceMode==='voltage'?'current':'voltage';
+      if (sourcedLimit && isFiniteDecimal(t.bias) &&
+          Math.abs(Number(t.bias))>sourcedLimit)
+        add('HARDWARE_THEORY_LIMIT',path+'.bias','Source exceeds the 4200A theoretical ±'+sourcedLimit+' '+(sourceMode==='voltage'?'V':'A'));
+      if (sourcedLimit && isPositiveDecimal(t.compliance) &&
+          Number(t.compliance)>HARDWARE_ENVELOPE[measuredMode])
+        add('HARDWARE_THEORY_LIMIT',path+'.compliance','Compliance exceeds theoretical '+HARDWARE_ENVELOPE[measuredMode]+' '+(measuredMode==='current'?'A':'V'));
       if (!resource || resource==='none') warnings.push({code:'UNASSIGNED_RESOURCE',path:path+'.resource',reason:'No physical channel is assigned'});
       else if (resources.has(resource)) add('DUPLICATE_RESOURCE',path+'.resource','One physical channel cannot drive two terminals');
       else resources.set(resource,i);
@@ -88,6 +101,9 @@
       if (range) {
         if (!['auto','fixed'].includes(id(range.mode))) add('INVALID_MEASURE_RANGE_MODE',path+'.measureRange.mode','Use auto or fixed');
         if (range.mode==='fixed' && !isPositiveDecimal(range.value)) add('INVALID_MEASURE_RANGE',path+'.measureRange.value','Fixed measurement range must be positive and finite');
+        if (range.mode==='fixed' && isPositiveDecimal(range.value) &&
+            sourcedLimit && Number(range.value)>HARDWARE_ENVELOPE[measuredMode])
+          add('HARDWARE_THEORY_LIMIT',path+'.measureRange.value','Range exceeds theoretical '+HARDWARE_ENVELOPE[measuredMode]+' '+(measuredMode==='current'?'A':'V'));
       }
       if (role==='CONDITION' && t.bias===undefined && t.expression===undefined) add('MISSING_CONDITION',path+'.bias','Condition must define a bias or expression');
     }
@@ -96,6 +112,23 @@
     verifySequence('xSweep',plan.xSweep,errors);
     if (p===1) verifySequence('pSweep',plan.pSweep,errors);
     else if (plan.pSweep !== undefined) add('UNUSED_P_SWEEP','pSweep','Psweep sequence requires one P terminal');
+    // Check both axes before saving the Page, even with no 4200A connected.
+    // Values within the maximum hardware envelope remain editable; a
+    // verified physical-module model applies stricter limits at compilation.
+    for(const [key,role] of [['xSweep','X'],['pSweep','P']]){
+      const t=terms.find(term=>term?.role===role);
+      const seq=plan[key];
+      if(!t||!seq||typeof seq!=='object')continue;
+      const mode=id(t.sourceMode).toLowerCase(),max=HARDWARE_ENVELOPE[mode];
+      if(!max)continue;
+      const list=seq.mode==='list'?(Array.isArray(seq.values)?seq.values:[]):[seq.start,seq.stop,seq.step];
+      for(const [i,value] of list.entries()){
+        if(!isFiniteDecimal(value))continue; // formula parsing is a separate gate
+        if(Math.abs(Number(value))>max)
+          add('HARDWARE_THEORY_LIMIT',key+'.'+(seq.mode==='list'?'values['+i+']':['start','stop','step'][i]),
+            'Sweep exceeds the 4200A theoretical ±'+max+' '+(mode==='voltage'?'V':'A'));
+      }
+    }
     for (const [name,ref] of refs) {
       if (!labels.has(ref)) add('UNKNOWN_REFERENCE','terminals['+labels.get(name)+'].relativeTo','Reference node does not exist');
       if (name===ref) add('SELF_REFERENCE','terminals['+labels.get(name)+'].relativeTo','Self reference is forbidden');
@@ -110,5 +143,5 @@
     warnings.push({code:'HARDWARE_GATE',path:'$',reason:'Offline validation is not instrument capability validation'});
     return Object.freeze({valid:errors.length===0,executionAuthorized:false,errors:Object.freeze(errors),warnings:Object.freeze(warnings)});
   }
-  return Object.freeze({validatePagePlan,version:'0.1.0-offline'});
+  return Object.freeze({validatePagePlan,HARDWARE_ENVELOPE,version:'0.2.0-offline'});
 });
