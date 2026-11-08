@@ -21,7 +21,7 @@ jobs:
   android-preview:
     name: Compile standalone Android 35 (SMU output disabled)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout 4200A rebuild
         uses: actions/checkout@v4
@@ -67,6 +67,39 @@ jobs:
           test -s android4200a/app/build/outputs/apk/debug/app-debug.apk
           ls -lh android4200a/app/build/outputs/apk/debug/app-debug.apk
           echo 'Debug certificate is ephemeral; no debug APK will be distributed.'
+      - name: Enable Android emulator KVM acceleration
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Start Android 35 emulator, launch and inspect shared FS-Pro UI
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 3072M
+          emulator-boot-timeout: 720
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r android4200a/app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am start -W -n studio.dk.fspro.preview.debug/studio.dk.fspro.preview.MainActivity
+            sleep 7
+            adb logcat -d -s 'DKTS-FSPro-Ready:I' '*:S' | tee android4200a/emulator-ready.log
+            grep 'FS_PRO_READY' android4200a/emulator-ready.log
+            mkdir -p artifacts/4200a-android-emulator
+            adb exec-out screencap -p > artifacts/4200a-android-emulator/launch-portrait.png
+            test -s artifacts/4200a-android-emulator/launch-portrait.png
+      - name: Upload emulator screenshot evidence only (never temporary-signature APK)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 4200a-android-emulator-evidence
+          path: |
+            artifacts/4200a-android-emulator/
+            android4200a/emulator-ready.log
+          if-no-files-found: warn
       - name: Restore private fixed Android release-signing identity
         id: sign
         env:
