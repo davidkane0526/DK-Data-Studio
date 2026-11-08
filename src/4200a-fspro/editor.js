@@ -36,6 +36,14 @@ const ensureFrameViewer=()=>{
  });
  return frameViewer;
 };
+document.addEventListener('dkts:frame-selected',event=>{
+ const index=event.detail?.index;
+ if(!Number.isInteger(index)||index<0||index>3||!frameViewer?.hasCapture?.())return;
+ // The plot must be visible before DKDS Core measures its canvas dimensions.
+ requestAnimationFrame(()=>frameViewer.refreshFrame(index).catch(error=>{
+  note('图窗刷新失败：'+String(error?.message||error).slice(0,90));
+ }));
+});
 function saveText(filename,text,mime){
  const blob=new Blob([text],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
