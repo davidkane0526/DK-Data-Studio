@@ -2,13 +2,6 @@ name: DKTS 4200A standalone Android Preview
 on:
   push:
     branches: [feat/4200a-fspro-rebuild]
-    paths:
-      - 'android4200a/**'
-      - 'src/4200a-fspro/**'
-      - 'src/core/**'
-      - 'src/styles/**'
-      - 'scripts/4200a/**'
-      - '.github/workflows/4200a-preview-android.yml'
   pull_request:
     branches: ['4200']
   workflow_dispatch:
