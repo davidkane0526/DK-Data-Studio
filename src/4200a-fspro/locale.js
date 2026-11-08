@@ -3,6 +3,9 @@
  /* DKTS UI localization. Technical identifiers, user-entered data and KXCI
   * protocol values are NEVER translated. Only presentation text is changed. */
  const pairs=[
+  ['Open Project','打开工程'],['Save Project','保存工程'],['Import Raw Data','导入原始数据'],
+  ['Instrument Network Settings','仪器网络设置'],['Terminal Range','测量档位'],
+  ['Unlock required','需要先解锁'],
   ['Current Page','当前页面'],['Subwindow','子窗口'],['Plot Area','绘图区'],
   ['Four Frames','四宫格'],['Transfer Curve','转移特性'],['Raw Data','数据表'],
   ['New','新建'],['Open','打开'],['Save','保存'],['Data','数据'],
