@@ -51,12 +51,18 @@
     points=Math.round(cycles)+1;
   }else{
     points=Number(t.points);
-    if(!Number.isSafeInteger(points)||points<2)fail('INVALID_POINTS',t.logical);
-    step=(stop-start)/(points-1);
-    if(step===0)fail('INVALID_STEP',t.logical);
+    if(!Number.isSafeInteger(points)||points<(role==='P'?1:2))fail('INVALID_POINTS',t.logical);
+    if(points===1){
+      // VAR2 supports one source step. No sweep increment is needed.
+      if(start!==stop)fail('SINGLE_POINT_ENDPOINT_MISMATCH',t.logical);
+      step=0;
+    }else{
+      step=(stop-start)/(points-1);
+      if(step===0)fail('INVALID_STEP',t.logical);
+    }
   }
   if(points>(role==='X'?1024:32))fail('KXCI_POINT_LIMIT',t.logical+' '+points);
-  if(Math.abs(step)<0.001&&t.sourceMode==='voltage')fail('KXCI_VOLTAGE_QUANTIZATION',t.logical+'.step');
+  if(Math.abs(step)<0.001&&step!==0&&t.sourceMode==='voltage')fail('KXCI_VOLTAGE_QUANTIZATION',t.logical+'.step');
   const stepText=numeric(step,t.logical+'.step'),startText=numeric(start,t.logical+'.start');
   if(role==='X'){
    const stopText=numeric(stop,t.logical+'.stop');
