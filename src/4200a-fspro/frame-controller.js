@@ -27,13 +27,43 @@
   let capture=null,disposed=false,revision=0;
   const ensure=()=>{if(disposed)throw new Error('Frame viewer disposed')};
   const axes=raw=>({x:raw.columns.find(c=>c.id==='voltage')||raw.columns[0],y:raw.columns.find(c=>c.id==='current')||raw.columns[1]});
-  const plotLayout=(x,y,title)=>({
-   autosize:true,margin:{t:14,r:18,b:52,l:62},
-   xaxis:{title:`${x.label}${x.unit?` (${x.unit})`:''}`,automargin:true},
-   yaxis:{title:`${y.label}${y.unit?` (${y.unit})`:''}`,automargin:true},
-   showlegend:true,legend:{orientation:'h',y:-0.22},
-   dragmode:'pan'
-  });
+  // DKDS D3 Core honors tickvals/ticktext. The default d3 fixed decimal
+  // formatting can clip nanoamp-scale values at the mobile plot boundary.
+  // Only the AXIS labels are formatted; exact raw readings remain unchanged.
+  function compactScientificTicks(values){
+   const nums=values.map(Number).filter(Number.isFinite);
+   if(!nums.length)return null;
+   const minimum=Math.min(...nums),maximum=Math.max(...nums);
+   const magnitude=Math.max(Math.abs(minimum),Math.abs(maximum));
+   if(magnitude===0||(magnitude>=0.0001&&magnitude<10000))return null;
+   const spread=maximum-minimum;
+   const exp=Math.floor(Math.log10(spread>0?spread:magnitude));
+   const power=Math.pow(10,exp);
+   const desired=spread>0?spread/4:magnitude/4;
+   const coefficient=desired/power;
+   const step=(coefficient<=1?1:coefficient<=2?2:coefficient<=5?5:10)*power;
+   if(!Number.isFinite(step)||step<=0)return null;
+   const start=Math.floor(minimum/step),end=Math.ceil(maximum/step);
+   if(end-start>12)return null;
+   const tickvals=[],ticktext=[];
+   for(let i=start;i<=end;i++){
+    const value=Number((i*step).toPrecision(12));
+    tickvals.push(value);
+    ticktext.push(value===0?'0':value.toExponential(1).replace(/\\.0e/,'e'));
+   }
+   return {tickvals,ticktext};
+  }
+  const plotLayout=(x,y,traces=[])=>{
+   const allX=traces.flatMap(t=>Array.isArray(t.x)?t.x:[]);
+   const allY=traces.flatMap(t=>Array.isArray(t.y)?t.y:[]);
+   const xTicks=compactScientificTicks(allX),yTicks=compactScientificTicks(allY);
+   return {
+    autosize:true,margin:{t:14,r:18,b:52,l:65},
+    xaxis:{title:`${x.label}${x.unit?` (${x.unit})`:''}`,automargin:true,...(xTicks||{})},
+    yaxis:{title:`${y.label}${y.unit?` (${y.unit})`:''}`,automargin:true,...(yTicks||{})},
+    showlegend:true,legend:{orientation:'h',y:-0.22},dragmode:'pan'
+   };
+  };
   function renderDataFrame(container,table){
    const existing=container.querySelector('.fs-empty-hint');if(existing)existing.hidden=true;
    const sheet=document.createElement('div');sheet.className='fs-mini-table-wrap';
@@ -75,7 +105,7 @@
     return false;
    }
    hint.hidden=true;
-   await plot.react(content,traces,plotLayout(x,y),{
+   await plot.react(content,traces,plotLayout(x,y,traces),{
     responsive:true,scrollZoom:true,displayModeBar:false
    },{
     source:'dkts.4200a.native',renderKey:`${original.captureId}:${index}:visible`,
@@ -107,7 +137,7 @@
     const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
     if(!traces.some(t=>t.x.length)){hint.textContent='原始数据没有有效采样点';hint.hidden=false;continue;}
     hint.hidden=true;
-    await plot.react(content,traces,plotLayout(x,y),{responsive:true,scrollZoom:true,displayModeBar:false},{
+    await plot.react(content,traces,plotLayout(x,y,traces),{responsive:true,scrollZoom:true,displayModeBar:false},{
      source:'dkts.4200a.native',renderKey:`${original.captureId}:${i}`,
      renderPriority:'immediate'
     });
