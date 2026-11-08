@@ -89,12 +89,18 @@ jobs:
             adb install -r android4200a/app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am start -W -n studio.dk.fspro.preview.debug/studio.dk.fspro.preview.MainActivity
-            sleep 7
-            adb logcat -d -s 'DKTS-FSPro-Ready:I' '*:S' | tee android4200a/emulator-ready.log
-            grep 'FS_PRO_READY' android4200a/emulator-ready.log
+            sleep 15
             mkdir -p artifacts/4200a-android-emulator
+            adb logcat -d -s 'DKTS-FSPro-Ready:V' '*:S' > android4200a/emulator-ready.log
+            adb logcat -d -s 'DKTS-FSPro-WebJS:V' '*:S' > artifacts/4200a-android-emulator/webjs-errors.log
             adb exec-out screencap -p > artifacts/4200a-android-emulator/launch-portrait.png
             test -s artifacts/4200a-android-emulator/launch-portrait.png
+            cat android4200a/emulator-ready.log
+            if ! grep -q 'FS_PRO_READY' android4200a/emulator-ready.log; then
+              echo 'Android UI not ready; printing JavaScript diagnostics.'
+              cat artifacts/4200a-android-emulator/webjs-errors.log
+              exit 1
+            fi
       - name: Upload emulator screenshot evidence only (never temporary-signature APK)
         if: always()
         uses: actions/upload-artifact@v4
