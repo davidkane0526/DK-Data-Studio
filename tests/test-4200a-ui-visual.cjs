@@ -271,7 +271,9 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('MOBILE-PLOT-DROPDOWN-ANCHORED',await rotated.evaluate(()=>{
     const anchor=document.querySelector('.fs-plot-layout-wrap .fs-select-trigger').getBoundingClientRect();
     const popup=document.querySelector('.fs-select-popover')?.getBoundingClientRect();
-    return !!popup&&popup.top>=7&&popup.bottom<=window.innerHeight+1&&Math.abs(popup.left-anchor.left)<12;
+    return !!popup&&popup.top>=6&&popup.bottom<=window.innerHeight+1&&popup.left>=6&&
+      popup.right<=window.innerWidth+1&&
+      (Math.abs(popup.top-anchor.bottom)<14||Math.abs(popup.bottom-anchor.top)<14);
   }),'custom dropdown opens near actual heading trigger, not at screen bottom');
   await rotated.keyboard.press('Escape');
   await rotated.close();
