@@ -150,6 +150,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('RAW-UI-STATUS-COMPLIANCE',cells[2].includes('限流 (C)'),'actual C compliance shown');
   check('RAW-UI-STATUS-COLUMNS',await viewer.locator('thead').textContent().then(x=>x.includes('N/C')&&x.includes('仪器状态')),
     'raw channel statuses visible');
+  const dialogBounds=await rawPreview.evaluate(()=>{
+    const d=document.querySelector('#fs-data-host .fs-data-dialog').getBoundingClientRect();
+    const last=document.querySelector('#fs-data-host .fs-data-table tbody tr:last-child').getBoundingClientRect();
+    const pane=document.querySelector('#fs-data-host .fs-data-table-wrap').getBoundingClientRect();
+    return {height:d.height,rowBottom:last.bottom,paneBottom:pane.bottom};
+  });
+  check('RAW-UI-COMPACT',dialogBounds.height>=225&&dialogBounds.height<=360&&
+    dialogBounds.rowBottom<=dialogBounds.paneBottom+2,'3 rows should not create giant empty modal: '+JSON.stringify(dialogBounds));
   check('RAW-UI-PRECISION',cells[0].includes('1.234567890123e-9'),'original instrument numeric text preserved');
   check('RAW-UI-NO-ERRORS',rawPageErrors.length===0,'raw import page errors: '+rawPageErrors.join('; '));
   await rawPreview.screenshot({path:path.join(out,'11-raw-data-viewer-offline-fixture.png'),fullPage:true});
