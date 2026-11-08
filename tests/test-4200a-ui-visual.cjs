@@ -8,7 +8,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {pathToFileURL}=require('node:url');
 const {chromium}=require('playwright');
-const file=pathToFileURL(path.resolve(__dirname,'../src/4200a-fspro/index.html')).href;
+const file=pathToFileURL(path.resolve(process.env.DK4200_UI_ENTRY_FILE||path.join(__dirname,'../src/4200a-fspro/index.html'))).href;
 const out=path.resolve(process.env.DK4200_QA_OUT||path.join(__dirname,'../artifacts/4200a-ui'));
 fs.mkdirSync(out,{recursive:true});
 const report=[];
