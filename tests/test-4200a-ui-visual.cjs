@@ -123,6 +123,51 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
    tabs:Array.from(document.querySelectorAll('.fs-tabs button')).map(x=>x.textContent)
   }));
   check('UI-035',metrics.terminalCount===4&&metrics.tabs.join(',')==='Sweep,Target,Strategy','same terminal and tab composition');
+  const mobileShape=await mobile.evaluate(()=>{
+    const viewport=document.documentElement.clientWidth;
+    const list=document.querySelector('.fs-terminal-list');
+    const fields=[...document.querySelectorAll('.fs-terminal .fs-generator-values input,.fs-sweep-head input,.fs-sweep-head select')];
+    const box=list.getBoundingClientRect();
+    return {
+      viewport,
+      pageWidth:document.documentElement.scrollWidth,
+      listWidth:box.width,
+      overflowFields:fields.map(el=>({name:el.getAttribute('data-bind'),right:Math.round(el.getBoundingClientRect().right)}))
+        .filter(el=>el.right>viewport+2),
+      panelScroll:document.querySelector('.fs-triptych').scrollWidth-document.querySelector('.fs-triptych').clientWidth
+    };
+  });
+  check('UI-MOBILE-FIELD-FIT',mobileShape.overflowFields.length===0,
+    'No mobile Sweep inputs may be cut off: '+JSON.stringify(mobileShape));
+  check('UI-MOBILE-TRIPTYCH-SCROLL',mobileShape.panelScroll>50,
+    'All 3 lower panes must be horizontally scrollable: '+JSON.stringify(mobileShape));
+  await mobile.locator('.fs-terminal').last().scrollIntoViewIfNeeded();
+  const bVisible=await mobile.evaluate(()=>{
+    const last=document.querySelector('.fs-terminal:last-child').getBoundingClientRect();
+    const list=document.querySelector('.fs-terminal-list').getBoundingClientRect();
+    return {top:last.top,bottom:last.bottom,listTop:list.top,listBottom:list.bottom,left:last.left,right:last.right,
+      viewport:document.documentElement.clientWidth};
+  });
+  check('UI-MOBILE-LAST-TERMINAL',
+    bVisible.top>=bVisible.listTop-3&&bVisible.bottom<=bVisible.listBottom+3&&
+    bVisible.left>=-2&&bVisible.right<=bVisible.viewport+2,
+    'Final B terminal must be visible and within viewport after scroll: '+JSON.stringify(bVisible));
+  await mobile.screenshot({path:path.join(out,'09-mobile-last-terminal.png'),fullPage:true});
+  await mobile.evaluate(()=>{
+    const strip=document.querySelector('.fs-triptych');
+    strip.scrollLeft=strip.scrollWidth;
+    strip.dispatchEvent(new Event('scroll',{bubbles:true}));
+  });
+  await mobile.waitForTimeout(220);
+  const lastPanel=await mobile.evaluate(()=>{
+    const strip=document.querySelector('.fs-triptych').getBoundingClientRect();
+    const last=document.querySelector('.fs-triptych-panel:last-child').getBoundingClientRect();
+    return {stripLeft:strip.left,stripRight:strip.right,lastLeft:last.left,lastRight:last.right};
+  });
+  check('UI-MOBILE-SPEC-REACHABLE',
+    lastPanel.lastLeft>=lastPanel.stripLeft-5&&lastPanel.lastRight<=lastPanel.stripRight+6,
+    'Associate Spec panel must be reachable by swipe: '+JSON.stringify(lastPanel));
+  await mobile.screenshot({path:path.join(out,'10-mobile-associate-spec.png'),fullPage:true});
   check('UI-NO-PAGEERROR',pageErrors.length===0,'Page errors: '+pageErrors.join('; '));
   fs.writeFileSync(path.join(out,'acceptance-report.json'),JSON.stringify({reference:'FS-Pro V6',kind:'offline UI',checks:report,metrics,pageErrors},null,2));
   console.log(JSON.stringify({checks:report.length,passed:report.filter(x=>x.pass).length,output:out,metrics}));
