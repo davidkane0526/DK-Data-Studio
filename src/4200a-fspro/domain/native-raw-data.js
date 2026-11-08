@@ -53,6 +53,14 @@
     if(Object.values(row.channelStatuses||{}).includes('C')&&row.status===0)
      fail('COMPLIANCE_STATUS_MISMATCH',`samples[${i}].status`);
    }
+   if(row.instrumentStatuses!==undefined){
+    if(!row.instrumentStatuses||typeof row.instrumentStatuses!=='object'||Array.isArray(row.instrumentStatuses))
+      fail('INSTRUMENT_STATUSES',`samples[${i}].instrumentStatuses`);
+    else for(const [key,state] of Object.entries(row.instrumentStatuses))
+      if(!ids.has(key)||typeof state!=='string'||state.length>32||
+        !/^[A-Za-z0-9_.+\\-]{1,32}$/.test(state))
+        fail('INSTRUMENT_STATUS',`samples[${i}].instrumentStatuses.${key}`);
+   }
    for(const id of ids){
     const val=row[id];
     if(val===null)continue; // instrumentation range overflow / invalid reading; preserve as blank in plot
@@ -73,6 +81,7 @@
   const fields=raw.columns.map(c=>({id:c.id,label:c.label,unit:c.unit}));
   return Object.freeze({
    captureId:raw.captureId,source:raw.source,rows:raw.samples.map(row=>({index:row.index,sweepId:row.sweepId,status:row.status??null,channelStatuses:row.channelStatuses?{...row.channelStatuses}:null,
+    instrumentStatuses:row.instrumentStatuses?{...row.instrumentStatuses}:null,
     values:Object.fromEntries(fields.map(c=>[c.id,row[c.id]]))})),columns:fields
   });
  }
@@ -80,8 +89,10 @@
  function toCSV(raw,opts={}){
   const table=toTable(raw,opts),ids=table.columns.map(c=>c.id),header=['index','sweepId','status',...table.columns.map(c=>`${c.label}${c.unit?` (${c.unit})`:''}`)].map(csvField).join(',');
   const stateKeys=[...new Set(table.rows.flatMap(row=>Object.keys(row.channelStatuses||{})))].sort();
-  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status??'',...ids.map(k=>row.values[k]??''),...stateKeys.map(k=>row.channelStatuses?.[k]??'')].map(csvField).join(','));
-  return [[header,...stateKeys.map(k=>csvField(k+' status'))].join(','),...rows].join('\r\n')+'\r\n';
+  const nativeKeys=[...new Set(table.rows.flatMap(row=>Object.keys(row.instrumentStatuses||{})))].sort();
+  const rows=table.rows.map(row=>[row.index,row.sweepId,row.status??'',...ids.map(k=>row.values[k]??''),
+    ...stateKeys.map(k=>row.channelStatuses?.[k]??''),...nativeKeys.map(k=>row.instrumentStatuses?.[k]??'')].map(csvField).join(','));
+  return [[header,...stateKeys.map(k=>csvField(k+' status')),...nativeKeys.map(k=>csvField(k+' native status raw'))].join(','),...rows].join('\r\n')+'\r\n';
  }
  function traces(raw,{x='voltage',y='current'}={}){
   const table=toTable(raw);
