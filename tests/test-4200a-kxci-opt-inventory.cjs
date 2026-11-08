@@ -8,9 +8,25 @@ assert.equal(parsed.unresolvedSlots.length,2,'PMU and CVU without channel remain
 const opt=m.toModuleCapabilities('SMU,HPSMUPA,CVU,VM',
   {instrumentId:'KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14',lineFrequencyHz:50,
     verifiedSlotMapping:{1:'SMU2',2:'SMU4'}});
-assert.deepEqual(opt.smus.map(x=>[x.resource,x.model,x.preamplifier]),[['SMU2','4200-SMU',false],['SMU4','4210-SMU',true]]);
+assert.deepEqual(opt.smus.map(x=>[x.resource,x.model,x.preamplifier]),[['SMU2',null,false],['SMU4',null,true]]);
 assert.equal(opt.executionAuthorized,false);
-assert.equal(opt.readyForCompiler,true);
+assert.equal(opt.readyForCompiler,false,'*OPT? never proves 4200 vs 4201 / 4210 vs 4211');
+const cardRows=[
+ 'slotno:1,name:SMU2,model:KI4201,serialno:500001,hwver:2,fwver:3',
+ 'slotno:2,name:SMU4,model:KI4211,serialno:500002,hwver:4,fwver:5'
+].join(',');
+const audited=m.toModuleCapabilities('SMU,HPSMUPA,CVU,VM',
+  {instrumentId:'KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14',lineFrequencyHz:50,
+   verifiedSlotMapping:{1:'SMU2',2:'SMU4'},instrumentInfoRaw:cardRows});
+assert.equal(audited.readyForCompiler,true,'physical model and serial observed for both SMUs');
+assert.deepEqual(audited.smus.map(x=>[x.resource,x.model,x.modelVerified]),[
+ ['SMU2','4201-SMU',true],['SMU4','4211-SMU',true]]);
+const mismatch=m.toModuleCapabilities('SMU,HPSMU',
+ {instrumentId:'KI4200A',lineFrequencyHz:50,verifiedSlotMapping:{1:'SMU1',2:'SMU2'},
+ instrumentInfoRaw:'slotno:1,name:SMU1,model:KI4210,serialno:123,slotno:2,name:SMU2,model:KI4210,serialno:234'});
+assert.equal(mismatch.readyForCompiler,false);
+assert.ok(mismatch.unresolved.some(x=>x.reason==='PHYSICAL_MODEL_MISMATCH'));
+assert.equal(m.parseInstrumentInfo(cardRows).length,2);
 const unknown=m.toModuleCapabilities('SMU,SMUPA,NOTAMODULE', {instrumentId:'KI4200A',lineFrequencyHz:50});
 assert.equal(unknown.readyForCompiler,false);
 assert.equal(unknown.unresolved.length,3);
