@@ -31,11 +31,12 @@
   const height=Math.min(288,portal.scrollHeight,H-2*pad);
   const spaceBelow=H-box.bottom-pad,spaceAbove=box.top-pad;
   const below=spaceBelow>=Math.min(height,156)||spaceBelow>=spaceAbove;
-  portal.style.width=width+'px';
-  portal.style.left=Math.max(pad,Math.min(W-pad-width,box.left))+'px';
-  portal.style.top=(below?Math.max(pad,Math.min(H-pad-height,box.bottom+4))
-    :Math.max(pad,box.top-height-4))+'px';
-  portal.style.maxHeight=Math.max(44,Math.min(height,below?spaceBelow-4:spaceAbove-4))+'px';
+  const spec={component:'dkts.fspro.select-popover',owner:'dkts.fspro.ui-controls',source:'src/4200a-fspro/ui-controls.js'};
+  window.DKDSStyleGate.set(portal,'width',width+'px',spec);
+  window.DKDSStyleGate.set(portal,'left',Math.max(pad,Math.min(W-pad-width,box.left))+'px',spec);
+  window.DKDSStyleGate.set(portal,'top',(below?Math.max(pad,Math.min(H-pad-height,box.bottom+4))
+    :Math.max(pad,box.top-height-4))+'px',spec);
+  window.DKDSStyleGate.set(portal,'max-height',Math.max(44,Math.min(height,below?spaceBelow-4:spaceAbove-4))+'px',spec);
  }
  function paint(){
   if(!portal)return;
