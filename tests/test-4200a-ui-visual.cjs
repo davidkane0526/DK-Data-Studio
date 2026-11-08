@@ -114,6 +114,46 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-033-REFERENCE-VIEWPORT',manualGeometry.lastBottom<=manualGeometry.listBottom+2&&manualGeometry.lastBottom<manualGeometry.lowerTop,
     'At 1080x770 terminal B must remain visible: '+JSON.stringify(manualGeometry));
   await manual.close();
+  const rawPreview=await browser.newPage({viewport:{width:1200,height:850},deviceScaleFactor:1});
+  const rawPageErrors=[];
+  rawPreview.on('pageerror',err=>rawPageErrors.push(String(err.message||err)));
+  await rawPreview.goto(file);
+  const fixture={
+   schema:'dkts.4200a.native.raw.v1',source:'keithley-4200a-kxci',
+   instrumentId:'KEITHLEY INSTRUMENTS,KI4200A,OFFLINE-TEST,V0',
+   captureId:'OFFLINE-IMPORT-QA',planHash:'b'.repeat(64),
+   startedAt:'2026-11-08T00:00:00.000Z',status:'fault',
+   columns:[{id:'voltage',label:'Voltage',unit:'V'},{id:'current',label:'Current',unit:'A'},
+      {id:'time',label:'Instrument Time',unit:'s'}],
+   samples:[
+    {index:0,sweepId:'P0',voltage:'0.000000',current:'1.234567890123e-9',time:'0.0000000'},
+    {index:1,sweepId:'P0',status:0,voltage:'0.100000',current:'1.240000000000e-9',time:'0.0100000',
+     channelStatuses:{current:'N'},instrumentStatuses:{current:'0'}},
+    {index:2,sweepId:'P0',status:1,voltage:'0.200000',current:'2.500000000000e-7',time:'0.0200000',
+     channelStatuses:{current:'C'},instrumentStatuses:{current:'1'}}
+   ],
+   rawFrames:[{command:"DO 'I1'",readOrder:0,payloadBase64:Buffer.from('1,2,3').toString('base64')}]
+  };
+  await rawPreview.locator('#fs-raw-input').setInputFiles({
+    name:'offline-4200a-capture-fixture.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(fixture))
+  });
+  await rawPreview.waitForFunction(()=>document.getElementById('fs-messages').textContent.includes('OFFLINE-IMPORT-QA'),{timeout:10000});
+  await rawPreview.locator('.fs-menu [data-menu="Tools"]').click();
+  await rawPreview.locator('.fs-menu-popup [data-command="data-viewer"]').click();
+  const viewer=rawPreview.locator('#fs-data-host');
+  check('RAW-UI-OPEN',await viewer.locator('.fs-data-dialog').isVisible(),
+    'offline imported native raw capture renders in Data Viewer');
+  const cells=await viewer.locator('tbody tr').allTextContents();
+  check('RAW-UI-STATUS-UNKNOWN',cells[0].includes('未知')&&!cells[0].includes('null'),
+    'unprovided native status remains explicitly unknown');
+  check('RAW-UI-STATUS-COMPLIANCE',cells[2].includes('限流 (C)'),'actual C compliance shown');
+  check('RAW-UI-STATUS-COLUMNS',await viewer.locator('thead').textContent().then(x=>x.includes('N/C')&&x.includes('仪器状态')),
+    'raw channel statuses visible');
+  check('RAW-UI-PRECISION',cells[0].includes('1.234567890123e-9'),'original instrument numeric text preserved');
+  check('RAW-UI-NO-ERRORS',rawPageErrors.length===0,'raw import page errors: '+rawPageErrors.join('; '));
+  await rawPreview.screenshot({path:path.join(out,'11-raw-data-viewer-offline-fixture.png'),fullPage:true});
+  await rawPreview.close();
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await mobile.goto(file+'?open=edit');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
