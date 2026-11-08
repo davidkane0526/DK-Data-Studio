@@ -69,5 +69,28 @@ const id='KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14';
  const failedShutdown=await shutdown.run(plan,{instrumentId:id,captureId:'OFFLINE-MOCK-SHUTDOWN-FAIL'});
  assert.equal(failedShutdown.status,'fault','uncertain source state must never be success');
  assert.equal(failedShutdown.state.shutdown,'unconfirmed');
+ let rejectBlocked=null,enteredPoll=false;
+ const preemptionEvents=[];
+ const stalledAdapter={
+  kind:'offline-mock',
+  async write(command){preemptionEvents.push(command);},
+  query(command){
+   if(command==='SP'){
+    enteredPoll=true;
+    return new Promise((resolve,reject)=>{rejectBlocked=reject;});
+   }
+   return Promise.resolve({bytes:Buffer.from('N+1,N+2,N+3')});
+  },
+  cancelPendingRead(){if(rejectBlocked){rejectBlocked(new Error('pending SP read canceled'));rejectBlocked=null;}}
+ };
+ const pendingRunner=createRunner({transport:stalledAdapter,maxPoll:100,pollIntervalMs:0});
+ const interrupted=pendingRunner.run(plan,{instrumentId:id,captureId:'OFFLINE-STOP-PREEMPTION'});
+ for(let i=0;i<20&&!enteredPoll;i++)await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(enteredPoll,true,'mock source must reach blocking SP query');
+ assert.equal(pendingRunner.stop('user').stopPreemption,'supported');
+ const interruptedResult=await Promise.race([interrupted,new Promise((_,reject)=>setTimeout(()=>reject(new Error('STOP_TIMEOUT')),1000))]);
+ assert.equal(interruptedResult.status,'aborted');
+ assert.deepEqual(preemptionEvents.slice(-4),['ME4','DE','CH1','CH2']);
+ assert.equal(interruptedResult.state.sourceSafeVerified,false,'mock cleanup does not prove DUT safe state');
  console.log('4200A offline execution state machine: complete, user abort, syntax fault and hardware-command gate verified');
 })().catch(err=>{console.error(err);process.exitCode=1;});
