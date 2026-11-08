@@ -120,6 +120,8 @@
   if(page.info?.testType!=='DC')fail('TEST_MODE_UNSUPPORTED',page.info?.testType);
   if(!assertPlain(capabilities)||capabilities.schema!=='dkts.4200a.module-capabilities.v1')fail('CAPABILITIES_REQUIRED');
   if(!Array.isArray(capabilities.smus)||!capabilities.smus.length)fail('NO_SMU_INVENTORY');
+  if(capabilities.readyForCompiler===false||capabilities.smus.some(m=>m?.modelVerified===false))
+   fail('PHYSICAL_MODEL_UNVERIFIED','*OPT? family alone cannot authorize an exact SMU model');
   if(capabilities.lineFrequencyHz!==50&&capabilities.lineFrequencyHz!==60)fail('LINE_FREQUENCY_REQUIRED');
   if(!Array.isArray(page.terminals)||page.terminals.length<2)fail('TERMINALS_REQUIRED');
   if(page.terminals.length>9)fail('KXCI_CHANNEL_COUNT','KXCI CH maximum 9 channels');
