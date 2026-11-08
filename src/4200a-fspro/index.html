@@ -9,12 +9,18 @@
 </head>
 <body class="dkds-modern-ui fs-app" data-dkds-host="desktop">
 <div id="fs-shell" class="fs-shell">
-  <header class="fs-titlebar">
-    <strong>DK Test Studio</strong><span class="fs-caption">4200A</span>
-    <span class="fs-title-spacer"></span>
-    <button id="fs-instrument-link" data-native-action="toggle" type="button">连接</button>
-  </header>
-  <nav class="fs-menu" aria-label="主菜单">
+  <header class="fs-titlebar" id="fs-titlebar" aria-label="DK Test Studio 标题栏">
+  <div class="fs-brand"><span class="fs-brand-mark" aria-hidden="true">DK</span><strong>DK Test Studio</strong></div>
+  <div class="fs-version-wrap">
+    <button id="fs-version-badge" class="fs-version-badge" type="button" aria-expanded="false" aria-controls="fs-version-popover" aria-label="查看版本信息">V0.3.13</button>
+    <div id="fs-version-popover" class="fs-version-popover" hidden role="status" aria-live="polite">
+      <strong id="fs-version-ui">a0</strong>
+      <span id="fs-version-help">当前界面资源版本。预览版尚未启用自动更新。</span>
+    </div>
+  </div>
+  <span class="fs-title-divider" aria-hidden="true"></span>
+  <button id="fs-mobile-menu-toggle" class="fs-mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="fs-main-menu">菜单</button>
+  <nav id="fs-main-menu" class="fs-menu" aria-label="主菜单">
     <div class="fs-menu-item"><button data-menu="File" aria-expanded="false">File</button><div class="fs-menu-popup" role="menu" hidden><button data-command="new">New Project</button><button data-command="open">Open Page</button><button data-command="save">Save Page</button></div></div>
     <div class="fs-menu-item"><button data-menu="Instruments" aria-expanded="false">Instruments</button><div class="fs-menu-popup" role="menu" hidden><button data-command="connection">Set Connection</button><button data-native-action="settings">Connection Settings</button></div></div>
     <div class="fs-menu-item"><button data-menu="Measurement" aria-expanded="false">Measurement</button><div class="fs-menu-popup" role="menu" hidden><button data-command="edit">Edit Page</button><button disabled title="原生输出尚未通过验收">Measure</button><button disabled title="原生输出尚未通过验收">Repeat</button></div></div>
@@ -22,6 +28,22 @@
     <div class="fs-menu-item"><button data-menu="Window" aria-expanded="false">Window</button><div class="fs-menu-popup" role="menu" hidden><button data-command="arrange">Arrange 2 × 2</button></div></div>
     <div class="fs-menu-item"><button data-menu="Help" aria-expanded="false">Help</button><div class="fs-menu-popup" role="menu" hidden><button data-command="help">About this preview</button></div></div>
   </nav>
+  <span class="fs-title-spacer fs-title-drag-region" aria-hidden="true"></span>
+  <button id="fs-instrument-link" data-native-action="toggle" type="button">连接</button>
+  <button id="fs-language-switch" class="fs-language-switch" type="button" aria-label="切换为英语" title="English">EN</button>
+  <div class="fs-window-actions" id="fs-window-actions" role="group" aria-label="窗口控制" hidden>
+    <button id="fs-window-minimize" type="button" class="fs-window-button" aria-label="最小化" title="最小化">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 10h12"/></svg>
+    </button>
+    <button id="fs-window-maximize" type="button" class="fs-window-button" aria-label="最大化" title="最大化" data-maximized="false">
+      <svg class="fs-glyph-max" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4.5" y="4.5" width="11" height="11" rx="1"/></svg>
+      <svg class="fs-glyph-restore" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 6.5V4h9v9h-2"/><rect x="4" y="7" width="9" height="9" rx="1"/></svg>
+    </button>
+    <button id="fs-window-close" type="button" class="fs-window-button fs-window-close" aria-label="关闭窗口" title="关闭窗口">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+    </button>
+  </div>
+</header>
   <div class="fs-toolbar" role="toolbar" aria-label="主工具栏">
     <button data-command="new" title="新建工程">新建</button>
     <button data-command="open" title="载入工程">打开</button>
@@ -92,6 +114,9 @@
 <script src="editor.js"></script>
 <script src="domain/kxci-opt-inventory.js"></script>
 <script src="android-bridge.js"></script>
+<script src="build-info.js"></script>
+<script src="ui-shell.js"></script>
 <script src="discovery-ui.js"></script>
+<script src="locale.js"></script>
 </body>
 </html>
