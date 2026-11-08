@@ -116,9 +116,12 @@
       if (ref && ref!=='gnd' && ref!=='ground' && ref!=='0') refs.set(key,ref);
       const range=t.measureRange;
       if (range) {
-        if (!['auto','fixed'].includes(id(range.mode))) add('INVALID_MEASURE_RANGE_MODE',path+'.measureRange.mode','Use auto or fixed');
-        if (range.mode==='fixed' && !isPositiveDecimal(range.value)) add('INVALID_MEASURE_RANGE',path+'.measureRange.value','Fixed measurement range must be positive and finite');
-        if (range.mode==='fixed' && isPositiveDecimal(range.value) &&
+        if (!['auto','fixed','minimum'].includes(id(range.mode))) add('INVALID_MEASURE_RANGE_MODE',path+'.measureRange.mode','Use auto, fixed or minimum');
+        if (range.mode==='minimum' && sourceMode!=='voltage')
+          add('MINIMUM_CURRENT_RANGE_ONLY',path+'.measureRange.mode','KXCI RG configures the current autorange floor only');
+        if (range.mode!=='auto' && !isPositiveDecimal(range.value))
+          add('INVALID_MEASURE_RANGE',path+'.measureRange.value','Selected range must be positive and finite');
+        if (range.mode!=='auto' && isPositiveDecimal(range.value) &&
             sourcedLimit && Number(range.value)>HARDWARE_ENVELOPE[measuredMode])
           add('HARDWARE_THEORY_LIMIT',path+'.measureRange.value','Range exceeds theoretical '+HARDWARE_ENVELOPE[measuredMode]+' '+(measuredMode==='current'?'A':'V'));
       }
