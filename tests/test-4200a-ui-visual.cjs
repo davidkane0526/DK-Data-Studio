@@ -291,6 +291,20 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     'CSV keeps the original source numeric strings and all offline-fixture samples');
   check('RAW-UI-NO-ERRORS',rawPageErrors.length===0,'raw import page errors: '+rawPageErrors.join('; '));
   await rawPreview.screenshot({path:path.join(out,'11-raw-data-viewer-offline-fixture.png'),fullPage:true});
+  await rawPreview.setViewportSize({width:430,height:900});
+  const mobileRawFooter=await rawPreview.evaluate(()=>{
+    const buttons=[...document.querySelectorAll('#fs-data-host .fs-editor-footer button')];
+    const dialog=document.querySelector('#fs-data-host .fs-data-dialog').getBoundingClientRect();
+    const boxes=buttons.map(x=>x.getBoundingClientRect());
+    return {count:buttons.length,dialogWidth:dialog.width,
+      allInside:boxes.every(b=>b.left>=dialog.left-2&&b.right<=dialog.right+2),
+      sameHeight:Math.max(...boxes.map(b=>b.height))-Math.min(...boxes.map(b=>b.height))<2};
+  });
+  check('RAW-EXPORT-MOBILE-BUTTONS',
+    mobileRawFooter.count===3&&mobileRawFooter.allInside&&mobileRawFooter.sameHeight,
+    'CSV, raw JSON, close must remain visible in the mobile Data Viewer: '+JSON.stringify(mobileRawFooter));
+  await rawPreview.screenshot({path:path.join(out,'19-mobile-raw-data-export.png'),fullPage:true});
+
   await rawPreview.close();
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   await mobile.goto(file);
