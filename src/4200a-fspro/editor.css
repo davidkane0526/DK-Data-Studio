@@ -33,8 +33,8 @@
 .fs-brand{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-width:0}
 .fs-brand strong{font-size:13px;font-weight:650;white-space:nowrap;letter-spacing:-.15px}
 .fs-brand-mark{width:27px;height:27px;border-radius:7px;display:grid;place-items:center;
-  background-size:cover;background-repeat:no-repeat;background-position:center;
   background:linear-gradient(145deg,#18294b,#10213c 65%,#1b3a60);
+  background-size:cover;background-repeat:no-repeat;background-position:center;
   color:#e5f5ff;box-shadow:inset 0 0 0 1px #6593b95f;font-size:11px;
   letter-spacing:-1px;font-weight:750;text-shadow:1px 0 0 #54cce9}
 .fs-title-spacer,.fs-toolbar-fill{flex:1;min-width:4px}
