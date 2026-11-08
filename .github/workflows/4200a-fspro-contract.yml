@@ -78,10 +78,20 @@ jobs:
         env:
           NODE_PATH: /tmp/dk-4200a-qa/node_modules
         run: node tests/test-4200a-ui-visual.cjs
+      - name: Check packaged Android UI assets with real Chromium
+        env:
+          NODE_PATH: /tmp/dk-4200a-qa/node_modules
+          DK4200_UI_ENTRY_FILE: android4200a/app/src/main/assets/src/4200a-fspro/index.html
+          DK4200_QA_OUT: artifacts/4200a-android-assets
+        run: |
+          node scripts/4200a/stage-android-preview.cjs
+          node tests/test-4200a-ui-visual.cjs
       - name: Upload screenshots and report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: 4200a-fspro-ui-evidence
-          path: artifacts/4200a-ui/
+          path: |
+            artifacts/4200a-ui/
+            artifacts/4200a-android-assets/
           if-no-files-found: warn
