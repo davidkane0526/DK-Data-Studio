@@ -117,7 +117,7 @@
  function isNumeric(control){
   const key=control?.dataset?.bind||'';
   return (/^(?:refValue|terminals\[\d+\]\.(?:start|stop|step|points|bias|compliance|measureRange\.value)|strategy\.(?:integrationTime|delayTime))$/.test(key) ||
-    control?.getAttribute?.('data-fs-device-field')==='port');
+    control?.getAttribute?.('data-device-field')==='port');
  }
  const seen=new WeakSet();
  function bindNew(root=document){
