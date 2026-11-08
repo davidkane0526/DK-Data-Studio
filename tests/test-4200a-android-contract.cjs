@@ -16,7 +16,7 @@ assert.doesNotMatch(java,/case "(?:write|measure|exchange|output|command)":/);
 assert.match(main,/WebViewAssetLoader/);assert.match(main,/setAllowFileAccess\(false\)/);
 assert.match(gradle,/applicationId 'studio.dk.fspro.preview'/);
 assert.match(gradle,/verifyStableSigning/);
-assert.match(gradle,/versionName '0.3.0'/);
+assert.match(gradle,/versionName '0.3.13'/);
 assert.ok(html.indexOf('domain/kxci-opt-inventory.js')<html.indexOf('android-bridge.js'));
 assert.ok(html.indexOf('android-bridge.js')<html.indexOf('discovery-ui.js'));
 assert.ok(asset.UI_FILES.includes('src/core/scientific/plot-runtime.js'));
