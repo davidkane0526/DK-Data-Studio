@@ -351,6 +351,34 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('MOBILE-PLOT-NO-SYNTHETIC',mobileFrameErrors.length===0,
     'raw-data responsive plotting JS errors: '+mobileFrameErrors.join(' | '));
   await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
+  // The next capture may have no time channel; clear the previous I-t SVG.
+  await mobileRaw.evaluate(()=>window.DK4200MobileFrames.select(2));
+  const noTime={
+    ...fixture,captureId:'OFFLINE-IMPORT-NOTIME',
+    columns:fixture.columns.filter(column=>column.id!=='time'),
+    samples:fixture.samples.map(({time,...sample})=>sample)
+  };
+  await mobileRaw.locator('#fs-raw-input').setInputFiles({
+    name:'offline-native-without-time.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(noTime))
+  });
+  await mobileRaw.waitForFunction(()=>
+    document.querySelector('#fs-messages')?.textContent.includes('OFFLINE-IMPORT-NOTIME'),{timeout:10000});
+  check('MOBILE-PLOT-STALE-CLEARED',await mobileRaw.evaluate(()=>{
+    const card=document.querySelector('#fs-frame-3');
+    return card?.querySelectorAll('svg,canvas').length===0&&
+      card?.querySelector('.fs-empty-hint')?.textContent.includes('没有此图所需的通道');
+  }),'when the new raw capture has no time channel, clear the old I-t trace');
+  const restored={...fixture,captureId:'OFFLINE-IMPORT-RESTORED'};
+  await mobileRaw.locator('#fs-raw-input').setInputFiles({
+    name:'offline-native-time-restored.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(restored))
+  });
+  await mobileRaw.waitForFunction(()=>
+    document.querySelector('#fs-messages')?.textContent.includes('OFFLINE-IMPORT-RESTORED'),{timeout:10000});
+  check('MOBILE-PLOT-RECOVERS',await mobileRaw.evaluate(()=>
+    document.querySelector('#fs-frame-3 svg')!==null),
+    'restoring time channel redraws original instrument I-t without reopening');
   await mobileRaw.close();
   check('MOBILE-DEFAULT-ZH',await mobile.evaluate(()=>
     document.documentElement.lang==='zh-CN'&&!document.querySelector('#fs-mobile-menu-toggle')&&
