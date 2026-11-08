@@ -172,6 +172,12 @@ function segmentMarkup(t,i){
 function terminalMarkup(t,i){
  const logicalOpts=draft.terminals.filter((v,j)=>j!==i).map(v=>[v.logical,v.logical]);
  const segmentButton=`<button data-action="add-segment" data-i="${i}" title="在当前端子下方添加分段">+</button>`;
+  const voltageMeasurement=t.sourceMode==='current';
+  // The measured quantity is voltage if the SMU sources current.
+  // Never display current-range presets for voltage measurement.
+  const presetRanges=voltageMeasurement?
+    ['2e-1','2e0','2e1','2e2']:
+    ['1e-12','1e-11','1e-10','1e-9','1e-8','1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0'];
  return `<div class="fs-terminal" data-terminal="${i}"><div class="fs-terminal-top">
  <strong class="fs-terminal-label">${e(t.logical)}</strong>
  ${select(`terminals[${i}].sourceMode`,[['voltage','Voltage'],['current','Current']],t.sourceMode)}
@@ -188,7 +194,7 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
    <label>测量档位</label>
    ${select(`terminals[${i}].measureRange.mode`,
-     [['auto','自动'],['minimum','自动下限'],['fixed','即时指定']],t.measureRange?.mode||'auto',
+     [['auto','自动'],['minimum','自动下限',voltageMeasurement],['fixed','即时指定']],t.measureRange?.mode||'auto',
      `data-fs-range-mode="${i}"`)}
    <label>${t.sourceMode==='voltage'?'电流 (A)':'电压 (V)'}</label>
    <input class="fs-range-value" data-bind="terminals[${i}].measureRange.value"
@@ -198,7 +204,7 @@ function terminalMarkup(t,i){
    <label>预设档位</label>
    <select class="fs-range-presets" data-range-preset="${i}" aria-label="${e(t.logical)} 固定量程预设"
      ${t.measureRange?.mode==='auto'?'disabled':''}>
-     ${options([['','自定义'],...['1e-12','1e-11','1e-10','1e-9','1e-8','1e-7','1e-6','1e-5','1e-4','1e-3','1e-2','1e-1','1e0'].map(v=>[v,v])],
+     ${options([['','自定义'],...presetRanges.map(v=>[v,v])],
        t.measureRange?.mode!=='auto'?t.measureRange?.value:'')}
    </select>
    <span class="fs-range-note" title="RG 设置电流自动量程下限；RI/RV 请求即时量程，是否全程保持需要实机验收">量程指令仅离线编译</span>
@@ -351,7 +357,14 @@ function bindControl(el){
    draft.terminals.forEach((t,i)=>{if(i!==current&&t.role===el.value)t.role='CONDITION';});
   }
   render();
- } else if(path.endsWith('.generator')||path.endsWith('.sourceMode')||path.endsWith('.logical')||path.endsWith('.measureRange.mode')){render();}
+ } else if(path.endsWith('.sourceMode')){
+   // An SMU changing source mode changes its measured unit (A versus V).
+   // Reject stale range values without forcing the user to infer the unit.
+   const match=/terminals\[(\d+)\]/.exec(path);
+   const terminal=match?draft.terminals[Number(match[1])]:null;
+   if(terminal)terminal.measureRange={mode:'auto',value:el.value==='current'?'2e0':'1e-6'};
+   render();note('源模式已更改，测量量程已重置为自动');
+  } else if(path.endsWith('.generator')||path.endsWith('.logical')||path.endsWith('.measureRange.mode')){render();}
  else updateStatus();
 }
 host.addEventListener('input',event=>{if(event.target.matches('input[data-bind],textarea[data-bind]'))bindControl(event.target);});
