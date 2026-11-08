@@ -59,7 +59,7 @@
   }
   return Object.freeze(rows);
  }
- function toModuleCapabilities(reply,{instrumentId,lineFrequencyHz,verifiedSlotMapping,instrumentInfoRaw}={}){
+ function toModuleCapabilities(reply,{instrumentId,lineFrequencyHz,verifiedSlotMapping,instrumentInfoRaw,remoteModuleInfoRaw}={}){
   if(typeof instrumentId!=='string'||!/(KI4200A|4200A)/i.test(instrumentId))throw new Error('4200A IDN required');
   if(lineFrequencyHz!==50&&lineFrequencyHz!==60)throw new Error('Line frequency must be verified');
   const parsed=parseOptReply(reply);
@@ -67,6 +67,7 @@
   const smus=[],used=new Set(),unresolved=[];
   const physical=instrumentInfoRaw===undefined?[]:parseInstrumentInfo(instrumentInfoRaw);
   const physicalMap=new Map(physical.map(x=>[x.slot,x]));
+  const remote=remoteModuleInfoRaw===undefined?[]:parseInstrumentInfo(remoteModuleInfoRaw);
   for(const slot of parsed.slots){
    if(slot.kind!=='SMU'){if(slot.kind==='unknown')unresolved.push({slot:slot.slot,reason:'UNKNOWN_SLOT'});continue;}
    const proposed=slot.resource||mapping[slot.slot];
@@ -77,8 +78,17 @@
    const card=physicalMap.get(slot.slot);
    const exact=/^(?:KI)?(4200|4201|4210|4211)(?:-?SMU)?$/i.exec(card?.model||'');
    const model=exact?exact[1]+'-SMU':null;
-   const verified=model!==null&&Boolean(card?.serialno)&&((model.startsWith('421')===high));
-   if(card&&!verified)unresolved.push({slot:slot.slot,reason:'PHYSICAL_MODEL_MISMATCH'});
+   const physicalName=/^(?:SMU|HPSMU|SMUPA|HPSMUPA)([1-9])$/i.exec(card?.name||'');
+   const sameMapping=Boolean(physicalName)&&Number(physicalName[1])===channelIndex(proposed);
+   const paRecords=remote.filter(row=>row.slot===slot.slot&&/^PA[1-9]$/i.test(row.name));
+   const paConfirmed=!pa||paRecords.some(row=>/^KI4200$/i.test(row.model)&&Boolean(row.serialno));
+   const verified=model!==null&&Boolean(card?.serialno)&&sameMapping&&
+       ((model.startsWith('421')===high))&&paConfirmed;
+   if(card&&!sameMapping)unresolved.push({slot:slot.slot,reason:'PHYSICAL_CHANNEL_MISMATCH'});
+   if(card&&model!==null&&((model.startsWith('421')!==high)))
+    unresolved.push({slot:slot.slot,reason:'PHYSICAL_POWER_CLASS_MISMATCH'});
+   if(card&&!model)unresolved.push({slot:slot.slot,reason:'PHYSICAL_MODEL_UNKNOWN'});
+   if(pa&&!paConfirmed)unresolved.push({slot:slot.slot,reason:'PREAMPLIFIER_NOT_VERIFIED'});
    if(!card)unresolved.push({slot:slot.slot,reason:'PHYSICAL_MODEL_NOT_OBSERVED'});
    smus.push(Object.freeze({
     resource:proposed,modelVerified:verified,model:verified?model:null,
