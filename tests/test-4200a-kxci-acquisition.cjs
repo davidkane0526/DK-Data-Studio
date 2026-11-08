@@ -44,6 +44,22 @@ assert.equal(partial.samples[1].status,undefined);
 assert.equal(partial.samples[2].status,1,'genuine C always flags compliance, even if other channels omitted status');
 assert.throws(()=>rawTokens(Buffer.from('N+1;N+2'),3),/count mismatch/);
 assert.throws(()=>rawTokens(Buffer.from('N+1;NaN;C+3'),3),/Invalid KXCI/);
+const metaPlan=dc.compile({...page,captureNativeMeta:true},{capabilities});
+assert.equal(metaPlan.metaReads.length,metaPlan.read.length+1,'one timestamp and one status stream per captured function');
+assert.ok(metaPlan.metaReads.some(x=>x.command==="DO 'V2T'"));
+assert.ok(metaPlan.metaReads.some(x=>x.command==="DO 'I2S'"));
+const aux=metaPlan.metaReads.map(req=>({
+ command:req.command,bytes:Buffer.from(req.type==='timestamp'?'0,0.010000000,0.020000000':'0,1,0','utf8')
+}));
+const withMetadata=assemble({compiled:metaPlan,replies,metaReplies:aux,
+ instrumentId:capabilities.instrumentId,captureId:'OFFLINE-MOCK-AUX'});
+assert.equal(withMetadata.columns[0].id,'time');
+assert.equal(withMetadata.samples[1].time,'0.010000000','native timestamp strings retained');
+assert.equal(withMetadata.samples[1].instrumentStatuses.i2,'1','opaque status value retained without guessing bits');
+assert.equal(withMetadata.rawFrames.length,metaPlan.read.length+metaPlan.metaReads.length);
+assert.ok(raw.toCSV(withMetadata).includes('i2 native status raw'));
+assert.throws(()=>assemble({compiled:metaPlan,replies,metaReplies:aux.slice(1),
+ instrumentId:capabilities.instrumentId,captureId:'BAD'}),/Missing or extra KXCI/);
 const corrupted=replies.map(x=>({...x}));
 corrupted[0].command='DO \'I9\'';
 assert.throws(()=>assemble({compiled,replies:corrupted,instrumentId:capabilities.instrumentId,captureId:'TEST'}),/Out-of-order/);
