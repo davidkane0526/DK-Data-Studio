@@ -86,6 +86,7 @@
 .fs-tree-muted{color:var(--fs-sub)}
 .fs-device-row{padding:12px;display:flex;gap:6px;align-items:center;justify-content:space-between}
 .fs-right{display:flex;flex-direction:column;min-width:0;min-height:0}
+.fs-mobile-plot-tabs{display:none}
 .fs-frames{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex:1;gap:7px;padding:8px;min-height:190px;overflow:auto}
 .fs-frame{min-width:0;min-height:120px;border:1px solid var(--fs-line);border-radius:6px;background:var(--fs-panel);display:flex;flex-direction:column;overflow:hidden}
 .fs-frame-title{height:27px;flex-shrink:0;padding:5px 10px;background:color-mix(in srgb,var(--fs-bg) 65%,var(--fs-panel));display:flex;justify-content:space-between;border-bottom:1px solid var(--fs-line);font-weight:600}
@@ -179,8 +180,18 @@
  .fs-sidebar{display:none}
  .fs-body{display:flex}
  .fs-right{flex:1}
- .fs-frames{grid-template-columns:1fr;grid-template-rows:none}
- .fs-frame{min-height:130px}
+ .fs-mobile-plot-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;
+   flex:0 0 auto;padding:5px 8px;background:var(--fs-panel);border-bottom:1px solid var(--fs-line)}
+ .fs-app .fs-mobile-plot-tabs button{min-width:0;min-height:35px;white-space:nowrap;border:0;
+   border-radius:5px;background:transparent;padding:6px 2px;font-weight:600;
+   color:var(--fs-sub);touch-action:manipulation}
+ .fs-app .fs-mobile-plot-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--fs-accent) 11%,var(--fs-panel));
+   color:var(--fs-accent);box-shadow:inset 0 -2px var(--fs-accent)}
+ .fs-frames{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
+   min-height:160px;overflow:hidden;gap:0;padding:7px}
+ .fs-frame{min-height:0;min-width:0}
+ .fs-frame[data-mobile-active="false"]{display:none}
+ .fs-frame[data-mobile-active="true"]{display:flex}
  .fs-bottom{grid-template-columns:1fr;max-height:36%}
  .fs-bottom-cell:nth-child(2){display:none}
  .fs-toolbar{height:42px;min-height:42px;overflow:hidden;flex-shrink:0;gap:6px;padding-inline:8px}
