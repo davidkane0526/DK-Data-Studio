@@ -44,9 +44,15 @@ function showDataViewer(){
  const table=frameViewer?.table?.();if(!table){note('当前没有可查看的仪器原始数据');return;}
  const host=document.getElementById('fs-data-host');
  const fields=table.columns.map(c=>`${e(c.label)}${c.unit?` (${e(c.unit)})`:''}`);
- const heads=['Index','Sweep','Status',...fields].map(v=>`<th scope="col">${v}</th>`).join('');
- const rows=table.rows.slice(0,800).map(row=>`<tr><td>${row.index}</td><td>${e(row.sweepId)}</td><td>${row.status}</td>${table.columns.map(c=>`<td>${e(row.values[c.id]??'')}</td>`).join('')}</tr>`).join('');
- host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行；导出 CSV 保留全部原始数值文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
+ const statusKeys=[...new Set(table.rows.flatMap(row=>Object.keys(row.channelStatuses||{})))].sort();
+ const nativeKeys=[...new Set(table.rows.flatMap(row=>Object.keys(row.instrumentStatuses||{})))].sort();
+ const heads=['Index','Sweep','Status',...fields,
+  ...statusKeys.map(x=>x+' N/C'),...nativeKeys.map(x=>x+' 仪器状态')].map(v=>`<th scope="col">${e(v)}</th>`).join('');
+ const displayStatus=value=>value===1?'限流 (C)':value===0?'正常 (N)':'未知';
+ const rows=table.rows.slice(0,800).map(row=>`<tr data-native-status="${row.status===1?'compliance':row.status===0?'normal':'unknown'}"><td>${row.index}</td><td>${e(row.sweepId)}</td><td>${displayStatus(row.status)}</td>${table.columns.map(c=>`<td>${e(row.values[c.id]??'')}</td>`).join('')}${statusKeys.map(key=>`<td>${e(row.channelStatuses?.[key]??'')}</td>`).join('')}${nativeKeys.map(key=>`<td>${e(row.instrumentStatuses?.[key]??'')}</td>`).join('')}</tr>`).join('');
+ const countC=table.rows.filter(row=>row.status===1).length;
+ const countUnknown=table.rows.filter(row=>row.status!==0&&row.status!==1).length;
+ host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
  host.hidden=false;
 }
 document.getElementById('fs-data-host').addEventListener('click',ev=>{
