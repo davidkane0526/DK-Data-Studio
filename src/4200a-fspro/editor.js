@@ -52,7 +52,7 @@ function showDataViewer(){
  const rows=table.rows.slice(0,800).map(row=>`<tr data-native-status="${row.status===1?'compliance':row.status===0?'normal':'unknown'}"><td>${row.index}</td><td>${e(row.sweepId)}</td><td>${displayStatus(row.status)}</td>${table.columns.map(c=>`<td>${e(row.values[c.id]??'')}</td>`).join('')}${statusKeys.map(key=>`<td>${e(row.channelStatuses?.[key]??'')}</td>`).join('')}${nativeKeys.map(key=>`<td>${e(row.instrumentStatuses?.[key]??'')}</td>`).join('')}</tr>`).join('');
  const countC=table.rows.filter(row=>row.status===1).length;
  const countUnknown=table.rows.filter(row=>row.status!==0&&row.status!==1).length;
- host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
+ host.innerHTML=`<div class="fs-editor fs-data-dialog" role="dialog" aria-modal="true" aria-label="Data Viewer"><div class="fs-editor-title">Data Viewer <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-raw-action="close" aria-label="关闭">×</button></div><p class="fs-data-note">原始采样：${e(table.captureId)} · 显示前 ${Math.min(table.rows.length,800)} / ${table.rows.length} 行 · 限流 ${countC} · 状态未知 ${countUnknown}。导出 CSV 保留全部原始数值与状态文本。</p><div class="fs-data-table-wrap"><table class="fs-data-table"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table></div><footer class="fs-editor-footer"><button data-raw-action="export">Export CSV</button><button data-raw-action="close" class="fs-primary">Close</button></footer></div>`;
  const previewRowCount=Math.min(table.rows.length,800);
  const desiredHeight=Math.min(740,Math.max(245,172+Math.min(previewRowCount,20)*26));
  host.querySelector('.fs-data-dialog')?.style.setProperty('--fs-data-height',desiredHeight+'px');
@@ -237,7 +237,7 @@ function strategyMarkup(){
 }
 function pageHTML(){
  return `<div class="fs-editor" role="dialog" aria-modal="true" aria-label="Edit Page">
- <div class="fs-editor-title">Edit Page <button data-action="cancel" title="关闭" aria-label="关闭">×</button></div>
+ <div class="fs-editor-title">Edit Page <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-action="cancel" title="关闭" aria-label="关闭">×</button></div>
  <div class="fs-editor-main">
  ${infoMarkup()}
  <div class="fs-editor-controls">
@@ -260,7 +260,7 @@ function pageHTML(){
 }
 function connectionHTML(){
  return `<div class="fs-editor fs-connection-dialog" role="dialog" aria-modal="true" aria-label="Set Connection">
- <div class="fs-editor-title">Set Connection <button data-action="close-connection" aria-label="关闭">×</button></div>
+ <div class="fs-editor-title">Set Connection <button type="button" class="fs-modal-language" data-fs-locale-switch>EN</button><button data-action="close-connection" aria-label="关闭">×</button></div>
  <div class="fs-connection-content">
  <fieldset class="fs-fieldset"><legend>Connection List</legend>
  <select aria-label="Connection preset" class="fs-full-field"><option>Local 4200A — 当前 Page</option></select>
