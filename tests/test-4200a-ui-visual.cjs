@@ -316,6 +316,17 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
       log.textContent.includes('OFFLINE-IMPORT-QA')&&
       status.getBoundingClientRect().height<=28;
    }), 'raw import details belong to the log, not repeated in one-line bottom connection status');
+  await mobileRaw.setViewportSize({width:920,height:560});
+  await mobileRaw.waitForTimeout(550);
+  const rotatedRaw=await mobileRaw.evaluate(()=>({
+    first:document.querySelectorAll('#fs-frame-1 svg').length,
+    third:document.querySelectorAll('#fs-frame-3 svg').length,
+    visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').length
+  }));
+  check('MOBILE-ROTATION-REPLOTS-RAW',rotatedRaw.first>0&&rotatedRaw.third>0&&rotatedRaw.visible===4,
+    'landscape restores hidden original I–V and I–t plots: '+JSON.stringify(rotatedRaw));
+  await mobileRaw.setViewportSize({width:430,height:900});
+  await mobileRaw.waitForTimeout(250);
   check('MOBILE-PLOT-NO-SYNTHETIC',mobileFrameErrors.length===0,
     'raw-data responsive plotting JS errors: '+mobileFrameErrors.join(' | '));
   await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
