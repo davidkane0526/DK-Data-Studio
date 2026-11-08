@@ -189,9 +189,13 @@
   }
  }
  function updateToggle(){
-  switcher.textContent=language==='zh'?'EN':'中文';
-  switcher.title=language==='zh'?'Switch to English':'切换为中文';
-  switcher.setAttribute('aria-label',switcher.title);
+  const label=language==='zh'?'EN':'中文';
+  const caption=language==='zh'?'Switch to English':'切换为中文';
+  for(const button of document.querySelectorAll('#fs-language-switch,[data-fs-locale-switch]')){
+    if(button.textContent!==label)button.textContent=label;
+    if(button.getAttribute('title')!==caption)button.setAttribute('title',caption);
+    if(button.getAttribute('aria-label')!==caption)button.setAttribute('aria-label',caption);
+  }
   document.documentElement.lang=language==='zh'?'zh-CN':'en';
  }
  function setLanguage(next){
@@ -201,7 +205,9 @@
   walk(document.body);
   return language;
  }
- switcher.addEventListener('click',()=>setLanguage(language==='zh'?'en':'zh'));
+ document.addEventListener('click',event=>{
+  if(event.target.closest?.('#fs-language-switch,[data-fs-locale-switch]'))setLanguage(language==='zh'?'en':'zh');
+ });
  // The legacy FS-Pro page editor creates entire new forms via innerHTML.
  // Localize after render without altering source-mode, channel or numeric values.
  const observer=new MutationObserver(records=>{
@@ -212,6 +218,7 @@
    if(entry.type==='attributes')nodes.add(entry.target);
   }
   for(const root of nodes)if(root)walk(root);
+  if([...nodes].some(root=>root?.querySelector?.('[data-fs-locale-switch]')))updateToggle();
  });
  observer.observe(document.body,{childList:true,subtree:true,characterData:true,
   attributes:true,attributeFilter:['aria-label','title','placeholder']});
