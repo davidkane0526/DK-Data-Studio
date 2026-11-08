@@ -241,6 +241,41 @@ async function seedVisualSMUs(page){
   check('CONNECTION-TOOLBAR-CLOSE',await desktop.locator('#fs-modal-host .fs-editor').count()===0,
     'standalone Connection close must not open Edit Page');
   check('SAFE-003',await desktop.locator('.fs-editor').count()===0,'cancel closes and reverts draft');
+  await desktop.locator('#fs-add-test').click();
+  check('PROJECT-TEST-PICKER',await desktop.locator('.fs-test-picker [data-action="create-test"]').count()===5,
+    'Project navigation exposes five explicit test types');
+  await desktop.locator('.fs-test-picker [data-test-type="pulse"]').click();
+  check('PROJECT-ADD-PULSE',await desktop.evaluate(()=>
+    document.querySelectorAll('#fs-page-list [data-command="select-page"]').length===2&&
+    window.DK4200FSPro.getDraft().info.testType==='Pulse'&&
+    document.querySelector('#fs-toolbar-page-name').textContent==='Pulse Sweep'),
+    'adding Pulse creates a selectable offline Page, not fake live measurement');
+  await desktop.locator('#fs-page-list [data-page-id="page-1"]').click();
+  check('PROJECT-SELECT-DC',await desktop.evaluate(()=>
+    window.DK4200FSPro.getDraft().info.testType==='DC'&&
+    document.querySelector('#fs-toolbar-page-name').textContent==='IV Sweep'),
+    'selecting Page 1 changes the active parameters');
+  await desktop.locator('#fs-page-list [data-page-id="page-2"]').click();
+  const projectDownload=desktop.waitForEvent('download');
+  await desktop.locator('.fs-title-actions [data-command="save"]').click();
+  const savedProject=await projectDownload;
+  const savedProjectData=fs.readFileSync(await savedProject.path(),'utf8');
+  const savedProjectJSON=JSON.parse(savedProjectData);
+  check('PROJECT-MULTI-SAVE',savedProjectJSON.schema==='dkts.fspro.project.v1'&&
+    savedProject.suggestedFilename()==='4200A-project.json'&&
+    savedProjectJSON.pages.length===2&&savedProjectJSON.activePageId==='page-2',
+    'project JSON persists multiple tests and active selection');
+  await desktop.locator('.fs-title-actions [data-command="new"]').click();
+  check('PROJECT-RESET',await desktop.locator('#fs-page-list [data-command="select-page"]').count()===1,
+    'New Project resets the Page list');
+  await desktop.locator('#fs-open-input').setInputFiles({
+    name:'persisted-offline-project.json',mimeType:'application/json',buffer:Buffer.from(savedProjectData)
+  });
+  check('PROJECT-RESTORE',await desktop.evaluate(()=>
+    document.querySelectorAll('#fs-page-list [data-command="select-page"]').length===2&&
+    window.DK4200FSPro.getDraft().info.testType==='Pulse'&&
+    document.querySelector('#fs-toolbar-page-name').textContent==='Pulse Sweep'),
+    'import preserves the selected offline Pulse test without hardware execution');
   await desktop.close();
   const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
   await manual.goto(file+'?open=edit');
