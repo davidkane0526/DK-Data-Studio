@@ -84,7 +84,9 @@
  }
  function position(x,y){
   const p=clamp(x,y);
-  panel.style.left=p.x+'px';panel.style.top=p.y+'px';
+  const spec={component:'dkts.fspro.numeric-keypad',owner:'dkts.fspro.numeric-keypad',source:'src/4200a-fspro/numeric-keypad.js'};
+  window.DKDSStyleGate.set(panel,'left',p.x+'px',spec);
+  window.DKDSStyleGate.set(panel,'top',p.y+'px',spec);
   remembered=p;
  }
  function open(control){
