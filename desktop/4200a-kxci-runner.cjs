@@ -65,9 +65,16 @@ function createRunner({transport,onState=()=>{},pause=ms=>new Promise(resolve=>s
     const bytes=Buffer.isBuffer(result?.bytes)?result.bytes:Buffer.from(String(result?.text??result),'utf8');
     replies.push({command:req.command,bytes});
    }
+   const metaReplies=[];
+   for(const req of compiled.metaReads||[]){
+    ensureNotStopped();
+    const result=await transport.query(req.command);
+    const bytes=Buffer.isBuffer(result?.bytes)?result.bytes:Buffer.from(String(result?.text??result),'utf8');
+    metaReplies.push({command:req.command,bytes});
+   }
    ensureNotStopped();
    // Not an instrument capture. The mock fixture must never be emitted to the native-data viewer.
-   const record=assemble({compiled,replies,instrumentId,captureId:captureId||'OFFLINE-MOCK-ONLY',
+   const record=assemble({compiled,replies,metaReplies,instrumentId,captureId:captureId||'OFFLINE-MOCK-ONLY',
      startedAt:startedAt||new Date().toISOString()});
    record.executionContext='offline-mock';
    await cleanup(compiled,false);
