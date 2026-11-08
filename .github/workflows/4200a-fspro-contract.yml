@@ -84,6 +84,7 @@ jobs:
           DK4200_UI_ENTRY_FILE: android4200a/app/src/main/assets/src/4200a-fspro/index.html
           DK4200_QA_OUT: artifacts/4200a-android-assets
         run: |
+          node tools/4200a-generate-brand-icons.cjs
           node scripts/4200a/stage-android-preview.cjs
           node tests/test-4200a-ui-visual.cjs
       - name: Upload screenshots and report
