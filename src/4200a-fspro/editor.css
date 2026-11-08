@@ -197,7 +197,7 @@
 .fs-empty-hint{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;pointer-events:none;color:var(--fs-sub)}
 .fs-empty-hint[hidden]{display:none}
 .fs-app .fs-frame-viewer{min-height:20px;font-size:11px;padding:1px 5px;margin-left:6px}
-.fs-data-dialog{width:min(1000px,100%);height:min(740px,calc(100dvh - 24px))}
+.fs-data-dialog{width:min(1000px,100%);height:min(var(--fs-data-height,480px),calc(100dvh - 24px));min-height:min(225px,calc(100dvh - 24px))}
 .fs-data-table-wrap{flex:1;overflow:auto;margin:10px;border:1px solid var(--fs-line);border-radius:5px}
 .fs-app .fs-data-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
 .fs-data-table th,.fs-data-table td{border-bottom:1px solid var(--fs-line);padding:5px 10px;text-align:left}
