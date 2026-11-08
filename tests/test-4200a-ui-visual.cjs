@@ -187,6 +187,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     'mobile interface launches in Chinese');
   check('MOBILE-COMPACT-MENU',await mobile.locator('.fs-mobile-menu-toggle').isVisible()&&
     await mobile.locator('.fs-menu').isHidden(),'compact File and other menu groups');
+  const toolbarCompact=await mobile.evaluate(()=>{
+    const t=document.querySelector('.fs-toolbar'),buttons=[...t.querySelectorAll('button')].filter(x=>getComputedStyle(x).display!=='none');
+    return {client:t.clientWidth,scroll:t.scrollWidth,buttons:buttons.map(x=>x.dataset.command||x.id)};
+  });
+  check('MOBILE-COMPACT-TOOLBAR',
+    toolbarCompact.scroll<=toolbarCompact.client+2&&
+    !toolbarCompact.buttons.some(x=>['new','open','save','connection'].includes(x)),
+    'File commands live in titlebar menu without horizontal toolbar overflow: '+JSON.stringify(toolbarCompact));
   await mobile.locator('#fs-mobile-menu-toggle').click();
   check('MOBILE-MENU-OPEN',await mobile.locator('.fs-menu').isVisible()&&
     await mobile.locator('.fs-menu [data-menu="File"]').textContent().then(x=>x==='文件'),
