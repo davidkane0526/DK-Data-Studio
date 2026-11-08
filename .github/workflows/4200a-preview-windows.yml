@@ -24,8 +24,10 @@ jobs:
         id: revision
         shell: pwsh
         run: |
-          $number=(git rev-list --count HEAD).Trim()
-          if ($number -notmatch '^[0-9]+
+          $count=(git rev-list --count HEAD).Trim()
+          if ([string]::IsNullOrWhiteSpace($count)) { throw 'Missing commit count' }
+          ('number=' + $count) | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host ('Cross-platform UI revision a' + $count)
       - name: Node 22
         uses: actions/setup-node@v4
         with:
