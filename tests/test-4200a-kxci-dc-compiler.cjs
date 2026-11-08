@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const dc=require('../src/4200a-fspro/domain/kxci-dc-compiler');
 const inv=()=>({schema:'dkts.4200a.module-capabilities.v1',instrumentId:'KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14',
- lineFrequencyHz:50,smus:[1,2,3].map(n=>({resource:'SMU'+n,model:'4200-SMU',preamplifier:false}))});
+ lineFrequencyHz:50,readyForCompiler:true,smus:[1,2,3].map(n=>({resource:'SMU'+n,model:'4200-SMU',modelVerified:true,preamplifier:false}))});
 const page=()=>({schema:'dkts.fspro.page.v1',info:{testType:'DC'},strategy:{
  scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'},
  terminals:[
@@ -24,6 +24,13 @@ assert.deepEqual(out.prepare.map(x=>x.command).filter(x=>/^(?:CH|VC|VR|VP|IT|DT|
 assert.deepEqual(out.start.map(x=>x.command),['MD','ME1']);
 assert.deepEqual(out.stop.map(x=>x.command),['MD','ME4','DE','CH1','CH2','CH3']);
 assert.equal(out.poll.command,'SP');assert.equal(out.read.length,6);
+fail('PHYSICAL_MODEL_UNVERIFIED',(p,c)=>{c.readyForCompiler=false;});
+fail('PHYSICAL_MODEL_UNVERIFIED',(p,c)=>{delete c.readyForCompiler;});
+fail('PHYSICAL_MODEL_UNVERIFIED',(p,c)=>{delete c.smus[0].modelVerified;});
+fail('PHYSICAL_MODEL_UNVERIFIED',(p,c)=>{c.smus[0].modelVerified=false;});
+fail('REFERENCE_VALUE_NOT_COMPILED',p=>{p.refNode='S';p.refValue='2.5';});
+fail('REFERENCE_NODE_UNMAPPED',p=>{p.refNode='MISSING';p.refValue='0';});
+fail('INVALID_NUMBER',p=>{p.refValue='0;ME1';});
 fail('HARDWARE_LIMIT',p=>p.terminals[1].stop='1000');
 fail('HARDWARE_LIMIT',p=>p.terminals[2].compliance='2');
 fail('KXCI_CLAMPED_COMPLIANCE',p=>p.terminals[0].compliance='1e-10');
@@ -50,7 +57,7 @@ fail('TEST_MODE_UNSUPPORTED',p=>p.info.testType='Pulse');
 fail('KXCI_DELAY_LIMIT',p=>p.strategy.delayTime='8');
 fail('INTEGRATION_PLC_LIMIT',p=>p.strategy.integrationTime='2');
 const four=page(),fourInventory=inv();
-fourInventory.smus.push({resource:'SMU4',model:'4200-SMU',preamplifier:false});
+fourInventory.smus.push({resource:'SMU4',model:'4200-SMU',modelVerified:true,preamplifier:false});
 four.terminals.push({...four.terminals[0],logical:'B',resource:'SMU4'});
 four.outputs='Ib,Vgs';
 const fourCompiled=dc.compile(four,{capabilities:fourInventory});

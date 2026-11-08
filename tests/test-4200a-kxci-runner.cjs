@@ -4,7 +4,7 @@ const {compile}=require('../src/4200a-fspro/domain/kxci-dc-compiler');
 const {createRunner}=require('../desktop/4200a-kxci-runner.cjs');
 const caps={schema:'dkts.4200a.module-capabilities.v1',
  instrumentId:'KEITHLEY INSTRUMENTS,KI4200A,1498377,V1.14',lineFrequencyHz:50,
- smus:[1,2].map(n=>({resource:'SMU'+n,model:'4200-SMU',preamplifier:false}))};
+ readyForCompiler:true,smus:[1,2].map(n=>({resource:'SMU'+n,model:'4200-SMU',modelVerified:true,preamplifier:false}))};
 const page={schema:'dkts.fspro.page.v1',info:{testType:'DC'},
  strategy:{scope:'Local Setting',method:'Custom',integrationTime:'0.02',delayTime:'0.04',sourceRange:'Auto',measureRange:'Auto'},
  terminals:[{logical:'S',resource:'SMU1',role:'CONDITION',sourceMode:'voltage',

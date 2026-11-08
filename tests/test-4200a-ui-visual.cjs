@@ -525,7 +525,41 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     'keypad scientific exponent edits actual guarded PagePlan field, not a fake overlay');
   check('ANDROID-KEYPAD-CLOSE',await androidInput.locator('#dkts-numeric-keypad').isHidden()&&
     androidErrors.length===0,'numeric keyboard closes without JS errors: '+androidErrors.join(' | '));
+  await androidInput.locator('.fs-terminal').first().locator('button[data-action="add-segment"]').click();
+  const segmentedStart=androidInput.locator('input[data-bind="terminals[0].segments[0].start"]');
+  check('ANDROID-SEGMENT-NUMERIC',await segmentedStart.getAttribute('inputmode')==='none'&&
+    await segmentedStart.getAttribute('readonly')!==null,
+    'dynamic segment numeric fields must reuse the built-in Android nine-grid keypad');
+  await segmentedStart.click();
+  await androidInput.locator('#dkts-numeric-keypad [data-key="1"]').click();
+  await androidInput.locator('#dkts-numeric-keypad [data-key="done"]').click();
+  check('ANDROID-SEGMENT-KEYPAD-PERSISTS',await androidInput.evaluate(()=>
+    window.DK4200FSPro.getDraft().terminals[0].segments[0].start==='1'),
+    'segment keypad input writes the actual draft rather than a transient overlay');
   await androidInput.close();
+
+  // Simulate a native reconnect error with an old verified KCon slot.
+  // Both the visible connection list and execution gate must revoke it.
+  const failedReconnect=await browser.newPage({viewport:{width:430,height:900}});
+  await failedReconnect.addInitScript(()=>{
+    window.DK4200Native={
+      connect:async()=>{throw new Error('ETIMEDOUT');},
+      disconnect:async()=>({connected:false})
+    };
+  });
+  await failedReconnect.goto(file);
+  await failedReconnect.waitForFunction(()=>
+    window.DK4200ConnectionStatus?.snapshot()?.pending===false);
+  await failedReconnect.evaluate(()=>window.DK4200FSPro.setVerifiedInventory(['SMU1']));
+  await failedReconnect.evaluate(()=>window.DK4200ConnectionStatus.connect());
+  await failedReconnect.evaluate(()=>window.DK4200FSPro.openEdit());
+  await failedReconnect.locator('button[data-action="connection"]').first().click();
+  check('FAILED-RECONNECT-REVOKES-SMU',await failedReconnect.evaluate(()=>{
+    const select=document.querySelector('select[data-bind="terminals[0].resource"]');
+    return !window.DK4200ConnectionStatus.snapshot().connected&&
+      [...select.options].map(o=>o.value).join(',')==='None';
+  }),'failed native reconnect invalidates previously detected KCon resources');
+  await failedReconnect.close();
   check('UI-NO-PAGEERROR',pageErrors.length===0,'Page errors: '+pageErrors.join('; '));
   fs.writeFileSync(path.join(out,'acceptance-report.json'),JSON.stringify({reference:'FS-Pro V6',kind:'offline UI',checks:report,metrics,pageErrors},null,2));
   console.log(JSON.stringify({checks:report.length,passed:report.filter(x=>x.pass).length,output:out,metrics}));

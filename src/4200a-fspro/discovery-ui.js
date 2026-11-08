@@ -57,6 +57,9 @@
    return true;
   }catch(err){
    connected=false;discovery=null;
+   // A failed reconnect must revoke resource selections from the prior
+   // verified session. Never let stale KCon channels appear as live.
+   window.DK4200FSPro?.setVerifiedInventory?.([]);
    summary('未连接');
    note('连接失败：'+summarizeConnectionError(err));
    showDialogStatus();

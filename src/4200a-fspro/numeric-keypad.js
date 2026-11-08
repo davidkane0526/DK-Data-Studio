@@ -118,7 +118,7 @@
  }
  function isNumeric(control){
   const key=control?.dataset?.bind||'';
-  return (/^(?:refValue|terminals\[\d+\]\.(?:start|stop|step|points|bias|compliance|measureRange\.value)|strategy\.(?:integrationTime|delayTime))$/.test(key) ||
+  return (/^(?:refValue|terminals\[\d+\]\.(?:start|stop|step|points|bias|compliance|measureRange\.value|segments\[\d+\]\.(?:start|stop|step|points|bias))|strategy\.(?:integrationTime|delayTime))$/.test(key) ||
     control?.getAttribute?.('data-device-field')==='port');
  }
  const seen=new WeakSet();
