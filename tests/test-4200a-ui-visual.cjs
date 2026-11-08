@@ -137,6 +137,14 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
       panelScroll:document.querySelector('.fs-triptych').scrollWidth-document.querySelector('.fs-triptych').clientWidth
     };
   });
+  const sweepHead=await mobile.evaluate(()=>{
+    const kids=[...document.querySelector('.fs-sweep-head').children];
+    return kids.map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent?.slice(0,30),left:r.left,right:r.right,top:r.top,bottom:r.bottom};});
+  });
+  check('UI-MOBILE-OUTPUT-LAYOUT',sweepHead.length===4&&
+    sweepHead[2].top>=sweepHead[0].bottom-1&&
+    sweepHead.every(el=>el.right<=mobileShape.viewport+2),
+    'Outputs must appear in a readable second row: '+JSON.stringify(sweepHead));
   check('UI-MOBILE-FIELD-FIT',mobileShape.overflowFields.length===0,
     'No mobile Sweep inputs may be cut off: '+JSON.stringify(mobileShape));
   check('UI-MOBILE-TRIPTYCH-SCROLL',mobileShape.panelScroll>50,
