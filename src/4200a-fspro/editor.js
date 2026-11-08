@@ -94,7 +94,7 @@ document.getElementById('fs-raw-input').addEventListener('change',async ev=>{
  finally{ev.target.value='';}
 });
 
-const options=(items,selected)=>items.map(item=>{const [v,l,disabled]=Array.isArray(item)?item:[item,item];return `<option value="${e(v)}"${String(v)===String(selected)?' selected':''}${disabled?' disabled title="等待4200A测量编译器"':''}>${e(l)}</option>`}).join('');
+const options=(items,selected)=>items.map(item=>{const [v,l,disabled,reason]=Array.isArray(item)?item:[item,item];return `<option value="${e(v)}"${String(v)===String(selected)?' selected':''}${disabled?' disabled':''}${disabled&&reason?' title="'+e(reason)+'"':''}>${e(l)}</option>`}).join('');
 const field=(label,key,value,kind='text',extra='')=>`<span class="fs-inline-field"><label for="field-${e(key)}">${e(label)}</label><input id="field-${e(key)}" data-bind="${e(key)}" type="${kind}" value="${e(value)}" ${extra}></span>`;
 const select=(key,opts,value,attrs='')=>`<select data-bind="${e(key)}" aria-label="${e(key)}" ${attrs}>${options(opts,value)}</select>`;
 const get=(obj,path)=>path.replace(/\[(\d+)\]/g,'.$1').split('.').reduce((x,k)=>x?.[k],obj);
@@ -194,7 +194,7 @@ function terminalMarkup(t,i){
  <div class="fs-terminal-range" aria-label="${e(t.logical)} 量程与限流">
    <label>测量档位</label>
    ${select(`terminals[${i}].measureRange.mode`,
-     [['auto','自动'],['minimum','自动下限',voltageMeasurement],['fixed','即时指定']],t.measureRange?.mode||'auto',
+     [['auto','自动'],['minimum','自动下限',voltageMeasurement,'仅支持电流测量'],['fixed','即时指定']],t.measureRange?.mode||'auto',
      `data-fs-range-mode="${i}"`)}
    <label>${t.sourceMode==='voltage'?'电流 (A)':'电压 (V)'}</label>
    <input class="fs-range-value" data-bind="terminals[${i}].measureRange.value"
