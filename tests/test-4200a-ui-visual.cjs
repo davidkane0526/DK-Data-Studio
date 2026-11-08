@@ -13,6 +13,16 @@ const out=path.resolve(process.env.DK4200_QA_OUT||path.join(__dirname,'../artifa
 fs.mkdirSync(out,{recursive:true});
 const report=[];
 function check(id,condition,details=''){report.push({id,pass:!!condition,details});assert.ok(condition,`${id}: ${details}`);}
+async function seedVisualSMUs(page){
+ await page.evaluate(()=>window.DK4200FSPro.setVerifiedInventory(['SMU1','SMU2','SMU3','SMU4']));
+ const plan=await page.evaluate(()=>{
+   const p=window.DK4200FSPro.getDraft();p.terminals.forEach((t,i)=>{t.resource='SMU'+(i+1)});return p;
+ });
+ await page.locator('#fs-open-input').setInputFiles({
+  name:'offline-qa-four-smu-plan.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(plan))
+ });
+ await page.waitForFunction(()=>window.DK4200FSPro.getDraft().terminals[0].resource==='SMU1');
+}
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--allow-file-access-from-files']});
  try{
@@ -108,6 +118,12 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   check('UI-HEADER-CONNECT',await desktop.locator('.fs-titlebar #fs-instrument-link').count()===1&&
     await desktop.locator('.fs-toolbar #fs-instrument-link').count()===0,'Connect pinned in titlebar, not scrolled toolbar');
   check('SAFE-001',await desktop.locator('#fs-measure').isDisabled()&&await desktop.locator('#fs-repeat').isDisabled(),'no hardware output enabled');
+  await desktop.locator('.fs-toolbar button[data-command="edit"]').click();
+  check('NONE-HIDDEN',await desktop.locator('.fs-terminal').count()===0&&
+    await desktop.locator('.fs-no-ports').isVisible(),
+    'Unassigned None terminals are not in the Page parameter UI');
+  await desktop.locator('button[data-action="cancel"]').last().click();
+  await seedVisualSMUs(desktop);
   await desktop.locator('.fs-toolbar button[data-command="edit"]').click();
   await desktop.screenshot({path:path.join(out,'02-edit-page-sweep.png'),fullPage:true});
   const editor=desktop.locator('.fs-editor');
@@ -210,7 +226,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await desktop.screenshot({path:path.join(out,'05-set-connection.png'),fullPage:true});
   check('UI-019',await desktop.locator('.fs-connection-table tr').count()===5,'separate connection mapping dialog');
   check('UI-020',await desktop.locator('.fs-connection-footer').innerText().then(x=>/共享|shared/i.test(x)),'shared preset warning preserved in either locale');
-  check('UI-031',await desktop.locator('select[data-bind="terminals[0].resource"] option').allTextContents().then(xs=>xs.length===1&&xs[0]==='None'),'no fictitious unverified modules');
+  check('UI-031',await desktop.locator('select[data-bind="terminals[0].resource"] option').allTextContents().then(xs=>xs.length===5&&xs[0]==='None'),'no fictitious unverified modules');
   await desktop.locator('button[data-action="close-connection"]').last().click();
   check('CONNECTION-PAGE-RETURN',await desktop.locator('.fs-editor[aria-label="Edit Page"]').count()===1,
     'Connection opened from Page returns to Page');
@@ -225,6 +241,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await desktop.close();
   const manual=await browser.newPage({viewport:{width:1080,height:770},deviceScaleFactor:1});
   await manual.goto(file+'?open=edit');
+  await seedVisualSMUs(manual);
+  await manual.evaluate(()=>window.DK4200FSPro.openEdit());
   await manual.screenshot({path:path.join(out,'07-edit-page-manual-1080x770.png'),fullPage:true});
   const manualGeometry=await manual.evaluate(()=>{
    const list=document.querySelector('.fs-terminal-list');
@@ -479,6 +497,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     'show complete selected test name without clipped current-page prefix: '+JSON.stringify(mobilePageName));
   await mobile.screenshot({path:path.join(out,'12-mobile-title-actions-zh.png'),fullPage:true});
   await mobile.goto(file+'?open=edit');
+  await seedVisualSMUs(mobile);
+  await mobile.evaluate(()=>window.DK4200FSPro.openEdit());
   check('MOBILE-MODAL-ZH',await mobile.locator('.fs-editor-title').textContent().then(x=>x.includes('编辑页面')),
     'editor title localized by default');
   check('MOBILE-MODAL-LANGUAGE',await mobile.locator('.fs-editor [data-fs-locale-switch]').count()===0,
@@ -574,6 +594,8 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const androidErrors=[];
   androidInput.on('pageerror',err=>androidErrors.push(String(err.message||err)));
   await androidInput.goto(file+'?open=edit');
+  await seedVisualSMUs(androidInput);
+  await androidInput.evaluate(()=>window.DK4200FSPro.openEdit());
   check('ANDROID-DEFAULT-EDITABLE',await androidInput.locator('input[data-bind="terminals[0].bias"]').isEnabled(),
     'Android Page defaults to unlocked');
   const bias=androidInput.locator('input[data-bind="terminals[0].bias"]');

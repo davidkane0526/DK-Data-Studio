@@ -179,8 +179,9 @@ function segmentMarkup(t,i){
  <button data-action="remove-segment" data-i="${i}" data-j="${j}" aria-label="删除分段">−</button></div>`).join('');
  return segmentRows;
 }
+function visibleTerminals(){return draft.terminals.map((t,i)=>({t,i})).filter(row=>row.t.resource!=='None');}
 function terminalMarkup(t,i){
- const logicalOpts=draft.terminals.filter((v,j)=>j!==i).map(v=>[v.logical,v.logical]);
+ const logicalOpts=visibleTerminals().filter(row=>row.i!==i).map(row=>[row.t.logical,row.t.logical]);
  const segmentButton=`<button data-action="add-segment" data-i="${i}" title="在当前端子下方添加分段">+</button>`;
   const voltageMeasurement=t.sourceMode==='current';
   // The measured quantity is voltage if the SMU sources current.
@@ -223,7 +224,7 @@ function terminalMarkup(t,i){
 function limitsPanel(){
  return `<div class="fs-triptych-panel"><h3>Limits</h3><div class="fs-table-wrap"><table class="fs-table">
  <thead><tr><th>Node</th><th>I (A)</th><th>V</th></tr></thead><tbody>
- ${draft.terminals.map((t,i)=>`<tr><td>${e(t.logical)}</td><td>${t.sourceMode==='voltage'?`<input data-bind="terminals[${i}].compliance" value="${e(t.compliance)}" aria-label="${e(t.logical)} current compliance"/>`:'—'}</td><td>${t.sourceMode==='current'?`<input data-bind="terminals[${i}].compliance" value="${e(t.compliance)}" aria-label="${e(t.logical)} voltage compliance"/>`:'—'}</td></tr>`).join('')}
+ ${visibleTerminals().map(({t,i})=>`<tr><td>${e(t.logical)}</td><td>${t.sourceMode==='voltage'?`<input data-bind="terminals[${i}].compliance" value="${e(t.compliance)}" aria-label="${e(t.logical)} current compliance"/>`:'—'}</td><td>${t.sourceMode==='current'?`<input data-bind="terminals[${i}].compliance" value="${e(t.compliance)}" aria-label="${e(t.logical)} voltage compliance"/>`:'—'}</td></tr>`).join('')}
  </tbody></table></div></div>`;
 }
 function varsPanel(){
@@ -242,7 +243,7 @@ function sweepMarkup(){
  <span class="fs-inline-field"><input aria-label="Reference Value" data-bind="refValue" value="${e(draft.refValue)}"/><label>(V)</label></span>
  <label>Outputs:</label><input data-bind="outputs" aria-label="Outputs" value="${e(draft.outputs)}"/>
  </div><section class="fs-terminal-list" aria-label="Input Setting"><div class="fs-section-title">Input Setting</div>
- ${draft.terminals.map(terminalMarkup).join('')}</section>
+ ${visibleTerminals().length?visibleTerminals().map(({t,i})=>terminalMarkup(t,i)).join(''):'<div class="fs-no-ports">尚未分配测量通道，请先到「端口配置」选择实际模块。</div>'}</section>
  <section class="fs-triptych" aria-label="Limits Page Var Associate Spec">
  ${limitsPanel()}${varsPanel()}${specsPanel()}</section>`;
 }
@@ -272,7 +273,7 @@ function strategyMarkup(){
  </div>
  <fieldset class="fs-fieldset"><legend>Per-Terminal Measurement Range</legend>
  <table class="fs-connection-table"><thead><tr><th>Terminal</th><th>Range Mode</th><th>Range Value</th></tr></thead><tbody>
- ${draft.terminals.map((t,i)=>`<tr><td>${e(t.logical)}</td>
+ ${visibleTerminals().map(({t,i})=>`<tr><td>${e(t.logical)}</td>
  <td>${select(`terminals[${i}].measureRange.mode`,[['auto','Auto'],['minimum','Auto Floor (I)'],['fixed','Immediate Range']],t.measureRange.mode)}</td>
  <td><input aria-label="${e(t.logical)} range value" data-bind="terminals[${i}].measureRange.value" value="${e(t.measureRange.value)}" ${t.measureRange.mode==='auto'?'disabled title="自动量程模式"':''}/></td>
  </tr>`).join('')}

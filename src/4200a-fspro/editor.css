@@ -540,3 +540,15 @@
   box-shadow:none;filter:none;transform:none;
 }
 .fs-app button:focus-visible{box-shadow:none}
+
+.fs-app .fs-no-ports{padding:20px;text-align:center;color:var(--fs-sub);border:1px dashed var(--fs-line);border-radius:6px;font-size:12px}
+.fs-app .fs-terminal-top{grid-template-columns:34px 92px 86px minmax(0,1fr);align-items:center}
+.fs-app .fs-terminal-bottom{display:grid;grid-template-columns:minmax(190px,.7fr) minmax(0,1.5fr);align-items:center;gap:6px;padding-left:0}
+.fs-app .fs-terminal-range{border-top:0;margin:0;padding:0;grid-template-columns:auto minmax(76px,.65fr) auto minmax(72px,.65fr) auto minmax(84px,1fr)}
+@media(max-width:899px){
+ .fs-app .fs-terminal-top{grid-template-columns:30px 92px minmax(65px,1fr);gap:5px}
+ .fs-app .fs-terminal-top>.fs-generator{grid-column:1 / -1}
+ .fs-app .fs-terminal-bottom{grid-template-columns:minmax(0,1fr)}
+ .fs-app .fs-terminal-range{border-top:1px solid var(--fs-line);padding-top:5px;grid-template-columns:auto minmax(80px,1fr) auto minmax(80px,1fr)}
+ .fs-app .fs-terminal-range label:nth-of-type(3){grid-column:1}
+}
