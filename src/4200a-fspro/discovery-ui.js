@@ -32,6 +32,10 @@
   if(/EPERM|Operation not permitted|Binding socket|network was not available|EHOSTUNREACH|ENETUNREACH|路由/i.test(value))
    return '无法使用当前网络访问仪器，请检查网卡 IP 与路由';
   if(/ETIMEDOUT|timeout|timed out/i.test(value))return '连接超时，请检查仪器地址与端口';
+  // Android SocketFactory reports a long Java ConnectException containing
+  // "/169.254.x.x (port 1225)"; do not put an exception trace in the UI log.
+  if(/failed to connect|connect failed|java\.net\.ConnectException|connection failed/i.test(value))
+   return '连接失败，请检查仪器网络、IP 地址及 KXCI 端口';
   if(/ECONNREFUSED|refused/i.test(value))return '仪器拒绝连接，请检查 KXCI 服务';
   if(/not connected|closed|reset|broken pipe/i.test(value))return '连接已中断，请重新连接';
   return value.split('\\n')[0].slice(0,76);
