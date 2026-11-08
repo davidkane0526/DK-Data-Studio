@@ -138,6 +138,21 @@ async function seedVisualSMUs(page){
   }));
   check('UI-034-TRACE',fieldTrace.total>=35&&fieldTrace.missing.length===0,'field traceability: '+JSON.stringify(fieldTrace));
   check('UI-011',await editor.locator('.fs-terminal').count()===4,'stacked terminals');
+  check('FS-PRO-TWO-ROW-GROUPS',await desktop.evaluate(()=>{
+   const cards=[...document.querySelectorAll('.fs-terminal')];
+   return cards.length===4&&cards.every(card=>{
+    const ref=card.querySelector('.fs-terminal-reference')?.getBoundingClientRect();
+    const range=card.querySelector('.fs-terminal-range')?.getBoundingClientRect();
+    const outer=card.getBoundingClientRect();
+    return ref&&range&&Math.abs(ref.top-range.top)<3&&
+      ref.left>=outer.left-2&&range.right<=outer.right+2;
+   });
+  }),'desktop reference/scan role and measurement range share an aligned second row');
+  check('FS-PRO-NO-CLICK-SHADOW',await desktop.evaluate(()=>{
+   const button=document.querySelector('.fs-editor-controls [data-action="lock"]');
+   button.focus();
+   return getComputedStyle(button).boxShadow==='none';
+  }),'button focus is not rendered as a click-shadow halo');
   check('RANGE-PER-TERMINAL',await editor.locator('.fs-terminal-range').count()===4&&
     await editor.locator('select[data-bind$=".measureRange.mode"]').count()===4&&
     await editor.locator('input[data-bind$=".measureRange.value"]').count()===4&&
