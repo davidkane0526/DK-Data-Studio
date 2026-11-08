@@ -253,6 +253,30 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     dataTab.visible.join(',')==='fs-frame-4',
     'mobile Data tab activates only raw-data Frame: '+JSON.stringify(dataTab));
   await mobile.screenshot({path:path.join(out,'15-mobile-data-tab.png'),fullPage:true});
+  const rotated=await browser.newPage({viewport:{width:430,height:900},hasTouch:true});
+  await rotated.goto(file);
+  await rotated.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').click();
+  await rotated.setViewportSize({width:920,height:560});
+  const landscape=await rotated.evaluate(()=>({
+    tabs:getComputedStyle(document.querySelector('#fs-mobile-plot-tabs')).display,
+    visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').length
+  }));
+  check('MOBILE-LANDSCAPE-2X2',landscape.tabs==='none'&&landscape.visible===4,
+    'turning from portrait to landscape restores all 4 native plot Frames: '+JSON.stringify(landscape));
+  await rotated.setViewportSize({width:430,height:900});
+  const portraitAgain=await rotated.evaluate(()=>({
+    active:window.DK4200MobileFrames?.current(),
+    visible:[...document.querySelectorAll('.fs-frame')].filter(x=>getComputedStyle(x).display!=='none').map(x=>x.id)
+  }));
+  check('MOBILE-ROTATION-PRESERVES-SELECTED',portraitAgain.active===3&&
+    portraitAgain.visible.join(',')==='fs-frame-4',
+    'orientation change retains selected raw-data Frame: '+JSON.stringify(portraitAgain));
+  await rotated.locator('#fs-mobile-plot-tabs [data-frame-index="3"]').focus();
+  await rotated.keyboard.press('ArrowLeft');
+  check('MOBILE-PLOT-KEYBOARD',await rotated.locator('#fs-mobile-plot-tabs [aria-selected="true"]')
+    .getAttribute('data-frame-index')==='2',
+    'ArrowLeft changes accessible plot tab to I–t');
+  await rotated.close();
   await mobile.locator('#fs-mobile-plot-tabs [data-frame-index="0"]').click();
   const mobileRaw=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   const mobileFrameErrors=[];mobileRaw.on('pageerror',err=>mobileFrameErrors.push(String(err.message||err)));
