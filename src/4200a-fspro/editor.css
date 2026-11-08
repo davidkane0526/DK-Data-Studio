@@ -205,7 +205,9 @@
 
 /* Single mobile responsive owner: keep every numeric Sweep field inside 430px. */
 @media(max-width:650px){
- .fs-app .fs-sweep-head{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 20px minmax(0,1fr);min-width:0;gap:4px}
+ .fs-app .fs-sweep-head{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);grid-template-rows:28px 28px;min-width:0;gap:4px 8px}
+ .fs-app .fs-sweep-head>label:nth-child(3){grid-column:1;grid-row:2;justify-self:start;align-self:center}
+ .fs-app .fs-sweep-head>input:nth-child(4){grid-column:2;grid-row:2}
  .fs-app .fs-sweep-head .fs-inline-field{min-width:0}
  .fs-app .fs-sweep-head input,.fs-app .fs-sweep-head select{width:100%;min-width:0}
  .fs-app .fs-terminal-list{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
