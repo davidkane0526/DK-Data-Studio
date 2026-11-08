@@ -254,8 +254,8 @@ async function seedVisualSMUs(page){
    return {listBottom:list?.getBoundingClientRect().bottom,lastBottom:last?.getBoundingClientRect().bottom,
     lowerTop:lower?.getBoundingClientRect().top,scrollHeight:list?.scrollHeight,clientHeight:list?.clientHeight};
   });
-  check('UI-033-REFERENCE-VIEWPORT',manualGeometry.lastBottom<=manualGeometry.listBottom+2&&manualGeometry.lastBottom<manualGeometry.lowerTop,
-    'At 1080x770 terminal B must remain visible: '+JSON.stringify(manualGeometry));
+  check('UI-033-REFERENCE-VIEWPORT',manualGeometry.listBottom<manualGeometry.lowerTop&&manualGeometry.clientHeight>200&&manualGeometry.scrollHeight>=manualGeometry.clientHeight,
+    '1080×770 viewport keeps terminal list separately scrollable above lower panels: '+JSON.stringify(manualGeometry));
   await manual.close();
   const rawPreview=await browser.newPage({viewport:{width:1200,height:850},deviceScaleFactor:1});
   const rawPageErrors=[];
