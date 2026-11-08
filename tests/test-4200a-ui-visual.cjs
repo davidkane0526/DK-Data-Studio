@@ -113,7 +113,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await editor.locator('button[data-action="connection"]').click();
   await desktop.screenshot({path:path.join(out,'05-set-connection.png'),fullPage:true});
   check('UI-019',await desktop.locator('.fs-connection-table tr').count()===5,'separate connection mapping dialog');
-  check('UI-020',await desktop.locator('.fs-connection-footer').innerText().then(x=>x.includes('共享')),'shared preset warning');
+  check('UI-020',await desktop.locator('.fs-connection-footer').innerText().then(x=>/共享|shared/i.test(x)),'shared preset warning preserved in either locale');
   check('UI-031',await desktop.locator('select[data-bind="terminals[0].resource"] option').allTextContents().then(xs=>xs.length===1&&xs[0]==='None'),'no fictitious unverified modules');
   await desktop.locator('button[data-action="close-connection"]').last().click();
   await desktop.locator('button[data-action="cancel"]').last().click();
