@@ -285,6 +285,13 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     !axisTicks.labels.some(x=>/0\\.0{5,}[1-9]/.test(x))&&
     axisTicks.minimumLeft>=axisTicks.plotLeft-1,
     'nanoamp current ticks must use scientific notation and remain visible: '+JSON.stringify(axisTicks));
+  check('MOBILE-STATUS-NO-DUPLICATE',await mobileRaw.evaluate(()=>{
+    const status=document.querySelector('#fs-bottom-status');
+    const log=document.querySelector('#fs-messages');
+    return !status.textContent.includes('OFFLINE-IMPORT-QA')&&
+      log.textContent.includes('OFFLINE-IMPORT-QA')&&
+      status.getBoundingClientRect().height<=28;
+   }), 'raw import details belong to the log, not repeated in one-line bottom connection status');
   check('MOBILE-PLOT-NO-SYNTHETIC',mobileFrameErrors.length===0,
     'raw-data responsive plotting JS errors: '+mobileFrameErrors.join(' | '));
   await mobileRaw.screenshot({path:path.join(out,'16-mobile-original-time-plot.png'),fullPage:true});
