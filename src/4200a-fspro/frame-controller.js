@@ -51,6 +51,38 @@
    const foot=document.createElement('div');foot.className='fs-mini-table-note';foot.textContent=`显示前 ${Math.min(80,table.rows.length)} / ${table.rows.length} 点`;
    container.replaceChildren(sheet,foot);
   }
+  // Hidden mobile Frames may have zero layout width. Re-render from the
+  // *same original imported capture* once a Frame becomes visible.
+  async function refreshFrame(index){
+   ensure();
+   if(!capture||!Number.isInteger(index)||index<0||index>3)return false;
+   if(index===3)return true; // Frame 4 is always the native raw table.
+   const original=capture.raw;
+   const validPlotAxes=axes(original);
+   const pair=index===0?[validPlotAxes.x,validPlotAxes.y]:
+    index===1?(original.columns.some(c=>c.id==='gate_voltage')?
+     [original.columns.find(c=>c.id==='gate_voltage'),validPlotAxes.y]:null):
+     original.columns.some(c=>c.id==='time')?
+      [original.columns.find(c=>c.id==='time'),validPlotAxes.y]:null;
+   const {content,hint}=renderers[index];
+   if(!pair){
+    hint.textContent='当前采样没有此图所需的通道';hint.hidden=false;
+    return false;
+   }
+   const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
+   if(!traces.some(t=>t.x.length)){
+    hint.textContent='原始数据没有有效采样点';hint.hidden=false;
+    return false;
+   }
+   hint.hidden=true;
+   await plot.react(content,traces,plotLayout(x,y),{
+    responsive:true,scrollZoom:true,displayModeBar:false
+   },{
+    source:'dkts.4200a.native',renderKey:`${original.captureId}:${index}:visible`,
+    renderPriority:'immediate'
+   });
+   return true;
+  }
   async function setCapture(raw,{provenance='imported-file'}={}){
    ensure();
    if(provenance!=='imported-file'&&provenance!=='native-verified')throw new Error('Unapproved raw-data provenance');
@@ -67,6 +99,9 @@
    ];
    for(let i=0;i<renderers.length;i++){
     if(ticket!==revision||disposed)return false;
+    if(i<3&&typeof window!=='undefined'&&
+       window.matchMedia?.('(max-width:650px)').matches&&
+       renderers[i].card.dataset.mobileActive==='false')continue;
     const {content,hint}=renderers[i],pair=specs[i];
     if(!pair){hint.textContent=i===3?'原始数据表':'当前采样没有此图所需的通道';hint.hidden=false;continue;}
     const [x,y]=pair,traces=rawData.traces(original,{x:x.id,y:y.id});
@@ -102,7 +137,7 @@
    try{plot.dispose?.()}catch{}
    return true;
   }
-  return Object.freeze({VERSION,setCapture,exportCSV,table,hasCapture,provenance,dispose});
+  return Object.freeze({VERSION,setCapture,refreshFrame,exportCSV,table,hasCapture,provenance,dispose});
  }
  return Object.freeze({VERSION,create});
 });
