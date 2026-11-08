@@ -4,6 +4,10 @@ plugins {
 
 def stableStore = System.getenv('DKTS_FSPRO_ANDROID_KEYSTORE_PATH')
 def stablePassword = System.getenv('DKTS_FSPRO_ANDROID_SIGNING_PASSWORD')
+// Untrusted compile job may generate ONLY an unsigned APK; a separate trusted
+// repository signs it with the original private DKTS signing certificate.
+def detachedSigning = System.getenv('DKTS_FSPRO_DETACHED_SIGNING') == '1'
+if(detachedSigning && (stableStore || stablePassword)) throw new GradleException('Private signing credentials forbidden in detached build')
 def runCode = Integer.parseInt(System.getenv('DKTS_FSPRO_BUILD_NUMBER') ?: '1')
 if(runCode < 1 || runCode > 2000000000) throw new GradleException('Invalid aNNNN build revision')
 android {
@@ -26,7 +30,7 @@ android {
                 storeFile file(stableStore)
                 storeType 'PKCS12'
                 storePassword stablePassword
-                keyAlias 'dkts-fspro'
+                keyAlias 'dkts'
                 keyPassword stablePassword
             }
         }
@@ -57,5 +61,7 @@ tasks.register('verifyStableSigning') {
     }
 }
 afterEvaluate {
-    tasks.matching { it.name == 'assembleRelease' }.configureEach { dependsOn tasks.named('verifyStableSigning') }
+    tasks.matching { it.name == 'assembleRelease' }.configureEach {
+        if(!detachedSigning) dependsOn tasks.named('verifyStableSigning')
+    }
 }
