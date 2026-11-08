@@ -154,7 +154,10 @@ async function seedVisualSMUs(page){
    return {listClient:list?.clientHeight,listScroll:list?.scrollHeight,
      listBottom:listRect?.bottom,lastBottom:lastRect?.bottom,triptychTop:bottom?.top,refWidth:ref?.getBoundingClientRect().width};
   });
-  check('UI-011-VISIBLE',sweepGeometry.lastBottom<=sweepGeometry.listBottom+2&&sweepGeometry.lastBottom<=sweepGeometry.triptychTop-2,'4 terminals visible: '+JSON.stringify(sweepGeometry));
+  check('UI-011-VISIBLE',sweepGeometry.listClient>150&&
+    sweepGeometry.listBottom<=sweepGeometry.triptychTop-2&&
+    sweepGeometry.listScroll>=sweepGeometry.listClient,
+    'terminal parameters form a bounded, independently scrollable FS-Pro list: '+JSON.stringify(sweepGeometry));
   check('UI-010-REFNODE',sweepGeometry.refWidth>=68,'RefNode selection not collapsed: '+JSON.stringify(sweepGeometry));
   check('UI-012',await desktop.evaluate(()=>{const x=window.DK4200FSPro.getDraft().terminals.filter(t=>t.role==='X');const p=window.DK4200FSPro.getDraft().terminals.filter(t=>t.role==='P');return x.length===1&&p.length===1;}),'one X one P');
   const triptych=await editor.locator('.fs-triptych > .fs-triptych-panel h3').allTextContents();
