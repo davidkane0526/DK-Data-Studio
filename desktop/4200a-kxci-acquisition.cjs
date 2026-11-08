@@ -9,13 +9,13 @@ const numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
 function rawTokens(payload,expected){
  const buffer=Buffer.isBuffer(payload)?payload:Buffer.from(payload);
  if(!buffer.length||buffer.length>4*1024*1024)throw new Error('Empty or oversized KXCI DO response');
- const text=buffer.toString('utf8').replace(/\\0+$/,'').trim();
- const tokens=text.split(/[,;\\s]+/).filter(Boolean);
+ const text=buffer.toString('utf8').replace(/\0+$/,'').trim();
+ const tokens=text.split(/[,;\s]+/).filter(Boolean);
  if(tokens.length!==expected)throw new Error('KXCI DO point count mismatch: expected '+expected+', got '+tokens.length);
  return tokens.map((rawToken,index)=>{
   // Rev E §3-1 documents N/C-prefixed system readings; §5-38 describes
   // unprefixed numeric DO values. Preserve both; never invent a status flag.
-  const match=/^([NC])?([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[Ee][+-]?\\d+)?)$/.exec(rawToken);
+  const match=/^([NC])?([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?)$/.exec(rawToken);
   if(!match||!numeric.test(match[2])||!Number.isFinite(Number(match[2])))
    throw new Error('Invalid KXCI DO number/status at '+index+': '+rawToken.slice(0,32));
   return Object.freeze({status:match[1]||null,valueText:match[2],rawToken});
