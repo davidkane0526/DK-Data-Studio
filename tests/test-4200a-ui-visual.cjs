@@ -18,9 +18,27 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
  try{
   const desktop=await browser.newPage({viewport:{width:1200,height:850},deviceScaleFactor:1,acceptDownloads:true});
   await desktop.goto(file);
+  check('SHELL-DEFAULT-ZH',await desktop.evaluate(()=>
+    window.DKTSLocale?.getLanguage()==='zh'&&document.documentElement.lang==='zh-CN'&&
+    document.querySelector('[data-menu="File"]')?.textContent==='文件'&&
+    document.querySelector('#fs-version-badge')?.textContent==='V0.3.13'),
+    'default Chinese and original V0.3.13 identity');
+  check('SHELL-BRAND',await desktop.locator('.fs-brand-mark').textContent().then(x=>x==='DK'),
+    'original DK brand mark exists');
+  check('SHELL-TITLEBAR',await desktop.evaluate(()=>{
+    const title=document.querySelector('.fs-titlebar'),menu=document.querySelector('.fs-menu');
+    const a=title.getBoundingClientRect(),b=menu.getBoundingClientRect();
+    return b.top>=a.top&&b.bottom<=a.bottom&&a.height<=46;
+  }),'File and other menus occupy single titlebar, not an extra row');
   const pageErrors=[];
   desktop.on('pageerror',err=>pageErrors.push(String(err.message||err)));
   await desktop.screenshot({path:path.join(out,'01-main-workspace.png'),fullPage:true});
+  await desktop.locator('#fs-language-switch').click();
+  check('SHELL-SWITCH-EN',await desktop.evaluate(()=>
+    window.DKTSLocale?.getLanguage()==='en'&&
+    document.querySelector('[data-menu="File"]')?.textContent==='File'&&
+    document.querySelector('#fs-language-switch')?.textContent==='中文'),
+    'language changes without a page reload');
   await desktop.locator('.fs-menu [data-menu="File"]').click();
   const menuGeometry=await desktop.evaluate(()=>{
    const trigger=document.querySelector('.fs-menu [data-menu="File"]').getBoundingClientRect();
@@ -163,8 +181,32 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   await rawPreview.screenshot({path:path.join(out,'11-raw-data-viewer-offline-fixture.png'),fullPage:true});
   await rawPreview.close();
   const mobile=await browser.newPage({viewport:{width:430,height:900},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+  await mobile.goto(file);
+  check('MOBILE-DEFAULT-ZH',await mobile.evaluate(()=>
+    document.documentElement.lang==='zh-CN'&&document.querySelector('#fs-mobile-menu-toggle')?.textContent==='菜单'),
+    'mobile interface launches in Chinese');
+  check('MOBILE-COMPACT-MENU',await mobile.locator('.fs-mobile-menu-toggle').isVisible()&&
+    await mobile.locator('.fs-menu').isHidden(),'compact File and other menu groups');
+  await mobile.locator('#fs-mobile-menu-toggle').click();
+  check('MOBILE-MENU-OPEN',await mobile.locator('.fs-menu').isVisible()&&
+    await mobile.locator('.fs-menu [data-menu="File"]').textContent().then(x=>x==='文件'),
+    'mobile category menu accessible in titlebar');
+  await mobile.locator('.fs-menu [data-menu="File"]').click();
+  check('MOBILE-FILE-SUBMENU',await mobile.locator('.fs-menu [data-menu="File"] + .fs-menu-popup').isVisible(),
+    'File submenu remains reachable');
+  await mobile.screenshot({path:path.join(out,'12-mobile-menu-zh.png'),fullPage:true});
+  await mobile.locator('#fs-mobile-menu-toggle').click();
   await mobile.goto(file+'?open=edit');
+  check('MOBILE-MODAL-ZH',await mobile.locator('.fs-editor-title').textContent().then(x=>x.includes('编辑页面')),
+    'editor title localized by default');
+  check('MOBILE-MODAL-LANGUAGE',await mobile.locator('.fs-editor [data-fs-locale-switch]').isVisible(),
+    'switch remains reachable while editor is modal');
   await mobile.screenshot({path:path.join(out,'06-edit-page-narrow.png'),fullPage:true});
+  await mobile.locator('.fs-editor [data-fs-locale-switch]').click();
+  check('MOBILE-EN',await mobile.evaluate(()=>
+    window.DKTSLocale.getLanguage()==='en'&&
+    document.querySelector('.fs-tabs button')?.textContent==='Sweep'),
+    'translate full form without changing data-bind values');
   check('UI-030',await mobile.locator('.fs-info').isVisible()&&await mobile.locator('.fs-triptych-panel').count()===3,'mobile preserves three panels and original order');
   const connectPin=await mobile.evaluate(()=>{
     const button=document.querySelector('.fs-titlebar #fs-instrument-link'),title=document.querySelector('.fs-titlebar');
