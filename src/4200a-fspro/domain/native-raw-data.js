@@ -15,7 +15,6 @@
  const identifier=x=>typeof x==='string'&&/^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/.test(x);
  const text=x=>typeof x==='string'&&x.trim().length>0;
  const decimal=x=>typeof x==='string'&&NUMBER.test(x.trim())&&Number.isFinite(Number(x));
- const bytes=x=>Array.isArray(x)&&x.every(v=>Number.isInteger(v)&&v>=0&&v<=255);
  function validate(raw,{limit=DEFAULT_LIMIT}={}){
   const errors=[];
   const fail=(code,path)=>errors.push(Object.freeze({code,path}));
