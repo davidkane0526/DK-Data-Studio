@@ -1,0 +1,110 @@
+name: DKTS 4200A standalone Android Preview
+on:
+  push:
+    branches: [feat/4200a-fspro-rebuild]
+    paths:
+      - 'android4200a/**'
+      - 'src/4200a-fspro/**'
+      - 'src/core/**'
+      - 'src/styles/**'
+      - 'scripts/4200a/**'
+      - '.github/workflows/4200a-preview-android.yml'
+  pull_request:
+    branches: ['4200']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: dkts-fspro-preview-android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android-preview:
+    name: Compile standalone Android 35 (SMU output disabled)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout 4200A rebuild
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android API and build tools
+        run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Stage FS-Pro shared web assets
+        env:
+          DKTS_UI_REVISION: a${{ github.run_number }}
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund d3@7.9.0
+          node scripts/4200a/stage-android-preview.cjs
+          node --check src/4200a-fspro/android-bridge.js
+          node --check src/4200a-fspro/discovery-ui.js
+      - name: Compile Android preview with temporary CI debug identity
+        env:
+          DKTS_FSPRO_BUILD_NUMBER: ${{ github.run_number }}
+        run: gradle -p android4200a :app:assembleDebug --no-daemon --stacktrace
+      - name: Verify compile-only debug package, never publish it
+        run: |
+          test -s android4200a/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android4200a/app/build/outputs/apk/debug/app-debug.apk
+          echo 'Debug certificate is ephemeral; no debug APK will be distributed.'
+      - name: Restore private fixed Android release-signing identity
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.DKTS_FSPRO_ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.DKTS_FSPRO_ANDROID_SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo 'signing=false' >> "$GITHUB_OUTPUT"
+            echo 'No stable signing secrets: compile-only mode, no installable APK publication.'
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/dkts-fspro-preview.p12"
+          test -s "$RUNNER_TEMP/dkts-fspro-preview.p12"
+          chmod 600 "$RUNNER_TEMP/dkts-fspro-preview.p12"
+          echo 'signing=true' >> "$GITHUB_OUTPUT"
+      - name: Build reproducibly signed Android Release APK
+        if: steps.sign.outputs.signing == 'true'
+        env:
+          DKTS_FSPRO_BUILD_NUMBER: ${{ github.run_number }}
+          DKTS_FSPRO_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/dkts-fspro-preview.p12
+          DKTS_FSPRO_ANDROID_SIGNING_PASSWORD: ${{ secrets.DKTS_FSPRO_ANDROID_SIGNING_PASSWORD }}
+        run: gradle -p android4200a :app:assembleRelease --no-daemon --stacktrace
+      - name: Check signed APK and assign versioned filename
+        if: steps.sign.outputs.signing == 'true'
+        run: |
+          apk=android4200a/app/build/outputs/apk/release/app-release.apk
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk"
+          cp "$apk" "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk"
+          sha256sum "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk"
+      - name: Upload signed standalone APK
+        if: steps.sign.outputs.signing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android
+          path: DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk
+          if-no-files-found: error
+      - name: Publish signed Android prerelease
+        if: steps.sign.outputs.signing == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/feat/4200a-fspro-rebuild'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="DKTS-FSPro-Android-V0.3.0-a${{ github.run_number }}-preview"
+          gh release create "$tag" "DKTS-4200A-Preview-V0.3.0-a${{ github.run_number }}-Android.apk" \
+            --target "${{ github.sha }}" \
+            --title "DK Test Studio 4200A Preview V0.3.0 a${{ github.run_number }} Android" \
+            --notes "Read-only preview: *IDN? and *OPT? only. Measure/Repeat disabled. Stable repository key required; nativeVersion V0.3.0, uiRevision a${{ github.run_number }}. No real instrument measurement acceptance." \
+            --prerelease
