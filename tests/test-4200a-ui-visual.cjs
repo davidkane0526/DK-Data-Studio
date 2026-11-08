@@ -49,6 +49,34 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
   const pageErrors=[];
   desktop.on('pageerror',err=>pageErrors.push(String(err.message||err)));
   await desktop.screenshot({path:path.join(out,'01-main-workspace.png'),fullPage:true});
+  // A separate Chromium renderer simulates ONLY the narrow Electron window
+  // bridge to validate button layout and dispatch; this is not an OS test.
+  const windowPreview=await browser.newPage({viewport:{width:1200,height:850}});
+  await windowPreview.addInitScript(()=>{
+    window.__windowPreviewOps=[];
+    window.DKTSWindow={
+      control:operation=>{
+        window.__windowPreviewOps.push(operation);
+        return Promise.resolve(operation==='toggleMaximize'?true:operation==='isMaximized'?false:true);
+      },
+      onMaximize:callback=>{window.__windowPreviewMaximize=callback;}
+    };
+  });
+  await windowPreview.goto(file);
+  check('WINDOW-FRAMELESS-BUTTONS',await windowPreview.locator('#fs-window-actions').isVisible()&&
+    await windowPreview.locator('.fs-window-button').count()===3,
+    'minimize/maximize/close render only when Electron bridge exists');
+  await windowPreview.locator('#fs-window-minimize').click();
+  await windowPreview.locator('#fs-window-maximize').click();
+  await windowPreview.waitForFunction(()=>document.querySelector('#fs-window-maximize')?.dataset.maximized==='true');
+  check('WINDOW-RESTORE-GLYPH',await windowPreview.locator('#fs-window-maximize').getAttribute('aria-label')==='还原',
+    'restore icon/label tracks native maximize state');
+  await windowPreview.locator('#fs-window-close').click();
+  check('WINDOW-DISPATCH-ALLOWLIST',await windowPreview.evaluate(()=>
+    JSON.stringify(window.__windowPreviewOps)==='["isMaximized","minimize","toggleMaximize","close"]'),
+    'exact read-only window bridge operation list and order');
+  await windowPreview.screenshot({path:path.join(out,'13-desktop-frameless-window-controls.png'),fullPage:true});
+  await windowPreview.close();
   await desktop.locator('#fs-language-switch').click();
   check('SHELL-SWITCH-EN',await desktop.evaluate(()=>
     window.DKTSLocale?.getLanguage()==='en'&&
