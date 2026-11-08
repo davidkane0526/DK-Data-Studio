@@ -337,6 +337,7 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
       status.getBoundingClientRect().height<=28;
    }), 'raw import details belong to the log, not repeated in one-line bottom connection status');
   await mobileRaw.setViewportSize({width:920,height:560});
+  await mobileRaw.evaluate(()=>window.DK4200MobileFrames.setLayout('grid'));
   await mobileRaw.waitForTimeout(550);
   const rotatedRaw=await mobileRaw.evaluate(()=>({
     first:document.querySelectorAll('#fs-frame-1 svg').length,
