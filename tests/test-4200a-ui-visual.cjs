@@ -159,6 +159,18 @@ function check(id,condition,details=''){report.push({id,pass:!!condition,details
     window.DK4200FSPro.getDraft().terminals[0].measureRange.value==='2e-9'&&
     window.DK4200FSPro.validate().executionAuthorized===false),
     'software custom range is saved offline without claiming hardware execution');
+  check('RANGE-MODE-OPTIONS',await editor.locator('select[data-bind="terminals[0].measureRange.mode"] option').evaluateAll(nodes=>
+    nodes.map(n=>n.value).join(',')==='auto,minimum,fixed'),
+    'auto / current autorange floor / immediate range remain distinct');
+  await editor.locator('select[data-bind="terminals[0].measureRange.mode"]').selectOption('minimum');
+  check('RANGE-FLOOR-EDITABLE',await editor.locator('input[data-bind="terminals[0].measureRange.value"]').isEnabled(),
+    'current autorange floor allows a software-defined range');
+  await editor.locator('select[data-range-preset="0"]').selectOption('1e-8');
+  check('RANGE-FLOOR-PRESET-MODE',await desktop.evaluate(()=>{
+    const r=window.DK4200FSPro.getDraft().terminals[0].measureRange;
+    return r.mode==='minimum'&&r.value==='1e-8';
+  }),'preset must not silently switch the current autorange floor to fixed');
+  await editor.locator('select[data-bind="terminals[0].measureRange.mode"]').selectOption('fixed');
   await desktop.screenshot({path:path.join(out,'17-terminal-fixed-range-config.png'),fullPage:true});
   await editor.locator('button[data-action="add-segment"]').first().click();
   check('UI-013',await editor.locator('.fs-terminal').first().locator('.fs-segment-row').count()===1,'segment stays under terminal');
