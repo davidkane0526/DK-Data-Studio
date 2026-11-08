@@ -516,3 +516,12 @@
  .fs-app .fs-terminal-range{flex:1 0 100%}
  .fs-app .fs-range-note{display:none}
 }
+
+/* Compact mobile toolbar: retain the complete active Page identifier; the
+ * four-character prefix wasted space and made IV Sweep appear as IV S… . */
+.fs-toolbar-page-prefix{display:inline;margin-right:5px}
+@media(max-width:650px){
+ .fs-app .fs-toolbar-page-prefix{display:none}
+ .fs-app .fs-toolbar #fs-toolbar-page-name{display:inline;white-space:nowrap}
+ .fs-app .fs-toolbar .fs-toolbar-caption{max-width:100px;flex:0 1 auto}
+}
