@@ -3,6 +3,7 @@
 - 范围：FS-Pro 的独立 `Page` 编辑表单 → 严格 KXCI DC 编译 → 执行状态机 → 原始 `DO` 响应存储 → DKDS 科学绘图。
 - 参考文献：Tektronix **4200A-KXCI-907-01 Rev. E, March 2025**（官方 PDF，§3-1、§4-4、§5-7、§5-14 至 §5-28、§5-38、§5-40）。2026 年已有 Rev. F，**必须逐条复核最新版本、仪器固件以及实际模块后才能开启源输出**。
 - 截止当前所有编译 `executionAuthorized:false`；执行器只接受 `kind:'offline-mock'`。Electron native preload **只开放读取身份、读取模块清单和连接/断开**，不存在向物理设备发送 `VR/VC/ME1` 的路径。
+- **2026-11-08 量程编译（仅离线）**：每端子区分自动（无显式命令）、自动电流量程下限（`RG n,value`）、立即指定电流量程（`RI n,range,compliance`）和立即指定电压量程（`RV n,range,compliance`）。依据官方 Rev. E §5-42/43，`RG` 不等同于固定量程，`RI/RV` 也没有提供完整扫描期间保持量程的证据，编译元数据保留 `heldDuringSweepVerified:false`。`RI` 的电流范围表只明确列出 4200/4201-SMU，4210/4211-SMU 的 `RI` 暂拒编译，不会猜测。预放决定最小电流档位。RG 对高功率 SMU 的范围有手册明确支持。任何量程编译仍然不得直接产生真实源输出。
 
 ## 文件与职责
 
