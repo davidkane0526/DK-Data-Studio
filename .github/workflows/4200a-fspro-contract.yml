@@ -56,6 +56,7 @@ jobs:
           node tests/test-4200a-kxci-acquisition.cjs
           node tests/test-4200a-kxci-runner.cjs
           node tests/test-4200a-routed-discovery.cjs
+          node tests/test-4200a-android-contract.cjs
   browser-visual:
     name: Render desktop and Android-size screenshots
     runs-on: ubuntu-24.04
