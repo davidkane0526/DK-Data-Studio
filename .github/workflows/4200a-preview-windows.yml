@@ -2,13 +2,6 @@ name: DKTS 4200A standalone Windows Preview
 on:
   push:
     branches: [feat/4200a-fspro-rebuild]
-    paths:
-      - 'src/4200a-fspro/**'
-      - 'src/core/**'
-      - 'src/styles/**'
-      - 'desktop/4200a-*.cjs'
-      - 'scripts/4200a/**'
-      - '.github/workflows/4200a-preview-windows.yml'
   pull_request:
     branches: ['4200']
   workflow_dispatch:
