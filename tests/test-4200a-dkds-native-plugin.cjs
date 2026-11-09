@@ -48,6 +48,6 @@ assert.equal(safeModeSwitch.pages[0].terminals[0].rangeMode,'auto',
 const switched=api.edit(floor,'D',{sourceMode:'current'});
 assert.equal(switched.pages[0].terminals[0].rangeMode,'auto');
 assert.equal(switched.pages[0].terminals[0].rangeValue,'2');
-assert.throws(()=>api.edit(mapped,'D',{compliance:'1000000000000e1000'}),/Nonfinite/);
+assert.throws(()=>api.edit(mapped,'D',{compliance:'1000000000000e1000'}),/Invalid numeric input/);
 assert.throws(()=>api.add(orig,'invented'),/Unknown test type/);
 console.log('DKTS Core-native plugin: manifest, 5 types, project state, None/SMU mapping, range guards PASS');
