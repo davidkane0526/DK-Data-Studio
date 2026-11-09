@@ -42,7 +42,9 @@ const reset=api.edit(mapped,'D',{resource:'None'});
 assert.equal(api.visible(reset.pages[0]).length,0);
 const floor=api.edit(mapped,'D',{rangeMode:'minimum',rangeValue:'1e-6'});
 assert.equal(floor.pages[0].terminals[0].rangeMode,'minimum');
-assert.throws(()=>api.edit(floor,'D',{sourceMode:'current',rangeMode:'minimum'}),/Invalid/);
+const safeModeSwitch=api.edit(floor,'D',{sourceMode:'current',rangeMode:'minimum'});
+assert.equal(safeModeSwitch.pages[0].terminals[0].rangeMode,'auto',
+ 'source-mode switch clears stale unsupported current-autorange minimum');
 const switched=api.edit(floor,'D',{sourceMode:'current'});
 assert.equal(switched.pages[0].terminals[0].rangeMode,'auto');
 assert.equal(switched.pages[0].terminals[0].rangeValue,'2');
