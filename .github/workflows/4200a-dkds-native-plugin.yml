@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/4200a/dkds-native-workspace/**'
       - 'tests/test-4200a-dkds-native-plugin.cjs'
+      - 'tests/test-4200a-dkds-native-host.cjs'
       - '.github/workflows/4200a-dkds-native-plugin.yml'
   pull_request:
     branches: [4200]
@@ -26,6 +27,7 @@ jobs:
           node --check tools/4200a/dkds-native-workspace/model.js
           node --check tools/4200a/dkds-native-workspace/plugin.js
           node tests/test-4200a-dkds-native-plugin.cjs
+          node tests/test-4200a-dkds-native-host.cjs
       - name: DKDS official SDK Plugin API 1.19 validation
         run: node sdk/tools/dkds-plugin.js validate tools/4200a/dkds-native-workspace
       - name: Create standalone installer-compatible DKDS plugin package
