@@ -1,0 +1,40 @@
+name: DKTS 4200A external DKDS Core plugin
+on:
+  push:
+    branches:
+      - feat/4200a-fspro-rebuild
+    paths:
+      - 'tools/4200a/dkds-native-workspace/**'
+      - 'tests/test-4200a-dkds-native-plugin.cjs'
+      - '.github/workflows/4200a-dkds-native-plugin.yml'
+  pull_request:
+    branches: [4200]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk-validation:
+    name: Native TOP Plugin API 1.19 contract and installable package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and domain invariants
+        run: |
+          node --check tools/4200a/dkds-native-workspace/model.js
+          node --check tools/4200a/dkds-native-workspace/plugin.js
+          node tests/test-4200a-dkds-native-plugin.cjs
+      - name: DKDS official SDK Plugin API 1.19 validation
+        run: node sdk/tools/dkds-plugin.js validate tools/4200a/dkds-native-workspace
+      - name: Create standalone installer-compatible DKDS plugin package
+        run: |
+          mkdir -p dist
+          node sdk/tools/dkds-plugin.js package tools/4200a/dkds-native-workspace dist/DKTS-4200A-native-v0.7.0.dkplugin
+      - name: Archive plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DKTS-4200A-DKDS-Core-native-plugin
+          path: dist/DKTS-4200A-native-v0.7.0.dkplugin
+          if-no-files-found: error
