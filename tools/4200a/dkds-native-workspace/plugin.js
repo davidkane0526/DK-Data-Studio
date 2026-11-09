@@ -5,7 +5,7 @@
   const model=ctx.modules.require('model'),units=ctx.ui.unitTemplates;
   const ACTIVITY='dkts-keithley-4200',PAGE='dktsKeithley4200Page';
   const store=ctx.state.create(model.initial(),{projectSlice:'settings'});
-  let wb=null,plot=null,nav=null,parameters=null,dataNote=null,kindField=null;
+  let wb=null,plot=null,nav=null,parameters=null,portFields=null,dataNote=null,kindField=null;
   const state=()=>model.validate(store.get());
   const active=()=>{const s=state();return s.pages.find(x=>x.id===s.activeId);};
   const persist=value=>{store.patch(model.validate(value));ctx.project.capture?.();render();};
@@ -49,6 +49,17 @@
    });
    units.action.create(nav,{id:'add-test',label:'＋ 新增测试',
     onInvoke:()=>persist(model.add(state(),kindField?.control?.value||'iv'))});
+   if(portFields){
+    portFields.replaceChildren();
+    units.note.create(portFields,{variant:'meta',
+     text:'以下均为离线端口规划。只有仪器完成型号识别及输出安全验收后才允许真实测试。'});
+    for(const term of p.terminals)units.field.create(portFields,{
+     kind:'select',label:term.logical+' 端口',value:term.resource,
+     options:['None','SMU1','SMU2','SMU3','SMU4','SMU5','SMU6','SMU7','SMU8']
+      .map(x=>({value:x,label:x})),
+     onChange:event=>change(term.logical,'resource',event.target.value)
+    });
+   }
    parameters.replaceChildren();
    units.note.create(parameters,{variant:'meta',text:p.name+' · '+p.testType+
     ' · 离线参数模式；设备输出尚未通过安全验收'});
@@ -111,20 +122,15 @@
    options:model.KINDS.map(x=>({value:x.id,label:x.label}))});
   parameters=units.layout.create(params,{variant:'stack-comfortable'});
   const ports=units.layout.create(null,{variant:'stack-comfortable'});
-  units.note.create(ports,{variant:'meta',text:'手动端口映射不代表仪器模块已被识别；真实输出仍然禁用。'});
-  for(const t of active().terminals)units.field.create(ports,{
-   kind:'select',label:t.logical+' 端口',value:t.resource,
-   options:['None','SMU1','SMU2','SMU3','SMU4','SMU5','SMU6','SMU7','SMU8'].map(x=>({value:x,label:x})),
-   onChange:e=>change(t.logical,'resource',e.target.value)
-  });
+  portFields=ports;
   const paramPrime=units.prime.build({id:'parameters',label:'参数',title:'FS-Pro 参数设置',
    variant:'canonical-header',presentationRole:'data-control',presentationPurpose:'parameters',
-   semanticKind:'panel',priority:92,collapsible:true,existingNode:params,
+   semanticKind:'panel',placementControl:'host',priority:92,collapsible:true,existingNode:params,
    defaultPlacement:'right',placements:['inline','right','bottom','float'],
    stateVersion:'native-dkts-v1'});
   const portPrime=units.prime.build({id:'ports',label:'端口',title:'端口映射',
    variant:'canonical-header',presentationRole:'inspector',semanticKind:'inspector',
-   priority:65,collapsible:true,existingNode:ports,
+   priority:65,collapsible:true,existingNode:ports,chrome:'auto',header:{mode:'generate',title:'端口映射'},
    defaultPlacement:'bottom',placements:['inline','right','bottom','float'],
    stateVersion:'native-dkts-v1'});
   wb.compose({primary:{id:'main',label:'数据图',presentationRole:'scientific-primary',
