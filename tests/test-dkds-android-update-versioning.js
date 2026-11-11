@@ -39,10 +39,12 @@ try{
   assert(workflow.includes('node tools/updates/stamp-android-build.cjs'));
   assert(workflow.includes('DKDS_UI_APP_VERSION="$DKDS_RELEASE_VERSION" DKDS_UI_BUILD_ID="$DKDS_HOT_BUILD_ID"'));
   assert(workflow.includes('dkds-android-v${DKDS_RELEASE_VERSION}-${DKDS_HOT_BUILD_ID}'));
+  assert(workflow.includes("if: github.event_name == 'push' && github.ref == 'refs/heads/dev'"),'Android full and preview releases must publish from dev.');
   const windows=fs.readFileSync(path.join(root,'.github/workflows/build-windows.yml'),'utf8');
   assert(windows.includes('node tools/updates/resolve-build-identity.cjs'));
   assert(windows.includes('dkds-windows-v$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID'));
   assert(windows.includes('DK-Data-Studio-Portable-$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID-x64.exe'));
+  assert(windows.includes("if: github.event_name == 'push' && github.ref == 'refs/heads/dev'"),'Windows full and preview releases must publish from dev.');
   assert(windows.includes('V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID'));
   assert(windows.includes('--title "DK Data Studio Windows · V$env:DKDS_RELEASE_VERSION $env:DKDS_HOT_BUILD_ID"'),'Windows Release create/edit titles must both expose Vx.y.z aNNNN.');
   assert(!windows.includes('npm version $ciVersion'),'Windows CI must not rewrite the stable application version.');
