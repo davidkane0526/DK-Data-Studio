@@ -3,9 +3,7 @@ name: Build Android
 on:
   push:
     branches:
-      - plugin
       - dev
-      - '4200'
     paths:
       - '.github/workflows/build-android.yml'
       - 'mobile/**'
@@ -33,7 +31,7 @@ on:
   pull_request:
     branches:
       - main
-      - '4200'
+      - dev
     paths:
       - 'mobile/**'
       - 'src/**'
@@ -301,7 +299,7 @@ jobs:
 
   publish-android-preview:
     name: Publish DKDS Android preview to GitHub Releases
-    if: github.event_name == 'push' && github.ref == 'refs/heads/4200'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: build-android
     runs-on: ubuntu-24.04
     permissions:
