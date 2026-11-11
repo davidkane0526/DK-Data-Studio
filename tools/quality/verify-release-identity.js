@@ -39,7 +39,7 @@ if (!new RegExp('^# ' + escapeRegExp(version) + '(?:\\s|$)', 'm').test(changelog
 if (!new RegExp('[vV]' + escapeRegExp(version) + '\\s+Release').test(readme)) {
   throw new Error('README_CN.md is missing the V' + version + ' Release marker.');
 }
-if (!desktopHtml.includes('<span class="version">V' + version + '</span>')) {
+if (!desktopHtml.includes('<span class="version">v' + version + '</span>')) {
   throw new Error('src/index.html desktop version label does not match the stable application version.');
 }
 if (!androidStamp.includes('const version=source;')||!androidStamp.includes('const versionCode=100000+run;')) {
