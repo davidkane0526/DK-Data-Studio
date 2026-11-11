@@ -1,3 +1,11 @@
+# 3.72.4 — In-app full-update smoke release (dev)
+
+- Prepare a controlled complete application update to V3.72.4 from older DKDS builds so users can test update discovery, verified download and platform installation directly from the version button.
+- Align Windows Portable EXE and Android APK preview release jobs to the dev branch; update the standalone signed CSS hot-update channel from the retired 4200 branch to dev.
+- Keep App version V3.72.4 distinct from the per-commit aNNNN hot-update identity; bump Android source versionCode to 287 (CI stamps a monotonically increasing run-based versionCode on produced APKs).
+- Retain generic TCP/IP connectivity and original DKDS analysis plugins. Do not incorporate Keithley-specific KXCI handling or DK Test Studio instrument functionality into DKDS.
+- This is a publish-path test release; Windows/Android installer availability and in-app upgrade success require GitHub Actions build and real-device verification.
+
 # 3.72.1 — Direct Android update installation
 
 - Removes DKDS's redundant confirmation dialog before APK installation. Selecting “下载并安装” now immediately downloads (or reuses) the APK, verifies its SHA-256 digest and signing certificate, and invokes the Android package installer. Android's own system installation/permission confirmations remain in place.
