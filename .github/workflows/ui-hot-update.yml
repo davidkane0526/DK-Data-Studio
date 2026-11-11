@@ -1,7 +1,7 @@
 name: DKDS Fast UI Hot Update
 on:
   push:
-    branches: ['4200']
+    branches: ['dev']
     paths:
       - 'src/styles/structure/connectivity-panels.css'
       - 'src/styles/platform/native-client-shell.css'
@@ -48,13 +48,13 @@ jobs:
           node -e "const x=require('./dist/DKDS-UI-bundle.json');if(x.schema!=='dkds-ui-v2'||x.appVersion!==process.env.DKDS_RELEASE_VERSION||x.buildId!==process.env.DKDS_HOT_BUILD_ID||Object.keys(x.files).length!==3)process.exit(1)"
           echo "Hot update identity: V$DKDS_RELEASE_VERSION $DKDS_HOT_BUILD_ID"
       - name: Publish UI-only update release
-        if: github.ref == 'refs/heads/4200' && steps.scope.outputs.channel == 'hot-update-only'
+        if: github.ref == 'refs/heads/dev' && steps.scope.outputs.channel == 'hot-update-only'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          head_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/4200" --jq '.commit.sha')"
+          head_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/dev" --jq '.commit.sha')"
           if [ "$head_sha" != "$GITHUB_SHA" ]; then
             echo 'Newer branch commit exists; skip an obsolete UI bundle.'
             exit 0
