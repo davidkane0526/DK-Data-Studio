@@ -383,8 +383,10 @@ jobs:
           $tag = "v$env:DKDS_RELEASE_VERSION"
           $title = "DK Data Studio $tag"
           $latestDevSha = gh api "repos/$env:GITHUB_REPOSITORY/branches/dev" --jq '.commit.sha'
-          if ($LASTEXITCODE -ne 0 -or $latestDevSha.Trim() -ne $env:GITHUB_SHA) {
-            throw "Superseded dev build must not publish a Release: $env:GITHUB_SHA"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve current dev HEAD for Release safety check.' }
+          if ($latestDevSha.Trim() -ne $env:GITHUB_SHA) {
+            Write-Host "Superseded dev build; skipping obsolete stable Release: $env:GITHUB_SHA"
+            exit 0
           }
           $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
             Where-Object { $_.Name -match '(?i)portable' } |
@@ -436,6 +438,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
+          $latestDevSha = gh api "repos/$env:GITHUB_REPOSITORY/branches/dev" --jq '.commit.sha'
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve current dev HEAD for preview safety check.' }
+          if ($latestDevSha.Trim() -ne $env:GITHUB_SHA) {
+            Write-Host "Superseded dev build; skipping obsolete Windows preview: $env:GITHUB_SHA"
+            exit 0
+          }
           $tag = "dkds-windows-v$env:DKDS_RELEASE_VERSION-$env:DKDS_HOT_BUILD_ID"
           $portable = Get-ChildItem -Path (Join-Path $PWD 'artifact-windows') -File -Filter '*.exe' |
             Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
