@@ -5,6 +5,8 @@
 - Keep App version V3.72.4 distinct from the per-commit aNNNN hot-update identity; bump Android source versionCode to 287 (CI stamps a monotonically increasing run-based versionCode on produced APKs).
 - Retain generic TCP/IP connectivity and original DKDS analysis plugins. Do not incorporate Keithley-specific KXCI handling or DK Test Studio instrument functionality into DKDS.
 - This is a publish-path test release; Windows/Android installer availability and in-app upgrade success require GitHub Actions build and real-device verification.
+- Repository maintenance verified removal of 82 legacy DKTS/4200A Releases and 28 cancelled dev runs (audit: `docs/reports/DKDS_GITHUB_CLEANUP_2026-11-11.md`). All `v*` and `dkds-*` update releases remain available. The one-off cleanup Action was removed after use.
+- Release workflows now skip superseded dev builds with a notice instead of a false failure or an obsolete preview. Build Windows, Build Android and UI Hot Update are the three permanent dev Actions workflows.
 
 # 3.72.1 — Direct Android update installation
 
