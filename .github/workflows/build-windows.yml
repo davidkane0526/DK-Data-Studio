@@ -3,9 +3,7 @@ name: Build Windows
 on:
   push:
     branches:
-      - plugin
       - dev
-      - '4200'
     paths:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
@@ -34,7 +32,7 @@ on:
   pull_request:
     branches:
       - main
-      - '4200'
+      - dev
     paths:
       - 'main.js'
       - 'plugin-window-manager.js'
@@ -432,7 +430,7 @@ jobs:
           }
 
       - name: Publish DKDS Windows preview (portable only)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/4200'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
